@@ -159,6 +159,9 @@ test('create order', function () {
 
 
     $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
     $this->customer->refresh();
 
     expect($order)->toBeInstanceOf(Order::class)
@@ -179,6 +182,49 @@ test('create order', function () {
         ->and($order->stats->number_item_transactions_at_submission)->toBe(0);
 
     return $order;
+});
+
+test('UI Edit Order', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $response = get(route(
+        'grp.org.shops.show.ordering.orders.edit',
+        [
+            'organisation' => $this->organisation->slug,
+            'shop' => $this->shop->slug,
+            'order' => $order->slug,
+        ]
+    ));
+
+    $response->assertOk();
+    $response->assertInertia(function (AssertableInertia $page) use ($order) {
+        $page
+            ->component('EditModel')
+            ->has('breadcrumbs')
+            ->has('title')
+            ->has('pageHead', function (AssertableInertia $head) use ($order) {
+                $head->where('title', $order->slug)
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'exitEdit')
+                    ->etc();
+            })
+            ->has('formData', function (AssertableInertia $form) use ($order) {
+                $form->has('blueprint')
+                    ->where('args.updateRoute.name', 'grp.models.order.update')
+                    ->where('args.updateRoute.parameters.order', $order->id)
+                    ->etc();
+            });
+    });
 });
 
 test('get order products', function (Order $order) {
