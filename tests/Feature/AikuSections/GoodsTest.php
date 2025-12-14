@@ -29,6 +29,11 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Validation\ValidationException;
 use App\Models\Goods\TradeUnitFamily as TradeUnitFamilyModel;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
+use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
+use App\Actions\Goods\TradeUnitFamily\UI\IndexTradeUnitFamilies;
+use App\Actions\Goods\TradeUnitFamily\UI\CreateTradeUnitFamily as CreateTradeUnitFamilyUI;
+use App\Actions\Goods\TradeUnitFamily\UI\EditTradeUnitFamily as EditTradeUnitFamilyUI;
+use App\Actions\Goods\TradeUnitFamily\UI\ShowTradeUnitFamily as ShowTradeUnitFamilyUI;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnitFamilies;
 
 use function Pest\Laravel\actingAs;
@@ -481,4 +486,133 @@ test('store trade unit family enforces unique code per group', function () {
         'name' => 'Fam A2 should fail',
     ]);
 })->throws(ValidationException::class);
+
+test('UI Show Trade Unit Family page loads', function () {
+    $group = createGroup();
+
+    $family = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'Shown Family',
+    ]);
+
+    $response = get(route('grp.trade_units.families.show', [$family->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($family) {
+        $page
+            ->component('Goods/TradeUnitFamily')
+            ->where('title', __('Trade Unit Family').' '.$family->code)
+            ->has('breadcrumbs')
+            ->has('pageHead', function (AssertableInertia $head) use ($family) {
+                $head->where('title', $family->code)
+                    ->where('model', __('Trade Unit Family'))
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'edit')
+                    ->etc();
+            })
+            ->has('tabs.current');
+    });
+});
+
+test('UI Edit Trade Unit Family page loads', function () {
+    $group = createGroup();
+
+    $family = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'Editable Family',
+    ]);
+
+    $response = get(route('grp.trade_units.families.edit', [$family->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($family) {
+        $page
+            ->component('EditModel')
+            ->where('title', __('Edit Trade Unit Family'))
+            ->has('breadcrumbs')
+            ->has('pageHead', function (AssertableInertia $head) {
+                $head->where('title', __('Edit trade family'))
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'cancel')
+                    ->etc();
+            })
+            ->has('formData', function (AssertableInertia $form) use ($family) {
+                $form->has('blueprint')
+                    ->where('args.updateRoute.name', 'grp.models.trade_unit_family.update')
+                    ->where('args.updateRoute.parameters.tradeUnitFamily', $family->id)
+                    ->etc();
+            });
+    });
+});
+
+test('UI Create Trade Unit Family page loads', function () {
+    $response = get(route('grp.trade_units.families.create'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->where('title', __('New Trade Unit Family'))
+            ->has('breadcrumbs')
+            ->has('pageHead', function (AssertableInertia $head) {
+                $head->where('title', __('New trade family'))
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'cancel')
+                    ->etc();
+            })
+            ->has('formData', function (AssertableInertia $form) {
+                $form->where('route.name', 'grp.models.trade_unit_family.store')
+                    ->has('blueprint')
+                    ->etc();
+            });
+    });
+});
+
+test('UI index trade unit families page loads', function () {
+    $response = get(route('grp.trade_units.families.index'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnitsFamilies')
+            ->where('title', __('Trade Unit Families'))
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
+test('index trade unit families tableStructure returns closure', function () {
+    $closure = IndexTradeUnitFamilies::make()->tableStructure($this->group);
+    expect($closure)->toBeInstanceOf(Closure::class);
+});
+
+test('update trade unit family updates name and description', function () {
+    $group = createGroup();
+
+    $family = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'Original Name',
+        'description' => 'Original Description',
+    ]);
+
+    $updated = UpdateTradeUnitFamily::make()->handle($family, [
+        'name' => 'Updated Name',
+        'description' => 'Updated Description',
+    ]);
+
+    expect($updated->fresh()->name)->toBe('Updated Name')
+        ->and($updated->fresh()->description)->toBe('Updated Description');
+});
+
+test('update trade unit family allows null description', function () {
+    $group = createGroup();
+
+    $family = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'With Desc',
+        'description' => 'Some text',
+    ]);
+
+    $updated = UpdateTradeUnitFamily::make()->handle($family, [
+        'description' => null,
+    ]);
+
+    expect($updated->fresh()->description)->toBeNull();
+});
 
