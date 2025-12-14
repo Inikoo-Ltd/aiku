@@ -264,6 +264,16 @@ test("UI Index Trade Units", function () {
 test("UI Show TradeUnit", function () {
     $this->withoutExceptionHandling();
     $tradeUnit = TradeUnit::first();
+    if (!$tradeUnit) {
+        $tradeUnit = TradeUnit::factory()->create([
+            'group_id' => $this->group->id,
+            'code'     => 'TU-'.uniqid(),
+            'name'     => 'Sample TU',
+        ]);
+    }
+    if (!$tradeUnit->stats) {
+        $tradeUnit->stats()->create();
+    }
     $response  = get(
         route("grp.trade_units.units.show", [$tradeUnit->slug])
     );
@@ -277,6 +287,60 @@ test("UI Show TradeUnit", function () {
                 fn (AssertableInertia $page) => $page->where("title", $tradeUnit->code)->etc()
             )
             ->has("tabs");
+    });
+});
+
+test("UI Edit Trade Unit", function () {
+    $tradeUnit = TradeUnit::first();
+    if (!$tradeUnit) {
+        $tradeUnit = TradeUnit::factory()->create([
+            'group_id' => $this->group->id,
+            'code'     => 'TU-'.uniqid(),
+            'name'     => 'Sample TU',
+        ]);
+    }
+    $response  = get(
+        route("grp.trade_units.units.edit", [$tradeUnit->slug])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($tradeUnit) {
+        $page
+            ->component("EditModel")
+            ->has("breadcrumbs", 3)
+            ->has("title")
+            ->has("navigation")
+            ->has(
+                "formData",
+                fn ($page) => $page->where("args", [
+                    'updateRoute' => [
+                        'name'       => 'grp.models.trade-unit.update',
+                        'parameters' => $tradeUnit->id,
+                    ],
+                ])->etc()
+            )
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", $tradeUnit->name)->etc()
+            )
+            ->has("formData");
+    });
+});
+
+test("UI Show Trade Units Dashboard", function () {
+    $response = get(
+        route("grp.trade_units.dashboard")
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Goods/GoodsDashboard")
+            ->has("breadcrumbs", 2)
+            ->has("title")
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page->where("title", 'Trade Units Dashboard')->etc()
+            )
+            ->has("flatTreeMaps");
     });
 });
 
