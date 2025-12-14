@@ -10,6 +10,13 @@
 
 use App\Actions\Accounting\Invoice\Search\ReindexInvoiceSearch;
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Ordering\Order\PayOrder;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Models\Accounting\PaymentServiceProvider;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
@@ -123,6 +130,8 @@ test('store shipping country action', function () {
     expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class)
         ->and($this->shop->stats->number_shipping_countries)->toBe(1);
 });
+
+
 
 test('update shipping country action', function () {
     $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
@@ -882,4 +891,117 @@ test('Ordering hydrators', function () {
     $this->artisan('hydrate', [
         '--sections' => 'ordering',
     ])->assertExitCode(0);
+});
+
+test('Pay order creates payment and attaches to order', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    $amount    = 50.25;
+    $reference = 'PAY-'.uniqid();
+
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => $amount,
+        'reference' => $reference,
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $order->refresh();
+
+    expect($payment->amount)->toBe((string) $amount)
+        ->and($payment->reference)->toBe($reference)
+        ->and($order->payments()->where('payments.id', $payment->id)->exists())->toBeTrue();
+});
+
+test('Pay order with accounts payment account creates credit transaction', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Accounts Account',
+        ]
+    );
+
+    // Ensure this account behaves as an accounts ledger so PayOrder creates a credit transaction
+    $paymentAccount->is_accounts = true;
+    $paymentAccount->save();
+
+    $amount    = 75.00;
+    $payment   = PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => $amount,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $payment->refresh();
+
+    expect($payment->creditTransaction)->not->toBeNull()
+        ->and((float) $payment->creditTransaction->amount)->toBe((float) (-$amount))
+        ->and($payment->creditTransaction->payment_id)->toBe($payment->id);
+});
+
+test('Pay order attaches payment to invoice when invoice exists', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $invoice = StoreInvoice::make()->action($order, [
+        'type' => InvoiceTypeEnum::INVOICE,
+        'currency_id' => $this->shop->currency_id,
+        'net_amount' => 0,
+        'total_amount' => 0,
+        'gross_amount' => 0,
+        'tax_amount' => 0,
+    ]);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Cash Account 2',
+        ]
+    );
+
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 10.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $payment->refresh();
+    $invoice->refresh();
+
+    expect($payment->invoices()->where('invoices.id', $invoice->id)->exists())->toBeTrue();
 });
