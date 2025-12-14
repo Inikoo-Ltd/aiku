@@ -662,3 +662,57 @@ test('hydrate trade unit family trade units stats', function () {
         ->and($stats->number_trade_units_status_discontinuing)->toBe(0)
         ->and($stats->number_trade_units_status_anomality)->toBe(1);
 });
+
+test('UI Index Stock Families', function () {
+    $response = get(
+        route('grp.goods.stock-families.index')
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/StockFamilies')
+            ->has('breadcrumbs')
+            ->has('title')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $p) => $p
+                    ->has('title')
+                    ->has('icon')
+                    ->has('subNavigation')
+                    ->has('actions')
+                    ->where('title', 'Master SKU Families')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI Create Stock Family', function () {
+    $response = get(
+        route('grp.goods.stock-families.create')
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->has('breadcrumbs')
+            ->has('title')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $p) => $p
+                    ->where('title', 'New SKU family')
+                    ->has('actions')
+                    ->etc()
+            )
+            ->has(
+                'formData',
+                fn ($p) => $p
+                    ->has('blueprint')
+                    ->has('route')
+                    ->where('route', [
+                        'name' => 'grp.models.stock-family.store',
+                    ])
+                    ->etc()
+            );
+    });
+});
