@@ -468,7 +468,7 @@ test("UI Index dispatching delivery-notes", function () {
 
 test("UI Index dispatching show delivery-notes", function () {
 
-    $deliveryNote=DeliveryNote::first();
+    $deliveryNote = DeliveryNote::first();
 
     $this->withoutExceptionHandling();
     $response = get(
@@ -531,7 +531,7 @@ test("UI Index dispatching show delivery-notes (tab picking)", function () {
 
 test('UI get section route dispatching show', function () {
 
-    $deliveryNote=DeliveryNote::first();
+    $deliveryNote = DeliveryNote::first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.warehouses.show.dispatching.delivery_notes.show', [
         'organisation' => $deliveryNote->organisation->slug,
@@ -542,4 +542,47 @@ test('UI get section route dispatching show', function () {
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::INVENTORY_DISPATCHING->value)
         ->and($sectionScope->model_slug)->toBe($deliveryNote->warehouse->slug);
+});
+
+test('UI Create Replacement Delivery Note', function () {
+    $this->withoutExceptionHandling();
+    $deliveryNote = $this->order->deliveryNotes()->first();
+
+
+    $response = get(route(
+        'grp.org.shops.show.ordering.orders.show.replacement.create',
+        [
+            'organisation' => $this->organisation->slug,
+            'shop' => $this->shop->slug,
+            'order' => $this->order->slug,
+        ]
+    ));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($deliveryNote) {
+        $page
+            ->component('Org/Dispatching/CreateReplacement')
+            ->where('title', __('Replacement'))
+            ->has('breadcrumbs')
+            ->has('pageHead', function (AssertableInertia $head) {
+                $head->where('model', __('Replacement'))
+                    ->has('title')
+                    ->has('actions')
+                    ->etc();
+            })
+            ->has('tabs', function (AssertableInertia $tabs) {
+                $tabs->has('current')
+                    ->has('navigation');
+            })
+            ->has('delivery_note', function (AssertableInertia $dn) use ($deliveryNote) {
+                $dn->where('id', $deliveryNote->id)->etc();
+            })
+            ->has('routes', function (AssertableInertia $routes) use ($deliveryNote) {
+                $routes->where('update.name', 'grp.models.delivery_note.update')
+                    ->where('update.parameters.deliveryNote', $deliveryNote->id)
+                    ->etc();
+            })
+            ->has('address')
+            ->has('box_stats')
+            ->has('notes');
+    });
 });

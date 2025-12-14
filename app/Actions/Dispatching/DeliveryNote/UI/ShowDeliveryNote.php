@@ -406,33 +406,6 @@ class ShowDeliveryNote extends OrgAction
         };
     }
 
-    public function getInvoiceButton(DeliveryNote $deliveryNote): array
-    {
-        $invoiceButton        = [];
-        $generateInvoiceLabel = __('Generate Invoice');
-
-        if (($deliveryNote->state == DeliveryNoteStateEnum::FINALISED || $deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) && $deliveryNote->orders->first()->invoices->count() == 0) {
-            $invoiceButton = [
-                [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => $generateInvoiceLabel,
-                    'label'   => $generateInvoiceLabel,
-                    'key'     => 'action',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.dispatched',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ]
-                ]
-            ];
-        }
-
-        return $invoiceButton;
-    }
-
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -652,7 +625,6 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'    => $actions,
-                $this->getInvoiceButton($deliveryNote),
                 'wrapped_actions' => $this->wrappedActions($deliveryNote, $request),
             ],
             'warning'       => $warning,
