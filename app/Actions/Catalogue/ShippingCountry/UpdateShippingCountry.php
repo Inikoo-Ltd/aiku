@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Models\Ordering\ShippingCountry;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateShippingCountry extends OrgAction
 {
@@ -23,6 +24,13 @@ class UpdateShippingCountry extends OrgAction
         $shippingCountry->update($modelData);
 
         return $shippingCountry;
+    }
+
+    public function asController(ShippingCountry $shippingCountry, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($shippingCountry->shop, $request);
+
+        $this->handle($shippingCountry, $this->validatedData);
     }
 
     public function rules(): array
