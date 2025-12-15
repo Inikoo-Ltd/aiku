@@ -153,7 +153,6 @@ class EditCustomer extends OrgAction
                                     'label'    => __('Sage Customer Number'),
                                     'value'    => $customer->accounting_reference,
                                     'required' => false,
-                                    'hidden'   => !$customer->is_credit_customer,
                                 ],
                             ]
                         ],

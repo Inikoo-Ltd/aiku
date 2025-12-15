@@ -40,12 +40,7 @@ class IndexSageInvoicesReport extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Invoice::class);
-        $queryBuilder->where('invoices.organisation_id', $organisation->id)
-            ->where('invoices.in_process', false)
-            ->whereHas('customer', function ($query) {
-                $query->where('is_credit_customer', true)
-                    ->whereNotNull('accounting_reference');
-            });
+        $queryBuilder->where('invoices.organisation_id', $organisation->id)  ->where('invoices.in_process', false);
 
         $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', '=', 'currencies.id');
