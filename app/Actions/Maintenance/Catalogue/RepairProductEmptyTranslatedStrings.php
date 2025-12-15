@@ -43,7 +43,7 @@ class RepairProductEmptyTranslatedStrings
                         if ($masterProduct->{$field}) {
                             $command->info("Repairing product $field $product->slug  from  $masterProduct->slug ");
 
-                            TranslateCategoryModel::run(
+                            TranslateCategoryModel::dispatch(
                                 $product,
                                 [
                                     $field=> $masterProduct->{$field}

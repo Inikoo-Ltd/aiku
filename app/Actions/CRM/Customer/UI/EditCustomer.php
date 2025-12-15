@@ -74,8 +74,8 @@ class EditCustomer extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('contact information'),
-                            'label'  => __('contact'),
+                            'title'  => __('Contact information'),
+                            'label'  => __('Contact'),
                             'fields' => [
                                 'contact_name'             => [
                                     'type'  => 'input',
@@ -136,6 +136,13 @@ class EditCustomer extends OrgAction
                                     'label' => __('identity document number'),
                                     'value' => $customer->identity_document_number
                                 ],
+                            ]
+                        ],
+                        [
+                            'title'  => __('Accounting'),
+                            'label'  => __('Accounting'),
+                            'fields' => [
+
                                 'is_credit_customer' => [
                                     'type'  => 'toggle',
                                     'label' => __('Credit Customer'),
@@ -146,7 +153,6 @@ class EditCustomer extends OrgAction
                                     'label'    => __('Sage Customer Number'),
                                     'value'    => $customer->accounting_reference,
                                     'required' => false,
-                                    'hidden'   => !$customer->is_credit_customer,
                                 ],
                             ]
                         ],

@@ -40,13 +40,7 @@ class IndexSageInvoicesReport extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Invoice::class);
-        $queryBuilder->where('invoices.organisation_id', $organisation->id)
-            ->where('invoices.in_process', false)
-            ->whereHas('customer', function ($query) {
-                $query->where('is_credit_customer', true)
-                    ->whereNotNull('accounting_reference');
-            });
-
+        $queryBuilder->where('invoices.organisation_id', $organisation->id)->where('invoices.in_process', false);
         $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', '=', 'currencies.id');
         $queryBuilder->leftJoin('tax_categories', 'invoices.tax_category_id', '=', 'tax_categories.id');
@@ -55,7 +49,7 @@ class IndexSageInvoicesReport extends OrgAction
 
         $queryBuilder
             ->defaultSort('-date')
-            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount'])
+            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix)
@@ -77,6 +71,7 @@ class IndexSageInvoicesReport extends OrgAction
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
                 'customers.company_name as customer_company',
+                'customers.is_credit_customer as is_credit_customer',
                 'customers.accounting_reference',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
@@ -107,6 +102,7 @@ class IndexSageInvoicesReport extends OrgAction
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
                 ->column(key: 'accounting_reference', label: __('Sage Ref'), sortable: false)
                 ->column(key: 'type', label: __('Type'))
+                ->column(key: 'is_credit_customer', label: __('Credit Customer'), sortable: true)
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
                 ->column(key: 'tax_amount', label: __('Tax'), sortable: true, type: 'currency')
                 ->column(key: 'total_amount', label: __('Total'), sortable: true, type: 'currency')

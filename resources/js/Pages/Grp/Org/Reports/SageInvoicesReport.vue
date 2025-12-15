@@ -3,11 +3,12 @@ import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faFileInvoice, faFileDownload } from "@fal"
+import { faFileInvoice, faFileDownload, faCheckCircle, faCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { capitalize } from "@/Composables/capitalize"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faFileInvoice, faFileDownload)
+library.add(faFileInvoice, faFileDownload, faCircle, faCheckCircle)
 
 const props = defineProps<{
     data: object
@@ -89,6 +90,12 @@ const exportExcel = () => {
                 <span class="text-xs text-gray-500">
                     {{ item.type.label }}
                 </span>
+            </div>
+        </template>
+
+        <template #cell(is_credit_customer)="{ item }">
+            <div class="flex justify-center gap-2">
+                <FontAwesomeIcon :icon="item.is_credit_customer.icon" :color="item.is_credit_customer.color" />
             </div>
         </template>
 

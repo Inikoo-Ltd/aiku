@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue"
-import { Head, router } from "@inertiajs/vue3"
+import { ref, computed } from "vue"
+import { Head, router, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
@@ -12,12 +12,19 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { faPlus } from "@fal"
+import Product from "../Org/Catalogue/Product.vue"
+import { fromJSON } from "postcss"
 
-type Variant = { label: string; options: string[]; active?: boolean }
+type Variant = {
+    label: string
+    options: string[]
+    active?: boolean
+}
+
 type Node = {
     key: Record<string, string>
     label: string
-    product: string | null
+    product: any | null
     children?: Node[]
 }
 
@@ -29,11 +36,22 @@ const props = defineProps<{
     save_route: routeType
 }>()
 
-const state = ref({ variants: [{ label: "Color", options: ["Red", "Blue", "Green"], active: false }, { label: "Size", options: ["L", "XL", "XXL"], active: false },] as Variant[], groupBy: "Color" })
-const product_leader = ref<null | any>(null)
-/* const variant_code = ref("") */
+
+
+const form = useForm({
+    product_leader: null as any,
+    variants: [
+        { label: "Color", options: ["Red", "Blue"], active: false },
+        { label: "Size", options: ["L", "XL"], active: false }
+    ] as Variant[],
+    groupBy: "Color",
+    products: {} as Record<string, any>
+})
 
 const expanded = ref<Record<string, boolean>>({})
+
+
+
 const toggleExpand = (k: string) => {
     expanded.value[k] = !expanded.value[k]
 }
@@ -44,9 +62,8 @@ const normalizeKey = (k: Record<string, string>) =>
         .map(key => `${key}=${k[key]}`)
         .join("|")
 
-
 const validVariants = computed(() =>
-    state.value.variants
+    form.variants
         .filter(v => v.label.trim())
         .map(v => ({
             label: v.label,
@@ -54,30 +71,24 @@ const validVariants = computed(() =>
         }))
 )
 
-
 const getCombinations = (list: { label: string; options: string[] }[]) => {
-    const recur = (i: number, cur: any) =>
+    const recur = (i: number, cur: any): any[] =>
         i === list.length
             ? [cur]
             : list[i].options.flatMap(o =>
-                recur(i + 1, { ...cur, [list[i].label]: o })
-            )
+                  recur(i + 1, { ...cur, [list[i].label]: o })
+              )
     return recur(0, {})
 }
 
 
-const productMap = ref<Record<string, string | null>>({})
 
 const buildNodes = computed<Node[]>(() => {
     const variants = validVariants.value
     if (!variants.length) return []
 
-    const getProduct = (keyObj: Record<string, string>) => {
-        const key = normalizeKey(keyObj)
-        return productMap.value[key] ?? null
-    }
-
-
+    const getProduct = (keyObj: Record<string, string>) =>
+        form.products[normalizeKey(keyObj)] ?? null
 
     if (variants.length === 1) {
         const v = variants[0]
@@ -88,118 +99,84 @@ const buildNodes = computed<Node[]>(() => {
         }))
     }
 
-    if (!state.value.groupBy) {
-        return getCombinations(variants).map(row => {
+    const base = variants.find(v => v.label === form.groupBy)
+    const others = variants.filter(v => v.label !== form.groupBy)
+    if (!base) return []
+
+    return base.options.map(opt => ({
+        key: { [base.label]: opt },
+        label: opt,
+        product: getProduct({ [base.label]: opt }),
+        children: getCombinations([
+            { label: base.label, options: [opt] },
+            ...others
+        ]).map(c => {
             const keyObj = variants.reduce((acc, v) => {
-                acc[v.label] = row[v.label]
+                acc[v.label] = c[v.label]
                 return acc
             }, {} as Record<string, string>)
+
             return {
                 key: keyObj,
                 label: Object.values(keyObj).join(" — "),
                 product: getProduct(keyObj)
             }
         })
-    }
-
-    const base = variants.find(v => v.label === state.value.groupBy)
-    const others = variants.filter(v => v.label !== state.value.groupBy)
-    if (!base) return []
-
-    return base.options.map(opt => {
-        const parentKey = { [base.label]: opt }
-        const parent: Node = {
-            key: parentKey,
-            label: opt,
-            product: getProduct(parentKey),
-            children: getCombinations([{ label: base.label, options: [opt] }, ...others])
-                .map(c => {
-                    const keyObj = variants.reduce((acc, v) => {
-                        acc[v.label] = c[v.label]
-                        return acc
-                    }, {} as Record<string, string>)
-                    return {
-                        key: keyObj,
-                        label: Object.values(keyObj).join(" — "),
-                        product: getProduct(keyObj)
-                    }
-                })
-        }
-        return parent
-    })
+    }))
 })
+
 
 const setProduct = (node: Node, val: any | null) => {
     if (!val?.id) return
 
     const key = normalizeKey(node.key)
 
-    productMap.value[key] = {
-        id: val.id,
-        name: val.name,
-        code: val.code,
-        image: val.image_thumbnail,
-        slug: val.slug
+    form.products[val.id] = {
+        ...node.key,
+        product: {
+            id: val.id,
+            name: val.name,
+            code: val.code,
+            image: val.image_thumbnail,
+            slug: val.slug
+        }
     }
 }
+
 
 const toggleActive = (i: number) =>
-    state.value.variants.forEach((v, idx) => (v.active = idx === i ? !v.active : false))
+    form.variants.forEach((v, idx) => (v.active = idx === i ? !v.active : false))
 
 const addVariant = () => {
-    state.value.variants.forEach(v => (v.active = false))
-    state.value.variants.push({ label: "", options: [""], active: true })
+    form.variants.forEach(v => (v.active = false))
+    form.variants.push({ label: "", options: [""], active: true })
 }
 
-const addOption = (i: number) => state.value.variants[i].options.push("")
-const removeOption = (vi: number, oi: number) => state.value.variants[vi].options.splice(oi, 1)
+const addOption = (i: number) => form.variants[i].options.push("")
+const removeOption = (vi: number, oi: number) =>
+    form.variants[vi].options.splice(oi, 1)
 
-const deleteVariant = (index: number) => {
-    const removed = state.value.variants.splice(index, 1)
-    if (removed[0]?.label === state.value.groupBy) {
-        state.value.groupBy = state.value.variants[0]?.label ?? ""
-    }
+const deleteVariant = (i: number) => {
+    form.variants.splice(i, 1)
+    form.groupBy = form.variants[0]?.label ?? ""
 }
 
 const keyToString = (k: Record<string, string>) => JSON.stringify(k)
 
-const saving = ref(false)
 
-const buildPayload = () => ({
-    variants: validVariants.value,
-    groupBy: state.value.groupBy,
-    products: productMap.value
+
+const isValid = computed(() => {
+    console.log("isValid computed called",form.product_leader,validVariants.length)
+    if (!form.product_leader) return true
+    if (!form.variants.length) return true
+    return false
 })
 
 const save = () => {
-    saving.value = true
-    router.post(
-        route(props.save_route.name, props.save_route.parameters),
-        {
-            data: buildPayload(),
-            product_leader: product_leader.value
-        },
-        {
-            onFinish: () => (saving.value = false)
-        }
-    )
+    if (!isValid) return
+    form.post(route(props.save_route.name, props.save_route.parameters))
 }
-
-
-watch(validVariants, () => {
-    const validKeys = new Set(
-        getCombinations(validVariants.value).map(k => normalizeKey(k))
-    )
-
-    Object.keys(productMap.value).forEach(k => {
-        if (!validKeys.has(k)) {
-            delete productMap.value[k]
-        }
-    })
-})
-
 </script>
-
 
 
 <template>
@@ -208,27 +185,24 @@ watch(validVariants, () => {
     <PageHeading :data="props.pageHead" />
 
     <div class="flex justify-center mt-6">
-        <div class="w-full max-w-2xl p-4 rounded-lg shadow bg-white space-y-2">
+        <div class="w-full max-w-2xl p-4 bg-white rounded-lg shadow space-y-4">
 
-            <!-- Variants section -->
-            <h2 class="text-sm font-semibold">Create Variant</h2>
-
+            <!-- Product Leader -->
             <div>
-                <label class="text-xs">Product Leader</label>
-                <PureMultiselectInfiniteScroll v-model="product_leader" :fetchRoute="props.master_assets_route"
-                    valueProp="id" label-prop="name"  :caret="false"
-                    :placeholder="trans('Select Product Leader')" />
+                <label class="text-xs font-medium">
+                    Product Leader <span class="text-red-500">*</span>
+                </label>
+                <PureMultiselectInfiniteScroll v-model="form.product_leader" :fetchRoute="props.master_assets_route" :required="true"
+                    valueProp="id" label-prop="name" :caret="false" :placeholder="trans('Select Product Leader')" />
             </div>
 
-            <!-- <div>
-                <label class="text-xs">Variant Code</label>
-                <PureInput v-model="variant_code" placeholder="e.g. SKU12345" />
-            </div> -->
+            <!-- Variants -->
+            <div>
+                <label class="text-xs font-medium">
+                    Variants <span class="text-red-500">*</span>
+                </label>
 
-
-            <div class="mt-4 space-y-1">
-                <label class="text-xs">Variants</label>
-                <div v-for="(v, vi) in state.variants" :key="vi" class="border rounded">
+                <div v-for="(v, vi) in form.variants" :key="vi" class="border rounded mt-2">
                     <div v-if="!v.active" class="p-2 cursor-pointer" @click="toggleActive(vi)">
                         <div class="text-sm font-medium">{{ v.label || "Untitled Variant" }}</div>
                         <div class="text-xs text-gray-500">
@@ -236,40 +210,47 @@ watch(validVariants, () => {
                         </div>
                     </div>
 
-                    <div v-else class="p-3 space-y-1 bg-gray-50">
+                    <div v-else class="p-3 bg-gray-50 space-y-2">
                         <div>
-                            <label class="text-xs">Name</label>
+                            <label class="text-xs font-medium">
+                                Name <span class="text-red-500">*</span>
+                            </label>
                             <PureInput v-model="v.label" placeholder="Color, Size" />
                         </div>
 
                         <div>
-                            <label class="text-xs">Options</label>
+                            <label class="text-xs font-medium">
+                                Options <span class="text-red-500">*</span>
+                            </label>
+
                             <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
                                 <PureInput v-model="v.options[oi]" placeholder="Value" class="flex-1" />
-                                <button @click="removeOption(vi, oi)" class="text-red-500 text-sm">
+                                <button @click="removeOption(vi, oi)" class="text-red-500">
                                     <FontAwesomeIcon :icon="faTrashAlt" />
                                 </button>
                             </div>
+                        </div>
 
-                            <div class="flex justify-between mt-3">
-                                <Button type="dashed" @click="addOption(vi)" label="+ Add" size="xs" />
-                                <div class="flex gap-2">
-                                    <Button type="red_outline" :icon="faTrashAlt" label="Delete" size="xs"
-                                        @click="deleteVariant(vi)" />
-                                    <Button label="Done" @click="toggleActive(vi)" size="xs" />
-                                </div>
+                        <div class="flex justify-between mt-3">
+                            <Button type="dashed" size="xs" @click="addOption(vi)">+ Add</Button>
+                            <div class="flex gap-2">
+                                <Button type="red_outline" size="xs" @click="deleteVariant(vi)">
+                                    Delete
+                                </Button>
+                                <Button size="xs" @click="toggleActive(vi)">Done</Button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <Button v-if="state.variants.length < 2" type="dashed" @click="addVariant" size="xs" :icon="faPlus"
-                    label="Add Variant"></Button>
-
+                <Button v-if="form.variants.length < 2" type="dashed" size="xs" class="mt-2" :icon="faPlus"
+                    @click="addVariant">
+                    Add Variant
+                </Button>
                 <div class="border-t mt-6">
                     <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
                         <span class="text-sm">Group by</span>
-                        <select v-model="state.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+                        <select v-model="form.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
                             <option v-for="v in validVariants" :key="v.label" :value="v.label">
                                 {{ v.label }}
                             </option>
@@ -296,7 +277,7 @@ watch(validVariants, () => {
                                         <tr class="hover:bg-gray-50 h-[70px]">
                                             <td class="px-4">
                                                 <div class="flex items-center">
-                                                    <button v-if="state.variants.length > 1 && node.children"
+                                                    <button v-if="form.variants.length > 1 && node.children"
                                                         class="w-5 h-5 mr-2 border rounded bg-gray-100 flex items-center justify-center leading-none text-sm font-medium"
                                                         @click="toggleExpand(keyToString(node.key))">
                                                         {{ expanded[keyToString(node.key)] ? "−" : "+" }}
@@ -306,7 +287,7 @@ watch(validVariants, () => {
                                                 </div>
                                             </td>
 
-                                            <td class="px-4" v-if="state.variants.length === 1">
+                                            <td class="px-4" v-if="form.variants.length === 1">
                                                 <PureMultiselectInfiniteScroll :model-value="node.product"
                                                     @update:model-value="val => setProduct(node, val)"
                                                     :fetchRoute="props.master_assets_route" valueProp="id"
@@ -318,7 +299,7 @@ watch(validVariants, () => {
                                         </tr>
 
                                         <tr v-for="child in node.children"
-                                            v-if="state.variants.length > 1 && expanded[keyToString(node.key)]"
+                                            v-if="form.variants.length > 1 && expanded[keyToString(node.key)]"
                                             :key="keyToString(child.key)" class="hover:bg-gray-50 h-[70px]">
                                             <td class="px-8 text-sm text-gray-700">
                                                 ↳ {{ child.label }}
@@ -339,12 +320,11 @@ watch(validVariants, () => {
                 </div>
             </div>
 
-            <!-- SAVE BUTTON -->
-            <div class="pt-5">
-                <Button full class="bg-blue-600 text-white" :loading="saving" @click="save">
-                    Save Variants
-                </Button>
-            </div>
+            <!-- SAVE -->
+            <Button full class="bg-blue-600 text-white disabled:opacity-50" :loading="form.processing" @click="save" :disabled="isValid">
+                Save Variants
+            </Button>
+
         </div>
     </div>
 </template>

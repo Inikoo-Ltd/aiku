@@ -87,7 +87,7 @@ watch(selectedPeriodType, (newValue, oldValue) => {
                 }
             }
         )
-    }    
+    }
 })
 
 // Convert Date to '20250206'
@@ -130,7 +130,17 @@ onBeforeMount(() => {
 </script>
 
 <template>
-    <div class="flex rounded-md" v-tooltip="trans('Filter data by dates')">
+    <div class="flex items-center gap-2 rounded-md" v-tooltip="trans('Filter data by dates')">
+        <!-- Display selected date range when custom interval is active -->
+        <transition name="slide-fade">
+            <div v-if="dateFilterValue[0] && dateFilterValue[1]"
+                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
+                <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
+                <span class="text-indigo-400">-</span>
+                <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
+            </div>
+        </transition>
+
         <Popover v-slot="{ open }" class="relative">
             <PopoverButton
                 :class="open ? '' : ''"
@@ -162,12 +172,12 @@ onBeforeMount(() => {
                             {{ trans("Reset filter by dates") }}
                         </div>
                     </div>
-                    
+
                     <VueDatePicker
                         v-model="dateFilterValue"
                         range
                         multi-calendars
-                        inline 
+                        inline
                         auto-apply
                         :enableTimePicker="false"
                     >
@@ -180,7 +190,7 @@ onBeforeMount(() => {
                         </template>
 
                         <!-- <template #action-extra="{  }">
-                            
+
                         </template> -->
                     </VueDatePicker>
 
