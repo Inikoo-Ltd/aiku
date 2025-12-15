@@ -8,7 +8,7 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Maintenance\Masters\AddMissingMasterAssets;
+use App\Actions\Maintenance\Masters\AddMissingMasterAssetsFromSeederShops;
 use App\Actions\Masters\MasterAsset\MatchAssetsToMaster;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -33,7 +33,7 @@ class CheckProductMasters
             $product->refresh();
             if ($product->is_main && !$product->master_product_id) {
                 $command->info("Found main product with no master asset $product->slug");
-                AddMissingMasterAssets::make()->upsertMasterProduct($product->shop->masterShop, $product);
+                AddMissingMasterAssetsFromSeederShops::make()->upsertMasterProduct($product->shop->masterShop, $product);
             }
 
         }

@@ -192,10 +192,15 @@ const getIcon = (type?: string) => {
                         <!-- Brands -->
                         <div class="flex justify-between items-start gap-3">
                             <dt class="text-gray-500 whitespace-nowrap">{{ trans("Brands") }}</dt>
-                            <dd class="font-medium flex flex-wrap gap-1">
-                                <span v-for="brand in data.brands" :key="brand.id" v-tooltip="'brand'"
-                                    class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100">
-                                    {{ brand.name }}
+                            <dd class="font-medium flex flex-wrap gap-1 justify-end">
+                                <template v-if="data.brands?.length">
+                                    <span v-for="brand in data.brands" :key="brand.id" v-tooltip="'brand'"
+                                        class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100">
+                                        {{ brand.name }}
+                                    </span>
+                                </template>
+                                <span v-else class="opacity-40 font-normal italic text-xs">
+                                    {{ trans("No brand") }}
                                 </span>
                             </dd>
                         </div>
@@ -203,10 +208,15 @@ const getIcon = (type?: string) => {
                         <!-- Tags -->
                         <div class="flex justify-between items-start gap-3">
                             <dt class="text-gray-500 whitespace-nowrap">{{ trans("Tags") }}</dt>
-                            <dd class="font-medium flex flex-wrap gap-1">
-                                <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
-                                    class="px-2 py-0.5 rounded-full text-xs bg-green-100 bg-green-50 border border-blue-100">
-                                    {{ tag.name }}
+                            <dd class="font-medium flex flex-wrap gap-1 justify-end">
+                                <template v-if="data.tags?.length">
+                                    <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
+                                        class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+                                        {{ tag.name }}
+                                    </span>
+                                </template>
+                                <span v-else class="opacity-40 font-normal italic text-xs">
+                                    {{ trans("No tag") }}
                                 </span>
                             </dd>
                         </div>

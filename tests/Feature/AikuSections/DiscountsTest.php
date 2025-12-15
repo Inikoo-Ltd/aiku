@@ -17,11 +17,14 @@ use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateOffer;
+use App\Actions\Discounts\Offer\SuspendPermanentOffer;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
@@ -34,6 +37,7 @@ use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -371,7 +375,7 @@ test('force delete offer with soft deleted allowances', function () {
     $offerAllowance->delete();
     $this->assertSoftDeleted($offerAllowance);
 
-    // Force delete the offer
+    // Force to delete the offer
     DeleteOffer::make()->action($offer, true);
 
     // Check if the offer is gone
@@ -412,4 +416,77 @@ test('create volume discount', function () {
         ->and($offer->allowance_signature)->toBe('all_products_in_product_category:1:percentage_off:0.2')
         ->and($offer->trigger_data['item_quantity'])->toBe(5)
         ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.2);
+});
+
+test('suspend permanent offer suspends offer and active allowances', function () {
+    $shop = $this->shop;
+    $offerCampaign = $shop->offerCampaigns()->first();
+
+    $offerData = Offer::factory()->definition();
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    // set required flags directly to avoid validation enum rule
+    $offer->duration = OfferDurationEnum::PERMANENT;
+    $offer->state = OfferStateEnum::ACTIVE;
+    $offer->status = true;
+    $offer->save();
+
+    $allowanceData = OfferAllowance::factory()->definition();
+    data_set($allowanceData, 'trigger_type', 'Shop');
+    data_set($allowanceData, 'trigger_id', $offer->shop->id);
+    $allowance = StoreOfferAllowance::make()->action($offer, $allowanceData);
+    $allowance->duration = OfferDurationEnum::PERMANENT;
+    $allowance->state = OfferAllowanceStateEnum::ACTIVE;
+    $allowance->status = true;
+    $allowance->save();
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::ACTIVE)
+        ->and($offer->status)->toBeTrue();
+
+    $suspended = SuspendPermanentOffer::run($offer);
+
+    $suspended->refresh();
+    expect($suspended->state)->toBe(OfferStateEnum::SUSPENDED)
+        ->and($suspended->status)->toBeFalse()
+        ->and($suspended->end_at)->not->toBeNull();
+
+    $allowance = $suspended->offerAllowances()->first();
+    expect($allowance->state)->toBe(OfferAllowanceStateEnum::SUSPENDED)
+        ->and($allowance->status)->toBeFalse()
+        ->and($allowance->end_at)->not->toBeNull();
+});
+
+test('suspend permanent offer is safe to run twice', function () {
+    $shop = $this->shop;
+    $offerCampaign = $shop->offerCampaigns()->first();
+
+    $offerData = Offer::factory()->definition();
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer->duration = OfferDurationEnum::PERMANENT;
+    $offer->state = OfferStateEnum::ACTIVE;
+    $offer->status = true;
+    $offer->save();
+
+    SuspendPermanentOffer::run($offer);
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::SUSPENDED);
+
+    // Run again, should remain suspended without error
+    SuspendPermanentOffer::run($offer);
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::SUSPENDED)
+        ->and($offer->status)->toBeFalse();
+});
+
+test('suspend permanent offer aborts on non-permanent offer', function () {
+    $shop = $this->shop;
+    $offerCampaign = $shop->offerCampaigns()->first();
+
+    $offerData = Offer::factory()->definition();
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer->duration = OfferDurationEnum::INTERVAL;
+    $offer->save();
+
+    expect(fn () => SuspendPermanentOffer::run($offer))
+        ->toThrow(HttpException::class);
 });

@@ -69,6 +69,9 @@ class MasterVariant extends Model implements Auditable, HasMedia
     use InMasterShop;
 
     protected $guarded = [];
+    protected $casts = [
+        'data'      => 'array',
+    ];
 
     public function generateTags(): array
     {

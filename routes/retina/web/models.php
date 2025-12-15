@@ -384,8 +384,8 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProd
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
-Route::post('portfolio/{portfolio:id}/update-new-ebay-product', UpdateAndUploadRetinaPortfolioToCurrentEbay::class)->name('portfolio.update_new_ebay_product.publish');
-Route::post('portfolio/{portfolio:id}/update-new-ebay-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentEbay::class, 'asDraft'])->name('portfolio.update_new_ebay_product.draft');
+Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentEbay::class)->name('portfolio.update_new_product.publish');
+Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentEbay::class, 'asDraft'])->name('portfolio.update_new_product.draft');
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');
