@@ -362,33 +362,37 @@ class EditShop extends OrgAction
                             'label'  => __('Shipping'),
                             'icon'   => 'fa-light fa-truck',
                             'fields' => [
-                                'forbidden_dispatch_countries' => [
-                                    'noSaveButton'  => true,
-                                    'isWithRefreshFieldform'  => true,
-                                    'label'       => __('Allowed Shipping Countries'),
-                                    'type'        => 'shipping_countries',
-                                    'placeholder' => __('Select countries'),
-                                    'information' => __('Customer only able to submit to this countries'),
-                                    'required'    => true,
-                                    'full'          => true,
-                                    'country_list'=> GetCountriesOptions::run(),
-                                    'routes' => [
-                                            'store'  => [
-                                                'name' => 'grp.models.shop.shipping_country.store', 'parameters' => ['shop' => $shop->id
-                                                ]
-                                            ],
-                                            'update' => [
-                                                'name' => 'grp.models.shipping_country.update', 'parameters' => []
-                                            ],
-                                            'delete' => [
-                                                'name' => 'grp.models.shipping_country.delete', 'parameters' => []
-                                            ],
+                                'allowed_shipping_countries' => [
+                                    'noSaveButton'              => true,
+                                    'isWithRefreshFieldform'    => true,
+                                    'label'                     => __('Allowed Shipping Countries'),
+                                    'type'                      => 'shipping_countries',
+                                    'placeholder'               => __('Select countries'),
+                                    'information'               => __('Customer only able to submit to this countries'),
+                                    'required'                  => true,
+                                    'full'                      => true,
+                                    'country_list'              => GetCountriesOptions::run(),
+                                    'routes'                    => [
+                                        'store'  => [
+                                            'name' => 'grp.models.shipping_country.store',
+                                            'parameters' => [
+                                                'shop' => $shop->id
+                                            ]
+                                        ],
+                                        'update' => [
+                                            'name' => 'grp.models.shipping_country.update',
+                                            'parameters' => []
+                                        ],
+                                        'delete' => [
+                                            'name' => 'grp.models.shipping_country.delete',
+                                            'parameters' => []
+                                        ],
                                     ],
-                                    'searchable'  => true,
-                                    'mode'        => 'tags',
-                                    'labelProp'   => 'label',
-                                    'valueProp'   => 'id',
-                                    'value'       => GetShopShippingCountries::run($shop),
+                                    'searchable'                => true,
+                                    'mode'                      => 'tags',
+                                    'labelProp'                 => 'label',
+                                    'valueProp'                 => 'id',
+                                    'value'                     => GetShopShippingCountries::run($shop),
                                 ]
                             ],
                         ],

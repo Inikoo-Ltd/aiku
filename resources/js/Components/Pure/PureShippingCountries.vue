@@ -10,6 +10,9 @@ import PureMultiselect from './PureMultiselect.vue'
 import PureTextarea from './PureTextarea.vue'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
 import { trans } from 'laravel-vue-i18n'
+import { routeType } from '@/types/route'
+import { notify } from '@kyvg/vue3-notification'
+import { router } from '@inertiajs/vue3'
 
 library.add(faInfinity, faPlus, faTrashAlt, faPen)
 
@@ -19,10 +22,17 @@ const props = withDefaults(defineProps<{
         included_postal_codes?: string
         excluded_postal_codes?: string
     }>
-    // country_list?: any
+    routes: {
+        store: routeType
+        update: routeType
+        delete: routeType
+    }
+    country_list: {}[]
 }>(), {
     // country_list: () => [],
 })
+
+console.log('country_list', props.country_list)
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -31,23 +41,26 @@ const emit = defineEmits(['update:modelValue'])
 const showModal = ref(false)
 const selectedIndex = ref(-1)
 const editCountryCode = ref('')
+const editCountryId = ref(null)
 const editIncludedPostalCodes = ref('')
 const editExcludedPostalCodes = ref('')
 
 const countryOptions = computed(() => {
-    // const list = props.country_list
-    // if (list && typeof list === 'object' && !Array.isArray(list)) {
-    //     return Object.values(list).map((c: any) => ({
-    //         label: c.label,
-    //         code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
-    //     }))
-    // }
-    // if (Array.isArray(list)) {
-    //     return list.map((c: any) => ({
-    //         label: c.label,
-    //         code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
-    //     }))
-    // }
+    const list = props.country_list
+    if (list && typeof list === 'object' && !Array.isArray(list)) {
+        return Object.values(list).map((c: any) => ({
+            id: c.id,
+            label: c.label,
+            code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
+        }))
+    }
+    if (Array.isArray(list)) {
+        return list.map((c: any) => ({
+            id: c.id,
+            label: c.label,
+            code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
+        }))
+    }
     return []
 })
 
@@ -86,6 +99,43 @@ function saveEdit() {
     showModal.value = false
 }
 
+const isLoading = ref(false)
+const onAddNewShippingCountry = () => {
+    // Section: Submit
+    console.log('editCountryId.value', editCountryId.value, route(props.routes.store.name, props.routes.store.parameters))
+    
+    router.post(
+        route(props.routes.store.name, props.routes.store.parameters),
+        {
+            country_id: editCountryId.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoading.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoading.value = false
+            },
+        }
+    )
+}
+
 // function deleteItem(index: number) {
 //     const updated = [...props.modelValue]
 //     updated.splice(index, 1)
@@ -117,57 +167,55 @@ console.log('qqqq', _modal_delete?.value)
     <div class="space-y-4 text-sm max-w-[450px] mx-auto">
 
         <!-- List of Regions -->
-        <div v-if="true" v-for="(item, index) in aaa" :key="index"
-            class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2">
-            <!-- Country Code -->
-            <div class="flex justify-between items-center">
-                <div>
-                    <span class="text-gray-500">Country:</span>
-                    <span class="font-mono font-medium">
-                        <img class="inline pr-1 pl-1 h-[1em]"
-                            :src="'/flags/' + item.country_code?.toLowerCase() + '.png'" :alt="item.country_code"
-                            :title="getCountryLabel(item.country_code)" />
-                        {{ getCountryLabel(item.country_code) }}
-                    </span>
+        <template v-if="modelValue?.length">
+            <div v-for="(item, index) in modelValue" :key="index"
+                class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2">
+                <!-- Country Code -->
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-gray-500">Country:</span>
+                        <span class="font-mono font-medium">
+                            <img class="inline pr-1 pl-1 h-[1em]"
+                                :src="'/flags/' + item.country_code?.toLowerCase() + '.png'" :alt="item.country_code"
+                                :title="getCountryLabel(item.country_code)" />
+                            {{ getCountryLabel(item.country_code) }}
+                        </span>
+                    </div>
+                    <!-- Section: Button (edit/delete) -->
+                    <div class="flex items-center ">
+                        <Button :icon="faPencil" type="edit" size="xs" @click="openEditModal(index)">
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faPencil" class="" />
+                            </template>
+                        </Button>
+                        <Button :icon="faTrashAlt" type="edit" class="text-red-500" size="xs"
+                            aclick="deleteItem(index)"
+                            @click="() => _modal_delete?.changeModel()"
+                        >
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faTrashAlt" class="text-red-500" />
+                            </template>
+                        </Button>
+                    </div>
                 </div>
-
-                <!-- Section: Button (edit/delete) -->
-                <div class="flex items-center ">
-                    <Button :icon="faPencil" type="edit" size="xs" @click="openEditModal(index)">
-                        <template #icon>
-                            <FontAwesomeIcon :icon="faPencil" class="" />
-                        </template>
-                    </Button>
-
-                    <Button :icon="faTrashAlt" type="edit" class="text-red-500" size="xs"
-                        aclick="deleteItem(index)"
-                        @click="() => _modal_delete?.changeModel()"
-                    >
-                        <template #icon>
-                            <FontAwesomeIcon :icon="faTrashAlt" class="text-red-500" />
-                        </template>
-                    </Button>
-
+                <!-- Section: Included Postal Codes -->
+                <div v-if="item.included_postal_codes">
+                    <div class="text-green-500 mb-1">Included Postal Codes</div>
+                    <div class="bg-green-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
+                        {{ item.included_postal_codes.join(', ') }}
+                    </div>
                 </div>
-            </div>
-
-            <!-- Section: Included Postal Codes -->
-            <div v-if="item.included_postal_codes">
-                <div class="text-green-500 mb-1">Included Postal Codes</div>
-                <div class="bg-green-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
-                    {{ item.included_postal_codes.join(', ') }}
-                </div>
-            </div>
-
-            <!-- Section: Excluded Postal Codes -->
-            <div v-if="item.excluded_postal_codes">
-                <div class="text-red-500 mb-1">Excluded Postal Codes</div>
-                <div class="bg-red-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
-                    {{ item.excluded_postal_codes.join(', ') }}
+                <!-- Section: Excluded Postal Codes -->
+                <div v-if="item.excluded_postal_codes">
+                    <div class="text-red-500 mb-1">Excluded Postal Codes</div>
+                    <div class="bg-red-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
+                        {{ item.excluded_postal_codes.join(', ') }}
+                    </div>
                 </div>
             </div>
-        </div>
-        
+        </template>
+        <p v-else class="text-center text-gray-500">No shipping countries added yet.</p>
+
         <div class="flex justify-end mb-2">
             <Button
                 :icon="faPlus"
@@ -177,6 +225,8 @@ console.log('qqqq', _modal_delete?.value)
                 @click="addNewItem"
             />
         </div>
+
+        <pre>{{ props.modelValue }}</pre>
     </div>
 
     
@@ -199,12 +249,12 @@ console.log('qqqq', _modal_delete?.value)
             <div v-if="selectedIndex === -1">
                 <label class="block mb-1 text-gray-600">Select country</label>
                 <PureMultiselect
-                    :modelValue="editCountryCode"
-                    @update:modelValue="val => editCountryCode = val"
+                    :modelValue="editCountryId"
+                    @update:modelValue="val => editCountryId = val"
                     :options="countryOptions"
                     :searchable="true"
                     label="label"
-                    valueProp="code"
+                    valueProp="id"
                     mode="single"
                     required
                 />
@@ -233,7 +283,8 @@ console.log('qqqq', _modal_delete?.value)
 
         <template #footer>
             <Button label="Cancel" type="exit" @click="showModal = false" />
-            <Button type="create" :label="selectedIndex === -1 ? 'Add' : 'Set Changes'" @click="saveEdit" />
+            <Button v-if="selectedIndex === -1" type="create" :label="trans('Add')" @click="onAddNewShippingCountry" full />
+            <Button v-else type="create" :label="trans('Set Changes')" @click="saveEdit" full />
         </template>
     </Dialog>
 

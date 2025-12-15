@@ -15,61 +15,38 @@ import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
 import PureShippingCountries from '@/Components/Pure/PureShippingCountries.vue'
+import { routeType } from '@/types/route'
 
 const props = defineProps<{
     form: any
     fieldName: string
     options?: any
-    fieldData?: {
-        type: string
+    fieldData: {
+        // type: string
         placeholder: string
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
+        country_list: {}[]
+        routes: {
+            store: routeType
+            update: routeType
+            delete: routeType
+        }
+        searchable: boolean
+        mode: string // 'tags'
     }
 }>()
 
-// const emits = defineEmits()
-
-// const setFormValue = (data: Object, fieldName: String) => {
-//     if (Array.isArray(fieldName)) {
-//         return getNestedValue(data, fieldName)
-//     } else {
-//         return data[fieldName]
-//     }
-// }
-
-// const getNestedValue = (obj: Object, keys: Array) => {
-//     return keys.reduce((acc, key) => {
-//         if (acc && typeof acc === "object" && key in acc) return acc[key]
-//         return null
-//     }, obj)
-// }
-
-// const value = ref(setFormValue(props.form, props.fieldName))
-
-// watch(value, (newValue) => {
-//     // Update the form field value when the value ref changes
-//     updateFormValue(newValue)
-//     props.form.errors[props.fieldName] = ''
-// })
-
-// const updateFormValue = (newValue) => {
-//     let target = props.form
-//     if (Array.isArray(props.fieldName)) {
-//         set(target, props.fieldName, newValue)
-//     } else {
-//         target[props.fieldName] = newValue
-//     }
-//     emits("update:form", target)
-// }
-
-// console.log(props)
 </script>
+
 <template>
     <div class="relative">
         <PureShippingCountries
             :modelValue="form[fieldName]"
+            @update:modelValue="(e) => console.log('qqq', e)"
+            :routes="fieldData?.routes"
+            :country_list="fieldData?.country_list"
         />
     </div>
 
