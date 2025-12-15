@@ -136,6 +136,18 @@ class EditCustomer extends OrgAction
                                     'label' => __('identity document number'),
                                     'value' => $customer->identity_document_number
                                 ],
+                                'is_credit_customer' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Credit Customer'),
+                                    'value' => $customer->is_credit_customer,
+                                ],
+                                'accounting_reference' => [
+                                    'type'     => 'input',
+                                    'label'    => __('Sage Customer Number'),
+                                    'value'    => $customer->accounting_reference,
+                                    'required' => false,
+                                    'hidden'   => !$customer->is_credit_customer,
+                                ],
                             ]
                         ],
                         [
