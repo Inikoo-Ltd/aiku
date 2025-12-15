@@ -1,4 +1,10 @@
 <laravel-boost-guidelines>
+=== .ai/aiku-ai.guidelines rules ===
+
+- DO not write code comments you must write clear, self-explanatory code instead
+- DO not run vendor/bin/pint --dirty
+
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -8,7 +14,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 ## Foundational Context
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.3.6
+- php - 8.4.15
 - inertiajs/inertia-laravel (INERTIA) - v2
 - laravel/framework (LARAVEL) - v12
 - laravel/horizon (HORIZON) - v5
@@ -29,7 +35,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - phpunit/phpunit (PHPUNIT) - v12
 - @inertiajs/vue3 (INERTIA) - v2
 - laravel-echo (ECHO) - v1
-- prettier (PRETTIER) - v2
+- prettier (PRETTIER) - v3
 - tailwindcss (TAILWINDCSS) - v3
 - vue (VUE) - v3
 

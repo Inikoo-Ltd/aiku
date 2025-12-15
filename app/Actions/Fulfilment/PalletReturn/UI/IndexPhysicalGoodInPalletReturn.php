@@ -131,11 +131,11 @@ class IndexPhysicalGoodInPalletReturn extends OrgAction
                 );
 
             $table
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, className: 'text-right font-mono')
-                ->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true, className: 'hello')
+                ->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true, className: 'hello')
                 ->defaultSort('code');
         };
     }

@@ -20,8 +20,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetMasterCollections extends GrpAction
 {
-    private MasterShop $parent;
-
     public function handle(MasterShop $parent, MasterCollection|MasterShop|MasterProductCategory $scope, $prefix = null): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(MasterCollection::class);
@@ -69,22 +67,15 @@ class GetMasterCollections extends GrpAction
 
     public function inMasterCollection(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $masterShop;
         $this->initialisation($masterShop->group, $request);
         return $this->handle(parent: $masterShop, scope: $scope);
     }
 
     public function asController(MasterShop $masterShop, MasterShop $scope, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $masterShop;
         $this->initialisation($masterShop->group, $request);
         return $this->handle(parent: $masterShop, scope: $scope);
     }
-    public function inMasterProductCategory(MasterShop $masterShop, MasterProductCategory $scope, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $masterShop;
-        $this->initialisation($masterShop->group, $request);
-        return $this->handle(parent: $masterShop, scope: $scope);
-    }
+
 
 }

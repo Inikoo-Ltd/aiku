@@ -86,8 +86,8 @@ class IndexMasterShops extends GrpAction
                         'title' => __("No master shops found"),
                     ],
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'departments', label: __('departments'), tooltip: __('current master departments'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sub_departments', label: __('Sub departments'), tooltip: __('current master sub departments'), canBeHidden: false, sortable: true, searchable: true)

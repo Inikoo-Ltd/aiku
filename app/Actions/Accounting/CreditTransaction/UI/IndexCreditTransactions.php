@@ -104,11 +104,11 @@ class IndexCreditTransactions extends OrgAction
                 );
 
             $table->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hm');
-            $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'payment_reference', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'order_reference', label: __('Order'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
-            $table->column(key: 'running_amount', label: __('running amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            $table->column(key: 'running_amount', label: __('Running amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             $table->column(key: 'actions', label: __('Actions'));
         };
     }

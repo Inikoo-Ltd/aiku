@@ -27,7 +27,6 @@ use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartmentWorkshop;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
@@ -35,7 +34,6 @@ use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartmentsWorkshop;
 
 require_once __DIR__ . '/common/trade_units.php';
 require_once __DIR__ . '/common/trade_unit_families.php';
@@ -51,7 +49,6 @@ Route::delete('/master-departments/{masterProductCategory}/delete', DeleteMaster
 
 Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.show')->group(function () {
     Route::get('', [ShowMasterDepartment::class, 'inGroup'])->name('');
-    Route::get('blueprint', [ShowMasterDepartmentWorkshop::class, 'inGroup'])->name('.blueprint');
 
     Route::prefix('master-families')->as('.master_families.')->group(function () {
         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartment'])->name('index');
@@ -96,7 +93,6 @@ Route::name("master_shops")->prefix('master-shops')
 
         Route::get('', IndexMasterShops::class)->name('.index');
         Route::get('{masterShop}/edit', EditMasterShop::class)->name('.edit');
-        Route::get('{masterShop}/blueprint', ShowMasterDepartmentsWorkshop::class)->name('.blueprint');
 
         Route::prefix('/{masterShop}')->as('.show')->group(function () {
             Route::get('', ShowMasterShop::class)->name('');
@@ -105,7 +101,6 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('', IndexMasterDepartments::class)->name('index');
                 Route::get('create', CreateMasterDepartment::class)->name('create');
 
-                Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
                 Route::get('{masterDepartment}/edit', EditMasterDepartment::class)->name('edit');
 
 

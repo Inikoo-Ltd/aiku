@@ -12,6 +12,7 @@ namespace App\Http\Resources\Masters;
 
 use App\Traits\ParsesCollectionParentsData;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -29,6 +30,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $parents_data
  * @property mixed $number_current_master_collections
  * @property mixed $status
+ * @property mixed $has_active_webpage
+ * @property mixed $web_images
  */
 class MasterCollectionsResource extends JsonResource
 {
@@ -68,6 +71,7 @@ class MasterCollectionsResource extends JsonResource
                 ]
             ],
             'has_active_webpage' => $this->has_active_webpage,
+            'image_thumbnail'              => Arr::get($this->web_images, 'main.thumbnail'),
         ];
     }
 

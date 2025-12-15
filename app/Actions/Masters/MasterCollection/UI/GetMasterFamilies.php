@@ -22,13 +22,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetMasterFamilies extends GrpAction
 {
-    public function inOrphanMasterProduct(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($masterShop->group, $request);
-
-        return $this->handle(parent: $masterShop);
-    }
-
     public function asController(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($masterShop->group, $request);

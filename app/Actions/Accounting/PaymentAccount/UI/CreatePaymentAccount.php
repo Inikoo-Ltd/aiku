@@ -49,12 +49,12 @@ class CreatePaymentAccount extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'required' => true
                                 ],
                                 'name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'required' => true
                                 ],
                                 'type' => [

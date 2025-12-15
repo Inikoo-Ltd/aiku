@@ -164,7 +164,7 @@ class IndexRawMaterials extends OrgAction
                         default => null
                     }
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);

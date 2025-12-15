@@ -8,8 +8,9 @@
  *
 */
 
-namespace App\Actions\Masters\MasterAsset\UI;
+namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductImages;
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Helpers\ImagesResource;
 use App\Models\Masters\MasterAsset;

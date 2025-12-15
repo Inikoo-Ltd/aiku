@@ -47,6 +47,7 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in'
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required'])

@@ -6,17 +6,18 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\Invoice\IrisPdfInvoice;
-use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
-use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
-use App\Actions\Helpers\Media\UI\DownloadAttachment;
-use App\Actions\Iris\Catalogue\DownloadIrisProduct;
+use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\UpdateIrisLocale;
-use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
+use App\Actions\Accounting\Invoice\IrisPdfInvoice;
+use App\Actions\Iris\Catalogue\DownloadIrisProduct;
+use App\Actions\Helpers\Media\UI\DownloadAttachment;
+use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
-use Illuminate\Support\Facades\Route;
+use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
+use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
+use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 
 Route::name('webhooks.')->group(function () {
     Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
@@ -37,11 +38,11 @@ Route::get(".well-known/apple-developer-merchantid-domain-association", function
 
 Route::prefix("disclosure")
     ->name("disclosure.")
-    ->group(__DIR__."/disclosure.php");
+    ->group(__DIR__ . "/disclosure.php");
 
 Route::prefix("unsubscribe")
     ->name("unsubscribe.")
-    ->group(__DIR__."/unsubscribe.php");
+    ->group(__DIR__ . "/unsubscribe.php");
 
 
 Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
@@ -49,13 +50,13 @@ Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscr
 
 Route::prefix("json")
     ->name("json.")
-    ->group(__DIR__."/json.php");
+    ->group(__DIR__ . "/json.php");
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::prefix("models")
         ->name("models.")
-        ->group(__DIR__."/models.php");
+        ->group(__DIR__ . "/models.php");
 
 
     Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
@@ -63,15 +64,18 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::prefix("catalogue")
         ->name("catalogue.")
-        ->group(__DIR__."/catalogue.php");
+        ->group(__DIR__ . "/catalogue.php");
 
 
     Route::prefix("")->group(function () {
-        Route::group([], __DIR__.'/system.php');
+        Route::group([], __DIR__ . '/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
-        Route::get('/warming_base.txt', [ShowIrisWebpagesList::class,'base'])->name('warming.base');
-        Route::get('/warming_families.txt', [ShowIrisWebpagesList::class,'families'])->name('warming.families');
-        Route::get('/warming_products.txt', [ShowIrisWebpagesList::class,'products'])->name('warming.products');
+        Route::get('/sitemaps/{sitemapType}.xml', ShowIrisSubSitemap::class)
+            ->where('sitemapType', 'products|departments|sub_departments|families|contents|blogs|pages|collections')
+            ->name('iris_sitemap_sub');
+        Route::get('/warming_base.txt', [ShowIrisWebpagesList::class, 'base'])->name('warming.base');
+        Route::get('/warming_families.txt', [ShowIrisWebpagesList::class, 'families'])->name('warming.families');
+        Route::get('/warming_products.txt', [ShowIrisWebpagesList::class, 'products'])->name('warming.products');
 
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');

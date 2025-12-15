@@ -54,14 +54,14 @@ class EditWorkplace extends OrgAction
             'fields' => [
                 'name'        => [
                     'type'        => 'input',
-                    'label'       => __('name'),
+                    'label'       => __('Name'),
                     'placeholder' => __('Input your name'),
                     'value'       => $workplace->name,
                     'required'    => true
                 ],
                 'type'        => [
                     'type'        => 'select',
-                    'label'       => __('type'),
+                    'label'       => __('Type'),
                     'options'     => Options::forEnum(WorkplaceTypeEnum::class),
                     'placeholder' => __('Select a type'),
                     'mode'        => 'single',

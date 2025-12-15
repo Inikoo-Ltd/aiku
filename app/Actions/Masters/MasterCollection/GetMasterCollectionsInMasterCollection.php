@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Masters\MasterCollection\UI;
+namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
@@ -17,7 +17,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterCollectionsInMasterCollection extends OrgAction
+class GetMasterCollectionsInMasterCollection extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, $prefix = null): LengthAwarePaginator
     {
@@ -76,10 +76,10 @@ class IndexMasterCollectionsInMasterCollection extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($action) {
-                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             }
 
 

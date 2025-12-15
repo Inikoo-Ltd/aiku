@@ -60,13 +60,13 @@ class EditFulfilment extends OrgAction
                             'fields' => [
                                 'code'  => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => $fulfilment->shop->code,
                                     'required' => true,
                                 ],
                                 'name'  => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'value'    => $fulfilment->shop->name,
                                     'required' => true,
                                 ],

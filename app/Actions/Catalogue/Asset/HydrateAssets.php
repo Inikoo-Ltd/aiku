@@ -12,11 +12,15 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateHistoricAssets;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateTransactions;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\Asset;
+use Illuminate\Support\Facades\DB;
 
 class HydrateAssets
 {
@@ -38,6 +42,18 @@ class HydrateAssets
         AssetHydrateInvoicedCustomersIntervals::run($asset->id);
         AssetHydrateTransactions::run($asset);
         AssetHydrateOrderIntervals::run($asset->id);
+        AssetHydrateInvoicesCustomersStats::run($asset->id);
+        AssetHydrateInvoicesStats::run($asset->id);
+        AssetHydrateOrdersStats::run($asset->id);
+
+
+        $stats = [
+            'last_order_submitted_at'  => DB::table('transactions')->where('asset_id', $asset->id)->max('submitted_at'),
+            'last_order_dispatched_at' => DB::table('transactions')->where('asset_id', $asset->id)->max('dispatched_at'),
+        ];
+
+        $asset->orderingStats()->update($stats);
+
     }
 
 

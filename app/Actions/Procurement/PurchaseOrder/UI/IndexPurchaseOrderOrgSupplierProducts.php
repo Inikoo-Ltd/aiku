@@ -99,9 +99,9 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'image_thumbnail', label: __('image'), canBeHidden: false, sortable: false, searchable: false)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_ordered', label: __('quantity ordered'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };

@@ -79,7 +79,7 @@ class CreateBlogWebpage extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => '',
                                     'required' => true,
                                 ],
@@ -91,7 +91,7 @@ class CreateBlogWebpage extends OrgAction
                                 ],
 //                                'type' => [
 //                                    'type'     => 'select',
-//                                    'label'    => __('type'),
+//                                    'label'    => __('Type'),
 //                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
 //                                    'value'    => '',
 //                                    'required' => true,

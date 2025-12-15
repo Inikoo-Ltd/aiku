@@ -34,7 +34,7 @@ trait WithMasterCatalogueSubNavigation
             ],
             [
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_department,
-                'label'    => __('Departments'),
+                'label'    => __('Master Departments'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_departments.index',
                     'parameters' => [

@@ -100,7 +100,7 @@ trait WithFamilySubNavigation
                 'route'     => $familyRoute,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('family')
+                    'tooltip' => __('Family')
                 ]
             ],
 

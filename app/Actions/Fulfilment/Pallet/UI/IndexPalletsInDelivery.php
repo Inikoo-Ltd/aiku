@@ -112,7 +112,7 @@ class IndexPalletsInDelivery extends OrgAction
 
 
             if ($palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS) {
-                $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'avatar');
             }

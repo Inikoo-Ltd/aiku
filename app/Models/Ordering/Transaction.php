@@ -83,6 +83,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $quantity_picked quantity picked for delivery
  * @property string $submitted_quantity_ordered
  * @property array<array-key, mixed>|null $offers_data
+ * @property \Illuminate\Support\Carbon|null $dispatched_at
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
@@ -125,6 +127,8 @@ class Transaction extends Model
         'date'                      => 'datetime',
         'submitted_at'              => 'datetime',
         'in_warehouse_at'           => 'datetime',
+        'dispatched_at'             => 'datetime',
+        'cancelled_at'              => 'datetime',
         'settled_at'                => 'datetime',
         'out_of_stock_in_basket_at' => 'datetime',
         'fetched_at'                => 'datetime',

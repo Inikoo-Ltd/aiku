@@ -177,7 +177,7 @@ class ShowProduction extends OrgAction
         }
 
         return match ($routeName) {
-            'grp.org.productions.show.infrastructure.dashboard' => [
+            'grp.org.productions.show' => [
                 'label' => $production->name,
                 'route' => [
                     'name'       => $routeName,

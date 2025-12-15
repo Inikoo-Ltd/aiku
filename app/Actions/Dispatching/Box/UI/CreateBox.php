@@ -70,7 +70,7 @@ class CreateBox extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'required' => true
                                 ],
                                 'height' => [

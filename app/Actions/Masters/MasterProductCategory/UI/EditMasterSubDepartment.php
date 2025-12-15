@@ -84,7 +84,7 @@ class EditMasterSubDepartment extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $masterProductCategory->code
                                 ],
                             ]
@@ -96,7 +96,7 @@ class EditMasterSubDepartment extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $masterProductCategory->name
                                 ],
                                 'description_title' => [
@@ -106,7 +106,7 @@ class EditMasterSubDepartment extends OrgAction
                                 ],
                                 'description' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
                                     'value' => $masterProductCategory->description
                                 ],
                                 'description_extra' => [

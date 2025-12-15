@@ -131,8 +131,8 @@ class IndexGuests extends GrpAction
                         ] : null
                     ]
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'contact_name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('slug');
         };

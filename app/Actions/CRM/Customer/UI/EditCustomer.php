@@ -147,7 +147,7 @@ class EditCustomer extends OrgAction
                                     'label'      => __('Tags'),
                                     'value'      => $customer->tags->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->pluck('id')->toArray(),
                                     'noSaveButton' => true,
-                                    'isWithRefreshFieldform' => true,
+                                    'isWithRefreshFieldForm' => true,
                                     'tag_routes' => [
                                         'index_tag' => [
                                             'name'       => 'grp.json.customer.tags.index',

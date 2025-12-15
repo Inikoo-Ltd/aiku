@@ -176,11 +176,11 @@ class IndexLocations extends OrgAction
                     }
                 )
                 ->column(key: 'scope', label: __('scope'), canBeHidden: false, type: 'icon')
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'max_weight', label: __('weight'), canBeHidden: false, align: 'right');
+            $table->column(key: 'max_weight', label: __('Weight'), canBeHidden: false, align: 'right');
             $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, align: 'right');
             $table->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, align: 'right')
                 ->defaultSort('code');

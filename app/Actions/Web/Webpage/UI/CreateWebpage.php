@@ -106,7 +106,7 @@ class CreateWebpage extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => '',
                                     'required' => true,
                                 ],
