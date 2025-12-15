@@ -125,6 +125,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.updated_at',
                 'products.slug',
                 'products.asset_id',
+                'products.available_quantity',
                 'invoices_all',
                 'sales_all',
                 'products.units',
@@ -168,9 +169,9 @@ class IndexProductsInProductCategory extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'unit', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
@@ -284,12 +285,12 @@ class IndexProductsInProductCategory extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
-                    fn() => ProductsResource::collection($products)
-                    : Inertia::lazy(fn() => ProductsResource::collection($products)),
+                    fn () => ProductsResource::collection($products)
+                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
-                    fn() => ProductsResource::collection($products)
-                    : Inertia::lazy(fn() => ProductsResource::collection($products)),
+                    fn () => ProductsResource::collection($products)
+                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
 
             ]

@@ -80,7 +80,7 @@ class ProductsResource extends JsonResource
             'unit'                      => $this->unit,
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
-            'available_quantity'        => $this->available_quantity,
+            'available_quantity'        => trimDecimalZeros($this->available_quantity),
             'gross_weight'              => $this->gross_weight,
             'rrp'                       => $this->rrp,
             'rrp_per_unit'              => $this->units != 0 ? $this->rrp / $this->units : '',
