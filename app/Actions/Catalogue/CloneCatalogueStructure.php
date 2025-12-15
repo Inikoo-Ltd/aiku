@@ -225,15 +225,17 @@ class CloneCatalogueStructure
             ->where('type', ProductCategoryTypeEnum::FAMILY->value)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
-        $foundFamily = null;
 
 
         if (!$foundFamilyData) {
             $parent = $this->getParentForUpsertFamily($shop, $masterFamily);
-            if ($parent) {
-                print "creating family: $code in $shop->slug \n";
 
-
+            if (!$parent) {
+                $parent = $shop;
+            }
+            $foundFamily=null;
+            print "creating family: $code in $shop->slug \n";
+            try {
                 $foundFamily = StoreProductCategory::make()->action(
                     $parent,
                     [
@@ -245,7 +247,10 @@ class CloneCatalogueStructure
                     ]
                 );
                 CloneProductCategoryImagesFromMaster::run($foundFamily);
+            }catch (\Throwable $e) {
+                print $e->getMessage()."\n";
             }
+
         } else {
             $foundFamily = ProductCategory::find($foundFamilyData->id);
 
