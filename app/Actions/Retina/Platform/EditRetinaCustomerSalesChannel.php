@@ -30,7 +30,8 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
 
         $properties = [];
         $routeName = 'retina.models.customer_sales_channel.update';
-        if (in_array(class_basename($user), [class_basename(EbayUser::class)])) {
+
+        if (class_basename($user) == class_basename(EbayUser::class)) {
             $properties = [
                 [
                     "label"  => __("Pricing"),
@@ -58,7 +59,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
         if ($user instanceof EbayUser) {
             $routeName = 'retina.models.customer_sales_channel.ebay_update';
             $properties = [
-
+                ...$properties,
                 [
                     "label"  => __("Shipping"),
                     'icon'    => 'fa-light fa-truck',
