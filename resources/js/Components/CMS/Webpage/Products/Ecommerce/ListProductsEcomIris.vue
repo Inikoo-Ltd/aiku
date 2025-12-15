@@ -520,8 +520,8 @@ watch(
                       <div
                             v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border relative rounded flex md:flex-1"
-                            :class="product.stock ? '' : 'bg-red-100'"
+                            class="border relative rounded flex md:flex-1 justify-center"
+                            :class="product.stock &&  code != 'products-1' ? '' : 'bg-red-100'"
                         >
                             <RenderProduct 
                                 :code="code" 
