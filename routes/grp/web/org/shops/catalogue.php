@@ -26,7 +26,6 @@ use App\Actions\Catalogue\ProductCategory\UI\CreateSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\EditDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\EditFamily;
 use App\Actions\Catalogue\ProductCategory\UI\EditSubDepartment;
-use App\Actions\Catalogue\ProductCategory\UI\IndexBlueprintDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
@@ -106,7 +105,6 @@ Route::prefix('products')->as('products.')
 Route::name("departments.")->prefix('departments')
     ->group(function () {
         Route::get('', IndexDepartments::class)->name('index');
-        Route::get('/blueprints', IndexBlueprintDepartment::class)->name('index.blueprints');
         Route::get('create', CreateDepartment::class)->name('create');
 
 

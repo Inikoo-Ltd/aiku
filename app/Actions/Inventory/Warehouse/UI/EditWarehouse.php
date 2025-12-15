@@ -44,12 +44,12 @@ class EditWarehouse extends OrgAction
             'fields' => [
                 'code' => [
                     'type'  => 'input',
-                    'label' => __('code'),
+                    'label' => __('Code'),
                     'value' => $warehouse->code
                 ],
                 'name' => [
                     'type'  => 'input',
-                    'label' => __('name'),
+                    'label' => __('Name'),
                     'value' => $warehouse->name
                 ],
                 'address' => [

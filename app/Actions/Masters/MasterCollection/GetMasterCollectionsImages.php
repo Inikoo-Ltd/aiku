@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Masters\MasterCollection\UI;
+namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Helpers\ImagesResource;
@@ -48,7 +48,7 @@ class GetMasterCollectionsImages
                     'media'   => ''
                 ],
             ],
-        'images' => ImagesResource::collection(IndexMasterCollectionImages::run($masterCollection))->resolve(),
+            'images' => ImagesResource::collection(GetMasterCollectionImages::run($masterCollection))->resolve(),
 
         ];
     }

@@ -29,10 +29,7 @@ const props = defineProps<{
     save_route: routeType
 }>()
 
-const state = ref({
-    variants: [] as Variant[],
-    groupBy: null,
-})
+const state = ref({ variants: [{ label: "Color", options: ["Red", "Blue", "Green"], active: false }, { label: "Size", options: ["L", "XL", "XXL"], active: false },] as Variant[], groupBy: "Color" })
 
 
 const expanded = ref<Record<string, boolean>>({})
@@ -132,13 +129,15 @@ const setProduct = (node: Node, val: string | null) => {
     console.log("Set product", val)
     if (!val.id) return
 
-    const key = { ...node.key, product: {
+    const key = {
+        ...node.key, product: {
             id: val.id,
             name: val.name,
             code: val.code,
             image: val.image_thumbnail,
             slug: val.slug
-    } }
+        }
+    }
 
     // Reverse mapping: productId → key JSON
     productMap.value[val.id] = key
@@ -237,7 +236,8 @@ const save = () => {
             </div>
 
             <!-- Add Variant -->
-            <Button v-if="state.variants.length < 2" type="dashed" @click="addVariant" size="xs" :icon="faPlus" label="Add Variant"></Button>
+            <Button v-if="state.variants.length < 2" type="dashed" @click="addVariant" size="xs" :icon="faPlus"
+                label="Add Variant"></Button>
 
             <!-- Grouping -->
             <div class="border-t mt-6">
@@ -252,60 +252,79 @@ const save = () => {
 
                 <!-- Table -->
                 <div class="overflow-x-auto border rounded mt-4" :style="{ overflow: 'visible' }">
-                    <table class="min-w-full divide-y">
+                  <table class="min-w-full divide-y table-fixed">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-2 text-left text-sm w-1/2">Variant</th>
-                                <th class="px-4 py-2 text-left text-sm w-1/2">Product</th>
+                                <th class="px-4 py-2 text-left text-sm w-[50%]">Variant</th>
+                                <th class="px-4 py-2 text-left text-sm w-[50%]">Product</th>
                             </tr>
                         </thead>
 
                         <tbody class="bg-white divide-y">
                             <template v-if="state.variants.length > 1 && state.groupBy">
                                 <template v-for="node in buildNodes" :key="keyToString(node.key)">
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-2 w-1/2">
+                                    <tr class="hover:bg-gray-50 h-[70px]">
+                                        <td class="px-4 py-2 w-[50%] align-top">
                                             <button class="mr-2 text-sm" @click="toggleExpand(keyToString(node.key))">
                                                 <span v-if="node.children?.length">
                                                     <span v-if="expanded[keyToString(node.key)]">−</span>
                                                     <span v-else>+</span>
                                                 </span>
                                             </button>
-                                            {{ node.label }}
+                                            <span class="truncate block">{{ node.label }}</span>
                                         </td>
-                                        <td class="px-4 py-2 w-1/2"></td>
+                                        <td class="px-4 py-2 w-[50%] align-top"></td>
                                     </tr>
 
-                                    <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
-                                        :key="keyToString(child.key)" class="bg-white hover:bg-gray-50">
-
-                                        <td class="px-8 py-2 text-sm text-gray-700 w-1/2">
-                                            ↳ {{ child.label }}
+                                    <tr
+                                        v-for="child in node.children"
+                                        v-if="expanded[keyToString(node.key)]"
+                                        :key="keyToString(child.key)"
+                                        class="bg-white hover:bg-gray-50 h-[70px]"
+                                    >
+                                        <td class="px-8 py-2 text-sm text-gray-700 w-[50%] align-top">
+                                            <span class="truncate block">↳ {{ child.label }}</span>
                                         </td>
 
-                                        <td class="px-4 py-2 w-1/2">
-                                            <PureMultiselectInfiniteScroll :model-value="child.product"
+                                        <td class="px-4 py-2 w-[50%] align-top h-[70px]">
+                                            <PureMultiselectInfiniteScroll
+                                                :model-value="child.product"
                                                 @update:model-value="(val) => setProduct(child, val)"
-                                                :fetchRoute="props.master_assets_route" :classes="'w-full'"
-                                                :placeholder="trans('Select Product')" valueProp="id" label-prop="name"
-                                                :object="true" :caret="false">
+                                                :fetchRoute="props.master_assets_route"
+                                                :classes="'w-full'"
+                                                :placeholder="trans('Select Product')"
+                                                valueProp="id"
+                                                label-prop="name"
+                                                :object="true"
+                                                :caret="false"
+                                            >
                                                 <template #singlelabel="{ value }">
-                                                    <div class="flex  gap-3 p-2 rounded-lg transition border border-transparent hover:border-gray-200 hover:bg-gray-50 justify-between">
+                                                    <div
+                                                        class="flex gap-3 p-2 rounded-lg transition border border-transparent
+                                                            hover:border-gray-200 hover:bg-gray-50 justify-between overflow-hidden"
+                                                    >
                                                         <!-- Image wrapper -->
                                                         <div
-                                                            class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
-                                                            <Image v-if="value?.image" :src="value.image.thumbnail"
+                                                            class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center"
+                                                        >
+                                                            <Image
+                                                                v-if="value?.image"
+                                                                :src="value.image.thumbnail"
                                                                 alt="Product image"
-                                                                class="w-full h-full object-cover" />
-                                                            <FontAwesomeIcon v-else icon="fal fa-image"
-                                                                class="text-gray-400 text-lg" />
+                                                                class="w-full h-full object-cover"
+                                                            />
+                                                            <FontAwesomeIcon
+                                                                v-else
+                                                                icon="fal fa-image"
+                                                                class="text-gray-400 text-lg"
+                                                            />
                                                         </div>
+
                                                         <!-- Text content -->
                                                         <div class="min-w-0">
-                                                            <div
-                                                                class="text-sm font-semibold text-gray-800  items-center gap-2">
+                                                            <div class="text-sm font-semibold text-gray-800 items-center gap-2">
                                                                 <div class="truncate">{{ value?.name }}</div>
-                                                                <div class="text-gray-500 font-mono truncate">
+                                                                <div class="truncate text-gray-500 font-mono">
                                                                     ({{ value?.code || '-' }})
                                                                 </div>
                                                             </div>
@@ -313,7 +332,6 @@ const save = () => {
                                                     </div>
                                                 </template>
                                             </PureMultiselectInfiniteScroll>
-
                                         </td>
                                     </tr>
                                 </template>
@@ -321,37 +339,59 @@ const save = () => {
 
                             <!-- Flat Mode -->
                             <template v-else>
-                                <tr v-for="node in buildNodes" :key="keyToString(node.key)" class="hover:bg-gray-50">
-                                    <td class="px-4 py-2 w-1/2">{{ node.label }}</td>
-                                    <td class="px-4 py-2 w-1/2">
-                                        <PureMultiselectInfiniteScroll :model-value="node.product"
+                                <tr
+                                    v-for="node in buildNodes"
+                                    :key="keyToString(node.key)"
+                                    class="hover:bg-gray-50 h-[70px]"
+                                >
+                                    <td class="px-4 py-2 w-[50%] align-top">
+                                        <span class="truncate block">{{ node.label }}</span>
+                                    </td>
+
+                                    <td class="px-4 py-2 w-[50%] align-top h-[70px]">
+                                        <PureMultiselectInfiniteScroll
+                                            :model-value="node.product"
                                             @update:model-value="(val) => setProduct(node, val)"
-                                            :fetchRoute="props.master_assets_route" :object="true"  :caret="false"
-                                            :placeholder="trans('Select Product')" valueProp="id" label-prop="name" >
-                                             <template #singlelabel="{ value }">
-                                                    <div class="flex  gap-3 p-2 rounded-lg transition border border-transparent hover:border-gray-200 hover:bg-gray-50 justify-between">
-                                                        <!-- Image wrapper -->
-                                                        <div
-                                                            class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
-                                                            <Image v-if="value?.image" :src="value.image.thumbnail"
-                                                                alt="Product image"
-                                                                class="w-full h-full object-cover" />
-                                                            <FontAwesomeIcon v-else icon="fal fa-image"
-                                                                class="text-gray-400 text-lg" />
-                                                        </div>
-                                                        <!-- Text content -->
-                                                        <div class="min-w-0">
-                                                            <div
-                                                                class="text-sm font-semibold text-gray-800  items-center gap-2">
-                                                                <div class="truncate">{{ value?.name }}</div>
-                                                                <div class="text-gray-500 font-mono truncate">
-                                                                    ({{ value?.code || '-' }})
-                                                                </div>
+                                            :fetchRoute="props.master_assets_route"
+                                            :object="true"
+                                            :caret="false"
+                                            :placeholder="trans('Select Product')"
+                                            valueProp="id"
+                                            label-prop="name"
+                                        >
+                                            <template #singlelabel="{ value }">
+                                                <div
+                                                    class="flex gap-3 p-2 rounded-lg transition border border-transparent
+                                                        hover:border-gray-200 hover:bg-gray-50 justify-between overflow-hidden"
+                                                >
+                                                    <!-- Image wrapper -->
+                                                    <div
+                                                        class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center"
+                                                    >
+                                                        <Image
+                                                            v-if="value?.image"
+                                                            :src="value.image.thumbnail"
+                                                            alt="Product image"
+                                                            class="w-full h-full object-cover"
+                                                        />
+                                                        <FontAwesomeIcon
+                                                            v-else
+                                                            icon="fal fa-image"
+                                                            class="text-gray-400 text-lg"
+                                                        />
+                                                    </div>
+
+                                                    <!-- Text content -->
+                                                    <div class="min-w-0">
+                                                        <div class="text-sm font-semibold text-gray-800 items-center gap-2">
+                                                            <div class="truncate">{{ value?.name }}</div>
+                                                            <div class="truncate text-gray-500 font-mono">
+                                                                ({{ value?.code || '-' }})
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </template>
-                                                
+                                                </div>
+                                            </template>
                                         </PureMultiselectInfiniteScroll>
                                     </td>
                                 </tr>
@@ -377,4 +417,3 @@ const save = () => {
     justify-content: space-between;
 }
 </style>
-

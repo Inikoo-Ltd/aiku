@@ -124,6 +124,7 @@ class IndexMasterProducts extends GrpAction
                 'master_assets.unit',
                 'master_assets.units',
                 'master_assets.rrp',
+                'master_assets.web_images',
                 'master_asset_stats.number_current_assets as used_in',
                 'currencies.code as currency_code',
             ]
@@ -222,6 +223,7 @@ class IndexMasterProducts extends GrpAction
             }
 
             $table
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
@@ -337,7 +339,7 @@ class IndexMasterProducts extends GrpAction
                 ],
                 'data'                  => MasterProductsResource::collection($masterAssets),
                 'masterProductCategory' => $this->parent->id,
-                'editable_table'        => true,
+                'editable_table'        => false,
                 'shopsData'             => $shopsData,
 
             ]

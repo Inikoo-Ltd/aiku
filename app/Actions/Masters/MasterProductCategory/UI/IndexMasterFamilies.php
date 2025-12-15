@@ -172,6 +172,7 @@ class IndexMasterFamilies extends OrgAction
             'master_product_categories.description',
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
+            'master_product_categories.web_images',
             'master_product_category_stats.number_current_families as used_in',
             'master_product_category_stats.number_current_master_assets_type_product as products',
 
@@ -244,9 +245,10 @@ class IndexMasterFamilies extends OrgAction
 
 
             $table
-                ->column(key: 'status_icon', label: '', canBeHidden: false, sortable: false, searchable: true, type: 'icon')
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
         };

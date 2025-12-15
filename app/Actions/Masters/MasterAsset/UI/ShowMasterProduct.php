@@ -11,10 +11,12 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterAsset\GetMasterProductImages;
 use App\Actions\Masters\MasterAsset\GetMasterProductSalesData;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
@@ -22,10 +24,11 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\ProductsResource;
-use App\Http\Resources\Masters\MasterProductSalesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\Masters\MasterProductResource;
+use App\Http\Resources\Masters\MasterProductSalesResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -33,8 +36,6 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
-use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
 class ShowMasterProduct extends GrpAction
 {

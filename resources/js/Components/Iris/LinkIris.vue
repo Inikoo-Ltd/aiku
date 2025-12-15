@@ -73,7 +73,7 @@ const isLoading = ref(false)
 <template>
   <!-- Internal Inertia link (same app) -->
   <Link
-    v-if="type === 'internal' && (location === getLinkLocation(computedHref))"
+    v-if="type === 'internal' && (location === getLinkLocation(computedHref)) && computedHref"
     :href="computedHref"
     :method="method"
     :headers="{ is_logged_in: layout?.iris?.is_logged_in, ...header }"
@@ -92,7 +92,7 @@ const isLoading = ref(false)
 
   <!-- External or cross-app link -->
   <a
-    v-else
+    v-else-if="computedHref"
     :href="computedHref"
     :class="class"
     :style="style"
@@ -101,4 +101,6 @@ const isLoading = ref(false)
   >
     <slot>{{ label }}</slot>
   </a>
+
+  <div v-else><slot>{{ label }}</slot></div>
 </template>

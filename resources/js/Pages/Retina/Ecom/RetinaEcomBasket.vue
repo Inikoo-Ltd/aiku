@@ -536,7 +536,6 @@ const onChangeInsurance = async (val: boolean) => {
 					class="rounded-none border-0"
 				/> -->
                 <Button
-                   v-if="is_in_basket"
                     @click="() => isModalProductListOpen = true"
                     :label="trans('Add products')"
                     type="tertiary"

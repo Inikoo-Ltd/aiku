@@ -103,7 +103,7 @@ class IndexOutOfStockProducts extends OrgAction
                 );
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true);
         };

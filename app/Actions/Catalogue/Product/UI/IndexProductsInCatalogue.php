@@ -121,6 +121,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
+                'products.web_images',
                 'available_quantity',
                 'units',
                 'unit',
@@ -186,6 +187,7 @@ class IndexProductsInCatalogue extends OrgAction
                     ]
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'units', label: __('Units'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

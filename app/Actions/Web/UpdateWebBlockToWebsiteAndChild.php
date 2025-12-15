@@ -44,6 +44,7 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
         $webpages->chunk(500, function ($webpages) use ($names, $newWebBlock, $fieldValue, $website, &$progress, &$total, &$lastPercent) {
             foreach ($webpages as $webpage) {
                 $modified = $this->modifyLayout($webpage->published_layout, $names, $newWebBlock->slug, $fieldValue);
+                $progress++;
                 if (empty($modified)) {
                     continue;
                 }
@@ -71,7 +72,6 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
                     $unpublished->updateQuietly(['layout' => $unLayout]);
                 }
 
-                $progress++;
                 $percent = intval(($progress / $total) * 100);
                 if ($percent >= $lastPercent + 10) {
                     $lastPercent = $percent;
@@ -79,6 +79,8 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
                 }
             }
         });
+
+        BroadcastUpdateWeblocks::dispatch(100, $website);
 
         return $newWebBlock;
     }

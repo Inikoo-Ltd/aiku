@@ -64,7 +64,7 @@ class IndexUploadedImages extends GrpAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->withExportLinks($exportLinks)
-                ->column(key: 'name', label: __('name'), sortable: true)
+                ->column(key: 'name', label: __('Name'), sortable: true)
                 ->column(key: 'thumbnail', label: __('image'))
                 ->column(key: 'size', label: __('size'), sortable: true)
                 ->column(key: 'select', label: __('Operations'))

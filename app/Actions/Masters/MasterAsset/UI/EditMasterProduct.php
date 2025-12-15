@@ -150,7 +150,7 @@ class EditMasterProduct extends GrpAction
                 'fields' => [
                     'code' => [
                         'type'  => 'input',
-                        'label' => __('code'),
+                        'label' => __('Code'),
                         'value' => $masterProduct->code
                     ],
                 ]

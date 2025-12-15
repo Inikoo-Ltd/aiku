@@ -68,6 +68,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property array<array-key, mixed>|null $web_images
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
@@ -117,6 +118,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'            => 'array',
+        'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
@@ -124,8 +126,9 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
+        'web_images'  => '{}',
     ];
 
     public function generateTags(): array
@@ -237,7 +240,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
-
 
 
 }

@@ -73,7 +73,7 @@ class EditShippingZoneSchema extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $shippingZoneSchema->name
                                 ],
                             ],

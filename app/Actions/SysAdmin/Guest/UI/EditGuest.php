@@ -112,7 +112,7 @@ class EditGuest extends GrpAction
 
                                 'contact_name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $guest->contact_name
                                 ],
                                 'email' => [

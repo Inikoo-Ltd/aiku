@@ -61,8 +61,8 @@ class IndexCalendars extends OrgAction
             }
             $table
                 ->withGlobalSearch()
-                ->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'contact_name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'job_title', label: __('position'), canBeHidden: false)
                 ->column(key: 'state', label: __('state'), canBeHidden: false)
                 ->defaultSort('slug');

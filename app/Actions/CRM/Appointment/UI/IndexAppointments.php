@@ -102,7 +102,7 @@ class IndexAppointments extends OrgAction
                 ->column(key: 'customer_name', label: __('customer name'))
                 ->column(key: 'schedule_at', label: __('schedule at'), sortable: true)
                 ->column(key: 'state', label: __('state'))
-                ->column(key: 'type', label: __('type'))
+                ->column(key: 'type', label: __('Type'))
                 ->column(key: 'event', label: __('event'))
                 ->column(key: 'event_address', label: __('event address'))
                 ->defaultSort('published_at');

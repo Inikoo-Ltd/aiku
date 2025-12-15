@@ -48,7 +48,6 @@ class CancelOrder extends OrgAction
 
     public function handle(Order $order): Order
     {
-
         $oldState = $order->state;
 
         $modelData = [
@@ -66,7 +65,10 @@ class CancelOrder extends OrgAction
 
         /** @var Transaction $transaction */
         foreach ($transactions as $transaction) {
-            $transactionData = ['state' => TransactionStateEnum::CANCELLED];
+            $transactionData = [
+                'state' => TransactionStateEnum::CANCELLED,
+                'cancelled_at' => $date
+            ];
             data_set($transactionData, 'quantity_cancelled', $transaction->quantity_ordered);
 
             $transaction->update($transactionData);
@@ -93,14 +95,11 @@ class CancelOrder extends OrgAction
             ];
 
 
-
-            $payment     = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+            $payment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
                 'amount' => $payment->amount
             ]);
-
-
         }
 
         $deliveryNotes = $order->deliveryNotes;

@@ -332,8 +332,6 @@ test('UI Index job positions', function () {
     });
 });
 
-
-
 test('UI create workplace', function () {
     $response = get(route('grp.org.hr.workplaces.create', [$this->organisation->slug]));
     $response->assertInertia(function (AssertableInertia $page) {

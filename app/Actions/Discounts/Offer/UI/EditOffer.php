@@ -42,11 +42,11 @@ class EditOffer extends OrgAction
                     'blueprint'  =>
                         [
                             [
-                                'title'  => __('name'),
+                                'title'  => __('Name'),
                                 'fields' => [
                                     'name'        => [
                                         'type'        => 'input',
-                                        'label'       => __('name'),
+                                        'label'       => __('Name'),
                                         'placeholder' => __('Name'),
                                         'required'    => true,
                                         'value'       => $offer->name,

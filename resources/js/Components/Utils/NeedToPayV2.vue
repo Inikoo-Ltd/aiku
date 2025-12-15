@@ -102,11 +102,10 @@ const onPayWithBalance = () => {
                 <div class="h-3 w-full bg-black/20 rounded-full relative overflow-hidden flex">
                     <div v-for="(payment, idx) in payments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))"
                         v-tooltip="trans('(:paymentName) Paid :paymentAmount at :datePayment', { paymentName: payment.payment_account?.name || 'Unknown', paymentAmount: locale.currencyFormat(currencyCode, Number(payment.amount)), datePayment: useFormatTime(payment.created_at, { formatTime: 'hm'}) })"
-                        class="h-full opacity-50 hover:opacity-100"
+                        class="h-full bg-green-500 hover:bg-green-600"
                         :class="idx != payments.length - 1 ? 'border-r border-black/70' : ''"
                         :style="{
                             width: (Number(payment.amount)/Number(totalAmount))*100 + '%',
-                            backgroundColor: useStringToHex(payment.payment_account?.code || 'gray')
                         }"
                     />
                 </div>

@@ -52,6 +52,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
                 'master_assets.created_at',
                 'master_assets.updated_at',
                 'master_assets.slug',
+                'master_assets.web_images',
             ])
             ->leftJoin('master_asset_stats', 'master_assets.id', 'master_asset_stats.master_asset_id');
 
@@ -83,11 +84,11 @@ class IndexMasterProductsInMasterCollection extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($action) {
-                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }
