@@ -6,9 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 use App\Actions\Accounting\Intrastat\ExportIntrastatXml;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatReport;
+use App\Actions\Accounting\SageInvoices\ExportSageInvoices;
+use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Reports\PostRoomRoutes;
 use App\Actions\Reports\ShowOrganisationSalesReport;
 use App\Actions\UI\Reports\IndexReports;
@@ -21,12 +22,13 @@ Route::get('/', function () {
     return redirect()->route('grp.org.reports.intrastat', Route::current()->parameters());
 })->name('index');
 
-
 Route::get('/sales', ShowOrganisationSalesReport::class)->name('sales');
 
 Route::get('/intrastat', IndexIntrastatReport::class)->name('intrastat');
 Route::get('/intrastat/export', ExportIntrastatXml::class)->name('intrastat.export');
 
+Route::get('/sage-invoices', IndexSageInvoicesReport::class)->name('sage-invoices');
+Route::get('/sage-invoices/export', ExportSageInvoices::class)->name('sage-invoices.export');
 
 Route::name("sent_emails.")->prefix('sent-emails')
     ->group(function () {
