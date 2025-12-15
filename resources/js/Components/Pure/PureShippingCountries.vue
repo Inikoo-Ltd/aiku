@@ -14,6 +14,7 @@ import { trans } from 'laravel-vue-i18n'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import { get, set } from 'lodash'
 
 library.add(faInfinity, faPlus, faTrashAlt, faPen)
 
@@ -45,6 +46,7 @@ const editCountryCode = ref('')
 const editCountryId = ref(null)
 const editIncludedPostalCodes = ref('')
 const editExcludedPostalCodes = ref('')
+const editTerritories = ref({})
 
 const countryOptions = computed(() => {
     const list = props.country_list
@@ -69,16 +71,16 @@ function openEditModal(index: number) {
     const item = props.modelValue[index]
     selectedIndex.value = index
     editCountryCode.value = item.country_code
-    editIncludedPostalCodes.value = item.included_postal_codes || ''
-    editExcludedPostalCodes.value = item.excluded_postal_codes || ''
+    // editIncludedPostalCodes.value = item.included_postal_codes || ''
+    // editExcludedPostalCodes.value = item.excluded_postal_codes || ''
     showModal.value = true
 }
 
 function addNewItem() {
     selectedIndex.value = -1
     editCountryCode.value = ''
-    editIncludedPostalCodes.value = ''
-    editExcludedPostalCodes.value = ''
+    // editIncludedPostalCodes.value = ''
+    // editExcludedPostalCodes.value = ''
     showModal.value = true
 }
 
@@ -100,7 +102,7 @@ function saveEdit() {
     showModal.value = false
 }
 
-const isLoading = ref(false)
+const isLoadingAddNewShippingCountry = ref(false)
 const onAddNewShippingCountry = () => {
     // Section: Submit
     console.log('editCountryId.value', editCountryId.value, route(props.routes.store.name, props.routes.store.parameters))
@@ -108,13 +110,14 @@ const onAddNewShippingCountry = () => {
     router.post(
         route(props.routes.store.name, props.routes.store.parameters),
         {
-            country_id: editCountryId.value
+            country_id: editCountryId.value,
+            territories: editTerritories.value
         },
         {
             preserveScroll: true,
             preserveState: true,
             onStart: () => { 
-                isLoading.value = true
+                isLoadingAddNewShippingCountry.value = true
             },
             onSuccess: () => {
                 notify({
@@ -122,6 +125,8 @@ const onAddNewShippingCountry = () => {
                     text: trans("Successfully submit the data"),
                     type: "success"
                 })
+                editTerritories.value = {}
+                editCountryId.value = null
             },
             onError: errors => {
                 notify({
@@ -131,7 +136,7 @@ const onAddNewShippingCountry = () => {
                 })
             },
             onFinish: () => {
-                isLoading.value = false
+                isLoadingAddNewShippingCountry.value = false
             },
         }
     )
@@ -145,7 +150,7 @@ const onAddNewShippingCountry = () => {
 
 function getCountryLabel(code: string): string {
     const found = countryOptions.value.find(c => c.code === code)
-    return found ? found.label : code
+    return found ? found.label : code ?? ''
 }
 
 const aaa = [
@@ -279,18 +284,30 @@ const selectedCountryToDelete = ref<any>(null)
 
             <div>
                 <label class="block mb-1 text-gray-600">Included Postal Codes</label>
-                <PureTextarea v-model="editIncludedPostalCodes" rows="3" class="w-full" autoResize />
+                <PureTextarea
+                    :modelValue="get(editTerritories, ['included_postal_codes'], []).join(',')"
+                    @update:modelValue="e => set(editTerritories, ['included_postal_codes'], e.split(',').map(s => s.trim()).filter(Boolean))"
+                    rows="3"
+                    class="w-full"
+                    autoResize
+                />
             </div>
 
             <div>
                 <label class="block mb-1 text-gray-600">Excluded Postal Codes</label>
-                <PureTextarea v-model="editExcludedPostalCodes" rows="3" class="w-full" autoResize />
+                <PureTextarea
+                    :modelValue="get(editTerritories, ['excluded_postal_codes'], []).join(',')"
+                    @update:modelValue="e => set(editTerritories, ['excluded_postal_codes'], e.split(',').map(s => s.trim()).filter(Boolean))"
+                    rows="3"
+                    class="w-full"
+                    autoResize
+                />
             </div>
         </div>
 
         <template #footer>
             <Button label="Cancel" type="exit" @click="showModal = false" />
-            <Button v-if="selectedIndex === -1" type="create" :label="trans('Add')" @click="onAddNewShippingCountry" full />
+            <Button v-if="selectedIndex === -1" type="create" :label="trans('Add')" @click="onAddNewShippingCountry" full :loading="isLoadingAddNewShippingCountry" />
             <Button v-else type="create" :label="trans('Set Changes')" @click="saveEdit" full />
         </template>
     </Dialog>

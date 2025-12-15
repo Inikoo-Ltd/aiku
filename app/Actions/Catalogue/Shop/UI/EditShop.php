@@ -364,7 +364,7 @@ class EditShop extends OrgAction
                             'fields' => [
                                 'allowed_shipping_countries' => [
                                     'noSaveButton'              => true,
-                                    'isWithRefreshFieldform'    => true,
+                                    'isWithRefreshFieldForm'    => true,
                                     'label'                     => __('Allowed Shipping Countries'),
                                     'type'                      => 'shipping_countries',
                                     'placeholder'               => __('Select countries'),
