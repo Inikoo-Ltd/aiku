@@ -190,9 +190,9 @@ class IndexProductsInCatalogue extends OrgAction
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'units', label: __('Units'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'unit', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'rrp', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if ($bucket != 'discontinued') {
                 $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
             }

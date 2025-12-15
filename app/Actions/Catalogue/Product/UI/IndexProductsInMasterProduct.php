@@ -92,9 +92,9 @@ class IndexProductsInMasterProduct extends OrgAction
             $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('Price/Outer'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'unit', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'units', label: __('Units'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'actions', label: __(''), canBeHidden: false);
         };
     }
