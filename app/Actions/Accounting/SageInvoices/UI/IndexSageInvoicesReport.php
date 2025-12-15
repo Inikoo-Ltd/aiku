@@ -10,6 +10,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -46,6 +47,17 @@ class IndexSageInvoicesReport extends OrgAction
         $queryBuilder->leftJoin('tax_categories', 'invoices.tax_category_id', '=', 'tax_categories.id');
 
         $this->records = $queryBuilder->count('invoices.id');
+
+        if (!request()->query('between')) {
+            $start = Carbon::now()->startOfMonth()->format('Ymd');
+            $end   = Carbon::now()->format('Ymd');
+
+            request()->merge([
+                'between' => [
+                    'date' => "{$start}-{$end}",
+                ],
+            ]);
+        }
 
         $queryBuilder
             ->defaultSort('-date')
