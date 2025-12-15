@@ -34,10 +34,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_dimensions
  * @property int $number_used_slots
  * @property int $number_used_slots_for_sale
- * @property string $data
+ * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property string $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image

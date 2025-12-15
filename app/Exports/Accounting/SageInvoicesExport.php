@@ -3,7 +3,6 @@
 namespace App\Exports\Accounting;
 
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
