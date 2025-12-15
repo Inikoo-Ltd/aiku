@@ -58,5 +58,5 @@ jobs:
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
           slug: Inikoo-Ltd/aiku
