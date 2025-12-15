@@ -31,6 +31,7 @@ class HydrateMasterAssets
         MasterAssetHydrateAssets::run($masterAsset->id);
         MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);
         MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
+        UpdateMasterAssetWebImages::run($masterAsset);
     }
 
 }

@@ -108,7 +108,7 @@ class ShowMasterFamily extends GrpAction
         return Inertia::render(
             'Masters/MasterFamily',
             [
-                'title'                 => __('family'),
+                'title'                 => __('Family'),
                 'breadcrumbs'           => $this->getBreadcrumbs(
                     $masterFamily,
                     $request->route()->getName(),
@@ -198,8 +198,8 @@ class ShowMasterFamily extends GrpAction
                             'style'   => 'create',
                             'tooltip' => __('Add a master product to this family'),
                             'label'   => __('Master Product'),
-                        ]: false,
-                        $this->canEdit ? [
+                        ] : false,
+                        $this->canEdit && app()->environment('local') ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Create a variants group for this family'),
@@ -208,7 +208,7 @@ class ShowMasterFamily extends GrpAction
                                 'name'       => preg_replace('/show$/', 'create.variant', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ]: false,
+                        ] : false,
                     ],
                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 

@@ -219,7 +219,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
                 class="family-item h-full flex items-center"
                 :data="item"
                 :style="{
-                  height: maxHeight && maxHeight > 0 ? maxHeight + 'px' : 'auto',
+
                   ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType)
                 }"
                 :screenType="props.screenType"

@@ -86,7 +86,7 @@ class EditPoll extends OrgAction
                             'fields' => [
                                 'name'                     => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $poll->name
                                 ],
                                 'label'                    => [
@@ -98,7 +98,7 @@ class EditPoll extends OrgAction
                                     'type'         => 'poll_type_select',
                                     'type_options' => $optionsPool,
                                     'required'     => true,
-                                    'label'        => __('type'),
+                                    'label'        => __('Type'),
                                     'options'      => Options::forEnum(PollTypeEnum::class),
                                     'value'        => [
                                         'type'         => $poll->type->value,

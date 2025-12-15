@@ -48,7 +48,7 @@ class CreateMailshot extends OrgAction
                 ],
                 'type' => [
                     'type'     => 'select',
-                    'label'    => __('type'),
+                    'label'    => __('Type'),
                     'required' => true,
                     'options'  => Options::forEnum(MailshotTypeEnum::class),
                 ],
@@ -125,7 +125,7 @@ class CreateMailshot extends OrgAction
                     'blueprint'  =>
                         [
                             [
-                                'title'  => __('name'),
+                                'title'  => __('Name'),
                                 'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                             ]
                         ],

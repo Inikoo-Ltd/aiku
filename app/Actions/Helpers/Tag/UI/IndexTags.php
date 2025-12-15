@@ -100,7 +100,7 @@ class IndexTags extends OrgAction
             $queryBuilder->where('scope', $this->forcedScope);
         }
 
-        if ($parent instanceOf Shop) {
+        if ($parent instanceof Shop) {
             $queryBuilder->where('shop_id', $parent->id);
         }
 

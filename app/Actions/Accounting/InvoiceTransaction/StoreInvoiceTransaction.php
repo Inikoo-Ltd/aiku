@@ -10,6 +10,8 @@ namespace App\Actions\Accounting\InvoiceTransaction;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -95,6 +97,8 @@ class StoreInvoiceTransaction extends OrgAction
             AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
             AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
             AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
+            AssetHydrateInvoicesCustomersStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
+            AssetHydrateInvoicesStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
         }
 
         return $invoiceTransaction;

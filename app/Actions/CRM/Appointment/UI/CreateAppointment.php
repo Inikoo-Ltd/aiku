@@ -8,11 +8,9 @@
 
 namespace App\Actions\CRM\Appointment\UI;
 
-use App\Actions\CRM\Customer\UI\GetCustomerOptions;
-use App\Actions\InertiaAction;
+use App\Actions\OrgAction;
 use App\Enums\CRM\Appointment\AppointmentEventEnum;
 use App\Enums\CRM\Appointment\AppointmentTypeEnum;
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -20,7 +18,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 
-class CreateAppointment extends InertiaAction
+class CreateAppointment extends OrgAction
 {
     public function handle(Organisation|Shop $parent, ActionRequest $request): Response
     {
@@ -69,37 +67,37 @@ class CreateAppointment extends InertiaAction
                                         'mode'     => 'single',
                                         'label'    => __('customer'),
                                         'required' => true,
-                                        'options'  => GetCustomerOptions::run(Customer::all())
+
                                     ],
                                     'type' => [
                                         'type'     => 'select',
                                         'mode'     => 'single',
-                                        'label'    => __('type'),
+                                        'label'    => __('Type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(AppointmentTypeEnum::class)
                                     ],
                                     'event' => [
                                         'type'     => 'select',
                                         'mode'     => 'single',
-                                        'label'    => __('event'),
+                                        'label'    => __('Event'),
                                         'required' => true,
                                         'options'  => Options::forEnum(AppointmentEventEnum::class)
                                     ],
                                     'event_address' => [
                                         'type'     => 'input',
-                                        'label'    => __('event address'),
+                                        'label'    => __('Event address'),
                                         'value'    => '',
                                         'required' => true,
                                     ],
                                     'schedule_at' => [
                                         'type'     => 'date',
-                                        'label'    => __('schedule'),
+                                        'label'    => __('Schedule'),
                                         'value'    => '',
                                         'required' => true,
                                     ],
                                     'description' => [
                                         'type'     => 'textarea',
-                                        'label'    => __('description'),
+                                        'label'    => __('Description'),
                                         'value'    => ''
                                     ]
                                 ]
@@ -133,7 +131,7 @@ class CreateAppointment extends InertiaAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
-        return $this->handle(organisation(), $request);
+        return $this->handle($this->organisation, $request);
     }
 
     public function inShop(Shop $shop, ActionRequest $request): Response

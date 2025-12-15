@@ -26,11 +26,12 @@ class DeleteMasterCollection extends GrpAction
 
     private ?MasterCollection $masterCollection;
 
-    public function handle(MasterCollection $masterCollection, bool $forceDelete = false)
+    /**
+     * @throws \Throwable
+     */
+    public function handle(MasterCollection $masterCollection, bool $forceDelete = false): void
     {
-        try {
-            DB::beginTransaction();
-
+        DB::transaction(function () use ($masterCollection, $forceDelete) {
             DB::table('collections')->where('master_collection_id', $masterCollection->id)
                 ->update(['master_collection_id' => null]);
 
@@ -54,30 +55,31 @@ class DeleteMasterCollection extends GrpAction
             } else {
                 $masterCollection->delete();
             }
+        });
 
-            MasterCollectionRecordSearch::run($masterCollection);
-            MasterShopHydrateMasterCollections::dispatch($masterCollection->masterShop);
-
-            DB::commit();
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-        }
+        MasterCollectionRecordSearch::run($masterCollection);
+        MasterShopHydrateMasterCollections::dispatch($masterCollection->masterShop);
     }
 
-    public function action(MasterCollection $masterCollection, bool $forceDelete = false)
+    /**
+     * @throws \Throwable
+     */
+    public function action(MasterCollection $masterCollection, bool $forceDelete = false): void
     {
         $this->masterCollection = $masterCollection;
-        return $this->handle($masterCollection, $forceDelete);
+        $this->handle($masterCollection, $forceDelete);
     }
 
-    public function asController(MasterCollection $masterCollection, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(MasterCollection $masterCollection, ActionRequest $request): void
     {
         $this->masterCollection = $masterCollection;
         $this->initialisation($masterCollection->group, $request);
 
         $forceDelete = $request->boolean('force_delete');
 
-        return $this->handle($masterCollection, $forceDelete);
+        $this->handle($masterCollection, $forceDelete);
     }
 }

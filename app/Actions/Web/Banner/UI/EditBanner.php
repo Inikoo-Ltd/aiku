@@ -59,7 +59,7 @@ class EditBanner extends OrgAction
             'fields' => [
                 'name' => [
                     'type'     => 'input',
-                    'label'    => __('name'),
+                    'label'    => __('Name'),
                     'value'    => $banner->name,
                     'required' => true,
                 ],

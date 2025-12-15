@@ -138,7 +138,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
                                         ->pluck('tags.id')
                                         ->toArray(),
-                                    'isWithRefreshFieldform' => true,
+                                    'isWithRefreshFieldForm' => true,
                                     'tag_routes' => [
                                         'index_tag' => [
                                             'name'       => 'retina.json.customer.tags.index',

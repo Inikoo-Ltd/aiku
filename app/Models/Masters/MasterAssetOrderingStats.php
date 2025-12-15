@@ -97,7 +97,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Masters\MasterAsset|null $masterAsset
+ * @property-read \App\Models\Masters\MasterAsset $masterAsset
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetOrderingStats query()
