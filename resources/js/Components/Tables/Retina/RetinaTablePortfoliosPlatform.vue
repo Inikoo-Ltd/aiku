@@ -399,6 +399,14 @@ const selectedErrorProduct = ref(null)
 const isOpenModalEditProduct = ref(false)
 const isLoadingSubmitErrorTitle = ref(false)
 
+const calculateAdjustedPrice = (basePrice: number, adjustment: number, type: 'percent' | 'fixed'): number => {
+    if (type === 'percent') {
+        return basePrice * (1 + (adjustment / 100));
+    }
+
+    return (basePrice * 1) + adjustment;
+}
+
 const submitUpdateAndUploadProduct = (sel, state: 'draft' | 'publish') => {
     // Section: Submit
     router.post(
@@ -825,7 +833,7 @@ const calculateVat = (price: number) => {
             </div>
 
             <div class="mb-2">
-                <strong> 
+                <strong>
                     {{ trans('List of Products under your :_storetype Store', {_storetype: platform_data.name}) }}
                 </strong>
             </div>
@@ -908,7 +916,7 @@ const calculateVat = (price: number) => {
                         </div>
                     </div>
                     <div class="mt-4">
-                        <Button @click="() => onSubmitVariant()" 
+                        <Button @click="() => onSubmitVariant()"
                             :disabled="!selectedVariant?.id"
                             v-tooltip="!selectedVariant?.id ? trans('Select at least one product on your platform') : ''"
                             :label="trans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.code ?? 'it'})" type="primary" full xicon="fas fa-plus"
@@ -920,7 +928,7 @@ const calculateVat = (price: number) => {
     </Modal>
 
     <Modal :isOpen="isOpenModalEditProduct" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModalEditProduct = false">
-        <div>
+
             <div class="text-xl font-semibold text-center">
                 {{ trans("Edit Product") }}
             </div>
@@ -940,15 +948,32 @@ const calculateVat = (price: number) => {
                 <label for="edit-product-rrp" class="block text-sm font-semibold">{{ trans("Selling Price") }}</label>
                 <InputNumber
                     :modelValue="selectedEditProduct?.customer_price"
-                    @update:modelValue="(value) => set(selectedEditProduct, ['customer_price'], value)"
                     inputId="edit-product-rrp"
                     mode="currency"
                     fluid
                     size="small"
                     :currency="layout?.iris?.currency?.code"
                     :locale="layout.locale"
-                    :disabled="isLoadingSubmitErrorTitle"
+                    :disabled="true"
                 />
+                <div class="mt-2 flex flex-row gap-2">
+                    <Button
+                        v-for="percent in [20, 40, 60, 80, 100]"
+                        :key="'p'+percent"
+                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.customer_price || 0, percent, 'percent'))"
+                        :label="`+${percent}%`"
+                        size="xs"
+                        type="tertiary"
+                    />
+                    <Button
+                        v-for="amount in [2, 4, 6, 8, 10]"
+                        :key="'a'+amount"
+                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.customer_price || 0, amount, 'fixed'))"
+                        :label="`+${amount}`"
+                        size="xs"
+                        type="tertiary"
+                    />
+                </div>
             </div>
 
 <!--            <div v-if="platform_data.type === 'ebay'">
@@ -995,7 +1020,6 @@ const calculateVat = (price: number) => {
                 />
             </div>
 
-        </div>
     </Modal>
 
 </template>
