@@ -31,7 +31,7 @@ const props = defineProps<{
 
 const state = ref({ variants: [{ label: "Color", options: ["Red", "Blue", "Green"], active: false }, { label: "Size", options: ["L", "XL", "XXL"], active: false },] as Variant[], groupBy: "Color" })
 const product_leader = ref<null | any>(null)
-const variant_code = ref("")
+/* const variant_code = ref("") */
 
 const expanded = ref<Record<string, boolean>>({})
 const toggleExpand = (k: string) => {
@@ -177,7 +177,6 @@ const save = () => {
         route(props.save_route.name, props.save_route.parameters),
         {
             data: buildPayload(),
-            code: variant_code.value,
             product_leader: product_leader.value
         },
         {
@@ -221,10 +220,10 @@ watch(validVariants, () => {
                     :placeholder="trans('Select Product Leader')" />
             </div>
 
-            <div>
+            <!-- <div>
                 <label class="text-xs">Variant Code</label>
                 <PureInput v-model="variant_code" placeholder="e.g. SKU12345" />
-            </div>
+            </div> -->
 
 
             <div class="mt-4 space-y-1">
