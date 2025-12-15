@@ -31,6 +31,7 @@ class ProductResource extends JsonResource
             $pickingFactor[] = [
                 'org_stock_id'   => $orgStock->id,
                 'org_stock_code' => $orgStock->code,
+                'org_stock_name' => $orgStock->name,
                 'note'           => $orgStock->pivot->note,
                 'picking_factor' => riseDivisor(
                     divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)),
