@@ -70,7 +70,14 @@ const onSendPublish = async (data) => {
             layout: JSON.parse(data?.jsonFile),
             compiled_layout: data?.htmlFile
         });
-        console.log("Publish response:", response.data);
+
+        if (response && response.status === 200) {
+            notify({
+                title: "Success",
+                text: "Save and publish email successfully",
+                type: "success",
+            });
+        }
     } catch (error) {
         console.log(error)
         const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
@@ -248,6 +255,7 @@ const schedulePublish = async () =>{
         :mergeTags="mergeTags"
         @onSave="onSendPublish"
         @sendTest="openSendTest"
+        @auto-save="autoSave"
         @saveTemplate="onSaveTemplate"
         ref="_beefree"
     />
