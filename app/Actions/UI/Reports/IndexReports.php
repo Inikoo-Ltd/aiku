@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Reports;
 
 use App\Actions\OrgAction;
+use App\Actions\Reports\WithReportsSubNavigation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\Catalogue\Shop;
@@ -23,6 +24,7 @@ class IndexReports extends OrgAction
 {
     use AsAction;
     use WithInertia;
+    use WithReportsSubNavigation;
 
     public function handle(Organisation|Shop $scope): Shop|Organisation
     {
@@ -72,8 +74,9 @@ class IndexReports extends OrgAction
                         'icon'  => ['fal', 'fa-chart-line'],
                         'title' => __('Reports')
                     ],
-                    'title'     => __('reports'),
-                    'container' => $container
+                    'title'     => __('Reports'),
+                    'container' => $container,
+                    'subNavigation' => $this->getReportsNavigation($this->organisation),
                 ],
 
 
@@ -92,6 +95,7 @@ class IndexReports extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
+                            'icon'  => 'fal fa-chart-line',
                             'route' => [
                                 'name'       => 'grp.org.reports.index',
                                 'parameters' => $routeParameters

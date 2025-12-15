@@ -410,7 +410,7 @@ const calculateAdjustedPrice = (basePrice: number, adjustment: number, type: 'pe
 const submitUpdateAndUploadProduct = (sel, state: 'draft' | 'publish') => {
     // Section: Submit
     router.post(
-        route(`retina.models.portfolio.update_new_ebay_product.${state}`, {
+        route(`retina.models.portfolio.update_new_product.${state}`, {
             portfolio: sel.id
         }),
         {
@@ -807,7 +807,7 @@ const calculateVat = (price: number) => {
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }"  v-if=!disabled>
             <div class="flex gap-2">
-                <Button v-if="! item.platform_status && platform_data.type === 'ebay'"
+                <Button v-if="! item.platform_status"
                         v-tooltip="trans('Edit detail of the product')"
                         type="tertiary"
                         size="xs"
