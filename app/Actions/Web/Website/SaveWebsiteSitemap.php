@@ -84,6 +84,9 @@ class SaveWebsiteSitemap extends OrgAction
 
         $count = 0;
 
+        $scheme = app()->environment('production') ? 'https' : 'http';
+        $baseUrl = $scheme . '://' . $website->domain;
+
         $website->webpages()->with('liveSnapshot')->where('state', WebpageStateEnum::LIVE)->chunk($chunkSize, function ($webpages) use (&$count, $limit, &$groups, $map) {
             /** @var Webpage $webpage */
             foreach ($webpages as $webpage) {
@@ -117,7 +120,7 @@ class SaveWebsiteSitemap extends OrgAction
 
         $indexSitemap = Sitemap::create();
         foreach ($groups as $name => $sitemap) {
-            $indexSitemap->add(Url::create(url("sitemaps/{$name}.xml")));
+            $indexSitemap->add(Url::create($baseUrl . "/sitemaps/{$name}_{$website->id}.xml"));
         }
         $indexSitemap->writeToDisk('local', "sitemaps/sitemap_{$website->id}.xml");
 
