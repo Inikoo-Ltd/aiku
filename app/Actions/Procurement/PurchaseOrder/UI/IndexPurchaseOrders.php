@@ -105,6 +105,14 @@ class IndexPurchaseOrders extends OrgAction
             ->selectRaw('purchase_orders.org_exchange * purchase_orders.cost_total as org_total_cost')
             // changed this section 👆
             ->selectRaw('\''.$organisation->currency->code.'\' as org_currency_code')
+            ->with([
+                'parent' => function ($morphTo) {
+                    $morphTo->morphWith([
+                        OrgSupplier::class => ['supplier'],
+                        OrgAgent::class => ['agent'],
+                    ]);
+                }
+            ])
             ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -193,9 +201,15 @@ class IndexPurchaseOrders extends OrgAction
         return $this->handle($orgSupplier);
     }
 
-
     public function jsonResponse(LengthAwarePaginator $purchaseOrders): AnonymousResourceCollection
     {
+        foreach ($purchaseOrders as $purchaseOrder) {
+            if ($purchaseOrder->parent_type === 'OrgSupplier' && $purchaseOrder->relationLoaded('parent')) {
+                $purchaseOrder->parent->load('supplier');
+            } elseif ($purchaseOrder->parent_type === 'OrgAgent' && $purchaseOrder->relationLoaded('parent')) {
+                $purchaseOrder->parent->load('agent');
+            }
+        }
         return PurchaseOrdersResource::collection($purchaseOrders);
     }
 
