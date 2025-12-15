@@ -30,7 +30,8 @@ const props = defineProps<{
 }>()
 
 const state = ref({ variants: [{ label: "Color", options: ["Red", "Blue", "Green"], active: false }, { label: "Size", options: ["L", "XL", "XXL"], active: false },] as Variant[], groupBy: "Color" })
-
+const product_leader = ref<null | any>(null)
+const variant_code = ref("")
 
 const expanded = ref<Record<string, boolean>>({})
 const toggleExpand = (k: string) => {
@@ -176,6 +177,8 @@ const save = () => {
         route(props.save_route.name, props.save_route.parameters),
         {
             data: buildPayload(),
+            code: variant_code.value,
+            product_leader: product_leader.value
         },
         {
             onFinish: () => (saving.value = false)
@@ -211,121 +214,130 @@ watch(validVariants, () => {
             <!-- Variants section -->
             <h2 class="text-sm font-semibold">Create Variant</h2>
 
-            <div v-for="(v, vi) in state.variants" :key="vi" class="border rounded">
-                <div v-if="!v.active" class="p-2 cursor-pointer" @click="toggleActive(vi)">
-                    <div class="text-sm font-medium">{{ v.label || "Untitled Variant" }}</div>
-                    <div class="text-xs text-gray-500">
-                        {{v.options.filter(o => o).join(", ") || "No options"}}
-                    </div>
-                </div>
+            <div>
+                <label class="text-xs">Product Leader</label>
+                <PureMultiselectInfiniteScroll v-model="product_leader" :fetchRoute="props.master_assets_route"
+                    valueProp="id" label-prop="name"  :caret="false"
+                    :placeholder="trans('Select Product Leader')" />
+            </div>
 
-                <div v-else class="p-3 space-y-1 bg-gray-50">
-                    <div>
-                        <label class="text-xs">Name</label>
-                        <PureInput v-model="v.label" placeholder="Color, Size" />
+            <div>
+                <label class="text-xs">Variant Code</label>
+                <PureInput v-model="variant_code" placeholder="e.g. SKU12345" />
+            </div>
+
+
+            <div class="mt-4 space-y-1">
+                <label class="text-xs">Variants</label>
+                <div v-for="(v, vi) in state.variants" :key="vi" class="border rounded">
+                    <div v-if="!v.active" class="p-2 cursor-pointer" @click="toggleActive(vi)">
+                        <div class="text-sm font-medium">{{ v.label || "Untitled Variant" }}</div>
+                        <div class="text-xs text-gray-500">
+                            {{v.options.filter(o => o).join(", ") || "No options"}}
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="text-xs">Options</label>
-                        <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
-                            <PureInput v-model="v.options[oi]" placeholder="Value" class="flex-1" />
-                            <button @click="removeOption(vi, oi)" class="text-red-500 text-sm">
-                                <FontAwesomeIcon :icon="faTrashAlt" />
-                            </button>
+                    <div v-else class="p-3 space-y-1 bg-gray-50">
+                        <div>
+                            <label class="text-xs">Name</label>
+                            <PureInput v-model="v.label" placeholder="Color, Size" />
                         </div>
 
-                        <div class="flex justify-between mt-3">
-                            <Button type="dashed" @click="addOption(vi)" label="+ Add" size="xs" />
-                            <div class="flex gap-2">
-                                <Button type="red_outline" :icon="faTrashAlt" label="Delete" size="xs"
-                                    @click="deleteVariant(vi)" />
-                                <Button label="Done" @click="toggleActive(vi)" size="xs" />
+                        <div>
+                            <label class="text-xs">Options</label>
+                            <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
+                                <PureInput v-model="v.options[oi]" placeholder="Value" class="flex-1" />
+                                <button @click="removeOption(vi, oi)" class="text-red-500 text-sm">
+                                    <FontAwesomeIcon :icon="faTrashAlt" />
+                                </button>
+                            </div>
+
+                            <div class="flex justify-between mt-3">
+                                <Button type="dashed" @click="addOption(vi)" label="+ Add" size="xs" />
+                                <div class="flex gap-2">
+                                    <Button type="red_outline" :icon="faTrashAlt" label="Delete" size="xs"
+                                        @click="deleteVariant(vi)" />
+                                    <Button label="Done" @click="toggleActive(vi)" size="xs" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Add Variant -->
-            <Button v-if="state.variants.length < 2" type="dashed" @click="addVariant" size="xs" :icon="faPlus"
-                label="Add Variant"></Button>
+                <Button v-if="state.variants.length < 2" type="dashed" @click="addVariant" size="xs" :icon="faPlus"
+                    label="Add Variant"></Button>
 
-            <!-- Grouping -->
-            <div class="border-t mt-6">
-                <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
-                    <span class="text-sm">Group by</span>
-                    <select v-model="state.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
-                        <option v-for="v in validVariants" :key="v.label" :value="v.label">
-                            {{ v.label }}
-                        </option>
-                    </select>
-                </div>
+                <div class="border-t mt-6">
+                    <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
+                        <span class="text-sm">Group by</span>
+                        <select v-model="state.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+                            <option v-for="v in validVariants" :key="v.label" :value="v.label">
+                                {{ v.label }}
+                            </option>
+                        </select>
+                    </div>
 
-                <!-- Table -->
-                <div class="border rounded mt-4" :style="{ overflow: 'visible' }">
-                    <div class="border rounded-xl">
-                        <table class="min-w-full table-fixed divide-y">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
-                                        Variant
-                                    </th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
-                                        Product
-                                    </th>
-                                </tr>
-                            </thead>
-
-                            <tbody class="divide-y">
-                                <template v-for="node in buildNodes" :key="keyToString(node.key)">
-                                    <!-- PARENT ROW -->
-                                    <tr class="hover:bg-gray-50 h-[70px]">
-                                        <td class="px-4">
-                                            <div class="flex items-center">
-                                                <!-- expand button only when multi-variant -->
-                                                <button v-if="state.variants.length > 1 && node.children"
-                                                    class="w-5 h-5 mr-2 border rounded bg-gray-100 flex items-center justify-center leading-none text-sm font-medium"
-                                                    @click="toggleExpand(keyToString(node.key))">
-                                                    {{ expanded[keyToString(node.key)] ? "−" : "+" }}
-                                                </button>
-
-                                                <div class="truncate">{{ node.label }}</div>
-                                            </div>
-                                        </td>
-
-                                        <!-- PRODUCT SELECT (ONLY WHEN ONE VARIANT) -->
-                                        <td class="px-4" v-if="state.variants.length === 1">
-                                            <PureMultiselectInfiniteScroll :model-value="node.product"
-                                                @update:model-value="val => setProduct(node, val)"
-                                                :fetchRoute="props.master_assets_route" valueProp="id" label-prop="name"
-                                                :object="true" :caret="false" :placeholder="trans('Select Product')" />
-                                        </td>
-
-                                        <!-- EMPTY CELL FOR MULTI VARIANT -->
-                                        <td v-else />
+                    <!-- Table -->
+                    <div class="border rounded mt-4" :style="{ overflow: 'visible' }">
+                        <div class="border rounded-xl">
+                            <table class="min-w-full table-fixed divide-y">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
+                                            Variant
+                                        </th>
+                                        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
+                                            Product
+                                        </th>
                                     </tr>
+                                </thead>
 
-                                    <!-- CHILD ROWS (ONLY MULTI VARIANT) -->
-                                    <tr v-for="child in node.children"
-                                        v-if="state.variants.length > 1 && expanded[keyToString(node.key)]"
-                                        :key="keyToString(child.key)" class="hover:bg-gray-50 h-[70px]">
-                                        <td class="px-8 text-sm text-gray-700">
-                                            ↳ {{ child.label }}
-                                        </td>
-                                        <td class="px-4">
-                                            <PureMultiselectInfiniteScroll :model-value="child.product"
-                                                @update:model-value="val => setProduct(child, val)"
-                                                :fetchRoute="props.master_assets_route" valueProp="id" label-prop="name"
-                                                :object="true" :caret="false" :placeholder="trans('Select Product')" />
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
+                                <tbody class="divide-y">
+                                    <template v-for="node in buildNodes" :key="keyToString(node.key)">
+                                        <tr class="hover:bg-gray-50 h-[70px]">
+                                            <td class="px-4">
+                                                <div class="flex items-center">
+                                                    <button v-if="state.variants.length > 1 && node.children"
+                                                        class="w-5 h-5 mr-2 border rounded bg-gray-100 flex items-center justify-center leading-none text-sm font-medium"
+                                                        @click="toggleExpand(keyToString(node.key))">
+                                                        {{ expanded[keyToString(node.key)] ? "−" : "+" }}
+                                                    </button>
 
-                        </table>
+                                                    <div class="truncate">{{ node.label }}</div>
+                                                </div>
+                                            </td>
+
+                                            <td class="px-4" v-if="state.variants.length === 1">
+                                                <PureMultiselectInfiniteScroll :model-value="node.product"
+                                                    @update:model-value="val => setProduct(node, val)"
+                                                    :fetchRoute="props.master_assets_route" valueProp="id"
+                                                    label-prop="name" :object="true" :caret="false"
+                                                    :placeholder="trans('Select Product')" />
+                                            </td>
+
+                                            <td v-else />
+                                        </tr>
+
+                                        <tr v-for="child in node.children"
+                                            v-if="state.variants.length > 1 && expanded[keyToString(node.key)]"
+                                            :key="keyToString(child.key)" class="hover:bg-gray-50 h-[70px]">
+                                            <td class="px-8 text-sm text-gray-700">
+                                                ↳ {{ child.label }}
+                                            </td>
+                                            <td class="px-4">
+                                                <PureMultiselectInfiniteScroll :model-value="child.product"
+                                                    @update:model-value="val => setProduct(child, val)"
+                                                    :fetchRoute="props.master_assets_route" valueProp="id"
+                                                    label-prop="name" :object="true" :caret="false"
+                                                    :placeholder="trans('Select Product')" />
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-
             </div>
 
             <!-- SAVE BUTTON -->
