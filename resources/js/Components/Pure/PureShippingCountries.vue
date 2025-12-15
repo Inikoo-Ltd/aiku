@@ -187,6 +187,7 @@ const selectedCountryToDelete = ref<any>(null)
                             {{ getCountryLabel(item.country_code) }}
                         </span>
                     </div>
+
                     <!-- Section: Button (edit/delete) -->
                     <div class="flex items-center ">
                         <Button :icon="faPencil" type="edit" size="xs" @click="openEditModal(index)">
@@ -232,8 +233,6 @@ const selectedCountryToDelete = ref<any>(null)
                 @click="addNewItem"
             />
         </div>
-
-        <pre>{{ props.modelValue }}</pre>
     </div>
 
     
@@ -249,7 +248,6 @@ const selectedCountryToDelete = ref<any>(null)
         @success="() => selectedCountryToDelete = null"
         :title="trans('Are you sure you want to remove :code?', { code: getCountryLabel(selectedCountryToDelete?.country_code) })"
         :description="trans('This will remove the country from allowed shipping countries list.')"
-        isFullLoading
         :noLabel="trans('Yes, remove')"
         noIcon="fal fa-times"
     />
