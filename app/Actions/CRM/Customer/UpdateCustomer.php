@@ -273,6 +273,8 @@ class UpdateCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
             'state'                                                 => ['sometimes', Rule::enum(CustomerStateEnum::class)],
             'is_re'                                                 => ['sometimes', 'boolean'],
+            'is_credit_customer'                                    => ['sometimes', 'boolean'],
+            'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
 
         ];
 

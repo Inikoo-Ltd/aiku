@@ -8,12 +8,11 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
-use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Catalogue\Product;
-use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Traits\HasBucketAttachment;
@@ -32,11 +31,6 @@ class GetProductShowcase
         if ($product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
             $webpageUrl = $product->webpage->canonical_url;
         }
-
-        $tradeUnits = $product->tradeUnits;
-
-
-        $tradeUnits->loadMissing(['ingredients']);
 
 
         $properties = [
@@ -64,10 +58,6 @@ class GetProductShowcase
             'oxidising'                  => $product->pictogram_oxidising,
         ];
 
-        $dataTradeUnits = [];
-        if ($product->tradeUnits) {
-            $dataTradeUnits = $this->getDataTradeUnit($product->tradeUnits);
-        }
 
         $parentLink = null;
         if ($product->not_for_sale_from_master || $product->not_for_sale_from_trade_unit) {
@@ -89,14 +79,18 @@ class GetProductShowcase
             }
         }
 
+
         return [
             'product'             => ProductResource::make($product),
             'properties'          => $properties,
             'gpsr'                => $gpsr,
-            'parts'               => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+            'parts'               => // todo: delete this asap use org_stocks
+                OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+            'org_stocks'               => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'               => $product->stats,
-            'trade_units'         => $dataTradeUnits,
             'images'              => $this->getImagesData($product),
+            'brand'               => $product->brand(),
+            'tags'                => TagsResource::collection($product->tags)->toArray(request()),
             'main_image'          => $product->imageSources(),
             'attachment_box'      => $this->getAttachmentData($product),
             'webpage_url'         => $webpageUrl,
@@ -111,11 +105,5 @@ class GetProductShowcase
         ];
     }
 
-    private function getDataTradeUnit($tradeUnits): array
-    {
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
-            return GetTradeUnitShowcase::run($tradeUnit);
-        })->toArray();
-    }
 
 }

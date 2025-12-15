@@ -97,6 +97,27 @@ const toggleBackInStock = () =>
                         <FontAwesomeIcon v-else icon="fal fa-image"
                             class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
                             fixed-width />
+
+                       <div
+                            v-if="product.stock <= 0"
+                            class="absolute inset-0 z-10 flex items-center justify-center rounded-xl pointer-events-none"
+                        >
+                            <div
+                                class="
+                                    w-full 
+                                    bg-white/95 text-gray-900
+                                    text-xs sm:text-sm md:text-xl
+                                    font-semibold md:font-bold
+                                    tracking-wide uppercase
+                                    py-1.5 sm:py-2
+                                    text-center
+                                    shadow-sm md:shadow-md
+                                    backdrop-blur-sm
+                                "
+                            >
+                                Out of Stock
+                            </div>
+                        </div>
                     </slot>
 
                     <!-- FAVOURITE -->
@@ -122,7 +143,6 @@ const toggleBackInStock = () =>
 
                 <!-- PRODUCT INFO -->
                 <div class="px-3 mb-4">
-                    <!-- TITLE -->
                     <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
                         :type="product.url ? typeOfLink : undefined"
                         class="hover:text-gray-500 font-semibold l text-sm mb-1 block">
@@ -133,20 +153,24 @@ const toggleBackInStock = () =>
                     </component>
 
                     <!-- CODE + RRP -->
-                    <div class="text-xs font-normal text-gray-600 mb-1  flex justify-between items-center md:grid md:grid-cols-[auto_1fr] md:gap-1">
-                        <span class="text-gray-800">{{ product?.code }}</span>
+                    <div
+                        class="text-xs font-normal text-gray-600 mb-1
+                                flex flex-col gap-0.5
+                                md:grid md:grid-cols-[auto_1fr] md:gap-1"
+                        >
+                        <span class="text-gray-800 break-words">
+                            {{ product?.code }}
+                        </span>
 
-                        <span class="text-right md:text-right text-xs whitespace-nowrap">
+                        <span class="text-left md:text-right text-xs break-words">
                             RRP :
                             {{ locale.currencyFormat(currency?.code, product.rrp) }}
                             / {{ product.unit }}
                         </span>
                     </div>
-
                 </div>
 
             </div>
-            <!-- END TOP GROW -->
 
             <!-- PRICE + BUTTON (FIXED AT BOTTOM) -->
             <div class="px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
@@ -192,8 +216,7 @@ const toggleBackInStock = () =>
         <!-- LOGIN CTA -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
             <a :href="urlLoginWithRedirect()" class="w-full">
-                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full
-                    :injectStyle="buttonStyleLogin" />
+                <Button label="Login or Register" class="rounded-none" full :injectStyle="buttonStyleLogin" />
             </a>
         </div>
 

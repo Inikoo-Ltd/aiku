@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -37,6 +37,12 @@ const toggleExpand = (k: string) => {
     expanded.value[k] = !expanded.value[k]
 }
 
+const normalizeKey = (k: Record<string, string>) =>
+    Object.keys(k)
+        .sort()
+        .map(key => `${key}=${k[key]}`)
+        .join("|")
+
 
 const validVariants = computed(() =>
     state.value.variants
@@ -66,11 +72,8 @@ const buildNodes = computed<Node[]>(() => {
     if (!variants.length) return []
 
     const getProduct = (keyObj: Record<string, string>) => {
-        const key = keyObj
-        const found = Object.entries(productMap.value)
-            .find(([pid, storedKey]) => storedKey === key)
-
-        return found?.[0] ?? null
+        const key = normalizeKey(keyObj)
+        return productMap.value[key] ?? null
     }
 
 
@@ -125,24 +128,19 @@ const buildNodes = computed<Node[]>(() => {
     })
 })
 
-const setProduct = (node: Node, val: string | null) => {
-    console.log("Set product", val)
-    if (!val.id) return
+const setProduct = (node: Node, val: any | null) => {
+    if (!val?.id) return
 
-    const key = {
-        ...node.key, product: {
-            id: val.id,
-            name: val.name,
-            code: val.code,
-            image: val.image_thumbnail,
-            slug: val.slug
-        }
+    const key = normalizeKey(node.key)
+
+    productMap.value[key] = {
+        id: val.id,
+        name: val.name,
+        code: val.code,
+        image: val.image_thumbnail,
+        slug: val.slug
     }
-
-    // Reverse mapping: productId → key JSON
-    productMap.value[val.id] = key
 }
-
 
 const toggleActive = (i: number) =>
     state.value.variants.forEach((v, idx) => (v.active = idx === i ? !v.active : false))
@@ -184,6 +182,19 @@ const save = () => {
         }
     )
 }
+
+
+watch(validVariants, () => {
+    const validKeys = new Set(
+        getCombinations(validVariants.value).map(k => normalizeKey(k))
+    )
+
+    Object.keys(productMap.value).forEach(k => {
+        if (!validKeys.has(k)) {
+            delete productMap.value[k]
+        }
+    })
+})
 
 </script>
 
@@ -251,114 +262,68 @@ const save = () => {
                 </div>
 
                 <!-- Table -->
-                <div class="overflow-x-auto border rounded mt-4" :style="{ overflow: 'visible' }">
-                    <table class="min-w-full divide-y">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-left text-sm w-1/2">Variant</th>
-                                <th class="px-4 py-2 text-left text-sm w-1/2">Product</th>
-                            </tr>
-                        </thead>
+                <div class="border rounded mt-4" :style="{ overflow: 'visible' }">
+                    <div class="border rounded-xl">
+                        <table class="min-w-full table-fixed divide-y">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
+                                        Variant
+                                    </th>
+                                    <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
+                                        Product
+                                    </th>
+                                </tr>
+                            </thead>
 
-                        <tbody class="bg-white divide-y">
-                            <template v-if="state.variants.length > 1 && state.groupBy">
+                            <tbody class="divide-y">
                                 <template v-for="node in buildNodes" :key="keyToString(node.key)">
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-2 w-1/2">
-                                            <button class="mr-2 text-sm" @click="toggleExpand(keyToString(node.key))">
-                                                <span v-if="node.children?.length">
-                                                    <span v-if="expanded[keyToString(node.key)]">−</span>
-                                                    <span v-else>+</span>
-                                                </span>
-                                            </button>
-                                            {{ node.label }}
+                                    <!-- PARENT ROW -->
+                                    <tr class="hover:bg-gray-50 h-[70px]">
+                                        <td class="px-4">
+                                            <div class="flex items-center">
+                                                <!-- expand button only when multi-variant -->
+                                                <button v-if="state.variants.length > 1 && node.children"
+                                                    class="w-5 h-5 mr-2 border rounded bg-gray-100 flex items-center justify-center leading-none text-sm font-medium"
+                                                    @click="toggleExpand(keyToString(node.key))">
+                                                    {{ expanded[keyToString(node.key)] ? "−" : "+" }}
+                                                </button>
+
+                                                <div class="truncate">{{ node.label }}</div>
+                                            </div>
                                         </td>
-                                        <td class="px-4 py-2 w-1/2"></td>
+
+                                        <!-- PRODUCT SELECT (ONLY WHEN ONE VARIANT) -->
+                                        <td class="px-4" v-if="state.variants.length === 1">
+                                            <PureMultiselectInfiniteScroll :model-value="node.product"
+                                                @update:model-value="val => setProduct(node, val)"
+                                                :fetchRoute="props.master_assets_route" valueProp="id" label-prop="name"
+                                                :object="true" :caret="false" :placeholder="trans('Select Product')" />
+                                        </td>
+
+                                        <!-- EMPTY CELL FOR MULTI VARIANT -->
+                                        <td v-else />
                                     </tr>
 
-                                    <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
-                                        :key="keyToString(child.key)" class="bg-white hover:bg-gray-50">
-
-                                        <td class="px-8 py-2 text-sm text-gray-700 w-1/2">
+                                    <!-- CHILD ROWS (ONLY MULTI VARIANT) -->
+                                    <tr v-for="child in node.children"
+                                        v-if="state.variants.length > 1 && expanded[keyToString(node.key)]"
+                                        :key="keyToString(child.key)" class="hover:bg-gray-50 h-[70px]">
+                                        <td class="px-8 text-sm text-gray-700">
                                             ↳ {{ child.label }}
                                         </td>
-
-                                        <td class="px-4 py-2 w-1/2">
+                                        <td class="px-4">
                                             <PureMultiselectInfiniteScroll :model-value="child.product"
-                                                @update:model-value="(val) => setProduct(child, val)"
-                                                :fetchRoute="props.master_assets_route" :classes="'w-full'"
-                                                :placeholder="trans('Select Product')" valueProp="id" label-prop="name"
-                                                :object="true" :caret="false">
-                                                <template #singlelabel="{ value }">
-                                                    <div
-                                                        class="flex  gap-3 p-2 rounded-lg transition border border-transparent hover:border-gray-200 hover:bg-gray-50 justify-between">
-                                                        <!-- Image wrapper -->
-                                                        <div
-                                                            class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
-                                                            <Image v-if="value?.image" :src="value.image.thumbnail"
-                                                                alt="Product image"
-                                                                class="w-full h-full object-cover" />
-                                                            <FontAwesomeIcon v-else icon="fal fa-image"
-                                                                class="text-gray-400 text-lg" />
-                                                        </div>
-                                                        <!-- Text content -->
-                                                        <div class="min-w-0">
-                                                            <div
-                                                                class="text-sm font-semibold text-gray-800  items-center gap-2">
-                                                                <div class="truncate">{{ value?.name }}</div>
-                                                                <div class="text-gray-500 font-mono truncate">
-                                                                    ({{ value?.code || '-' }})
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                            </PureMultiselectInfiniteScroll>
-
+                                                @update:model-value="val => setProduct(child, val)"
+                                                :fetchRoute="props.master_assets_route" valueProp="id" label-prop="name"
+                                                :object="true" :caret="false" :placeholder="trans('Select Product')" />
                                         </td>
                                     </tr>
                                 </template>
-                            </template>
+                            </tbody>
 
-                            <!-- Flat Mode -->
-                            <template v-else>
-                                <tr v-for="node in buildNodes" :key="keyToString(node.key)" class="hover:bg-gray-50">
-                                    <td class="px-4 py-2 w-1/2">{{ node.label }}</td>
-                                    <td class="px-4 py-2 w-1/2">
-                                        <PureMultiselectInfiniteScroll :model-value="node.product"
-                                            @update:model-value="(val) => setProduct(node, val)"
-                                            :fetchRoute="props.master_assets_route" :object="true" :caret="false"
-                                            :placeholder="trans('Select Product')" valueProp="id" label-prop="name">
-                                            <template #singlelabel="{ value }">
-                                                <div
-                                                    class="flex  gap-3 p-2 rounded-lg transition border border-transparent hover:border-gray-200 hover:bg-gray-50 justify-between">
-                                                    <!-- Image wrapper -->
-                                                    <div
-                                                        class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
-                                                        <Image v-if="value?.image" :src="value.image.thumbnail"
-                                                            alt="Product image" class="w-full h-full object-cover" />
-                                                        <FontAwesomeIcon v-else icon="fal fa-image"
-                                                            class="text-gray-400 text-lg" />
-                                                    </div>
-                                                    <!-- Text content -->
-                                                    <div class="min-w-0">
-                                                        <div
-                                                            class="text-sm font-semibold text-gray-800  items-center gap-2">
-                                                            <div class="truncate">{{ value?.name }}</div>
-                                                            <div class="text-gray-500 font-mono truncate">
-                                                                ({{ value?.code || '-' }})
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </template>
-
-                                        </PureMultiselectInfiniteScroll>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
+                        </table>
+                    </div>
                 </div>
 
             </div>

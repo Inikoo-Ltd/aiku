@@ -1046,4 +1046,3 @@ test('shipping zone hydrators', function () {
     HydrateShippingZones::run($shippingZone);
     $this->artisan('hydrate:shipping_zones')->assertExitCode(0);
 });
-

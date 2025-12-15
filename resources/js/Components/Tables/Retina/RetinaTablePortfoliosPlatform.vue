@@ -338,8 +338,6 @@ const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
 const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = true
-
-
     try {
         const www = await axios.get(route(props.routes.fetch_products.name, {
             customerSalesChannel: props.customerSalesChannel?.id,
@@ -400,6 +398,14 @@ const selectedEditProduct = ref(null)
 const selectedErrorProduct = ref(null)
 const isOpenModalEditProduct = ref(false)
 const isLoadingSubmitErrorTitle = ref(false)
+
+const calculateAdjustedPrice = (basePrice: number, adjustment: number, type: 'percent' | 'fixed'): number => {
+    if (type === 'percent') {
+        return basePrice * (1 + (adjustment / 100));
+    }
+
+    return (basePrice * 1) + adjustment;
+}
 
 const submitUpdateAndUploadProduct = (sel, state: 'draft' | 'publish') => {
     // Section: Submit
@@ -818,8 +824,7 @@ const calculateVat = (price: number) => {
 
     <!-- <pre>{{ data.data[0] }}</pre> -->
 
-
-    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModal = false">
+    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []}">
         <div class="relative isolate">
 
             <div v-if="isLoadingSubmit"
@@ -828,8 +833,17 @@ const calculateVat = (price: number) => {
             </div>
 
             <div class="mb-2">
+                <strong>
+                    {{ trans('List of Products under your :_storetype Store', {_storetype: platform_data.name}) }}
+                </strong>
+            </div>
+
+            <div class="mb-2 relative">
                 <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()"
-                           :placeholder="trans('Input sku/title to search')"/>
+                           :placeholder="trans('Search in :platform', { platform: platform_data.name })"/>
+                <div v-if="isLoadingFetchPlatformProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
+                    <LoadingIcon/>
+                </div>
                 <slot name="afterInput">
                 </slot>
             </div>
@@ -838,24 +852,27 @@ const calculateVat = (price: number) => {
                 <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
                         <!-- <div class="font-semibold text-lg py-1">{{ trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
-
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
-                    <div class="h-full md:h-[400px] overflow-auto py-2 relative">
+                    <div class="h-full md:h-[400px] overflow-x-clip overflow-y-scroll py-2 relative" style="scrollbar-width: thin; scrollbar-gutter: stable;">
                         <!-- Products list -->
-                        <div class="grid grid-cols-2 gap-3 pb-2">
-                            <template v-if="resultOfFetchPlatformProduct?.length > 0">
+                        <div  class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
+                            <div v-if="isLoadingFetchPlatformProduct" class="text-center text-gray-500 col-span-3">
+                                <LoadingIcon class="ml-1"/> {{ trans("Fetching your :_storetype product list", {_storetype: platform_data.name}) }}
+                            </div>
+                            <template v-else-if="resultOfFetchPlatformProduct?.length > 0">
                                 <div v-for="(item, index) in resultOfFetchPlatformProduct" :key="index"
-                                     @click="() => selectedVariant = item"
+                                     @click="() => {selectedVariant = item}"
                                      class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                      :class="[
 										selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
 									]">
                                     <Transition name="slide-to-right">
                                         <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                                         icon="fas fa-check-circle"
-                                                         class="bottom-2 right-2 absolute text-green-500"
-                                                         fixed-width aria-hidden="true"/>
+                                            icon="fas fa-check-circle"
+                                            class="-top-2 -right-2 absolute text-green-500" fixed-width
+                                            aria-hidden="true"
+                                        />
                                     </Transition>
                                     <slot name="product" :item="item">
 <!--                                        <Image v-if="item.images?.src" :src="item.images?.src"
@@ -898,14 +915,12 @@ const calculateVat = (price: number) => {
                             </div>
                         </div>
                     </div>
-
-
                     <div class="mt-4">
-                        <Button @click="() => onSubmitVariant()" xdisabled="selectedProduct.length < 1"
-                                xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                                xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
-                                label="Select as variant" type="primary" full xicon="fas fa-plus"
-                                :loading="isLoadingSubmit"/>
+                        <Button @click="() => onSubmitVariant()"
+                            :disabled="!selectedVariant?.id"
+                            v-tooltip="!selectedVariant?.id ? trans('Select at least one product on your platform') : ''"
+                            :label="trans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.code ?? 'it'})" type="primary" full xicon="fas fa-plus"
+                            :loading="isLoadingSubmit"/>
                     </div>
                 </div>
             </div>
@@ -913,7 +928,7 @@ const calculateVat = (price: number) => {
     </Modal>
 
     <Modal :isOpen="isOpenModalEditProduct" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModalEditProduct = false">
-        <div>
+
             <div class="text-xl font-semibold text-center">
                 {{ trans("Edit Product") }}
             </div>
@@ -933,15 +948,32 @@ const calculateVat = (price: number) => {
                 <label for="edit-product-rrp" class="block text-sm font-semibold">{{ trans("Selling Price") }}</label>
                 <InputNumber
                     :modelValue="selectedEditProduct?.customer_price"
-                    @update:modelValue="(value) => set(selectedEditProduct, ['customer_price'], value)"
                     inputId="edit-product-rrp"
                     mode="currency"
                     fluid
                     size="small"
                     :currency="layout?.iris?.currency?.code"
                     :locale="layout.locale"
-                    :disabled="isLoadingSubmitErrorTitle"
+                    :disabled="true"
                 />
+                <div class="mt-2 flex flex-row gap-2">
+                    <Button
+                        v-for="percent in [20, 40, 60, 80, 100]"
+                        :key="'p'+percent"
+                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.customer_price || 0, percent, 'percent'))"
+                        :label="`+${percent}%`"
+                        size="xs"
+                        type="tertiary"
+                    />
+                    <Button
+                        v-for="amount in [2, 4, 6, 8, 10]"
+                        :key="'a'+amount"
+                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.customer_price || 0, amount, 'fixed'))"
+                        :label="`+${amount}`"
+                        size="xs"
+                        type="tertiary"
+                    />
+                </div>
             </div>
 
 <!--            <div v-if="platform_data.type === 'ebay'">
@@ -988,7 +1020,6 @@ const calculateVat = (price: number) => {
                 />
             </div>
 
-        </div>
     </Modal>
 
 </template>

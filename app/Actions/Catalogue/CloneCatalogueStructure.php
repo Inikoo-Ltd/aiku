@@ -17,6 +17,7 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Maintenance\Masters\AddMissingProductsFromMaster;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
@@ -26,7 +27,9 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
@@ -46,8 +49,11 @@ class CloneCatalogueStructure
      */
     public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false): void
     {
+
         $this->cloneDepartments($fromShop, $shop);
         $this->cloneSubDepartments($fromShop, $shop);
+        $this->cloneFamilies($fromShop, $shop);
+        $this->cloneProducts($fromShop, $shop);
 
         if ($deleteMissing) {
             $this->deleteDepartmentsNotFoundInFromShop($fromShop, $shop);
@@ -145,6 +151,148 @@ class CloneCatalogueStructure
         }
 
         return $family;
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function cloneProducts(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
+    {
+        if ($fromShop instanceof MasterShop) {
+            foreach ($fromShop->masterAssets()->where('type', MasterAssetTypeEnum::PRODUCT)->get() as $masterProduct) {
+                if ($masterProduct->status) {
+                    if ($shop instanceof Shop) {
+                        AddMissingProductsFromMaster::make()->upsertProduct($shop, $masterProduct);
+                    } else {
+                        dd('todo A');
+                    }
+                }
+            }
+        } else {
+            foreach ($fromShop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get() as $family) {
+                if ($family->state == ProductCategoryStateEnum::ACTIVE) {
+                    if ($shop instanceof Shop) {
+                        dd('todo B');
+                    } else {
+                        dd('todo C');
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function cloneFamilies(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
+    {
+        if ($fromShop instanceof MasterShop) {
+            foreach ($fromShop->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get() as $masterFamily) {
+                if ($masterFamily->status && $masterFamily->stats->number_current_master_assets > 0) {
+                    if ($shop instanceof Shop) {
+                        $this->upsertFamily($shop, $masterFamily);
+                    } else {
+                        dd('todo A');
+                    }
+                }
+            }
+        } else {
+            foreach ($fromShop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get() as $family) {
+                if ($family->state == ProductCategoryStateEnum::ACTIVE) {
+                    if ($shop instanceof Shop) {
+                        dd('todo B');
+                    } else {
+                        dd('todo C');
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function upsertFamily(Shop $shop, MasterProductCategory $masterFamily): ?ProductCategory
+    {
+        $code = $masterFamily->code;
+
+
+        $foundFamilyData = DB::table('product_categories')
+            ->where('shop_id', $shop->id)
+            ->where('type', ProductCategoryTypeEnum::FAMILY->value)
+            ->whereRaw("lower(code) = lower(?)", [$code])->first();
+
+
+
+        if (!$foundFamilyData) {
+            $parent = $this->getParentForUpsertFamily($shop, $masterFamily);
+
+            if (!$parent) {
+                $parent = $shop;
+            }
+            $foundFamily=null;
+            print "creating family: $code in $shop->slug \n";
+            try {
+                $foundFamily = StoreProductCategory::make()->action(
+                    $parent,
+                    [
+                        'code'                       => $masterFamily->code,
+                        'name'                       => $masterFamily->name,
+                        'description'                => $masterFamily->description,
+                        'type'                       => ProductCategoryTypeEnum::FAMILY,
+                        'master_product_category_id' => $masterFamily->id
+                    ]
+                );
+                CloneProductCategoryImagesFromMaster::run($foundFamily);
+            }catch (\Throwable $e) {
+                print $e->getMessage()."\n";
+            }
+
+        } else {
+            $foundFamily = ProductCategory::find($foundFamilyData->id);
+
+            if ($foundFamily) {
+                $dataToUpdate = [
+                    'master_product_category_id' => $masterFamily->id
+                ];
+                if ($masterFamily->description && !$foundFamily->description) {
+                    data_set($dataToUpdate, 'description', $masterFamily->description);
+                }
+
+                $foundFamily = UpdateProductCategory::make()->action(
+                    $foundFamily,
+                    $dataToUpdate
+                );
+            }
+        }
+
+
+        return $foundFamily;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function getParentForUpsertFamily(Shop $shop, MasterProductCategory $masterFamily): ?ProductCategory
+    {
+        $parent = null;
+        if ($masterFamily->masterDepartment) {
+            $department = CloneCatalogueStructure::make()->upsertDepartment($shop, $masterFamily->masterDepartment);
+
+            if ($department) {
+                if ($masterFamily->masterSubDepartment) {
+                    $parent = CloneCatalogueStructure::make()->upsertSubDepartment($department, $masterFamily->masterSubDepartment);
+                } else {
+                    $parent = $department;
+                }
+            }
+        }
+
+
+        return $parent;
     }
 
 
@@ -310,8 +458,6 @@ class CloneCatalogueStructure
             }
         }
         if ($foundDepartment && !$foundDepartment->webpage) {
-
-
             try {
                 $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
                 PublishWebpage::make()->action(
@@ -323,7 +469,6 @@ class CloneCatalogueStructure
             } catch (\Throwable $e) {
                 print $foundDepartment->slug.' '.$e->getMessage()."\n";
             }
-
         }
 
         if ($foundDepartment) {

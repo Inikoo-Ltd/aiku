@@ -24,8 +24,10 @@ const props = defineProps<{
         } | null
     }[]
     routeFunction?: Function
+    keyPicking?: string
 }>()
 
+const key = props.keyPicking ?? 'pick_fractional'
 
 
 const isOpenModal = ref(false)
@@ -40,7 +42,7 @@ const isOpenModal = ref(false)
         <div v-if="trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
             <span class=""> &#8623; SKU </span>
             <span class="font-bold">
-                <FractionDisplay v-if="trade_units[0].pick_fractional" :fractionData="trade_units[0].pick_fractional" />
+                <FractionDisplay v-if="trade_units[0][key]" :fractionData="trade_units[0][key]" />
             </span>
         </div>
         <div v-else class="text-teal-600 whitespace-nowrap w-full">
@@ -70,25 +72,29 @@ const isOpenModal = ref(false)
                 </div>	
             </div>
 
-            <div v-for="tUnit in trade_units" :key="tUnit.tradeUnit.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
+            <div v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
                 <div class="text-left flex items-center">
-                    <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
-                        {{ tUnit.tradeUnit.code }}
-                    </Link>
-                    <span v-else>
-                        {{ tUnit.tradeUnit.code }}
-                    </span>
+                    <slot name="col_code" :data="tUnit">
+                        <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
+                            {{ tUnit.tradeUnit?.code }}
+                        </Link>
+                        <span v-else>
+                            {{ tUnit.tradeUnit?.code }}
+                        </span>
+                    </slot>
                 </div>
 
                 <div class="text-left col-span-3 flex items-center">
-                    {{ tUnit.tradeUnit.name }}
+                    <slot name="col_name" :data="tUnit">
+                        {{ tUnit.tradeUnit?.name }}
+                    </slot>
                 </div>
 
                 <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
                     <span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
                         <span> &#8623; SKU </span>
                         <span class="font-bold ms-2">
-                            <FractionDisplay v-if="tUnit.pick_fractional" :fractionData="tUnit.pick_fractional" />
+                            <FractionDisplay v-if="tUnit[key]" :fractionData="tUnit[key]" />
                         </span>
                     </span>
                 </div>

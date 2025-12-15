@@ -27,14 +27,15 @@ class TranslateCategoryModel
 
     public function handle(ProductCategory|Product $model, array $translationData): void
     {
-        $english = Language::where('code', 'en')->first();
+        $english      = Language::where('code', 'en')->first();
         $shopLanguage = $model->shop->language;
 
         $modelData = [
-            'name'                       => Translate::run($translationData['name'], $english, $shopLanguage),
-            'description'                => Translate::run($translationData['description'], $english, $shopLanguage),
-            'description_title'          => Translate::run($translationData['description_title'], $english, $shopLanguage),
-            'description_extra'          => Translate::run($translationData['description_extra'], $english, $shopLanguage),
+            'unit'              => Translate::run($translationData['unit'], $english, $shopLanguage),
+            'name'              => Translate::run($translationData['name'], $english, $shopLanguage),
+            'description'       => Translate::run($translationData['description'], $english, $shopLanguage),
+            'description_title' => Translate::run($translationData['description_title'], $english, $shopLanguage),
+            'description_extra' => Translate::run($translationData['description_extra'], $english, $shopLanguage),
         ];
 
         if ($shopLanguage->code == 'en') {
@@ -43,31 +44,61 @@ class TranslateCategoryModel
             data_set($modelData, 'is_description_reviewed', true);
             data_set($modelData, 'is_description_extra_reviewed', true);
 
+            if ($model instanceof Product) {
+                data_set($modelData, 'is_unit_reviewed', true);
+            }
         } else {
-            data_set($modelData, 'is_name_reviewed', Arr::get(
-                $translationData,
-                'name',
-                false
-            ) ? false : null);
+            data_set(
+                $modelData,
+                'is_name_reviewed',
+                Arr::get(
+                    $translationData,
+                    'name',
+                    false
+                ) ? false : null
+            );
 
-            data_set($modelData, 'is_description_title_reviewed', Arr::get(
-                $translationData,
-                'description_title',
-                false
-            ) ? false : null);
+            data_set(
+                $modelData,
+                'is_description_title_reviewed',
+                Arr::get(
+                    $translationData,
+                    'description_title',
+                    false
+                ) ? false : null
+            );
 
-            data_set($modelData, 'is_description_reviewed', Arr::get(
-                $translationData,
-                'description',
-                false
-            ) ? false : null);
+            data_set(
+                $modelData,
+                'is_description_reviewed',
+                Arr::get(
+                    $translationData,
+                    'description',
+                    false
+                ) ? false : null
+            );
 
-            data_set($modelData, 'is_description_extra_reviewed', Arr::get(
-                $translationData,
-                'description_extra',
-                false
-            ) ? false : null);
+            data_set(
+                $modelData,
+                'is_description_extra_reviewed',
+                Arr::get(
+                    $translationData,
+                    'description_extra',
+                    false
+                ) ? false : null
+            );
 
+            if ($model instanceof Product) {
+                data_set(
+                    $modelData,
+                    'is_unit_reviewed',
+                    Arr::get(
+                        $translationData,
+                        'unit',
+                        false
+                    ) ? false : null
+                );
+            }
         }
 
 
@@ -76,7 +107,6 @@ class TranslateCategoryModel
         } else {
             UpdateProduct::run($model, $modelData);
         }
-
     }
 
 }

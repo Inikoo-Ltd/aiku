@@ -33,70 +33,79 @@ class AddMissingProductsFromMaster
         foreach ($masterShop->masterAssets()->where('type', MasterAssetTypeEnum::PRODUCT)->where('is_main', true)->get() as $masterProduct) {
             /** @var Shop $shop */
             foreach ($masterShop->shops()->where('is_aiku', true)->get() as $shop) {
-                if (!$shop->products()->where('master_product_id', $masterProduct->id)->exists()) {
-                    list($hasAllOrgStocks, $hasDiscontinuing, $hasDiscontinued) = $this->getOrgStocksData($shop->organisation, $masterProduct->tradeUnits);
-
-                    if ($hasAllOrgStocks && !$hasDiscontinuing && !$hasDiscontinued) {
-                        $anchorShop = $this->getSeederShop($masterShop, $shop->organisation);
-
-                        $anchorProduct = $anchorShop->products()->where('master_product_id', $masterProduct->id)->first();
-                        if (!$anchorProduct) {
-                            print "Skipping Product $masterProduct->code has no anchor product in shop $anchorShop->slug \n";
-                            continue;
-                        }
-
-                        $exchange = GetCurrencyExchange::run($anchorShop->currency, $shop->currency);
-                        $price    = round($anchorProduct->price * $exchange, 2);
-                        $rrp      = null;
-                        if ($anchorProduct->rrp) {
-                            $rrp = round($anchorProduct->rrp * $exchange, 2);
-                        }
-                        $createWebpage = false;
-                        if ($anchorProduct->is_for_sale) {
-                            $createWebpage = true;
-                        }
-
-
-
-                        if (!$masterProduct->masterFamily) {
-                            print "Skipping Product $masterProduct->code master product do not have master family $shop->slug \n";
-
-                        } else {
-
-
-                            $productCategories = $masterProduct->masterFamily->productCategories;
-                            if (!$productCategories) {
-                                print "Skipping Product $masterProduct->code master family do not have local family $shop->slug \n";
-                            } else {
-                                print "Adding product $masterProduct->code to shop $shop->slug \n";
-
-                                StoreProductFromMasterProduct::make()->action($masterProduct, [
-                                    'shop_products' => [
-                                        $shop->id => [
-                                            'price'          => $price,
-                                            'rrp'            => $rrp,
-                                            'create_webpage' => $createWebpage,
-                                        ]
-                                    ]
-                                ]);
-                            }
-
-
-
-                        }
-
-
-                    } elseif (!$hasAllOrgStocks) {
-                        print "Skipping Product $masterProduct->code has no org stocks in shop $shop->slug \n";
-                    } elseif ($hasDiscontinued) {
-                        print "Skipping Product $masterProduct->code has discontinued in shop $shop->slug \n";
-                    } else {
-                        print "Skipping Product $masterProduct->code has discontinuing org stocks in shop $shop->slug \n";
-                    }
-                }
+                $this->upsertProduct($shop, $masterProduct);
             }
         }
     }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function upsertProduct(Shop $shop, MasterAsset $masterProduct): void
+    {
+        $masterShop = $masterProduct->masterShop;
+
+        if (!$shop->products()->where('master_product_id', $masterProduct->id)->exists()) {
+            list($hasAllOrgStocks, $hasDiscontinuing, $hasDiscontinued) = $this->getOrgStocksData($shop->organisation, $masterProduct->tradeUnits);
+
+            if ($hasAllOrgStocks && !$hasDiscontinuing && !$hasDiscontinued) {
+                $anchorShop = $this->getSeederShop($masterShop, $shop->organisation);
+
+                $anchorProduct = $anchorShop->products()->where('master_product_id', $masterProduct->id)->first();
+                if (!$anchorProduct) {
+                    print "Skipping Product $masterProduct->code has no anchor product in shop $anchorShop->slug \n";
+
+                    return;
+                }
+
+                $exchange = GetCurrencyExchange::run($anchorShop->currency, $shop->currency);
+                $price    = round($anchorProduct->price * $exchange, 2);
+                $rrp      = null;
+                if ($anchorProduct->rrp) {
+                    $rrp = round($anchorProduct->rrp * $exchange, 2);
+                }
+                $createWebpage = false;
+                if ($anchorProduct->is_for_sale) {
+                    $createWebpage = true;
+                }
+
+
+                if (!$masterProduct->masterFamily) {
+                    print "Skipping Product $masterProduct->code master product do not have master family $shop->slug \n";
+                } else {
+                    $productCategories = $masterProduct->masterFamily->productCategories;
+                    if (!$productCategories) {
+                        print "Skipping Product $masterProduct->code master family do not have local family $shop->slug \n";
+                    } else {
+                        print "Adding product $masterProduct->code to shop $shop->slug \n";
+
+
+                        StoreProductFromMasterProduct::make()->action(
+                            $masterProduct,
+                            [
+                                'shop_products' => [
+                                    $shop->id => [
+                                        'price'          => $price,
+                                        'rrp'            => $rrp,
+                                        'create_webpage' => $createWebpage,
+                                        'create_in_shop' => 'Yes'
+                                    ]
+                                ]
+                            ]
+                        );
+                    }
+                }
+            } elseif (!$hasAllOrgStocks) {
+                print "Skipping Product $masterProduct->code has no org stocks in shop $shop->slug \n";
+            } elseif ($hasDiscontinued) {
+                print "Skipping Product $masterProduct->code has discontinued in shop $shop->slug \n";
+            } else {
+                print "Skipping Product $masterProduct->code has discontinuing org stocks in shop $shop->slug \n";
+            }
+        }
+    }
+
 
     public function getOrgStocksData(Organisation $organisation, $tradeUnits): array
     {
@@ -106,7 +115,6 @@ class AddMissingProductsFromMaster
         $hasDiscontinued  = false;
 
 
-        $orgStocksData = [];
         foreach ($tradeUnits as $tradeUnit) {
             $orgStocks = $tradeUnit->orgStocks()->where('organisation_id', $organisation->id)->get();
             if ($orgStocks->count() == 0) {

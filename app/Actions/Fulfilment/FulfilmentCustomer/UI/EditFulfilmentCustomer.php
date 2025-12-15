@@ -124,6 +124,18 @@ class EditFulfilmentCustomer extends OrgAction
                                     'label' => __('Identity document number'),
                                     'value' => $fulfilmentCustomer->customer->identity_document_number
                                 ],
+                                'is_credit_customer' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Credit Customer'),
+                                    'value' => $fulfilmentCustomer->customer->is_credit_customer,
+                                ],
+                                'accounting_reference' => [
+                                    'type'     => 'input',
+                                    'label'    => __('Sage Customer Number'),
+                                    'value'    => $fulfilmentCustomer->customer->accounting_reference,
+                                    'required' => false,
+                                    'hidden'   => !$fulfilmentCustomer->customer->is_credit_customer,
+                                ],
                             ]
                         ]
                     ],
