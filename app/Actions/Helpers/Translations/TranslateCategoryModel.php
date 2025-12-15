@@ -20,18 +20,12 @@ class TranslateCategoryModel
 {
     use AsAction;
 
-    public function getJobUniqueId(ProductCategory|Product $model): string
-    {
-        return class_basename($model).$model->id;
-    }
-
     public function handle(ProductCategory|Product $model, array $translationData): void
     {
         $english      = Language::where('code', 'en')->first();
         $shopLanguage = $model->shop->language;
 
         $modelData = [];
-
 
 
         if (Arr::exists($translationData, 'unit')) {
