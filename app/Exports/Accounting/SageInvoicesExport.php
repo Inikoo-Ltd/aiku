@@ -25,16 +25,12 @@ class SageInvoicesExport implements FromQuery, WithMapping, ShouldAutoSize, With
     {
         return Invoice::query()
             ->with([
-                'shop',
                 'customer',
-                'taxCategory'
+                'taxCategory',
             ])
             ->where('in_process', false)
             ->where('organisation_id', $this->parent->id)
             ->whereBetween('date', [$this->startDate, $this->endDate])
-            ->whereHas('shop', function (Builder $query) {
-                $query->where('type', ShopTypeEnum::FULFILMENT);
-            })
             ->whereHas('customer', function (Builder $query) {
                 $query->where('is_credit_customer', true);
             });
