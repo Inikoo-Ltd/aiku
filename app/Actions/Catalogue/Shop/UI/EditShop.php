@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Actions\Catalogue\Shop\UI\GetShopShippingCountries;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
@@ -17,7 +18,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
-use App\Models\Helpers\Country;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use Exception;
@@ -25,7 +25,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditShop extends OrgAction
 {
@@ -372,12 +371,24 @@ class EditShop extends OrgAction
                                     'information' => __('Customer only able to submit to this countries'),
                                     'required'    => true,
                                     'full'          => true,
-                                    'options'     => GetCountriesOptions::run(),
+                                    'country_list'=> GetCountriesOptions::run(),
+                                    'routes' => [
+                                            'store'  => [
+                                                'name' => 'grp.models.shop.shipping_country.store', 'parameters' => ['shop' => $shop->id
+                                                ]
+                                            ],
+                                            'update' => [
+                                                'name' => 'grp.models.shipping_country.update', 'parameters' => []
+                                            ],
+                                            'delete' => [
+                                                'name' => 'grp.models.shipping_country.delete', 'parameters' => []
+                                            ],
+                                    ],
                                     'searchable'  => true,
                                     'mode'        => 'tags',
                                     'labelProp'   => 'label',
                                     'valueProp'   => 'id',
-                                    'value'       => $result,
+                                    'value'       => GetShopShippingCountries::run($shop),
                                 ]
                             ],
                         ],

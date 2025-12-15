@@ -38,6 +38,7 @@ class IndexOrgStocksInTradeUnit extends OrgAction
                 ->where('model_has_trade_units.model_type', 'OrgStock');
         });
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
+        $queryBuilder->leftjoin('organisations', 'organisations.id', '=', 'org_stocks.organisation_id');
 
 
         $queryBuilder
@@ -49,6 +50,10 @@ class IndexOrgStocksInTradeUnit extends OrgAction
                 'org_stocks.name',
                 'org_stocks.state',
                 'model_has_trade_units.quantity as quantity',
+                'organisations.code as organisation_code',
+                'organisations.name as organisation_name',
+                'organisations.slug as organisation_slug',
+
             ]);
 
 
@@ -74,6 +79,7 @@ class IndexOrgStocksInTradeUnit extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState([])
                 ->column(key: 'state', label: '', icon: 'fal fa-yin-yang', canBeHidden: false, sortable: true, type: 'avatar')
+                ->column(key: 'organisation_code', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);

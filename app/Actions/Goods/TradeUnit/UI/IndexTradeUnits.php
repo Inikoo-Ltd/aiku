@@ -112,7 +112,7 @@ class IndexTradeUnits extends GrpAction
                 'trade_units.name',
                 'trade_units.description',
                 'trade_units.gross_weight',
-                'trade_units.net_weight',
+                'trade_units.marketing_weight',
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
@@ -122,7 +122,7 @@ class IndexTradeUnits extends GrpAction
             ]);
 
 
-        return $queryBuilder->allowedSorts(['code', 'type', 'name','number_current_stocks','number_current_products'])
+        return $queryBuilder->allowedSorts(['code', 'type', 'name', 'number_current_stocks', 'number_current_products','marketing_weight'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -150,19 +150,20 @@ class IndexTradeUnits extends GrpAction
                     }
                 )
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+            ->column(key: 'type', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true);
 
             $routeName = request()->route()->getName();
 
+
             if (str_starts_with($routeName, 'grp.goods.')) {
-                $table->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             } else {
-                $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
 
-            $table->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'marketing_weight', label: __('weight').' ('.__('Marketing').')', canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

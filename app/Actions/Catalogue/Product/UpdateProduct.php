@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
@@ -308,9 +309,12 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::has($changed, 'master_product_id')) {
-            $product->asset->updateQuietly([
-                'master_asset_id' => $product->master_product_id
-            ]);
+            UpdateAsset::run(
+                $product->asset,
+                [
+                    'master_asset_id' => $product->master_product_id
+                ]
+            );
         }
 
         if (Arr::has($changed, 'price')) {

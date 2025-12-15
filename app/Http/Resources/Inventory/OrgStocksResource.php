@@ -38,8 +38,6 @@ class OrgStocksResource extends JsonResource
 {
     public function toArray($request): array
     {
-
-
         return [
             'id'                              => $this->id,
             'slug'                            => $this->slug,
@@ -60,10 +58,10 @@ class OrgStocksResource extends JsonResource
             'organisation_slug'               => $this->organisation_slug,
             'warehouse_slug'                  => $this->warehouse_slug,
             'packed_in'                       => trimDecimalZeros($this->packed_in),
-            'pick_fractional' => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
-            'value_in_locations' => $this->value_in_locations,
-            'revenue' => $this->revenue,
-            'dispatched' => $this->dispatched,
+            'pick_fractional'                 => ($this->quantity && $this->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity)), $this->packed_in) : [],
+            'value_in_locations'              => $this->value_in_locations,
+            'revenue'                         => $this->revenue,
+            'dispatched'                      => $this->dispatched,
 
         ];
     }

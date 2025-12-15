@@ -40,14 +40,14 @@ class UpdateTag extends OrgAction
         $this->handle($tag, $this->validatedData);
     }
 
-    public function inSelfFilledTag(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
     {
         try {
             $this->initialisationFromShop($shop, $request);
 
             $this->handle($tag, $this->validatedData);
 
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [
@@ -56,7 +56,34 @@ class UpdateTag extends OrgAction
                 'description' => __('Tag updated.'),
             ]);
         } catch (Exception $e) {
-            return Redirect::route('grp.org.shops.show.crm.tags.index', [
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function inInternalTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): RedirectResponse
+    {
+        try {
+            $this->initialisationFromShop($shop, $request);
+
+            $this->handle($tag, $this->validatedData);
+
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag updated.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
                 $this->organisation->slug,
                 $this->shop->slug
             ])->with('notification', [

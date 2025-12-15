@@ -50,6 +50,7 @@ class ShowOrgStock extends OrgAction
         return $this->handle($orgStock);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inStockFamily(Organisation $organisation, Warehouse $warehouse, OrgStockFamily $orgStockFamily, OrgStock $orgStock, ActionRequest $request): OrgStock
     {
         $this->parent = $orgStockFamily;
@@ -123,8 +124,8 @@ class ShowOrgStock extends OrgAction
                     : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
 
                 OrgStockTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgStockTabsEnum::PURCHASE_ORDERS->value ?
-                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock))
-                    : Inertia::lazy(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock))),
+                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, OrgStockTabsEnum::PURCHASE_ORDERS->value))
+                    : Inertia::lazy(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, OrgStockTabsEnum::PURCHASE_ORDERS->value))),
 
                 OrgStockTabsEnum::PRODUCTS->value => $this->tab == OrgStockTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock))
@@ -138,7 +139,7 @@ class ShowOrgStock extends OrgAction
             ]
         )
             ->table(IndexProductsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::PRODUCTS->value))
-            ->table(IndexPurchaseOrders::make()->tableStructure($orgStock));
+            ->table(IndexPurchaseOrders::make()->tableStructure(parent:$orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value));
     }
 
 

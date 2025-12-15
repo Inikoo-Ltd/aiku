@@ -41,6 +41,7 @@ class StoreStock extends OrgAction
     public function handle(Group|StockFamily $parent, $modelData): Stock
     {
         data_set($modelData, 'group_id', $this->group->id);
+        data_set($modelData, 'state', StockStateEnum::IN_PROCESS);
 
         $tradeUnitData = Arr::pull($modelData, 'trade_unit');
         data_set($tradeUnitData, 'code', $modelData['code']);
@@ -98,7 +99,6 @@ class StoreStock extends OrgAction
                 ),
             ],
             'name'  => ['required', 'string', 'max:255'],
-            'state' => ['sometimes', Rule::enum(StockStateEnum::class)->only(StockStateEnum::ACTIVE)],
 
             'units' => ['required', 'integer', 'min:1'],
 
@@ -128,7 +128,6 @@ class StoreStock extends OrgAction
             unset($rules['trade_unit.data']);
 
 
-            $rules['state']       = ['sometimes', 'nullable', Rule::enum(StockStateEnum::class)];
             $rules['source_slug'] = ['sometimes', 'nullable', 'string'];
             $rules                = $this->noStrictStoreRules($rules);
         }
