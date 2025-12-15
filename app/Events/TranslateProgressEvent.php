@@ -17,11 +17,7 @@ class TranslateProgressEvent implements ShouldBroadcastNow
 
     public string $text;
     public string $randomString;
-    /**
-     * Create a new event instance.
-     *
-     * @return void
-     */
+
     public function __construct(string $text, string $randomString)
     {
         $this->text = $text;
@@ -35,12 +31,8 @@ class TranslateProgressEvent implements ShouldBroadcastNow
         ];
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
-    public function broadcastOn()
+
+    public function broadcastOn(): PrivateChannel
     {
         return new PrivateChannel("translate.{$this->randomString}.channel");
     }
