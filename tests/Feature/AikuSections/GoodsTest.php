@@ -32,7 +32,6 @@ use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\IndexTradeUnitFamilies;
 
-
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 

@@ -145,9 +145,9 @@ class IndexProducts extends OrgAction
 
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'customers_invoiced_all', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'invoices_all', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sales_all', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

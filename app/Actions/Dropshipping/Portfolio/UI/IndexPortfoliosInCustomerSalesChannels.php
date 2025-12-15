@@ -248,11 +248,11 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'item_code', label: __('product'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'item_name', label: __('product name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'item_code', label: __('Product'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'item_name', label: __('Product name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'matches', label: __('matches'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'actions', label: __('actions'), canBeHidden: false, searchable: true);
+                ->column(key: 'matches', label: __('Matches'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('Actions'), canBeHidden: false, searchable: true);
         };
     }
 

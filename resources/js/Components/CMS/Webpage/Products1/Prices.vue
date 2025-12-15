@@ -48,51 +48,77 @@ defineProps<{
 </script>
 
 <template>
-    <!-- Price Card -->
-    <div v-if="layout?.iris?.is_logged_in"
-        class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
-        <div class="flex items-center justify-between">
-            <span class="font-medium text-xs">
-               {{ trans("Retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }} /
-                <span class=""> {{ product.unit }}</span>
-                <!-- <span class="text-xs ml-2 font-medium">
-                    {{ trans("(excl. tax)") }}
-                </span> -->
-            </span>
-        </div>
-        <div class="flex items-center justify-between">
-            <span class="text-xs flex items-center text-gray-500 font-medium">
-                {{ trans("Profit") }} : {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}
-                <span v-tooltip="trans('Profit margin')" class="ml-1">
-                    ({{ product?.margin }})
-                </span>
-            </span>
-        </div>
-    </div>
+<div
+  v-if="layout?.iris?.is_logged_in"
+  class="border-t border-b border-gray-200 p-1 px-0 mb-1
+         flex flex-col gap-1 text-gray-800 tabular-nums text-xs"
+>
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+    <span class="font-medium">
+      {{ trans("Retail") }} :
+    </span>
 
-    <div v-if="layout?.iris?.is_logged_in" class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
-        <div v-if="product.units == 1" class="flex justify-between">
-            <div>
-                {{ trans("Price") }}:
-                <span class="font-semibold">
-                    {{ locale.currencyFormat(currency?.code, product.price  ) }}
-                    <span class="text-xs text-gray-600">/{{ product.unit }}</span>
-                </span>
-            </div>
-        </div>
-        <div v-else>
-            <div class="flex justify-between">
-                <div>
-                   {{ trans("Price") }}:
-                    <span class="font-semibold">{{ locale.currencyFormat(currency?.code,product.price) }}/{{trans('outer')}}</span>
-                </div>
-                <div>
-                    <span class="text-xs price_per_unit">(<span> {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
-                    <span class=" text-gray-600"> /{{ product.unit }}</span></span>)</span>
-                </div>
-            </div>
-        </div>
+    <span class="font-semibold">
+      {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+      <span class="text-gray-600">/{{ product.unit }}</span>
+    </span>
+  </div>
+
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between text-gray-500">
+    <span class="font-medium">
+      {{ trans("Profit") }} :
+    </span>
+
+    <span class="font-semibold flex items-center">
+      {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}
+      <span v-tooltip="trans('Profit margin')" class="ml-1">
+        ({{ product?.margin }})
+      </span>
+    </span>
+  </div>
+</div>
+
+<div
+  v-if="layout?.iris?.is_logged_in"
+  class="p-1 px-0 mb-3
+         flex flex-col gap-1 text-gray-800 tabular-nums text-xs"
+>
+  <div
+    v-if="product.units == 1"
+    class="flex flex-col md:flex-row md:items-center md:justify-between"
+  >
+    <span class="font-medium">
+      {{ trans("Price") }} :
+    </span>
+
+    <span class="font-semibold">
+      {{ locale.currencyFormat(currency?.code, product.price) }}
+      <span class="text-gray-600">/{{ product.unit }}</span>
+    </span>
+  </div>
+
+  <div
+    v-else
+    class="flex flex-col md:flex-row md:items-center md:justify-between"
+  >
+    <span class="font-medium">
+      {{ trans("Price") }} :
+    </span>
+
+    <div class="flex flex-col md:flex-row md:items-center md:gap-2">
+      <span class="font-semibold">
+        {{ locale.currencyFormat(currency?.code, product.price) }}
+        / {{ trans("outer") }}
+      </span>
+
+      <span class="text-gray-600 text-xs">
+        ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
+        / {{ product.unit }})
+      </span>
     </div>
+  </div>
+</div>
+
 </template>
 
 

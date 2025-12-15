@@ -27,7 +27,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AddMissingMasterAssets
+class AddMissingMasterAssetsFromSeederShops
 {
     use asAction;
 
