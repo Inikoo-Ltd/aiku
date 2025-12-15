@@ -33,6 +33,7 @@ class ChatSessionListResource extends JsonResource
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'created_at_timestamp' => $this->created_at->copy()->setTimezone('UTC')->timestamp,
+            'priority' => $this->priority,
             'contact_name' => $webUser?->customer?->contact_name,
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
@@ -52,6 +53,13 @@ class ChatSessionListResource extends JsonResource
                 'id' => $webUser->id,
                 'name' => $webUser->contact_name,
                 'slug' => $webUser->customer->slug,
+                'email' => $webUser->customer->email,
+                'phone' => $webUser->customer->phone,
+                'slug' => $webUser->customer->slug,
+                'organisation' => $webUser->customer->organisation->name,
+                'organisation_slug' => $webUser->customer->organisation->slug,
+                'shop' => $webUser->customer->shop->name,
+                'shop_slug' => $webUser->customer->shop->slug,
             ] : null,
 
             'assigned_agent' => $activeAssignment ? [

@@ -20,6 +20,7 @@ export interface SessionAPI {
 	contact_name: string | null
 	created_at: string
 	created_at_timestamp: number
+	priority: string
 	customer: boolean
 	last_message?: LastMessage
 	assigned_agent?: any | null
@@ -27,8 +28,15 @@ export interface SessionAPI {
 	message_count: number
 	duration: string
 	web_user?: {
+		id: string
 		name: string
 		slug: string
+		email: string
+		phone: string
+		organisation: string
+		organisation_slug: string
+		shop: string
+		shop_slug: string
 	} | null
 }
 
@@ -64,14 +72,22 @@ export interface Contact {
 	ulid: string
 	avatar: string
 	lastMessage: string
+	priority: string
 	lastMessageTime?: string
 	lastMessageTimestamp?: number
 	unread: number
 	status: "waiting" | "active" | "closed" | string
 	messages?: ChatMessage[]
 	webUser?: {
+		id: string
 		name: string
 		slug: string
+		email: string
+		phone: string
+		organisation: string
+		organisation_slug: string
+		shop: string
+		shop_slug: string
 	} | null
 }
 

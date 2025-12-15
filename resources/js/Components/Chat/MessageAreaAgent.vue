@@ -87,6 +87,22 @@ const autoResize = () => {
 	})
 }
 
+const priorityClass = (p?: string) => {
+	const key = String(p || "").toLowerCase()
+	switch (key) {
+		case "low":
+			return "border-blue-500 text-blue-500"
+		case "normal":
+			return "border-gray-400 text-gray-400"
+		case "high":
+			return "border-yellow-500 text-yellow-500"
+		case "urgent":
+			return "border-red-500 text-red-500"
+		default:
+			return "border-gray-300 text-gray-300"
+	}
+}
+
 const sendMessage = () => {
 	if (!newMessage.value.trim()) return
 	emit("send-message", newMessage.value)
@@ -225,10 +241,13 @@ const onViewHistory = () => {
 	isMenuOpen.value = false
 	emit("view-history")
 }
-const onViewUserProfile = (slug: { slug: string }) => {
+
+const onViewUserProfile = () => {
 	isMenuOpen.value = false
+	const slug = chatSession.value?.web_user?.slug || null
 	emit("view-user-profile", slug)
 }
+
 const onTransferChat = () => {
 	isMenuOpen.value = false
 	emit("transfer-chat")
@@ -299,7 +318,7 @@ onUnmounted(() => {
 <template>
 	<div
 		class="flex flex-col max-h-[85vh] sm:max-h-[80vh] md:max-h-[75vh] lg:max-h-[100vh] h-[clamp(420px,70vh,900px)] overflow-hidden bg-white">
-		<div class="flex-none flex items-center justify-between border px-4 py-2 bg-gray-100">
+		<div class="flex-none flex items-center justify-between border px-4 py-3 bg-gray-100">
 			<button @click="$emit('back')" class="p-1">
 				<FontAwesomeIcon
 					:icon="faArrowLeft"
@@ -310,9 +329,28 @@ onUnmounted(() => {
 				<img
 					:src="'https://i.pravatar.cc/100?u=' + props.session?.ulid"
 					class="w-10 h-10 rounded-full object-cover" />
-				<span class="font-semibold">{{
-					capitalize(props.session?.guest_identifier || props.session?.contact_name)
-				}}</span>
+				<div class="flex flex-col justify-start items-start gap-1">
+					<span class="font-semibold">{{
+						capitalize(props.session?.guest_identifier || props.session?.contact_name)
+					}}</span>
+					<div class="flex items-start gap-1">
+						<span
+							v-if="props.session?.web_user"
+							class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-green-100 text-green-800">
+							{{ trans("Customer") }}
+						</span>
+						<span
+							v-else
+							class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-blue-100 text-blue-800">
+							{{ trans("Guest") }}
+						</span>
+						<span
+							class="inline-flex items-center justify-center border px-2 py-0.5 rounded-sm text-[11px] font-medium"
+							:class="priorityClass(props.session?.priority)">
+							{{ capitalize(props.session?.priority || "") }}
+						</span>
+					</div>
+				</div>
 			</div>
 			<div class="relative">
 				<button ref="ellipsisBtn" class="p-1" @click="toggleMenu">
@@ -461,7 +499,7 @@ onUnmounted(() => {
 
 			<button
 				@click="sendMessage"
-				class="px-4 py-2 rounded-full bg-blue-500 text-white hover:bg-blue-600">
+				class="px-4 py-2 buttonPrimary rounded-full bg-blue-500 text-white hover:bg-blue-600">
 				<FontAwesomeIcon :icon="faPaperPlane" class="text-base" />
 			</button>
 		</div>
@@ -469,6 +507,21 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.buttonPrimary {
+	background-color: v-bind("layout?.app?.theme[4]") !important;
+	color: v-bind("layout?.app?.theme[5]") !important;
+	border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
+
+	&:hover {
+		background-color: v-bind(
+			"`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`"
+		) !important;
+	}
+
+	&:focus {
+		box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
+	}
+}
 ::-webkit-scrollbar {
 	width: 6px;
 }

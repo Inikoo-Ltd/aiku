@@ -7,6 +7,7 @@ import { Contact, SessionAPI, ChatMessage } from "@/types/Chat/chat"
 import MessageAreaAgent from "@/Components/Chat/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
+import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
 
 const layout: any = inject("layout", {})
 
@@ -18,6 +19,21 @@ const messages = ref<ChatMessage[]>([])
 const activeTab = ref("waiting")
 const isAssigning = ref<Record<string, boolean>>({})
 const errorPerContact = ref<Record<string, string>>({})
+
+const sidePanelVisible = ref(false)
+const sidePanelInitialTab = ref<"history" | "profile">("history")
+
+const showHistoryPanel = () => {
+	sidePanelInitialTab.value = "history"
+	sidePanelVisible.value = true
+}
+const showProfilePanel = () => {
+	sidePanelInitialTab.value = "profile"
+	sidePanelVisible.value = true
+}
+const closeSidePanel = () => {
+	sidePanelVisible.value = false
+}
 
 const reloadContacts = async () => {
 	try {
@@ -45,6 +61,7 @@ const reloadContacts = async () => {
 				unread: s.unread_count,
 				status: s.status,
 				webUser: s.web_user,
+				priority: s.priority,
 			})
 		)
 	} catch (e) {
@@ -64,6 +81,7 @@ const waitEchoReady = (callback: Function) => {
 		}
 	}, 300)
 }
+
 onMounted(() => {
 	waitEchoReady(() => {
 		window.Echo.join("chat-list").listen(".chatlist", (e: any) => {
@@ -81,6 +99,22 @@ const formatTime = (timestamp: string) => {
 	return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
+const priorityClass = (p?: string) => {
+	const key = String(p || "").toLowerCase()
+	switch (key) {
+		case "low":
+			return "border-blue-500 text-blue-500"
+		case "normal":
+			return "border-gray-400 text-gray-400"
+		case "high":
+			return "border-yellow-500 text-yellow-500"
+		case "urgent":
+			return "border-red-500 text-red-500"
+		default:
+			return "border-gray-300 text-gray-300"
+	}
+}
+
 watch(activeTab, () => {
 	selectedSession.value = null
 	messages.value = []
@@ -94,6 +128,7 @@ const openChat = (c: Contact) => {
 		ulid: String(c.ulid),
 		guest_identifier: c.name,
 		status: c.status,
+		priority: c.priority,
 		web_user: c.webUser,
 	} as SessionAPI
 	messages.value = c.messages ?? []
@@ -246,6 +281,24 @@ const formatLastMessage = (msg: string) => {
 								<div class="font-semibold text-gray-800">
 									{{ capitalize(c.name) }}
 								</div>
+								<div class="flex items-start gap-1">
+									<span
+										v-if="c.webUser?.id"
+										class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-green-100 text-green-800">
+										{{ trans("Customer") }}
+									</span>
+									<span
+										v-else
+										class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-blue-100 text-blue-800">
+										{{ trans("Guest") }}
+									</span>
+
+									<span
+										class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium border"
+										:class="priorityClass(c.priority)">
+										{{ capitalize(c.priority) }}
+									</span>
+								</div>
 								<div class="text-sm text-gray-500 truncate">
 									{{ formatLastMessage(c.lastMessage) }}
 								</div>
@@ -268,13 +321,27 @@ const formatLastMessage = (msg: string) => {
 				</div>
 			</div>
 
-			<MessageAreaAgent
-				v-else
-				:messages="messages"
-				:session="selectedSession"
-				@back="back"
-				@send-message="handleSendMessage"
-				@close-session="closeSession" />
+			<div v-else class="relative h-[calc(100vh-160px)]">
+				<div
+					v-if="sidePanelVisible"
+					class="absolute z-[9999] right-[420px] bottom-0 w-[350px]">
+					<ChatSidePanel
+						:session="selectedSession"
+						:initialTab="sidePanelInitialTab"
+						@close="closeSidePanel" />
+				</div>
+
+				<div class="h-full">
+					<MessageAreaAgent
+						:messages="messages"
+						:session="selectedSession"
+						@back="back"
+						@send-message="handleSendMessage"
+						@close-session="closeSession"
+						@view-history="showHistoryPanel"
+						@view-user-profile="showProfilePanel" />
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
