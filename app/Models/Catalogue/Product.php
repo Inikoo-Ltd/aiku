@@ -357,6 +357,13 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
     }
 
+    public function brand(): ?Brand
+    {
+        /** @var Brand $brand */
+        $brand = $this->brands()->first();
+        return $brand;
+    }
+
     public function productVariants(): HasMany
     {
         return $this->hasMany(Product::class, 'main_product_id');

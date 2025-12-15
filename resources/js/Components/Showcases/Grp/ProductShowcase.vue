@@ -51,27 +51,32 @@ const props = defineProps<{
 			name: string
 			percentage: number | null
 		}[] | null
-		trade_units: {
-			brand: {}
-			brand_routes: {
-				index_brand: routeType
-				store_brand: routeType
-				update_brand: routeType
-				delete_brand: routeType
-				attach_brand: routeType
-				detach_brand: routeType
-			}
-			tag_routes: {
-				index_tag: routeType
-				store_tag: routeType
-				update_tag: routeType
-				delete_tag: routeType
-				attach_tag: routeType
-				detach_tag: routeType
-			}
-			tags: {}[]
-			tags_selected_id: number[]
-		}[],
+		org_stocks: {
+
+		}
+		brands: {}[]
+		tags: {}[]
+		// trade_units: {
+		// 	brand: {}
+		// 	brand_routes: {
+		// 		index_brand: routeType
+		// 		store_brand: routeType
+		// 		update_brand: routeType
+		// 		delete_brand: routeType
+		// 		attach_brand: routeType
+		// 		detach_brand: routeType
+		// 	}
+		// 	tag_routes: {
+		// 		index_tag: routeType
+		// 		store_tag: routeType
+		// 		update_tag: routeType
+		// 		delete_tag: routeType
+		// 		attach_tag: routeType
+		// 		detach_tag: routeType
+		// 	}
+		// 	tags: {}[]
+		// 	tags_selected_id: number[]
+		// }[],
 		gpsr: {
 			acute_toxicity: boolean
 			corrosive: boolean
@@ -103,18 +108,18 @@ const props = defineProps<{
 }>()
 
 
-const tradeUnitTags = computed(() => {
-	const list = props.data?.trade_units ?? []
-	const tags = list.flatMap(item => item.tags ?? [])
-	const unique = new Map(tags.map(tag => [tag.id, tag]))
-	return [...unique.values()]
-})
+// const tradeUnitTags = computed(() => {
+// 	const list = props.data?.trade_units ?? []
+// 	const tags = list.flatMap(item => item.tags ?? [])
+// 	const unique = new Map(tags.map(tag => [tag.id, tag]))
+// 	return [...unique.values()]
+// })
 
 
-const tradeUnitBrands = computed(() => {
-  return (props.data?.trade_units ?? [])
-    .flatMap(unit => unit?.brand ?? [])
-})
+// const tradeUnitBrands = computed(() => {
+//   return (props.data?.trade_units ?? [])
+//     .flatMap(unit => unit?.brand ?? [])
+// })
 
 
 const editIsForSale = () => {
@@ -169,10 +174,13 @@ const getTooltips = () => {
 		
 		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center flex gap-y-2 flex-wrap justify-end">
 			<LabelSKU
+				v-if="data.product.data.picking_factor"
 				:product="data.product.data"
-				:trade_units="data.trade_units"
+				:trade_units="data.product.data.picking_factor"
 				xrouteFunction="tradeUnitRoute"
+				keyPicking="picking_factor"
 			/>
+
 
 			<span
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
@@ -208,8 +216,8 @@ const getTooltips = () => {
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Product Tags -->
-			<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
-				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+			<dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+				<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
 					{{ tag.name }}
 				</span>
 			</dd>
@@ -239,12 +247,12 @@ const getTooltips = () => {
 
 		<!-- Product Summary -->
 		<ProductSummary 
-			 :data="{...data.product.data, tags : tradeUnitTags, brands : tradeUnitBrands}" 
-			 :properties="data.properties" 
-			 :parts="data.parts"
-			 :public-attachment="data.attachment_box.public" 
-			 :gpsr="data.gpsr"
-			 :attachments="data.attachment_box"
+			:data="{...data.product.data, tags: data.tags, brands: data.brands}" 
+			:properties="data.properties" 
+			:parts="data.org_stocks"
+			:public-attachment="data.attachment_box.public" 
+			:gpsr="data.gpsr"
+			:attachments="data.attachment_box"
 		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
