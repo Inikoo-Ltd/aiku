@@ -34,6 +34,8 @@ class PurchaseOrdersResource extends JsonResource
             'parent_type'       => $this->parent_type,
             'parent_name'       => $this->parent_name,
             'parent_slug'       => $this->parent->slug,
+            'agent_slug'        => $this->parent_type === 'OrgAgent' ? $this->parent->agent->slug : null,
+            'supplier_slug'     => $this->parent_type === 'OrgSupplier' ? $this->parent->supplier->slug : null,
             'slug'              => $this->slug,
             'number_current_purchase_order_transactions'   => $this->number_current_purchase_order_transactions,
             'date'              => $this->date,
