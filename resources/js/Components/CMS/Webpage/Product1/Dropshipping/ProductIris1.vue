@@ -125,9 +125,9 @@ const toggleExpanded = () => {
                     <ButtonAddPortfolio :product="product" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
                         :productHasPortfolio="productExistenceInChannels" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                         />
-                    <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
+                    <!-- <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="text-xs font-medium text-gray-800"
