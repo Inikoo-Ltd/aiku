@@ -169,10 +169,13 @@ const getTooltips = () => {
 		
 		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center flex gap-y-2 flex-wrap justify-end">
 			<LabelSKU
+				v-if="data.product.data.picking_factor"
 				:product="data.product.data"
-				:trade_units="data.trade_units"
+				:trade_units="data.product.data.picking_factor"
 				xrouteFunction="tradeUnitRoute"
+				keyPicking="picking_factor"
 			/>
+
 
 			<span
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
