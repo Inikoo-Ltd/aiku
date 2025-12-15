@@ -11,21 +11,23 @@ namespace App\Actions\Comms\BeeFreeSDK;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\OrgAction;
+use App\Models\Comms\Outbox;
+use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
-class AuthenticateBeefreeAccount
+class AuthenticateBeefreeAccount extends OrgAction
 {
-    use AsAction;
+    public string $commandSignature = 'beefree:auth {outbox:Outbox} {modelData?*}';
 
-
-    public string $commandSignature = 'beefree:auth';
-
-    public function handle(string $uid = null): array
+    public function handle(?Outbox $outbox, ?array $modelData): array
     {
 
         // note: take the client id and client secret from group settings
-        $clientId = "";
-        $clientSecret = "";
+        $beefreeSettings = $this->group->settings['beefree'];
+        $clientId = $beefreeSettings['client_id'];
+        $clientSecret = $beefreeSettings['client_secret'];
+        \Log::info("beefreeSettings: " . json_encode($beefreeSettings));
 
         if (!$clientId || !$clientSecret) {
             throw new \Exception('BeeFree credentials not configured');
@@ -34,9 +36,9 @@ class AuthenticateBeefreeAccount
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
         ])->post('https://auth.getbee.io/loginV2', [
-            'client_id' => $clientId,
-            'client_secret' => $clientSecret,
-            'uid' => $uid ?? "test1-clientside"
+            'client_id' => $clientId ?? null,
+            'client_secret' => $clientSecret ?? null,
+            'uid' => Arr::get($modelData, 'uid', 'test1-clientside')
         ]);
 
         \Log::info("data Repponse: " . json_encode($response->json()));
@@ -52,20 +54,27 @@ class AuthenticateBeefreeAccount
         throw new \Exception('Failed to authenticate with BeeFree');
     }
 
-    public function asController(): JsonResponse
+    // public function asController(): JsonResponse
+    // {
+    //     try {
+    //         $uid = request()->input('uid', 'test1-clientside');
+    //         $result = $this->handle($uid);
+
+    //         return response()->json($result);
+    //     } catch (\Exception $e) {
+    //         Log::error('Auth error: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    public function action(Outbox $outbox, array $modelData): array
     {
-        try {
-            $uid = request()->input('uid', 'test1-clientside');
-            $result = $this->handle($uid);
 
-            return response()->json($result);
-        } catch (\Exception $e) {
-            Log::error('Auth error: ' . $e->getMessage());
-
-            return response()->json([
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $this->initialisation($outbox->organisation, $modelData);
+        return $this->handle($outbox->uid, $this->validatedData);
     }
 
     public function jsonResponse(array $result): JsonResponse
@@ -73,8 +82,18 @@ class AuthenticateBeefreeAccount
         return response()->json($result);
     }
 
-    public function asCommand(): void
+    public function rules(): array
     {
-        $this->handle(request()->input('uid', 'test1-clientside'));
+        $rules = [
+            'uid' => ['sometimes', 'required', 'string'],
+        ];
+
+        return $rules;
+    }
+
+    public function asCommand(Command $command): void
+    {
+
+        $this->handle($command->argument('outbox'), $command->argument('modelData'));
     }
 }
