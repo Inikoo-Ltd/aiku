@@ -45,6 +45,13 @@ class PublishOutbox extends OrgAction
             ]
         );
 
+        // update the unpublished layout
+        $updateData = [
+            'layout' => Arr::get($modelData, 'layout'),
+        ];
+        $this->update($unpublishedSnapshot, $updateData);
+
+
         StoreDeployment::run(
             $email,
             [
