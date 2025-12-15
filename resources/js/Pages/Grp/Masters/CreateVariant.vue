@@ -278,23 +278,36 @@ watch(validVariants, () => {
 
                             <tbody class="divide-y">
                                 <template v-for="node in buildNodes" :key="keyToString(node.key)">
+                                    <!-- PARENT ROW -->
                                     <tr class="hover:bg-gray-50 h-[70px]">
                                         <td class="px-4">
                                             <div class="flex items-center">
-                                                <button v-if="node.children" class="w-5 h-5 mr-2 border rounded bg-gray-100
-                   flex items-center justify-center
-                   leading-none text-sm font-medium" @click="toggleExpand(keyToString(node.key))">
+                                                <!-- expand button only when multi-variant -->
+                                                <button v-if="state.variants.length > 1 && node.children"
+                                                    class="w-5 h-5 mr-2 border rounded bg-gray-100 flex items-center justify-center leading-none text-sm font-medium"
+                                                    @click="toggleExpand(keyToString(node.key))">
                                                     {{ expanded[keyToString(node.key)] ? "−" : "+" }}
                                                 </button>
 
                                                 <div class="truncate">{{ node.label }}</div>
                                             </div>
                                         </td>
-                                        <td />
 
+                                        <!-- PRODUCT SELECT (ONLY WHEN ONE VARIANT) -->
+                                        <td class="px-4" v-if="state.variants.length === 1">
+                                            <PureMultiselectInfiniteScroll :model-value="node.product"
+                                                @update:model-value="val => setProduct(node, val)"
+                                                :fetchRoute="props.master_assets_route" valueProp="id" label-prop="name"
+                                                :object="true" :caret="false" :placeholder="trans('Select Product')" />
+                                        </td>
+
+                                        <!-- EMPTY CELL FOR MULTI VARIANT -->
+                                        <td v-else />
                                     </tr>
 
-                                    <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
+                                    <!-- CHILD ROWS (ONLY MULTI VARIANT) -->
+                                    <tr v-for="child in node.children"
+                                        v-if="state.variants.length > 1 && expanded[keyToString(node.key)]"
                                         :key="keyToString(child.key)" class="hover:bg-gray-50 h-[70px]">
                                         <td class="px-8 text-sm text-gray-700">
                                             ↳ {{ child.label }}
@@ -308,6 +321,7 @@ watch(validVariants, () => {
                                     </tr>
                                 </template>
                             </tbody>
+
                         </table>
                     </div>
                 </div>
