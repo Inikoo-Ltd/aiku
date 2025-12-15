@@ -58,14 +58,7 @@ jobs:
         if: steps.changed-coverage-files.outputs.any_changed != 'true'
         run: /usr/bin/php8.4 vendor/bin/pest --exclude-group=integration --stop-on-defect
       - name: Process coverage to Codecov
-        if: steps.changed-coverage-files.outputs.any_changed == 'true'
+        if: steps.changed-coverage-files.outputs.any_changed != 'true'
         uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: false
-          files: ./clover.xml
-          verbose: true
         env:
-          CODECOV_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-      - name: Upload coverage to Codacy
-        if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}; bash <(curl -Ls https://coverage.codacy.com/get.sh)
+            CODECOV_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
