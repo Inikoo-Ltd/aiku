@@ -50,7 +50,7 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
         return Inertia::render(
             'Dropshipping/Product/Product',
             [
-                'title'       => __('product'),
+                'title'       => __('Product'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters(),
                     $title
