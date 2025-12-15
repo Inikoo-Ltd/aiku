@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingCountries;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\ShippingCountry;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -33,6 +34,13 @@ class StoreShippingCountry extends OrgAction
         ShopHydrateShippingCountries::dispatch($shop)->delay($this->hydratorsDelay);
 
         return $shippingCountry;
+    }
+
+    public function asController(Shop $shop, ActionRequest $request): ShippingCountry
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $this->validatedData);
     }
 
     public function rules(): array

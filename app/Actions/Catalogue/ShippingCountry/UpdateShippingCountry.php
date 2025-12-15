@@ -28,7 +28,11 @@ class UpdateShippingCountry extends OrgAction
     public function rules(): array
     {
         return [
-            'territories' => ['sometimes', 'nullable', 'array'],
+            'territories'                           => ['sometimes', 'nullable', 'array'],
+            'territories.included_postal_codes'     => ['sometimes', 'nullable', 'array', 'min:1'],
+            'territories.included_postal_codes.*'   => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\\s\\-]+$/i'],
+            'territories.excluded_postal_codes'     => ['sometimes', 'nullable', 'array', 'min:1'],
+            'territories.excluded_postal_codes.*'   => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\\s\\-]+$/i'],
         ];
     }
 
