@@ -24,7 +24,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
         }
 
         $itemInBasket = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->first();
-        if($itemInBasket){
+        if ($itemInBasket) {
             return RetinaEcomUpdateTransaction::make()->action($itemInBasket, $customer, [
                 'quantity_ordered' => data_get($modelData, 'quantity')
             ]);

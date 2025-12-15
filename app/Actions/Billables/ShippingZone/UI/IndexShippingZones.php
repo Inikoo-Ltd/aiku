@@ -86,11 +86,11 @@ class IndexShippingZones extends OrgAction
                         default => null
                     }
                 );
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'position', label: __('position'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'territories', label: __('territories'), canBeHidden: false);
-            $table->column(key: 'price', label: __('price'), canBeHidden: false);
+            $table->column(key: 'price', label: __('Price'), canBeHidden: false);
         };
     }
 

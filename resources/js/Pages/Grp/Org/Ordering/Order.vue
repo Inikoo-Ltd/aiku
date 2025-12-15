@@ -990,7 +990,7 @@ const labelToBePaid = (toBePaidValue: string) => {
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </dt> -->
-
+                        
                         <div v-if="data.data?.state === 'cancelled'" class="">
                             <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
@@ -998,7 +998,7 @@ const labelToBePaid = (toBePaidValue: string) => {
                             </div>
                         </div>
 
-                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need'" class="w-full">
+                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && Number(box_stats.products.payment.total_amount) > 0" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
                             <div class="w-full rounded-md shadow pxb-2 isolate border"
                                 :class="[

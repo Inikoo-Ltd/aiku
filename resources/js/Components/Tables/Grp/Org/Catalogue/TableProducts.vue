@@ -25,6 +25,7 @@ import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import Image from "@/Components/Image.vue"
 
 
 
@@ -352,6 +353,12 @@ const _table = ref<InstanceType<typeof Table> | null>(null)
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
+        <template #cell(image_thumbnail)="{ item: product }">
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
+
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
             {{ refund["organisation_code"] }}

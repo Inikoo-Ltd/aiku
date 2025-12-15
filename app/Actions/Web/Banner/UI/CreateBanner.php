@@ -57,7 +57,7 @@ class CreateBanner extends OrgAction
 
                 'name' => [
                     'type'        => 'input',
-                    'label'       => __('name'),
+                    'label'       => __('Name'),
                     'placeholder' => __('Name for new banner'),
                     'required'    => true,
                     'value'       => '',

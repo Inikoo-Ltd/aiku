@@ -16,6 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import Dialog from 'primevue/dialog';
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import axios from "axios";
+import Image from "@/Components/Image.vue"
 
 defineProps<{
     data: object,
@@ -166,6 +167,11 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
     <Table @onCheckedAll="onCheckedAll" :resource="data" :name="tab" class="mt-5" :isCheckBox="true" :key="tableKey"
         @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         checkboxKey='id' :isChecked="(item) => selectedFamily.includes(item.id)" ref="_table">
+        <template #cell(image_thumbnail)="{ item: collection }">
+            <div class="flex justify-center">
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #add-on-button>
             <div v-if="selectedFamily.length != 0">
                 <Button :icon="faFolderTree" label="Assign to another" @click="visibleDialog = true" :size="'xs'"

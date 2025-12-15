@@ -112,7 +112,7 @@ class EditSubDepartment extends OrgAction
                                 'fields' => [
                                     'code' => [
                                         'type'  => 'input',
-                                        'label' => __('code'),
+                                        'label' => __('Code'),
                                         'value' => $subDepartment->code
                                     ],
                                 ]

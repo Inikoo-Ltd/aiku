@@ -57,13 +57,13 @@ class CreateWorkplace extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'        => 'input',
-                                    'label'       => __('name'),
+                                    'label'       => __('Name'),
                                     'placeholder' => '',
                                     'required'    => true
                                 ],
                                 'type' => [
                                     'type'        => 'select',
-                                    'label'       => __('type'),
+                                    'label'       => __('Type'),
                                     'options'     => Options::forEnum(WorkplaceTypeEnum::class),
                                     'placeholder' => __('Select a type'),
                                     'mode'        => 'single',

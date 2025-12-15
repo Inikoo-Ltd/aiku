@@ -161,7 +161,7 @@ class IndexDepartmentWebpages extends OrgAction
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_sub_departments', label: __('Sub Departments'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_families', label: __('Families'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);

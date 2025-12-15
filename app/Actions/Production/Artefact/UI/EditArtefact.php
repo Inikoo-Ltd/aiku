@@ -86,13 +86,13 @@ class EditArtefact extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => $artefact->code,
                                     'required' => true
                                 ],
                                 'name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'value'    => $artefact->name,
                                     'required' => true
                                 ],
@@ -105,7 +105,7 @@ class EditArtefact extends OrgAction
                                 // ],
                                 // 'type' => [
                                 //     'type'    => 'select',
-                                //     'label'   => __('type'),
+                                //     'label'   => __('Type'),
                                 //     'value'   => $storedItem->type,
                                 //     'required'=> true,
                                 //     'options' => PalletTypeEnum::values()

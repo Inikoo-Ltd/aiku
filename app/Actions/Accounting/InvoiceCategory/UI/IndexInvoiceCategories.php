@@ -77,7 +77,7 @@ class IndexInvoiceCategories extends OrgAction
                     ]
                 )
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type:'icon')
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_type_invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_type_refunds', label: __('refunds'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

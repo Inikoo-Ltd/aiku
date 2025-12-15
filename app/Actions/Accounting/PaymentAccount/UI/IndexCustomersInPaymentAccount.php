@@ -127,7 +127,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                 ]
                 )
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'total_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'total_amount_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

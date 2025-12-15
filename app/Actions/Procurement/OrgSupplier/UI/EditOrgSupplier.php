@@ -94,7 +94,7 @@ class EditOrgSupplier extends OrgAction
 
                                 'code' => [
                                     'type' => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $supplier->code,
                                     'required' => true,
                                 ],

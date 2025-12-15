@@ -117,10 +117,10 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     {
         if ($command->argument('id')) {
 
-            if(is_numeric($command->argument('id'))){
+            if (is_numeric($command->argument('id'))) {
                 $product = Product::findOrFail($command->argument('id'));
-            }else{
-                $product = Product::Where('slug',$command->argument('id'))->firstOrFail();
+            } else {
+                $product = Product::Where('slug', $command->argument('id'))->firstOrFail();
             }
 
             $this->handle($product);

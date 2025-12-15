@@ -52,18 +52,7 @@ class IndexMasterProductCategoryImages extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-
-
-            $table
-                ->withGlobalSearch()
-                ->withEmptyState(
-                    [
-
-                        'count' => $masterAsset->stats->number_images,
-
-                    ]
-                );
-
+            $table->withGlobalSearch();
 
             $table
                 ->column(key: 'grabbable_area', label: '', canBeHidden: false, type: 'icon')

@@ -28,7 +28,7 @@ class CheckEbayChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
-        if (!$ebayUser->fulfillment_policy_id && !$ebayUser->return_policy_id && !$ebayUser->payment_policy_id && !$ebayUser->location_key) {
+        if (!$ebayUser->fulfillment_policy_id || !$ebayUser->return_policy_id || !$ebayUser->payment_policy_id || !$ebayUser->location_key) {
             UpdateEbayUserData::run($ebayUser);
 
             $ebayUser->refresh();

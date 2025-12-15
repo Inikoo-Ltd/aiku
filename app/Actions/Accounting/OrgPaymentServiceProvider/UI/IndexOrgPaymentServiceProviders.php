@@ -84,7 +84,7 @@ class IndexOrgPaymentServiceProviders extends OrgAction
                 ->defaultSort('code')
                 ->column(key: 'adoption', label: '', type: 'icon')
                 ->column(key: 'logo', label: '')
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_payment_accounts', label: __('accounts'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true);

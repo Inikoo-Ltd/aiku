@@ -79,7 +79,7 @@ class EditRental extends OrgAction
                             'fields' => [
                                 'code'        => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => $rental->code,
                                     'readonly' => true
                                 ],
@@ -90,23 +90,23 @@ class EditRental extends OrgAction
                                 ],
                                 'description' => [
                                     'type'  => 'input',
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
                                     'value' => $rental->description
                                 ],
                                 'unit'        => [
                                     'type'    => 'select',
-                                    'label'   => __('unit'),
+                                    'label'   => __('Unit label'),
                                     'value'   => $rental->unit,
                                     'options' => Options::forEnum(RentalUnitEnum::class)
                                 ],
                                 'units'       => [
                                     'type'  => 'input',
-                                    'label' => __('units'),
+                                    'label' => __('Units'),
                                     'value' => $rental->units,
                                 ],
                                 'price'       => [
                                     'type'     => 'input',
-                                    'label'    => __('price'),
+                                    'label'    => __('Price'),
                                     'required' => true,
                                     'value'    => $rental->price
                                 ],

@@ -163,7 +163,7 @@ class IndexTradeUnits extends GrpAction
             }
 
 
-            $table->column(key: 'marketing_weight', label: __('weight').' ('.__('Marketing').')', canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'marketing_weight', label: __('Weight').' ('.__('Marketing').')', canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

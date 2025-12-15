@@ -81,7 +81,7 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
         });
 
         BroadcastUpdateWeblocks::dispatch(100, $website);
-        
+
         return $newWebBlock;
     }
 

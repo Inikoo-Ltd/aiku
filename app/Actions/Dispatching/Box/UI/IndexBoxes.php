@@ -117,7 +117,7 @@ class IndexBoxes extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, searchable: true);
             $table->column(key: 'dimension', label: __('dimension'), canBeHidden: false, searchable: true);
             $table->column(key: 'stock', label: __('stock'), canBeHidden: false, searchable: true);
         };

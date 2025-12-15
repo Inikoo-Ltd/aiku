@@ -9,6 +9,7 @@ import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
 import { RouteParams } from "@/types/route-params";
 import { MasterDepartment} from "@/types/master-department";
+import Image from "@/Components/Image.vue"
 
 defineProps<{
     data: object,
@@ -111,6 +112,11 @@ function ProductRoute(masterDepartment: MasterDepartment) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(image_thumbnail)="{ item: collection }">
+            <div class="flex justify-center">
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
       <template #cell(master_shop_code)="{ item: department }">
         <Link v-tooltip="department.master_shop_name" :href="masterShopRoute(department) as string" class="secondaryLink">
           {{ department["master_shop_code"] }}

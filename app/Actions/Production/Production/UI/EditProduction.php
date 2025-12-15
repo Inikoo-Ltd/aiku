@@ -44,12 +44,12 @@ class EditProduction extends OrgAction
             'fields' => [
                 'code' => [
                     'type'  => 'input',
-                    'label' => __('code'),
+                    'label' => __('Code'),
                     'value' => $production->code
                 ],
                 'name' => [
                     'type'  => 'input',
-                    'label' => __('name'),
+                    'label' => __('Name'),
                     'value' => $production->name
                 ]
             ]

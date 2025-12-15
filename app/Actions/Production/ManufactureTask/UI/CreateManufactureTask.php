@@ -55,13 +55,13 @@ class CreateManufactureTask extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => '',
                                     'required' => true
                                 ],
                                 'name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'value'    => '',
                                     'required' => true
                                 ],

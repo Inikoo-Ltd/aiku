@@ -56,7 +56,7 @@ class CreateShippingZoneSchema extends OrgAction
                                 'fields' => [
                                     'name' => [
                                         'type'  => 'input',
-                                        'label' => __('name')
+                                        'label' => __('Name')
                                     ],
                                 ]
                             ]

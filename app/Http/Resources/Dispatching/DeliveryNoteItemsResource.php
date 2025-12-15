@@ -29,7 +29,6 @@ class DeliveryNoteItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
-
         $requiredFactionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
@@ -51,26 +50,22 @@ class DeliveryNoteItemsResource extends JsonResource
             $quantityDispatched = 0;
         }
 
-
         return [
-            'id'                           => $this->id,
-            'state'                        => $this->state,
-            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'            => $this->quantity_required,
-            'quantity_required_fractional' => $requiredFactionalData,
-
-            'quantity_dispatched'          => $this->quantity_dispatched,
-            'quantity_dispatched_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
-            'quantity_picked'              => $this->quantity_picked,
-            'quantity_picked_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
-
-            'quantity_packed'              => $this->quantity_packed,
-            'quantity_packed_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_packed ?? 0)), $packedIn),
-
-
-            'org_stock_code'               => $this->org_stock_code,
-            'org_stock_name'               => $this->org_stock_name,
-            'org_stock_slug'               => $this->org_stock_slug,
+            'id'                             => $this->id,
+            'state'                          => $this->state,
+            'state_icon'                     => $this->state->stateIcon()[$this->state->value],
+            'quantity_required'              => $this->quantity_required,
+            'quantity_required_fractional'   => $requiredFactionalData,
+            'quantity_dispatched'            => $this->quantity_dispatched,
+            'quantity_dispatched_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
+            'quantity_picked'                => $this->quantity_picked,
+            'quantity_picked_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
+            'quantity_packed'                => $this->quantity_packed,
+            'quantity_packed_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_packed ?? 0)), $packedIn),
+            'org_stock_code'                 => $this->org_stock_code,
+            'org_stock_name'                 => $this->org_stock_name,
+            'org_stock_slug'                 => $this->org_stock_slug,
+            'org_stock_id'                   => $this->org_stock_id,
         ];
     }
 }

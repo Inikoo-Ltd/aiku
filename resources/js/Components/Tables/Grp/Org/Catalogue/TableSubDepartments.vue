@@ -13,7 +13,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { RouteParams } from "@/types/route-params"
 import { Family } from "@/types/family"
-import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
+import { faTimesCircle, faCheckCircle } from "@fal";
+import Image from "@/Components/Image.vue"
 
 defineProps<{
     data: object
@@ -150,6 +151,11 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(image_thumbnail)="{ item: product }">
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(state)="{ item: SubDepartment }">
             <Icon :data="SubDepartment.state">
             </Icon>

@@ -6,8 +6,9 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterCollection\UI;
+namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Masters\MasterProductCategory\UI\IndexMasterProductCategoryImages;
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Media;
@@ -17,7 +18,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class IndexMasterCollectionImages extends OrgAction
+class GetMasterCollectionImages extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, $prefix = null): LengthAwarePaginator
     {
@@ -45,33 +46,7 @@ class IndexMasterCollectionImages extends OrgAction
 
     public function tableStructure(MasterAsset $masterAsset, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($masterAsset, $prefix) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-
-
-
-            $table
-                ->withGlobalSearch()
-                ->withEmptyState(
-                    [
-
-                        'count' => $masterAsset->stats->number_images,
-
-                    ]
-                );
-
-
-            $table
-                ->column(key: 'grabbable_area', label: '', canBeHidden: false, type: 'icon')
-                ->column(key: 'image', label: __('Image'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'size', label: __('Size'), canBeHidden: false, sortable: true, searchable: true);
-
-
-        };
+        return IndexMasterProductCategoryImages::make()->tableStructure($masterAsset, $prefix);
     }
 
 }

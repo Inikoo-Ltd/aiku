@@ -128,8 +128,8 @@ class IndexShippers extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'api_shipper', label: __('type'), sortable: true);
-            $table->column(key: 'name', label: __('name'), sortable: true);
+            $table->column(key: 'api_shipper', label: __('Type'), sortable: true);
+            $table->column(key: 'name', label: __('Name'), sortable: true);
             $table->column(key: 'trade_as', label: __('Trade as'), sortable: true);
         };
     }
