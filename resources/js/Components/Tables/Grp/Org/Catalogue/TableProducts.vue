@@ -403,6 +403,10 @@ const _table = ref<InstanceType<typeof Table> | null>(null)
             </div>
         </template>
 
+        <template #cell(rrp_per_unit)="{ item: product }">
+            {{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}
+
+        </template>
 
         <template #cell(rrp)="{ item: product }">
             <div>

@@ -83,6 +83,7 @@ class ProductsResource extends JsonResource
             'available_quantity'        => $this->available_quantity,
             'gross_weight'              => $this->gross_weight,
             'rrp'                       => $this->rrp,
+            'rrp_per_unit'              => $this->units != 0 ? $this->rrp / $this->units : '',
             'customers_invoiced_all'    => $this->customers_invoiced_all,
             'invoices_all'              => $this->invoices_all,
             'sales_all'                 => $this->sales_all,
