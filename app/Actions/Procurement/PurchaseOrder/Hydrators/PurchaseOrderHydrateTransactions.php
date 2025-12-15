@@ -18,10 +18,8 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 {
     use AsAction;
 
-
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        // Get All Transactions Once 👇
         $transactions = $purchaseOrder->purchaseOrderTransactions;
 
         $stateCounts = $transactions
@@ -45,7 +43,7 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
             $totalCount - $inProcessCount - $settledCount - $cancelledCount - $notReceivedCount;
 
         foreach (PurchaseOrderTransactionStateEnum::cases() as $state) {
-            $stats['number_purchase_order_transactions_state_' . $state->snake()] =
+            $stats['number_purchase_order_transactions_state_'.$state->snake()] =
                 Arr::get($stateCounts, $state->value, 0);
         }
 
@@ -53,7 +51,7 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
         $stats['gross_weight'] = $this->getGrossWeight($purchaseOrder);
         $stats['net_weight'] = $this->getNetWeight($purchaseOrder);
 
-        $purchaseOrder->stats()->update($stats);
+        $purchaseOrder->update($stats);
     }
 
     public function getGrossWeight(PurchaseOrder $purchaseOrder): float
@@ -61,8 +59,11 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
         $grossWeight = 0;
 
         foreach ($purchaseOrder->purchaseOrderTransactions as $item) {
-            foreach ($item->supplierProduct['tradeUnits'] as $tradeUnit) {
-                $grossWeight += $item->supplierProduct['grossWeight'] * $tradeUnit->pivot->package_quantity;
+            if (! $item->supplierProduct) {
+                continue;
+            }
+            foreach ($item->supplierProduct['tradeUnits'] ?? [] as $tradeUnit) {
+                $grossWeight += ($item->supplierProduct['grossWeight'] ?? 0) * ($tradeUnit->pivot->package_quantity ?? 0);
             }
         }
 
@@ -74,8 +75,11 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
         $netWeight = 0;
 
         foreach ($purchaseOrder->purchaseOrderTransactions as $item) {
-            foreach ($item->supplierProduct['tradeUnits'] as $tradeUnit) {
-                $netWeight += $item->supplierProduct['netWeight'] * $tradeUnit->pivot->package_quantity;
+            if (! $item->supplierProduct) {
+                continue;
+            }
+            foreach ($item->supplierProduct['tradeUnits'] ?? [] as $tradeUnit) {
+                $netWeight += ($item->supplierProduct['netWeight'] ?? 0) * ($tradeUnit->pivot->package_quantity ?? 0);
             }
         }
 
@@ -87,7 +91,10 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
         $costItems = 0;
 
         foreach ($purchaseOrder->purchaseOrderTransactions as $item) {
-            $costItems += $item->unit_price * $item->supplierProduct['cost'];
+            if (! $item->supplierProduct) {
+                continue;
+            }
+            $costItems += ($item->unit_price ?? 0) * ($item->supplierProduct['cost'] ?? 0);
         }
 
         return $costItems;
