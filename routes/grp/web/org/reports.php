@@ -16,11 +16,7 @@ use App\Actions\UI\Reports\IndexReports;
 use App\Stubs\UIDummies\IndexDummies;
 use Illuminate\Support\Facades\Route;
 
-//Route::get('/', IndexReports::class)->name('index');
-//Temporary
-Route::get('/', function () {
-    return redirect()->route('grp.org.reports.intrastat', Route::current()->parameters());
-})->name('index');
+Route::get('/', IndexReports::class)->name('index');
 
 Route::get('/sales', ShowOrganisationSalesReport::class)->name('sales');
 

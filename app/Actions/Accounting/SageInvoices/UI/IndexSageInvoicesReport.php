@@ -3,6 +3,8 @@
 namespace App\Actions\Accounting\SageInvoices\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Reports\WithReportsSubNavigation;
+use App\Actions\UI\Reports\IndexReports;
 use App\Http\Resources\Accounting\SageInvoiceResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
@@ -18,6 +20,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexSageInvoicesReport extends OrgAction
 {
+    use WithReportsSubNavigation;
+
     private int $records;
 
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
@@ -122,7 +126,7 @@ class IndexSageInvoicesReport extends OrgAction
         return Inertia::render(
             'Org/Reports/SageInvoicesReport',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Sage Invoices Report'),
                 'pageHead'    => [
                     'title' => __('Sage Invoices Export Report'),
@@ -130,6 +134,7 @@ class IndexSageInvoicesReport extends OrgAction
                         'title' => __('Sage Invoices'),
                         'icon'  => 'fal fa-file-invoice'
                     ],
+                    'subNavigation' => $this->getReportsNavigation($this->organisation),
                 ],
                 'data'        => SageInvoiceResource::collection($invoices),
             ]
@@ -141,31 +146,23 @@ class IndexSageInvoicesReport extends OrgAction
         return SageInvoiceResource::collection($invoices);
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return [
+        return array_merge(
+            IndexReports::make()->getBreadcrumbs($routeName, $routeParameters),
             [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-chart-line',
-                    'label' => __('Reports'),
-                    'route' => [
-                        'name'       => 'grp.org.reports.index',
-                        'parameters' => $routeParameters
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'icon'  => 'fal fa-file-invoice',
+                        'label' => __('Sage Invoices'),
+                        'route' => [
+                            'name'       => 'grp.org.reports.sage-invoices',
+                            'parameters' => $routeParameters
+                        ]
                     ]
-                ]
+                ],
             ],
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-file-invoice',
-                    'label' => __('Sage Invoices'),
-                    'route' => [
-                        'name'       => 'grp.org.reports.sage-invoices',
-                        'parameters' => $routeParameters
-                    ]
-                ]
-            ],
-        ];
+        );
     }
 }
