@@ -119,7 +119,7 @@ class SaveWebsiteSitemap extends OrgAction
 
         $indexSitemap = Sitemap::create();
         foreach ($groups as $name => $sitemap) {
-            $indexSitemap->add(Url::create($baseUrl . "/sitemaps/{$name}_{$website->id}.xml"));
+            $indexSitemap->add(Url::create($baseUrl . "/sitemaps/{$name}.xml"));
         }
         $indexSitemap->writeToDisk('local', "sitemaps/sitemap_{$website->id}.xml");
 
