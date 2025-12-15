@@ -30,75 +30,109 @@ class TranslateCategoryModel
         $english      = Language::where('code', 'en')->first();
         $shopLanguage = $model->shop->language;
 
-        $modelData = [
-            'unit'              => Translate::run($translationData['unit'], $english, $shopLanguage),
-            'name'              => Translate::run($translationData['name'], $english, $shopLanguage),
-            'description'       => Translate::run($translationData['description'], $english, $shopLanguage),
-            'description_title' => Translate::run($translationData['description_title'], $english, $shopLanguage),
-            'description_extra' => Translate::run($translationData['description_extra'], $english, $shopLanguage),
-        ];
+        $modelData = [];
+
+
+
+        if (Arr::exists($translationData, 'unit')) {
+            data_set($modelData, 'unit', Translate::run($translationData['unit'], $english, $shopLanguage));
+        }
+        if (Arr::exists($translationData, 'name')) {
+            data_set($modelData, 'name', Translate::run($translationData['name'], $english, $shopLanguage));
+        }
+        if (Arr::exists($translationData, 'description')) {
+            data_set($modelData, 'description', Translate::run($translationData['description'], $english, $shopLanguage));
+        }
+        if (Arr::exists($translationData, 'description_title')) {
+            data_set($modelData, 'description_title', Translate::run($translationData['description_title'], $english, $shopLanguage));
+        }
+        if (Arr::exists($translationData, 'description_extra')) {
+            data_set($modelData, 'description_extra', Translate::run($translationData['description_extra'], $english, $shopLanguage));
+        }
+
 
         if ($shopLanguage->code == 'en') {
-            data_set($modelData, 'is_name_reviewed', true);
-            data_set($modelData, 'is_description_title_reviewed', true);
-            data_set($modelData, 'is_description_reviewed', true);
-            data_set($modelData, 'is_description_extra_reviewed', true);
+            if (Arr::exists($modelData, 'name')) {
+                data_set($modelData, 'is_name_reviewed', true);
+            }
 
-            if ($model instanceof Product) {
+            if (Arr::exists($modelData, 'description_title')) {
+                data_set($modelData, 'is_description_title_reviewed', true);
+            }
+
+            if (Arr::exists($modelData, 'description')) {
+                data_set($modelData, 'is_description_reviewed', true);
+            }
+
+            if (Arr::exists($translationData, 'description_extra')) {
+                data_set($modelData, 'is_description_extra_reviewed', true);
+            }
+
+            if ($model instanceof Product && Arr::exists($modelData, 'unit')) {
                 data_set($modelData, 'is_unit_reviewed', true);
             }
+
         } else {
-            data_set(
-                $modelData,
-                'is_name_reviewed',
-                Arr::get(
-                    $translationData,
-                    'name',
-                    false
-                ) ? false : null
-            );
-
-            data_set(
-                $modelData,
-                'is_description_title_reviewed',
-                Arr::get(
-                    $translationData,
-                    'description_title',
-                    false
-                ) ? false : null
-            );
-
-            data_set(
-                $modelData,
-                'is_description_reviewed',
-                Arr::get(
-                    $translationData,
-                    'description',
-                    false
-                ) ? false : null
-            );
-
-            data_set(
-                $modelData,
-                'is_description_extra_reviewed',
-                Arr::get(
-                    $translationData,
-                    'description_extra',
-                    false
-                ) ? false : null
-            );
-
-            if ($model instanceof Product) {
+            if (Arr::exists($modelData, 'name')) {
                 data_set(
                     $modelData,
-                    'is_unit_reviewed',
+                    'is_name_reviewed',
                     Arr::get(
                         $translationData,
-                        'unit',
+                        'name',
                         false
                     ) ? false : null
                 );
             }
+
+            if(Arr::exists($modelData, 'description_title')) {
+                data_set(
+                    $modelData,
+                    'is_description_title_reviewed',
+                    Arr::get(
+                        $translationData,
+                        'description_title',
+                        false
+                    ) ? false : null
+                );
+            }
+
+            if(Arr::exists($modelData, 'description')) {
+                data_set(
+                    $modelData,
+                    'is_description_reviewed',
+                    Arr::get(
+                        $translationData,
+                        'description',
+                        false
+                    ) ? false : null
+                );
+            }
+
+            if(Arr::exists($modelData, 'description_extra')) {
+                data_set(
+                    $modelData,
+                    'is_description_extra_reviewed',
+                    Arr::get(
+                        $translationData,
+                        'description_extra',
+                        false
+                    ) ? false : null
+                );
+            }
+
+            if(Arr::exists($modelData, 'unit') && $model instanceof Product) {
+                    data_set(
+                        $modelData,
+                        'is_unit_reviewed',
+                        Arr::get(
+                            $translationData,
+                            'unit',
+                            false
+                        ) ? false : null
+                    );
+                }
+
         }
 
 

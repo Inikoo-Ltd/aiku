@@ -74,16 +74,20 @@ const isOpenModal = ref(false)
 
             <div v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
                 <div class="text-left flex items-center">
-                    <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
-                        {{ tUnit.tradeUnit?.code }}
-                    </Link>
-                    <span v-else>
-                        {{ tUnit.tradeUnit?.code }}
-                    </span>
+                    <slot name="col_code" :data="tUnit">
+                        <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
+                            {{ tUnit.tradeUnit?.code }}
+                        </Link>
+                        <span v-else>
+                            {{ tUnit.tradeUnit?.code }}
+                        </span>
+                    </slot>
                 </div>
 
                 <div class="text-left col-span-3 flex items-center">
-                    {{ tUnit.tradeUnit?.name }}
+                    <slot name="col_name" :data="tUnit">
+                        {{ tUnit.tradeUnit?.name }}
+                    </slot>
                 </div>
 
                 <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">

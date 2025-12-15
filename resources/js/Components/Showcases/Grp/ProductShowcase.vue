@@ -179,8 +179,15 @@ const getTooltips = () => {
 				:trade_units="data.product.data.picking_factor"
 				xrouteFunction="tradeUnitRoute"
 				keyPicking="picking_factor"
-			/>
-
+			>
+				<template #col_code="{ data }">
+					{{ data.org_stock_code }}
+				</template>
+				
+				<template #col_name="{ data }">
+					{{ data.org_stock_name }}
+				</template>
+			</LabelSKU>
 
 			<span
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
@@ -216,11 +223,12 @@ const getTooltips = () => {
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Product Tags -->
-			<dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+			<!-- <dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
 				<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
 					{{ tag.name }}
 				</span>
-			</dd>
+			</dd> -->
+
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
