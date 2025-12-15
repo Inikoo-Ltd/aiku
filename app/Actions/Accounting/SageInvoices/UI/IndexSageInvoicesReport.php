@@ -48,16 +48,6 @@ class IndexSageInvoicesReport extends OrgAction
 
         $this->records = $queryBuilder->count('invoices.id');
 
-        if (!request()->query('between')) {
-            $start = Carbon::now()->startOfMonth()->format('Ymd');
-            $end   = Carbon::now()->format('Ymd');
-
-            request()->merge([
-                'between' => [
-                    'date' => "{$start}-{$end}",
-                ],
-            ]);
-        }
 
         $queryBuilder
             ->defaultSort('-date')
@@ -112,7 +102,7 @@ class IndexSageInvoicesReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
-                ->column(key: 'accounting_reference', label: __('Sage Ref'), sortable: false)
+                ->column(key: 'accounting_reference', label: 'Sage Ref')
                 ->column(key: 'type', label: __('Type'))
                 ->column(key: 'is_credit_customer', label: __('Credit Customer'), sortable: true)
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
@@ -121,6 +111,27 @@ class IndexSageInvoicesReport extends OrgAction
                 ->defaultSort('-date');
         };
     }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        // todo: uncomment this when show between dates works on UI
+        //
+        //        if (!$request->has('between')) {
+        //            $start   = Carbon::now()->startOfMonth()->format('Ymd');
+        //            $end     = Carbon::now()->format('Ymd');
+        //            $between = [
+        //                'date' => "$start-$end",
+        //            ];
+        //
+        //            // Keep action attributes in sync
+        //            $this->set('between', $between);
+        //
+        //            // Also merge into request so request()->input('between') returns this value
+        //            $request->merge(['between' => $between]);
+        //            request()->merge(['between' => $between]);
+        //        }
+    }
+
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -137,8 +148,8 @@ class IndexSageInvoicesReport extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Sage Invoices Report'),
                 'pageHead'    => [
-                    'title' => __('Sage Invoices Export Report'),
-                    'icon'  => [
+                    'title'         => __('Sage Invoices Export Report'),
+                    'icon'          => [
                         'title' => __('Sage Invoices'),
                         'icon'  => 'fal fa-file-invoice'
                     ],
