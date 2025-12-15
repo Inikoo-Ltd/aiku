@@ -57,5 +57,6 @@ jobs:
       - name: Process coverage to Codecov
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
         uses: codecov/codecov-action@v5
-        env:
-            CODECOV_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        with:
+          token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          slug: Inikoo-Ltd/aiku
