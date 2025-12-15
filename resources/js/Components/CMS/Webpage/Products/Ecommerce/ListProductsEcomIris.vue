@@ -499,13 +499,11 @@ watch(
                     </div>
 
                     <div>
-                        <!-- <ButtonAddCategoryToPortfolio xproduct="fieldValue.product" :products :categoryId
-                            xproductHasPortfolio="productExistenceInChannels" /> -->
                     </div>
                 </div>
 
                 <!-- Product Grid -->
-               <div :class="responsiveGridClass" class="grid gap-6 p-4 items-stretch auto-rows-fr"
+               <div :class="responsiveGridClass" class="grid gap-6 p-4 md:items-stretch md:auto-rows-fr"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
@@ -522,7 +520,7 @@ watch(
                       <div
                             v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border relative rounded flex flex-1"
+                            class="border relative rounded flex md:flex-1"
                             :class="product.stock ? '' : 'bg-red-100'"
                         >
                             <RenderProduct 
@@ -535,7 +533,6 @@ watch(
                                 :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"
-                                class="flex-1"
                             />
                         </div>
                     </template>
