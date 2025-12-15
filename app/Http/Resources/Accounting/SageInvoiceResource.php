@@ -19,6 +19,10 @@ class SageInvoiceResource extends JsonResource
                 'label' => $this->type === InvoiceTypeEnum::REFUND ? __('Sales Credit') : __('Sales Invoice'),
                 'icon'  => $this->type === InvoiceTypeEnum::REFUND ? 'fal fa-undo' : 'fal fa-file-invoice',
             ],
+            'is_credit_customer'   => [
+                'icon'  => $this->is_credit_customer ? 'fal fa-check-circle' : 'fal fa-circle',
+                'color' => $this->is_credit_customer ? 'green' : ''
+            ],
             'customer'             => [
                 'name'                 => $this->customer_name,
                 'slug'                 => $this->customer_slug,
