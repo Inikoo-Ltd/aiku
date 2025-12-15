@@ -41,7 +41,7 @@
         "vue": "^3.4.27"
     },
     "dependencies": {
-        "@beefree.io/sdk": "^7.0.1",
+        "@beefree.io/sdk": "^10.1.0-feat-load-config-async.0",
         "@checkout.com/checkout-web-components": "^1.4.0",
         "@codemirror/lang-css": "^6.3.0",
         "@codemirror/lang-html": "^6.4.9",
