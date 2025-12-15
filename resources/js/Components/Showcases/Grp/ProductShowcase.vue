@@ -51,6 +51,11 @@ const props = defineProps<{
 			name: string
 			percentage: number | null
 		}[] | null
+		org_stocks: {
+
+		}
+		brands: {}[]
+		tags: {}[]
 		// trade_units: {
 		// 	brand: {}
 		// 	brand_routes: {
@@ -242,12 +247,12 @@ const getTooltips = () => {
 
 		<!-- Product Summary -->
 		<ProductSummary 
-			 :data="{...data.product.data, tags : data.tags, brands : data.brands}" 
-			 :properties="data.properties" 
-			 :parts="data.parts"
-			 :public-attachment="data.attachment_box.public" 
-			 :gpsr="data.gpsr"
-			 :attachments="data.attachment_box"
+			:data="{...data.product.data, tags: data.tags, brands: data.brands}" 
+			:properties="data.properties" 
+			:parts="data.org_stocks"
+			:public-attachment="data.attachment_box.public" 
+			:gpsr="data.gpsr"
+			:attachments="data.attachment_box"
 		/>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
