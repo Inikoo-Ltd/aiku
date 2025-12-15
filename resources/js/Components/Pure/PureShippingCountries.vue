@@ -3,7 +3,8 @@ import { ref, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from '../Elements/Buttons/Button.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInfinity, faPlus, faPen, faPencil } from '@far'
+import { faInfinity, faPen, faPencil } from '@far'
+import { faPlus } from '@fas'
 import { faTrashAlt, faEdit } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureMultiselect from './PureMultiselect.vue'
@@ -160,7 +161,7 @@ const aaa = [
 ]
 
 const _modal_delete = ref<InstanceType<typeof ModalConfirmationDelete> | null>(null)
-console.log('qqqq', _modal_delete?.value)
+const selectedCountryToDelete = ref<any>(null)
 </script>
 
 <template>
@@ -188,9 +189,10 @@ console.log('qqqq', _modal_delete?.value)
                                 <FontAwesomeIcon :icon="faPencil" class="" />
                             </template>
                         </Button>
+                        
                         <Button :icon="faTrashAlt" type="edit" class="text-red-500" size="xs"
                             aclick="deleteItem(index)"
-                            @click="() => _modal_delete?.changeModel()"
+                            @click="() => (_modal_delete?.changeModel(), selectedCountryToDelete = item)"
                         >
                             <template #icon>
                                 <FontAwesomeIcon :icon="faTrashAlt" class="text-red-500" />
@@ -233,14 +235,19 @@ console.log('qqqq', _modal_delete?.value)
     <!-- Section: Remove country -->
     <ModalConfirmationDelete
         ref="_modal_delete"
-        xrouteDelete="props.brand_routes.detach_brand"
-        :title="trans('Are you sure you want to remove :code?', { code: 'getCountryLabel(item.country_code)' })"
+        :routeDelete="{
+            name: props.routes.delete.name,
+            parameters: {
+                shippingCountry: selectedCountryToDelete?.id
+            }
+        }"
+        @success="() => selectedCountryToDelete = null"
+        :title="trans('Are you sure you want to remove :code?', { code: getCountryLabel(selectedCountryToDelete?.country_code) })"
         :description="trans('This will remove the country from allowed shipping countries list.')"
         isFullLoading
         :noLabel="trans('Yes, remove')"
         noIcon="fal fa-times"
-    >
-    </ModalConfirmationDelete>
+    />
 
     <!-- Modal for Add/Edit -->
     <Dialog v-model:visible="showModal" modal header="Add Allowed Shipping Country" :style="{ width: '450px' }">
