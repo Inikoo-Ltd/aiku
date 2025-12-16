@@ -180,7 +180,18 @@ trait IsOrder
             [
                 'label'       => __('Shipping'),
                 'information' => '',
-                'price_total' => $order->shipping_amount
+                'price_total' => $order->shipping_amount,
+                'data'        => [
+                    'engine'              => $order->shipping_engine,
+                    'is_shipping_tbc'     => $order->is_shipping_tbc,
+                    'shipping_tbc_amount' => $order->shipping_tbc_amount,
+                    'shipping_zone_id'    => $order->shipping_zone_id,
+                    'shipping_zone'       => $order->shipping_zone_id ? [
+                        'slug' => $order->shippingZone->slug,
+                        'code' => $order->shippingZone->code,
+                        'name' => $order->shippingZone->name,
+                    ] : null
+                ]
             ]
         ];
 

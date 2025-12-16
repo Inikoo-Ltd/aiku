@@ -30,7 +30,7 @@ class CalculateOrderShipping
 
     public function handle(Order $order, $discount = false): Order
     {
-        if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE, OrderShippingEngineEnum::TO_BE_CONFIRMED_SET])) {
+        if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE])) {
             return $order;
         }
 
@@ -86,6 +86,9 @@ class CalculateOrderShipping
 
 
             list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
+            if ($this->toBeConfirmed) {
+                $shippingAmount = $order->shipping_tbc_amount;
+            }
 
             if (!is_numeric($shippingAmount)) {
                 $shippingAmount = 0;
@@ -100,15 +103,13 @@ class CalculateOrderShipping
             }
 
 
-            if ($this->toBeConfirmed) {
-                $order->update([
-                    'shipping_engine' => OrderShippingEngineEnum::TO_BE_CONFIRMED,
-                ]);
-            } else {
-                $order->update([
-                    'shipping_engine' => OrderShippingEngineEnum::AUTO,
-                ]);
-            }
+            $order->update([
+                'shipping_engine' => OrderShippingEngineEnum::AUTO,
+            ]);
+
+            OrderUpdateIsShippingTBC::run($order);
+
+
         }
 
 

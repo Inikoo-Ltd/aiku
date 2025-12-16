@@ -19,6 +19,7 @@ use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
+use App\Models\Billables\ShippingZone;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Dispatching\DeliveryNote;
@@ -139,6 +140,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_re recargo de equivalencia
  * @property int $number_item_transactions Count of product item transactions in the order
  * @property array<array-key, mixed>|null $offer_meters
+ * @property bool $is_shipping_tbc
+ * @property string|null $shipping_tbc_amount
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -160,6 +163,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Payment> $payments
  * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
+ * @property-read ShippingZone|null $shippingZone
  * @property-read Shop $shop
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
@@ -362,6 +366,11 @@ class Order extends Model implements HasMedia, Auditable
     public function orderPaymentApiPoint(): HasMany
     {
         return $this->hasMany(OrderPaymentApiPoint::class);
+    }
+
+    public function shippingZone(): BelongsTo
+    {
+        return $this->belongsTo(ShippingZone::class);
     }
 
 
