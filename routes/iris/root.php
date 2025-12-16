@@ -16,6 +16,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
+use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
 use Illuminate\Support\Facades\Route;
 
 Route::name('webhooks.')->group(function () {
@@ -76,6 +77,10 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
+
+        // LLMs.txt for AI crawlers
+        Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');
+
 
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');

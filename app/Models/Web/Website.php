@@ -381,4 +381,14 @@ class Website extends Model implements Auditable, HasMedia
         return $this->hasMany(Announcement::class);
     }
 
+    public function llmsTxt(): HasMany
+    {
+        return $this->hasMany(WebsiteLlmsTxt::class);
+    }
+
+    public function activeLlmsTxt(): ?WebsiteLlmsTxt
+    {
+        return WebsiteLlmsTxt::getActiveForWebsite($this);
+    }
+
 }
