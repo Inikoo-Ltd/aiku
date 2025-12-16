@@ -148,6 +148,7 @@ class IndexDepartments extends OrgAction
 
             $table
                 ->defaultSort('code')
+                ->withLabelRecord([__('department'),__('departments')])
                 ->withGlobalSearch()
                 ->withEmptyState(
                     match (class_basename($parent)) {

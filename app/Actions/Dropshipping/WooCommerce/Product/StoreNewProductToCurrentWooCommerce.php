@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -34,7 +33,7 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): void
     {
         $result = $wooCommerceUser->checkConnection();
-        if ($result && Arr::has($result, 'environment')) {
+        if ($result) {
             StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
         } else {
             $wooCommerceUser->customerSalesChannel->update([

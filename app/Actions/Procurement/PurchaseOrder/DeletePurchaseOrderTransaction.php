@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,9 +23,10 @@ class DeletePurchaseOrderTransaction extends OrgAction
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction): void
     {
-        $transaction = $purchaseOrderTransaction;
-        $transaction->delete();
-        CalculatePurchaseOrderTotalAmounts::run($transaction->purchaseOrder);
+        $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
+        $purchaseOrderTransaction->delete();
+        CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
     }
 
     public function action(PurchaseOrderTransaction $purchaseOrderTransaction): void

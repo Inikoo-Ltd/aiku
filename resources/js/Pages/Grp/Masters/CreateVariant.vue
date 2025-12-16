@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
-import { Head, router, useForm } from "@inertiajs/vue3"
+import { Head, useForm, } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
@@ -12,8 +12,6 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { faPlus } from "@fal"
-import Product from "../Org/Catalogue/Product.vue"
-import { fromJSON } from "postcss"
 
 type Variant = {
     label: string
@@ -40,12 +38,14 @@ const props = defineProps<{
 
 const form = useForm({
     product_leader: null as any,
-    variants: [
-        { label: "Color", options: ["Red", "Blue"], active: false },
-        { label: "Size", options: ["L", "XL"], active: false }
-    ] as Variant[],
-    groupBy: "Color",
-    products: {} as Record<string, any>
+    data_variants: {
+        variants: [
+            { label: "Color", options: ["Red", "Blue"], active: false },
+            { label: "Size", options: ["L", "XL"], active: false }
+        ] as Variant[],
+        groupBy: "Color",
+        products: {} as Record<string, any>
+    }
 })
 
 const expanded = ref<Record<string, boolean>>({})
@@ -62,14 +62,14 @@ const normalizeKey = (k: Record<string, string>) =>
         .map(key => `${key}=${k[key]}`)
         .join("|")
 
-const validVariants = computed(() =>
-    form.variants
-        .filter(v => v.label.trim())
+const validVariants = computed(() => {
+    return (form.data_variants.variants ?? [])
+        .filter(v => v?.label?.trim())
         .map(v => ({
             label: v.label,
-            options: v.options.filter(o => o.trim())
+            options: (v.options ?? []).filter(o => o?.trim())
         }))
-)
+})
 
 const getCombinations = (list: { label: string; options: string[] }[]) => {
     const recur = (i: number, cur: any): any[] =>
@@ -88,7 +88,7 @@ const buildNodes = computed<Node[]>(() => {
     if (!variants.length) return []
 
     const getProduct = (keyObj: Record<string, string>) =>
-        form.products[normalizeKey(keyObj)] ?? null
+        form.data_variants.products[normalizeKey(keyObj)] ?? null
 
     if (variants.length === 1) {
         const v = variants[0]
@@ -99,8 +99,8 @@ const buildNodes = computed<Node[]>(() => {
         }))
     }
 
-    const base = variants.find(v => v.label === form.groupBy)
-    const others = variants.filter(v => v.label !== form.groupBy)
+    const base = variants.find(v => v.label === form.data_variants.groupBy)
+    const others = variants.filter(v => v.label !== form.data_variants.groupBy)
     if (!base) return []
 
     return base.options.map(opt => ({
@@ -131,7 +131,7 @@ const setProduct = (node: Node, val: any | null) => {
 
     const key = normalizeKey(node.key)
 
-    form.products[val.id] = {
+    form.data_variants.products[val.id] = {
         ...node.key,
         product: {
             id: val.id,
@@ -145,20 +145,22 @@ const setProduct = (node: Node, val: any | null) => {
 
 
 const toggleActive = (i: number) =>
-    form.variants.forEach((v, idx) => (v.active = idx === i ? !v.active : false))
+    form.data_variants.variants.forEach((v, idx) => (v.active = idx === i ? !v.active : false))
 
 const addVariant = () => {
-    form.variants.forEach(v => (v.active = false))
-    form.variants.push({ label: "", options: [""], active: true })
+    form.data_variants.variants.forEach(v => (v.active = false))
+    form.data_variants.variants.push({ label: "", options: [""], active: true })
 }
 
-const addOption = (i: number) => form.variants[i].options.push("")
+const addOption = (i: number) => form.data_variants.variants[i].options.push("")
 const removeOption = (vi: number, oi: number) =>
-    form.variants[vi].options.splice(oi, 1)
+    form.data_variants.variants[vi].options.splice(oi, 1)
 
 const deleteVariant = (i: number) => {
-    form.variants.splice(i, 1)
-    form.groupBy = form.variants[0]?.label ?? ""
+    form.data_variants.variants.splice(i, 1)
+
+    const first = form.data_variants.variants[0]
+    form.data_variants.groupBy = first ? first.label : ""
 }
 
 const keyToString = (k: Record<string, string>) => JSON.stringify(k)
@@ -166,16 +168,19 @@ const keyToString = (k: Record<string, string>) => JSON.stringify(k)
 
 
 const isValid = computed(() => {
-    console.log("isValid computed called",form.product_leader,validVariants.length)
     if (!form.product_leader) return true
-    if (!form.variants.length) return true
+    if (!form.data_variants.variants.length) return true
     return false
 })
 
+
 const save = () => {
-    if (!isValid) return
+    if (isValid.value) return
+
+
     form.post(route(props.save_route.name, props.save_route.parameters))
 }
+
 </script>
 
 
@@ -202,7 +207,7 @@ const save = () => {
                     Variants <span class="text-red-500">*</span>
                 </label>
 
-                <div v-for="(v, vi) in form.variants" :key="vi" class="border rounded mt-2">
+                <div v-for="(v, vi) in form.data_variants.variants" :key="vi" class="border rounded mt-2">
                     <div v-if="!v.active" class="p-2 cursor-pointer" @click="toggleActive(vi)">
                         <div class="text-sm font-medium">{{ v.label || "Untitled Variant" }}</div>
                         <div class="text-xs text-gray-500">
@@ -243,14 +248,14 @@ const save = () => {
                     </div>
                 </div>
 
-                <Button v-if="form.variants.length < 2" type="dashed" size="xs" class="mt-2" :icon="faPlus"
+                <Button v-if="form?.data_variants?.variants?.length < 2" type="dashed" size="xs" class="mt-2" :icon="faPlus"
                     @click="addVariant">
                     Add Variant
                 </Button>
                 <div class="border-t mt-6">
                     <div v-if="validVariants.length" class="flex items-center gap-2 mt-3">
                         <span class="text-sm">Group by</span>
-                        <select v-model="form.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+                        <select v-model="form.data_variants.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
                             <option v-for="v in validVariants" :key="v.label" :value="v.label">
                                 {{ v.label }}
                             </option>
@@ -277,7 +282,7 @@ const save = () => {
                                         <tr class="hover:bg-gray-50 h-[70px]">
                                             <td class="px-4">
                                                 <div class="flex items-center">
-                                                    <button v-if="form.variants.length > 1 && node.children"
+                                                    <button v-if="form.data_variants.variants.length > 1 && node.children"
                                                         class="w-5 h-5 mr-2 border rounded bg-gray-100 flex items-center justify-center leading-none text-sm font-medium"
                                                         @click="toggleExpand(keyToString(node.key))">
                                                         {{ expanded[keyToString(node.key)] ? "−" : "+" }}
@@ -287,7 +292,7 @@ const save = () => {
                                                 </div>
                                             </td>
 
-                                            <td class="px-4" v-if="form.variants.length === 1">
+                                            <td class="px-4" v-if="form.data_variants.variants.length === 1">
                                                 <PureMultiselectInfiniteScroll :model-value="node.product"
                                                     @update:model-value="val => setProduct(node, val)"
                                                     :fetchRoute="props.master_assets_route" valueProp="id"
@@ -299,7 +304,7 @@ const save = () => {
                                         </tr>
 
                                         <tr v-for="child in node.children"
-                                            v-if="form.variants.length > 1 && expanded[keyToString(node.key)]"
+                                            v-if="form.data_variants.variants.length > 1 && expanded[keyToString(node.key)]"
                                             :key="keyToString(child.key)" class="hover:bg-gray-50 h-[70px]">
                                             <td class="px-8 text-sm text-gray-700">
                                                 ↳ {{ child.label }}

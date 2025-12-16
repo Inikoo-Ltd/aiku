@@ -22,6 +22,7 @@ enum MasterFamilyTabsEnum: string
     case SALES     = 'sales';
 
     case HISTORY   = 'history';
+    case VARIANTS   = 'variants';
 
 
     public function blueprint(): array
@@ -51,6 +52,10 @@ enum MasterFamilyTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
+            MasterFamilyTabsEnum::VARIANTS => [
+                 'title' => __('Variants'),
+                 'icon'  => 'fal fa-tachometer-alt-fast',
+             ], 
         };
     }
 }

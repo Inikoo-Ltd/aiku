@@ -114,6 +114,7 @@ class IndexMasterDepartments extends OrgAction
             }
             $table
                 ->defaultSort('code')
+                ->withLabelRecord([__('master department'),__('master departments')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(

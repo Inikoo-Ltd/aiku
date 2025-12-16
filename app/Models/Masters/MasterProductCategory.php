@@ -12,6 +12,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\Group;
+use App\Models\Masters\MasterVariant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
@@ -203,6 +204,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function masterSubDepartment(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_sub_department_id');
+    }
+
+    public function masterVariant(): HasMany
+    {
+        return $this->hasMany(MasterVariant::class, 'master_family_id');
     }
 
     public function parent(): BelongsTo

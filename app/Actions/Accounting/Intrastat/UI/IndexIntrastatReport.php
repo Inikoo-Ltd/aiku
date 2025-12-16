@@ -9,7 +9,6 @@
 namespace App\Actions\Accounting\Intrastat\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Reports\WithReportsSubNavigation;
 use App\Actions\UI\Reports\IndexReports;
 use App\Http\Resources\Accounting\IntrastatMetricsResource;
 use App\InertiaTable\InertiaTable;
@@ -28,17 +27,78 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexIntrastatReport extends OrgAction
 {
-    use WithReportsSubNavigation;
-
     private int $records;
+    private string $bucket = 'all';
 
     public function authorize(ActionRequest $request): bool
     {
         return in_array($this->organisation->id, $request->user()->authorisedOrganisations()->pluck('id')->toArray());
     }
 
-    public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
+    protected function getElementGroups(Organisation $organisation, ?array $dateFilter = null): array
     {
+        $withVatQuery = IntrastatMetrics::where('organisation_id', $organisation->id)
+            ->whereHas('taxCategory', function ($query) {
+                $query->where('rate', '>', 0.0);
+            });
+
+        $withoutVatQuery = IntrastatMetrics::where('organisation_id', $organisation->id)
+            ->where(function ($query) {
+                $query->whereHas('taxCategory', function ($q) {
+                    $q->where('rate', '=', 0.0);
+                })
+                ->orWhereNull('tax_category_id');
+            });
+
+        if ($dateFilter && !empty($dateFilter['date'])) {
+            $raw = $dateFilter['date'];
+            [$start, $end] = explode('-', $raw);
+            $start = \Carbon\Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
+            $end   = \Carbon\Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');
+
+            $withVatQuery->whereBetween('date', [$start, $end]);
+            $withoutVatQuery->whereBetween('date', [$start, $end]);
+        }
+
+        return [
+            'vat_status' => [
+                'label'    => __('VAT Status'),
+                'elements' => [
+                    'with_vat'    => [
+                        __('Invoices with VAT'),
+                        $withVatQuery->count()
+                    ],
+                    'without_vat' => [
+                        __('Invoices with no VAT'),
+                        $withoutVatQuery->count(),
+                        __('No VAT')
+                    ],
+                ],
+                'engine' => function ($query, $elements) {
+                    if (in_array('with_vat', $elements)) {
+                        $query->whereHas('taxCategory', function ($q) {
+                            $q->where('rate', '>', 0.0);
+                        });
+                    }
+                    if (in_array('without_vat', $elements)) {
+                        $query->where(function ($q) {
+                            $q->whereHas('taxCategory', function ($subQuery) {
+                                $subQuery->where('rate', '=', 0.0);
+                            })
+                            ->orWhereNull('tax_category_id');
+                        });
+                    }
+                }
+            ],
+        ];
+    }
+
+    public function handle(Organisation $organisation, $prefix = null, $bucket = null, $dateFilter = null): LengthAwarePaginator
+    {
+        if ($bucket) {
+            $this->bucket = $bucket;
+        }
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('intrastat_metrics.tariff_code', $value);
@@ -54,6 +114,28 @@ class IndexIntrastatReport extends OrgAction
 
         $queryBuilder->leftJoin('countries', 'intrastat_metrics.country_id', '=', 'countries.id');
         $queryBuilder->leftJoin('tax_categories', 'intrastat_metrics.tax_category_id', '=', 'tax_categories.id');
+
+        if ($this->bucket == 'with_vat') {
+            $queryBuilder->whereHas('taxCategory', function ($query) {
+                $query->where('rate', '>', 0.0);
+            });
+        } elseif ($this->bucket == 'without_vat') {
+            $queryBuilder->where(function ($query) {
+                $query->whereHas('taxCategory', function ($q) {
+                    $q->where('rate', '=', 0.0);
+                })
+                ->orWhereNull('tax_category_id');
+            });
+        } elseif ($this->bucket == 'all') {
+            foreach ($this->getElementGroups($organisation, $dateFilter) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
+        }
 
         $this->records = $queryBuilder->count('intrastat_metrics.id');
 
@@ -85,9 +167,9 @@ class IndexIntrastatReport extends OrgAction
             ->paginate(perPage: 50);
     }
 
-    public function tableStructure(Organisation $organisation, ?array $exportLinks = null, $prefix = null): Closure
+    public function tableStructure(Organisation $organisation, ?array $exportLinks = null, $prefix = null, $bucket = null, $dateFilter = null): Closure
     {
-        return function (InertiaTable $table) use ($organisation, $exportLinks, $prefix) {
+        return function (InertiaTable $table) use ($organisation, $exportLinks, $prefix, $bucket, $dateFilter) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -101,7 +183,19 @@ class IndexIntrastatReport extends OrgAction
                         'count'       => $this->records,
                     ]
                 )
-                ->betweenDates(['date'])
+                ->betweenDates(['date']);
+
+            if ($bucket == 'all') {
+                foreach ($this->getElementGroups($organisation, $dateFilter) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
+            }
+
+            $table
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'tariff_code', label: __('Tariff Code'), sortable: true, searchable: true)
                 ->column(key: 'country', label: __('Destination'))
@@ -116,8 +210,16 @@ class IndexIntrastatReport extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($organisation, $request);
+        $dateFilter = $request->input('between', []);
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, null, 'all', $dateFilter);
+    }
+
+    public function inReports(Organisation $organisation): int
+    {
+        $this->handle($organisation, null, 'all');
+
+        return $this->records;
     }
 
     public function htmlResponse(LengthAwarePaginator $metrics, ActionRequest $request): Response
@@ -130,6 +232,8 @@ class IndexIntrastatReport extends OrgAction
             ];
         });
 
+        $dateFilter = $request->input('between', []);
+
         return Inertia::render(
             'Org/Accounting/Intrastat/IntrastatReport',
             [
@@ -141,14 +245,13 @@ class IndexIntrastatReport extends OrgAction
                         'title' => __('Intrastat'),
                         'icon'  => 'fal fa-file-export'
                     ],
-                    'subNavigation' => $this->getReportsNavigation($this->organisation),
                 ],
                 'data'        => IntrastatMetricsResource::collection($metrics),
                 'filters'     => [
                     'countries' => $euCountries,
                 ],
             ]
-        )->table($this->tableStructure($this->organisation));
+        )->table($this->tableStructure($this->organisation, null, null, $this->bucket, $dateFilter));
     }
 
     public function jsonResponse(LengthAwarePaginator $metrics): AnonymousResourceCollection

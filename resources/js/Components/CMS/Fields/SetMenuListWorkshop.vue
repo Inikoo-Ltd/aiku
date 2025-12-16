@@ -1,192 +1,217 @@
 <script setup lang="ts">
+import { ref, computed } from "vue"
 import draggable from "vuedraggable"
-import Drawer from 'primevue/drawer';
-import { ref } from "vue";
-import EditMode from "../Website/Menus/EditMode/EditMode.vue";
-import { routeType } from "@/types/route";
-import { debounce } from "lodash-es"
-import { ulid } from "ulid";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faTrash } from "@fas";
-import { useConfirm } from "primevue/useconfirm"
+import Drawer from "primevue/drawer"
 import ConfirmPopup from "primevue/confirmpopup"
-import { faCopy, faExclamationTriangle } from "@far";
-import { faEye, faEyeSlash } from "@fal";
-import { trans } from "laravel-vue-i18n"
+import { useConfirm } from "primevue/useconfirm"
 
-const props = defineProps<{
-    data: {
-        data: {
-            component: string,
-            fieldValue: {
-                navigation: Array<any>
-            }
-        }
-    }
-}>()
+import cloneDeep from "lodash-es/cloneDeep"
+import { ulid } from "ulid"
 
-const emits = defineEmits<{
-    (e: 'auto-save'): void
-}>()
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import EditMode from "../Website/Menus/EditMode/EditMode.vue"
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faEye, faEyeSlash } from "@fal"
+import { faCopy } from "@far"
+import { faTrash } from "@fas"
+
+const dataModel = defineModel<{
+	data: {
+		component: string
+		fieldValue: {
+			navigation: any[]
+		}
+	}
+}>("data")
 
 const confirm = useConfirm()
-const visibleDrawer = ref(false);
-const selectedMenu = ref(0)
-const deleteButtonRefs = ref<HTMLElement[]>([]);
+const visibleDrawer = ref(false)
+const selectedMenu = ref<number | null>(null)
 
-const allowMove = (evt: any) => {
-    return evt.originalEvent?.target?.closest('.drag-handle') !== null
-}
 
-const SetMenuActive = (index: number) => {
-    visibleDrawer.value = true
-    selectedMenu.value = index
-}
-
-const onChangeNavigation = (setData: object) => {
-    props.data.data.fieldValue.navigation[selectedMenu] = setData
-    debouncedSendUpdate()
-}
-
-const debouncedSendUpdate = debounce(() => autoSave(), 1000, {
-    leading: false,
-    trailing: true,
+const navigation = computed(() => {
+	return dataModel.value?.data.fieldValue.navigation ?? []
 })
 
+
+const updateNavigation = (updater: (list: any[]) => any[] | void) => {
+	if (!dataModel.value) return
+
+	const nextNavigation = cloneDeep(
+		dataModel.value.data.fieldValue.navigation
+	)
+
+	const result = updater(nextNavigation)
+
+	dataModel.value = {
+		...dataModel.value,
+		data: {
+			...dataModel.value.data,
+			fieldValue: {
+				...dataModel.value.data.fieldValue,
+				navigation: result ?? nextNavigation,
+			},
+		},
+	}
+}
+
+
+const allowMove = (evt: any) =>
+	evt.originalEvent?.target?.closest(".drag-handle") !== null
+
+const onDragUpdate = (newList: any[]) => {
+	updateNavigation(() => newList)
+}
+
+/* --------------------------------------------
+ * Actions
+ * -------------------------------------------- */
+const setMenuActive = (index: number) => {
+	selectedMenu.value = index
+	visibleDrawer.value = true
+}
+
 const addNavigation = () => {
-    props?.data?.data?.fieldValue?.navigation?.push({
-        label: "New Navigation",
-        id: ulid(),
-        type: "single",
-    })
-    console.log(props?.data?.data?.fieldValue?.navigation);
-    debouncedSendUpdate()
+	updateNavigation(list => {
+		list.push({
+			id: ulid(),
+			label: "New Navigation",
+			type: "single",
+			hidden: false,
+		})
+	})
 }
 
-const deleteNavigation = (index: Number) => {
-    props?.data?.data?.fieldValue?.navigation?.splice(index, 1)
-    debouncedSendUpdate()
+const deleteNavigation = (index: number) => {
+	updateNavigation(list => {
+		list.splice(index, 1)
+	})
+
+	if (selectedMenu.value === index) {
+		selectedMenu.value = null
+		visibleDrawer.value = false
+	}
 }
 
-const hiddenNavigation = (index: number) => {
-    const nav = props.data.data.fieldValue?.navigation
-    if (!nav || !nav[index]) return
-
-    nav[index].hidden = !Boolean(nav[index].hidden)
-
-    debouncedSendUpdate()
+const toggleHiddenNavigation = (index: number) => {
+	updateNavigation(list => {
+		if (list[index]) {
+			list[index].hidden = !list[index].hidden
+		}
+	})
 }
 
-const copyNavigation = (index: number) => {
-    const nav = props.data.data.fieldValue?.navigation
-    if (!nav || !nav[index]) return
-
-    const duplicated = { ...nav[index] }  // copy new object
-
-    nav.splice(index + 1, 0, duplicated)  // insert without deleting anything
-
-    debouncedSendUpdate()
+const duplicateNavigation = (index: number) => {
+	updateNavigation(list => {
+		const nav = list[index]
+		if (!nav) return
+		list.splice(index + 1, 0, cloneDeep(nav))
+	})
 }
 
+const updateNavigationFromDrawer = (value: any) => {
+	if (selectedMenu.value === null) return
 
-
-
-const autoSave = async (event) => {
-   emits('auto-save')
+	updateNavigation(list => {
+		list[selectedMenu.value!] = cloneDeep(value)
+	})
 }
-
 </script>
 
 <template>
-    <!-- Add Menu Button -->
-    <div class="flex justify-end m-2">
-        <Button :label="'add Navigation'" type="create" :size="'xs'" @click="() => addNavigation()" />
-    </div>
+	<div class="flex justify-end m-2">
+		<Button
+			label="Add Navigation"
+			type="create"
+			size="xs"
+			@click="addNavigation"
+		/>
+	</div>
 
-    <!-- Menu List -->
-    <draggable 
-        :list="data.data?.fieldValue.navigation" 
-        ghost-class="ghost" 
-        chosen-class="chosen" 
-        drag-class="dragging"
-        group="column" 
-        itemKey="id" 
-        class="space-y-2" 
-        :move="allowMove" 
-        :fallbackOnBody="true" 
-        @end="autoSave"
-    >
-        <template #item="{ element, index }">
-            <div @click="() => SetMenuActive(index)"
-                class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400"
-                :class="element.hidden ? 'opacity-50 hover:opacity-100' : ''"
-            >
-                <!-- Drag Handle -->
-                <div class="drag-handle cursor-move px-3 py-2 text-gray-500 hover:text-indigo-600"
-                    title="Drag to reorder" @click.stop>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
-                    </svg>
-                </div>
+	<draggable
+		:list="navigation"
+		item-key="id"
+		class="space-y-2"
+		ghost-class="ghost"
+		chosen-class="chosen"
+		drag-class="dragging"
+		:fallbackOnBody="true"
+		:move="allowMove"
+		@update="onDragUpdate"
+	>
+		<template #item="{ element, index }">
+			<div
+				@click="setMenuActive(index)"
+				class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-indigo-400"
+				:class="element.hidden ? 'opacity-50 hover:opacity-100' : ''"
+			>
+				<div
+					class="drag-handle cursor-move px-3 py-2 text-gray-500 hover:text-indigo-600"
+					@click.stop
+				>
+					≡
+				</div>
 
-                <!-- Label -->
-                <div class="flex-1 px-4 py-2">
-                    <div class="text-sm font-semibold text-gray-700">{{ element.label }}</div>
-                </div>
+				<div class="flex-1 px-4 py-2">
+					<div class="text-sm font-semibold text-gray-700">
+						{{ element.label }}
+					</div>
+				</div>
 
-                <button @click.stop="() => hiddenNavigation(index)"
-                    class="px-2 py-1"
-                    v-tooltip="element.hidden ? trans('Hide menu') : trans('Show menu')">
-                    <FontAwesomeIcon v-if="element.hidden" :icon="faEyeSlash" class="text-red-400 hover:text-red-700" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else :icon="faEye" class="text-gray-400 hover:text-gray-700" fixed-width aria-hidden="true" />
-                </button>
+				<button
+					@click.stop="toggleHiddenNavigation(index)"
+					class="px-2 py-1"
+				>
+					<FontAwesomeIcon
+						:icon="element.hidden ? faEyeSlash : faEye"
+						class="text-gray-400 hover:text-gray-700"
+					/>
+				</button>
 
-                <button @click.stop="() => copyNavigation(index)"
-                    class="px-2 py-1 text-gray-400 hover:text-gray-700"
-                    v-tooltip="trans('Duplicate menu')"
-                >
-                    <FontAwesomeIcon :icon="faCopy" class="" fixed-width aria-hidden="true" />
-                </button>
+				<button
+					@click.stop="duplicateNavigation(index)"
+					class="px-2 py-1"
+				>
+					<FontAwesomeIcon
+						:icon="faCopy"
+						class="text-gray-400 hover:text-gray-700"
+					/>
+				</button>
 
-                <!-- Delete Button -->
-                <button :ref="el => deleteButtonRefs[index] = el" @click.stop="() => deleteNavigation(index)"
-                    class="px-2 py-1 text-red-400 hover:text-red-700"
-                    v-tooltip="trans('Delete menu')">
-                    <FontAwesomeIcon icon="fal fa-trash-alt" class="" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-        </template>
-    </draggable>
+				<button
+					@click.stop="deleteNavigation(index)"
+					class="px-2 py-1"
+				>
+					<FontAwesomeIcon
+						:icon="faTrash"
+						class="text-red-400 hover:text-red-700"
+					/>
+				</button>
+			</div>
+		</template>
+	</draggable>
 
-    <!-- Drawer for Menu Editing -->
-    <Drawer 
-        v-model:visible="visibleDrawer" 
-        :header="data?.data?.fieldValue?.navigation?.[selectedMenu]?.label"
-        position="right" 
-        :pt="{ root: { style: 'width: 40vw' } }"
-    >
-        <EditMode 
-            v-model="data.data.fieldValue.navigation[selectedMenu]"
-            @update:model-value="(data : {}) => onChangeNavigation(data)" 
-        />
-    </Drawer>
+	<Drawer
+		v-model:visible="visibleDrawer"
+		:header="selectedMenu !== null ? navigation[selectedMenu]?.label : ''"
+		position="right"
+		:pt="{ root: { style: 'width: 40vw' } }"
+	>
+		<EditMode
+			v-if="selectedMenu !== null"
+			:model-value="navigation[selectedMenu]"
+			@update:model-value="updateNavigationFromDrawer"
+		/>
+	</Drawer>
 
-    <ConfirmPopup>
-        <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
-        </template>
-    </ConfirmPopup>
+	<ConfirmPopup />
 </template>
-
 
 <style scoped lang="scss">
 .ghost {
-    opacity: 0.5;
-    background-color: #e2e8f0;
-    border: 2px dashed #4F46E5;
+	opacity: 0.5;
+	background-color: #e2e8f0;
+	border: 2px dashed #4f46e5;
 }
-
 </style>

@@ -20,6 +20,7 @@ use App\Enums\UI\CRM\CustomersTabsEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSource;
 use App\Models\SysAdmin\Group;
@@ -90,7 +91,7 @@ class IndexCustomers extends OrgAction
         return $this->handle($shop);
     }
 
-    public function handle(Group|Organisation|Shop|TrafficSource $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|Product|TrafficSource $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
             $query->where(function ($query) use ($value, $parent) {
@@ -131,6 +132,16 @@ class IndexCustomers extends OrgAction
             }
         }
 
+        if ($parent instanceof Product) {
+            $queryBuilder->whereIn('customers.id', function ($query) use ($parent) {
+                $query->select('customer_id')
+                    ->from('transactions')
+                    ->where('model_id', $parent->id)
+                    ->where('model_type', 'Product')
+                    ->distinct();
+            });
+        }
+
         $allowedSort = [
             'reference',
             'name',
@@ -164,14 +175,13 @@ class IndexCustomers extends OrgAction
             $allowedSort = array_merge(['organisation_name', 'shop_name'], $allowedSort);
         } elseif (class_basename($parent) == 'TrafficSource') {
             $queryBuilder->where('customers.traffic_source_id', $parent->id);
-        } else {
+        } elseif (class_basename($parent) == 'Organisation') {
             $queryBuilder
                 ->where('customers.organisation_id', $parent->id)
                 ->select([
                     'shops.code as shop_code',
                     'shops.slug as shop_slug',
-                ])
-                ->leftJoin('shops', 'shops.id', 'shop_id');
+                ]);
         }
 
         if ($parent instanceof TrafficSource) {
@@ -211,7 +221,7 @@ class IndexCustomers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop|TrafficSource $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|Organisation|Shop|Product|TrafficSource $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
@@ -244,6 +254,7 @@ class IndexCustomers extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('customer'),__('customers')])
                 ->withGlobalSearch()
                 ->withEmptyState(
                     match (class_basename($parent)) {

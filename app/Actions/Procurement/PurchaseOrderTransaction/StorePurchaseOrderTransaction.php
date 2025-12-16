@@ -10,10 +10,11 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreProcurementOrderItem;
-use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -34,6 +35,7 @@ class StorePurchaseOrderTransaction extends OrgAction
         $purchaseOrderTransaction = $purchaseOrder->purchaseOrderTransactions()->create($modelData);
 
         CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder)->delay($this->hydratorsDelay);
 
         return $purchaseOrderTransaction;
     }
@@ -44,26 +46,24 @@ class StorePurchaseOrderTransaction extends OrgAction
             'quantity_ordered' => ['required', 'numeric', 'min:0'],
         ];
 
-        if (!$this->strict) {
-            $rules['state']           = ['sometimes', 'required', Rule::enum(PurchaseOrderTransactionStateEnum::class)];
+        if (! $this->strict) {
+            $rules['state'] = ['sometimes', 'required', Rule::enum(PurchaseOrderTransactionStateEnum::class)];
             $rules['delivery_state'] = ['sometimes', 'required', Rule::enum(PurchaseOrderTransactionDeliveryStateEnum::class)];
-            $rules['submitted_at']    = ['sometimes', 'required', 'date'];
-            $rules['net_amount']      = ['sometimes', 'numeric'];
-            $rules['org_exchange']    = ['sometimes', 'numeric'];
-            $rules['grp_exchange']    = ['sometimes', 'numeric'];
-
+            $rules['submitted_at'] = ['sometimes', 'required', 'date'];
+            $rules['net_amount'] = ['sometimes', 'numeric'];
+            $rules['org_exchange'] = ['sometimes', 'numeric'];
+            $rules['grp_exchange'] = ['sometimes', 'numeric'];
 
             $rules = $this->noStrictStoreRules($rules);
         }
-
 
         return $rules;
     }
 
     public function action(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, array $modelData, int $hydratorsDelay = 0, bool $strict = true): PurchaseOrderTransaction
     {
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($purchaseOrder->organisation, $modelData);
 

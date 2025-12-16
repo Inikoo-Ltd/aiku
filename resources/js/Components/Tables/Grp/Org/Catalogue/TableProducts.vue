@@ -380,7 +380,7 @@ const _table = ref<InstanceType<typeof Table> | null>(null)
             </div>
         </template>
 
-        <template #cell(unit)="{ item: product }"> 
+        <template #cell(unit)="{ item: product }">
                 <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput>
                 <span v-else>{{ product.unit }}</span>
         </template>
@@ -465,6 +465,12 @@ const _table = ref<InstanceType<typeof Table> | null>(null)
             <Icon :data="product['state_icon']" />
         </template>
 
+        <template #cell(customers_invoiced_all)="{ item }">
+            <Link :href="productRoute(item) + '?tab=customers'" class="secondaryLink">
+                {{ item.customers_invoiced_all }}
+            </Link>
+        </template>
+
         <template #cell(actions)="{ item }">
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
                 :method="routes?.detach?.method" :data="{
@@ -524,11 +530,11 @@ const _table = ref<InstanceType<typeof Table> | null>(null)
                 class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
                 fixed-width aria-hidden='true' />
         </template>
-        
+
 
         <template #header-checkbox>
             <div></div>
         </template>
-                                                   
+
     </Table>
 </template>

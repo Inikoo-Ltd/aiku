@@ -14,7 +14,6 @@ use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,10 +34,8 @@ class TestConnectionWooCommerceUser extends RetinaAction
 
         $connection = $wooCommerceUser->checkConnection();
 
-        if (! Arr::has($connection, 'environment')) {
-            $baseMsg = Arr::get($connection, '0');
-
-            throw ValidationException::withMessages(['message' => is_string($baseMsg) ? Arr::get(json_decode($baseMsg, true), 'message') : $baseMsg]);
+        if (! $connection) {
+            throw ValidationException::withMessages(['message' => __('Unknown error: contact administrator')]);
         }
 
         return null;
