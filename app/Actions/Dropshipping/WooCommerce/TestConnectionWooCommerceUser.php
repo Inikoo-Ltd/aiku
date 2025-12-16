@@ -35,10 +35,8 @@ class TestConnectionWooCommerceUser extends RetinaAction
 
         $connection = $wooCommerceUser->checkConnection();
 
-        if (! Arr::has($connection, 'environment')) {
-            $baseMsg = Arr::get($connection, '0');
-
-            throw ValidationException::withMessages(['message' => is_string($baseMsg) ? Arr::get(json_decode($baseMsg, true), 'message') : $baseMsg]);
+        if (! $connection) {
+            throw ValidationException::withMessages(['message' => __('Unknown error: contact administrator')]);
         }
 
         return null;
