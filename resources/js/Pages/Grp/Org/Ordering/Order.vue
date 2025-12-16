@@ -1244,7 +1244,7 @@ const labelToBePaid = (toBePaidValue: string) => {
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
                         <template #cell_shipping="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
-                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class"> <pre>{{fieldSummary}}</pre>
                                     <span>{{ fieldSummary.label }}</span>
                                     <span v-if="fieldSummary.data.engine === 'manual'" class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
                                         {{ trans('Manual') }}
