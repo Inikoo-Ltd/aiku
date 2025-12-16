@@ -44,72 +44,13 @@ trait WithFaireApiRequest
     }
 
     /**
-     * Normalize error message from API response
-     *
-     * @param array $errorData
-     * @return array|null
-     */
-    public function normalizeErrorMessage(array $errorData): ?array
-    {
-        // If empty array, no error
-        if (empty($errorData)) {
-            return null;
-        }
-
-        // Check if it's an indexed array (has numeric keys starting from 0)
-        $firstError = $errorData[0] ?? $errorData;
-
-        // Case 1: Already has 'message' key (array format)
-        if (is_array($firstError) && isset($firstError['message'])) {
-            return ['message' => $firstError['message']];
-        }
-
-        // Case 2: Has 'code' and 'message' keys
-        if (is_array($firstError) && isset($firstError['code'], $firstError['message'])) {
-            return ['message' => $firstError['message']];
-        }
-
-        // Case 3: Has only 'code' key
-        if (is_array($firstError) && isset($firstError['code'])) {
-            return ['message' => 'Error: ' . $firstError['code']];
-        }
-
-        // Case 4: String error (might be JSON string or plain text)
-        if (is_string($firstError)) {
-            // Try to decode if it's JSON
-            $decoded = json_decode($firstError, true);
-
-            // If it decoded successfully and has a message key
-            if (is_array($decoded) && isset($decoded['message'])) {
-                return ['message' => $decoded['message']];
-            }
-
-            // If it has code and message
-            if (is_array($decoded) && isset($decoded['code'], $decoded['message'])) {
-                return ['message' => $decoded['message']];
-            }
-
-            // Check if it's HTML
-            if (str_starts_with(trim($firstError), '<!DOCTYPE') || str_starts_with(trim($firstError), '<')) {
-                return ['message' => 'Server returned HTML error page'];
-            }
-
-            // Plain text error
-            return ['message' => trim($firstError)];
-        }
-
-        // Default fallback
-        return ['message' => 'Unknown error occurred'];
-    }
-
-    /**
      * Initialize the Faire API credentials
      *
      * @return void
      */
     protected function initFaireApi(): void
     {
-        $this->faireApiToken = $this->api_token;
+        $this->faireApiToken = $this->access_token;
     }
 
     /**
