@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexVariants;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
@@ -24,6 +25,7 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\Masters\MasterFamiliesSalesResource;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterFamilySales;
+use App\Http\Resources\Masters\MasterVariantsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -235,6 +237,10 @@ class ShowMasterFamily extends GrpAction
                 MasterFamilyTabsEnum::IMAGES->value => $this->tab == MasterFamilyTabsEnum::IMAGES->value ?
                     fn () => GetMasterProductCategoryImages::run($masterFamily)
                     : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterFamily)),
+
+                /*  MasterFamilyTabsEnum::VARIANTS->value => $this->tab == MasterFamilyTabsEnum::VARIANTS->value ?
+                    fn () => MasterVariantsResource::collection(IndexVariants::run($masterFamily))
+                    : Inertia::lazy(fn () => MasterVariantsResource::collection(IndexVariants::run($masterFamily))), */
 
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
