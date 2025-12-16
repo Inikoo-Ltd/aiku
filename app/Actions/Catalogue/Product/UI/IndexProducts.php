@@ -123,6 +123,7 @@ class IndexProducts extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('product'),__('products')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [

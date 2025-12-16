@@ -132,7 +132,7 @@ class IndexOrgAgents extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('agents'),
+                'title'       => __('Agents'),
                 'pageHead'    => [
                     'model'   => __('Procurement'),
                     'title'   => __('Agents'),

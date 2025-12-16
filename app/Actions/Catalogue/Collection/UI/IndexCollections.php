@@ -176,6 +176,7 @@ class IndexCollections extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('collection'),__('collections')])
                 ->withEmptyState(
                     [
                         'title'       => __("No collections found"),

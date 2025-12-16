@@ -254,6 +254,7 @@ class IndexCustomers extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('customer'),__('customers')])
                 ->withGlobalSearch()
                 ->withEmptyState(
                     match (class_basename($parent)) {

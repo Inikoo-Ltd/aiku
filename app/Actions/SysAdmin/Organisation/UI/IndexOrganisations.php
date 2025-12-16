@@ -87,6 +87,7 @@ class IndexOrganisations extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('organisation'),__('organisations')])
                 ->withEmptyState(
                     [
                         'title'       => __('no organisation'),
