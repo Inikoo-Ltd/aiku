@@ -22,11 +22,11 @@ library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRig
 
 const props = defineProps<{
     product: ProductResource
-    customerData : any
+    customerData: any
     buttonStyle?: any
 }>()
 
-const customer = ref({...props.customerData})
+const customer = ref({ ...props.customerData })
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -51,13 +51,13 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
             route('iris.models.transaction.store', {
                 product: product.id
             }),
-            { 
+            {
                 quantity: quantity ?? get(customer.value, ['quantity_ordered_new'], customer.value.quantity_ordered)
             }
         )
 
         if (response.status !== 200) {
-            
+
         }
 
         const productToAddToBasket = {
@@ -66,7 +66,7 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
             quantity_ordered: response.data?.quantity_ordered,
             quantity_ordered_new: response.data?.quantity_ordered,
         }
-        
+
         // Check the product in Basket, if exist: replace, not exist: push
         const products = layout.rightbasket?.products
         if (products) {
@@ -114,8 +114,8 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
     } finally {
         isLoadingSubmitQuantityProduct.value = false
     }
-    
-    
+
+
 }
 
 const onUpdateQuantity = (product: ProductResource) => {
@@ -125,7 +125,7 @@ const onUpdateQuantity = (product: ProductResource) => {
 
     router.post(
         route('iris.models.transaction.update', {
-            transaction: customer.value.transaction_id 
+            transaction: customer.value.transaction_id
         }),
         {
             quantity_ordered: get(product, ['quantity_ordered_new'], null)
@@ -134,7 +134,7 @@ const onUpdateQuantity = (product: ProductResource) => {
             preserveScroll: true,
             preserveState: true,
             // only: ['iris'],
-            onStart: () => { 
+            onStart: () => {
                 setStatus('loading')
                 isLoadingSubmitQuantityProduct.value = true
             },
@@ -168,7 +168,7 @@ const onUpdateQuantity = (product: ProductResource) => {
                 layout.reload_handle()
             },
             onError: errors => {
-                console.log('eee',errors)
+                console.log('eee', errors)
                 setStatus('error')
                 notify({
                     title: trans("Something went wrong"),
@@ -212,16 +212,52 @@ const compIsAddToBasket = computed(() => {
 })
 
 const showWarning = () => {
-      notify({
-      title: "Stock limit reached",
-      text: `You cannot add more than ${customer.value.stock} items.`,
-      type: "error",
+    notify({
+        title: "Stock limit reached",
+        text: `You cannot add more than ${customer.value.stock} items.`,
+        type: "error",
     })
 }
 
+const incrementQty = () => {
+    const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
+
+    if (current >= customer.value.stock) {
+        showWarning()
+        return
+    }
+
+    set(customer.value, ['quantity_ordered_new'], current + 1)
+    debAddAndUpdateProduct()
+}
+
+const decrementQty = () => {
+    const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
+    const next = Math.max(0, current - 1)
+
+    set(customer.value, ['quantity_ordered_new'], next)
+    debAddAndUpdateProduct()
+}
+
+const onManualInput = (e: Event) => {
+    const value = Number((e.target as HTMLInputElement).value)
+
+    if (Number.isNaN(value)) return
+
+    if (value > customer.value.stock) {
+        showWarning()
+        set(customer.value, ['quantity_ordered_new'], customer.value.stock)
+    } else {
+        set(customer.value, ['quantity_ordered_new'], Math.max(0, value))
+    }
+
+    debAddAndUpdateProduct()
+}
+
+
 // Watch: if parent refetch the Customer Data (maybe RightSideBasket have update the quantity)
 watch(() => props.customerData, (newVal) => {
-    customer.value = {...newVal}
+    customer.value = { ...newVal }
 }, {
     deep: true
 })
@@ -229,63 +265,72 @@ watch(() => props.customerData, (newVal) => {
 
 <template>
     <div class="">
-        <div class="flex items-center gap-2 relative ">
-            <div class="w-32">
-                <InputNumber
-                    :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? (get(customer, ['quantity_ordered'], 0) ?? 0) : get(customer, ['quantity_ordered_new'], 0)"
-                    @input="(e) => (e.value ? set(customer, ['quantity_ordered_new'], e.value) : set(customer, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
-                    inputId="integeronly"
-                    fluid
-                    showButtons
-                    :disabled="isLoadingSubmitQuantityProduct"
-                    :min="0"
-                    :max="customer.stock"
-                    buttonLayout="horizontal"
-                    :inputStyle="{
-                        textAlign: 'center',
-                        minWidth: '4rem'
-                    }"
-                >
-                    <template #incrementicon>
-                        <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" @click="()=> customer.quantity_ordered == customer.stock ? showWarning() : null " />
-                    </template>
-                    <template #decrementicon>
-                        <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
-                    </template>
-                </InputNumber>
+        <div class="flex items-center gap-2 relative">
+            <div class="flex items-center border rounded-lg overflow-hidden w-32">
+                <!-- Decrement -->
+                <button type="button" class="px-3 py-2 disabled:opacity-50" :disabled="isLoadingSubmitQuantityProduct"
+                    @click="decrementQty">
+                    <FontAwesomeIcon icon="fas fa-minus" />
+                </button>
+
+                <!-- Input -->
+                <input type="number" class="w-full h-10 text-center leading-none outline-none appearance-none" :min="0"
+                    :max="customer.stock" :disabled="isLoadingSubmitQuantityProduct" :value="customer.quantity_ordered_new === null || customer.quantity_ordered_new === undefined
+                        ? customer.quantity_ordered ?? 0
+                        : customer.quantity_ordered_new
+                        " @input="onManualInput" />
+
+                <!-- Increment -->
+                <button type="button" class="px-3 py-2 disabled:opacity-50" :disabled="isLoadingSubmitQuantityProduct"
+                    @click="incrementQty">
+                    <FontAwesomeIcon icon="fas fa-plus" />
+                </button>
             </div>
-           
-            
-            <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/>
+
+            <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7" />
 
             <div v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" class="ml-8">
-                <Button
-                    v-if="compIsAddToBasket"
-                    @click="() => onAddToBasket(props.product, 1)"
-                    icon="far fa-plus"
-                    :label="trans(`Add to basket`)"
-                    type="primary"
-                    size="lg"
-                    :disabled="customer.quantity_ordered > customer.stock"
-                    :loading="isLoadingSubmitQuantityProduct"
-                    :inject-style="buttonStyle"
-                />
+                <Button @click="() => onAddToBasket(props.product, 1)" icon="far fa-plus"
+                    :label="trans('Add to basket')" type="primary" size="lg" :loading="isLoadingSubmitQuantityProduct"
+                    :inject-style="buttonStyle" />
             </div>
-            
-        </div>
-        
-        <div v-if="customer.quantity_ordered" class="mt-1 xitalic text-gray-700 text-sm">
-            {{ trans("Current amount in basket") }}: <span class="font-semibold">{{ locale.currencyFormat(layout?.iris?.currency?.code, (props.product.price * customer.quantity_ordered)) }}</span>
-            <span>
-                <template v-if="customer.quantity_ordered_new !== null && customer.quantity_ordered_new !== undefined">
-                    <span v-if="customer.quantity_ordered_new > customer.quantity_ordered">
-                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Increased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered_new - customer.quantity_ordered)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered_new))) }}</span>
-                    </span>
-                    <span v-else-if="customer.quantity_ordered_new < customer.quantity_ordered">
-                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Decreased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered - customer.quantity_ordered_new)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered_new))) }}</span>
-                    </span>
-                </template>
-            </span>
+            <div v-if="customer.quantity_ordered" class="mt-1 xitalic text-gray-700 text-sm">
+                {{ trans("Current amount in basket") }}: <span class="font-semibold">{{
+                    locale.currencyFormat(layout?.iris?.currency?.code, (props.product.price *
+                        customer.quantity_ordered))
+                    }}</span>
+                <span>
+                    <template
+                        v-if="customer.quantity_ordered_new !== null && customer.quantity_ordered_new !== undefined">
+                        <span v-if="customer.quantity_ordered_new > customer.quantity_ordered">
+                            <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width
+                                aria-hidden="true" /> <span
+                                v-tooltip="trans('Increased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered_new - customer.quantity_ordered))) })">{{
+                                    locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price *
+                                        Number(customer.quantity_ordered_new))) }}</span>
+                        </span>
+                        <span v-else-if="customer.quantity_ordered_new < customer.quantity_ordered">
+                            <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width
+                                aria-hidden="true" /> <span
+                                v-tooltip="trans('Decreased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered - customer.quantity_ordered_new))) })">{{
+                                    locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price *
+                                        Number(customer.quantity_ordered_new))) }}</span>
+                        </span>
+                    </template>
+                </span>
+            </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type='number'] {
+    -moz-appearance: textfield;
+}
+</style>
