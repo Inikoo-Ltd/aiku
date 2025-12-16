@@ -309,7 +309,7 @@ class UpdateTradeUnit extends GrpAction
             $rules['gross_weight']     = ['sometimes', 'nullable', 'numeric'];
             $rules['net_weight']       = ['sometimes', 'nullable', 'numeric'];
             $rules['marketing_weight'] = ['sometimes', 'nullable', 'numeric'];
-
+            $rules['code']             = ['sometimes', 'string'];
 
             $rules = $this->noStrictUpdateRules($rules);
         }
