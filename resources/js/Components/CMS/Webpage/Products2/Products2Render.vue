@@ -162,7 +162,7 @@ const toggleBackInStock = () =>
                             {{ product?.code }}
                         </span>
 
-                        <span  v-if="layout?.iris?.is_logged_in" class="text-left md:text-right text-xs break-words">
+                        <span  class="text-left md:text-right text-xs break-words">
                             RRP :
                             {{ locale.currencyFormat(currency?.code, product.rrp) }}
                             / {{ product.unit }}
@@ -188,7 +188,7 @@ const toggleBackInStock = () =>
                 </div>
 
                 <!-- BUTTON -->
-                <div class="flex items-center md:justify-end">
+                <div class="flex items-center justify-end">
                     <template v-if="layout?.iris?.is_logged_in">
                         <!-- In stock -->
                         <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket="hasInBasket"

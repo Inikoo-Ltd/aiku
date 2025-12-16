@@ -35,6 +35,27 @@ class ExportIntrastatXml extends OrgAction
             $query->whereBetween('date', [$start, $end]);
         }
 
+        if (!empty($filters['elements']['vat_status'])) {
+            $vatStatuses = is_array($filters['elements']['vat_status']) 
+                ? $filters['elements']['vat_status'] 
+                : explode(',', $filters['elements']['vat_status']);
+
+            if (count($vatStatuses) === 1) {
+                if (in_array('with_vat', $vatStatuses)) {
+                    $query->whereHas('taxCategory', function ($q) {
+                        $q->where('rate', '>', 0.0);
+                    });
+                } elseif (in_array('without_vat', $vatStatuses)) {
+                    $query->where(function ($q) {
+                        $q->whereHas('taxCategory', function ($subQuery) {
+                            $subQuery->where('rate', '=', 0.0);
+                        })
+                        ->orWhereNull('tax_category_id');
+                    });
+                }
+            }
+        }
+
         $metrics = $query->orderBy('date')->get();
 
         if (!empty($filters['between']['date'])) {
@@ -85,7 +106,8 @@ class ExportIntrastatXml extends OrgAction
         $this->initialisation($organisation, $request);
 
         $filters = [
-            'between' => $request->input('between', [])
+            'between'  => $request->input('between', []),
+            'elements' => $request->input('elements', [])
         ];
 
         $xml = $this->handle($organisation, $filters);

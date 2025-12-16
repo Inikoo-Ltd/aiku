@@ -46,7 +46,7 @@ class RepairProductEmptyTranslatedStrings
                             TranslateCategoryModel::dispatch(
                                 $product,
                                 [
-                                    $field=> $masterProduct->{$field}
+                                    $field => $masterProduct->{$field}
                                 ]
                             );
                         }

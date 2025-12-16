@@ -12,6 +12,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InMasterShop;
+use App\Models\Masters\MasterProductCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -34,10 +35,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_dimensions
  * @property int $number_used_slots
  * @property int $number_used_slots_for_sale
- * @property string $data
+ * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property string $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -98,6 +100,11 @@ class MasterVariant extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    public function masterFamily(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
     }
 
     public function stats(): HasOne

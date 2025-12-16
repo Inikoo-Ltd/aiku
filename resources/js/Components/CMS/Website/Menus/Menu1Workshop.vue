@@ -334,6 +334,7 @@ watch(loadingItem, (newVal) => {
             >
                 <div class="grid grid-cols-4 gap-8 p-6">
                     <div v-for="(subnav, idxSub) in hoveredNavigation?.subnavs" :key="subnav.title" class="">
+     
                         <component
                             :is="subnav?.link?.href ? LinkIris : 'div'"
                             :href="internalHref(subnav?.link?.href)"

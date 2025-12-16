@@ -54,11 +54,9 @@ jobs:
       - name: Run test with coverage
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
         run: /usr/bin/php8.4 vendor/bin/pest -d memory_limit=-1 --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
-      - name: Run test without coverage
-        if: steps.changed-coverage-files.outputs.any_changed != 'true'
-        run: /usr/bin/php8.4 vendor/bin/pest --exclude-group=integration --stop-on-defect
       - name: Process coverage to Codecov
-        if: steps.changed-coverage-files.outputs.any_changed != 'true'
+        if: steps.changed-coverage-files.outputs.any_changed == 'true'
         uses: codecov/codecov-action@v5
-        env:
-            CODECOV_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: Inikoo-Ltd/aiku

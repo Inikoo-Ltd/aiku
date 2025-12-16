@@ -10,11 +10,13 @@ namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\OrgAction;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterVariant;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterVariant extends OrgAction
@@ -30,7 +32,6 @@ class StoreMasterVariant extends OrgAction
         data_set($modelData, 'group_id', $masterProductCategory->group_id);
         data_set($modelData, 'master_shop_id', $masterProductCategory->master_shop_id);
 
-
         /** @var MasterVariant $masterVariant */
         $masterVariant = DB::transaction(function () use ($modelData) {
             $masterVariant = MasterVariant::create($modelData);
@@ -44,8 +45,6 @@ class StoreMasterVariant extends OrgAction
                 $masterVariant->timeSeries()->create(['frequency' => $frequency]);
             }
 
-
-
             $masterVariant->refresh();
 
             return $masterVariant;
@@ -54,9 +53,29 @@ class StoreMasterVariant extends OrgAction
         return $masterVariant;
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        // TODOO
+        // Change to real Code Getter
+        $code = MasterAsset::find($this->product_leader)->code . '-var-' . now()->format('His');
+        $this->set('code', $code);
+
+        if($this->product_leader){
+            $this->set('leader_id', $this->product_leader);
+        }
+
+        if($this->data_variants){
+            $this->set('data', $this->data_variants);
+        }
+    }
+
     public function rules(): array
     {
         return [
+            'leader_id' => [
+                'required',
+                Rule::exists('master_assets', 'id')
+            ],
             'code' => [
                 'required',
                 'max:32',
@@ -73,7 +92,6 @@ class StoreMasterVariant extends OrgAction
         ];
     }
 
-
     /**
      * @throws \Throwable
      */
@@ -86,7 +104,6 @@ class StoreMasterVariant extends OrgAction
         return $this->handle($masterProductCategory, $this->validatedData);
     }
 
-
     /**
      * @throws \Throwable
      */
@@ -97,5 +114,9 @@ class StoreMasterVariant extends OrgAction
         return $this->handle($masterProductCategory, $this->validatedData);
     }
 
+    public function jsonResponse(MasterVariant $masterVariant): MasterVariant
+    {
+        return $masterVariant;
+    }
 
 }

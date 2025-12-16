@@ -20,7 +20,6 @@ class UpdateAsset extends OrgAction
 
     public function handle(Asset $asset, array $modelData = []): Asset
     {
-
         $originalMasterAsset = null;
         if (Arr::has($modelData, 'master_asset_id')) {
             $originalMasterAsset = $asset->masterAsset;
@@ -29,7 +28,6 @@ class UpdateAsset extends OrgAction
         $asset = $this->update($asset, $modelData);
 
         $changes = $asset->getChanges();
-
 
 
         if (Arr::hasAny($changes, ['state', 'master_asset_id'])) {
@@ -48,7 +46,9 @@ class UpdateAsset extends OrgAction
     public function rules(): array
     {
         return [
-            'master_asset_id' => ['nullable','integer'],
+            'master_asset_id' => ['nullable', 'integer'],
+            'tax_category'    => ['sometimes', 'array'],
+
         ];
     }
 
@@ -56,6 +56,7 @@ class UpdateAsset extends OrgAction
     {
         $this->asAction = true;
         $this->initialisationFromShop($asset->shop, $modelData);
+
         return $this->handle($asset, $this->validatedData);
     }
 

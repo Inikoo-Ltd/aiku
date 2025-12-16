@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexVariants;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
@@ -17,6 +18,7 @@ use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\MasterVariant\IndexMasterVariant;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
@@ -24,6 +26,7 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\Masters\MasterFamiliesSalesResource;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterFamilySales;
+use App\Http\Resources\Masters\MasterVariantsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -236,6 +239,9 @@ class ShowMasterFamily extends GrpAction
                     fn () => GetMasterProductCategoryImages::run($masterFamily)
                     : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterFamily)),
 
+                // MasterFamilyTabsEnum::VARIANTS->value => $this->tab == MasterFamilyTabsEnum::VARIANTS->value ?
+                //     fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily))
+                //     : Inertia::lazy(fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily))),
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
                 //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),

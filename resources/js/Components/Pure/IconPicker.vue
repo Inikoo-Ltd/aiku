@@ -29,6 +29,7 @@ import {
   faMedal,
 } from "@far";
 import { faLambda } from "@fad";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 // Add icons to the library
 library.add(
@@ -110,6 +111,11 @@ const onChangeIcon = (iconData: any) => {
   _popover.value?.hide();
 };
 
+const clearIcon = () => {
+  emits("update:modelValue", null as any)
+  _popover.value?.hide()
+}
+
 defineExpose({
   allIcons,
   popover: _popover,
@@ -118,23 +124,27 @@ defineExpose({
 </script>
 
 <template>
-    <div @click="toggle" >
-        <span v-html="renderIcon(modelValue)"></span>
+  <div class="relative inline-flex items-center justify-center" @click="toggle">
+    <!-- Current Icon -->
+    <span v-html="renderIcon(modelValue)"></span>
 
-        <Popover ref="_popover">
-          <div class="w-full max-w-[25rem]">
-            <div class="grid grid-cols-4 gap-2 max-h-44 min-h-12 overflow-y-auto">
-              <div
-                v-for="(iconData, index) in allIcons"
-                :key="index"
-                class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-200 cursor-pointer"
-                @click="() => onChangeIcon(iconData)"
-              >
-                <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
-              </div>
-            </div>
+    <!-- Clear Button (top-right) -->
+    <button v-if="modelValue" type="button"
+      class="absolute -top-5 -right-4 rounded-full text-gray-400 hover:text-red-500" @click="clearIcon">
+      <FontAwesomeIcon :icon="faTimesCircle" class="text-xs text-red-500"></FontAwesomeIcon>
+    </button>
+
+    <Popover ref="_popover">
+      <div class="w-full max-w-[25rem]">
+        <div class="grid grid-cols-4 gap-2 max-h-44 min-h-12 overflow-y-auto">
+          <div v-for="(iconData, index) in allIcons" :key="index"
+            class="flex items-center justify-center p-2 rounded-lg hover:bg-gray-200 cursor-pointer"
+            @click="onChangeIcon(iconData)">
+            <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
           </div>
-        </Popover>
-    </div>
+        </div>
+      </div>
+    </Popover>
+  </div>
 </template>
 

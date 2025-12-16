@@ -63,6 +63,7 @@ class IndexInvoices extends OrgAction
             }
             $table
                 ->betweenDates(['date'])
+                ->withLabelRecord([__('invoice'),__('invoices')])
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)

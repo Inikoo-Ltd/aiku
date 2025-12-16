@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Events\TranslateProgressEvent;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -53,7 +52,7 @@ class Translate extends OrgAction
             $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
 
             $text = Arr::get($translatedTexts, 'text_to_translate', $text);
-            if($broadcastRandomString!=null){
+            if ($broadcastRandomString != null) {
                 TranslateProgressEvent::dispatch($text, $broadcastRandomString);
             }
 

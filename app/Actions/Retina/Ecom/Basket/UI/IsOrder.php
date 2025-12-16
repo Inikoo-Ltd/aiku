@@ -178,9 +178,22 @@ trait IsOrder
                 'price_total' => $order->charges_amount
             ],
             [
-                'label'       => __('Shipping'),
-                'information' => '',
-                'price_total' => $order->shipping_amount
+                'label'                     => __('Shipping'),
+                'information'               => '',
+                'price_total'               => $order->shipping_amount,
+                'slot_name'                 => 'shipping',
+                'data'                      => [
+                    'shipping_amount'     => $order->shipping_amount,
+                    'engine'              => $order->shipping_engine,
+                    'is_shipping_tbc'     => $order->is_shipping_tbc,
+                    'shipping_tbc_amount' => $order->shipping_tbc_amount,
+                    'shipping_zone_id'    => $order->shipping_zone_id,
+                    'shipping_zone'       => $order->shipping_zone_id ? [
+                        'slug' => $order->shippingZone->slug,
+                        'code' => $order->shippingZone->code,
+                        'name' => $order->shippingZone->name,
+                    ] : null
+                ]
             ]
         ];
 

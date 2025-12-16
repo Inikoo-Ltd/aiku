@@ -86,6 +86,7 @@ class IndexAttachments extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('attachment'),__('attachments')])
                 ->withEmptyState(
                     [
                         'title' => $noResults,

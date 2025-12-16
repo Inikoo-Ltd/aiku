@@ -69,11 +69,19 @@ class CreateCharge extends OrgAction
                                         'label'    => __('Name'),
                                         'required' => true,
                                     ],
+                                    'label' => [
+                                        'type'  => 'input',
+                                        'information'   => __("This will show in customer's order"),
+                                        'label' => __('Label'),
+                                        'required' => true,
+                                    ],
                                     'description' => [
                                         'type'     => 'textarea',
+                                        'information'   => __("This will show in customer's order as a tooltip"),
                                         'label'    => __('Description'),
                                         'required' => true,
                                     ],
+
                                     'type'        => [
                                         'type'     => 'select',
                                         'label'    => __('Type'),

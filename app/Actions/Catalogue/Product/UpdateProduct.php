@@ -433,7 +433,6 @@ class UpdateProduct extends OrgAction
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
-
         ];
 
 

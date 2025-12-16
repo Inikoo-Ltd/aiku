@@ -14,7 +14,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateInventoryInWooPortfolio
@@ -61,7 +60,7 @@ class UpdateInventoryInWooPortfolio
 
             $wooCommerceUser->setTimeout(20);
             $result = $wooCommerceUser->checkConnection();
-            if ($result && Arr::has($result, 'environment')) {
+            if ($result) {
 
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => null
