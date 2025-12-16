@@ -9,7 +9,7 @@
 namespace App\Actions\UI\Reports;
 
 use App\Actions\OrgAction;
-use App\Actions\Reports\WithReportsSubNavigation;
+use App\Actions\Reports\GetReports;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\Catalogue\Shop;
@@ -24,7 +24,6 @@ class IndexReports extends OrgAction
 {
     use AsAction;
     use WithInertia;
-    use WithReportsSubNavigation;
 
     public function handle(Organisation|Shop $scope): Shop|Organisation
     {
@@ -64,22 +63,35 @@ class IndexReports extends OrgAction
         return Inertia::render(
             'Org/Reports/Reports',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'     => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => 'BI',
-                'pageHead' => [
+                'title'           => __('Reports'),
+                'pageHead'        => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-chart-line'],
                         'title' => __('Reports')
                     ],
                     'title'     => __('Reports'),
                     'container' => $container,
-                    'subNavigation' => $this->getReportsNavigation($this->organisation),
                 ],
-
-
+                'dashboard_stats' => [
+                    'setting' => [
+                        "currency_chosen" => 'usd'
+                    ],
+                    'widgets' => [
+                        'column_count' => 2,
+                        'components'   => [
+                            [
+                                'col_span' => 1,
+                                'row_span' => 10,
+                                'type'     => 'overview_display',
+                                'data'     => GetReports::run($this->organisation)
+                            ],
+                        ]
+                    ],
+                ],
             ]
         );
     }

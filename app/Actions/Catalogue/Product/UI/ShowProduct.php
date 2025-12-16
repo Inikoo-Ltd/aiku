@@ -12,6 +12,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -25,6 +26,7 @@ use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductSalesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
@@ -420,7 +422,9 @@ class ShowProduct extends OrgAction
                     fn () => HistoryResource::collection(IndexHistory::run($product))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
 
-
+                ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
+                    fn () => CustomersResource::collection(IndexCustomers::run($product))
+                    : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
             ]
         )->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
@@ -428,7 +432,8 @@ class ShowProduct extends OrgAction
             ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
             ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
-            ->table(IndexProductSales::make()->tableStructure(prefix: ProductTabsEnum::SALES->value));
+            ->table(IndexProductSales::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
+            ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value));
     }
 
     public function jsonResponse(Product $product): ProductsResource

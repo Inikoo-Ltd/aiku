@@ -139,6 +139,7 @@ class IndexTradeUnits extends GrpAction
 
             $table
                 ->defaultSort('code')
+                ->withLabelRecord([__('trade unit'),__('trade units')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(

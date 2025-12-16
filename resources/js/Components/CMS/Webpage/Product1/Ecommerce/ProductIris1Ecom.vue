@@ -300,13 +300,8 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
                     }}
                 </span>
             </div>
-        </div>
 
-        <!-- Section: Price, unit info, favourite icon -->
-        <div class="flex justify-between items-start gap-4 mt-2">
-            <ProductPrices v-if="layout?.iris?.is_logged_in" :field-value="fieldValue" />
-
-            <FontAwesomeIcon
+              <FontAwesomeIcon
                 v-if="layout?.iris?.is_logged_in && layout?.retina?.type !== 'dropshipping'"
                 :icon="customerData?.is_favourite ? fasHeart : faHeart"
                 class="text-xl cursor-pointer transition-colors duration-300"
@@ -317,6 +312,11 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
                         : onAddFavourite(product)
                 "
             />
+        </div>
+
+        <!-- Section: Price, unit info, favourite icon -->
+        <div class="md:flex md:justify-between items-start gap-4 mt-2">
+            <ProductPrices v-if="layout?.iris?.is_logged_in" :field-value="fieldValue" />
         </div>
 
         <!-- Section: Mobile Tags -->

@@ -285,6 +285,7 @@ class IndexFamilies extends OrgAction
                         default => null
                     }
                 )
+                ->withLabelRecord([__('family'),__('families')])
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);

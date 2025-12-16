@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, Popover as PopoverPrimevue, Select } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -82,8 +82,10 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
+import { get, set } from "lodash"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
 interface UploadSection {
     title: {
@@ -347,6 +349,7 @@ const noteToSubmit = ref({
     selectedNote: "",
     value: ""
 })
+const ellipsis = ref()
 const onSubmitNote = async (closePopup: Function) => {
 
     try {
@@ -566,10 +569,6 @@ const onCreateReplacement = (action: any) => {
     )
 }
 
-const ellipsis = ref()
-const toggleElipsis = (e: Event) => {
-    ellipsis.value.toggle(e)
-}
 
 const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
@@ -616,6 +615,115 @@ const labelToBePaid = (toBePaidValue: string) => {
     }
 }
 
+// Section: change shipping price (in Summary)
+const isLoadingUpdateShippingTbcAmount = ref(false)
+const updateShippingTbcAmount = (value: number, oldValue: number|null) => {
+    if (Number(value) === Number(oldValue)) {
+        return 
+    }
+    router.patch(
+        route('grp.models.order.set_shipping_tbc_amount', {
+            order: props.data?.data?.id
+        }),
+        {
+            shipping_tbc_amount: value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingUpdateShippingTbcAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully update shipping amount"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update shipping amount"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingUpdateShippingTbcAmount.value = false
+            },
+        }
+    )
+}
+const _shipping_price_method = ref(null)
+const isLoadingShippingManual = ref(false)
+const setShippingManualAmount = (v: number) => {
+    // Section: Submit
+    router.patch(
+        route('grp.models.order.set_shipping_engine_manual', {
+            order: props.data?.data?.id
+        }),
+        {
+            shipping_amount: v
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingShippingManual.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully change shipping method to manual"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set shipping method to manual"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingShippingManual.value = false
+            },
+        }
+    )
+}
+const setShippingToAuto = () => {
+    // Section: Submit
+    router.get(
+        route('grp.models.order.set_shipping_engine_auto', {
+            order: props.data?.data?.id
+        }),
+        { },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingShippingManual.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully change shipping method to auto"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set shipping method to auto"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingShippingManual.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -1236,23 +1344,112 @@ const labelToBePaid = (toBePaidValue: string) => {
                                     class="text-gray-500" />
                             </dt>
                             <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
-                                {{ box_stats?.products.estimated_weight || 0 }} kilograms
+                                {{ box_stats?.products.estimated_weight || 0 }} {{ trans("kilogram") }}
                             </dd>
                         </dl>
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
-                        <template #cell_shipping="{ fieldSummary }">
+                        <template #cell_shipping_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
-                                    <span>{{ fieldSummary.label }}</span>
-                                    <span v-if="fieldSummary.data.engine === 'manual'" class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
-                                        {{ trans('Manual') }}
+                                    <span v-if="fieldSummary.data.engine === 'manual'">
+                                        <span>{{ fieldSummary.label }}</span>
+                                        <span class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
+                                            {{ trans('Manual') }}
+                                        </span>
+                                    </span>
+                                    <span v-else>
+                                        <span>{{ fieldSummary.label }}</span>
+                                        <span v-if="fieldSummary.data.shipping_zone?.code" v-tooltip="trans('Shipping zone code')">
+                                            ({{ fieldSummary.data.shipping_zone?.code }})
+                                        </span>
                                     </span>
                                     <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
+                                    <span @click="_shipping_price_method?.toggle" class="text-gray-500 hover:text-blue-500 cursor-pointer text-2xl">
+                                        <FontAwesomeIcon icon="fal fa-ellipsis-h" class="" fixed-width aria-hidden="true" />
+                                    </span>
                                 </div>
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+
+                                
+                                <!-- Popover: Select shipping price method -->
+                                <PopoverPrimevue ref="_shipping_price_method">
+                                    <div class="relative flex flex-col gap-2">
+                                        <div>
+                                            {{ trans("Select to change shipping price method") }}:
+                                        </div>
+                                        <div class="grid grid-cols-1 gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <RadioButton
+                                                    :modelValue="get(fieldSummary, ['data', 'engine'], null)"
+                                                    @update:modelValue="(v) => (set(fieldSummary, ['data', 'engine'], v), setShippingToAuto())"
+                                                    inputId="ingredient1"
+                                                    name="pizza"
+                                                    value="auto"
+                                                />
+                                                <label for="ingredient1">{{ trans("Auto") }}</label>
+                                            </div>
+                                            <div>
+                                                <div class="flex items-start gap-2">
+                                                    <RadioButton
+                                                        :modelValue="get(fieldSummary, ['data', 'engine'], null)"
+                                                        @update:modelValue="(v) => (set(fieldSummary, ['data', 'engine'], v), setShippingManualAmount(get(fieldSummary, ['data', 'shipping_amount'], 0)))"
+                                                        inputId="ingredient2"
+                                                        name="pizza"
+                                                        value="manual"
+                                                    />
+                                                    <div>
+                                                        <label for="ingredient2" class="block">{{ trans("Manual") }}</label>
+                                                        <InputNumber
+                                                            :modelValue="get(fieldSummary, ['data', 'shipping_amount'], null)"
+                                                            @update:modelValue="(v) => setShippingManualAmount(v)"
+                                                            inputId="currency-input"
+                                                            mode="currency"
+                                                            :disabled="get(fieldSummary, ['data', 'engine'], null) !== 'manual'"
+                                                            :currency="currency.code"
+                                                            locale="en-GB"
+                                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                                            :min="0"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div v-if="isLoadingShippingManual" class="absolute inset-0 bg-black/50 text-white text-2xl flex items-center justify-center rounded">
+                                                <LoadingIcon />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </PopoverPrimevue>
                             </dt>
+                        </template>
+                        
+                        <template #cell_shipping_3="{ fieldSummary }">
+                            <div class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
+                                <Transition name="spin-to-right">
+                                    <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc"
+                                        class="-mr-2"
+                                        :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? 'errorShake' : ''"
+                                        v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null"
+                                    >
+                                        <InputNumber
+                                            :modelValue="get(fieldSummary, ['data', 'shipping_tbc_amount'], null)"
+                                            @update:modelValue="(v) => updateShippingTbcAmount(v, get(fieldSummary, ['data', 'shipping_tbc_amount'], null))"
+                                            inputId="currency-input"
+                                            mode="currency"
+                                            :currency="currency.code"
+                                            locale="en-GB"
+                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                            :min="0"
+                                        />
+                                    </div>
+
+                                    <dd v-else :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
+                                        {{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}
+                                    </dd>
+                                </Transition>
+                            </div>
                         </template>
                     </OrderSummary>
                 </section>

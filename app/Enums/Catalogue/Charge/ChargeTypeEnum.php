@@ -14,24 +14,28 @@ enum ChargeTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case HANGING   = 'hanging';
-    case PREMIUM   = 'premium';
-    case TRACKING  = 'tracking';
+    case HANGING = 'hanging';
+    case PREMIUM = 'premium';
+    case TRACKING = 'tracking';
     case INSURANCE = 'insurance';
-    case PAYMENT   = 'payment';
-    case COD       = 'cod';
-    case PACKING   = 'packing';
+    case PAYMENT = 'payment';
+    case COD = 'cod';
+    case PACKING = 'packing';
+    case MARKETPLACE_FEE = 'marketplace_fee';
+    case OTHER = 'other';
 
     public static function labels(): array
     {
         return [
-            'hanging    ' => __('Hanging'),
-            'premium'     => __('Premium'),
-            'tracking'    => __('Tracking'),
-            'insurance'   => __('Insurance'),
-            'cod'         => __('Charge on delivery'),
-            'payment'     => __('Payment'),
-            'packing'     => __('Packing')
+            'hanging    '     => __('Hanging'),
+            'premium'         => __('Premium'),
+            'tracking'        => __('Tracking'),
+            'insurance'       => __('Insurance'),
+            'cod'             => __('Charge on delivery'),
+            'payment'         => __('Payment'),
+            'packing'         => __('Packing'),
+            'other'           => __('Other'),
+            'marketplace_fee' => __('Marketplace fee')
         ];
     }
 

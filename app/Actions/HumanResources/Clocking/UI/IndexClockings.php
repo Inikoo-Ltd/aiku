@@ -91,6 +91,7 @@ class IndexClockings extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('clocking'),__('clockings')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [

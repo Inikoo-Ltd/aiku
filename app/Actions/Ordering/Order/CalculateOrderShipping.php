@@ -104,12 +104,12 @@ class CalculateOrderShipping
 
 
             $order->update([
-                'shipping_engine' => OrderShippingEngineEnum::AUTO,
+                'shipping_engine'         => OrderShippingEngineEnum::AUTO,
+                'shipping_zone_id'        => $shippingZone?->id,
+                'shipping_zone_schema_id' => $shippingZone?->shipping_zone_schema_id,
             ]);
 
-            $order=UpdateOrderIsShippingTBC::run($order);
-
-
+            $order = UpdateOrderIsShippingTBC::run($order);
         }
 
 
