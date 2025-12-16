@@ -115,7 +115,6 @@ const addLink = (subnavIndex: number) => {
 
 
 const saveSubnavTitle = (data) => {
-  console.log(data)
   const subnavs = cloneDeep(localNav.value.subnavs ?? [])
   subnavs[parentIdx.value].title = data.label
   subnavs[parentIdx.value].link = data.link
@@ -176,31 +175,35 @@ watch(
 
 
 <template>
-<div class="bg-slate-50 p-6 max-w-4xl mx-auto">
-  <!-- Navigation Title + Icon -->
-  <section class="bg-white rounded-lg shadow-md p-6 mb-6 space-y-6">
-    <div>
-      <h2 class="font-medium text-gray-800 text-lg mb-4">Navigation Title</h2>
-      <div class="flex items-center gap-3">
-        <button type="button" class="border border-gray-300 rounded px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <IconPicker v-model="props.modelValue.icon" />
-        </button>
-        <input v-model="props.modelValue.label" type="text" placeholder="Enter Navigation Title"
-          class="flex-grow border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-      </div>
-    </div>
+  <div class="bg-slate-50 p-6 max-w-4xl mx-auto">
+    <!-- Navigation Title + Icon -->
+    <section class="bg-white rounded-lg shadow-md p-6 mb-6 space-y-6">
+      <!-- Navigation Title + Icon -->
+      <div>
+        <h2 class="font-medium text-gray-800 text-lg mb-4">Navigation Title</h2>
 
-    <!-- Type Selector -->
-    <div>
-      <h3 class="font-medium text-gray-800 text-md mb-3">Type</h3>
-      <PureMultiselect 
-        :required="true" 
-        v-model="props.modelValue.type" 
-        label="label" value-prop="value" 
-        :options="[{ label: 'Single', value: 'single' }, { label: 'Multiple', value: 'multiple' }]" 
-        @change="(e) => changeType(e)" 
-      />
-    </div>
+        <div class="flex items-center gap-3">
+          <button type="button"
+            class="border border-gray-300 rounded px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <IconPicker :model-value="localNav.icon" @update:model-value="icon => commit({ icon })" />
+          </button>
+
+          <input :value="localNav.label" @input="e => commit({ label: e.target.value })" type="text"
+            placeholder="Enter Navigation Title"
+            class="flex-grow border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+      </div>
+
+      <!-- Type Selector -->
+      <div>
+        <h3 class="font-medium text-gray-800 text-md mb-3">Type</h3>
+
+        <PureMultiselect :required="true" :model-value="localNav.type" label="label" value-prop="value" :options="[
+          { label: 'Single', value: 'single' },
+          { label: 'Multiple', value: 'multiple' }
+        ]" @update:model-value="changeType" />
+      </div>
+
 
     <!-- Navigation Link -->
     <div>
