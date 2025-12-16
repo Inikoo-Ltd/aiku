@@ -233,7 +233,7 @@ class CloneCatalogueStructure
             if (!$parent) {
                 $parent = $shop;
             }
-            $foundFamily=null;
+            $foundFamily = null;
             print "creating family: $code in $shop->slug \n";
             try {
                 $foundFamily = StoreProductCategory::make()->action(
@@ -247,7 +247,7 @@ class CloneCatalogueStructure
                     ]
                 );
                 CloneProductCategoryImagesFromMaster::run($foundFamily);
-            }catch (\Throwable $e) {
+            } catch (\Throwable $e) {
                 print $e->getMessage()."\n";
             }
 

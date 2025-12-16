@@ -20,18 +20,12 @@ class TranslateCategoryModel
 {
     use AsAction;
 
-    public function getJobUniqueId(ProductCategory|Product $model): string
-    {
-        return class_basename($model).$model->id;
-    }
-
     public function handle(ProductCategory|Product $model, array $translationData): void
     {
         $english      = Language::where('code', 'en')->first();
         $shopLanguage = $model->shop->language;
 
         $modelData = [];
-
 
 
         if (Arr::exists($translationData, 'unit')) {
@@ -85,7 +79,7 @@ class TranslateCategoryModel
                 );
             }
 
-            if(Arr::exists($modelData, 'description_title')) {
+            if (Arr::exists($modelData, 'description_title')) {
                 data_set(
                     $modelData,
                     'is_description_title_reviewed',
@@ -97,7 +91,7 @@ class TranslateCategoryModel
                 );
             }
 
-            if(Arr::exists($modelData, 'description')) {
+            if (Arr::exists($modelData, 'description')) {
                 data_set(
                     $modelData,
                     'is_description_reviewed',
@@ -109,7 +103,7 @@ class TranslateCategoryModel
                 );
             }
 
-            if(Arr::exists($modelData, 'description_extra')) {
+            if (Arr::exists($modelData, 'description_extra')) {
                 data_set(
                     $modelData,
                     'is_description_extra_reviewed',
@@ -121,17 +115,17 @@ class TranslateCategoryModel
                 );
             }
 
-            if(Arr::exists($modelData, 'unit') && $model instanceof Product) {
-                    data_set(
-                        $modelData,
-                        'is_unit_reviewed',
-                        Arr::get(
-                            $translationData,
-                            'unit',
-                            false
-                        ) ? false : null
-                    );
-                }
+            if (Arr::exists($modelData, 'unit') && $model instanceof Product) {
+                data_set(
+                    $modelData,
+                    'is_unit_reviewed',
+                    Arr::get(
+                        $translationData,
+                        'unit',
+                        false
+                    ) ? false : null
+                );
+            }
 
         }
 

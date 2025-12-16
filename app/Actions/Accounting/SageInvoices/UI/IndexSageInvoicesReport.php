@@ -10,6 +10,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -40,22 +41,17 @@ class IndexSageInvoicesReport extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Invoice::class);
-        $queryBuilder->where('invoices.organisation_id', $organisation->id)
-            ->where('invoices.in_process', false)
-            ->whereHas('customer', function ($query) {
-                $query->where('is_credit_customer', true)
-                    ->whereNotNull('accounting_reference');
-            });
-
+        $queryBuilder->where('invoices.organisation_id', $organisation->id)->where('invoices.in_process', false);
         $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', '=', 'currencies.id');
         $queryBuilder->leftJoin('tax_categories', 'invoices.tax_category_id', '=', 'tax_categories.id');
 
         $this->records = $queryBuilder->count('invoices.id');
 
+
         $queryBuilder
             ->defaultSort('-date')
-            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount'])
+            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix)
@@ -77,6 +73,7 @@ class IndexSageInvoicesReport extends OrgAction
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
                 'customers.company_name as customer_company',
+                'customers.is_credit_customer as is_credit_customer',
                 'customers.accounting_reference',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
@@ -105,14 +102,36 @@ class IndexSageInvoicesReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
-                ->column(key: 'accounting_reference', label: __('Sage Ref'), sortable: false)
+                ->column(key: 'accounting_reference', label: 'Sage Ref')
                 ->column(key: 'type', label: __('Type'))
+                ->column(key: 'is_credit_customer', label: __('Credit Customer'), sortable: true)
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
                 ->column(key: 'tax_amount', label: __('Tax'), sortable: true, type: 'currency')
                 ->column(key: 'total_amount', label: __('Total'), sortable: true, type: 'currency')
                 ->defaultSort('-date');
         };
     }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        // todo: uncomment this when show between dates works on UI
+        //
+        //        if (!$request->has('between')) {
+        //            $start   = Carbon::now()->startOfMonth()->format('Ymd');
+        //            $end     = Carbon::now()->format('Ymd');
+        //            $between = [
+        //                'date' => "$start-$end",
+        //            ];
+        //
+        //            // Keep action attributes in sync
+        //            $this->set('between', $between);
+        //
+        //            // Also merge into request so request()->input('between') returns this value
+        //            $request->merge(['between' => $between]);
+        //            request()->merge(['between' => $between]);
+        //        }
+    }
+
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -129,8 +148,8 @@ class IndexSageInvoicesReport extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Sage Invoices Report'),
                 'pageHead'    => [
-                    'title' => __('Sage Invoices Export Report'),
-                    'icon'  => [
+                    'title'         => __('Sage Invoices Export Report'),
+                    'icon'          => [
                         'title' => __('Sage Invoices'),
                         'icon'  => 'fal fa-file-invoice'
                     ],

@@ -74,18 +74,18 @@ class EditFulfilmentCustomer extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('contact information'),
-                            'label'  => __('contact'),
+                            'title'  => __('Contact information'),
+                            'label'  => __('Contact'),
                             'fields' => [
 
                                 'contact_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $fulfilmentCustomer->customer->contact_name
                                 ],
                                 'company_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => $fulfilmentCustomer->customer->company_name
                                 ],
                                 'email'                    => [
@@ -124,7 +124,15 @@ class EditFulfilmentCustomer extends OrgAction
                                     'label' => __('Identity document number'),
                                     'value' => $fulfilmentCustomer->customer->identity_document_number
                                 ],
-                                'is_credit_customer' => [
+                            ]
+                        ],
+                        [
+                            'title'  => __('Accounting'),
+                            'label'  => __('Accounting'),
+                            'fields' => [
+
+
+                                'is_credit_customer'   => [
                                     'type'  => 'toggle',
                                     'label' => __('Credit Customer'),
                                     'value' => $fulfilmentCustomer->customer->is_credit_customer,
@@ -134,7 +142,6 @@ class EditFulfilmentCustomer extends OrgAction
                                     'label'    => __('Sage Customer Number'),
                                     'value'    => $fulfilmentCustomer->customer->accounting_reference,
                                     'required' => false,
-                                    'hidden'   => !$fulfilmentCustomer->customer->is_credit_customer,
                                 ],
                             ]
                         ]

@@ -139,7 +139,7 @@ class ShowOrgStock extends OrgAction
             ]
         )
             ->table(IndexProductsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::PRODUCTS->value))
-            ->table(IndexPurchaseOrders::make()->tableStructure(parent:$orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value));
+            ->table(IndexPurchaseOrders::make()->tableStructure($orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value));
     }
 
 

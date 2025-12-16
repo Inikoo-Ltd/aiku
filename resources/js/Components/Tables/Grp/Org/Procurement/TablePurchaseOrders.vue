@@ -39,6 +39,12 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.org.procurement.org_partners.show.purchase-orders.show",
         [route().params["organisation"], route().params["orgPartner"], purchaseOrder.slug]);
+    case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
+      return route(
+        "grp.org.procurement.purchase_orders.show",
+        [route().params["organisation"], purchaseOrder.slug]);
     default:
       return "";
   }
@@ -50,10 +56,16 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.org.procurement.org_suppliers.show",
         [route().params["organisation"], purchaseOrder.parent_slug]);
-    // case 'grp.org.procurement.agents.show':
-    //     return route(
-    //         'grp.org.procurement.agents.show.purchase_orders.show',
-    //         [route().params['organisation'], route().params['agent'], purchaseOrder.slug])
+    case "grp.org.procurement.org_agents.show.purchase-orders.index":
+      return route(
+        "grp.org.procurement.org_agents.show.suppliers.show",
+        [route().params["organisation"], route().params["orgAgent"], purchaseOrder.parent_slug]);
+    case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
+      return route(
+        "grp.supply-chain.suppliers.show",
+        [purchaseOrder.supplier_slug]);
     default:
       return "";
   }
@@ -65,15 +77,16 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.org.procurement.org_agents.show",
         [route().params["organisation"], purchaseOrder.parent_slug]);
-    // case 'grp.org.procurement.agents.show':
-    //     return route(
-    //         'grp.org.procurement.agents.show.purchase_orders.show',
-    //         [route().params['organisation'], route().params['agent'], purchaseOrder.slug])
+    case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
+      return route(
+        "grp.supply-chain.agents.show",
+        [purchaseOrder.agent_slug]);
     default:
       return "";
   }
 }
-
 
 </script>
 

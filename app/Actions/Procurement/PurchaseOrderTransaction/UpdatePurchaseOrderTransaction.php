@@ -10,12 +10,13 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Procurement\PurchaseOrder;
 
 class UpdatePurchaseOrderTransaction extends OrgAction
 {
@@ -26,6 +27,7 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     {
         $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, $modelData, ['data']);
         CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
 
         return $purchaseOrderTransaction;
     }
@@ -44,10 +46,10 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     {
         $rules = [
             'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
-            'unit_quantity'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-            'unit_price'       => ['sometimes', 'nullable', 'numeric'],
+            'unit_quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'unit_price' => ['sometimes', 'nullable', 'numeric'],
         ];
-        if (!$this->strict) {
+        if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 
@@ -57,7 +59,7 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     public function action(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData, int $hydratorsDelay = 0, bool $strict = true): PurchaseOrderTransaction
     {
         $this->asAction = true;
-        $this->strict   = $strict;
+        $this->strict = $strict;
 
         $this->hydratorsDelay = $hydratorsDelay;
 
@@ -65,7 +67,6 @@ class UpdatePurchaseOrderTransaction extends OrgAction
 
         return $this->handle($purchaseOrderTransaction, $this->validatedData);
     }
-
 
     public function asController(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, ActionRequest $request): PurchaseOrderTransaction
     {
