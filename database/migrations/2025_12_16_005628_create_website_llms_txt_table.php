@@ -1,13 +1,5 @@
 <?php
 
-/*
- * Author: Aiku Development Team
- * Created: Mon, 16 Dec 2024 08:56:00 Malaysia Time
- * Copyright (c) 2024, Inikoo Ltd
- *
- * Per-website LLMs.txt file storage for AI crawler configuration
- */
-
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

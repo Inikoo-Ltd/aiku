@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Aiku Development Team
- * Created: Mon, 16 Dec 2024 09:00:00 Malaysia Time
- * Copyright (c) 2024, Inikoo Ltd
- */
-
 namespace App\Actions\Web\Website\LlmsTxt;
 
 use App\Actions\OrgAction;

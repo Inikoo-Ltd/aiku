@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Aiku Development Team
- * Created: Mon, 16 Dec 2024 08:59:00 Malaysia Time
- * Copyright (c) 2024, Inikoo Ltd
- */
-
 namespace App\Models\Web;
 
 use App\Models\SysAdmin\Group;
