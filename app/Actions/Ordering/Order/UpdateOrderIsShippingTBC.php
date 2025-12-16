@@ -15,18 +15,20 @@ use Illuminate\Support\Arr;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrderUpdateIsShippingTBC extends OrgAction
+class UpdateOrderIsShippingTBC extends OrgAction
 {
     use AsAction;
 
     public string $commandSignature = 'order:is-shipping-tbc {--slug=}';
 
-    public function handle(Order $order): void
+    public function handle(Order $order): Order
     {
 
         $order->update([
             'is_shipping_tbc' => $this->getIsShippingTBC($order),
         ]);
+
+        return $order;
 
     }
 

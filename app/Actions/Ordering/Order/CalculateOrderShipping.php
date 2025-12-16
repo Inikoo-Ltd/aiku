@@ -107,7 +107,7 @@ class CalculateOrderShipping
                 'shipping_engine' => OrderShippingEngineEnum::AUTO,
             ]);
 
-            OrderUpdateIsShippingTBC::run($order);
+            $order=UpdateOrderIsShippingTBC::run($order);
 
 
         }
