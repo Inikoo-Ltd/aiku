@@ -1376,34 +1376,39 @@ const setShippingToAuto = () => {
                                 <!-- Popover: Select shipping price method -->
                                 <PopoverPrimevue ref="_shipping_price_method">
                                     <div class="relative flex flex-col gap-2">
-                                        <div>
+                                        <div class="text-sm">
                                             {{ trans("Select to change shipping price method") }}:
                                         </div>
                                         <div class="grid grid-cols-1 gap-2">
                                             <div class="flex items-center gap-2">
-                                                <RadioButton
-                                                    :modelValue="get(fieldSummary, ['data', 'engine'], null)"
-                                                    @update:modelValue="(v) => (set(fieldSummary, ['data', 'engine'], v), setShippingToAuto())"
-                                                    inputId="ingredient1"
+                                                <input
+                                                    type="radio"
+                                                    :checked="get(fieldSummary, ['data', 'engine'], null) === 'auto'"
+                                                    @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(); }"
+                                                    id="ingredient1"
                                                     name="pizza"
                                                     value="auto"
+                                                    class="focus:ring-0 focus:border-none"
                                                 />
                                                 <label for="ingredient1">{{ trans("Auto") }}</label>
                                             </div>
                                             <div>
                                                 <div class="flex items-start gap-2">
-                                                    <RadioButton
-                                                        :modelValue="get(fieldSummary, ['data', 'engine'], null)"
-                                                        @update:modelValue="(v) => (set(fieldSummary, ['data', 'engine'], v), setShippingManualAmount(get(fieldSummary, ['data', 'shipping_amount'], 0)))"
-                                                        inputId="ingredient2"
+                                                    <input
+                                                        type="radio"
+                                                        :checked="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
+                                                        @change="() => { set(fieldSummary, ['data', 'engine'], 'manual') }"
+                                                        id="ingredient2"
                                                         name="pizza"
                                                         value="manual"
+                                                        class="mt-1 focus:ring-0 focus:border-none"
                                                     />
                                                     <div>
                                                         <label for="ingredient2" class="block">{{ trans("Manual") }}</label>
                                                         <InputNumber
-                                                            :modelValue="get(fieldSummary, ['data', 'shipping_amount'], null)"
-                                                            @update:modelValue="(v) => setShippingManualAmount(v)"
+                                                            :modelValue="get(fieldSummary, ['data', 'new_shipping_amount'], get(fieldSummary, ['data', 'shipping_amount'], null))"
+                                                            @update:modelValue="(v) => set(fieldSummary, ['data', 'new_shipping_amount'], v)"
+                                                            @input="(v) => set(fieldSummary, ['data', 'new_shipping_amount'], v.value)"
                                                             inputId="currency-input"
                                                             mode="currency"
                                                             :disabled="get(fieldSummary, ['data', 'engine'], null) !== 'manual'"
@@ -1412,6 +1417,18 @@ const setShippingToAuto = () => {
                                                             inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
                                                             :min="0"
                                                         />
+                                                        <span v-if="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
+                                                            @click="() =>
+                                                                get(fieldSummary, ['data', 'new_shipping_amount'], null) == get(fieldSummary, ['data', 'shipping_amount'], null)
+                                                                    ? false
+                                                                    : setShippingManualAmount(get(fieldSummary, ['data', 'new_shipping_amount'], get(fieldSummary, ['data', 'shipping_amount'], 0)))
+                                                            "
+                                                            class="cursor-pointer ml-1">
+                                                            <LoadingIcon v-if="isLoadingShippingManual" />
+                                                            <FontAwesomeIcon v-else icon="fad fa-save" class="text-lg align-middle" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true"
+                                                                :class="get(fieldSummary, ['data', 'new_shipping_amount'], null) == get(fieldSummary, ['data', 'shipping_amount'], null) ? 'grayscale opacity-50' : ''"
+                                                            />
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1446,7 +1463,7 @@ const setShippingToAuto = () => {
                                     </div>
 
                                     <dd v-else :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
-                                        {{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}
+                                        {{ locale.currencyFormat(currency.code, fieldSummary.price_total || 0) }}
                                     </dd>
                                 </Transition>
                             </div>
