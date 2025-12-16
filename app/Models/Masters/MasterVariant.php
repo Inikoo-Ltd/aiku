@@ -12,6 +12,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InMasterShop;
+use App\Models\Masters\MasterProductCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -99,6 +100,11 @@ class MasterVariant extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    public function masterFamily(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
     }
 
     public function stats(): HasOne

@@ -47,7 +47,7 @@ class IndexSageInvoicesReport extends OrgAction
 
         $queryBuilder
             ->defaultSort('-date')
-            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer'])
+            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer', 'accounting_reference'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix)
@@ -98,7 +98,7 @@ class IndexSageInvoicesReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
-                ->column(key: 'accounting_reference', label: 'Sage Ref')
+                ->column(key: 'accounting_reference', label: 'Sage Ref', sortable: true)
                 ->column(key: 'type', label: __('Type'))
                 ->column(key: 'is_credit_customer', label: __('Credit Customer'), sortable: true)
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')

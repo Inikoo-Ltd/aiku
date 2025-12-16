@@ -59,7 +59,14 @@ class StoreMasterVariant extends OrgAction
         // Change to real Code Getter
         $code = MasterAsset::find($this->product_leader)->code . '-var-' . now()->format('His');
         $this->set('code', $code);
-        $this->set('leader_id', $this->product_leader);
+
+        if($this->product_leader){
+            $this->set('leader_id', $this->product_leader);
+        }
+
+        if($this->data_variants){
+            $this->set('data', $this->data_variants);
+        }
     }
 
     public function rules(): array
