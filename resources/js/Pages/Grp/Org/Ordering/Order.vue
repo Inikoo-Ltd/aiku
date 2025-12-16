@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, Popover as PopoverPrimevue, Select } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, Select } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -82,6 +82,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
+import { get, set } from "lodash"
 
 library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
@@ -616,6 +617,46 @@ const labelToBePaid = (toBePaidValue: string) => {
     }
 }
 
+// Section: change shipping price (in Summary)
+const isLoadingUpdateShippingTbcAmount = ref(false)
+const updateShippingTbcAmount = (value: number, oldValue: number|null) => {
+    console.log('ggg', Number(value), Number(oldValue))
+    if (Number(value) === Number(oldValue)) {
+        return 
+    }
+    router.patch(
+        route('grp.models.order.set_shipping_tbc_amount', {
+            order: props.data?.data?.id
+        }),
+        {
+            shipping_tbc_amount: value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingUpdateShippingTbcAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully update shipping amount"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update shipping amount"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingUpdateShippingTbcAmount.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -1242,17 +1283,49 @@ const labelToBePaid = (toBePaidValue: string) => {
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
-                        <template #cell_shipping="{ fieldSummary }">
+                        <template #cell_shipping_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
-                                <div class="flex items-center leading-none" :class="fieldSummary.label_class"> <pre>{{fieldSummary}}</pre>
-                                    <span>{{ fieldSummary.label }}</span>
-                                    <span v-if="fieldSummary.data.engine === 'manual'" class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
-                                        {{ trans('Manual') }}
+                                <!-- <pre>{{fieldSummary}}</pre> -->
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span v-if="fieldSummary.data.engine === 'manual'">
+                                        <span>{{ fieldSummary.label }}</span>
+                                        <span class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
+                                            {{ trans('Manual') }}
+                                        </span>
+                                    </span>
+                                    <span v-else>
+                                        <span>{{ fieldSummary.label }}</span>
+                                        <span v-if="fieldSummary.data.shipping_zone?.code" v-tooltip="trans('Shipping zone code')">
+                                            ({{ fieldSummary.data.shipping_zone?.code }})
+                                        </span>
                                     </span>
                                     <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                                 </div>
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
                             </dt>
+                        </template>
+                        
+                        <template #cell_shipping_3="{ fieldSummary }">
+                            <div class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
+                                <Transition name="spin-to-right">
+                                    <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc" class="-mr-2">
+                                        <InputNumber
+                                            :modelValue="get(fieldSummary, ['data', 'shipping_tbc_amount'], null)"
+                                            @update:modelValue="(v) => updateShippingTbcAmount(v, get(fieldSummary, ['data', 'shipping_tbc_amount'], null))"
+                                            inputId="currency-input"
+                                            mode="currency"
+                                            :currency="currency.code"
+                                            locale="en-GB"
+                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                            :min="0"
+                                        />
+                                    </div>
+
+                                    <dd v-else :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
+                                        {{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}
+                                    </dd>
+                                </Transition>
+                            </div>
                         </template>
                     </OrderSummary>
                 </section>
