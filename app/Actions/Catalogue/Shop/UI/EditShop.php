@@ -368,7 +368,7 @@ class EditShop extends OrgAction
                                     'label'                     => __('Allowed Shipping Countries'),
                                     'type'                      => 'shipping_countries',
                                     'placeholder'               => __('Select countries'),
-                                    'information'               => __('Customer only able to submit to this countries'),
+                                    'information'               => __('Customer only able to submit order that delivered to this countries'),
                                     'required'                  => true,
                                     'full'                      => true,
                                     'country_list'              => GetCountriesOptions::run(),

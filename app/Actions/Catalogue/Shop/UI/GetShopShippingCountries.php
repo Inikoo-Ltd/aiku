@@ -38,6 +38,7 @@ class GetShopShippingCountries
                 'label'                 => $country->name . ' (' . $country->code . ')',
                 'included_postal_codes' => $shippingCountry->territories['included_postal_codes'] ?? null,
                 'excluded_postal_codes' => $shippingCountry->territories['excluded_postal_codes'] ?? null,
+                'territories'           => $shippingCountry->territories
             ];
         }
 

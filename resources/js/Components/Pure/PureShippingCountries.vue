@@ -15,6 +15,7 @@ import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import { get, set } from 'lodash'
+import InformationIcon from '../Utils/InformationIcon.vue'
 
 library.add(faInfinity, faPlus, faTrashAlt, faPen)
 
@@ -31,10 +32,11 @@ const props = withDefaults(defineProps<{
     }
     country_list: {}[]
 }>(), {
-    // country_list: () => [],
+    country_list: () => [],
 })
 
-console.log('country_list', props.country_list)
+// console.log('modelValue', props.modelValue)
+// console.log('country_list', props.country_list)
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -50,6 +52,7 @@ const countryOptions = computed(() => {
     if (list && typeof list === 'object' && !Array.isArray(list)) {
         return Object.values(list).map((c: any) => ({
             id: c.id,
+            disabled: !!(props.modelValue?.find(value => value.country_id === c.id)),
             label: c.label,
             code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
         }))
@@ -57,6 +60,7 @@ const countryOptions = computed(() => {
     if (Array.isArray(list)) {
         return list.map((c: any) => ({
             id: c.id,
+            disabled: !!(props.modelValue?.find(value => value.country_id === c.id)),
             label: c.label,
             code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
         }))
@@ -64,25 +68,18 @@ const countryOptions = computed(() => {
     return []
 })
 
-const isEditMode = ref(false)
+
+
+// Section: Edit country
 const selectedCountryToEdit = ref(null)
-function openEditModal(item: {}) {
+const isEditMode = ref(false)
+const openEditModal = (item: {}) => {
     selectedCountryToEdit.value = item
     isEditMode.value = true
-    console.log('item', item)
-    // selectedIndex.value = index
     editCountryCode.value = item.country_code
     showModal.value = true
     editTerritories.value = item.territories || {}
 }
-
-function addNewItem() {
-    isEditMode.value = false
-    editCountryCode.value = ''
-    editTerritories.value = {}
-    showModal.value = true
-}
-
 const isLoadingEditShippingCountry = ref<number|null>(null)
 const saveEdit = () => {
     // Section: Submit
@@ -124,10 +121,17 @@ const saveEdit = () => {
     )
 }
 
+// Section: add new country
+const addNewItem = () => {
+    isEditMode.value = false
+    editCountryCode.value = ''
+    editTerritories.value = {}
+    showModal.value = true
+}
 const isLoadingAddNewShippingCountry = ref(false)
 const onAddNewShippingCountry = () => {
     // Section: Submit
-    console.log('editCountryId.value', editCountryId.value, route(props.routes.store.name, props.routes.store.parameters))
+    // console.log('editCountryId.value', editCountryId.value, route(props.routes.store.name, props.routes.store.parameters))
     
     router.post(
         route(props.routes.store.name, props.routes.store.parameters),
@@ -181,6 +185,7 @@ const selectedCountryToDelete = ref<any>(null)
         <template v-if="modelValue?.length">
             <div v-for="(item, index) in modelValue" :key="index"
                 class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2">
+                <!-- <pre>{{ item }}</pre> -->
                 <!-- Country Code -->
                 <div class="flex justify-between items-center">
                     <div>
@@ -272,6 +277,7 @@ const selectedCountryToDelete = ref<any>(null)
                     :searchable="true"
                     label="label"
                     valueProp="id"
+                    disabledProp="disabled"
                     mode="single"
                     required
                 />
@@ -288,7 +294,10 @@ const selectedCountryToDelete = ref<any>(null)
             </div>
 
             <div v-if="isEditMode">
-                <label class="block mb-1 text-gray-600">{{ trans("Included Postal Codes") }}</label>
+                <label class="block mb-1 text-gray-600">
+                    {{ trans("Included Postal Codes") }}
+                    <InformationIcon :information="trans('Separates each with comma') + ' (,)'" />
+                </label>
                 <PureTextarea
                     :modelValue="get(editTerritories, ['included_postal_codes'], []).join(',')"
                     @update:modelValue="e => set(editTerritories, ['included_postal_codes'], e.split(',').map(s => s.trim()).filter(Boolean))"
@@ -299,7 +308,10 @@ const selectedCountryToDelete = ref<any>(null)
             </div>
 
             <div v-if="isEditMode">
-                <label class="block mb-1 text-gray-600">{{ trans("Excluded Postal Codes") }}</label>
+                <label class="block mb-1 text-gray-600">
+                    {{ trans("Excluded Postal Codes") }}
+                    <InformationIcon :information="trans('Separates each with comma') + ' (,)'" />
+                </label>
                 <PureTextarea
                     :modelValue="get(editTerritories, ['excluded_postal_codes'], []).join(',')"
                     @update:modelValue="e => set(editTerritories, ['excluded_postal_codes'], e.split(',').map(s => s.trim()).filter(Boolean))"
@@ -313,7 +325,7 @@ const selectedCountryToDelete = ref<any>(null)
         <template #footer>
             <Button label="Cancel" type="exit" @click="showModal = false" />
             <Button v-if="!isEditMode" type="create" :label="trans('Add')" @click="onAddNewShippingCountry" full :loading="isLoadingAddNewShippingCountry" />
-            <Button v-else type="create" :label="trans('Set Changes')" @click="saveEdit" full />
+            <Button v-else type="save" :label="trans('Save edit')" @click="saveEdit" full :loading="!!isLoadingEditShippingCountry" />
         </template>
     </Dialog>
 
