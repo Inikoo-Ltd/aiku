@@ -101,7 +101,7 @@ class EditInvoice extends OrgAction
                             'fields'  => [
                                 'reference' => [
                                     'type'  => 'input',
-                                    'label' => __('reference'),
+                                    'label' => __('Reference'),
                                     'value' => $invoice->reference
                                 ],
                             ],

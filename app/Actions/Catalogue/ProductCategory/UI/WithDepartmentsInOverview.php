@@ -124,7 +124,7 @@ trait WithDepartmentsInOverview
                 $table->column(key: 'organisation_code', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
 
 
             $table->column(key: 'number_current_sub_departments', label: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);

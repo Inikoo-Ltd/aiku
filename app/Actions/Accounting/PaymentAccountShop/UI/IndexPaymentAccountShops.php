@@ -87,9 +87,7 @@ class IndexPaymentAccountShops extends OrgAction
                 'payment_account_shop.activated_at',
                 'payment_account_shop.state as state',
                 'payment_account_shop.show_in_checkout',
-                // 'payment_account_shop_stats.number_payments',
                 \DB::raw('COUNT(payments.id) as number_payments'), // Todo: remove this if payment_account_shop_stats.number_payments have a data
-                // 'payment_account_shop_stats.amount_successfully_paid',
                 \DB::raw('SUM(payments.amount) as amount_successfully_paid') // Todo: remove this if payment_account_shop_stats.amount_successfully_paid have a data
             ])
             ->groupBy([

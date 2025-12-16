@@ -99,7 +99,7 @@ class IndexNewStoredItemDeltasInProcessForPallet extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __("Name"), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'audited_quantity', label: __("Quantity"), canBeHidden: false);
             $table->column(key: 'actions', label: '', canBeHidden: false);
