@@ -111,6 +111,11 @@ class UpdateStock extends OrgAction
 
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
+            $rules['code'] = ['sometimes', 'string'];
+            $rules['activated_at'] = ['sometimes', 'date'];
+            $rules['discontinued_at'] = ['sometimes', 'date'];
+            $rules['state'] = ['sometimes', Rule::enum(StockStateEnum::class)];
+            $rules['source_slug']       = ['sometimes', 'string', 'max:255'];
         }
 
         return $rules;
