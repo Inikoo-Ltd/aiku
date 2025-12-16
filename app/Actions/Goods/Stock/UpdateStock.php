@@ -40,7 +40,6 @@ class UpdateStock extends OrgAction
         $changes = Arr::except($stock->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (Arr::hasAny($changes, ['code', 'name', 'stock_family_id', 'unit_value']) && $stock->state != StockStateEnum::IN_PROCESS) {
-
             foreach ($stock->orgStocks as $orgStock) {
                 $orgStock->update(
                     [
@@ -50,7 +49,6 @@ class UpdateStock extends OrgAction
                     ]
                 );
             }
-
         }
 
         if (Arr::has($changes, 'stock_family_id')) {
@@ -69,8 +67,6 @@ class UpdateStock extends OrgAction
                 }
             }
         }
-
-
 
 
         if (count($changes) > 0) {
@@ -110,12 +106,13 @@ class UpdateStock extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
-            $rules['code'] = ['sometimes', 'string'];
-            $rules['activated_at'] = ['sometimes', 'date'];
-            $rules['discontinued_at'] = ['sometimes', 'date'];
-            $rules['state'] = ['sometimes', Rule::enum(StockStateEnum::class)];
-            $rules['source_slug']       = ['sometimes', 'string', 'max:255'];
+            $rules                    = $this->noStrictUpdateRules($rules);
+            $rules['code']            = ['sometimes', 'string'];
+            $rules['activated_at']    = ['sometimes', 'nullable
+            ', 'date'];
+            $rules['discontinued_at'] = ['sometimes', 'nullable', 'date'];
+            $rules['state']           = ['sometimes', Rule::enum(StockStateEnum::class)];
+            $rules['source_slug']     = ['sometimes', 'string', 'max:255'];
         }
 
         return $rules;
@@ -128,8 +125,8 @@ class UpdateStock extends OrgAction
         if (!$audit) {
             Stock::disableAuditing();
         }
-        $this->asAction = true;
-        $this->stock    = $stock;
+        $this->asAction       = true;
+        $this->stock          = $stock;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromGroup($stock->group, $modelData);
 
