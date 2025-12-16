@@ -27,7 +27,7 @@ class CheckWooChannel
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
         $webhooks = [];
-        if(Arr::has($wooCommerceUser->settings, 'webhooks')) {
+        if (Arr::has($wooCommerceUser->settings, 'webhooks')) {
             $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
         }
 
@@ -39,7 +39,7 @@ class CheckWooChannel
             $existInPlatform      = true;
         }
 
-        if( !blank($webhooks)) {
+        if (!blank($webhooks)) {
             $this->update($wooCommerceUser, [
                 'settings' => array_merge($wooCommerceUser->settings, [
                     'webhooks' => $webhooks

@@ -328,7 +328,7 @@ const isHovered = ref(false)
             </div>
 
             <!-- Minus button (visible on hover) -->
-            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0" @mouseenter="isHovered = true" @mouseleave="isHovered = false"
+            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0" @mouseenter="isHovered = true" @mouseleave="isHovered = false"  type="button"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
                 <FontAwesomeIcon :icon="faMinus" :style="{
                     color: isHovered ? 'black' : buttonStyleHover?.color
@@ -343,7 +343,7 @@ const isHovered = ref(false)
             </span>
 
             <!-- Plus button (visible on hover) -->
-            <button @click.stop.prevent="increment"
+            <button @click.stop.prevent="increment"  type="button"
                 :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock" @mouseenter="isHovered = true" @mouseleave="isHovered = false"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{

@@ -18,7 +18,6 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
 
-
 class UpdateOrderShippingTBCAmount extends OrgAction
 {
     use WithActionUpdate;
@@ -55,8 +54,8 @@ class UpdateOrderShippingTBCAmount extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        $order=UpdateOrderIsShippingTBC::run($this->order);
-        if(!$order->is_shipping_tbc){
+        $order = UpdateOrderIsShippingTBC::run($this->order);
+        if (!$order->is_shipping_tbc) {
             $validator->errors()->add('shipping_tbc_amount', 'Shipping amount change is not allowed for this order');
         }
 

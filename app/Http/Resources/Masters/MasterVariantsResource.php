@@ -10,7 +10,6 @@
 namespace App\Http\Resources\Masters;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
