@@ -2,24 +2,24 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 23 Mar 2024 12:24:25 Malaysia Time, Mexico City, Mexico
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Wed, 17 Dec 2025 02:04:59 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
+use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
-use App\Models\Masters\MasterAsset;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexTradeUnitsInMasterProduct extends OrgAction
+class IndexTradeUnitsInStock extends OrgAction
 {
-    public function handle(MasterAsset $masterAsset, $prefix = null): LengthAwarePaginator
+    public function handle(Stock $stock, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -34,13 +34,13 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->leftjoin('model_has_trade_units', 'trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
-            ->where('model_has_trade_units.model_type', class_basename(MasterAsset::class))
-            ->where('model_has_trade_units.model_id', $masterAsset->id);
+            ->where('model_has_trade_units.model_type', 'Stock')
+            ->where('model_has_trade_units.model_id', $stock->id);
+
 
         $queryBuilder
             ->defaultSort('trade_units.code')
             ->select([
-                'trade_units.id',
                 'trade_units.code',
                 'trade_units.slug',
                 'trade_units.name',
@@ -51,7 +51,7 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
                 'trade_units.volume',
                 'trade_units.type',
                 'model_has_trade_units.quantity as quantity'
-        ]);
+            ]);
 
 
         return $queryBuilder->allowedSorts(['code', 'type', 'name'])
@@ -73,6 +73,7 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('trade unit'),__('trade units')])
                 ->withEmptyState(
                     [
                     'title' => __("No trade units found"),
@@ -82,7 +83,7 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, align: 'right');
         };
     }
 }

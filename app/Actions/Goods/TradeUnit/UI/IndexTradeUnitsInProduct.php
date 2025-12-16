@@ -77,7 +77,6 @@ class IndexTradeUnitsInProduct extends OrgAction
                 ->withEmptyState(
                     [
                     'title' => __("No trade units found"),
-                    'description' => __("You can create a new trade unit by clicking the button below."),
                 ]
                 )
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
