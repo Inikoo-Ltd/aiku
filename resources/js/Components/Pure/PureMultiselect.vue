@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<{
     resolveOnLoad?: boolean
     delay?: number
     minChars?: number
+    disabledProp?: string
 }>(), {
     clearOnBlur: true
 })
@@ -51,6 +52,7 @@ const onInput = (keyOption : any) => {
             @search-change="(e) => emits('search-change', e)"
             :loading="isLoading"
             :disabled
+            :disabledProp
             :classes="{
                 placeholder: 'pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 select-none text-sm text-left w-full pl-4 font-light text-gray-400 opacity-1',
                 ...classes,

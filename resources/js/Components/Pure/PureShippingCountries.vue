@@ -1,0 +1,339 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import Dialog from 'primevue/dialog'
+import Button from '../Elements/Buttons/Button.vue'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faInfinity, faPen, faPencil } from '@far'
+import { faPlus } from '@fas'
+import { faTrashAlt, faEdit } from '@fal'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import PureMultiselect from './PureMultiselect.vue'
+import PureTextarea from './PureTextarea.vue'
+import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
+import { trans } from 'laravel-vue-i18n'
+import { routeType } from '@/types/route'
+import { notify } from '@kyvg/vue3-notification'
+import { router } from '@inertiajs/vue3'
+import { get, set } from 'lodash'
+import InformationIcon from '../Utils/InformationIcon.vue'
+
+library.add(faInfinity, faPlus, faTrashAlt, faPen)
+
+const props = withDefaults(defineProps<{
+    modelValue: Array<{
+        country_code: string
+        included_postal_codes?: string
+        excluded_postal_codes?: string
+    }>
+    routes: {
+        store: routeType
+        update: routeType
+        delete: routeType
+    }
+    country_list: {}[]
+}>(), {
+    country_list: () => [],
+})
+
+// console.log('modelValue', props.modelValue)
+// console.log('country_list', props.country_list)
+
+const emit = defineEmits(['update:modelValue'])
+
+// const items = computed(() => props.modelValue || [])
+
+const showModal = ref(false)
+const editCountryCode = ref('')
+const editCountryId = ref(null)
+const editTerritories = ref({})
+
+const countryOptions = computed(() => {
+    const list = props.country_list
+    if (list && typeof list === 'object' && !Array.isArray(list)) {
+        return Object.values(list).map((c: any) => ({
+            id: c.id,
+            disabled: !!(props.modelValue?.find(value => value.country_id === c.id)),
+            label: c.label,
+            code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
+        }))
+    }
+    if (Array.isArray(list)) {
+        return list.map((c: any) => ({
+            id: c.id,
+            disabled: !!(props.modelValue?.find(value => value.country_id === c.id)),
+            label: c.label,
+            code: (c.label.match(/\(([^)]+)\)/)?.[1] || '').toUpperCase(),
+        }))
+    }
+    return []
+})
+
+
+
+// Section: Edit country
+const selectedCountryToEdit = ref(null)
+const isEditMode = ref(false)
+const openEditModal = (item: {}) => {
+    selectedCountryToEdit.value = item
+    isEditMode.value = true
+    editCountryCode.value = item.country_code
+    showModal.value = true
+    editTerritories.value = item.territories || {}
+}
+const isLoadingEditShippingCountry = ref<number|null>(null)
+const saveEdit = () => {
+    // Section: Submit
+    router.patch(
+        route(props.routes.update.name, {
+            shippingCountry: selectedCountryToEdit.value?.id
+        }),
+        {
+            territories: editTerritories.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingEditShippingCountry.value = selectedCountryToEdit.value?.id
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully edit shipping country"),
+                    type: "success"
+                })
+                editTerritories.value = {}
+                editCountryId.value = null
+                showModal.value = false
+            },
+            onError: errors => {
+                console.log('errrrr', errors)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to edit shipping country"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingEditShippingCountry.value = null
+            },
+        }
+    )
+}
+
+// Section: add new country
+const addNewItem = () => {
+    isEditMode.value = false
+    editCountryCode.value = ''
+    editTerritories.value = {}
+    showModal.value = true
+}
+const isLoadingAddNewShippingCountry = ref(false)
+const onAddNewShippingCountry = () => {
+    // Section: Submit
+    // console.log('editCountryId.value', editCountryId.value, route(props.routes.store.name, props.routes.store.parameters))
+    
+    router.post(
+        route(props.routes.store.name, props.routes.store.parameters),
+        {
+            country_id: editCountryId.value,
+            territories: editTerritories.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingAddNewShippingCountry.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+                editTerritories.value = {}
+                editCountryId.value = null
+                showModal.value = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingAddNewShippingCountry.value = false
+            },
+        }
+    )
+}
+
+function getCountryLabel(code: string): string {
+    const found = countryOptions.value.find(c => c.code === code)
+    return found ? found.label : code ?? ''
+}
+
+const _modal_delete = ref<InstanceType<typeof ModalConfirmationDelete> | null>(null)
+const selectedCountryToDelete = ref<any>(null)
+</script>
+
+<template>
+    <div class="space-y-4 text-sm max-w-[450px] mx-auto">
+
+        <!-- List of Regions -->
+        <template v-if="modelValue?.length">
+            <div v-for="(item, index) in modelValue" :key="index"
+                class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2">
+                <!-- <pre>{{ item }}</pre> -->
+                <!-- Country Code -->
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-gray-500">{{ trans("Country") }}:</span>
+                        <span class="font-mono font-medium">
+                            <img class="inline pr-1 pl-1 h-[1em]"
+                                :src="'/flags/' + item.country_code?.toLowerCase() + '.png'" :alt="item.country_code"
+                                :title="getCountryLabel(item.country_code)" />
+                            {{ getCountryLabel(item.country_code) }}
+                        </span>
+                    </div>
+
+                    <!-- Section: Button (edit/delete) -->
+                    <div class="flex items-center ">
+                        <Button :icon="faPencil" type="edit" size="xs" class="opacity-60 hover:opacity-100" @click="openEditModal(item)">
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faPencil" class="" fixedWidth />
+                            </template>
+                        </Button>
+                        
+                        <Button :icon="faTrashAlt" type="edit" class="opacity-60 hover:opacity-100" size="xs"
+                            aclick="deleteItem(index)"
+                            @click="() => (_modal_delete?.changeModel(), selectedCountryToDelete = item)"
+                        >
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faTrashAlt" class="text-red-500" fixedWidth />
+                            </template>
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- Section: Included Postal Codes -->
+                <div v-if="item.included_postal_codes">
+                    <div class="text-green-500 mb-1">{{ trans("Included Postal Codes") }} ({{ item.included_postal_codes?.length }})</div>
+                    <div class="bg-green-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
+                        {{ item.included_postal_codes.join(', ') }}
+                    </div>
+                </div>
+                <!-- Section: Excluded Postal Codes -->
+                <div v-if="item.excluded_postal_codes">
+                    <div class="text-red-500 mb-1">{{ trans("Excluded Postal Codes") }} ({{ item.excluded_postal_codes?.length }})</div>
+                    <div class="bg-red-50 text-xs p-2 rounded whitespace-pre-wrap break-words">
+                        {{ item.excluded_postal_codes.join(', ') }}
+                    </div>
+                </div>
+            </div>
+        </template>
+        <p v-else class="text-center text-gray-500">{{ trans("No shipping countries added yet") }}.</p>
+
+        <!-- Button: add shipping country -->
+        <div class="flex justify-end mb-2">
+            <Button
+                :icon="faPlus"
+                label="Add shipping country"
+                type="dashed"
+                full
+                @click="addNewItem"
+            />
+        </div>
+    </div>
+
+    
+    <!-- Section: Remove country -->
+    <ModalConfirmationDelete
+        ref="_modal_delete"
+        :routeDelete="{
+            name: props.routes.delete.name,
+            parameters: {
+                shippingCountry: selectedCountryToDelete?.id
+            }
+        }"
+        @success="() => selectedCountryToDelete = null"
+        :title="trans('Are you sure you want to remove :code?', { code: getCountryLabel(selectedCountryToDelete?.country_code) })"
+        :description="trans('This will remove the country from allowed shipping countries list.')"
+        :noLabel="trans('Yes, remove')"
+        noIcon="fal fa-times"
+    />
+
+    <!-- Modal for Add/Edit -->
+    <Dialog v-model:visible="showModal" modal header="Add Allowed Shipping Country" :style="{ width: '450px' }">
+        <div class="space-y-4 text-sm">
+            <!-- Add mode -->
+            <div v-if="!isEditMode" class="!z-50">
+                <label class="block mb-1 text-gray-600">{{ trans("Select country") }}</label>
+                <PureMultiselect
+                    :modelValue="editCountryId"
+                    @update:modelValue="val => editCountryId = val"
+                    :options="countryOptions"
+                    :searchable="true"
+                    label="label"
+                    valueProp="id"
+                    disabledProp="disabled"
+                    mode="single"
+                    required
+                />
+            </div>
+
+            <!-- Edit mode -->
+            <div v-else>
+                <label class="block mb-1 text-gray-600">Country</label>
+                <div class="flex items-center font-medium bg-gray-50 p-2 rounded">
+                    <img class="inline pr-1 pl-1 h-[1em]" :src="'/flags/' + editCountryCode?.toLowerCase() + '.png'"
+                        :alt="editCountryCode" :title="getCountryLabel(editCountryCode)" />
+                    {{ getCountryLabel(editCountryCode) }}
+                </div>
+            </div>
+
+            <div v-if="isEditMode">
+                <label class="block mb-1 text-gray-600">
+                    {{ trans("Included Postal Codes") }}
+                    <InformationIcon :information="trans('Separates each with comma') + ' (,)'" />
+                </label>
+                <PureTextarea
+                    :modelValue="get(editTerritories, ['included_postal_codes'], []).join(',')"
+                    @update:modelValue="e => set(editTerritories, ['included_postal_codes'], e.split(',').map(s => s.trim()).filter(Boolean))"
+                    rows="3"
+                    class="w-full"
+                    autoResize
+                />
+            </div>
+
+            <div v-if="isEditMode">
+                <label class="block mb-1 text-gray-600">
+                    {{ trans("Excluded Postal Codes") }}
+                    <InformationIcon :information="trans('Separates each with comma') + ' (,)'" />
+                </label>
+                <PureTextarea
+                    :modelValue="get(editTerritories, ['excluded_postal_codes'], []).join(',')"
+                    @update:modelValue="e => set(editTerritories, ['excluded_postal_codes'], e.split(',').map(s => s.trim()).filter(Boolean))"
+                    rows="3"
+                    class="w-full"
+                    autoResize
+                />
+            </div>
+        </div>
+
+        <template #footer>
+            <Button label="Cancel" type="exit" @click="showModal = false" />
+            <Button v-if="!isEditMode" type="create" :label="trans('Add')" @click="onAddNewShippingCountry" full :loading="isLoadingAddNewShippingCountry" />
+            <Button v-else type="save" :label="trans('Save edit')" @click="saveEdit" full :loading="!!isLoadingEditShippingCountry" />
+        </template>
+    </Dialog>
+
+</template>
+
+<style lang="scss">
+.p-dialog-content {
+    overflow-y: visible !important;
+}
+
+</style>

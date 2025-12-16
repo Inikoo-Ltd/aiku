@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingCountries;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\ShippingCountry;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -21,7 +22,7 @@ class StoreShippingCountry extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Shop $shop, array $modelData): ShippingCountry
+    public function handle(Shop $shop, array $modelData): void
     {
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
@@ -32,7 +33,14 @@ class StoreShippingCountry extends OrgAction
 
         ShopHydrateShippingCountries::dispatch($shop)->delay($this->hydratorsDelay);
 
-        return $shippingCountry;
+        // return $shippingCountry;
+    }
+
+    public function asController(Shop $shop, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        $this->handle($shop, $this->validatedData);
     }
 
     public function rules(): array
@@ -47,7 +55,7 @@ class StoreShippingCountry extends OrgAction
         ];
     }
 
-    public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $audit = true): ShippingCountry
+    public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $audit = true): void
     {
         if (!$audit) {
             ShippingCountry::disableAuditing();
@@ -57,6 +65,6 @@ class StoreShippingCountry extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($shop, $modelData);
 
-        return $this->handle($shop, $this->validatedData);
+        $this->handle($shop, $this->validatedData);
     }
 }

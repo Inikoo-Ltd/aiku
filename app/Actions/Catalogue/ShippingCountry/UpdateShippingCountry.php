@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Models\Ordering\ShippingCountry;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateShippingCountry extends OrgAction
 {
@@ -25,10 +26,21 @@ class UpdateShippingCountry extends OrgAction
         return $shippingCountry;
     }
 
+    public function asController(ShippingCountry $shippingCountry, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($shippingCountry->shop, $request);
+
+        $this->handle($shippingCountry, $this->validatedData);
+    }
+
     public function rules(): array
     {
         return [
-            'territories' => ['sometimes', 'nullable', 'array'],
+            'territories'                           => ['sometimes', 'nullable', 'array'],
+            'territories.included_postal_codes'     => ['sometimes', 'nullable', 'array', 'min:1'],
+            'territories.included_postal_codes.*'   => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\\s\\-]+$/i'],
+            'territories.excluded_postal_codes'     => ['sometimes', 'nullable', 'array', 'min:1'],
+            'territories.excluded_postal_codes.*'   => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9\\s\\-]+$/i'],
         ];
     }
 
