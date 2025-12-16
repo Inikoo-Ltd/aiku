@@ -157,6 +157,7 @@ class IndexOrgSuppliers extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord(__('Suppliers'))
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [

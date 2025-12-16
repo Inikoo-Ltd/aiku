@@ -209,7 +209,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Supplier products'),
+                        'label' => __('Supplier Products'),
                         'icon'  => ['fal', 'fa-box-usd'],
                         'root'  => 'grp.supply-chain.supplier_products.',
                         'route' => [

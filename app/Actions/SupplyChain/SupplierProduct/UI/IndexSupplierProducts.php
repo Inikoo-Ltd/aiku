@@ -123,8 +123,9 @@ class IndexSupplierProducts extends GrpAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -178,11 +179,11 @@ class IndexSupplierProducts extends GrpAction
     public function htmlResponse(LengthAwarePaginator $supplier_products, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('Supplier products');
+        $title = __('Supplier Products');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('Supplier products')
+            'title' => __('Supplier Products')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -195,7 +196,7 @@ class IndexSupplierProducts extends GrpAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Supplier products')
+                'title' => __('Supplier Products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',
@@ -210,7 +211,7 @@ class IndexSupplierProducts extends GrpAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Supplier products')
+                'title' => __('Supplier Products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',
@@ -224,7 +225,7 @@ class IndexSupplierProducts extends GrpAction
                     'type'    =>    'button',
                                     'style'   => 'create',
                                     'tooltip' => __('New supplier product'),
-                                    'label'   => __('New supplier product'),
+                                    'label'   => __('New supplier Product'),
                                     'route'   => [
                                         'name'       => 'grp.supply-chain.suppliers.supplier_products.create',
                                         'parameters' => $request->route()->originalParameters()
@@ -254,7 +255,7 @@ class IndexSupplierProducts extends GrpAction
                     $request->route()->originalParameters(),
                     $this->scope
                 ),
-                'title'       => __('Supplier products'),
+                'title'       => __('Supplier Products'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -279,7 +280,7 @@ class IndexSupplierProducts extends GrpAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Supplier products'),
+                        'label' => __('Supplier Products'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

@@ -11,7 +11,7 @@ namespace App\Actions\SupplyChain\Agent\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
-use App\Actions\OrgAction;
+use App\Actions\GrpAction;
 use App\Actions\Procurement\Marketplace\Agent\UI\RemoveMarketplaceAgent;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
@@ -20,7 +20,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditAgent extends OrgAction
+class EditAgent extends GrpAction
 {
     public function handle(Agent $agent): Agent
     {
@@ -35,7 +35,7 @@ class EditAgent extends OrgAction
 
     public function asController(Agent $agent, ActionRequest $request): RedirectResponse|Agent
     {
-        $this->initialisationFromGroup($agent->group, $request);
+        $this->initialisation($agent->group, $request);
 
         return $this->handle($agent);
     }
@@ -46,7 +46,7 @@ class EditAgent extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit marketplace agent'),
+                'title'       => __('Edit Marketplace Agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $agent,
                     $request->route()->originalParameters()
@@ -74,12 +74,13 @@ class EditAgent extends OrgAction
 
 
                         [
-                            'title'  => __('ID/contact details'),
+                            'title'  => __('ID/Contact details'),
                             'icon'   => ['fal', 'fa-address-book'],
+                            'label' => __('ID/Contact Details'),
                             'fields' => [
                                 'code'         => [
                                     'type'  => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $agent->code
                                 ],
                                 'name' => [
@@ -119,11 +120,12 @@ class EditAgent extends OrgAction
                         [
                             'title'  => __('settings'),
                             'icon'   => 'fa-light fa-cog',
+                            'label' => __('Settings'),
                             'fields' => [
 
                                 'currency_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('currency'),
+                                    'label'       => __('Currency'),
                                     'placeholder' => __('Select a currency'),
                                     'options'     => GetCurrenciesOptions::run(),
                                     'required'    => true,

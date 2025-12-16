@@ -150,11 +150,12 @@ class IndexSuppliers extends GrpAction
                         ]
                     }
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
-                ->column(key: 'number_supplier_products', label: __('products'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders', label: __('purchase orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->withLabelRecord([__('Supplier'), __('Suppliers')])
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'number_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -191,7 +192,7 @@ class IndexSuppliers extends GrpAction
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('suppliers');
+        $title = __('Suppliers');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
@@ -204,7 +205,7 @@ class IndexSuppliers extends GrpAction
                 'type'  => 'button',
                 'style' => 'primary',
                 'icon'  => 'fal fa-plus',
-                'label' => __('Create Supplier'),
+                'label' => __('Supplier'),
                 'route' => [
                     'name'       => 'grp.supply-chain.suppliers.create',
                     'parameters' => array_values($request->route()->originalParameters())
@@ -232,7 +233,7 @@ class IndexSuppliers extends GrpAction
                     'type'  => 'button',
                     'style' => 'primary',
                     'icon'  => 'fal fa-plus',
-                    'label' => __('Create Supplier'),
+                    'label' => __('Supplier'),
                     'route' => [
                         'name'       => 'grp.supply-chain.agents.show.suppliers.create',
                         'parameters' => array_values($request->route()->originalParameters())

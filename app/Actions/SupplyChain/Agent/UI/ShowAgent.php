@@ -66,11 +66,12 @@ class ShowAgent extends GrpAction
                     'next'     => $this->getNext($agent, $request),
                 ],
                 'pageHead'                     => [
-                    'model'   => __('agent'),
+                    'model'   => __('Agent'),
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
-                            'title' => __('Agent')
+                            'title' => __('Agent'),
+                            'label' => __('Agent')
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
                     'title'   => $agent->organisation->name,
@@ -98,7 +99,7 @@ class ShowAgent extends GrpAction
                                 'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
-                            'label' => __('supplier')
+                            'label' => __('Supplier')
                         ] : false,
                     ],
 

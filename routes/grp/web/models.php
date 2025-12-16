@@ -284,6 +284,7 @@ use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Actions\Production\RawMaterial\UpdateRawMaterial;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
+use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
@@ -891,7 +892,7 @@ Route::name('customer_client.')->prefix('customer-client/{customerClient:id}')->
 });
 
 Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
-Route::patch('/supplier/{supplier:id}', updateOrgSupplier::class)->name('supplier.update');
+Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
 
 Route::patch('/org-supplier/{orgSupplier:id}', UpdateOrgSupplier::class)->name('org_supplier.update');
 

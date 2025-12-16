@@ -77,8 +77,9 @@ class EditSupplier extends GrpAction
                 'formData'    => [
                     'blueprint' => [
                         [
-                            'title'  => __('ID/contact details '),
+                            'title'  => __('ID/Contact Details'),
                             'icon'   => 'fal fa-address-book',
+                            'label' => 'ID/Contact Details',
                             'fields' => [
 
                                 'code'         => [
@@ -239,6 +240,7 @@ class EditSupplier extends GrpAction
                         [
                             'title'  => __('settings '),
                             'icon'   => 'fa-light fa-cog',
+                            'label' => 'Settings',
                             'fields' => [
                                 'currency_id' => [
                                     'type'        => 'select',

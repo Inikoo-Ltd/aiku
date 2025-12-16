@@ -22,7 +22,7 @@ class GetAgentShowcase
             "contactCard" => AgentResource::make($agent)->getArray(),
             "stats" => [
                 [
-                    "label" => __("suppliers"),
+                    "label" => __("Suppliers"),
                     "count" => $agent->stats->number_active_suppliers,
                     "orther_counts" => [
                         [
@@ -37,7 +37,7 @@ class GetAgentShowcase
                 ],
 
                 [
-                    "label" => __("products"),
+                    "label" => __("Products"),
                     "count" => $agent->stats->number_supplier_products,
                     "orther_counts" => [
                         [

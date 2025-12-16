@@ -82,8 +82,6 @@ class IndexAgents extends GrpAction
             );
         }
 
-
-
         return $queryBuilder
             ->leftJoin('organisations', 'organisation_id', 'organisations.id')
             ->leftJoin('agent_stats', 'agent_stats.agent_id', '=', 'agents.id')
@@ -125,19 +123,20 @@ class IndexAgents extends GrpAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
+                            'label'   => __('Agent'),
                             'route'   => [
                                 'name'       => 'grp.supply-chain.agents.create',
                             ]
                         ] : null
                     ]
                 )
+                ->withLabelRecord([__('Agent'), __('Agents')])
 
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
-                ->column(key: 'number_suppliers', label: __('suppliers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_supplier_products', label: __('products'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'number_suppliers', label: __('Suppliers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -175,14 +174,14 @@ class IndexAgents extends GrpAction
                             'icon'  => ['fal', 'fa-people-arrows'],
                             'title' => __('Agents')
                         ],
-                    'title'  => __("agents"),
+                    'title'  => __("Agents"),
 
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.supply-chain.agents.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
+                            'tooltip' => __('Create A New Agent'),
+                            'label'   => __('Agent'),
                             'route'   => [
                                 'name'       => 'grp.supply-chain.agents.create',
                             ]
