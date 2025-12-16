@@ -20,11 +20,12 @@ class FetchAuroraOfferCampaign extends FetchAurora
             return;
         }
 
+
+
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Store Key'});
         if($shop->is_aiku){
             return;
         }
-
-        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Store Key'});
 
         $status = false;
         //enum('Suspended','Active','Finish','Waiting')
