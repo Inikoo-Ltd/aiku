@@ -66,7 +66,7 @@ class StoreMasterVariant extends OrgAction
     {
         return [
             'leader_id' => [
-                'required', 
+                'required',
                 Rule::exists('master_assets', 'id')
             ],
             'code' => [

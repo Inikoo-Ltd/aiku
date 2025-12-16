@@ -140,6 +140,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $art3Image
  * @property-read Media|null $art4Image
  * @property-read Media|null $art5Image
+ * @property-read LaravelCollection<int, Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
