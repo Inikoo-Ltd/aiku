@@ -18,6 +18,9 @@ import {
     faCube,
     faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign
 } from "@fal"
+import {
+faCloudRainbow
+} from "@fas"
 import { computed, defineAsyncComponent, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -46,7 +49,8 @@ library.add(
     faClipboard,
     faPoop,
     faScanner,
-    faDollarSign
+    faDollarSign,
+    faCloudRainbow
 )
 
 
@@ -99,7 +103,7 @@ const component = computed(() => {
                 v-tooltip="trans('Go to Master')"
             >
                 <FontAwesomeIcon
-                    icon="fab fa-octopus-deploy"
+                    icon="fas fa-cloud-rainbow"
                     color="#4B0082"
                     fixed-width
                 />
