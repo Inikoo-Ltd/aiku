@@ -54,7 +54,7 @@ import {
     faShippingFast,
     faIdCard,
     faEnvelope,
-    faPhone,
+    faPhone, faEdit,
     faWeight,
     faStickyNote,
     faTruck,
@@ -85,7 +85,7 @@ import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 import { get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
 interface UploadSection {
     title: {
@@ -1366,8 +1366,8 @@ const setShippingToAuto = () => {
                                         </span>
                                     </span>
                                     <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
-                                    <span @click="_shipping_price_method?.toggle" class="text-gray-500 hover:text-blue-500 cursor-pointer text-2xl">
-                                        <FontAwesomeIcon icon="fal fa-ellipsis-h" class="" fixed-width aria-hidden="true" />
+                                    <span @click="_shipping_price_method?.toggle" class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
+                                        <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
                                 </div>
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
@@ -1447,9 +1447,12 @@ const setShippingToAuto = () => {
                                 <Transition name="spin-to-right">
                                     <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc"
                                         class="-mr-2"
-                                        :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? 'errorShake' : ''"
-                                        v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null"
+                                        :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''"
+                                        
                                     >
+                                        <span v-if="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null" v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null">
+                                            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1 text-red-500" fixed-width aria-hidden="true" />
+                                        </span>
                                         <InputNumber
                                             :modelValue="get(fieldSummary, ['data', 'shipping_tbc_amount'], null)"
                                             @update:modelValue="(v) => updateShippingTbcAmount(v, get(fieldSummary, ['data', 'shipping_tbc_amount'], null))"
@@ -1458,6 +1461,9 @@ const setShippingToAuto = () => {
                                             :currency="currency.code"
                                             locale="en-GB"
                                             inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                            :invalid="
+                                                get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null
+                                            "
                                             :min="0"
                                         />
                                     </div>
