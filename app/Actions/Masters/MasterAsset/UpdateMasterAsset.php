@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
@@ -182,6 +183,14 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($masterAsset->wasChanged('tax_category')) {
+            foreach ($masterAsset->assets as $asset) {
+                UpdateAsset::run($asset, [
+                    'tax_category' => $masterAsset->tax_category
+                ]);
+            }
+        }
+
         return $masterAsset;
     }
 
@@ -227,6 +236,7 @@ class UpdateMasterAsset extends OrgAction
             'description_extra_i8n'        => ['sometimes', 'array'],
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
+            'tax_category'                 => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {

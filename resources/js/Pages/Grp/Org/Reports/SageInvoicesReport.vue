@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
+import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"

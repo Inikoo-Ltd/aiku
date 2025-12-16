@@ -277,9 +277,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
@@ -294,9 +294,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
@@ -433,7 +433,6 @@ class UpdateProduct extends OrgAction
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
-
         ];
 
 

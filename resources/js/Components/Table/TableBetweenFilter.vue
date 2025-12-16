@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { inject, onBeforeMount, ref, watch } from 'vue'
+import { onBeforeMount, ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faCheckSquare, faSquare, faCalendarAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import VueDatePicker from '@vuepic/vue-datepicker'
-import DatePicker from 'primevue/datepicker'
-// import { debounce } from 'lodash-es'
-import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Select from 'primevue/select'
@@ -37,6 +34,7 @@ const isLoadingReload = ref(false)
 
 // Watch the datepicker
 const dateFilterValue = ref([new Date(), new Date()])
+const hasBetweenQuery = ref(false)
 watch(dateFilterValue, (newValue) => {
     router.reload(
         {
@@ -58,6 +56,12 @@ watch(dateFilterValue, (newValue) => {
             }
         }
     )
+
+    if (newValue?.[0] && newValue?.[1]) {
+        hasBetweenQuery.value = true
+    } else {
+        hasBetweenQuery.value = false
+    }
 })
 
 // Section: multiselect
@@ -117,6 +121,8 @@ onBeforeMount(() => {
                     dateFilterValue.value = [new Date(formatDate(dates[0])), new Date(formatDate(dates[1]))];
                     // console.log('dateFilterValue', dateFilterValue.value)
                     selectedPeriodType.value = fieldName;
+
+                    hasBetweenQuery.value = true
                 }
             } else {
                 continue // Skip to the next iteration
@@ -133,7 +139,7 @@ onBeforeMount(() => {
     <div class="flex items-center gap-2 rounded-md" v-tooltip="trans('Filter data by dates')">
         <!-- Display selected date range when custom interval is active -->
         <transition name="slide-fade">
-            <div v-if="dateFilterValue[0] && dateFilterValue[1]"
+            <div v-if="hasBetweenQuery && dateFilterValue[0] && dateFilterValue[1]"
                  class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
                 <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
                 <span class="text-indigo-400">-</span>

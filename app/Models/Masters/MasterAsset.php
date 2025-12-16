@@ -11,6 +11,7 @@ namespace App\Models\Masters;
 use App\Enums\Masters\MasterAsset\MasterAssetProductsStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetStocksStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
@@ -133,6 +134,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $not_for_sale_since
  * @property bool $not_for_sale_from_trade_unit
  * @property array<array-key, mixed>|null $web_images
+ * @property array<array-key, mixed> $tax_category
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -210,13 +212,15 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'stocks_status'        => MasterAssetStocksStatusEnum::class,
         'products_status'      => MasterAssetProductsStatusEnum::class,
         'offers_data'          => 'array',
-        'web_images'      => 'array',
+        'web_images'           => 'array',
+        'tax_category'         => 'array',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
         'web_images'  => '{}',
+        'tax_category' => '{}',
     ];
 
     public function generateTags(): array
@@ -257,6 +261,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class, 'master_asset_id');
     }
 
     public function products(): HasMany
