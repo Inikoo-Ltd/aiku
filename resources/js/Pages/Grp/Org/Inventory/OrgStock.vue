@@ -9,7 +9,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { useLocaleStore } from '@/Stores/locale'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faInventory,
@@ -33,6 +32,8 @@ import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePu
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { routeType } from '@/types/route'
+import { PageHeadingTypes } from "@/types/PageHeading"
+import { Tabs as TSTabs } from "@/types/Tabs"
 library.add(
     faInventory,
     faBox,
@@ -48,17 +49,13 @@ library.add(
 
 )
 
-const locale = useLocaleStore()
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
     title: string,
-    pageHead: object,
-    tabs: {
-        current: string
-        navigation: object
-    }
+    pageHead: PageHeadingTypes,
+    tabs: TSTabs
     showcase: object
     supplier_products: object
     locations: object
@@ -106,11 +103,6 @@ const component = computed(() => {
                 />
             </Link>
 
-            <!-- <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
-                <FontAwesomeIcon
-                    icon="fal fa-atom"
-                />
-            </Link> -->
         </template>
     </PageHeading>
 

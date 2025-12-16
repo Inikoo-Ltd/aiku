@@ -90,7 +90,7 @@ function onSave(item) {
                 loadingSave.value.push(item.id)
             },
             onSuccess: () => {
-                // merge back into original item so the table updates immediately
+                // merge back into the original item so the table updates immediately
                 Object.assign(item, updated)
 
                 // cleanup
@@ -123,6 +123,7 @@ function productRoute(product: Product) {
         return ""
     }
 
+    console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.catalogue.products.current_products.index":
             return route(
@@ -254,14 +255,7 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug])
-        /*  case "grp.masters.master_shops.show.master_families.master_products.show":
-             return route(
-                 "grp.org.shops.show.catalogue.products.current_products.show",
-                 [
-                     product.organisation_slug,
-                     product.shop_slug,
-                     product.slug
-                 ]); */
+
         default:
             if (product.asset_id) {
                 return route(
