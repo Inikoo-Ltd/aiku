@@ -62,7 +62,7 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
                         'description'   => __("No items stored in any pallets")
                     ]
                 )
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true)

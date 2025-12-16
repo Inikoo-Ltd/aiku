@@ -89,9 +89,9 @@ class IndexFulfilmentCustomersRejected extends OrgAction
                         'count' => $fulfilment->shop->crmStats->number_customers_status_rejected,
                     ]
                 )
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'rejected_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rejected_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'rejected_reason', label: __('reason'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'rejected_notes', label: __('rejection notes'));
         };

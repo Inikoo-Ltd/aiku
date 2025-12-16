@@ -113,7 +113,7 @@ class IndexStoredItems extends OrgAction
                     }
                 )
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right')

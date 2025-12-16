@@ -159,7 +159,7 @@ class IndexStoredItemPallets extends OrgAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: false, searchable: true);
 
             //  if ($storedItem) {
             //      $table->column(key: 'fulfilment_customer_slug', label: __('Customer'), canBeHidden: false, searchable: true);

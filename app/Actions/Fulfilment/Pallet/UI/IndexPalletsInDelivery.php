@@ -123,7 +123,7 @@ class IndexPalletsInDelivery extends OrgAction
             }
 
             if (!($palletDelivery instanceof PalletDelivery && $palletDelivery->state == PalletDeliveryStateEnum::IN_PROCESS || $palletDelivery->state == PalletDeliveryStateEnum::SUBMITTED)) {
-                $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             }
 
 

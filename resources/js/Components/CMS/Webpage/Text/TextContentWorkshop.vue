@@ -65,8 +65,8 @@ watch(() => props.modelValue.value, () => {
         sendMessageToParent('activeChildBlock', bKeys[1])
       }"
       :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(modelValue.container?.properties, screenType)
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType,true,false),
+        ...getStyles(modelValue.container?.properties, screenType,true,false)
       }"
     >
       <EditorV2

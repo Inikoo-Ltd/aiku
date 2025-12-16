@@ -106,11 +106,11 @@ class IndexAbandonedCartMailshots extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'sent', label: __('sent'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'hard_bounce', label: __('hard bounce'), canBeHidden: false, sortable: true, searchable: true)

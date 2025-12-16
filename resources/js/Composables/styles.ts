@@ -57,7 +57,8 @@ export const resolveResponsiveValue = (
   export const getStyles = (
 		properties: any,
 		screen: string | "mobile" | "tablet" | "desktop" = "desktop",
-		useImportant = true
+		useImportant = true,
+		useValidation = true
   ) => {
 		if (!properties || typeof properties !== "object") return null
 
@@ -66,7 +67,16 @@ export const resolveResponsiveValue = (
 			return v == undefined || v == null ? null : v
 		}
 
-		const isValid = (v: any) => v !== null && v !== undefined;
+		const isValid = (v: any) => {
+			if (!useValidation) {
+				// ❌ when validation is OFF, 0 should be ignored
+				return v !== null && v !== undefined && v !== 0
+			}
+
+			// ✅ default behavior (0 is allowed)
+			return v !== null && v !== undefined
+		}
+
 
 		const styles: Record<string, string | null> = {
 			height:

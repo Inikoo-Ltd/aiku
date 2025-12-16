@@ -42,7 +42,7 @@ class CustomerRecordSearch
                 ],
                 'code'        => [
                     'label'   => $customer->reference,
-                    'tooltip' => __('reference')
+                    'tooltip' => __('Reference')
                 ],
                 'description' => [
                     'label' => $customer->name

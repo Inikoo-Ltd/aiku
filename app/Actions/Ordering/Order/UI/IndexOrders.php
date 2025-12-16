@@ -267,19 +267,19 @@ class IndexOrders extends OrgAction
             }
 
             $table->column(key: 'state', label: '', type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), sortable: true);
+            $table->column(key: 'reference', label: __('Reference'), sortable: true);
             $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
             if ($parent instanceof Shop || $parent instanceof Organisation || $parent instanceof Group) {
-                $table->column(key: 'customer_name', label: __('customer'), sortable: true);
+                $table->column(key: 'customer_name', label: __('Customer'), sortable: true);
             }
             if ($parent instanceof Organisation || $parent instanceof Group) {
-                $table->column(key: 'shop_name', label: __('shop'), sortable: true);
+                $table->column(key: 'shop_name', label: __('Shop'), sortable: true);
             }
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), sortable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), sortable: true);
             }
-            $table->column(key: 'pay_detailed_status', label: __('payment'), sortable: true);
-            $table->column(key: 'net_amount', label: __('net'), sortable: true, type: 'currency');
+            $table->column(key: 'pay_detailed_status', label: __('Payment'), sortable: true);
+            $table->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency');
         };
     }
 

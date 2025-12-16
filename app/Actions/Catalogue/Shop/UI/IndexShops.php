@@ -126,7 +126,7 @@ class IndexShops extends OrgAction
                         'type'    => 'button',
                         'style'   => 'create',
                         'tooltip' => __('New shop'),
-                        'label'   => __('shop'),
+                        'label'   => __('Shop'),
                         'route'   => [
                             'name'       => 'grp.org.shops.create',
                             'parameters' => $organisation->slug
@@ -179,7 +179,7 @@ class IndexShops extends OrgAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New shop'),
-                            'label'   => __('shop'),
+                            'label'   => __('Shop'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',
                                 'parameters' => $request->route()->originalParameters()

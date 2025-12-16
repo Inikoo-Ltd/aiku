@@ -46,7 +46,7 @@ class IndexShopsInGroup extends OrgAction
                     'title' => __('Shops'),
                     'icon'  => [
                         'icon'       => ['fal', 'fa-store-alt'],
-                        'title'      => __('shop'),
+                        'title'      => __('Shop'),
                         'afterTitle' => $afterTitle,
 
                     ]

@@ -5,12 +5,10 @@
   -->
 
 
-
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { useLocaleStore } from '@/Stores/locale'
-import { library } from '@fortawesome/fontawesome-svg-core'
+import { Head, Link } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faInventory,
     faBox,
@@ -19,7 +17,10 @@ import {
     faPaperclip,
     faCube,
     faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign
-} from '@fal'
+} from "@fal"
+import {
+faCloudRainbow
+} from "@fas"
 import { computed, defineAsyncComponent, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -30,9 +31,13 @@ import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations
 import StockShowcase from "@/Components/Showcases/Grp/StockShowcase.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
-import { trans } from 'laravel-vue-i18n'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { routeType } from '@/types/route'
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { routeType } from "@/types/route"
+import { PageHeadingTypes } from "@/types/PageHeading"
+import { Tabs as TSTabs } from "@/types/Tabs"
+import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
+
 library.add(
     faInventory,
     faBox,
@@ -45,25 +50,22 @@ library.add(
     faPoop,
     faScanner,
     faDollarSign,
-
+    faCloudRainbow
 )
 
-const locale = useLocaleStore()
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
+const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 const props = defineProps<{
     title: string,
-    pageHead: object,
-    tabs: {
-        current: string
-        navigation: object
-    }
-    showcase: object
-    supplier_products: object
-    locations: object
-    purchase_orders: {}
-    product?: {}
+    pageHead: PageHeadingTypes,
+    tabs: TSTabs
+    showcase?: object
+    supplier_products?: object
+    locations?: object
+    purchase_orders?: {}
+    products?: {}
+    trade_units?: {}
     master: {}
     masterRoute: routeType | null
 }>()
@@ -77,10 +79,11 @@ const component = computed(() => {
         showcase: StockShowcase,
         locations: TableLocations,
         supplier_products: TableSupplierProducts,
-        product: TableProducts,
+        products: TableProducts,
+        trade_units: TableTradeUnits,
         details: ModelDetails,
         history: ModelChangelog,
-        purchase_orders: TablePurchaseOrders,
+        purchase_orders: TablePurchaseOrders
     }
     return components[currentTab.value]
 
@@ -100,17 +103,12 @@ const component = computed(() => {
                 v-tooltip="trans('Go to Master')"
             >
                 <FontAwesomeIcon
-                    icon="fab fa-octopus-deploy"
+                    icon="fas fa-cloud-rainbow"
                     color="#4B0082"
                     fixed-width
                 />
             </Link>
 
-            <!-- <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
-                <FontAwesomeIcon
-                    icon="fal fa-atom"
-                />
-            </Link> -->
         </template>
     </PageHeading>
 

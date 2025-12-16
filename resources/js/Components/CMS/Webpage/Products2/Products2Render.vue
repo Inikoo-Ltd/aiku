@@ -164,7 +164,7 @@ const toggleBackInStock = () =>
 
                         <span  class="text-left md:text-right text-xs break-words">
                             RRP :
-                            {{ locale.currencyFormat(currency?.code, product.rrp) }}
+                            {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}
                             / {{ product.unit }}
                         </span>
                     </div>
