@@ -41,56 +41,7 @@ class ShowPaymentAccountShop extends OrgAction
 
     public function handle(PaymentAccount|Shop|Fulfilment $parent, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereStartWith('payment_accounts.code', $value)
-                    ->orWhereAnyWordStartWith('payment_accounts.name', $value)
-                    ->orWhereStartWith('shops.code', $value)
-                    ->orWhereAnyWordStartWith('shops.name', $value);
-            });
-        });
 
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
-
-        $queryBuilder = QueryBuilder::for(PaymentAccountShop::class);
-
-        if ($parent instanceof PaymentAccount) {
-            $queryBuilder->where('payment_account_shop.payment_account_id', $parent->id);
-        } elseif ($parent instanceof Shop) {
-            $queryBuilder->where('payment_account_shop.shop_id', $parent->id);
-        } elseif ($parent instanceof Fulfilment) {
-            $queryBuilder->where('payment_account_shop.shop_id', $parent->shop->id);
-        }
-
-        $queryBuilder->leftjoin('shops', 'payment_account_shop.shop_id', 'shops.id');
-        $queryBuilder->leftJoin('payment_accounts', 'payment_account_shop.payment_account_id', 'payment_accounts.id');
-        $queryBuilder->leftJoin('payment_account_shop_stats', 'payment_account_shop_stats.payment_account_shop_id', 'payment_account_shop.id');
-        $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
-
-        return $queryBuilder
-            ->defaultSort('payment_account_shop.id')
-            ->select([
-                'payment_account_shop.id',
-                'currencies.code as shop_currency_code',
-                'shops.id as shop_id',
-                'shops.code as shop_code',
-                'shops.name as shop_name',
-                'shops.slug as shop_slug',
-                'payment_accounts.slug as payment_account_slug',
-                'payment_accounts.code as payment_account_code',
-                'payment_accounts.name as payment_account_name',
-                'payment_account_shop.activated_at',
-                'payment_account_shop.state as state',
-                'payment_account_shop.show_in_checkout',
-                'payment_account_shop_stats.number_payments',
-                'payment_account_shop_stats.amount_successfully_paid',
-            ])
-            ->allowedSorts(['shop_code', 'shop_name', 'number_payments', 'amount_successfully_paid', 'payment_account_code', 'payment_account_name','activated_at'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
     }
 
 

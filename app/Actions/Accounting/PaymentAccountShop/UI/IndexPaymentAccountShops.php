@@ -124,7 +124,7 @@ class IndexPaymentAccountShops extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title' => __('No shops'),
+                        'title' => __('No payment accounts'),
                         'count' => $parent->stats->number_pas,
                     ]
                 );
