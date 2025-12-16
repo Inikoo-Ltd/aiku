@@ -92,13 +92,13 @@ class IndexStandaloneFulfilmentInvoiceTransactions extends OrgAction
                 ->withModelOperations()
                 ->withGlobalSearch();
 
-            $table->column(key: 'historic_asset_code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'historic_asset_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'historic_asset_name', label: __('description'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'historic_asset_price', label: __('base price'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'historic_asset_name', label: __('Description'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'historic_asset_price', label: __('Base price'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('id');
         };
     }

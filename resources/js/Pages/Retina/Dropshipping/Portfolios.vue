@@ -2,8 +2,8 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {computed, reactive, ref,watch, onMounted, onBeforeUnmount} from "vue";
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {computed, reactive, ref,watch, onMounted, onBeforeUnmount, inject} from "vue";
+import {PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -22,6 +22,7 @@ import { useFormatTime, useTimeCountdown} from "@/Composables/useFormatTime";
 import Icon from '@/Components/Icon.vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from 'date-fns';
+import { layoutStructure } from "@/Composables/useLayoutStructure";
 
 
 import {
@@ -108,6 +109,10 @@ const props = defineProps<{
     product_count: number
     download_portfolio_customer_sales_channel_url: string | null
     last_created_at_download_portfolio_customer_sales_channel: string | null
+    ebay_warehouse_policy_msg: {
+        show_msg: boolean
+        cust_country: string
+    }
 }>();
 
 const step = ref(props.step);
@@ -126,13 +131,12 @@ const cloneProgressData = ref({
     total: 0,
 });
 const cloneSourceChannelName = ref('');
-
-
 const isLoadingUpload = ref(false);
 const isLoadingClone = ref(false);
 const selectedData = reactive({
     products: [] as number[]
 });
+
 const onUploadToShopify = () => {
     if (!props.routes.bulk_upload?.name) {
         notify({
@@ -181,7 +185,6 @@ const downloadUrl = (type: string, addParams: string = '') => {
 
 const _popover = ref()
 const _clone_popover = ref()
-
 
 // Method: Platform reconnect
 const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
@@ -613,6 +616,7 @@ onBeforeUnmount(() => {
     }
 });
 
+const layout = inject('layout', layoutStructure)
 
 </script>
 
@@ -699,18 +703,6 @@ onBeforeUnmount(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <!-- Section: Alert if platform not connected yet -->
-    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
-            <div :class="'flex justify-between gap-3'">
-                <div :class="'flex gap-3 items-center'">
-                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
-                    <div>
-                        {{ trans("We're having trouble connecting to your site. Could you please confirm whether the site URL is correct? The URL we tried to access is ")}} <span class="underline">{{ customer_sales_channel?.store_url }}</span> {{ trans(". If correct, please feel free to ignore this message and we will try again shortly.") }}
-                    </div>
-                </div>
-                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-            </div>
-    </Message>
 
 
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
@@ -725,10 +717,42 @@ onBeforeUnmount(() => {
             :customer_sales_channel="customer_sales_channel"
         />
     </div>
-
+    <div v-if="ebay_warehouse_policy_msg.show_msg" class="flex justify-between mt-5 m-4">
+        <div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
+            <div class="flex flex-col sm:flex-row sm:items-start">
+                <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-500 mr-2 sm:mr-0 sm:mt-0.5" fill="currentColor"
+                            viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd"></path>
+                    </svg>
+                    <strong class="text-sm text-red-700 sm:hidden">{{ trans('Important Notice:') }}</strong>
+                </div>
+                <div class="sm:ml-3">
+                    <p class="text-sm text-red-700">
+                        <strong class="hidden sm:inline">{{ trans('Important Notice:') }}</strong>
+                                    {{ trans('We noticed your account is registered in') }} <strong> {{ ebay_warehouse_policy_msg.cust_country + '.' }} </strong>
+                        {{  trans('In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas.') }}
+                        <a href="https://export.ebay.com/en/fees-regulations-policies/ebay-policies/overseas-warehouse-block-policy-authorization-requirements-for-forward-deployed-inventory/"
+                            target="_blank"
+                            class="underline text-red-800 hover:text-red-900">
+                            [eBay Overseas Warehouse Block Policy]
+                        </a>
+                        <br> <br>
+                        {{ trans('If this happens, please contact eBay Support to request approval or further assistance:') }}
+                        <a href="https://www.ebay.com/help/contact_us?id=4105&st=10"
+                            target="_blank"
+                            class="underline text-red-800 hover:text-red-900">
+                            eBay Customer Support
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Section: Alert if there is product not synced -->
-    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual && currentTab === 'products'" severity="warn"
-             class="m-4 ">
+    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual && currentTab === 'products'" severity="warn" class="m-4">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
@@ -824,18 +848,18 @@ onBeforeUnmount(() => {
         </div>
         <div v-else class="overflow-x-auto">
             <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
                 :isPlatformManual
                 :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
             <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
                 :tab="'products'" :selectedData :platform_data :platform_user_id
-                :is_platform_connected :disabled="customer_sales_channel.ban_stock_update_until"
+                :is_platform_connected
                 :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel"
                 v-model:selectedProducts="selectedProducts" :key="key"
                 :count_product_not_synced="count_product_not_synced"/>
             <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
+                :platform_user_id :is_platform_connected :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
                 v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
@@ -927,32 +951,6 @@ onBeforeUnmount(() => {
             </div>
         </div>
     </Modal>
-
-    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
-            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
-                <Icon class="text-green-500" :data="{
-                icon: 'fas fa-check'
-            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
-            </div>
-        </div>
-
-        <div class="flex justify-center gap-2">
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.test_connection',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch',
-                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.unsuspend',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch'
-                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-        </div>
-    </Modal>
-
     <!-- Modal: Clone Progress -->
     <Modal :isOpen="isOpenModalCloneProgress" @onClose="cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0 ? isOpenModalCloneProgress = false : null"
            width="w-full max-w-md">

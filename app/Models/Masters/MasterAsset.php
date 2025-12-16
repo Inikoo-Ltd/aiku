@@ -11,6 +11,7 @@ namespace App\Models\Masters;
 use App\Enums\Masters\MasterAsset\MasterAssetProductsStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetStocksStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
@@ -21,6 +22,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
+use App\Models\Traits\InMasterShop;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -131,11 +133,14 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
  * @property bool $not_for_sale_from_trade_unit
+ * @property array<array-key, mixed>|null $web_images
+ * @property array<array-key, mixed> $tax_category
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
  * @property-read Media|null $art4Image
  * @property-read Media|null $art5Image
+ * @property-read LaravelCollection<int, Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
@@ -188,6 +193,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasImage;
     use HasTranslations;
+    use InMasterShop;
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
@@ -207,11 +213,15 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'stocks_status'        => MasterAssetStocksStatusEnum::class,
         'products_status'      => MasterAssetProductsStatusEnum::class,
         'offers_data'          => 'array',
+        'web_images'           => 'array',
+        'tax_category'         => 'array',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
+        'web_images'  => '{}',
+        'tax_category' => '{}',
     ];
 
     public function generateTags(): array
@@ -254,14 +264,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
-    public function group(): BelongsTo
+    public function assets(): HasMany
     {
-        return $this->belongsTo(Group::class);
-    }
-
-    public function masterShop(): BelongsTo
-    {
-        return $this->belongsTo(MasterShop::class);
+        return $this->hasMany(Asset::class, 'master_asset_id');
     }
 
     public function products(): HasMany

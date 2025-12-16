@@ -398,7 +398,9 @@
   },
   {
     "outboxes": [
-      "reorder_reminder"
+      "reorder_reminder",
+      "reorder_reminder_2nd",
+      "reorder_reminder_3rd"
     ],
     "name": "Reorder reminder",
     "content": "beefree_reorder_reminder.json",

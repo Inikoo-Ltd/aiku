@@ -38,16 +38,28 @@ trait WithFetchStock
 
         /** @var OrgStock $orgStock */
         if ($orgStock) {
+            $orgStockDataToUpdate = Arr::only($stockData['org_stock'], [
+                'state',
+                'discontinued_in_organisation_at',
+                'quantity_status',
+                'packed_in',
+                'name',
+                'source_id',
+                'source_slug',
+                'unit_cost',
+                'fetched_at',
+                'last_fetched_at'
+            ]);
             try {
                 return UpdateOrgStock::make()->action(
                     orgStock: $orgStock,
-                    modelData: $stockData['org_stock'],
+                    modelData: $orgStockDataToUpdate,
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
             } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $stockData['org_stock'], 'OrgStock', 'update');
+                $this->recordError($organisationSource, $e, $orgStockDataToUpdate, 'OrgStock', 'update');
 
                 return null;
             }
@@ -95,10 +107,23 @@ trait WithFetchStock
         $organisation = $organisationSource->getOrganisation();
         /** @var OrgStock $orgStock */
         if ($orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first()) {
+
+            $orgStockDataToUpdate2 = Arr::only($orgStockData, [
+                'state',
+                'discontinued_in_organisation_at',
+                'quantity_status',
+                'source_id',
+                'packed_in',
+                'name',
+                'source_slug',
+                'unit_cost',
+                'fetched_at',
+                'last_fetched_at'
+            ]);
             try {
                 $orgStock = UpdateOrgStock::make()->action(
                     orgStock: $orgStock,
-                    modelData: $orgStockData,
+                    modelData: $orgStockDataToUpdate2,
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
@@ -111,7 +136,7 @@ trait WithFetchStock
 
                 return $orgStock;
             } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $orgStockData, 'OrgStock', 'update');
+                $this->recordError($organisationSource, $e, $orgStockDataToUpdate2, 'OrgStock', 'update');
 
                 return null;
             }

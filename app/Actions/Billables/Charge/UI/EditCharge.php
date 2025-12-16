@@ -84,7 +84,7 @@ class EditCharge extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $charge->name
                                 ],
                                 'label' => [
@@ -95,7 +95,7 @@ class EditCharge extends OrgAction
                                 'description' => [
                                     'type'  => 'textarea',
                                     'information'   => __("This will show in customer's Dropshipping Basket as a tooltip"),
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
                                     'value' => $charge->description
                                 ],
                             ],

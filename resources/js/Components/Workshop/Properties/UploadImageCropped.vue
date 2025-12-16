@@ -79,11 +79,41 @@ const onFileChange = (event: Event) => {
 
 // --- Start Crop ---
 const startCrop = (file: File) => {
+    // 🔍 Jika GIF → langsung upload, jangan crop
+    if (file.type === "image/gif") {
+        uploadGifDirectly(file)
+        return
+    }
+
+    // --- normal crop flow ---
     if (currentFileUrl.value) URL.revokeObjectURL(currentFileUrl.value)
     currentFile.value = file
     currentFileUrl.value = URL.createObjectURL(file)
     cropperVisible.value = true
 }
+
+const uploadGifDirectly = async (file: File) => {
+    try {
+        isLoadingSubmit.value = true
+
+        const formData = new FormData()
+        formData.append("images[0]", file, file.name)
+
+        const response = await axios.post(
+            route(props.uploadRoutes.name, props.uploadRoutes.parameters),
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
+
+        emits("update:modelValue", cloneDeep(response.data.data[0].source))
+        notify({ title: "Success", text: "GIF uploaded successfully", type: "success" })
+    } catch (error) {
+        notify({ title: "Failed", text: "Error while uploading GIF", type: "error" })
+    } finally {
+        isLoadingSubmit.value = false
+    }
+}
+
 
 // --- Confirm Crop ---
 const confirmCrop = async () => {

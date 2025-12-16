@@ -5,6 +5,7 @@
 	"name": "footer 1",
 	"component": "footer",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
+	"is_in_test" : false,
 	"icon": ["fal", "folder"],
 	"data": {
 		"fieldValue": {

@@ -66,8 +66,8 @@ class IndexQuery extends InertiaAction
                 $table->withExportLinks($exportLinks);
             }
 
-            $table->column(key: 'name', label: __('name'), sortable: true)
-                ->column(key: 'description', label: __('description'), sortable: true)
+            $table->column(key: 'name', label: __('Name'), sortable: true)
+                ->column(key: 'description', label: __('Description'), sortable: true)
                 ->column(key: 'number_items', label: __('prospects'))
                 ->defaultSort('slug');
         };

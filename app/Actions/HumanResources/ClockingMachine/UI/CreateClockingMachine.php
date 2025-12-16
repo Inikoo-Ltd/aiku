@@ -44,12 +44,12 @@ class CreateClockingMachine extends OrgAction
         $fields = [
             'name' => [
                 'type'  => 'input',
-                'label' => __('name'),
+                'label' => __('Name'),
             ],
             'type' => [
                 'type'    => 'select',
                 'options' => Options::forEnum(ClockingMachineTypeEnum::class),
-                'label'   => __('type'),
+                'label'   => __('Type'),
             ],
         ];
 

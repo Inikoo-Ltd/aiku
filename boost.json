@@ -5,8 +5,7 @@
         "phpstorm"
     ],
     "editors": [
-        "phpstorm",
-        "vscode"
+        "phpstorm"
     ],
     "guidelines": []
 }

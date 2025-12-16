@@ -69,7 +69,7 @@ class CreateGuest extends InertiaAction
                                 ],
                                 'contact_name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'value'    => '',
                                     'required' => true
                                 ],

@@ -186,10 +186,10 @@ class IndexDepartmentsNeedReviews extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'is_name_reviewed', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'is_name_reviewed', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_title_reviewed', label: __('description title'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'is_description_reviewed', label: __('description'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'is_description_reviewed', label: __('Description'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_extra_reviewed', label: __('description extra'), canBeHidden: false, sortable: true, searchable: true);
         };
     }

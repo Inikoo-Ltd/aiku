@@ -250,8 +250,13 @@ if (!function_exists('trimDecimalZeros')) {
      * in the fractional part. Scientific notation inputs will be expanded to a fixed
      * decimal form before trimming.
      */
-    function trimDecimalZeros(int|float|string $value): string
+    function trimDecimalZeros(int|float|string|null $value): string
     {
+
+        if ($value === null) {
+            return '';
+        }
+
         // Fast paths
         if (is_int($value)) {
             return (string)$value;

@@ -32,6 +32,15 @@ class UpdateDeliveryNoteStateToInQueue extends OrgAction
     public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $oldState = $deliveryNote->state;
+
+        if (in_array($deliveryNote->state, [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED
+        ])) {
+            return $deliveryNote;
+        }
+
         data_set($modelData, 'queued_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::QUEUED->value);
         data_set($modelData, 'picker_user_id', $user->id);

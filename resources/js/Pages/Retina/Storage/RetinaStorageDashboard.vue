@@ -19,7 +19,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import CountUp from 'vue-countup-v3'
 import { Head } from '@inertiajs/vue3'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 
 import DataTable from "primevue/datatable"

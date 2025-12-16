@@ -179,6 +179,8 @@ class GetEcomOrderActions
                         'type'  => 'button',
                         'style' => 'cancel',
                         'key'   => 'cancel',
+                        'tooltip' => __("Cancel the order. If payment has already been made, the amount will be credited to the customer's balance"),
+                        'icon'  => 'fas fa-skull',
                         'label' => __('Cancel'),
                         'route' => [
                             'method'     => 'patch',

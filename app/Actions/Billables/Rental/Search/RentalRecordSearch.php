@@ -54,7 +54,7 @@ class RentalRecordSearch
                     ],
                     'code'        => [
                         'label'   => $rental->code,
-                        'tooltip' => __('code')
+                        'tooltip' => __('Code')
                     ],
                     'description' => [
                         'label' => $rental->name

@@ -32,6 +32,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingCountries;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSubDepartments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCreditTransactions;
@@ -131,6 +132,7 @@ class HydrateShops
         ShopHydrateProspects::run($shop);
         ShopHydrateTags::run($shop);
         ShopHydrateBrands::run($shop);
+        ShopHydrateShippingCountries::run($shop);
 
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             ShopHydratePlatformSalesIntervals::run($shop);

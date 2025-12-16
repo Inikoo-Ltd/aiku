@@ -17,7 +17,7 @@ import {
   faArrowCircleLeft
 } from "@fal";
 import { useTabChange } from '@/Composables/tab-change'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import { Icon } from "@/types/Utils/Icon";
 import Button from '@/Components/Elements/Buttons/Button.vue'

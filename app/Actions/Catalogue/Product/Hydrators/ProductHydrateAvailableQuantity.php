@@ -49,7 +49,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             }
 
             if ($orgStock->is_on_demand) {
-                $quantityInStock = 10000;
+                $quantityInStock = 250;
             } else {
                 $quantityInStock = $orgStock->quantity_available;
             }
@@ -116,7 +116,13 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     public function asCommand(Command $command): void
     {
         if ($command->argument('id')) {
-            $product = Product::findOrFail($command->argument('id'));
+
+            if (is_numeric($command->argument('id'))) {
+                $product = Product::findOrFail($command->argument('id'));
+            } else {
+                $product = Product::Where('slug', $command->argument('id'))->firstOrFail();
+            }
+
             $this->handle($product);
 
             return;

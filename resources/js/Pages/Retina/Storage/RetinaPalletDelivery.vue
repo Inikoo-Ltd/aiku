@@ -17,7 +17,7 @@ import { routeType } from '@/types/route'
 import { Table } from '@/types/Table'
 import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
 import { Tabs as TSTabs } from '@/types/Tabs'
-import { PageHeading as PageHeadingTypes } from  '@/types/PageHeading'
+import { PageHeadingTypes } from  '@/types/PageHeading'
 import type { Component } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 

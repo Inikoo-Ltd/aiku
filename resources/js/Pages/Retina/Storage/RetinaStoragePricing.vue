@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import { Head } from '@inertiajs/vue3'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { inject } from 'vue'
 

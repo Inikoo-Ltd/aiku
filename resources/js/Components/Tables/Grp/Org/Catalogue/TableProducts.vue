@@ -25,6 +25,7 @@ import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import Image from "@/Components/Image.vue"
 
 
 
@@ -42,6 +43,7 @@ defineProps<{
     },
     isCheckboxProducts?: boolean
     master?: boolean
+    selectedProductsId?: {}
 }>()
 
 const emits = defineEmits<{
@@ -346,19 +348,17 @@ const locale = inject("locale", aikuLocaleStructure)
 const _table = ref<InstanceType<typeof Table> | null>(null)
 
 
-onMounted(() => {
-    if (_table.value) {
-        _table.value.selectRow['113836'] = true
-        console.log(_table.value.selectRow)
-    }
-})
-
 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts"
-        @onSelectRow="(item) => emits('selectedRow', item)" key="product-table" ref="_table">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
+        <template #cell(image_thumbnail)="{ item: product }">
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
+
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
             {{ refund["organisation_code"] }}
@@ -403,6 +403,10 @@ onMounted(() => {
             </div>
         </template>
 
+        <template #cell(rrp_per_unit)="{ item: product }">
+            {{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}
+
+        </template>
 
         <template #cell(rrp)="{ item: product }">
             <div>
@@ -504,5 +508,27 @@ onMounted(() => {
             </div>
 
         </template>
+
+
+        <template #checkbox="data">
+            <FontAwesomeIcon
+                v-if="selectedProductsId[data.data.id]"
+                @click="() => emits('selectedRow', { [data.data.id]: false })"
+                icon='fas fa-check-square'
+                class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
+                fixed-width aria-hidden='true' />
+            <FontAwesomeIcon
+                v-if="!selectedProductsId[data.data.id]"
+                @click="() => emits('selectedRow', { [data.data.id]: true })"
+                icon='fal fa-square'
+                class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
+                fixed-width aria-hidden='true' />
+        </template>
+        
+
+        <template #header-checkbox>
+            <div></div>
+        </template>
+                                                   
     </Table>
 </template>

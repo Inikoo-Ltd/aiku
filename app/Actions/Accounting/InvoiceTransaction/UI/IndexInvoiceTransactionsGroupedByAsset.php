@@ -95,12 +95,12 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
             $table->withModelOperations()->withGlobalSearch();
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __('product name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Product name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             if ($invoice->type === InvoiceTypeEnum::REFUND && $invoice->in_process) {
-                $table->column(key: 'action', label: __('action'), canBeHidden: false);
+                $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }
             $table->defaultSort('code');
         };

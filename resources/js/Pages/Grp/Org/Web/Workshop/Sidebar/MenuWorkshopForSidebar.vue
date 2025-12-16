@@ -10,7 +10,7 @@ import ScreenView from "@/Components/ScreenView.vue"
 import { setIframeView } from "@/Composables/Workshop"
 import ProgressSpinner from "primevue/progressspinner"
 import { routeType } from "@/types/route"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import SideMenuWorkshop from "./SideMenuWorkshopForSidebar.vue"
 import {

@@ -35,9 +35,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
-
-
-
         $requiredFactionalData =
             riseDivisor(
                 divideWithRemainder(
@@ -68,7 +65,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'locations.code as location_code',
                 'locations.slug as location_slug',
             ])
-
             ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
@@ -83,8 +79,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 
 
         $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked);
-
-
 
 
         $isPicked = $quantityToPick == 0;
@@ -118,6 +112,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_not_picked'          => $this->quantity_not_picked,
             'quantity_packed'              => $this->quantity_packed,
             'quantity_dispatched'          => $this->quantity_dispatched,
+            'org_stock_id'                 => $this->org_stock_id,
             'org_stock_code'               => $this->org_stock_code,
             'org_stock_slug'               => $this->org_stock_slug,
             'org_stock_name'               => $this->org_stock_name,
@@ -128,7 +123,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'is_handled'                   => $this->is_handled,
             'is_packed'                    => $isPacked,
             'quantity_required_fractional' => $requiredFactionalData,
-            'warehouse_area'                  => $warehouseArea,
+            'warehouse_area'               => $warehouseArea,
 
 
             'upsert_picking_route' => [

@@ -163,8 +163,8 @@ class IndexWebsites extends OrgAction
                     ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], sortable: true, type: 'icon')
-                ->column(key: 'code', label: __('code'), sortable: true)
-                ->column(key: 'name', label: __('name'), sortable: true);
+                ->column(key: 'code', label: __('Code'), sortable: true)
+                ->column(key: 'name', label: __('Name'), sortable: true);
             if (!($parent instanceof Group)) {
                 $table->column(key: 'routeUniqueVisitor', label: __('unique visitor'));
             }

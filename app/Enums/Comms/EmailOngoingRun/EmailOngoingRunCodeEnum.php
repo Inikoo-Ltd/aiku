@@ -36,6 +36,8 @@ enum EmailOngoingRunCodeEnum: string
     case NEW_CUSTOMER_PUSH = 'new_customer_push';
     case ABANDONED_CART = 'abandoned_cart';
     case REORDER_REMINDER = 'reorder_reminder';
+    case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
+    case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';
     case OOS_NOTIFICATION = 'oos_notification';
 
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';

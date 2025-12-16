@@ -84,7 +84,7 @@ class IndexRetinaStoredItems extends RetinaAction
                 )
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');

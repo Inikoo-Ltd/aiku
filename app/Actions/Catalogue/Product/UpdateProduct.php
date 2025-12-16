@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
@@ -53,9 +54,12 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+        // hack because in tests $product->getChanges() do not work
+        $oldState = $product->state;
+
         $webpageData = [];
-        $newData = [];
-        $oldData = $product->toArray();
+        $newData     = [];
+        $oldData     = $product->toArray();
 
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
@@ -76,6 +80,7 @@ class UpdateProduct extends OrgAction
                 'family_id' => Arr::pull($modelData, 'family_id'),
             ]);
         }
+
 
         // todo: remove this after total aurora migration
         if (!$this->strict) {
@@ -152,11 +157,12 @@ class UpdateProduct extends OrgAction
             $newData = array_merge($newData, Arr::except($modelData, ['not_for_sale_since', 'out_of_stock_since', 'back_in_stock_since']));
         }
 
+
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-        if (Arr::hasAny($changed, ['is_for_sale','state'])) {
+        if (Arr::hasAny($changed, ['is_for_sale']) || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
         }
 
@@ -173,14 +179,11 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::has($changed, 'is_for_sale') && $product->webpage) {
-
             if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
                 ReopenWebpage::run($product->webpage);
             }
 
             if (!$product->is_for_sale && $product->webpage->state == WebPageStateEnum::LIVE) {
-
-
                 CloseWebpage::make()->action(
                     $product->webpage,
                     [
@@ -189,9 +192,6 @@ class UpdateProduct extends OrgAction
                     ]
                 );
             }
-
-
-
         }
 
 
@@ -309,9 +309,12 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::has($changed, 'master_product_id')) {
-            $product->asset->updateQuietly([
-                'master_asset_id' => $product->master_product_id
-            ]);
+            UpdateAsset::run(
+                $product->asset,
+                [
+                    'master_asset_id' => $product->master_product_id
+                ]
+            );
         }
 
         if (Arr::has($changed, 'price')) {
@@ -422,15 +425,14 @@ class UpdateProduct extends OrgAction
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
-            'webpage_title'            => ['sometimes', 'string'],
-            'webpage_description'      => ['sometimes', 'string'],
-            'webpage_breadcrumb_label' => ['sometimes', 'string', 'max:40'],
+            'webpage_title'                => ['sometimes', 'string'],
+            'webpage_description'          => ['sometimes', 'string'],
+            'webpage_breadcrumb_label'     => ['sometimes', 'string', 'max:40'],
 
             // Sale Status & Webpage
-            'is_for_sale'               => ['sometimes', 'boolean'],
-            'not_for_sale_from_master' => ['sometimes', 'boolean'],
+            'is_for_sale'                  => ['sometimes', 'boolean'],
+            'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
-
         ];
 
 

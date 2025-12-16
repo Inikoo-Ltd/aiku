@@ -50,6 +50,7 @@ class ShowOrgStock extends OrgAction
         return $this->handle($orgStock);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inStockFamily(Organisation $organisation, Warehouse $warehouse, OrgStockFamily $orgStockFamily, OrgStock $orgStock, ActionRequest $request): OrgStock
     {
         $this->parent = $orgStockFamily;
@@ -70,6 +71,8 @@ class ShowOrgStock extends OrgAction
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
+        $hasMaster = $orgStock->stock;
+
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
@@ -105,8 +108,17 @@ class ShowOrgStock extends OrgAction
                 'tabs'                            => [
                     'current'    => $this->tab,
                     'navigation' => OrgStockTabsEnum::navigation()
-
                 ],
+
+                'master'      => $hasMaster,
+                'masterRoute' => $hasMaster ? [
+                    'name'       => 'grp.goods.stocks.show',
+                    'parameters' => [
+                        'stock' => $orgStock->stock->slug
+                    ]
+                ] : null,
+
+
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
                     : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),

@@ -74,6 +74,7 @@ class IndexTradeUnitsInProduct extends OrgAction
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('Trade unit'),__('Trade units')])
                 ->withEmptyState(
                     [
                     'title' => __("No trade units found"),
@@ -84,7 +85,7 @@ class IndexTradeUnitsInProduct extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, align: 'right');
         };
     }
 }

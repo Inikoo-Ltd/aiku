@@ -565,14 +565,14 @@ function tagColorClass(scope?: string) {
     <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceIncrease v-model="isModalBalanceIncrease" :routeSubmit="data.balance.route_increase"
             :options="data.balance.increase_reasons_options" :currency="data.currency"
-            :types="data.balance.type_options" />
+            :types="data.balance.type_options" :balance="data.customer.balance" />
     </Modal>
 
     <!-- Modal: Decrease balance -->
     <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceDecrease v-model="isModalBalanceDecrease" :routeSubmit="data.balance.route_decrease"
             :options="data.balance.decrease_reasons_options" :currency="data.currency"
-            :types="data.balance.type_options" />
+            :types="data.balance.type_options" :balance="data.customer.balance" />
     </Modal>
 
     <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />

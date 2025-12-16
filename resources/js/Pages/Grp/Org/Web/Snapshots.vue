@@ -9,7 +9,7 @@ import {
   faGripLines
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import TableSnapshots from "@/Components/Tables/TableSnapshots.vue";
 
 library.add(faChevronRight, faChevronDown, faPlus, faGripLines);

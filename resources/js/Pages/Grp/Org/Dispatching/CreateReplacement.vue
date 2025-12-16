@@ -26,7 +26,7 @@ import {
 import { faArrowRight, faCheck, faSave } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import { computed, provide, ref, onMounted, inject } from "vue";

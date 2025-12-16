@@ -22,13 +22,18 @@ class MasterAssetHydrateAssets implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(MasterAsset $masterAsset): string
+    public function getJobUniqueId(int|null $masterAssetID): string
     {
-        return $masterAsset->id;
+        return $masterAssetID ?? 'empty';
     }
 
-    public function handle(MasterAsset $masterAsset): void
+    public function handle(int $masterAssetID): void
     {
+        $masterAsset = MasterAsset::find($masterAssetID);
+        if (!$masterAsset) {
+            return;
+        }
+
         $stats = [
             'number_assets' => DB::table('assets')->where('master_asset_id', $masterAsset->id)->count(),
             'number_current_assets' => DB::table('assets')->where('master_asset_id', $masterAsset->id)->whereIn('state', [

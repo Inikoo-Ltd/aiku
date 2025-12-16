@@ -150,7 +150,7 @@ class IndexCustomersInOverview extends OrgAction
                 $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
 
             $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
@@ -169,7 +169,6 @@ class IndexCustomersInOverview extends OrgAction
     public function htmlResponse(LengthAwarePaginator $customers, ActionRequest $request): Response
     {
         $navigation = CustomersTabsEnum::navigation();
-        unset($navigation[CustomersTabsEnum::DASHBOARD->value]);
 
         $this->tab = $request->get('tab', array_key_first($navigation));
 

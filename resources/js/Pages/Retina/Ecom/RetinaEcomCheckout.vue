@@ -13,7 +13,7 @@ import { faExclamationTriangle, faStar, faBoxHeart, faShieldAlt } from "@fas"
 import { Head } from "@inertiajs/vue3"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { routeType } from "@/types/route"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaymentCashOnDelivery.vue"
@@ -22,7 +22,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
 const props = defineProps<{
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     order: {},
     paymentMethods: []
     summary: {

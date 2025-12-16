@@ -90,7 +90,7 @@ class IndexFulfilmentCustomersRejected extends OrgAction
                     ]
                 )
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'rejected_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'rejected_reason', label: __('reason'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'rejected_notes', label: __('rejection notes'));

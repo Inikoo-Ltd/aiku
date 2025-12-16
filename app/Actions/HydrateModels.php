@@ -146,6 +146,8 @@ class HydrateModels extends HydrateModel
         $command->info('Goods section ⛅️');
         $command->call('hydrate:stocks');
         $command->call('hydrate:stock_families');
+        $command->call('hydrate:trade_units');
+        $command->call('hydrate:trade_unit_families');
     }
 
     protected function hydrateCatalogue(Command $command): void

@@ -24,7 +24,7 @@ import { faExclamationTriangle } from '@fad'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
-import { PageHeading as PageHeadingTypes } from  '@/types/PageHeading'
+import { PageHeadingTypes } from  '@/types/PageHeading'
 import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
 import { Table as TableTS } from '@/types/Table'
 import { Tabs as TSTabs } from '@/types/Tabs'

@@ -21,7 +21,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { UploadPallet } from "@/types/Pallet"
 import { Table as TableTS } from "@/types/Table"
 import { Tabs as TSTabs } from "@/types/Tabs"
@@ -31,12 +31,10 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 import axios from "axios"
-import { Action } from "@/types/Action"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { notify } from "@kyvg/vue3-notification"
 import OrderProductTable from "@/Components/Dropshipping/Orders/OrderProductTable.vue"
 import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
-import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -83,7 +81,6 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 
 library.add(faParachuteBox, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
@@ -420,16 +417,16 @@ const generateRouteDeliveryNote = (slug: string) => {
 const cancelLoading = ref(false)
 const confirm2 = (action) => {
     confirm.require({
-        message: 'Do you want to cancel this order ?',
-        header: 'Cancel Order',
-        rejectLabel: 'Cancel',
+        message: trans('Do you want to cancel this order?'),
+        header: trans('Cancel Order'),
+        rejectLabel: trans('Cancel'),
         rejectProps: {
-            label: 'No',
+            label: trans('No'),
             severity: 'secondary',
             outlined: true
         },
         acceptProps: {
-            label: 'Yes',
+            label: trans('Yes'),
             severity: 'danger'
         },
         accept: () => {
@@ -584,32 +581,7 @@ const compSelectedDeck = computed(() => {
 
     return route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...xxx})
 })
-// const onClickProforma = async () => {
-//     const aaa = ;
 
-//     // Section: Submit
-//     const url = route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...aaa})
-//     console.log('url', url)
-
-//     try {
-//         const response = await axios.get(url, aaa)
-//         const blob = new Blob([response.data], { type: response.headers['content-type'] })
-//         const link = document.createElement('a')
-//         link.href = window.URL.createObjectURL(blob)
-//         link.download = 'proforma-invoice.pdf'
-//         document.body.appendChild(link)
-//         link.click()
-//         document.body.removeChild(link)
-//     } catch (e) {
-//         notify({
-//             title: trans("Something went wrong"),
-//             text: trans("Failed to download proforma invoice"),
-//             type: "error"
-//         })
-//     }
-
-
-// }
 
 const isShowProforma = computed(() => {
     return props.proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)
@@ -681,18 +653,6 @@ const labelToBePaid = (toBePaidValue: string) => {
         </template>
 
 
-       <!-- <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
-           <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
-               class="flex gap-2">
-               <Button :style="'secondary'" :icon="faPlus" :label="trans('Product')" :tooltip="trans('Add a product')"
-                   @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
-               <Button v-if="
-                    Object.keys(_refComponents.createNewQty).length > 0 ||
-                    _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
-                " type="save" label="Save all changes" :loading="_refComponents.loadingsaveModify"
-                   @click="() => _refComponents.onSave()" />
-            </div>
-        </template> -->
 
         <template #other>
 
@@ -1030,7 +990,7 @@ const labelToBePaid = (toBePaidValue: string) => {
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </dt> -->
-
+                        
                         <div v-if="data.data?.state === 'cancelled'" class="">
                             <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
@@ -1038,9 +998,9 @@ const labelToBePaid = (toBePaidValue: string) => {
                             </div>
                         </div>
 
-                        <div v-else-if="data.data?.state !== 'created' && box_stats.products.payment.pay_status != 'no_need'" class="w-full">
+                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && Number(box_stats.products.payment.total_amount) > 0" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            <div class="w-full xflex xgap-x-2 xborder rounded-md shadow pxb-2 isolate border"
+                            <div class="w-full rounded-md shadow pxb-2 isolate border"
                                 :class="[
                                     Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
                                 ]"

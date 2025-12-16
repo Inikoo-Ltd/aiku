@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 import TablePallets from "@/Components/Tables/Grp/Org/Inventory/Fulfilment/TablePallets.vue"
 import Action from "@/Components/Forms/Fields/Action.vue"
 import { useForm } from '@inertiajs/vue3'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
 import { faStickyNote, } from '@fal'

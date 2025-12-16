@@ -133,8 +133,8 @@ class IndexRetinaFamilies extends RetinaAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
 

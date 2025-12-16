@@ -100,7 +100,7 @@ class EditFamily extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('family'),
+                'title'       => __('Family'),
                 'warning' => $family->masterProductCategory ? [
                     'type'  =>  'warning',
                     'title' =>  'warning',
@@ -145,7 +145,7 @@ class EditFamily extends OrgAction
                                 'fields' => [
                                     'code' => [
                                         'type'  => 'input',
-                                        'label' => __('code'),
+                                        'label' => __('Code'),
                                         'value' => $family->code
                                     ],
                                 ]

@@ -124,13 +124,13 @@ class EditShop extends OrgAction
                             'fields' => [
                                 'code'  => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => $shop->code,
                                     'required' => true,
                                 ],
                                 'name'  => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'value'    => $shop->name,
                                     'required' => true,
                                 ],
@@ -389,6 +389,23 @@ class EditShop extends OrgAction
                                     'type'  => 'input',
                                     'label' => __('Ebay Marketplace Id'),
                                     'value' => Arr::get($shop->settings, 'ebay.marketplace_id', ''),
+                                ],
+                                'ebay_warehouse_city' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Warehouse City'),
+                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_city', ''),
+                                ],
+                                'ebay_warehouse_state' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Warehouse State'),
+                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_state', ''),
+                                ],
+                                'ebay_warehouse_country' => [
+                                    'type'  => 'select',
+                                    'label' => __('Ebay Warehouse Country'),
+                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_country', ''),
+                                    'options'     => GetCountriesOptions::run(),
+                                    'mode'        => 'single'
                                 ],
                             ],
                         ] : [],

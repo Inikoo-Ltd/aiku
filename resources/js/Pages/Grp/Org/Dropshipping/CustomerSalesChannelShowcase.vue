@@ -10,7 +10,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import CustomerShowcase from "@/Components/Showcases/Grp/Customervue"
 import TablePlatformPortfolioLogs from "@/Components/Tables/Grp/Org/CRM/TablePlatformPortfolioLogs.vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
@@ -279,20 +279,20 @@ const isModalAddress = ref(false)
                                         <div v-for="shippingService in shippingOption.shippingServices">
                                             <ul>
                                                 <li>{{ trans("Carrier Code: ") }} {{
-                                                        shippingService.shippingCarrierCode
+                                                        shippingService?.shippingCarrierCode ?? '-'
                                                     }}
                                                 </li>
                                                 <li>{{ trans("Service Code: ") }} {{
-                                                        shippingService.shippingServiceCode
+                                                        shippingService?.shippingServiceCode ?? '-'
                                                     }}
                                                 </li>
                                                 <li>{{ trans("Shipping Cost: ") }} {{
-                                                        shippingService.shippingCost.value
-                                                    }} {{ shippingService.shippingCost.currency }}
+                                                        shippingService.shippingCost?.value ?? '-'
+                                                    }} {{ shippingService.shippingCost?.currency ?? '-' }}
                                                 </li>
                                                 <li>{{ trans("Additional Shipping Cost: ") }}
-                                                    {{ shippingService.additionalShippingCost.value }}
-                                                    {{ shippingService.additionalShippingCost.currency }}
+                                                    {{ shippingService.additionalShippingCost?.value ?? '-'  }}
+                                                    {{ shippingService.additionalShippingCost?.currency ?? '-' }}
                                                 </li>
                                                 <li>{{ trans("Free Shipping: ") }}
                                                     {{ shippingService.freeShipping ? trans('Yes') : trans('No') }}

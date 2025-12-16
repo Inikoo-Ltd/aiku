@@ -10,6 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -34,6 +35,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_current_sub_departments
  * @property mixed $number_current_collections
  * @property mixed $master_product_category_id
+ * @property mixed $currency_code
+ * @property mixed $is_name_reviewed
+ * @property mixed $is_description_title_reviewed
+ * @property mixed $is_description_reviewed
+ * @property mixed $is_description_extra_reviewed
+ * @property mixed $web_images
  */
 class DepartmentsResource extends JsonResource
 {
@@ -49,7 +56,7 @@ class DepartmentsResource extends JsonResource
             'shop_name'                      => $this->shop_name,
             'code'                           => $this->code,
             'name'                           => $this->name,
-            'currency_code'                           => $this->currency_code,
+            'currency_code'                  => $this->currency_code,
             'state'                          => [
                 'label' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
@@ -68,10 +75,11 @@ class DepartmentsResource extends JsonResource
             'organisation_code'              => $this->organisation_code,
             'organisation_slug'              => $this->organisation_slug,
             'master_product_category_id'     => $this->master_product_category_id,
-            'is_name_reviewed' => $this->is_name_reviewed,
-            'is_description_title_reviewed' => $this->is_description_title_reviewed,
-            'is_description_reviewed' => $this->is_description_reviewed,
-            'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
+            'is_name_reviewed'               => $this->is_name_reviewed,
+            'is_description_title_reviewed'  => $this->is_description_title_reviewed,
+            'is_description_reviewed'        => $this->is_description_reviewed,
+            'is_description_extra_reviewed'  => $this->is_description_extra_reviewed,
+            'image_thumbnail'                => Arr::get($this->web_images, 'main.thumbnail'),
         ];
     }
 }

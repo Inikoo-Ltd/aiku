@@ -96,7 +96,7 @@ class IndexProducts extends OrgAction
                 'customers_invoiced_all',
             ]);
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
+        return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug', 'customers_invoiced_all', 'invoices_all', 'sales_all'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -144,10 +144,10 @@ class IndexProducts extends OrgAction
                 );
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'customers_invoiced_all', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'invoices_all', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sales_all', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

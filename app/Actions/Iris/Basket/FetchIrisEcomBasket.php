@@ -131,15 +131,6 @@ class FetchIrisEcomBasket extends IrisAction
         ];
 
         $orderArr['order_summary'] = $orderSummary;
-        //
-        //        web_image_thumbnail
-        //offers_data
-        //name
-        //canonical_url
-        //code
-        //quantity_ordered_new
-        //quantity_ordered
-        //available_quantity
 
         $productsData = DB::table('transactions')
             ->select(

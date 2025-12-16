@@ -6,6 +6,7 @@
 	"category": "block",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"icon": ["fal", "presentation"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"banner_id": null,

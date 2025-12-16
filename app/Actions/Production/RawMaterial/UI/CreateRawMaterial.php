@@ -59,7 +59,7 @@ class CreateRawMaterial extends OrgAction
                                 'type' => [
                                     'type'     => 'select',
                                     'options'  => RawMaterialTypeEnum::values(),
-                                    'label'    => __('type'),
+                                    'label'    => __('Type'),
                                     'value'    => '',
                                     'required' => true
                                 ],
@@ -72,13 +72,13 @@ class CreateRawMaterial extends OrgAction
                                 ],
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => '',
                                     'required' => true
                                 ],
                                 'description' => [
                                     'type'     => 'input',
-                                    'label'    => __('description'),
+                                    'label'    => __('Description'),
                                     'value'    => '',
                                     'required' => true
                                 ],

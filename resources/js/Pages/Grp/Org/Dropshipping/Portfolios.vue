@@ -11,7 +11,7 @@ import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue
 import TablePortfoliosShopify from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosShopify.vue"
 import TablePortfoliosManual from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosManual.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { ref, onMounted } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Asset;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateHistoricAssets;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAssets;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateAssets;
@@ -32,6 +33,8 @@ class StoreAsset extends OrgAction
             if (in_array($parent->state, [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])) {
                 $status = true;
             }
+            data_set($modelData, 'master_asset_id', $parent->master_product_id);
+
         } else {
             $status = $parent->status;
         }
@@ -70,6 +73,10 @@ class StoreAsset extends OrgAction
         AssetHydrateSalesIntervals::dispatch($asset->id)->delay($hydratorsDelay);
         OrganisationHydrateAssets::dispatch($asset->organisation)->delay($hydratorsDelay);
         GroupHydrateAssets::dispatch($asset->group)->delay($hydratorsDelay);
+        if ($asset->master_asset_id) {
+            MasterAssetHydrateAssets::run($asset->master_asset_id);
+        }
+
 
         return $asset;
     }

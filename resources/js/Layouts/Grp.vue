@@ -22,7 +22,7 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
-    faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
+    faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faRainbow,
     faParking, faSeedling, faBoxCheck,
     faUsers, faShoppingBasket, faLayerGroup, faInboxOut,
     faTachometerAltFast,
@@ -39,10 +39,10 @@ import {
     faCheck,
     faTimes, faTrashAlt,
     faAsterisk, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
-    faSmile
+    faSmile, faMailBulk
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
-import { faAsterisk as fasAsterisk, faBoxHeart, faExclamation, faInfo, faPlay, faGlobe as fasGlobe, faStar, faCheckCircle, faTimesCircle } from "@fas"
+import { faAsterisk as fasAsterisk, faBoxHeart, faExclamation, faInfo, faPlay, faGlobe as fasGlobe, faStar, faCheckCircle, faTimesCircle, faSkull as fasSkull } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -51,7 +51,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 
-library.add(faAtomAlt, faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faCheckCircle, faTimesCircle, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faArrowRight, faShippingFast, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faFolderDownload, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
+library.add(faRainbow, faAtomAlt, faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faCheckCircle, faTimesCircle, fasSkull, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faArrowRight, faShippingFast, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faFolderDownload, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk, faMailBulk)
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())

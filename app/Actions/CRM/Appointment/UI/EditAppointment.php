@@ -75,7 +75,7 @@ class EditAppointment extends InertiaAction
                                     'type' => [
                                         'type'     => 'select',
                                         'mode'     => 'single',
-                                        'label'    => __('type'),
+                                        'label'    => __('Type'),
                                         'required' => true,
                                         'value'    => $appointment->type,
                                         'options'  => Options::forEnum(AppointmentTypeEnum::class)
@@ -102,7 +102,7 @@ class EditAppointment extends InertiaAction
                                     ],
                                     'description' => [
                                         'type'  => 'textarea',
-                                        'label' => __('description'),
+                                        'label' => __('Description'),
                                         'value' => $appointment->description
                                     ]
                                 ]

@@ -77,10 +77,24 @@ class FetchAuroraStocks extends FetchAuroraAction
 
 
         if ($stock = Stock::withTrashed()->where('source_id', $stockData['stock']['source_id'])->first()) {
+            $dataToUpdate = Arr::only($stockData['stock'], [
+                'name',
+                'code',
+                'activated_at',
+                'discontinued_at',
+                'state',
+                'source_id',
+                'source_slug',
+                'fetched_at',
+                'last_fetched_at',
+                'created_at'
+            ]);
             try {
+
+
                 $stock       = UpdateStock::make()->action(
                     stock: $stock,
-                    modelData: $stockData['stock'],
+                    modelData: $dataToUpdate,
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
@@ -88,7 +102,7 @@ class FetchAuroraStocks extends FetchAuroraAction
                 $isPrincipal = true;
                 $this->recordChange($organisationSource, $stock->wasChanged());
             } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $stockData['stock'], 'Stock', 'update');
+                $this->recordError($organisationSource, $e, $dataToUpdate, 'Stock', 'update');
 
                 return [
                     'stock'    => null,
@@ -145,7 +159,6 @@ class FetchAuroraStocks extends FetchAuroraAction
             }
         }
 
-
         if ($stock) {
             if ($isPrincipal) {
                 $tradeUnit = $stockData['trade_unit'];
@@ -172,6 +185,7 @@ class FetchAuroraStocks extends FetchAuroraAction
 
 
             if ($stock->state != StockStateEnum::IN_PROCESS) {
+
                 $orgStock = $this->processOrgStock($organisationSource, $stock, $stockData);
 
                 if ($orgStock) {

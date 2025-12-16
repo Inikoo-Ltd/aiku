@@ -102,6 +102,12 @@ function stockFamilyRoute(stock: Stock) {
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
         </template>
+        <template #cell(org_sku)="{ item: stock }">
+            <Link :href="orgStockRoute(stock) as string" class="primaryLink">
+                {{ stock["organisation_code"] }}
+            </Link>
+        </template>
+
         <template #cell(code)="{ item: stock }">
             <Link :href="orgStockRoute(stock) as string" class="primaryLink">
                 {{ stock["code"] }}

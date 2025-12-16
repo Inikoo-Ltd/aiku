@@ -67,7 +67,7 @@ class EditStockFamily extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $stockFamily->code
                                 ],
                                 'name' => [
