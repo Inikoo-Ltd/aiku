@@ -3,14 +3,12 @@
 namespace App\Actions\Accounting\SageInvoices\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Reports\WithReportsSubNavigation;
 use App\Actions\UI\Reports\IndexReports;
 use App\Http\Resources\Accounting\SageInvoiceResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
-use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -21,8 +19,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexSageInvoicesReport extends OrgAction
 {
-    use WithReportsSubNavigation;
-
     private int $records;
 
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
@@ -140,6 +136,12 @@ class IndexSageInvoicesReport extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function inReports(Organisation $organisation): int
+    {
+        return $this->handle($organisation)->total();
+    }
+
+
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -153,7 +155,6 @@ class IndexSageInvoicesReport extends OrgAction
                         'title' => __('Sage Invoices'),
                         'icon'  => 'fal fa-file-invoice'
                     ],
-                    'subNavigation' => $this->getReportsNavigation($this->organisation),
                 ],
                 'data'        => SageInvoiceResource::collection($invoices),
             ]
