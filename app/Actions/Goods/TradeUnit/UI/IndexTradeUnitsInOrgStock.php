@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
@@ -19,20 +20,15 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnitsInOrgStock extends OrgAction
 {
+    use WithTradeUnitIndex;
+
     public function handle(OrgStock $orgStock, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereStartWith('trade_units.code', $value)
-                    ->orWhereAnyWordStartWith('trade_units.name', $value);
-            });
-        });
+        $globalSearch = $this->tradeUnitGlobalSearch();
 
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
+        $this->updateQueryBuilderParametersIfPrefixed($prefix);
 
-        $queryBuilder = QueryBuilder::for(TradeUnit::class);
+        $queryBuilder = $this->baseTradeUnitIndexBuilder();
         $queryBuilder->leftjoin('model_has_trade_units', 'trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
             ->where('model_has_trade_units.model_type', 'OrgStock')
             ->where('model_has_trade_units.model_id', $orgStock->id);
@@ -52,38 +48,31 @@ class IndexTradeUnitsInOrgStock extends OrgAction
                 'trade_units.type',
                 'model_has_trade_units.quantity as quantity'
             ]);
-
-
-        return $queryBuilder->allowedSorts(['code', 'type', 'name'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $this->finalizeTradeUnitIndex(
+            queryBuilder: $queryBuilder,
+            allowedSorts: ['code', 'type', 'name'],
+            globalSearch: $globalSearch,
+            prefix: $prefix
+        );
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-
-            $table
-                ->defaultSort('code')
-                ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
-                ->withLabelRecord([__('trade unit'),__('trade units')])
-                ->withEmptyState(
-                    [
+            $this->setupTradeUnitTable(
+                table: $table,
+                modelOperations: $modelOperations,
+                prefix: $prefix,
+                withLabelRecord: true,
+                emptyState: [
                     'title' => __("No trade units found"),
                 ]
-                )
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, align: 'right');
+            );
+
+            $this->addColumnCodeAndName($table);
+            $this->addColumnNetWeight($table, 'Weight');
+            $this->addColumnType($table, 'Type');
+            $this->addColumnQuantity($table, 'Quantity', false, false, 'right');
         };
     }
 }
