@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Aiku Development Team
- * Created: Mon, 16 Dec 2024 09:00:00 Malaysia Time
- * Copyright (c) 2024, Inikoo Ltd
- */
-
 namespace App\Actions\Web\Website\LlmsTxt;
 
 use App\Models\Web\Website;
@@ -48,6 +42,6 @@ class GetLlmsTxt
 
     protected function getDefaultContent(Website $website): string
     {
-        return 'Hello World';
+        return 'if you see this, your .txt file was not uploaded successfully.';
     }
 }
