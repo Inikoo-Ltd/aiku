@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { v4 as uuid } from 'uuid'
 import cloneDeep from 'lodash-es/cloneDeep'
@@ -104,7 +104,7 @@ const deleteSubNavigation = (index: number) => {
 
 const addLink = (subnavIndex: number) => {
   const subnavs = cloneDeep(localNav.value.subnavs ?? [])
-  subnavs[subnavIndex].links.push({
+  subnavs[subnavIndex]?.links.push({
     id: uuid(),
     label: 'New Link',
     icon: null,
@@ -112,6 +112,7 @@ const addLink = (subnavIndex: number) => {
   })
   commit({ subnavs })
 }
+
 
 const saveSubnavTitle = (data) => {
   console.log(data)
@@ -162,6 +163,14 @@ const resetDialog = () => {
   parentIdx.value = -1
   linkIdx.value = -1
 }
+
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    localNav.value = cloneDeep(newVal)
+  }
+)
 </script>
 
 
@@ -228,7 +237,7 @@ const resetDialog = () => {
                       </div>
                     </div>
                     <div class="flex items-center gap-3">
-                      <FontAwesomeIcon v-if="element.links.length < 8" icon="fas fa-plus-circle" class="cursor-pointer text-blue-500" @click.stop="() => addLink(element)"/>
+                      <FontAwesomeIcon v-if="element.links.length < 8" icon="fas fa-plus-circle" class="cursor-pointer text-blue-500" @click.stop="() => addLink(index)"/>
                       <FontAwesomeIcon icon="fas fa-trash-alt" class="cursor-pointer text-red-500" @click.stop="() => deleteSubNavigation(index)"/>
                       <FontAwesomeIcon :icon="open ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="text-gray-400"/>
                     </div>
