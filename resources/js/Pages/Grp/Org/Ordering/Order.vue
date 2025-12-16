@@ -1241,7 +1241,20 @@ const labelToBePaid = (toBePaidValue: string) => {
                         </dl>
                     </div>
 
-                    <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
+                    <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
+                        <template #cell_shipping="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>{{ fieldSummary.label }}</span>
+                                    <span v-if="fieldSummary.data.engine === 'manual'" class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
+                                        {{ trans('Manual') }}
+                                    </span>
+                                    <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
+                                </div>
+                                <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+                            </dt>
+                        </template>
+                    </OrderSummary>
                 </section>
             </div>
         </BoxStatPallet>
