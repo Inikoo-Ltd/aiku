@@ -2,24 +2,24 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 23 Mar 2024 12:24:25 Malaysia Time, Mexico City, Mexico
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Wed, 17 Dec 2025 00:57:21 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexTradeUnitsInProduct extends OrgAction
+class IndexTradeUnitsInOrgStock extends OrgAction
 {
-    public function handle(Product $product, $prefix = null): LengthAwarePaginator
+    public function handle(OrgStock $orgStock, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -34,8 +34,8 @@ class IndexTradeUnitsInProduct extends OrgAction
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->leftjoin('model_has_trade_units', 'trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
-            ->where('model_has_trade_units.model_type', class_basename(Product::class))
-            ->where('model_has_trade_units.model_id', $product->id);
+            ->where('model_has_trade_units.model_type', 'OrgStock')
+            ->where('model_has_trade_units.model_id', $orgStock->id);
 
 
         $queryBuilder

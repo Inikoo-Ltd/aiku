@@ -5,11 +5,10 @@
   -->
 
 
-
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { library } from '@fortawesome/fontawesome-svg-core'
+import { Head, Link } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faInventory,
     faBox,
@@ -18,7 +17,7 @@ import {
     faPaperclip,
     faCube,
     faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign
-} from '@fal'
+} from "@fal"
 import { computed, defineAsyncComponent, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -29,11 +28,13 @@ import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations
 import StockShowcase from "@/Components/Showcases/Grp/StockShowcase.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
-import { trans } from 'laravel-vue-i18n'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { routeType } from '@/types/route'
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
+import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
+
 library.add(
     faInventory,
     faBox,
@@ -45,22 +46,22 @@ library.add(
     faClipboard,
     faPoop,
     faScanner,
-    faDollarSign,
-
+    faDollarSign
 )
 
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
+const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes,
     tabs: TSTabs
-    showcase: object
-    supplier_products: object
-    locations: object
-    purchase_orders: {}
-    product?: {}
+    showcase?: object
+    supplier_products?: object
+    locations?: object
+    purchase_orders?: {}
+    products?: {}
+    trade_units?: {}
     master: {}
     masterRoute: routeType | null
 }>()
@@ -74,10 +75,11 @@ const component = computed(() => {
         showcase: StockShowcase,
         locations: TableLocations,
         supplier_products: TableSupplierProducts,
-        product: TableProducts,
+        products: TableProducts,
+        trade_units: TableTradeUnits,
         details: ModelDetails,
         history: ModelChangelog,
-        purchase_orders: TablePurchaseOrders,
+        purchase_orders: TablePurchaseOrders
     }
     return components[currentTab.value]
 
