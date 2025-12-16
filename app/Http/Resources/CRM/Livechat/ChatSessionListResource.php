@@ -25,6 +25,19 @@ class ChatSessionListResource extends JsonResource
             $activeAssignment = $this->assignments->first();
         }
 
+        $guestProfile = null;
+        if ($this->relationLoaded('chatEvents') && $this->chatEvents->isNotEmpty()) {
+            $result = $this->chatEvents->first();
+            if ($result && !empty($result->payload)) {
+                $payload = $result->payload;
+                $guestProfile = [
+                    'name' => $payload['name'] ?? null,
+                    'email' => $payload['email'] ?? null,
+                    'phone' => $payload['phone'] ?? null,
+                ];
+            }
+        }
+
         $webUser = $this->web_user_id ? $this->webUser : null;
 
         return [
@@ -60,6 +73,12 @@ class ChatSessionListResource extends JsonResource
                 'organisation_slug' => $webUser->customer->organisation->slug,
                 'shop' => $webUser->customer->shop->name,
                 'shop_slug' => $webUser->customer->shop->slug,
+            ] : null,
+
+            'guest_profile' => $guestProfile ? [
+                'name' => $guestProfile['name'],
+                'email' => $guestProfile['email'],
+                'phone' => $guestProfile['phone'],
             ] : null,
 
             'assigned_agent' => $activeAssignment ? [

@@ -175,14 +175,6 @@ onMounted(async () => {
 							'bg-gray-100 text-gray-900': m.sender_type !== 'agent',
 						}">
 						<div class="text-sm whitespace-pre-line">{{ m.message_text }}</div>
-						<span
-							class="text-xs block mt-1"
-							:class="{
-								'text-white/80': m.sender_type === 'agent',
-								'text-gray-500': m.sender_type !== 'agent',
-							}"
-							>{{ formatTime(m.created_at) }}</span
-						>
 					</div>
 				</div>
 			</template>

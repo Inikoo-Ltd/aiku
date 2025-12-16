@@ -3,6 +3,7 @@ import { ref, inject, onMounted, onBeforeUnmount } from "vue"
 import MessageArea from "@/Components/Chat/MessageArea.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMessage } from "@fortawesome/free-solid-svg-icons"
+import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 import axios from "axios"
 
 interface ChatMessage {
@@ -63,7 +64,7 @@ const syncLoginState = () => {
 let chatChannel: any = null
 let currentChannelName: string | null = null
 let websocketInitialized = false
-
+const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 /**
  * Save chat session into localStorage
  */
@@ -81,6 +82,7 @@ const saveChatSession = (sessionData: {
 		priority: "normal",
 		saved_at: new Date().toISOString(),
 		contact_name: sessionData.contact_name,
+		guest_profile_submitted: false,
 	}
 
 	localStorage.setItem("chat", JSON.stringify(data))
@@ -317,6 +319,9 @@ const initWebSocket = () => {
 				...msg,
 				created_at: new Date(msg.created_at),
 			})
+			if (msg.sender_type === "agent") {
+				playNotificationSoundFile(soundUrl)
+			}
 			forceScrollBottom()
 		}
 		if (eventData.session_status === "closed") {
@@ -418,7 +423,7 @@ defineExpose({
 			<div
 				v-if="open"
 				ref="panelRef"
-				class="fixed bottom-[9rem] right-5 z-[70] w-[350px] h-[350px] bg-white rounded-md overflow-hidden border">
+				class="fixed bottom-[9rem] right-5 z-[70] w-[350px] lg:h-[450px] 2xl:h-[550px] bg-[#f6f6f7] rounded-md overflow-hidden border">
 				<MessageArea
 					:messages="messages"
 					:session="chatSession"

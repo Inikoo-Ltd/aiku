@@ -67,17 +67,11 @@ class ChatEvent extends Model
     }
 
 
-    public function isTransferRequest(): bool
-    {
-        return $this->event_type === ChatEventTypeEnum::TRANSFER_REQUEST;
-    }
-
 
     public function isTransferAccept(): bool
     {
         return $this->event_type === ChatEventTypeEnum::TRANSFER_ACCEPT;
     }
-
 
     public function isTransferReject(): bool
     {
@@ -100,6 +94,11 @@ class ChatEvent extends Model
     public function isNote(): bool
     {
         return $this->event_type === ChatEventTypeEnum::NOTE;
+    }
+
+    public function isGuestProfile(): bool
+    {
+        return $this->event_type === ChatEventTypeEnum::GUEST_PROFILE;
     }
 
 
@@ -131,7 +130,6 @@ class ChatEvent extends Model
     public function getTransferDetails(): ?array
     {
         if (!in_array($this->event_type, [
-            ChatEventTypeEnum::TRANSFER_REQUEST,
             ChatEventTypeEnum::TRANSFER_ACCEPT,
             ChatEventTypeEnum::TRANSFER_REJECT
         ]) || !$this->payload) {
@@ -183,6 +181,4 @@ class ChatEvent extends Model
             'payload' => $payload,
         ]);
     }
-
-
 }

@@ -8,6 +8,7 @@ import type { SessionAPI } from "@/types/Chat/chat"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faClose, faUser } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
+import AlertMessage from "@/Components/Utils/AlertMessage.vue"
 
 const props = defineProps<{
 	session: SessionAPI | null
@@ -22,6 +23,7 @@ const selectedHistory = ref<{
 
 const emit = defineEmits<{
 	(e: "close"): void
+	(e: "sync-success"): void
 }>()
 
 const layout: any = inject("layout", {})
@@ -29,7 +31,12 @@ const baseUrl = layout?.appUrl ?? ""
 
 const activeTab = ref<"history" | "profile">(props.initialTab ?? "history")
 const userProfile = ref<any | null>(null)
-const syncEmail = ref("")
+const syncEmail = ref(props.session?.guest_profile?.email || "")
+const syncEmailAlert = ref<{
+	status: string
+	title?: string
+	description?: string
+} | null>(null)
 const isSyncing = ref(false)
 
 const isLoadingHistory = ref(false)
@@ -60,8 +67,8 @@ const avatarUrl = computed(() => {
 const fetchUserProfile = async () => {
 	userProfile.value = {
 		name: displayName.value,
-		email: null,
-		phone: null,
+		email: props.session?.guest_profile?.email || null,
+		phone: props.session?.guest_profile?.phone || null,
 	}
 	try {
 		const slug = props.session?.web_user?.slug
@@ -76,11 +83,31 @@ const onSyncByEmail = async () => {
 	if (!syncEmail.value || !props.session?.ulid) return
 	try {
 		isSyncing.value = true
-		await axios.post(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/sync-by-email`, {
-			email: syncEmail.value,
-		})
-		emit("close")
-	} catch (error: any) {
+		const response = await axios.put(
+			`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/sync-by-email`,
+			{
+				email: syncEmail.value,
+			}
+		)
+		syncEmailAlert.value = {
+			status: "success",
+			title: "Success",
+			description: response.data.message,
+		}
+
+		setTimeout(() => {
+			syncEmailAlert.value = null
+			emit("close")
+		}, 3000)
+
+		emit("sync-success")
+		// emit("close")
+	} catch (e: any) {
+		syncEmailAlert.value = {
+			status: "danger",
+			title: "Error",
+			description: e.response?.data?.message || e.message,
+		}
 	} finally {
 		isSyncing.value = false
 	}
@@ -169,10 +196,7 @@ onMounted(async () => {
 						? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
 						: 'text-gray-600'
 				"
-				@click="
-					activeTab = 'profile'
-					// fetchUserProfile()
-				">
+				@click="activeTab = 'profile'">
 				{{ trans("Profile") }}
 			</button>
 		</div>
@@ -197,6 +221,7 @@ onMounted(async () => {
 									guest_identifier: s.guest_identifier,
 									status: s.status,
 									web_user: s.web_user,
+									guest_profile: s.guest_profile,
 								}
 							">
 							<div class="flex-1">
@@ -260,6 +285,7 @@ onMounted(async () => {
 					<input
 						type="email"
 						v-model="syncEmail"
+						disabled
 						placeholder="guest@example.com"
 						class="w-full px-3 py-2 border rounded" />
 					<button
@@ -268,6 +294,7 @@ onMounted(async () => {
 						@click="onSyncByEmail">
 						{{ isSyncing ? trans("Syncing...") : trans("Sync by email") }}
 					</button>
+					<AlertMessage v-if="syncEmailAlert" :alert="syncEmailAlert" />
 				</div>
 				<div v-else class="pt-2 space-y-2">
 					<div class="text-xs text-gray-500">{{ trans("Click to Customer Detail") }}</div>

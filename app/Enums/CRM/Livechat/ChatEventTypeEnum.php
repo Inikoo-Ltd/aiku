@@ -26,6 +26,8 @@ enum ChatEventTypeEnum: string
     case REPLY = 'reply';
     case SEND = 'send';
 
+    case GUEST_PROFILE = 'guest_profile';
+
     public static function labels(): array
     {
         return [
@@ -38,11 +40,12 @@ enum ChatEventTypeEnum: string
             'close' => __('Chat Closed'),
             'rating' => __('Rating Submitted'),
             'note' => __('Note Added'),
-            'reply'=> __('Reply'),
-            'send'=> __('Send'),
-            'transfer_to_agent'=> __('Transfer to Agent'),
-            'Assignment_to_self'=> __('Assignment to Self'),
-            'priority'=> __('Priority Updated'),
+            'reply' => __('Reply'),
+            'send' => __('Send'),
+            'transfer_to_agent' => __('Transfer to Agent'),
+            'Assignment_to_self' => __('Assignment to Self'),
+            'priority' => __('Priority Updated'),
+            'guest_profile' => __('Guest Profile'),
         ];
     }
 
@@ -94,15 +97,35 @@ enum ChatEventTypeEnum: string
                 'icon' => 'fas fa-sticky-note',
                 'class' => 'text-indigo-500',
             ],
-            'reply'=> [
-                'tooltip'=> __('Message Reply'),
-                'icon'=> 'fas fa-reply',
-                'class'=> 'text-gray-500',
+            'reply' => [
+                'tooltip' => __('Message Reply'),
+                'icon' => 'fas fa-reply',
+                'class' => 'text-gray-500',
             ],
-            'send'=> [
-                'tooltip'=> __('Message Sent'),
-                'icon'=> 'fas fa-paper-plane',
-                'class'=> 'text-blue-500',
+            'send' => [
+                'tooltip' => __('Message Sent'),
+                'icon' => 'fas fa-paper-plane',
+                'class' => 'text-blue-500',
+            ],
+            'transfer_to_agent' => [
+                'tooltip' => __('Transfer to Agent'),
+                'icon' => 'fas fa-user',
+                'class' => 'text-purple-500',
+            ],
+            'Assignment_to_self' => [
+                'tooltip' => __('Assignment to Self'),
+                'icon' => 'fas fa-user',
+                'class' => 'text-purple-500',
+            ],
+            'priority' => [
+                'tooltip' => __('Priority Updated'),
+                'icon' => 'fas fa-exclamation-triangle',
+                'class' => 'text-yellow-500',
+            ],
+            'guest_profile' => [
+                'tooltip' => __('Guest Profile'),
+                'icon' => 'fas fa-user',
+                'class' => 'text-purple-500',
             ],
 
         ];

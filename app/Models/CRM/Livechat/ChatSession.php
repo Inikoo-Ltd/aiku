@@ -59,6 +59,11 @@ class ChatSession extends Model
         return $this->belongsTo(WebUser::class, 'web_user_id');
     }
 
+    public function chatEvents(): HasMany
+    {
+        return $this->hasMany(ChatEvent::class, 'chat_session_id');
+    }
+
     public function language(): BelongsTo
     {
         return $this->belongsTo(Language::class);

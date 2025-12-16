@@ -7,6 +7,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 
@@ -46,6 +47,9 @@ class GetChatSessions
         $query = ChatSession::with([
             'messages' => function ($q) {
                 $q->latest()->limit(1);
+            },
+            'chatEvents' => function ($q) {
+                $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },
             'webUser',
             'assignments.chatAgent.user'

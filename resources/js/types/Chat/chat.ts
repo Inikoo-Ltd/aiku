@@ -38,6 +38,11 @@ export interface SessionAPI {
 		shop: string
 		shop_slug: string
 	} | null
+	guest_profile?: {
+		name: string
+		email: string
+		phone: string
+	} | null
 }
 
 // --------------------------
@@ -88,6 +93,11 @@ export interface Contact {
 		organisation_slug: string
 		shop: string
 		shop_slug: string
+	} | null
+	guest_profile?: {
+		name: string
+		email: string
+		phone: string
 	} | null
 }
 

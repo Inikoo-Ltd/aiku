@@ -6,6 +6,7 @@ import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar, faPlus, faSpinner, faPaperPlane } from "@fortawesome/free-solid-svg-icons"
+import GuestProfileForm from "@/Components/Chat/GuestProfileForm.vue"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
 
 const props = defineProps({
@@ -49,6 +50,27 @@ const selectedHistory = ref<{
 	contact_name?: string
 	guest_identifier?: string
 } | null>(null)
+
+const getGuestProfileSubmitted = (): boolean => {
+	try {
+		const raw = localStorage.getItem("chat")
+		if (!raw) return false
+		const data = JSON.parse(raw)
+		return data?.guest_profile_submitted === true
+	} catch (e) {
+		return false
+	}
+}
+const guestProfileSubmitted = ref<boolean>(getGuestProfileSubmitted())
+const onGuestProfileSubmitted = () => {
+	guestProfileSubmitted.value = true
+}
+watch(
+	() => props.session?.ulid,
+	() => {
+		guestProfileSubmitted.value = getGuestProfileSubmitted()
+	}
+)
 
 const formatTime = (timestamp: string) => {
 	if (!timestamp) return ""
@@ -122,6 +144,7 @@ const groupedMessages = () => {
  * Send message handler
  */
 const sendMessage = async () => {
+	if (!props.isLoggedIn && !guestProfileSubmitted.value) return
 	if (props.isRating) return
 	const text = input.value.trim()
 	if (!text || !props.session?.ulid) return
@@ -300,7 +323,7 @@ onMounted(() => {
 			<template v-for="(groupMessages, date) in groupedMessages()" :key="date">
 				<!-- Date Separator -->
 				<div class="flex justify-center">
-					<div class="px-3 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">
+					<div class="px-3 py-1 shadow-sm bg-white text-gray-600 text-xs rounded-full">
 						{{ date }}
 					</div>
 				</div>
@@ -321,13 +344,13 @@ onMounted(() => {
 								class="flex items-end gap-2"
 								:class="isUserMessage(message) ? 'flex-row-reverse' : ''">
 								<div
-									class="px-3 py-2 rounded-lg text-sm break-words whitespace-normal max-w-full"
+									class="px-3 py-2 rounded-lg shadow-md text-sm break-words whitespace-normal max-w-full"
 									:class="[
 										isUserMessage(message)
 											? 'user-bubble rounded-br-none'
 											: message.sender_type === 'agent'
-											? 'agent-bubble rounded-bl-none'
-											: 'system-bubble rounded-bl-none',
+											? 'agent-bubble  rounded-bl-none'
+											: 'system-bubble  rounded-bl-none',
 									]">
 									{{ message.message_text }}
 
@@ -338,7 +361,6 @@ onMounted(() => {
 												? 'text-white/70'
 												: 'text-gray-500'
 										">
-										{{ formatTime(message.created_at) }}
 										<span v-if="isUserMessage(message)" class="ml-1">
 											{{ message.is_read ? "✓✓" : "✓" }}
 										</span>
@@ -356,28 +378,6 @@ onMounted(() => {
 			</div>
 		</div>
 
-		<!-- Empty State -->
-		<div
-			v-else-if="activeMenu === 'chat'"
-			class="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500 bg-gray-50">
-			<div class="mb-4">
-				<svg
-					class="w-16 h-16 mx-auto text-gray-300"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="1"
-						d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-				</svg>
-			</div>
-			<h3 class="text-lg font-medium mb-2">{{ trans("No messages yet") }}</h3>
-			<p class="text-sm mb-4">
-				{{ trans("Start the conversation by sending a message") }}
-			</p>
-		</div>
 		<div v-if="activeMenu === 'chat' && isRating">
 			<div
 				class="p-3 border-t border-gray-200 bg-white flex items-center justify-between gap-2">
@@ -409,8 +409,17 @@ onMounted(() => {
 			</div>
 		</div>
 		<div v-if="activeMenu === 'chat' && !isRating">
-			<!-- Input Area -->
-			<div class="p-3 border-t border-gray-200 bg-white flex items-center gap-2">
+			<div
+				v-if="!isLoggedIn && !guestProfileSubmitted"
+				class="border-t border-gray-200 bg-white p-4">
+				<GuestProfileForm
+					:sessionUlid="session?.ulid"
+					@submitted="onGuestProfileSubmitted" />
+			</div>
+
+			<div
+				v-if="isLoggedIn || guestProfileSubmitted"
+				class="p-3 border-t border-gray-200 bg-white flex items-center gap-2">
 				<textarea
 					v-model="input"
 					@keydown="handleKeyDown"
@@ -441,7 +450,6 @@ onMounted(() => {
 .buttonPrimary {
 	background-color: v-bind("layout?.app?.theme[4]") !important;
 	color: v-bind("layout?.app?.theme[5]") !important;
-	border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
 
 	&:hover {
 		background-color: v-bind(
@@ -457,20 +465,17 @@ onMounted(() => {
 .user-bubble {
 	background-color: v-bind("layout?.app?.theme[4]") !important;
 	color: v-bind("layout?.app?.theme[5]") !important;
-	border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
 }
 
 /* Agent message bubble */
 .agent-bubble {
-	background-color: #f3f4f6;
-	color: #1f2937;
-	border: 1px solid #e5e7eb;
+	background-color: white;
+	color: #161616;
 }
 
 /* System message bubble */
 .system-bubble {
 	background-color: #fef3c7;
-	color: #92400e;
 	border: 1px solid #fbbf24;
 	font-style: italic;
 }

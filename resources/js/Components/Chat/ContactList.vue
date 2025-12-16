@@ -62,6 +62,7 @@ const reloadContacts = async () => {
 				status: s.status,
 				webUser: s.web_user,
 				priority: s.priority,
+				guest_profile: s.guest_profile,
 			})
 		)
 	} catch (e) {
@@ -130,6 +131,7 @@ const openChat = (c: Contact) => {
 		status: c.status,
 		priority: c.priority,
 		web_user: c.webUser,
+		guest_profile: c.guest_profile,
 	} as SessionAPI
 	messages.value = c.messages ?? []
 }
@@ -213,15 +215,16 @@ const handleClickContact = async (c: Contact) => {
 	}
 }
 
-const closeSession = async () => {
-	selectedSession.value = null
-	activeTab.value = "closed"
+const onSyncSuccess = async () => {
 	await reloadContacts()
-	notify({
-		title: trans("Success"),
-		text: trans("Chat session closed"),
-		type: "success",
-	})
+	if (selectedSession.value?.ulid) {
+		const c = contacts.value.find(
+			(ct) => String(ct.ulid) === String(selectedSession.value?.ulid)
+		)
+		if (c) {
+			openChat(c)
+		}
+	}
 }
 
 const formatLastMessage = (msg: string) => {
@@ -328,7 +331,8 @@ const formatLastMessage = (msg: string) => {
 					<ChatSidePanel
 						:session="selectedSession"
 						:initialTab="sidePanelInitialTab"
-						@close="closeSidePanel" />
+						@close="closeSidePanel"
+						@sync-success="onSyncSuccess" />
 				</div>
 
 				<div class="h-full">

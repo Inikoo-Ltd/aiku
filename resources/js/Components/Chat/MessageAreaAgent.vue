@@ -270,6 +270,7 @@ const initWebSocket = () => {
 				...msg,
 				created_at: new Date(msg.created_at),
 			} as ChatMessage)
+
 			scrollBottom()
 		}
 	})
