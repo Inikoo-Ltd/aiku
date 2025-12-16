@@ -2,6 +2,7 @@
 import { onMounted, ref, inject } from "vue";
 import axios from "axios"
 import Bee from "@mailupinc/bee-plugin";
+import BeefreeSDK from '@beefree.io/sdk'
 import { routeType } from "@/types/route";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -48,7 +49,7 @@ const beeConfig = () => {
     var headers = {
         'Content-Type': 'application/json',
     }
-    
+
     axios
         .post(endpoint,payload,headers)
         .then((response) => {
@@ -136,9 +137,13 @@ defineExpose({
 </script>
 
 <template>
-    <div v-if="showBee" id="app">
+    <!-- <div v-if="showBee" id="app">
         <div id="bee-plugin-container" class="beefree"></div>
-    </div>
+    </div> -->
+      <div v-if="showBee"
+      id="beefree-container"
+    ref="containerRef"
+    class="editor-container"></div>
 
     <div v-else>
         <EmptyState :data="{
