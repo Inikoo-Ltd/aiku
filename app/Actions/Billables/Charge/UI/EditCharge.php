@@ -10,6 +10,7 @@ namespace App\Actions\Billables\Charge\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -30,20 +31,86 @@ class EditCharge extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Charge $charge, ActionRequest $request): Charge
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($charge);
     }
 
 
     public function htmlResponse(Charge $charge, ActionRequest $request): Response
     {
-        $rules = Arr::get($charge->settings, 'rules', null);
+        $pricing = null;
 
-        $minOrder = null;
-        if ($rules && preg_match('/\d+/', $rules, $matches)) {
-            $minOrder = (int) $matches[0];
+        if (!in_array($charge->type, [
+            ChargeTypeEnum::OTHER,
+            ChargeTypeEnum::MARKETPLACE_FEE,
+            ChargeTypeEnum::OTHER->value,
+            ChargeTypeEnum::MARKETPLACE_FEE->value
+        ])) {
+            $rules = Arr::get($charge->settings, 'rules');
+
+            $minOrder = null;
+            if ($rules && preg_match('/\d+/', $rules, $matches)) {
+                $minOrder = (int)$matches[0];
+            }
+            $hasRules = !empty(trim($rules ?? ''));
+            $pricing  = [
+                'label'  => __('Pricing'),
+                'title'  => __('Edit charge'),
+                'fields' => $hasRules
+                    ? [
+                        'min_order' => [
+                            'type'  => 'input_number',
+                            'label' => __('Min order'),
+                            'value' => $minOrder
+                        ],
+                        'amount'    => [
+                            'type'  => 'input_number',
+                            'label' => __('Amount'),
+                            'value' => Arr::get($charge->settings, 'amount')
+                        ],
+
+                    ]
+                    : [
+                        'amount' => [
+                            'type'  => 'input_number',
+                            'label' => __('Amount'),
+                            'value' => Arr::get($charge->settings, 'amount')
+                        ],
+                    ]
+            ];
         }
 
-        $hasRules = !empty(trim($rules ?? ''));
+
+        $bluePrints =  [
+            [
+                'label'  => __('Properties'),
+                'title'  => __('Edit charge'),
+                'fields' => [
+                    'name'        => [
+                        'type'        => 'input',
+                        'information' => __("Charge name for internal use"),
+                        'label'       => __('Name'),
+                        'value'       => $charge->name
+                    ],
+                    'label'       => [
+                        'type'        => 'input',
+                        'information' => __("This will show in customer's order"),
+                        'label'       => __('Label'),
+                        'value'       => $charge->label
+                    ],
+                    'description' => [
+                        'type'        => 'textarea',
+                        'information' => __("This will show in customer's order as a tooltip"),
+                        'label'       => __('Description'),
+                        'value'       => $charge->description
+                    ],
+                ],
+            ]
+        ];
+        if ($pricing) {
+            $bluePrints[] = $pricing;
+        }
+
 
         return Inertia::render(
             'EditModel',
@@ -54,17 +121,17 @@ class EditCharge extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($charge, $request),
                     'next'     => $this->getNext($charge, $request),
                 ],
-                'pageHead' => [
-                    'title'    => $charge->name,
-                    'icon'     => [
+                'pageHead'    => [
+                    'title'   => $charge->name,
+                    'icon'    => [
                         'title' => __('Charge'),
                         'icon'  => 'fal fa-charging-station'
                     ],
-                    'actions'  => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -77,53 +144,7 @@ class EditCharge extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
-                        [
-                            'label'  => __('Properties'),
-                            'title'  => __('Edit charge'),
-                            'fields' => [
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Name'),
-                                    'value' => $charge->name
-                                ],
-                                'label' => [
-                                    'type'  => 'input',
-                                    'label' => __('label'),
-                                    'value' => $charge->label
-                                ],
-                                'description' => [
-                                    'type'  => 'textarea',
-                                    'information'   => __("This will show in customer's Dropshipping Basket as a tooltip"),
-                                    'label' => __('Description'),
-                                    'value' => $charge->description
-                                ],
-                            ],
-                        ],
-                        [
-                            'label'  => __('Pricing'),
-                            'title'  => __('Edit charge'),
-                            'fields' => $hasRules ? [
-                                'min_order' => [
-                                    'type'  => 'input_number',
-                                    'label' => __('min order'),
-                                    'value' => $minOrder
-                                ],
-                                'amount' => [
-                                    'type'  => 'input_number',
-                                    'label' => __('amount'),
-                                    'value' => Arr::get($charge->settings, 'amount')
-                                ],
-
-                            ] : [
-                                'amount' => [
-                                    'type'  => 'input_number',
-                                    'label' => __('amount'),
-                                    'value' => Arr::get($charge->settings, 'amount')
-                                ],
-                            ]
-                        ],
-                    ],
+                    'blueprint' => $bluePrints,
 
                     'args' => [
                         'updateRoute' => [
@@ -145,13 +166,14 @@ class EditCharge extends OrgAction
             charge: $charge,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '(' . __('Editing') . ')'
+            suffix: '('.__('Editing').')'
         );
     }
 
     public function getPrevious(Charge $charge, ActionRequest $request): ?array
     {
         $previous = Charge::where('slug', '<', $charge->slug)->orderBy('slug', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
