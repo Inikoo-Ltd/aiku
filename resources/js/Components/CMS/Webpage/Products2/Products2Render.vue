@@ -162,7 +162,7 @@ const toggleBackInStock = () =>
                             {{ product?.code }}
                         </span>
 
-                        <span  v-if="layout?.iris?.is_logged_in" class="text-left md:text-right text-xs break-words">
+                        <span  class="text-left md:text-right text-xs break-words">
                             RRP :
                             {{ locale.currencyFormat(currency?.code, product.rrp) }}
                             / {{ product.unit }}
