@@ -178,10 +178,11 @@ trait IsOrder
                 'price_total' => $order->charges_amount
             ],
             [
-                'label'       => __('Shipping'),
-                'information' => '',
-                'price_total' => $order->shipping_amount,
-                'data'        => [
+                'label'                     => __('Shipping'),
+                'information'               => '',
+                'price_total'               => $order->shipping_amount,
+                'slot_name'                 => 'shipping',
+                'data'                      => [
                     'engine'              => $order->shipping_engine,
                     'is_shipping_tbc'     => $order->is_shipping_tbc,
                     'shipping_tbc_amount' => $order->shipping_tbc_amount,
