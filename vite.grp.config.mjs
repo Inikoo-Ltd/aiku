@@ -20,6 +20,7 @@ export default ({ mode }) => {
         cors : true,
         watch: {
           usePolling: true,
+          interval: 400,
           ignored: ["**/storage/media/**"]
         }
       },

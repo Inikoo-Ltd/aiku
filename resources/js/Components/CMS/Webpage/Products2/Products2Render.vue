@@ -162,7 +162,7 @@ const toggleBackInStock = () =>
                             {{ product?.code }}
                         </span>
 
-                        <span class="text-left md:text-right text-xs break-words">
+                        <span  v-if="layout?.iris?.is_logged_in" class="text-left md:text-right text-xs break-words">
                             RRP :
                             {{ locale.currencyFormat(currency?.code, product.rrp) }}
                             / {{ product.unit }}
@@ -173,7 +173,7 @@ const toggleBackInStock = () =>
             </div>
 
             <!-- PRICE + BUTTON (FIXED AT BOTTOM) -->
-            <div class="px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
+            <div  v-if="layout?.iris?.is_logged_in" class="px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
                 <div>
                     <div class="font-extrabold text-black text-sm">
                         Price :
@@ -216,7 +216,7 @@ const toggleBackInStock = () =>
         <!-- LOGIN CTA -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
             <a :href="urlLoginWithRedirect()" class="w-full">
-                <Button label="Login or Register" class="rounded-none" full :injectStyle="buttonStyleLogin" />
+                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
             </a>
         </div>
 

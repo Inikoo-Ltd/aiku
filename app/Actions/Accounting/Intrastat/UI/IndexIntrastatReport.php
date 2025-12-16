@@ -9,6 +9,8 @@
 namespace App\Actions\Accounting\Intrastat\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Reports\WithReportsSubNavigation;
+use App\Actions\UI\Reports\IndexReports;
 use App\Http\Resources\Accounting\IntrastatMetricsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\IntrastatMetrics;
@@ -26,6 +28,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexIntrastatReport extends OrgAction
 {
+    use WithReportsSubNavigation;
+
     private int $records;
 
     public function authorize(ActionRequest $request): bool
@@ -129,7 +133,7 @@ class IndexIntrastatReport extends OrgAction
         return Inertia::render(
             'Org/Accounting/Intrastat/IntrastatReport',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Intrastat Report'),
                 'pageHead'    => [
                     'title' => __('Intrastat Export Report'),
@@ -137,6 +141,7 @@ class IndexIntrastatReport extends OrgAction
                         'title' => __('Intrastat'),
                         'icon'  => 'fal fa-file-export'
                     ],
+                    'subNavigation' => $this->getReportsNavigation($this->organisation),
                 ],
                 'data'        => IntrastatMetricsResource::collection($metrics),
                 'filters'     => [
@@ -151,31 +156,23 @@ class IndexIntrastatReport extends OrgAction
         return IntrastatMetricsResource::collection($metrics);
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return [
+        return array_merge(
+            IndexReports::make()->getBreadcrumbs($routeName, $routeParameters),
             [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-chart-line',
-                    'label' => __('Reports'),
-                    'route' => [
-                        'name'       => 'grp.org.reports.index',
-                        'parameters' => $routeParameters
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'icon'  => 'fal fa-file-export',
+                        'label' => __('Intrastat'),
+                        'route' => [
+                            'name'       => 'grp.org.reports.intrastat',
+                            'parameters' => $routeParameters
+                        ]
                     ]
-                ]
+                ],
             ],
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-file-export',
-                    'label' => __('Intrastat'),
-                    'route' => [
-                        'name'       => 'grp.org.reports.intrastat',
-                        'parameters' => $routeParameters
-                    ]
-                ]
-            ],
-        ];
+        );
     }
 }
