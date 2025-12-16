@@ -142,6 +142,7 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 }
 let controller: AbortController | null = null
 const autoSave = async (value: any) => {
+	console.log("Auto saving parents...", value)
 	if (controller) {
 		controller.abort()
 	}
@@ -156,6 +157,7 @@ const autoSave = async (value: any) => {
 			{ signal: controller.signal }
 		)
 		setStatus('success')
+		Navigation.value = {...value}
 		sendToIframe({ key: "reload", value: {} })
 	} catch (error: any) {
 		if (
@@ -228,7 +230,7 @@ const autoSave = async (value: any) => {
 
 			<!-- Side workshop -->
 			<SideMenuWorkshop
-				:data="data?.menu"
+				:data="Navigation"
 				:webBlockTypes="webBlockTypes"
 				@auto-save="autoSave"
 				@sendToIframe="sendToIframe"
