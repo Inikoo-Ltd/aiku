@@ -229,29 +229,32 @@ watch(() => props.customerData, (newVal) => {
 
 <template>
     <div class="">
-        <div class="flex items-center gap-2 relative w-36">
-            <InputNumber
-                :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? (get(customer, ['quantity_ordered'], 0) ?? 0) : get(customer, ['quantity_ordered_new'], 0)"
-                @input="(e) => (e.value ? set(customer, ['quantity_ordered_new'], e.value) : set(customer, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
-                inputId="integeronly"
-                fluid
-                showButtons
-                :disabled="isLoadingSubmitQuantityProduct"
-                :min="0"
-                :max="customer.stock"
-                buttonLayout="horizontal"
-                :inputStyle="{
-                    textAlign: 'center',
-                    minWidth: '4rem'
-                }"
-            >
-                <template #incrementicon>
-                    <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" @click="()=> customer.quantity_ordered == customer.stock ? showWarning() : null " />
-                </template>
-                <template #decrementicon>
-                    <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
-                </template>
-            </InputNumber>
+        <div class="flex items-center gap-2 relative ">
+            <div class="w-32">
+                <InputNumber
+                    :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? (get(customer, ['quantity_ordered'], 0) ?? 0) : get(customer, ['quantity_ordered_new'], 0)"
+                    @input="(e) => (e.value ? set(customer, ['quantity_ordered_new'], e.value) : set(customer, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
+                    inputId="integeronly"
+                    fluid
+                    showButtons
+                    :disabled="isLoadingSubmitQuantityProduct"
+                    :min="0"
+                    :max="customer.stock"
+                    buttonLayout="horizontal"
+                    :inputStyle="{
+                        textAlign: 'center',
+                        minWidth: '4rem'
+                    }"
+                >
+                    <template #incrementicon>
+                        <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" @click="()=> customer.quantity_ordered == customer.stock ? showWarning() : null " />
+                    </template>
+                    <template #decrementicon>
+                        <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
+                    </template>
+                </InputNumber>
+            </div>
+           
             
             <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/>
 
