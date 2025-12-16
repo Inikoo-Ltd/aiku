@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
-import { Head, router, useForm } from "@inertiajs/vue3"
+import { Head, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
@@ -12,8 +12,6 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { faPlus } from "@fal"
-import Product from "../Org/Catalogue/Product.vue"
-import { fromJSON } from "postcss"
 
 type Variant = {
     label: string
