@@ -157,6 +157,7 @@ const autoSave = async (value: any) => {
 			{ signal: controller.signal }
 		)
 		setStatus('success')
+		Navigation.value = {...value}
 		sendToIframe({ key: "reload", value: {} })
 	} catch (error: any) {
 		if (
