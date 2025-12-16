@@ -1,3 +1,130 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 26 Nov 2024 21:36:24 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2024, Raul A Perusquia Flores
+ */
+
+/** @noinspection PhpUnhandledExceptionInspection */
+
+use App\Actions\Accounting\Invoice\Search\ReindexInvoiceSearch;
+use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Billables\ShippingZone\HydrateShippingZones;
+use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
+use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
+use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Models\Accounting\PaymentServiceProvider;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
+use App\Actions\Accounting\Invoice\UpdateInvoice;
+use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
+use App\Actions\Analytics\GetSectionRoute;
+use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
+use App\Actions\Catalogue\Product\Json\GetOrderProducts;
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
+use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
+use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Ordering\Adjustment\StoreAdjustment;
+use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Ordering\Order\HydrateOrders;
+use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
+use App\Actions\Ordering\Purge\HydratePurges;
+use App\Actions\Ordering\Purge\StorePurge;
+use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
+use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
+use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
+use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
+use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\Purge\PurgeTypeEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Analytics\AikuScopedSection;
+use App\Models\Billables\Charge;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
+use App\Models\Catalogue\HistoricAsset;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
+use App\Models\Helpers\Address;
+use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\Order;
+use App\Models\Ordering\Purge;
+use App\Models\Ordering\PurgedOrder;
+use App\Models\Ordering\ShippingCountry;
+use App\Models\Ordering\Transaction;
+use App\Models\Helpers\Country;
+use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Date;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+
+beforeAll(function () {
+    loadDB();
+});
+
+beforeEach(function () {
+    list(
+        $this->organisation,
+        $this->user,
+        $this->shop
+    ) = createShop();
+
+    $this->group = $this->organisation->group;
+
+    list(
+        $this->tradeUnit,
+        $this->product
+    ) = createProduct($this->shop);
+
+    $this->customer = createCustomer($this->shop);
+
+    createWarehouse();
+
+    Config::set(
+        'inertia.testing.page_paths',
+        [resource_path('js/Pages/Grp')]
+    );
+    actingAs($this->user);
+});
 
 test('store shipping country action', function () {
     // Ensure migration exists (in case snapshot DB was loaded)
@@ -932,11 +1059,7 @@ test('order is_shipping_tbc becomes true when shipping zone price type is TBC', 
         ShippingZone::factory()->definition(),
         [
             'price' => [
-                'orders' => [
-                    'price' => [
-                        'type' => 'TBC',
-                    ],
-                ],
+                'type' => 'TBC',
             ],
         ]
     ));
@@ -945,7 +1068,7 @@ test('order is_shipping_tbc becomes true when shipping zone price type is TBC', 
     $order->update(['shipping_zone_id' => $zone->id]);
 
     // Run action
-    OrderUpdateIsShippingTBC::run($order);
+    UpdateOrderIsShippingTBC::run($order);
 
     expect($order->fresh()->is_shipping_tbc)->toBeTrue();
 });
@@ -969,7 +1092,7 @@ test('order is_shipping_tbc becomes false when shipping zone price type is not T
 
     $order->update(['shipping_zone_id' => $zone->id, 'is_shipping_tbc' => true]);
 
-    OrderUpdateIsShippingTBC::run($order);
+    UpdateOrderIsShippingTBC::run($order);
 
     expect($order->fresh()->is_shipping_tbc)->toBeFalse();
 });
@@ -1032,7 +1155,7 @@ test('order is_shipping_tbc false when no shipping zone present', function () {
     // Ensure no shipping zone is linked
     $order->update(['shipping_zone_id' => null, 'is_shipping_tbc' => true]);
 
-    OrderUpdateIsShippingTBC::run($order);
+    UpdateOrderIsShippingTBC::run($order);
 
     expect($order->fresh()->is_shipping_tbc)->toBeFalse();
 });
