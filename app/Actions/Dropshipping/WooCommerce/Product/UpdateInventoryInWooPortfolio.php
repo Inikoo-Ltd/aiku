@@ -61,7 +61,7 @@ class UpdateInventoryInWooPortfolio
 
             $wooCommerceUser->setTimeout(20);
             $result = $wooCommerceUser->checkConnection();
-            if ($result && Arr::has($result, 'environment')) {
+            if ($result) {
 
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => null

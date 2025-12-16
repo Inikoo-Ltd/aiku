@@ -44,7 +44,7 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
 
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
-        if (! Arr::has($wooCommerceUser->checkConnection(), 'environment')) {
+        if (! $wooCommerceUser->checkConnection()) {
             return;
         }
 
