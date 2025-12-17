@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
-import { faBox, faHandHoldingBox, faPallet, faPencil, faSeedling } from "@fal"
+import { faBox, faHandHoldingBox, faPallet, faPencil, faSeedling, faCashRegister } from "@fal"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { useLocaleStore } from "@/Stores/locale"
@@ -16,8 +16,10 @@ import { RouteParams } from "@/types/route-params"
 import paymentAccount from "@/Pages/Grp/Overview/Accounting/PaymentAccount.vue"
 import paymentAccountShops from "@/Pages/Grp/Org/Accounting/PaymentAccountShops.vue"
 import { Link } from "@inertiajs/vue3"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
 
-library.add(faBox, faHandHoldingBox, faPallet, faPencil, faSeedling, faCheckCircle, faTimesCircle)
+library.add(faBox, faHandHoldingBox, faPallet, faPencil, faSeedling, faCashRegister, faCheckCircle, faTimesCircle)
 
 defineProps<{
     data: {}
@@ -73,7 +75,10 @@ function paymentAccountShopRoute(paymentAccountShop: PaymentAccountShop) {
         </template>
 
         <template #cell(show_in_checkout)="{ item: paymentAccountShops }">
-            {{paymentAccountShops.show_in_checkout}}
+            <span v-if="paymentAccountShops.show_in_checkout" v-tooltip="trans('Shown on checkout')" class="opacity-70 hover:opacity-100">
+                <FontAwesomeIcon icon="fal fa-cash-register" class="" fixed-width aria-hidden="true" />
+            </span>
+            <span v-else />
         </template>
 
         <template #cell(number_payments)="{ item: paymentAccountShops }">

@@ -26,6 +26,8 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
+import { trans } from "laravel-vue-i18n"
+
 
 
 
