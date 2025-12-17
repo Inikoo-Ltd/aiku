@@ -21,11 +21,25 @@ class ImportUpload
 
     public function handle(UploadedFile|string $file, $import): void
     {
-        $realPath = storage_path('app/' . $file); //my pc cant run it without this
+        $realPath = storage_path('app/' . $file);
+
+        $readerType = null;
+        if ($file instanceof UploadedFile) {
+            $extension = strtolower($file->getClientOriginalExtension());
+            $readerType = match ($extension) {
+                'xlsx' => \Maatwebsite\Excel\Excel::XLSX,
+                'xls' => \Maatwebsite\Excel\Excel::XLS,
+                'csv' => \Maatwebsite\Excel\Excel::CSV,
+                'txt' => \Maatwebsite\Excel\Excel::CSV,
+                default => null,
+            };
+        }
 
         Excel::import(
             $import,
-            is_string($file) ? $realPath : $file->path()
+            is_string($file) ? $realPath : $file->path(),
+            null,
+            $readerType,
         );
 
         if (is_string($file)) {

@@ -421,7 +421,7 @@ class ShowOrder extends OrgAction
 
                 'upload_excel' => [
                     'title'               => [
-                        'label'       => __('Upload product'),
+                        'label'       => __('Upload Product'),
                         'information' => __('The list of column file: code, quantity')
                     ],
                     'progressDescription' => __('Adding Products'),
@@ -429,14 +429,14 @@ class ShowOrder extends OrgAction
                         'header' => ['code', 'quantity'],
                         'rows'   => [
                             [
-                                'code'     => 'product-001',
+                                'code'     => 'Product-001',
                                 'quantity' => '1'
                             ]
                         ]
                     ],
                     'upload_spreadsheet'  => [
                         'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'channel'         => 'grp.personal.'.request()->user()->id,
                         'required_fields' => ['code', 'quantity'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)'
