@@ -12,24 +12,21 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Actions\OrgAction;
-use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class AuthenticateBeefreeAccount extends OrgAction
 {
-    public string $commandSignature = 'beefree:auth {outbox} {modelData?*}';
+    public string $commandSignature = 'beefree:auth {organisation} {modelData?*}';
 
-    public function handle(?Organisation $organisation, ?array $modelData): array
+    public function handle(Organisation $organisation, array $modelData): array
     {
 
-        // note: take the client id and client secret from group settings
         $beefreeSettings = $this->group->settings['beefree'];
-        \Log::info('BeeFree settings:', ['settings' => $beefreeSettings]);
         $clientId = Arr::get($beefreeSettings, 'client_id');
         $clientSecret = Arr::get($beefreeSettings, 'client_secret');
-        \Log::info("beefreeSettings: " . json_encode($beefreeSettings));
 
         if (!$clientId || !$clientSecret) {
             throw new \Exception('BeeFree credentials not configured');
@@ -40,10 +37,9 @@ class AuthenticateBeefreeAccount extends OrgAction
         ])->post('https://auth.getbee.io/loginV2', [
             'client_id' => $clientId ?? null,
             'client_secret' => $clientSecret ?? null,
-            'uid' => Arr::get($modelData, 'uid', 'test1-clientside')
+            'uid' => Arr::get($modelData, 'uid', 'CmsUserName')
         ]);
 
-        \Log::info("data Repponse: " . json_encode($response->json()));
         if ($response->successful()) {
             return $response->json();
         }
@@ -56,16 +52,9 @@ class AuthenticateBeefreeAccount extends OrgAction
         throw new \Exception('Failed to authenticate with BeeFree');
     }
 
-    public function asController(Organisation $organisation, array $modelData): array
+    public function asController(Organisation $organisation, ActionRequest $request): array
     {
-        $this->initialisation($organisation, $modelData);
-        return $this->handle($organisation, $this->validatedData);
-    }
-
-    public function action(Organisation $organisation, array $modelData): array
-    {
-
-        $this->initialisation($organisation, $modelData);
+        $this->initialisation($organisation, $request);
         return $this->handle($organisation, $this->validatedData);
     }
 
@@ -85,14 +74,14 @@ class AuthenticateBeefreeAccount extends OrgAction
 
     public function asCommand(Command $command): void
     {
-        $outbox = Outbox::where('slug', $command->argument('outbox'))->first();
-        if (!$outbox) {
-            $command->error('Outbox not found');
+        $organisation = Organisation::where('slug', $command->argument('organisation'))->first();
+        if (!$organisation) {
+            $command->error('Organisation not found');
             return;
         }
         $modelData = $command->argument('modelData') ?? [];
-        $this->initialisation($outbox->organisation, $modelData);
-        $result = $this->handle($outbox, $modelData);
+        $this->initialisation($organisation, $modelData);
+        $result = $this->handle($organisation, $modelData);
         $command->info('BeeFree authentication successful');
         $command->info(json_encode($result, JSON_PRETTY_PRINT));
     }
