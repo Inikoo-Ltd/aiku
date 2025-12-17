@@ -16,6 +16,7 @@ use App\Actions\Dropshipping\Ebay\CheckEbayUserAuthorized;
 use App\Actions\Dropshipping\Ebay\CheckEbayUserCreating;
 use App\Actions\Dropshipping\Ebay\IndexEbayUserPolicies;
 use App\Actions\Dropshipping\Ebay\ShowCallbackSuccessRetinaEbayUser;
+use App\Actions\Dropshipping\Faire\AuthorizeRetinaFaireUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
@@ -80,6 +81,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
 
+    Route::post('faire-user/authorize', AuthorizeRetinaFaireUser::class)->name('faire.authorize');
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
     Route::post('wc-user/{customerSalesChannel}/test-connection', TestConnectionWooCommerceUser::class)->name('wc.test_connection');
     Route::delete('wc-user', DeleteShopifyUser::class)->name('wc.delete');

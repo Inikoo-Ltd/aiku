@@ -16,13 +16,29 @@ trait WithFaireApiRequest
      * @var string
      */
     protected string $faireApiUrl = 'https://www.faire.com/api/v2';
+    protected string $faireAuthUrl = 'https://www.faire.com/oauth2/authorize';
+    protected string $faireTokenUrl = 'https://www.faire.com/oauth2/token';
 
     /**
      * Faire API Token
      *
-     * @var string
+     * @var string|null
      */
-    protected string $faireApiToken = '';
+    protected string|null $faireApiToken = '';
+    protected string $faireAppId = '';
+    protected string $faireAppSecret = '';
+    protected string $redirectUri = '';
+    protected array $scopes = [
+        'READ_PRODUCTS',
+        'WRITE_PRODUCTS',
+        'READ_ORDERS',
+        'WRITE_ORDERS',
+        'READ_BRAND',
+        'READ_RETAILER',
+        'READ_INVENTORIES',
+        'WRITE_INVENTORIES',
+        'READ_SHIPMENTS',
+    ];
 
     /**
      * Cache duration in minutes
@@ -57,6 +73,9 @@ trait WithFaireApiRequest
     protected function initFaireApi(): void
     {
         $this->faireApiToken = $this->access_token;
+        $this->faireAppId = config('services.faire.app_id');
+        $this->faireAppSecret = config('services.faire.app_key');
+        $this->redirectUri = 'https://webhook.site/1518cc78-247f-49e7-bd5b-b9f8da42c5bc';
     }
 
     /**
@@ -67,6 +86,166 @@ trait WithFaireApiRequest
     protected function getFaireApiUrl(): string
     {
         return rtrim($this->faireApiUrl, '/');
+    }
+
+    /**
+     * Get OAuth authorization URL
+     *
+     * @param string|null $state Random state parameter for security
+     *
+     * @return string Authorization URL
+     */
+    public function getFaireAuthorizationUrl(string $state = null): string
+    {
+        if (!$this->faireAppId) {
+            $this->initFaireApi();
+        }
+
+        $scopes = $this->scopes;
+
+        $params = [
+            'client_id'     => $this->faireAppId,
+            'redirect_uri'  => $this->redirectUri,
+            'response_type' => 'code',
+            'state'         => $state,
+        ];
+
+        if (!empty($scopes)) {
+            $params['scope'] = implode(' ', $scopes);
+        }
+
+        return $this->faireAuthUrl . '?' . http_build_query($params);
+    }
+
+    /**
+     * Exchange authorization code for access token
+     *
+     * @param string $code Authorization code from callback
+     * @param string $redirectUri Same redirect URI used in authorization
+     *
+     * @return array|null Token data (access_token, refresh_token, expires_in, etc.)
+     */
+    public function exchangeCodeForToken(string $code, string $redirectUri): ?array
+    {
+        if (!$this->faireAppId || !$this->faireAppSecret) {
+            $this->initFaireApi();
+        }
+
+        try {
+            $response = Http::timeout($this->timeOut)
+                ->asForm()
+                ->post($this->faireTokenUrl, [
+                    'grant_type'    => 'authorization_code',
+                    'code'          => $code,
+                    'redirect_uri'  => $redirectUri,
+                    'client_id'     => $this->faireAppId,
+                    'client_secret' => $this->faireAppSecret,
+                ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            } else {
+                Log::error('Faire OAuth Token Exchange Error', [
+                    'status' => $response->status(),
+                    'body'   => $response->body()
+                ]);
+
+                return [$response->body()];
+            }
+        } catch (ConnectionException $e) {
+            Log::error('Faire OAuth Connection Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                ['message' => 'Faire OAuth Connection Error: ' . $e->getMessage()],
+            ];
+        }
+    }
+
+    /**
+     * Refresh access token using refresh token
+     *
+     * @param string $refreshToken Refresh token
+     *
+     * @return array|null New token data
+     */
+    public function refreshAccessToken(string $refreshToken): ?array
+    {
+        if (!$this->faireAppId || !$this->faireAppSecret) {
+            $this->initFaireApi();
+        }
+
+        try {
+            $response = Http::timeout($this->timeOut)
+                ->asForm()
+                ->post($this->faireTokenUrl, [
+                    'grant_type'    => 'refresh_token',
+                    'refresh_token' => $refreshToken,
+                    'client_id'     => $this->faireAppId,
+                    'client_secret' => $this->faireAppSecret,
+                ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            } else {
+                Log::error('Faire Token Refresh Error', [
+                    'status' => $response->status(),
+                    'body'   => $response->body()
+                ]);
+
+                return [$response->body()];
+            }
+        } catch (ConnectionException $e) {
+            Log::error('Faire Token Refresh Connection Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                ['message' => 'Faire Token Refresh Error: ' . $e->getMessage()],
+            ];
+        }
+    }
+
+    /**
+     * Revoke access token
+     *
+     * @param string $token Token to revoke
+     *
+     * @return bool Success status
+     */
+    public function revokeToken(string $token): bool
+    {
+        if (!$this->faireAppId || !$this->faireAppSecret) {
+            $this->initFaireApi();
+        }
+
+        try {
+            $response = Http::timeout($this->timeOut)
+                ->asForm()
+                ->post($this->faireTokenUrl . '/revoke', [
+                    'token'         => $token,
+                    'client_id'     => $this->faireAppId,
+                    'client_secret' => $this->faireAppSecret,
+                ]);
+
+            if ($response->successful()) {
+                return true;
+            } else {
+                Log::error('Faire Token Revocation Error', [
+                    'status' => $response->status(),
+                    'body'   => $response->body()
+                ]);
+
+                return false;
+            }
+        } catch (ConnectionException $e) {
+            Log::error('Faire Token Revocation Connection Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
     }
 
     /**

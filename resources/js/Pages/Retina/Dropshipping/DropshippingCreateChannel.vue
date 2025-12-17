@@ -175,6 +175,15 @@ const onSubmitAmazon = async () => {
 	window.location.href = response.data
 }
 
+// Section: amazon
+const onSubmitFaire = async () => {
+	const response = await axios.post(
+		route('retina.dropshipping.platform.faire.authorize')
+	)
+
+	window.open(response.data, '_blank');
+}
+
 // Section: Woocommerce
 const isModalMagento = ref<boolean>(false)
 const errMagento = ref("")
@@ -619,7 +628,7 @@ provide("goNext", goNext)
 						:label="trans('Connect')"
 						type="primary"
 						full
-						@click="() => (isModalMagento = true)" />
+						@click="onSubmitFaire" />
 					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
