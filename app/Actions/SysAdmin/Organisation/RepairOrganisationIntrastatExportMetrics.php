@@ -18,11 +18,11 @@ use Carbon\CarbonPeriod;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RepairOrganisationIntrastatMetrics
+class RepairOrganisationIntrastatExportMetrics
 {
     use AsAction;
 
-    public string $commandSignature = 'repair:organisation-intrastat-metrics {organisation?} {--queue : Dispatch jobs to queue instead of running synchronously}';
+    public string $commandSignature = 'repair:organisation-intrastat-export-metrics {organisation?} {--queue : Dispatch jobs to queue instead of running synchronously}';
 
     public function asCommand(Command $command): int
     {
@@ -95,7 +95,7 @@ class RepairOrganisationIntrastatMetrics
         }
 
         $command->info("");
-        $command->info("Repairing Organisation Intrastat Metrics...");
+        $command->info("Repairing Organisation Intrastat Export Metrics...");
         $command->info("Total organisations: " . count($organisationPeriods));
         $command->info("Total days to process: $totalDays");
 
