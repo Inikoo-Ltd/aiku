@@ -5,18 +5,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     use HasGroupOrganisationRelationship;
 
     public function up(): void
     {
         Schema::create('website_llms_txt', function (Blueprint $table) {
-            $table->id();
+            $table->increments('id');
             $table = $this->groupOrgRelationship($table);
 
             $table->unsignedSmallInteger('website_id')->index();
-            $table->foreign('website_id')->references('id')->on('websites')->cascadeOnDelete();
+            $table->foreign('website_id')->references('id')->on('websites')->nullOnDelete();
 
             $table->string('filename')->nullable()->comment('Original filename');
             $table->string('path')->comment('Storage path');

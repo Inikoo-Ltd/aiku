@@ -65,7 +65,9 @@ class GetIrisProductCategoryNavigation extends IrisAction
             $subDepartments = DB::table('product_categories')
                 ->where('type', 'sub_department')
                 ->where('department_id', $department->id)
-                ->whereIn('state', [
+                ->whereIn(
+                    'state',
+                    [
                         ProductCategoryStateEnum::ACTIVE->value,
                         ProductCategoryStateEnum::DISCONTINUING->value
                     ]
@@ -108,7 +110,9 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 $families = DB::table('product_categories')
                     ->where('type', 'family')
                     ->where('sub_department_id', $subDepartment->id)
-                    ->whereIn('state', [
+                    ->whereIn(
+                        'state',
+                        [
                             ProductCategoryStateEnum::ACTIVE->value,
                             ProductCategoryStateEnum::DISCONTINUING->value
                         ]

@@ -86,8 +86,8 @@ class EditWebsite extends OrgAction
 
         $blueprints[] = [
             'label' => __('Upload Your LLM'),
-            'icon'=> 'fa-light fa-upload',
-            'fields'=> [
+            'icon' => 'fa-light fa-upload',
+            'fields' => [
                 'llms_txt' => [
                     'type'        => 'file_upload',
                     'label'       => __('LLMs.txt File'),

@@ -15,21 +15,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $group_id
  * @property int $organisation_id
  * @property int $website_id
- * @property string|null $filename
- * @property string $path
- * @property int $file_size
- * @property string|null $content
- * @property string|null $checksum
+ * @property string|null $filename Original filename
+ * @property string $path Storage path
+ * @property int $file_size Size in bytes
+ * @property string|null $content File content for quick serving
+ * @property string|null $checksum MD5 checksum for integrity
  * @property bool $is_active
- * @property bool $use_fallback
+ * @property bool $use_fallback Use global fallback if no file
  * @property int|null $uploaded_by
  * @property \Illuminate\Support\Carbon|null $uploaded_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group $group
  * @property-read Organisation $organisation
- * @property-read Website $website
  * @property-read User|null $uploader
+ * @property-read \App\Models\Web\Website $website
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteLlmsTxt newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteLlmsTxt newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteLlmsTxt query()
+ * @mixin \Eloquent
  */
 class WebsiteLlmsTxt extends Model
 {
