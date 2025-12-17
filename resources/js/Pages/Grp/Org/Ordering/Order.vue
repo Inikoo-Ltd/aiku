@@ -610,9 +610,11 @@ const labelToBePaid = (toBePaidValue: string) => {
         return 'COD'
     }
 
-    if (toBePaidValue.toLowerCase() === 'bank_transfer') {
+    if (toBePaidValue.toLowerCase() === 'bank_transfer' || toBePaidValue.toLowerCase() === 'bank') {
         return 'Bank Transfer'
     }
+
+    return ''
 }
 
 // Section: change shipping price (in Summary)
