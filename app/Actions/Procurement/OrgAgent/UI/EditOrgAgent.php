@@ -68,6 +68,7 @@ class EditOrgAgent extends OrgAction
                         [
                             'title'  => __('Agent Details'),
                             'icon'   => 'fal fa-address-book',
+                            'label' => 'Agent Details',
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
@@ -77,9 +78,10 @@ class EditOrgAgent extends OrgAction
                                     'readonly' => true,
                                 ],
                                 'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Name'),
-                                    'value' => $orgAgent->agent->organisation->name,
+                                    'type'     => 'input',
+                                    'label'    => __('Name'),
+                                    'value'    => $orgAgent->agent->organisation->name,
+                                    'readonly' => true,
                                 ],
                             ],
                         ],

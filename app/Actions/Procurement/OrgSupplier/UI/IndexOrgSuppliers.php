@@ -154,11 +154,11 @@ class IndexOrgSuppliers extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
-                ->withLabelRecord([__('supplier'), __('suppliers')])
+                ->withLabelRecord([__('Supplier'), __('Suppliers')])
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('No suppliers'),
+                        'title' => __('No Suppliers Found'),
                         'count' => $organisation->inventoryStats->number_warehouse_areas,
 
                     ]

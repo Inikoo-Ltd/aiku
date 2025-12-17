@@ -116,17 +116,18 @@ class IndexSuppliers extends GrpAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
+                ->withLabelRecord([__('Supplier'), __('Suppliers')])
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Group' => [
-                            'title'       => __('no suppliers'),
+                            'title'       => __('No Suppliers'),
                             'description' => $canEdit ? __('Get started by creating a new supplier.') : null,
                             'count'       => $parent->supplyChainStats->number_suppliers,
                             'action'      => $this->canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('New supplier'),
-                                'label'   => __('supplier'),
+                                'tooltip' => __('New Supplier'),
+                                'label'   => __('Supplier'),
                                 'route'   => [
                                     'name'       => 'grp.supply-chain.suppliers.create',
                                     'parameters' => []
@@ -140,8 +141,8 @@ class IndexSuppliers extends GrpAction
                             'action'      => $canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('New supplier'),
-                                'label'   => __('supplier'),
+                                'tooltip' => __('New Supplier'),
+                                'label'   => __('Supplier'),
                                 'route'   => [
                                     'name'       => 'grp.supply-chain.agent.show.suppliers.create',
                                     'parameters' => [$parent->slug]
@@ -152,9 +153,9 @@ class IndexSuppliers extends GrpAction
                 )
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
-                ->column(key: 'number_supplier_products', label: __('products'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders', label: __('purchase orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'number_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -191,7 +192,7 @@ class IndexSuppliers extends GrpAction
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('suppliers');
+        $title = __('Suppliers');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
@@ -204,7 +205,7 @@ class IndexSuppliers extends GrpAction
                 'type'  => 'button',
                 'style' => 'primary',
                 'icon'  => 'fal fa-plus',
-                'label' => __('Create Supplier'),
+                'label' => __('Supplier'),
                 'route' => [
                     'name'       => 'grp.supply-chain.suppliers.create',
                     'parameters' => array_values($request->route()->originalParameters())
@@ -245,7 +246,7 @@ class IndexSuppliers extends GrpAction
             'SupplyChain/Suppliers',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('suppliers'),
+                'title'       => __('Suppliers'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
