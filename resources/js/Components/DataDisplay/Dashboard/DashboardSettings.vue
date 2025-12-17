@@ -178,7 +178,13 @@ onMounted(() => {
                     @scroll="checkOverflow"
                     class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
-                    <div v-if="(layout.currentRoute === 'grp.dashboard.show') || (layout.currentRoute === 'grp.org.dashboard.show')">
+                    <div
+						v-if="
+							(layout.currentRoute === 'grp.dashboard.show') ||
+							(layout.currentRoute === 'grp.org.dashboard.show') ||
+							(layout.currentRoute === 'grp.masters.dashboard')
+						"
+					>
                         <DashboardCustomDateRange :intervals="intervals" />
                     </div>
 
