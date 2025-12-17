@@ -57,6 +57,7 @@ export const useColorTheme = [
     ['#C1A027','#FFFFFF','#4B5058','#FFFFFF','#C1A027','#FFFFFF','#cccccc','#957A65'], // spain distribution
     ['#C48497','#FFFFFF','#4B5058','#FFFFFF','#C48497','#FFFFFF','#cccccc','#957A65'], // spain distribution
     ['#909B44','#FFFFFF','#4B5058','#FFFFFF','#909B44','#FFFFFF','#cccccc','#957A65'], // spain distribution
+    ['#000000', '#ffffff', '#000000', '#ffffff', '#000000', '#ffffff', '#000000', '#ffffff'],  // Pure black and white (a&c)
     // ['#E5F2F0', '#332925', '#38674F', '#E5F2F0', '#F5D9B9', '#332925', '#E5F2F0', '#374151'],  // Nature's Embrace
     // ['#FFFFFF', '#333333', '#F28B00', '#333333', '#D6C7E2', '#333333', '#FFFFFF', '#374151'],  // Modern Brights 
     // ['#F8F8F8', '#000000', '#2F4F4F', '#F8F8F8', '#424242', '#000000', '#F8F8F8', '#374151'],  // Classic Sophistication 
