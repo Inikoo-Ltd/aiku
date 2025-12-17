@@ -80,7 +80,6 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         }
 
         try {
-            // Check if transaction already exists for this product in this order
             $existingTransaction = $this->scope->transactions()
                 ->where('historic_asset_id', $historicAsset->id)
                 ->first();
@@ -91,7 +90,6 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
                     $modelData
                 );
             } else {
-                // Create new transaction
                 StoreTransaction::make()->action(
                     $this->scope,
                     $historicAsset,

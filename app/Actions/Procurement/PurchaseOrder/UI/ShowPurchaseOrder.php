@@ -274,7 +274,7 @@ class ShowPurchaseOrder extends OrgAction
                     'icon'  =>
                     [
                         'icon'  => ['fal', 'clipboard-list'],
-                        'title' => __('Purchase order')
+                        'title' => __('Purchase Order')
                     ],
                     'title' => $purchaseOrder->reference,
                     'afterTitle'    => [

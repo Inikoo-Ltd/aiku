@@ -123,7 +123,6 @@ trait WithImport
             try {
                 UploadExcelProgressEvent::dispatch($this->upload, $this->upload->user);
             } catch (\Exception $e) {
-                // Ignore broadcast errors (e.g., WebSocket server not available)
                 \Log::debug('Broadcast failed, continuing import', ['error' => $e->getMessage()]);
             }
         } elseif ($this->upload->webUser) {

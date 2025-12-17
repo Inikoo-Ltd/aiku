@@ -42,9 +42,9 @@ class CreateSupplier extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New supplier'),
+                'title'       => __('New Supplier'),
                 'pageHead'    => [
-                    'title'        => __('New supplier'),
+                    'title'        => __('New Supplier'),
                     'actions'      => [
                         [
                             'type'  => 'button',
