@@ -15,6 +15,7 @@ use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
+use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
@@ -80,6 +81,10 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
+
+        // LLMs.txt for AI crawlers
+        Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');
+
 
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');

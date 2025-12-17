@@ -349,6 +349,7 @@ use App\Actions\Web\Website\PublishWebsiteProductTemplate;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
+use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
 
@@ -830,6 +831,9 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('images/sidebar', [UploadImagesToWebsite::class, 'sidebar'])->name('sidebar.images.store');
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
+
+    // LLMs.txt upload
+    Route::post('llms-txt', StoreLlmsTxt::class)->name('llms_txt.store');
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {

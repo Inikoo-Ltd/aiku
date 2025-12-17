@@ -12,11 +12,8 @@ use App\Actions\OrgAction;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\Goods\TradeUnit;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnitsInProduct extends OrgAction
 {

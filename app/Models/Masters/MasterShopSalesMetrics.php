@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $lost_revenue_grp_currency
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read Group $group
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesMetrics newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopSalesMetrics newQuery()

@@ -22,9 +22,9 @@ class GetOrderDeliveryAddressManagement
     {
 
 
-        if($order->deliveryAddress){
+        if ($order->deliveryAddress) {
             $addresses = Collect([$order->deliveryAddress]);
-        }else{
+        } else {
             $addresses = Collect([]);
         }
 
