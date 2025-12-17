@@ -57,6 +57,7 @@ class IndexMasterProductsInTradeUnit extends OrgAction
                 'master_assets.created_at',
                 'master_assets.updated_at',
                 'master_assets.slug',
+                'master_assets.web_images',
             ]);
 
         return $queryBuilder->allowedSorts(['code', 'name', 'sales_all'])

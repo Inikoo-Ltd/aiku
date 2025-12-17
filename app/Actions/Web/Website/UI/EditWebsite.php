@@ -106,13 +106,13 @@ class EditWebsite extends OrgAction
             'fields' => [
                 'code'                  => [
                     'type'     => 'input',
-                    'label'    => __('code'),
+                    'label'    => __('Code'),
                     'value'    => $website->code,
                     'required' => true,
                 ],
                 'name'                  => [
                     'type'     => 'input',
-                    'label'    => __('name'),
+                    'label'    => __('Name'),
                     'value'    => $website->name,
                     'required' => true,
                 ],

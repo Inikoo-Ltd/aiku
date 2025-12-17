@@ -65,7 +65,7 @@ class ShowBannerWorkshop extends OrgAction
                 ],
                 'pageHead'          => [
 
-                    'title'     => __('Workshop'),
+                    'title'     => __("Banner's workshop"),
                     'container' => [
                         'icon'    => ['fal', 'fa-sign'],
                         'tooltip' => __('Banner'),

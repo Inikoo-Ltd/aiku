@@ -248,17 +248,17 @@ class IndexCollectionsInProductCategory extends OrgAction
                             'fields' => [
                                 'code'        => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'required' => true
                                 ],
                                 'name'        => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'required' => true,
                                 ],
                                 'description' => [
                                     'type'     => 'textarea',
-                                    'label'    => __('description'),
+                                    'label'    => __('Description'),
                                     'required' => false,
                                 ],
                                 "image"       => [

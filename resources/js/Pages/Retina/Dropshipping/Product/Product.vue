@@ -10,7 +10,7 @@ import type { Component } from 'vue'
 import axios from 'axios'
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import ProductShowcase from '@/Components/Retina/Storage/Dropshipping/ProductShowcase.vue'
 import { notify } from '@kyvg/vue3-notification'

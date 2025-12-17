@@ -132,7 +132,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'reference', label: __('Id'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customer_reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'customer_reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
                 ->column(key: 'number_pallets', label: __('total'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

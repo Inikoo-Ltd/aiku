@@ -4,6 +4,7 @@
 	"code": "luigi-last-seen-1",
 	"name": "Luigi: Last Seen",
 	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
 	"category": "block",
 	"fixed": true,
 	"data": {

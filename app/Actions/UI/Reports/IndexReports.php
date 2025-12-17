@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Reports;
 
 use App\Actions\OrgAction;
+use App\Actions\Reports\GetReports;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\Catalogue\Shop;
@@ -62,21 +63,35 @@ class IndexReports extends OrgAction
         return Inertia::render(
             'Org/Reports/Reports',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'     => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => 'BI',
-                'pageHead' => [
+                'title'           => __('Reports'),
+                'pageHead'        => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-chart-line'],
                         'title' => __('Reports')
                     ],
-                    'title'     => __('reports'),
-                    'container' => $container
+                    'title'     => __('Reports'),
+                    'container' => $container,
                 ],
-
-
+                'dashboard_stats' => [
+                    'setting' => [
+                        "currency_chosen" => 'usd'
+                    ],
+                    'widgets' => [
+                        'column_count' => 2,
+                        'components'   => [
+                            [
+                                'col_span' => 1,
+                                'row_span' => 10,
+                                'type'     => 'overview_display',
+                                'data'     => GetReports::run($this->organisation)
+                            ],
+                        ]
+                    ],
+                ],
             ]
         );
     }
@@ -92,6 +107,7 @@ class IndexReports extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
+                            'icon'  => 'fal fa-chart-line',
                             'route' => [
                                 'name'       => 'grp.org.reports.index',
                                 'parameters' => $routeParameters

@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,8 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         if ($orgStock->wasChanged('quantity_available')) {
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);
+
+                UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id);
             }
         }
 

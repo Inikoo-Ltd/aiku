@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faFilter, faSearch, faLayerGroup } from "@fas";
 import { ref, computed, inject, watch } from "vue";
-import FilterProducts from "@/Components/CMS/Webpage/Products1/FilterProduct.vue";
+import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
@@ -23,6 +23,8 @@ const props = defineProps<{
 }>();
 
 const layout: any = inject("layout", {});
+
+/* layout.app.theme = layout.iris.theme */
 
 const dummyProductImage = '/product/product_dummy.jpeg';
 
@@ -143,16 +145,12 @@ watch(
               products
             </span>
           </div>
-          <div>
-            <Button v-if="layout?.iris?.is_logged_in" :icon="faLayerGroup" label="Set All Products to Portfolio"
-              class="!p-3 !w-auto"  type="secondary" />
-          </div>
         </div>
 
         <div :class="responsiveGridClass" class="grid gap-6 p-4">
           <div v-for="product in dummyProducts" :key="product.id"
             :style="getStyles(modelValue?.card_product?.properties, screenType)"
-            class="border p-3 relative rounded  bg-white">
+            class="p-3 relative rounded  bg-white">
             <component
               :is="getProductsRenderB2bComponent(code)" 
               :product="product" 
@@ -161,6 +159,7 @@ watch(
               :bestSeller="modelValue.bestseller" 
               :buttonStyleHover="getStyles(modelValue?.buttonHover?.properties, screenType)"
               :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
+              :button="modelValue?.button"
              />
           </div>
         </div>

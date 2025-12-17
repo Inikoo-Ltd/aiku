@@ -97,7 +97,7 @@ class IndexBasketTransactions extends OrgAction
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
-            $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 

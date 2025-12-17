@@ -1,4 +1,3 @@
-import { routeType } from './route';
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 12 Jul 2025 19:13:19 British Summer Time, Sheffield, UK
@@ -9,7 +8,7 @@ import { routeType } from '@/types/route'
 import { Action } from '@/types/Action'
 import { Icon } from '@/types/Utils/Icon'
 
-export interface PageHeading {
+export interface PageHeadingTypes {
     actions: Action[]
     actionActualMethod?: string
     afterTitle?: {

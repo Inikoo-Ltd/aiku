@@ -12,7 +12,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
-use App\Http\Resources\Masters\MasterSubDepartmentsResource;
+use App\Http\Resources\Masters\MasterSubDepartmentResource;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -39,7 +39,7 @@ class GetMasterProductCategoryShowcase
                         'masterSubDepartment' => $productCategory->id
                     ]
                 ],
-                'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
+                'subDepartment' => MasterSubDepartmentResource::make($productCategory)->resolve(),
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),

@@ -21,9 +21,9 @@ class GetAddressData
     {
         $selectOptions = [];
         if ($shop) {
-            $countries = Country::whereNotIn('id', $shop->forbidden_dispatch_countries ?? [])->get();
+            $countries = Country::where('status', true)->where('show_in_address', true)->whereNotIn('id', $shop->forbidden_dispatch_countries ?? [])->get();
         } else {
-            $countries = Country::all();
+            $countries = Country::where('status', true)->where('show_in_address', true)->get();
         }
         /** @var Country $country */
         foreach ($countries as $country) {

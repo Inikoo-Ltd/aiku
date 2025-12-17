@@ -28,10 +28,18 @@ class UpdateWorkshopOutbox extends OrgAction
         $email = $outbox->emailOngoingRun->email;
 
         /** @var Snapshot $snapshot */
-        $snapshot = StoreEmailSnapshot::run(
-            $email,
-            [
-                'builder' => SnapshotBuilderEnum::BLADE,
+
+        $snapshot = $email->unpublishedSnapshot;
+        if ($snapshot) {
+            // update existing snapshot
+            $modelData['builder'] = $outbox->builder->value ?? $snapshot->builder->value;
+            $this->update($snapshot, $modelData);
+            unset($modelData['builder']);
+        } else {
+            $snapshot = StoreEmailSnapshot::run(
+                $email,
+                [
+                'builder' => $outbox->builder->value ?? SnapshotBuilderEnum::BEEFREE,
                 'state'          => SnapshotStateEnum::UNPUBLISHED,
                 'published_at'   => now(),
                 'layout'         => Arr::get($modelData, 'layout'),
@@ -40,7 +48,9 @@ class UpdateWorkshopOutbox extends OrgAction
                 'publisher_id'   => Arr::get($modelData, 'publisher_id'),
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
-        );
+            );
+        }
+
 
         $updateData = [
             'unpublished_snapshot_id'   => $snapshot->id

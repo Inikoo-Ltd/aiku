@@ -29,7 +29,7 @@ enum ProductTabsEnum: string
     case FAVOURITES = 'favourites';
     case REMINDERS = 'reminders';
     case ATTACHMENTS = 'attachments';
-
+    case CUSTOMERS = 'customers';
 
 
     public function blueprint(): array
@@ -94,7 +94,10 @@ enum ProductTabsEnum: string
                 'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
             ],
-
+            ProductTabsEnum::CUSTOMERS => [
+                'title' => __('Customers'),
+                'icon'  => 'fal fa-user',
+            ],
         };
     }
 }

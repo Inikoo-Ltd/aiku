@@ -70,6 +70,11 @@ class SubmitOrder extends OrgAction
                 }
 
                 $transaction->update($transactionData);
+
+                if ($transaction->asset) {
+                    $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
+                }
+
             }
         }
 
@@ -82,6 +87,7 @@ class SubmitOrder extends OrgAction
                 ]
             );
         }
+
 
 
         if ($order->customer_client_id) {

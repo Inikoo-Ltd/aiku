@@ -139,9 +139,9 @@ class IndexWebUsersInFulfilmentCRM extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withEmptyState()
-                ->column(key: 'username', label: __('username'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true);
             $table
-                ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Created at'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'action', label: __('Action'), canBeHidden: false)
                 ->defaultSort('username');

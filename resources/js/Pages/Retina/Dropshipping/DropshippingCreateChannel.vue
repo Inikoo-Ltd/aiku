@@ -1,417 +1,428 @@
 <script setup lang="ts">
-import {Head, router,usePage} from "@inertiajs/vue3";
-import PageHeading from "@/Components/Headings/PageHeading.vue";
-import {capitalize} from "@/Composables/capitalize";
-import { inject, ref, watch, onMounted, provide } from "vue";
+import { Head, router, usePage } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { capitalize } from "@/Composables/capitalize"
+import { inject, ref, watch, onMounted, provide } from "vue"
 
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
-import {Tabs as TSTabs} from "@/types/Tabs";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import {routeType} from "@/types/route";
+import { PageHeadingTypes } from "@/types/PageHeading"
+import { Tabs as TSTabs } from "@/types/Tabs"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { routeType } from "@/types/route"
 
-import {trans} from "laravel-vue-i18n";
-import Modal from "@/Components/Utils/Modal.vue";
-import Dialog from 'primevue/dialog';
-import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
-import PureInput from "@/Components/Pure/PureInput.vue";
-import {notify} from "@kyvg/vue3-notification";
+import { trans } from "laravel-vue-i18n"
+import Modal from "@/Components/Utils/Modal.vue"
+import Dialog from "primevue/dialog"
+import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import { notify } from "@kyvg/vue3-notification"
 
-import {layoutStructure} from "@/Composables/useLayoutStructure";
-import axios from "axios";
-import PurePassword from "@/Components/Pure/PurePassword.vue";
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import axios from "axios"
+import PurePassword from "@/Components/Pure/PurePassword.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
+import { faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import EbayProgressBar from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayProgressBar.vue";
-import EbayAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAccountNameForm.vue";
-import EbaySiteForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbaySiteForm.vue";
-import EbayAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAuthKeyForm.vue";
-import EbayListingProfileNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileNameForm.vue";
-import EbayListingProfileConfirmationForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileConfirmationForm.vue";
+import ProgressBar from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/ProgressBar.vue"
+import EbayAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAccountNameForm.vue"
+import EbaySiteForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbaySiteForm.vue"
+import EbayAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayAuthKeyForm.vue"
+import EbayListingProfileNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileNameForm.vue"
+import EbayListingProfileConfirmationForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelEbay/EbayListingProfileConfirmationForm.vue"
+import WooAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooAccountNameForm.vue"
+import WooAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooAuthKeyForm.vue"
+import WooConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooConnectedFinish.vue"
 library.add(faInfoCircle)
 
-library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers);
+library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
 
 const props = defineProps<{
-    title: string,
-    pageHead: PageHeadingTypes
-    tabs: TSTabs
-    shopify_url: string
-    unlinkRoute: routeType
-    fetchCustomerRoute: routeType
-    shop: object
-    tiktokAuth: {
-        url: string
-        isAuthenticated: boolean
-        isAuthenticatedExpired: boolean
-        tiktokName: string
-        deleteAccountRoute: routeType
-    }
-    type_manual: {
-        createRoute: routeType
-        isAuthenticated: boolean
-    }
-    type_shopify: {
-        createRoute: routeType
-        connectRoute?: {
-            url: string
-        }
-        isAuthenticated: boolean
-        shopify_url: string
-    }
-    type_woocommerce: {
-        connectRoute: routeType
-        isConnected: boolean
-    }
-    type_ebay: {
-        connectRoute: routeType
-    }
-    type_amazon: {
-        connectRoute: routeType
-    }
-    type_magento: {
-        connectRoute: routeType
-    }
-    total_channels: {
-        manual: number
-        shopify: number
-        woocommerce: number
-        tiktok: number
-        ebay: number
-        amazon: number
-        magento: number
-    }
-}>();
+	title: string
+	pageHead: PageHeadingTypes
+	tabs: TSTabs
+	shopify_url: string
+	unlinkRoute: routeType
+	fetchCustomerRoute: routeType
+	shop: object
+	tiktokAuth: {
+		url: string
+		isAuthenticated: boolean
+		isAuthenticatedExpired: boolean
+		tiktokName: string
+		deleteAccountRoute: routeType
+	}
+	type_manual: {
+		createRoute: routeType
+		isAuthenticated: boolean
+	}
+	type_shopify: {
+		createRoute: routeType
+		connectRoute?: {
+			url: string
+		}
+		isAuthenticated: boolean
+		shopify_url: string
+	}
+	type_woocommerce: {
+		connectRoute: routeType
+		isConnected: boolean
+	}
+	type_ebay: {
+		connectRoute: routeType
+		is_active: boolean
+	}
+	type_amazon: {
+		connectRoute: routeType
+	}
+	type_magento: {
+		connectRoute: routeType
+	}
+	total_channels: {
+		manual: number
+		shopify: number
+		woocommerce: number
+		tiktok: number
+		ebay: number
+		amazon: number
+		magento: number
+	}
+}>()
 
-const layout = inject("layout", layoutStructure);
+const layout = inject("layout", layoutStructure)
 
-const isModalOpen = ref<string | boolean>(false);
-const isPlatformCreateLoading = ref<string | boolean>(false);
-const websiteInput = ref<string | null>(null);
-const isLoading = ref<string | boolean>(false);
-const errorShopify = ref('')
+const isModalOpen = ref<string | boolean>(false)
+const isPlatformCreateLoading = ref<string | boolean>(false)
+const websiteInput = ref<string | null>(null)
+const isLoading = ref<string | boolean>(false)
+const errorShopify = ref("")
 const onCreateStoreShopify = async () => {
-    errorShopify.value = ''
-    isLoading.value = true
-    try {
-        const data = await axios['post'](
-            route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
-            {
-                name: websiteInput.value
-            }
-        )
-        isModalOpen.value = false;
-        websiteInput.value = null;
-        router.reload({
-            only: ['total_channels']
-        });
-        window.open(data.data, "_blank");
-
-    } catch (error) {
-        errorShopify.value = error.response?.data?.message
-        notify({
-            title: trans("Something went wrong"),
-            text: error.response?.data?.message,
-            type: "error"
-        });
-    }
-    isLoading.value = false
-
-};
+	errorShopify.value = ""
+	isLoading.value = true
+	try {
+		const data = await axios["post"](
+			route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
+			{
+				name: websiteInput.value,
+			}
+		)
+		isModalOpen.value = false
+		websiteInput.value = null
+		router.reload({
+			only: ["total_channels"],
+		})
+		window.open(data.data, "_blank")
+	} catch (error) {
+		errorShopify.value = error.response?.data?.message
+		notify({
+			title: trans("Something went wrong"),
+			text: error.response?.data?.message,
+			type: "error",
+		})
+	}
+	isLoading.value = false
+}
 
 // Section: Woocommerce
-const isModalWooCommerce = ref<boolean>(false);
+const isModalWooCommerce = ref<boolean>(false)
 const wooCommerceInput = ref({
-    name: null as null | string,
-    url: null as null | string
-});
-const onSubmitWoocommerce = async () => {
-    try {
-        const response = await axios.post(
-            route(props.type_woocommerce?.connectRoute?.name, props.type_woocommerce.connectRoute.parameters),
-            wooCommerceInput.value);
-        isModalWooCommerce.value = false;
-        wooCommerceInput.value.name = null;
-        wooCommerceInput.value.url = null;
-
-        window.location.href = response.data;
-    } catch (error) {
-        console.log("error", error);
-        notify({
-            title: trans("Something went wrong"),
-            text: error.response?.data?.message,
-            type: "error"
-        });
-    }
-}
+	name: null as null | string,
+	url: null as null | string,
+})
 
 // Section: Manual
 const isModalManual = ref(false)
-const errManual = ref('')
+const errManual = ref("")
 const manualInput = ref({
-    name: null as null | string,
-});
+	name: null as null | string,
+})
 const onSubmitManual = async () => {
-    isLoading.value = true;
-    try {
-        const response = await axios.post(
-            route(props.type_manual?.createRoute.name, props.type_manual?.createRoute.parameters),
-            manualInput.value);
-        isModalManual.value = false;
-        manualInput.value.name = null;
+	isLoading.value = true
+	try {
+		const response = await axios.post(
+			route(props.type_manual?.createRoute.name, props.type_manual?.createRoute.parameters),
+			manualInput.value
+		)
+		isModalManual.value = false
+		manualInput.value.name = null
 
-
-        notify({
-            title: trans("Success!"),
-            text: trans("Your Manual store has been created."),
-            type: "success",
-        })
-        router.get(
-            route('retina.dropshipping.customer_sales_channels.show', {
-                customerSalesChannel: response.data.slug
-            })
-        )
-    } catch (error) {
-        errManual.value = error.response?.data?.message
-        notify({
-            title: trans("Something went wrong"),
-            text: error.response?.data?.message,
-            type: "error"
-        });
-    }
-    isLoading.value = false;
+		notify({
+			title: trans("Success!"),
+			text: trans("Your Manual store has been created."),
+			type: "success",
+		})
+		router.get(
+			route("retina.dropshipping.customer_sales_channels.show", {
+				customerSalesChannel: response.data.slug,
+			})
+		)
+	} catch (error) {
+		errManual.value = error.response?.data?.message
+		notify({
+			title: trans("Something went wrong"),
+			text: error.response?.data?.message,
+			type: "error",
+		})
+	}
+	isLoading.value = false
 }
 
 // Section: amazon
 const onSubmitAmazon = async () => {
-    const response = await axios.post(
-        route(props.type_amazon.connectRoute.name, props.type_amazon.connectRoute.parameters));
+	const response = await axios.post(
+		route(props.type_amazon.connectRoute.name, props.type_amazon.connectRoute.parameters)
+	)
 
-    window.location.href = response.data;
-};
-
-// Section: Woocommerce
-const isModalMagento = ref<boolean>(false);
-const errMagento = ref('')
-const magentoInput = ref({
-    username: null as null | string,
-    password: null as null | string,
-    url: null as null | string
-});
-
-interface Modal {
-    title: string
-    description: string
-    type: 'success' | 'error' | 'info' | 'warning'
+	window.location.href = response.data
 }
 
-watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    console.log('modal ret', modal)
-    if (!modal) return
-
+// Section: Woocommerce
+const isModalMagento = ref<boolean>(false)
+const errMagento = ref("")
+const magentoInput = ref({
+	username: null as null | string,
+	password: null as null | string,
+	url: null as null | string,
 })
 
+interface Modal {
+	title: string
+	description: string
+	type: "success" | "error" | "info" | "warning"
+}
+
+watch(
+	() => usePage().props?.flash?.modal,
+	(modal: Modal) => {
+		console.log("modal ret", modal)
+		if (!modal) return
+	}
+)
+
 const onSubmitMagento = async () => {
-    try {
-        isLoading.value = true;
-        const response = await axios.post(
-            route(props.type_magento.connectRoute.name, props.type_magento.connectRoute.parameters), magentoInput.value);
+	try {
+		isLoading.value = true
+		const response = await axios.post(
+			route(props.type_magento.connectRoute.name, props.type_magento.connectRoute.parameters),
+			magentoInput.value
+		)
 
-        isModalMagento.value = false;
-        magentoInput.value.name = null;
+		isModalMagento.value = false
+		magentoInput.value.name = null
 
-        notify({
-            title: trans("Success!"),
-            text: trans("Your Magento store has been created."),
-            type: "success",
-        })
+		notify({
+			title: trans("Success!"),
+			text: trans("Your Magento store has been created."),
+			type: "success",
+		})
 
-        router.get(
-            route('retina.dropshipping.customer_sales_channels.show', {
-                customerSalesChannel: response.data.slug
-            })
-        )
+		router.get(
+			route("retina.dropshipping.customer_sales_channels.show", {
+				customerSalesChannel: response.data.slug,
+			})
+		)
+	} catch (error) {
+		errMagento.value = error.response?.data?.message
+		notify({
+			title: trans("Something went wrong"),
+			text: error.response?.data?.message,
+			type: "error",
+		})
+	}
 
-    } catch (error) {
-        errMagento.value = error.response?.data?.message
-        notify({
-            title: trans("Something went wrong"),
-            text: error.response?.data?.message,
-            type: "error"
-        });
-    }
-
-    isLoading.value = false;
-};
+	isLoading.value = false
+}
 
 // Section: Ebay
 const isModalEbay = ref(false)
 
 const closeModalEbayDuplicate = () => {
-    router.get(window.location.origin + window.location.pathname)
-    isModalEbayDuplicate.value = false
+	router.get(window.location.origin + window.location.pathname)
+	isModalEbayDuplicate.value = false
 }
 
 const isModalEbayDuplicate = ref(false)
-    // console.log('window', window.location)
-    onMounted(() => {
-    const query = new URLSearchParams(window.location.search)
-    const status = query.get('status')
-    const reason = query.get('reason')
+// console.log('window', window.location)
+onMounted(() => {
+	const query = new URLSearchParams(window.location.search)
+	const status = query.get("status")
+	const reason = query.get("reason")
 
-        if (status === 'error' && reason === 'duplicate-ebay') {
-            isModalEbayDuplicate.value = true
-            // router.get(window.location.origin + window.location.pathname)
-        }
+	if (status === "error" && reason === "duplicate-ebay") {
+		isModalEbayDuplicate.value = true
+		// router.get(window.location.origin + window.location.pathname)
+	}
 
-        if(route().params?.['continueEbayRegistration']) {
-            openCreateEbayModal();
-        }
-    })
+	if (route().params?.["continueEbayRegistration"]) {
+		openCreateEbayModal()
+	}
+})
 
-const isModalCreateEbay = ref(false);
-const ebayId = ref<int|null>(null);
-const customerSalesChannelId = ref<int|null>(null);
-const ebayName = ref<string|null>(null);
+const isModalCreateEbay = ref(false)
+const ebayId = ref<int | null>(null)
+const customerSalesChannelId = ref<int | null>(null)
+const ebayName = ref<string | null>(null)
 
-watch(customerSalesChannelId, (value) => {
-    console.log("customerSalesChannelId", value)
-}, { immediate: true });
+watch(
+	customerSalesChannelId,
+	(value) => {
+		console.log("customerSalesChannelId", value)
+	},
+	{ immediate: true }
+)
 
 const closeCreateEbayModal = () => {
-    isModalCreateEbay.value = false;
-    ebayId.value = null;
-    ebayName.value = null;
+	isModalCreateEbay.value = false
+	ebayId.value = null
+	ebayName.value = null
+}
+
+const closeCreateWooModal = () => {
+	isModalWooCommerce.value = false
 }
 
 const openCreateEbayModal = async () => {
-    isPlatformCreateLoading.value = true;
-    const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.creating_check'));
+	isPlatformCreateLoading.value = true
+	const { data } = await axios.get(
+		route("retina.dropshipping.customer_sales_channels.ebay.creating_check")
+	)
 
-    if(data) {
-        ebayId.value = data.id;
-        customerSalesChannelId.value = data.customer_sales_channel_id;
-        ebayName.value = data.name;
-        switch (data.step) {
-            case 'name':
-                currentStep.value = 1
-                steps.value[0].status = "complete";
-                steps.value[1].status = "current";
-                steps.value[2].status = "upcoming";
-                break
-            case 'marketplace':
-                currentStep.value = 1
-                steps.value[0].status = "complete";
-                steps.value[1].status = "current";
-                steps.value[2].status = "upcoming";
-                break
-            case 'auth':
-                currentStep.value = 2
-                steps.value[0].status = "complete";
-                steps.value[1].status = "complete";
-                steps.value[2].status = "current";
-                break
-            default:
-                currentStep.value = 0
-                steps.value[0].status = "current";
-                steps.value[1].status = "upcoming";
-                steps.value[2].status = "upcoming";
-        }
-    }
+	if (data) {
+		ebayId.value = data.id
+		customerSalesChannelId.value = data.customer_sales_channel_id
+		ebayName.value = data.name
+		switch (data.step) {
+			case "name":
+				currentStep.value = 1
+				steps.value[0].status = "complete"
+				steps.value[1].status = "current"
+				steps.value[2].status = "upcoming"
+				break
+			case "marketplace":
+				currentStep.value = 1
+				steps.value[0].status = "complete"
+				steps.value[1].status = "current"
+				steps.value[2].status = "upcoming"
+				break
+			case "auth":
+				currentStep.value = 2
+				steps.value[0].status = "complete"
+				steps.value[1].status = "complete"
+				steps.value[2].status = "current"
+				break
+			default:
+				currentStep.value = 0
+				steps.value[0].status = "current"
+				steps.value[1].status = "upcoming"
+				steps.value[2].status = "upcoming"
+		}
+	}
 
-    isPlatformCreateLoading.value = false;
-    isModalCreateEbay.value = true;
+	isPlatformCreateLoading.value = false
+	isModalCreateEbay.value = true
 }
 
-provide("closeCreateEbayModal", closeCreateEbayModal);
-provide("ebayId", ebayId);
-provide("ebayName", ebayName);
-provide("customerSalesChannelId", customerSalesChannelId);
+provide("closeCreateEbayModal", closeCreateEbayModal)
+provide("closeCreateWooModal", closeCreateWooModal)
+provide("ebayId", ebayId)
+provide("ebayName", ebayName)
+provide("customerSalesChannelId", customerSalesChannelId)
 
 const steps = ref([
-    { name: "Ebay Account Name", status: "current" },
-    // { name: "Ebay Site", status: "upcoming" },
-    { name: "Ebay Auth Key", status: "upcoming" },
-    // { name: "Ebay Listing Profile Name", status: "upcoming" },
-    { name: "Ebay Listing Profile Confirmation", status: "upcoming" }
-]);
+	{ name: "Account Name", status: "current" },
+	// { name: "Ebay Site", status: "upcoming" },
+	{ name: "Auth Key", status: "upcoming" },
+	// { name: "Ebay Listing Profile Name", status: "upcoming" },
+	{ name: "Listing Profile Confirmation", status: "upcoming" },
+])
 
-provide("steps", steps);
+provide("steps", steps)
 
 const stepComponents = [
-    EbayAccountNameForm,
-    // EbaySiteForm,
-    EbayAuthKeyForm,
-    // EbayListingProfileNameForm,
-    EbayListingProfileConfirmationForm
-];
+	EbayAccountNameForm,
+	// EbaySiteForm,
+	EbayAuthKeyForm,
+	// EbayListingProfileNameForm,
+	EbayListingProfileConfirmationForm,
+]
 
-const currentStep = ref(0);
+const stepWooComponents = [WooAccountNameForm, WooAuthKeyForm, WooConnectedFinish]
 
-provide("currentStep", currentStep);
+const currentStep = ref(0)
+
+provide("currentStep", currentStep)
 
 const goNext = () => {
-    if (currentStep.value < steps.value.length - 1) {
-        steps.value[currentStep.value].status = "complete";
-        currentStep.value++;
-        steps.value[currentStep.value].status = "current";
-    }
-};
+	if (currentStep.value < steps.value.length - 1) {
+		steps.value[currentStep.value].status = "complete"
+		currentStep.value++
+		steps.value[currentStep.value].status = "current"
+	}
+}
 
-provide("goNext", goNext);
+provide("goNext", goNext)
 </script>
 
 <template>
+	<Head :title="capitalize(title)" />
+	<PageHeading :data="pageHead" />
+	<div class="mt-4 px-4 md:px-6">
+		<div class="text-base py-2 w-fit">{{ trans("Select channel you want to create") }}:</div>
+		<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
+			<!-- Section: Manual -->
+			<div
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="https://aw.aurora.systems/art/aurora_log_v2_orange.png"
+						alt=""
+						class="h-9 sm:h-12" />
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							{{ trans("Web") }}/API
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.manual }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
 
-    <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead"/>
-    <div class="mt-4 px-4 md:px-6">
-        <div class="text-base py-2 w-fit">{{ trans("Select channel you want to create") }}:</div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
-            <!-- Section: Manual -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <div
-                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-9 sm:h-12">
-                    <div class="flex flex-col">
-                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">{{ trans("Web") }}/API</div>
-                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
-                    </div>
-                </div>
+				<div class="w-full flex justify-end">
+					<Button @click="() => (isModalManual = true)" :label="trans('Create')" full />
+				</div>
+			</div>
 
-                <div class="w-full flex justify-end">
-                    <Button
-                        @click="() => isModalManual = true"
-                        :label="trans('Create')"
-                        full
-                    />
-                </div>
-            </div>
+			<!-- Section: Shopify -->
+			<div
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="/assets/channel_logo/shopify.svg"
+						class="h-9 sm:h-12"
+						alt="Shopify"
+						v-tooltip="'Shopify'" />
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Shopify
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.shopify }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
+				<!-- Button: Connect -->
+				<div class="relative w-full">
+					<Button
+						@click="() => (isModalOpen = 'shopify')"
+						label="Connect"
+						type="primary"
+						full />
+				</div>
+			</div>
 
-            <!-- Section: Shopify -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <div
-                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <img
-                        src="/assets/channel_logo/shopify.svg"
-                        class="h-9 sm:h-12"
-                        alt="Shopify"
-                        v-tooltip="'Shopify'"
-                    />
-                    <div class="flex flex-col">
-                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Shopify</div>
-                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
-                    </div>
-                </div>
-                <!-- Button: Connect -->
-                <div class="relative w-full">
-                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
-                </div>
-            </div>
-
-            <!-- Section: Tiktok -->
-<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+			<!-- Section: Tiktok -->
+			<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img
@@ -443,314 +454,415 @@ provide("goNext", goNext);
                 </div>
             </div>-->
 
-            <!-- Section: Woocommerce -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <div
-                    class="truncate md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <img
-                        src="/assets/channel_logo/woocommerce.svg"
-                        class="h-9 sm:h-12 min-w-6"
-                        alt="Woocommerce"
-                        v-tooltip="'Woocommerce'"
-                    />
+			<!-- Section: Woocommerce -->
+			<div
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="truncate md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="/assets/channel_logo/woocommerce.svg"
+						class="h-9 sm:h-12 min-w-6"
+						alt="Woocommerce"
+						v-tooltip="'Woocommerce'" />
 
-                    <div class="flex flex-col">
-                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Woocommerce</div>
-                        <div class="text-xs text-gray-500 text-center sm:text-left">
-                            {{ total_channels?.woocommerce }} {{ trans("Channels") }}
-                        </div>
-                    </div>
-                </div>
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Woocommerce
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.woocommerce }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
 
-                <div class="w-full flex justify-end">
-                    <Button
-                        :label="trans('Connect')"
-                        type="primary"
-                        full
-                        @click="() => isModalWooCommerce = true"
-                    />
-                </div>
-            </div>
-            <!-- Section: Ebay -->
-            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <div
-                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
-                         alt="" class="h-9 sm:h-12"
-                    >
+				<div class="w-full flex justify-end">
+					<Button
+						:label="trans('Connect')"
+						type="primary"
+						full
+						@click="() => (isModalWooCommerce = true)" />
+				</div>
+			</div>
+			<!-- Section: Ebay -->
+			<div
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
+						alt=""
+						class="h-9 sm:h-12" />
 
-                    <div class="flex flex-col">
-                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Ebay</div>
-                        <div
-                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.ebay }} {{ trans("Channels") }}
-                        </div>
-                    </div>
-                </div>
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Ebay
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.ebay }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
 
-                <div class="w-full flex justify-end">
+				<div class="w-full flex justify-end">
+					<Button
+						:loading="isPlatformCreateLoading"
+						v-if="type_ebay.is_active"
+						:label="trans('Connect')"
+						xtype="primary"
+						type="primary"
+						full
+						@click="openCreateEbayModal" />
 
-<!--                    <Button-->
-<!--                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"-->
-<!--                        :label="trans('Connect')"-->
-<!--                        xtype="primary"-->
-<!--                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"-->
-<!--                        full-->
-<!--                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"-->
-<!--                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"-->
-<!--                    />-->
+					<Button v-else :label="trans('Maintenance')" type="tertiary" disabled full />
+				</div>
+			</div>
 
-                    <Button
-                        :loading="isPlatformCreateLoading"
-                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
-                        :label="trans('Connect')"
-                        xtype="primary"
-                        type="primary"
-                        full
-                        @click="openCreateEbayModal"
-                    />
+			<!-- Section: Amazon -->
+			<div
+				v-if="layout?.app?.environment === 'local'"
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="/assets/channel_logo/amazon_simple.svg"
+						class="h-9 sm:h-12"
+						:class="
+							layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''
+						"
+						alt="Amazon"
+						v-tooltip="'Amazon'" />
 
-<!--                    <Button xv-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
-                </div>
-            </div>
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Amazon
+						</div>
+						<div
+							v-if="
+								layout?.app?.environment === 'local' ||
+								layout?.app?.environment === 'staging'
+							"
+							class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
 
-            <!-- Section: Amazon -->
-<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <div
-                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <img
-                        src="/assets/channel_logo/amazon_simple.svg"
-                        class="h-9 sm:h-12"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
-                        alt="Amazon"
-                        v-tooltip="'Amazon'"
-                    />
+				<div class="w-full flex justify-end">
+					<Button
+						v-if="
+							layout?.app?.environment === 'local' ||
+							layout?.app?.environment === 'staging'
+						"
+						:label="trans('Connect')"
+						type="primary"
+						full
+						iconRight="fal fa-external-link-alt"
+						@click="onSubmitAmazon" />
 
-                    <div class="flex flex-col">
-                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Amazon</div>
-                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
-                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
-                        </div>
-                    </div>
-                </div>
+					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+				</div>
+			</div>
 
-                <div class="w-full flex justify-end">
-                    <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
-                        :label="trans('Connect')"
-                        type="primary"
-                        full
-                        iconRight="fal fa-external-link-alt"
-                        @click="onSubmitAmazon"
-                    />
+			<!-- Section: Magento -->
+			<div
+				v-if="layout?.app?.environment === 'local'"
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
+						alt=""
+						class="h-12 filter" />
 
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Magento
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.magento ?? 0 }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
 
-                </div>
-            </div>-->
+				<div class="w-full flex justify-end">
+					<Button
+						v-if="layout?.app?.environment === 'local'"
+						:label="trans('Connect')"
+						type="primary"
+						full
+						@click="() => (isModalMagento = true)" />
+					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+				</div>
+			</div>
 
-            <!-- Section: Magento -->
-<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-                <div
-                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                     <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
-                        alt="" class="h-12 filter"
-                    >
+			<!-- Section: Faire -->
+			<div
+				v-if="layout?.app?.environment === 'local'"
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img src="https://i.ibb.co.com/9mCLCxLh/faire.png" alt="" class="h-12 filter" />
 
-                    <div class="flex flex-col">
-                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Magento</div>
-                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.magento ?? 0 }} {{
-                                trans("Channels")
-                            }}
-                        </div>
-                    </div>
-                </div>
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Faire
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.faire ?? 0 }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
 
-                <div class="w-full flex justify-end">
-                    <Button
-                        v-if="layout?.app?.environment === 'local'"
-                        :label="trans('Connect')"
-                        type="primary"
-                        full
-                        @click="() => isModalMagento = true"
-                    />
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
-                </div>
-            </div>-->
-        </div>
-    </div>
+				<div class="w-full flex justify-end">
+					<Button
+						v-if="layout?.app?.environment === 'local'"
+						:label="trans('Connect')"
+						type="primary"
+						full
+						@click="() => (isModalMagento = true)" />
+					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+				</div>
+			</div>
 
-    <!-- Modal: Shopify -->
-    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
-        <div class="h-fit">
-            <div class="mb-6">
-                <div class="text-center font-semibold text-xl">
-                    {{ trans("Please enter your Shopify unique domain name") }}
-                </div>
+			<!-- Section: Wix -->
+			<div
+				v-if="layout?.app?.environment === 'local'"
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="https://cdn-icons-png.flaticon.com/512/5968/5968762.png"
+						alt=""
+						class="h-12 filter" />
 
-                <div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
-                    {{ trans("You will be able to find it in your Shopify settings under domains section.") }}
-                </div>
-            </div>
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Wix
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.wix ?? 0 }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
 
-            <PureInputWithAddOn
-                v-model="websiteInput"
-                @update:model-value="() => errorShopify = ''"
-                :leftAddOn="{
-                    icon: 'fal fa-globe'
-                }"
-                :rightAddOn="{
-                    label: shopify_url
-                }"
-                @keydown.enter="() => onCreateStoreShopify()"
-            />
+				<div class="w-full flex justify-end">
+					<Button
+						v-if="layout?.app?.environment === 'local'"
+						:label="trans('Connect')"
+						type="primary"
+						full
+						@click="() => (isModalMagento = true)" />
+					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+				</div>
+			</div>
+		</div>
+	</div>
 
-            <div class="mt-1 text-xs text-gray-500">
-                {{ trans("Not sure which is your Shopify store name?") }} <a href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view" target="_blank" class="underline hover:text-gray-700">Click here</a>
-            </div>
+	<!-- Modal: Shopify -->
+	<Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
+		<div class="h-fit">
+			<div class="mb-6">
+				<div class="text-center font-semibold text-xl">
+					{{ trans("Please enter your Shopify unique domain name") }}
+				</div>
 
-            <Transition name="slide-to-right">
-                <div v-if="errorShopify" class="text-red-500 italic text-sm mt-2">
-                    *{{ errorShopify }}
-                </div>
-            </Transition>
+				<div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
+					{{
+						trans(
+							"You will be able to find it in your Shopify settings under domains section."
+						)
+					}}
+				</div>
+			</div>
 
-            <Button @click="() => onCreateStoreShopify()" full :label="trans('Connect')" :loading="!!isLoading" class="mt-6" />
-        </div>
-    </Modal>
+			<PureInputWithAddOn
+				v-model="websiteInput"
+				@update:model-value="() => (errorShopify = '')"
+				:leftAddOn="{
+					icon: 'fal fa-globe',
+				}"
+				:rightAddOn="{
+					label: shopify_url,
+				}"
+				@keydown.enter="() => onCreateStoreShopify()" />
 
-    <!-- Modal: Manual -->
-    <Modal :isOpen="isModalManual" @onClose="isModalManual = false" width="w-full max-w-lg">
-        <div class="">
-            <div class="mb-4">
-                <div class="text-center font-semibold text-xl">
-                    {{ trans("Create platform manual") }}
-                </div>
+			<div class="mt-1 text-xs text-gray-500">
+				{{ trans("Not sure which is your Shopify store name?") }}
+				<a
+					href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view"
+					target="_blank"
+					class="underline hover:text-gray-700"
+					>Click here</a
+				>
+			</div>
 
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter the name of manual platform") }}
-                    <FontAwesomeIcon v-tooltip="trans('You can change the name later in Edit section')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true" />
-                </div>
-            </div>
+			<Transition name="slide-to-right">
+				<div v-if="errorShopify" class="text-red-500 italic text-sm mt-2">
+					*{{ errorShopify }}
+				</div>
+			</Transition>
 
-            <div class="flex flex-col gap-y-2" :class="errManual ? 'errorShake' : ''">
-                <PureInput
-                    v-model="manualInput.name"
-                    @update:modelValue="() => errManual = ''"
-                    :placeholder="trans('Enter new store name')"
-                    :maxLength="28"
-                    @onEnter="() => onSubmitManual()"></PureInput>
-            </div>
+			<Button
+				@click="() => onCreateStoreShopify()"
+				full
+				:label="trans('Connect')"
+				:loading="!!isLoading"
+				class="mt-6" />
+		</div>
+	</Modal>
 
-            <div v-if="errManual" class="text-red-500 italic text-sm mt-2">
-                *{{ errManual }}
-            </div>
+	<!-- Modal: Manual -->
+	<Modal :isOpen="isModalManual" @onClose="isModalManual = false" width="w-full max-w-lg">
+		<div class="">
+			<div class="mb-4">
+				<div class="text-center font-semibold text-xl">
+					{{ trans("Create platform manual") }}
+				</div>
 
-            <Button @click="() => onSubmitManual()" full label="Create" :loading="!!isLoading" class="mt-6"/>
-        </div>
-    </Modal>
+				<div class="text-center text-xs text-gray-500">
+					{{ trans("Enter the name of manual platform") }}
+					<FontAwesomeIcon
+						v-tooltip="trans('You can change the name later in Edit section')"
+						icon="fal fa-info-circle"
+						class="text-gray-400 hover:text-gray-600 cursor-pointer"
+						fixed-width
+						aria-hidden="true" />
+				</div>
+			</div>
 
-    <!-- Modal: Woocommerce -->
-    <Modal :isOpen="isModalWooCommerce" @onClose="isModalWooCommerce = false" width="w-full max-w-lg">
-        <div class="">
-            <div class="mb-4">
-                <div class="text-center font-semibold text-xl">
-                    {{ trans("WooCommerce store Url") }}
-                </div>
+			<div class="flex flex-col gap-y-2" :class="errManual ? 'errorShake' : ''">
+				<PureInput
+					v-model="manualInput.name"
+					@update:modelValue="() => (errManual = '')"
+					:placeholder="trans('Enter new store name')"
+					:maxLength="28"
+					@onEnter="() => onSubmitManual()"></PureInput>
+			</div>
 
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Woocommerce store url") }}
-                </div>
-            </div>
+			<div v-if="errManual" class="text-red-500 italic text-sm mt-2">*{{ errManual }}</div>
 
-            <div class="flex flex-col gap-y-2">
-                <PureInput v-model="wooCommerceInput.name" :placeholder="trans('Your store name')"></PureInput>
-                <PureInputWithAddOn v-model="wooCommerceInput.url" :leftAddOn="{
-                    icon: 'fal fa-globe'
-                }" :placeholder="'e.g https://storeurlexample.com'"
-                                    @keydown.enter="() => onSubmitWoocommerce()"/>
-            </div>
+			<Button
+				@click="() => onSubmitManual()"
+				full
+				label="Create"
+				:loading="!!isLoading"
+				class="mt-6" />
+		</div>
+	</Modal>
 
-            <Button @click="() => onSubmitWoocommerce()" full label="Create" :loading="!!isLoading" class="mt-6"/>
-        </div>
-    </Modal>
+	<!-- Modal: Woocommerce -->
+	<Modal
+		:isOpen="isModalWooCommerce"
+		@onClose="isModalWooCommerce = false"
+		width="w-full max-w-lg">
+		<div class="flex flex-col gap-6">
+			<ProgressBar />
+			<component :is="stepWooComponents[currentStep]" :props="props" />
+		</div>
+	</Modal>
 
-    <!-- Modal: Ebay -->
-    <Modal :isOpen="isModalEbay" @onClose="isModalEbay = false" width="w-full max-w-lg">
-        <div class="">
-            <div>
-                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100 border border-amber-300 text-xl">
-                    <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-amber-600" fixed-width aria-hidden="true" />
-                </div>
-                <div class="mt-3 text-center sm:mt-5">
-                    <DialogTitle as="h3" class="text-base font-semibold text-amber-600">Warning</DialogTitle>
-                    <div class="mt-2 text-amber-600">
-                        <p class="text-sm">You already have a shop connected to our platform. To connect a different eBay shop, please log out from your current eBay account, use a separate browser profile, or switch to another browser.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-5 sm:mt-6">
-                <Button
-                    @click="() => onSubmitEbay()"
-                    :label="trans('Connect')"
-                    full
-                />
-            </div>
-        </div>
-    </Modal>
+	<!-- Modal: Ebay -->
+	<Modal :isOpen="isModalEbay" @onClose="isModalEbay = false" width="w-full max-w-lg">
+		<div class="">
+			<div>
+				<div
+					class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100 border border-amber-300 text-xl">
+					<FontAwesomeIcon
+						icon="fad fa-exclamation-triangle"
+						class="text-amber-600"
+						fixed-width
+						aria-hidden="true" />
+				</div>
+				<div class="mt-3 text-center sm:mt-5">
+					<DialogTitle as="h3" class="text-base font-semibold text-amber-600"
+						>Warning</DialogTitle
+					>
+					<div class="mt-2 text-amber-600">
+						<p class="text-sm">
+							You already have a shop connected to our platform. To connect a
+							different eBay shop, please log out from your current eBay account, use
+							a separate browser profile, or switch to another browser.
+						</p>
+					</div>
+				</div>
+			</div>
+			<div class="mt-5 sm:mt-6">
+				<Button @click="() => onSubmitEbay()" :label="trans('Connect')" full />
+			</div>
+		</div>
+	</Modal>
 
-    <Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
-        <div class="flex flex-col gap-6">
-            <EbayProgressBar />
-            <component :is="stepComponents[currentStep]" :props="props" />
-        </div>
-    </Dialog>
+	<Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
+		<div class="flex flex-col gap-6">
+			<ProgressBar />
+			<component :is="stepComponents[currentStep]" :props="props" />
+		</div>
+	</Dialog>
 
-    <!-- Modal: Magento -->
-    <Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">
-        <div class="">
-            <div class="mb-4">
-                <div class="text-center font-semibold text-xl">
-                    {{ trans("Magento store detail") }}
-                </div>
+	<!-- Modal: Magento -->
+	<Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">
+		<div class="">
+			<div class="mb-4">
+				<div class="text-center font-semibold text-xl">
+					{{ trans("Magento store detail") }}
+				</div>
 
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Magento store detail") }}
-                </div>
-            </div>
+				<div class="text-center text-xs text-gray-500">
+					{{ trans("Enter your Magento store detail") }}
+				</div>
+			</div>
 
-            <div class="flex flex-col gap-y-2">
-                <PureInput v-model="magentoInput.username" :placeholder="trans('Username')"></PureInput>
-                <PurePassword v-model="magentoInput.password" :placeholder="trans('Password')"></PurePassword>
-                <PureInputWithAddOn v-model="magentoInput.url" :leftAddOn="{
-                    icon: 'fal fa-globe'
-                }" :placeholder="'e.g https://storeurlexample.com'"
-                                    @keydown.enter="() => onSubmitMagento()"/>
-            </div>
+			<div class="flex flex-col gap-y-2">
+				<PureInput
+					v-model="magentoInput.username"
+					:placeholder="trans('Username')"></PureInput>
+				<PurePassword
+					v-model="magentoInput.password"
+					:placeholder="trans('Password')"></PurePassword>
+				<PureInputWithAddOn
+					v-model="magentoInput.url"
+					:leftAddOn="{
+						icon: 'fal fa-globe',
+					}"
+					:placeholder="'e.g https://storeurlexample.com'"
+					@keydown.enter="() => onSubmitMagento()" />
+			</div>
 
-            <Button @click="() => onSubmitMagento()" full label="Create" :loading="!!isLoading" class="mt-6"/>
-        </div>
-    </Modal>
+			<Button
+				@click="() => onSubmitMagento()"
+				full
+				label="Create"
+				:loading="!!isLoading"
+				class="mt-6" />
+		</div>
+	</Modal>
 
-    <Modal :isOpen="isModalEbayDuplicate" @onClose="() => {isModalEbayDuplicate = false}" width="w-full max-w-lg">
-        <div>
-        <div class="mb-4">
-            <div class="text-center font-semibold text-xl">
-            {{ trans('eBay Account Already Connected') }}
-            </div>
-            <div class="text-center text-xs text-gray-500 mt-2">
-            {{ trans('To resolve this, try one of the following:') }}
-            <ul class="list-disc list-inside mt-2 text-left text-gray-500">
-                <li>{{ trans('Log out from your current eBay account.') }}</li>
-                <li>{{ trans('Switch to another browser.') }}</li>
-                <li>{{ trans('Use a separate browser profile.') }}</li>
-            </ul>
-            </div>
-        </div>
+	<Modal
+		:isOpen="isModalEbayDuplicate"
+		@onClose="
+			() => {
+				isModalEbayDuplicate = false
+			}
+		"
+		width="w-full max-w-lg">
+		<div>
+			<div class="mb-4">
+				<div class="text-center font-semibold text-xl">
+					{{ trans("eBay Account Already Connected") }}
+				</div>
+				<div class="text-center text-xs text-gray-500 mt-2">
+					{{ trans("To resolve this, try one of the following:") }}
+					<ul class="list-disc list-inside mt-2 text-left text-gray-500">
+						<li>{{ trans("Log out from your current eBay account.") }}</li>
+						<li>{{ trans("Switch to another browser.") }}</li>
+						<li>{{ trans("Use a separate browser profile.") }}</li>
+					</ul>
+				</div>
+			</div>
 
-        <div class="text-center">
-            <Button @click="closeModalEbayDuplicate" label="OK" class="mt-4 px-6" />
-        </div>
-        </div>
-    </Modal>
-
+			<div class="text-center">
+				<Button @click="closeModalEbayDuplicate" label="OK" class="mt-4 px-6" />
+			</div>
+		</div>
+	</Modal>
 </template>

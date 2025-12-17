@@ -2,7 +2,7 @@
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableCustomerPlatformOrders from "@/Components/Tables/Grp/Org/Ordering/TableCustomerPlatformOrders.vue";
 import { Head, router } from "@inertiajs/vue3";
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { capitalize } from "@/Composables/capitalize";
 import { trans } from "laravel-vue-i18n";
 import { ref } from "vue";
@@ -20,7 +20,7 @@ library.add(faStore, faBookmark);
 const props = defineProps<{
     data: {}
     title: string
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: {}

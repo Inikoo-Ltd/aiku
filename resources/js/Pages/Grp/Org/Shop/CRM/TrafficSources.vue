@@ -9,7 +9,7 @@
   import PageHeading from '@/Components/Headings/PageHeading.vue'
   import TableTrafficSources from '@/Components/Tables/Grp/Org/CRM/TableTrafficSources.vue'
   import { capitalize } from "@/Composables/capitalize"
-  import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+  import { PageHeadingTypes } from "@/types/PageHeading"
   
   
   const props = defineProps<{

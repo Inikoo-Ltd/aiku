@@ -41,12 +41,6 @@ class CreateMasterCollection extends OrgAction
         return $this->handle($masterSubDepartment, $request);
     }
 
-    public function inMasterSubDepartmentInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
-    {
-        $this->initialisationFromGroup(group(), $request);
-        return $this->handle($masterSubDepartment, $request);
-    }
-
     public function handle(MasterProductCategory|MasterShop $parent, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -80,17 +74,17 @@ class CreateMasterCollection extends OrgAction
                                 'fields' => [
                                     'code' => [
                                         'type'     => 'input',
-                                        'label'    => __('code'),
+                                        'label'    => __('Code'),
                                         'required' => true
                                     ],
                                     'name' => [
                                         'type'     => 'input',
-                                        'label'    => __('name'),
+                                        'label'    => __('Name'),
                                         'required' => true
                                     ],
                                     'description' => [
                                         'type'     => 'textarea',
-                                        'label'    => __('description'),
+                                        'label'    => __('Description'),
                                         'required' => false
                                     ],
                                     "image" => [

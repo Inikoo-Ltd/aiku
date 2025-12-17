@@ -8,12 +8,12 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -49,6 +49,7 @@ class StoreOrgStock extends OrgAction
         data_set($modelData, 'organisation_id', $organisation->id);
         data_set($modelData, 'code', $stock->code);
         data_set($modelData, 'name', $stock->name);
+        data_set($modelData, 'state', OrgStockStateEnum::ACTIVE, false);
 
 
         $orgStock = DB::transaction(function () use ($stock, $modelData, $parent) {
@@ -91,16 +92,16 @@ class StoreOrgStock extends OrgAction
     {
         $tradeUnits = [];
         foreach ($orgStock->stock->tradeUnits as $tradeUnit) {
-
             $tradeUnits[$tradeUnit->id] = [
                 'quantity' => $tradeUnit->pivot->quantity
             ];
-
         }
 
         $orgStock->tradeUnits()->sync($tradeUnits);
 
-
+        foreach ($orgStock->tradeUnits as $tradeUnit) {
+            TradeUnitHydrateStatusFromOrgStocks::dispatch($tradeUnit);
+        }
 
         return $orgStock;
     }
@@ -119,21 +120,6 @@ class StoreOrgStock extends OrgAction
         }
 
         return $rules;
-    }
-
-
-    public function prepareForValidation(): void
-    {
-        $state = match ($this->stock->state) {
-            StockStateEnum::ACTIVE => OrgStockStateEnum::ACTIVE,
-            StockStateEnum::DISCONTINUING => OrgStockStateEnum::DISCONTINUING,
-            StockStateEnum::DISCONTINUED => OrgStockStateEnum::DISCONTINUED,
-            StockStateEnum::SUSPENDED => OrgStockStateEnum::SUSPENDED,
-
-            default => null
-        };
-
-        $this->set('state', $state);
     }
 
     /**

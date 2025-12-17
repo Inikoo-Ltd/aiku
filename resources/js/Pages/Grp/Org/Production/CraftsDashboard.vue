@@ -15,7 +15,7 @@ import { faCheckCircle, faTimesCircle, faPauseCircle } from "@fas";
 import { capitalize } from "@/Composables/capitalize";
 import { useLocaleStore } from "@/Stores/locale";
 
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faSeedling, faThumbsDown, faTimesCircle, faPauseCircle, faCheckCircle);
 

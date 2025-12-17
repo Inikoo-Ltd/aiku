@@ -224,17 +224,17 @@ trait IsDeliveryNotesIndex
                 );
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
-                $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+                $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'effective_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_items', label: __('items'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
             if ($bucket == 'unassigned' && $pickerEmployee) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }

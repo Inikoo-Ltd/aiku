@@ -13,6 +13,7 @@ namespace App\Actions\Retina\Ecom\Basket;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Validation\ValidationException;
@@ -49,6 +50,14 @@ class RetinaEcomUpdateTransaction extends RetinaAction
                 'message' => __('This order has been submitted and cannot be updated'),
             ]);
         }
+    }
+
+    public function action(Transaction $transaction, Customer $customer, array $modelData): Transaction
+    {
+        $this->order = $transaction->order;
+        $this->initialisationActions($customer, $modelData);
+
+        return $this->handle($transaction, $this->validatedData);
     }
 
     public function asController(Transaction $transaction, ActionRequest $request)

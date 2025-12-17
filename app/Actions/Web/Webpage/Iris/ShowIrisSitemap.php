@@ -24,17 +24,18 @@ class ShowIrisSitemap
     {
         /** @var Website $website */
         $website = $request->get('website');
-        $filePath = 'sitemaps/sitemap-' . $website->id . '.xml';
+        // dd($website->id);
+        $filePath = "sitemaps/sitemap_{$website->id}.xml";
 
         if (!Storage::disk('local')->exists($filePath)) {
-            abort(404);
+            abort(404, "Sitemap not found for this website");
         }
 
         $sitemap = Storage::disk('local')->get($filePath);
 
         return response($sitemap, 200, [
-            'Content-Type' => 'application/xml',
-            'Cache-Control' => 'public, max-age=3600',
+            "Content-Type"  => "application/xml",
+            "Cache-Control" => "public, max-age=3600",
         ]);
     }
 }

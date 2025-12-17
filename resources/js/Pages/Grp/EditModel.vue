@@ -60,7 +60,8 @@ import {
     faNotesMedical,
     faBiohazard,
     faFolder,
-    faCartArrowDown
+    faCartArrowDown,
+    faWeight
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -117,7 +118,8 @@ library.add(
     faBoxes,
     faMoneyBill,
     faFolder,
-    faCartArrowDown
+    faCartArrowDown,
+    faWeight
 )
 
 const props = defineProps<{
@@ -199,7 +201,6 @@ const handleIntersection = (element: Element, index: number) => (entries) => {
 
 const switchTab = (key: string) => {
     currentTab.value = key
-    // console.log(key)
 
     // Update URL with query parameter
     router.visit('', {

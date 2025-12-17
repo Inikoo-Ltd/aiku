@@ -26,6 +26,7 @@ export const useFormatTime = (dateIso: string | Date | undefined, OptionsTime?: 
     if (OptionsTime?.formatTime === 'ddmy') return format(tempDateIso, 'PPPP', { locale: localesCode[tempLocaleCode] })  // Friday, April 29th, 1453
     if (OptionsTime?.formatTime === 'hms') return format(tempDateIso, 'PPpp', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023, 3:03:26 PM
     if (OptionsTime?.formatTime === 'hm') return format(tempDateIso, 'PPp', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023, 3:03 PM
+    if (OptionsTime?.formatTime === 'mdy') return format(tempDateIso, 'PP', { locale: localesCode[tempLocaleCode] })  // Nov 2, 2023
 
     return format(tempDateIso, OptionsTime?.formatTime || 'PPP', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
 }

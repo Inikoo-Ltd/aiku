@@ -6,6 +6,7 @@
 	"icon": ["fal", "text"],
 	"category": "block",
 	"fixed" : true,
+	"is_in_test" : true,
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"data": {
 		"fieldValue": {

@@ -64,18 +64,18 @@ class CreateShop extends OrgAction
 
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'required' => true,
                                 ],
                                 'name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'required' => true,
                                     'value'    => '',
                                 ],
                                 'type' => [
                                     'type'        => 'select',
-                                    'label'       => __('type'),
+                                    'label'       => __('Type'),
                                     'placeholder' => __('Select one option'),
                                     'options'     => Options::forEnum(ShopTypeEnum::class),
                                     'required'    => true,

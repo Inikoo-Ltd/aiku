@@ -6,6 +6,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
 use App\Actions\Comms\Mailshot\UI\WithIndexMailshots;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\TrafficSourcesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -23,6 +24,7 @@ class IndexTrafficSources extends OrgAction
 {
     use HasUIMailshots;
     use WithIndexMailshots;
+    use WithCustomersSubNavigation;
 
     private Shop|Organisation $parent;
 
@@ -115,7 +117,7 @@ class IndexTrafficSources extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $trafficSources, ActionRequest $request): Response
     {
-        $subNavigation = null;
+        $subNavigation = $this->getSubNavigation($request);
         $title         = __('Traffic Sources');
         $model         = __('Traffic Source');
         $icon          = [
@@ -127,7 +129,7 @@ class IndexTrafficSources extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $title      = $this->parent->name;
-            $model      = __('traffic source');
+            $model      = __('Traffic Source');
             $icon       = [
                 'icon'  => ['fal', 'fa-route'],
                 'title' => __('Traffic source')
@@ -146,10 +148,7 @@ class IndexTrafficSources extends OrgAction
         return Inertia::render(
             'Org/Shop/CRM/TrafficSources',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Traffic Sources'),
                 'pageHead'    => [
                     'title'         => $title,
@@ -173,36 +172,23 @@ class IndexTrafficSources extends OrgAction
         return $this->handle($shop);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
-        $headCrumb = function (array $routeParameters = []) {
-            return [
+        return array_merge(
+            ShowShop::make()->getBreadcrumbs($routeParameters),
+            [
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'route' => $routeParameters,
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
+                            'parameters' => $routeParameters
+                        ],
                         'label' => __('Traffic Sources'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],
-            ];
-        };
-
-        return match ($routeName) {
-            'grp.org.shops.show.marketing.traffic_sources.show',
-            'grp.org.shops.show.marketing.traffic_sources.index' =>
-            array_merge(
-                ShowShop::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
-            default => []
-        };
+            ],
+        );
     }
 }

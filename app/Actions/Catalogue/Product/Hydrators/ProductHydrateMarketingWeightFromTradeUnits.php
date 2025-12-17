@@ -25,6 +25,10 @@ class ProductHydrateMarketingWeightFromTradeUnits implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
+        if (!$product->is_single_trade_unit) {
+            return;
+        }
+
         $tradeUnit       = $product->tradeUnits()->whereNotNull('marketing_weight')->orderBy('marketing_weight', 'desc')->first();
         $marketingWeight = $tradeUnit?->marketing_weight;
 

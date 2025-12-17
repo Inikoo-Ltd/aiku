@@ -107,8 +107,8 @@ class IndexProductions extends OrgAction
                     ]
                 )
                 ->column(key: 'state_icon', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon')
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_raw_materials', label: __('materials'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_manufacture_tasks', label: __('tasks'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_artefacts', label: __('artefacts'), canBeHidden: false, sortable: true, searchable: true)

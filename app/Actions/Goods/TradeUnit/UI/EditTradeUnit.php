@@ -160,7 +160,7 @@ class EditTradeUnit extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $tradeUnit->code
                                 ],
                                 'cpnp_number' => [
@@ -186,17 +186,17 @@ class EditTradeUnit extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $tradeUnit->name
                                 ],
                                 'description_title' => [
                                     'type'  => 'input',
-                                    'label' => __('description title'),
+                                    'label' => __('Description title'),
                                     'value' => $tradeUnit->description_title
                                 ],
                                 'description' => [
                                     'type'  => 'textarea',
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
                                     'value' => $tradeUnit->description
                                 ],
                                 'description_extra' => [
@@ -206,28 +206,34 @@ class EditTradeUnit extends OrgAction
                                 ],
                                  'type' => [
                                     'type'  => 'input',
-                                    'label' => __('unit label'),
+                                    'label' => __('Unit label'),
                                     'value' => $tradeUnit->type
                                 ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Weight/Dimensions'),
+                            'icon'   => 'fa-light fa-weight',
+                            'fields' => [
                                 'gross_weight' => [
                                     'type'  => 'input_number',
-                                    'label' => __('gross weight'),
+                                    'label' => __('Weight').' ('.__('Shipping').')',
                                     'value' => $tradeUnit->gross_weight,
                                     'bind'  => [
                                         'suffix' => 'g'
                                     ]
                                 ],
-                                 'net_weight' => [
-                                    'type'  => 'input_number',
-                                    'label' => __('net weight'),
-                                    'value' => $tradeUnit->net_weight,
-                                    'bind'  => [
-                                        'suffix' => 'g'
-                                    ]
-                                ],
+//                                'net_weight' => [
+//                                    'type'  => 'input_number',
+//                                    'label' => __('Weight').' ('.__('Marketing').')',
+//                                    'value' => $tradeUnit->marketing_weight,
+//                                    'bind'  => [
+//                                        'suffix' => 'g'
+//                                    ]
+//                                ],
                                 'marketing_weight' => [
                                     'type'  => 'input_number',
-                                    'label' => __('marketing weight'),
+                                    'label' => __('Weight').' ('.__('Marketing').')',
                                     'value' => $tradeUnit->marketing_weight,
                                     'bind'  => [
                                         'suffix' => 'g'
@@ -235,18 +241,18 @@ class EditTradeUnit extends OrgAction
                                 ],
                                 'marketing_dimensions' => [
                                     'type'  => 'input-dimension',
-                                    'label' => __('marketing dimension'),
+                                    'label' => __('Dimensions').' ('.__('Marketing').')',
                                     'value' => $tradeUnit->marketing_dimensions,
                                 ],
                             ],
                         ],
                         [
-                            'label'  => __('translate'),
+                            'label'  => __('Translations'),
                             'icon'   => 'fa-light fa-language',
                             'fields' => [
                                 'name_i8n' => [
                                     'type'  => 'input_translation',
-                                    'label' => __('translate name'),
+                                    'label' => __('Translate name'),
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->name,
                                     'full' => true,
@@ -254,7 +260,7 @@ class EditTradeUnit extends OrgAction
                                 ],
                                 'description_title_i8n' => [
                                     'type'  => 'input_translation',
-                                    'label' => __('translate description title'),
+                                    'label' => __('Translate description title'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->description_title,
                                     'full' => true,
@@ -262,7 +268,7 @@ class EditTradeUnit extends OrgAction
                                 ],
                                 'description_i8n' => [
                                     'type'  => 'textEditor_translation',
-                                    'label' => __('translate description'),
+                                    'label' => __('Translate description'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->description,
                                     'full' => true,
@@ -270,7 +276,7 @@ class EditTradeUnit extends OrgAction
                                 ],
                                 'description_extra_i8n' => [
                                     'type'  => 'textEditor_translation',
-                                    'label' => __('translate description extra'),
+                                    'label' => __('Translate description extra'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->description_extra,
                                     'full' => true,
@@ -286,7 +292,9 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'tags-trade-unit',
                                     'label' => __('Tags'),
                                     'value' => $tradeUnit->tags->pluck('id')->toArray(),
-                                    'tag_routes' => $tagRoute
+                                    'tag_routes' => $tagRoute,
+                                    'noSaveButton'  => true,
+                                    'isWithRefreshFieldForm'    => true
                                 ],
                                  'brands' => [
                                     'type'  => 'brands-trade-unit',

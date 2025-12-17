@@ -32,7 +32,7 @@ class CheckWooChannelEnvironment
         $wooCommerceUser = $customerSalesChannel->user;
         $result = $wooCommerceUser->checkConnection();
 
-        print_r($result['environment']);
+        print_r($result);
 
 
     }

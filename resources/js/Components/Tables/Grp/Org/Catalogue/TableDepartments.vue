@@ -5,34 +5,34 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
-import { Department } from "@/types/department";
-import Icon from "@/Components/Icon.vue";
-import { remove as loRemove } from "lodash-es";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import { faSeedling } from "@fal";
-import { faOctopusDeploy } from  "@fortawesome/free-brands-svg-icons"
-import { library } from "@fortawesome/fontawesome-svg-core";
-import routes from "../../../../../../../han/src/constants/Routes";
-import { RouteParams } from "@/types/route-params";
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { Department } from "@/types/department"
+import Icon from "@/Components/Icon.vue"
+import { remove as loRemove } from "lodash-es"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import routes from "../../../../../../../han/src/constants/Routes"
+import { RouteParams } from "@/types/route-params"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
+import { faTimesCircle, faCheckCircle, faSeedling } from "@fal"
+import Image from "@/Components/Image.vue"
+import { trans } from "laravel-vue-i18n"
 
-library.add(faSeedling,faOctopusDeploy);
+library.add(faSeedling, faOctopusDeploy)
 
 defineProps<{
     data: {}
     tab?: string
-}>();
+}>()
 
-const locale = inject('locale', aikuLocaleStructure)
+const locale = inject("locale", aikuLocaleStructure)
 
 function departmentRoute(department: Department) {
-    const current = route().current();
+    const current = route().current()
 
     switch (current) {
         case "grp.org.shops.show.catalogue.departments.index":
@@ -45,7 +45,7 @@ function departmentRoute(department: Department) {
                     (route().params as RouteParams).shop,
                     department.slug
                 ]
-            );
+            )
 
         case "grp.org.shops.index":
         case "grp.overview.catalogue.departments.index":
@@ -56,7 +56,7 @@ function departmentRoute(department: Department) {
                     department.shop_slug,
                     department.slug
                 ]
-            );
+            )
 
         case "grp.masters.master_shops.show.master_departments.show":
             return route(
@@ -66,10 +66,10 @@ function departmentRoute(department: Department) {
                     department.shop_slug,
                     department.slug
                 ]
-            );
+            )
 
         default:
-            return '';
+            return ""
     }
 }
 
@@ -82,9 +82,9 @@ function subDepartmentsRoute(department: Department) {
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,
                 department.slug
-            ]);
+            ])
     }
-    return '';
+    return ""
 }
 
 function subCollectionsRoute(department: Department) {
@@ -95,9 +95,9 @@ function subCollectionsRoute(department: Department) {
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,
                 department.slug
-            ]);
+            ])
     }
-    return '';
+    return ""
 }
 
 
@@ -108,9 +108,9 @@ function familyRoute(department: Department) {
             [
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,
-                department.slug]);
+                department.slug])
     }
-    return '';
+    return ""
 }
 
 function productRoute(department: Department) {
@@ -120,43 +120,47 @@ function productRoute(department: Department) {
             [
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,
-                department.slug]);
+                department.slug])
     }
-    return '';
+    return ""
 }
 
 function organisationRoute(department: Department) {
     return route(
         "grp.org.overview.departments.index",
-        [department.organisation_slug]);
+        [department.organisation_slug])
 }
 
 function departmentsInShopRoute(department: Department) {
     return route(
         "grp.org.shops.show.catalogue.departments.index",
-        [department.organisation_slug, department.shop_slug]);
+        [department.organisation_slug, department.shop_slug])
 }
 
 function masterDepartmentRoute(department: Department) {
-    if(!department.master_product_category_id){
-        return '';
+    if (!department.master_product_category_id) {
+        return ""
     }
 
     return route(
         "grp.helpers.redirect_master_product_category",
-        [department.master_product_category_id]);
+        [department.master_product_category_id])
 }
 
 
-const isLoadingDetach = ref<string[]>([]);
+const isLoadingDetach = ref<string[]>([])
 const dotClass = (filled: boolean) =>
-    filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600";
-const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle);
+    filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-
+        <template #cell(image_thumbnail)="{ item: product }">
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(organisation_code)="{ item: department }">
             <Link v-tooltip='department["organisation_name"]' :href="organisationRoute(department)" class="secondaryLink">
                 {{ department["organisation_code"] }}
@@ -179,16 +183,16 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
         </template>
         <template #cell(code)="{ item: department }">
             <div class="whitespace-nowrap">
-            <Link  :href="(masterDepartmentRoute(department) as string)"  v-tooltip="'Go to Master'" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                <FontAwesomeIcon
-                    icon="fab fa-octopus-deploy"
-                    color="#4B0082"
-                />
-            </Link>
+                <Link :href="(masterDepartmentRoute(department) as string)" v-tooltip="trans('Go to Master')" class="mr-1" :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                    <FontAwesomeIcon
+                        icon="fab fa-octopus-deploy"
+                        color="#4B0082"
+                    />
+                </Link>
 
-            <Link :href="(departmentRoute(department) as string)" class="primaryLink">
-                {{ department["code"] }}
-            </Link>
+                <Link :href="(departmentRoute(department) as string)" class="primaryLink">
+                    {{ department["code"] }}
+                </Link>
             </div>
         </template>
 
@@ -238,8 +242,8 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
                 />
             </Link>
         </template>
-          <template #cell(is_name_reviewed)="{ item }">
-            <div >
+        <template #cell(is_name_reviewed)="{ item }">
+            <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_name_reviewed),

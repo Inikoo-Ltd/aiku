@@ -38,18 +38,30 @@ class DispatchOrder extends OrgAction
     public function handle(Order $order): Order
     {
         $oldState = $order->state;
-        $data     = [
+
+        $date = now();
+
+        $data = [
             'state'         => OrderStateEnum::DISPATCHED,
-            'dispatched_at' => now()
+            'dispatched_at' => $date
         ];
 
-        $order = DB::transaction(function () use ($order, $data) {
+        $order = DB::transaction(function () use ($order, $data, $date) {
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
-                $transaction->update([
+                $dataToUpdate = [
                     'state'               => TransactionStateEnum::DISPATCHED,
                     'quantity_dispatched' => $transaction->quantity_picked,
-                ]);
+                ];
+                if ($transaction->quantity_picked > 0) {
+                    data_set($dataToUpdate, 'dispatched_at', $date);
+                    if ($transaction->asset) {
+                        $transaction->asset->orderingStats()->update(['last_order_dispatched_at' => $date]);
+                    }
+
+                }
+                $transaction->update($dataToUpdate);
+
             }
 
             $this->update($order, $data);

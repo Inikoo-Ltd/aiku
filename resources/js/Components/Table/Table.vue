@@ -11,7 +11,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { computed, getCurrentInstance, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
+import { computed, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
 import clone from 'lodash-es/clone'
 import filter from 'lodash-es/filter'
@@ -22,12 +22,10 @@ import map from 'lodash-es/map'
 import { set as setLodash, debounce, kebabCase } from 'lodash-es'
 import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang} from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
@@ -35,7 +33,6 @@ import Icon from '../Icon.vue'
 library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
 
 const locale = inject('locale', aikuLocaleStructure)
-const layout = inject('layout', layoutStructure)
 
 const props = defineProps(
     {
@@ -204,14 +201,7 @@ const queryBuilderProps = computed(() => {
 
 
 const queryBuilderData = ref({...queryBuilderProps.value});  // spread operator to avoid sort on mounted
-// queryBuilderData.value.elementFilter = {
-//     // 'state': ['left'],
-//     // 'type': ['volunteer', 'employee']
-// }
-// queryBuilderData.value.periodFilter = {
-//     // 'type': 'today',
-//     // 'date': 202405
-// }
+
 
 
 const pageName = computed(() => {
@@ -290,50 +280,7 @@ const hasData = computed(() => {
     return compResourceMeta.value.total > 0;
 });
 
-//
 
-// function disableSearchInput(key) {
-//     forcedVisibleSearchInputs.value = forcedVisibleSearchInputs.value.filter(
-//         (search) => search !== key,
-//     );
-
-//     changeSearchInputValue(key, null);
-// }
-
-// function showSearchInput(key) {
-//     forcedVisibleSearchInputs.value.push(key);
-// }
-
-// const canBeReset = computed(() => {
-//     if (forcedVisibleSearchInputs.value.length > 0) {
-//         return true;
-//     }
-
-//     const queryStringData = qs.parse(location.search.substring(1));
-
-//     const page = queryStringData[pageName.value];
-
-//     if (page > 1) {
-//         return true;
-//     }
-
-//     const prefix = props.name === 'default' ? '' : props.name + '_';
-//     let dirty = false;
-
-//     forEach(['filter', 'columns', 'cursor', 'sort', 'elementGroups'], (key) => {
-//         const value = queryStringData[prefix + key];
-
-//         if (key === 'sort' && value === queryBuilderProps.value.defaultSort) {
-//             return;
-//         }
-
-//         if (value !== undefined) {
-//             dirty = true;
-//         }
-//     });
-
-//     return dirty;
-// });
 
 function resetQuery() {
     forcedVisibleSearchInputs.value = [];
@@ -350,11 +297,6 @@ function resetQuery() {
         queryBuilderData.value.elements[key].value = null;
     });
 
-    // forEach(queryBuilderData.value.columns, (column, key) => {
-    //     queryBuilderData.value.columns[key].hidden = column.can_be_hidden
-    //         ? !queryBuilderProps.value.defaultVisibleToggleableColumns.includes(column.key)
-    //         : false;
-    // });
 
     queryBuilderData.value.sort = null;
     queryBuilderData.value.cursor = null;
@@ -378,33 +320,14 @@ const changeGlobalSearchValue = debounce((value?: string) => {
     changeSearchInputValue('global', value);
 }, 400)
 
-// function changeFilterValue(key, value) {
-//     const intKey = findDataKey('filters', key);
 
-//     queryBuilderData.value.filters[intKey].value = value;
-//     queryBuilderData.value.cursor = null;
-//     queryBuilderData.value.page = 1;
-// }
 
 function onPerPageChange(value) {
     queryBuilderData.value.cursor = null
     queryBuilderData.value.perPage = value
     queryBuilderData.value.page = 1
 
-    // axios.patch(
-    //     route("grp.models.user.update", layout.user?.id),
-    //     {
-    //         settings: {
-    //             records_per_page: value,
-    //         },
-    //     }
-    // )
-    // .then((response) => {
-    //     console.log('success');
-    // })
-    // .catch((error) => {
-    //     console.error('Error:', error);
-    // });
+
 }
 
 function findDataKey(dataKey, key) {
@@ -413,11 +336,7 @@ function findDataKey(dataKey, key) {
     });
 }
 
-// function changeColumnStatus(key, visible) {
-//     const intKey = findDataKey('columns', key);
 
-//     queryBuilderData.value.columns[intKey].hidden = !visible;
-// }
 
 function getFilterForQuery() {
     let filtersWithValue = {};
@@ -523,21 +442,12 @@ function generateNewQueryString() {
     forEach(dataForNewQueryString(), (value, key) => {
         if (key === 'page') {
             queryStringData[pageName.value] = value;
-            // } else if (key === 'perPage') {
-            // This line make pagination error
-            //     queryStringData.perPage[prefix + key] = value;
         } else {
             queryStringData[prefix + key] = value;
         }
     });
     let query = qs.stringify(queryStringData, {
-        // filter(prefix, value) {
-        //         if (typeof value === 'object' && value !== null) {
-        //         return pickBy(value);
-        //     }
 
-        //     return value;
-        // },
         encodeValuesOnly: true,
         skipNulls: true,
         strictNullHandling: true,
@@ -627,12 +537,6 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('inertia:success', inertiaListener);
 });
-
-/* onBeforeMount(() => {
-    if ('data' in props.resource) {
-        if (props.useForm) props.resource.data.forEach((item) => item.form = useForm({...item}));
-    }
-}); */
 
 
 function sortBy(column) {
@@ -837,14 +741,7 @@ const isLoading = ref<string | boolean>(false)
 
                     <!-- Filter Group -->
                     <div class="flex flex-row justify-end items-center flex-nowrap gap-x-2">
-                        <!-- <div class="order-2 sm:order-1 mr-2 sm:mr-4" v-if="queryBuilderProps.hasFilters">
-                            <slot name="tableAdvancedFilter" :has-filters="queryBuilderProps.hasFilters"
-                                :has-enabled-filters="queryBuilderProps.hasEnabledFilters" :filters="queryBuilderProps.filters"
-                                :on-filter-change="changeFilterValue">
-                                <TableAdvancedFilter :has-enabled-filters="queryBuilderProps.hasEnabledFilters"
-                                    :filters="queryBuilderProps.filters" :on-filter-change="changeFilterValue" />
-                            </slot>
-                        </div> -->
+
 
                         <slot name="add-on-button-in-before">
                         </slot>
@@ -880,45 +777,11 @@ const isLoading = ref<string | boolean>(false)
                         <slot name="add-on-button">
                         </slot>
 
-                        <!-- Button: Reset -->
-                        <!--suppress HtmlUnknownAttribute -->
-                        <!-- <slot name="searchReset" can-be-reset="canBeReset" @resetSearch="() => resetQuery()">
-                            <div v-if="canBeReset" class="order-3">
-                                <SearchReset @resetSearch="() => resetQuery()" />
-                            </div>
-                        </slot> -->
 
-                        <!-- Button: Filter table -->
-                        <!-- <slot name="tableFilterColumn" :has-search-inputs="queryBuilderProps.hasSearchInputs"
-                            :has-search-inputs-without-value="queryBuilderProps.hasSearchInputsWithoutValue"
-                            :search-inputs="queryBuilderProps.searchInputsWithoutGlobal" :on-add="showSearchInput">
-                            <TableFilterColumn v-if="queryBuilderProps.hasSearchInputs" class="order-4"
-                                :search-inputs="queryBuilderProps.searchInputsWithoutGlobal" :has-search-inputs-without-value="queryBuilderProps.hasSearchInputsWithoutValue
-                                    " :on-add="showSearchInput" />
-                        </slot> -->
-
-
-                        <!-- Button: Switch toggle search the column of table -->
-                        <!-- <slot name="tableColumns" :has-columns="queryBuilderProps.hasToggleableColumns"
-                            :columns="queryBuilderProps.columns" :has-hidden-columns="queryBuilderProps.hasHiddenColumns"
-                            :on-change="changeColumnStatus">
-                            <TableColumns v-if="queryBuilderProps.hasToggleableColumns" class="order-4 mr-4 sm:mr-0 sm:order-5"
-                                :columns="queryBuilderProps.columns" :has-hidden-columns="queryBuilderProps.hasHiddenColumns"
-                                :on-change="changeColumnStatus" />
-                        </slot> -->
                     </div>
                 </div>
 
-                <!-- Field: search by column of table-->
-                <!-- <slot name="tableSearchRows" :has-search-rows-with-value="queryBuilderProps.hasSearchInputsWithValue"
-                    :search-inputs="queryBuilderProps.searchInputsWithoutGlobal"
-                    :forced-visible-search-inputs="forcedVisibleSearchInputs" :on-change="changeSearchInputValue">
-                    <TableSearchRows v-if="queryBuilderProps.hasSearchInputsWithValue ||
-                        forcedVisibleSearchInputs.length > 0
-                        " :search-inputs="queryBuilderProps.searchInputsWithoutGlobal"
-                        :forced-visible-search-inputs="forcedVisibleSearchInputs" :on-change="changeSearchInputValue"
-                        :on-remove="disableSearchInput" />
-                </slot> -->
+
 
             </div>
 
@@ -973,10 +836,7 @@ const isLoading = ref<string | boolean>(false)
                                             ]">
                                             <!-- Column: Check box -->
                                             <td v-if="isCheckBox" key="checkbox" class="">
-                                                <!--
-                                                <div v-if="selectRow[item[checkboxKey]]"
-                                                    class="absolute inset-0 bg-lime-500/10 -z-10" />
-                                                -->
+
 
                                                 <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
                                                     <FontAwesomeIcon v-if="disabledCheckbox(item)"
@@ -1026,24 +886,18 @@ const isLoading = ref<string | boolean>(false)
                                                         {{ locale.number(item[column.key]) }}
                                                     </template>
                                                     <template v-else-if="column.type === 'currency'">
-                                                        {{ locale.currencyFormat(item.currency_code, item[column.key])
-                                                        }}
+                                                        {{ locale.currencyFormat(item.currency_code, item[column.key]) }}
                                                     </template>
                                                     <template v-else-if="column.type === 'date'">
                                                         <span
                                                             v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })"
-                                                            class="whitespace-nowrap">{{ useFormatTime(item[column.key])
-                                                            }}</span>
+                                                            class="whitespace-nowrap">{{ useFormatTime(item[column.key]) }}</span>
                                                     </template>
                                                     <template v-else-if="column.type === 'date_hm'">
-                                                        <span class="whitespace-nowrap">{{
-                                                            useFormatTime(item[column.key], { formatTime: 'hm' })
-                                                            }}</span>
+                                                        <span class="whitespace-nowrap">{{useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
                                                     </template>
                                                     <template v-else-if="column.type === 'date_hms'">
-                                                        <span class="whitespace-nowrap">{{
-                                                            useFormatTime(item[column.key], { formatTime: 'hms' })
-                                                            }}</span>
+                                                        <span class="whitespace-nowrap">{{useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
                                                     </template>
                                                     <template v-else-if="column.type === 'icon'">
                                                         <Icon
@@ -1105,8 +959,7 @@ const isLoading = ref<string | boolean>(false)
                                                         {{ locale.number(item[column.key]) }}
                                                     </template>
                                                     <template v-else-if="column.type === 'currency'">
-                                                        {{ locale.currencyFormat(item.currency_code || 'usd',
-                                                        item[column.key]) }}
+                                                        {{ locale.currencyFormat(item.currency_code || 'usd', item[column.key]) }}
                                                     </template>
                                                     <template v-else>
                                                         {{ item[column.key] }}

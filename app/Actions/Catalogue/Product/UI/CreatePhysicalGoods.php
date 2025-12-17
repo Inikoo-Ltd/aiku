@@ -39,17 +39,17 @@ class CreatePhysicalGoods extends OrgAction
                                 'fields' => [
                                     'code' => [
                                         'type'       => 'input',
-                                        'label'      => __('code'),
+                                        'label'      => __('Code'),
                                         'required'   => true
                                     ],
                                     'name' => [
                                         'type'       => 'input',
-                                        'label'      => __('name'),
+                                        'label'      => __('Name'),
                                         'required'   => true
                                     ],
                                     'price' => [
                                         'type'       => 'input',
-                                        'label'      => __('price'),
+                                        'label'      => __('Price'),
                                         'required'   => true
                                     ],
                                     'unit' => [

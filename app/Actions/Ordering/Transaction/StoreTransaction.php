@@ -9,11 +9,13 @@
 namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -32,8 +34,6 @@ class StoreTransaction extends OrgAction
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
-
-
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
 
@@ -70,6 +70,10 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
 
 
+        if ($order->state == OrderStateEnum::SUBMITTED) {
+            data_set($modelData, 'submitted_at', now(), overwrite: false);
+        }
+
         $unitWeight = $historicAsset->model->gross_weight ?? 0;
 
         $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
@@ -95,6 +99,10 @@ class StoreTransaction extends OrgAction
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
+        if ($transaction->submitted_at && $transaction->asset) {
+            $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
+        }
 
 
         return $transaction;

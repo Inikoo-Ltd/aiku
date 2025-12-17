@@ -12,17 +12,16 @@ use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
-use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Helpers\SendSlackNotification;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -35,6 +34,7 @@ class StoreMasterAsset extends OrgAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
+    use WithMasterAssetTradeUnits;
 
     /**
      * @var \App\Models\Masters\MasterProductCategory
@@ -117,32 +117,6 @@ class StoreMasterAsset extends OrgAction
         return $masterAsset;
     }
 
-    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnitsRaw): void
-    {
-        $stocks = [];
-        $tradeUnits = [];
-        foreach ($tradeUnitsRaw as $item) {
-            $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
-            $tradeUnits[$tradeUnit->id] = [
-                'quantity' => Arr::get($item, 'quantity')
-            ];
-
-
-            foreach ($tradeUnit->stocks as $stock) {
-                $stocks[$stock->id] = [
-                    'quantity' =>  Arr::get($item, 'quantity') / $stock->pivot->quantity ,
-                ];
-            }
-        }
-
-        $masterAsset->tradeUnits()->sync($tradeUnits);
-        $masterAsset->stocks()->sync($stocks);
-        // Hydrate GSPR & Properties from trade units
-        MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
-
-        $masterAsset->refresh();
-
-    }
 
 
     public function rules(): array

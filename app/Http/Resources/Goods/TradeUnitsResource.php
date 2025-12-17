@@ -13,13 +13,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * @property string $code
  * @property string $slug
- * @property float $net_weight
  * @property string $type
  * @property string $name
  * @property mixed $number_current_stocks
  * @property mixed $number_current_products
  * @property mixed $id
  * @property mixed $status
+ * @property mixed $quantity
+ * @property mixed $marketing_weight
  */
 class TradeUnitsResource extends JsonResource
 {
@@ -29,12 +30,12 @@ class TradeUnitsResource extends JsonResource
             'slug'                    => $this->slug,
             'code'                    => $this->code,
             'name'                    => $this->name,
-            'weight'                  => $this->net_weight !== null ? ($this->net_weight).' g' : null,
+            'marketing_weight'        => $this->marketing_weight !== null ? ($this->marketing_weight).' g' : null,
             'type'                    => $this->type,
             'number_current_stocks'   => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
-            'quantity'                => $this->quantity ?? null,
+            'quantity'                => trimDecimalZeros($this->quantity),
             'status'                  => $this->status,
             'status_icon'             => $this->status ? $this->status->icon()[$this->status->value] : null,
             'media'                   => null

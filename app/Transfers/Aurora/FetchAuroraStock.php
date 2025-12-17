@@ -137,7 +137,8 @@ class FetchAuroraStock extends FetchAurora
         }
 
         $this->parsedData['org_stock'] = [
-
+            'code'            => $code,
+            'name'            => $name,
             'state'                           => match ($this->auroraModelData->{'Part Status'}) {
                 'Discontinuing' => OrgStockStateEnum::DISCONTINUING,
                 'Not In Use' => OrgStockStateEnum::DISCONTINUED,
@@ -157,6 +158,7 @@ class FetchAuroraStock extends FetchAurora
                 'Out_Of_Stock' => 'out-of-stock',
                 'Error' => 'error',
             },
+            'packed_in'       => $this->auroraModelData->{'Part Units Per Package'},
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
             'source_slug'     => $sourceSlug,
             'images'          => $this->parseImages(),

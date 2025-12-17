@@ -96,3 +96,7 @@ Broadcast::channel("translate.{randomString}.channel", function () {
 Broadcast::channel("upload-portfolio-to-r2.{randomString}", function () {
     return true;
 });
+
+Broadcast::channel('updateWebblocks.{slug}', function ($user, $slug) {
+    return true;
+});

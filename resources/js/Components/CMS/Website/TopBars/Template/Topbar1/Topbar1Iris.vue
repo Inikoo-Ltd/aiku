@@ -148,7 +148,7 @@ watch(
                     v-tooltip="trans('Profile')"
                     icon="fal fa-user"
                     type="transparent"
-                    class="button"
+                    class="button min-w-max"
                 >
                     <template #icon>
                         <FontAwesomeIcon  class="button" icon="fal fa-user" fixed-width aria-hidden="true" />
@@ -209,7 +209,7 @@ watch(
                     v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')"
                     v-tooltip="trans('Cart count and amount')"  
                     type="transparent"
-                    class="button"
+                    class="button min-w-max"
                 >
                     <template #loading>
                         <span v-show="false" class="button"></span>

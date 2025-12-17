@@ -89,7 +89,7 @@ class IndexWebUsersInCRM extends OrgAction
     public function htmlResponse(LengthAwarePaginator $webUsers, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-terminal'];
-        $title      = __('Web users');
+        $title      = __('Web Users');
         $afterTitle = null;
         $iconRight  = null;
 
@@ -107,7 +107,7 @@ class IndexWebUsersInCRM extends OrgAction
             ];
             $afterTitle = [
 
-                'label' => __('Web users')
+                'label' => __('Web Users')
             ];
         } else {
             $subNavigation = $this->getSubNavigation($request);
@@ -131,7 +131,7 @@ class IndexWebUsersInCRM extends OrgAction
                         ($this->canEdit && $this->parent instanceof Customer) ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('Website user'),
+                            'label' => __('Website User'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -168,8 +168,8 @@ class IndexWebUsersInCRM extends OrgAction
                                 [
                                     'type'    => 'button',
                                     'style'   => 'create',
-                                    'tooltip' => __('New website user'),
-                                    'label'   => __('website user'),
+                                    'tooltip' => __('New Website User'),
+                                    'label'   => __('Website User'),
                                     'route'   => [
                                         'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',
                                         'parameters' => [$parent->organisation->slug, $parent->shop->slug, $parent->slug]
@@ -180,9 +180,9 @@ class IndexWebUsersInCRM extends OrgAction
                         default => null
                     }
                 )
-                ->column(key: 'username', label: __('username'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true);
             $table
-                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Customer) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }
@@ -218,7 +218,7 @@ class IndexWebUsersInCRM extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Web users'),
+                        'label' => __('Web Users'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

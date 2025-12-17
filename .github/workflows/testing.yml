@@ -1,11 +1,10 @@
-name: Backend Tests With Coverage
+name: Backend Tests
 on:
   push:
     branches: [ "main" ]
 
 env:
   HOME: /home/aiku_test
-  XDEBUG_MODE: coverage
 
 jobs:
   laravel-tests:
@@ -13,11 +12,11 @@ jobs:
     runs-on: [ self-hosted ]
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
       - name: Composer install
-        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        run: php8.4 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: Prepare environment
         run: |
           ln -s ../../../../.pgpass .pgpass
@@ -30,42 +29,9 @@ jobs:
           mkdir private
           cd private
           ln -s ../../../../../artifacts/fa .
-
-      - name: Get db changed files
-        id: changed-db-files
-        uses: tj-actions/changed-files@v46
-        with:
-          files: |
-            app/Enums/**
-            app/Stubs/**
-            database/migrations/**
-      - name: Get coverage changed files
-        id: changed-coverage-files
-        uses: tj-actions/changed-files@v46
-        with:
-          files: |
-            app/**
-            tests/**
-            database/migrations/**
       - name: Generate database dumps 📚
         run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
-      - name: Run test with coverage
-        if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: /usr/bin/php8.4 vendor/bin/pest -d memory_limit=-1 --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
       - name: Run test without coverage
-        if: steps.changed-coverage-files.outputs.any_changed != 'true'
-        run: /usr/bin/php8.4 vendor/bin/pest --exclude-group=integration --stop-on-defect
-      - name: Process coverage to Codecov
-        if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: false
-          files: ./clover.xml
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-#      - name: Upload coverage to Codacy
-#        if: steps.changed-coverage-files.outputs.any_changed == 'true'
-#        run: export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}; bash <(curl -Ls https://coverage.codacy.com/get.sh)
+        run: /usr/bin/php8.4 -dxdebug.mode=off vendor/bin/pest --exclude-group=integration --stop-on-defect

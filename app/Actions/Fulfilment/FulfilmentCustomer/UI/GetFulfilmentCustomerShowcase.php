@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
 use App\Actions\CRM\Customer\UI\GetCustomerAddressManagement;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
@@ -83,7 +84,22 @@ class GetFulfilmentCustomerShowcase
             'currency_code'  => $fulfilmentCustomer->customer->shop->currency->code,
             'balance'        => [
                 'current'             => $fulfilmentCustomer->customer->balance,
-                'credit_transactions' => $fulfilmentCustomer->customer->stats->number_credit_transactions
+                'credit_transactions' => $fulfilmentCustomer->customer->stats->number_credit_transactions,
+
+                'route_increase'    => [
+                    'name'       => 'grp.models.credit_transaction.increase',
+                    'parameters' => [
+                        'customer'     => $fulfilmentCustomer->customer_id
+                    ]
+                ],
+                'route_decrease'    => [
+                    'name'       => 'grp.models.credit_transaction.decrease',
+                    'parameters' => [
+                        'customer'     => $fulfilmentCustomer->customer_id
+                    ]
+                ],
+                'increase_reasons_options' => CreditTransactionReasonEnum::getIncreaseReasons(),
+                'decrease_reasons_options' => CreditTransactionReasonEnum::getDecreaseReasons(),
             ],
             'recurring_bill' => $recurringBillData,
             'updateRoute'    => [

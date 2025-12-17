@@ -22,6 +22,9 @@ use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
+use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsAuto;
+use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
+use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
@@ -80,10 +83,11 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });
+
+    Route::patch('set-shipping-engine-manual', UpdateOrderShippingEngineAsManual::class)->name('set_shipping_engine_manual');
+    Route::patch('set-shipping-tbc-amount', UpdateOrderShippingTBCAmount::class)->name('set_shipping_tbc_amount');
+    Route::get('set-shipping-engine-auto', UpdateOrderShippingEngineAsAuto::class)->name('set_shipping_engine_auto');
 });
-
-
-
 
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
     Route::patch('update', UpdatePicking::class)->name('update');

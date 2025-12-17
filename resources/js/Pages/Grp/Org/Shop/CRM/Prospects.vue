@@ -18,7 +18,7 @@ import ProspectsDashboard from '@/Pages/Grp/Org/Shop/CRM/ProspectsDashboard.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { trans } from 'laravel-vue-i18n'
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Component } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

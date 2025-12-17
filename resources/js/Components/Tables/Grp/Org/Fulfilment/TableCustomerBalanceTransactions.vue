@@ -36,7 +36,7 @@ const locale = useLocaleStore()
             </div>
         </template>
         <template #cell(date)="{ item: customer }">
-            <div class="text-right">
+            <div v-tooltip="useFormatTime(customer.date, { localeCode: locale.language.code, formatTime: 'hms' })" class="text-right">
                 {{
                     useFormatTime(customer.date, {
                         localeCode: locale.language.code,

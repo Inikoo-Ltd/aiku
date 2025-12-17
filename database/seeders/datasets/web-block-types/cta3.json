@@ -6,6 +6,7 @@
 	"icon": ["fal", "rectangle-wide"],
 	"category": "block",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"text": "<h3>Ut dolorem reprehenderit</h3><p><span style=\"font-size: 1.0000rem\">In natus quas aut dolores vero et voluptatum </span></p><p><span style=\"font-size: 1.0000rem\">esse et culpa voluptas aut fugit ipsa.</span></p>",

@@ -87,6 +87,7 @@ class IndexOrganisations extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('organisation'),__('organisations')])
                 ->withEmptyState(
                     [
                         'title'       => __('no organisation'),
@@ -104,12 +105,12 @@ class IndexOrganisations extends OrgAction
                         ] : null
                     ]
                 )
-                ->column(key: 'type', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon')
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: '', canBeHidden: false, type: 'icon')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_employees_state_working', label: __('Employees'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_shops_state_open', label: __('shops'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'number_shops_state_open', label: __('Shops'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'action', label: __('Action'), canBeHidden: false)
                 ->defaultSort('code');
         };
     }

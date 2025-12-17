@@ -102,7 +102,7 @@ class EditFulfilmentService extends OrgAction
                                 ],
                                 'code'        => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => $service->code,
 
                                 ],
@@ -114,7 +114,7 @@ class EditFulfilmentService extends OrgAction
                                 ],
                                 'description' => [
                                     'type'  => 'input',
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
                                     'value' => $service->description
                                 ],
                                 'unit'        => [
@@ -129,7 +129,7 @@ class EditFulfilmentService extends OrgAction
                                 ],
                                 'price'       => [
                                     'type'   => 'input',
-                                    'label'  => __('price'),
+                                    'label'  => __('Price'),
                                     'value'  => $service->price,
                                     'hidden' => $disableNet
                                 ],

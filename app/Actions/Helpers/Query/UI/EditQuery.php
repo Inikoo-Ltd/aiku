@@ -47,7 +47,7 @@ class EditQuery extends InertiaAction
             'fields' => [
                 'username' => [
                     'type'     => 'input',
-                    'label'    => __('name'),
+                    'label'    => __('Name'),
                     'required' => true,
                     'value'    => $query->name
                 ],

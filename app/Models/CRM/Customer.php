@@ -133,6 +133,8 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
  * @property int|null $master_shop_id
  * @property bool $is_re recargo de equivalencia
  * @property string|null $post_source_id
+ * @property bool $is_credit_customer Sage credit customer flag
+ * @property string|null $accounting_reference Sage customer number
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers
@@ -227,7 +229,8 @@ class Customer extends Model implements HasMedia, Auditable
         'fetched_at'                  => 'datetime',
         'rejected_at'                 => 'datetime',
         'last_fetched_at'             => 'datetime',
-        'amount_in_basket'            => 'decimal:2'
+        'amount_in_basket'            => 'decimal:2',
+        'is_credit_customer'          => 'boolean',
     ];
 
 

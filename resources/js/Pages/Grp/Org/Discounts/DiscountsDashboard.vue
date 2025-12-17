@@ -8,7 +8,7 @@
     import SimpleBox from "@/Components/DataDisplay/SimpleBox.vue";
     import PageHeading from "@/Components/Headings/PageHeading.vue";
     import { layoutStructure } from "@/Composables/useLayoutStructure";
-    import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+    import { PageHeadingTypes } from "@/types/PageHeading";
     import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
     import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue";
     import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue";

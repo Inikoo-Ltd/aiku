@@ -126,7 +126,7 @@ class IndexShops extends OrgAction
                         'type'    => 'button',
                         'style'   => 'create',
                         'tooltip' => __('New shop'),
-                        'label'   => __('shop'),
+                        'label'   => __('Shop'),
                         'route'   => [
                             'name'       => 'grp.org.shops.create',
                             'parameters' => $organisation->slug
@@ -150,9 +150,9 @@ class IndexShops extends OrgAction
                 ->withModelOperations()
                 ->withEmptyState($emptyState)
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'avatar')
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -179,7 +179,7 @@ class IndexShops extends OrgAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New shop'),
-                            'label'   => __('shop'),
+                            'label'   => __('Shop'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',
                                 'parameters' => $request->route()->originalParameters()

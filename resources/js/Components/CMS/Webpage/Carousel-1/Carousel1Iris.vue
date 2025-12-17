@@ -143,7 +143,7 @@ const idxSlideLoading = ref<number | null>(null)
         <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
           <div class="space-card ">
              <div class="card flex flex-col h-full ">
-                <component :is="data?.link?.href != '/' ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
+                <component :is="data?.link?.href  ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
                   :href="data?.link?.href" :target="data?.link?.target" class="relative flex flex-1 flex-col" :type="data?.link?.type"
                   @start="() => idxSlideLoading = index"
                   @finish="() => idxSlideLoading = null"

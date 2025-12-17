@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
@@ -36,7 +37,7 @@ class DeleteTransaction extends OrgAction
         }
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
         AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-
+        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
 
         OrderRecordSearch::dispatch($order);
 
