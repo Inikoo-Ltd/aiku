@@ -91,6 +91,7 @@ class ShowOutbox extends OrgAction
     public function htmlResponse(Outbox $outbox, ActionRequest $request): Response
     {
 
+        $pageHeadAfterTitle = [];
         $actions = [
             [
                 'type'  => 'button',
@@ -126,7 +127,11 @@ class ShowOutbox extends OrgAction
             unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }
 
-
+        if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD]) && $outbox->days_after) {
+            $pageHeadAfterTitle = [
+                'label' => __('send after '.$outbox->days_after.' days from last invoice')
+            ];
+        }
 
         return Inertia::render(
             'Comms/Outbox',
@@ -146,7 +151,7 @@ class ShowOutbox extends OrgAction
                         ],
                     'iconRight' => $outbox->state->icon()[$outbox->state->value],
                     'actions' => $actions,
-                ],
+                ] + ($pageHeadAfterTitle ? ['afterTitle' => $pageHeadAfterTitle] : []),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $navigation
