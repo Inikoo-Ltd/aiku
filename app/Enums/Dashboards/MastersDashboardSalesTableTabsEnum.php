@@ -23,7 +23,6 @@ enum MastersDashboardSalesTableTabsEnum: string
 
     case MASTER_SHOPS = 'master_shops';
 
-
     public function blueprint(): array
     {
         return match ($this) {
@@ -36,8 +35,7 @@ enum MastersDashboardSalesTableTabsEnum: string
         };
     }
 
-
-    public function table(Group $group): array
+    public function table(Group $group, ?array $customRangeData = null): array
     {
 
         $header = match ($this) {
@@ -46,30 +44,30 @@ enum MastersDashboardSalesTableTabsEnum: string
 
         Arr::set($header, 'columns.label.formatted_value', __('Master Shop'));
 
-
         $body = match ($this) {
-            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => IndexMasterShopsSalesTable::make()->action($group),
+            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => IndexMasterShopsSalesTable::make()->action($group, $customRangeData),
         };
 
         $totals = match ($this) {
-            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => json_decode(DashboardTotalGroupMasterShopsSalesResource::make($group)->toJson(), true),
+            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => json_decode(
+                DashboardTotalGroupMasterShopsSalesResource::make($group)
+                    ->setCustomRangeData($customRangeData ?? [])
+                    ->toJson(),
+                true
+            ),
         };
-
-
 
         return [
             'header' => $header,
             'body'   => $body,
-            'totals' => $totals
+            'totals' => $totals,
         ];
     }
 
-    public static function tables(Group $group): array
+    public static function tables(Group $group, ?array $customRangeData = null): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($group) {
-            return [$case->value => $case->table($group)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($group, $customRangeData) {
+            return [$case->value => $case->table($group, $customRangeData)];
         })->all();
     }
-
-
 }

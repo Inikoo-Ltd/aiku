@@ -16,6 +16,7 @@ import Dialog from 'primevue/dialog';
 import axios from "axios";
 import {notify} from "@kyvg/vue3-notification";
 import {trans} from "laravel-vue-i18n";
+import Image from "@/Components/Image.vue"
 
 defineProps<{
     data: object,
@@ -128,6 +129,11 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
     <Table @onCheckedAll="onCheckedAll" :resource="data" :name="tab" class="mt-5" :isCheckBox="true" :key="tableKey"
     @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         checkboxKey='id' :isChecked="(item) => selectedSubDepartment.includes(item.id)" ref="_table">
+        <template #cell(image_thumbnail)="{ item: collection }">
+            <div class="flex justify-center">
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
            <template #add-on-button>
             <div v-if="selectedSubDepartment.length != 0">
                 <Button :icon="faFolderTree" :label="trans('Assign to another department')" @click="visibleDialog = true" :size="'xs'"

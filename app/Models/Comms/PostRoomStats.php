@@ -83,6 +83,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_pallet_delivery_deleted
  * @property int $number_outboxes_type_pallet_return_deleted
  * @property int $number_outboxes_type_pallet_deleted
+ * @property int $number_outboxes_type_reorder_reminder_2nd
+ * @property int $number_outboxes_type_reorder_reminder_3rd
  * @property-read \App\Models\Comms\PostRoom|null $postRoom
  * @method static Builder<static>|PostRoomStats newModelQuery()
  * @method static Builder<static>|PostRoomStats newQuery()

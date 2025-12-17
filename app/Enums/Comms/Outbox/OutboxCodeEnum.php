@@ -28,6 +28,8 @@ enum OutboxCodeEnum: string
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';
     case REORDER_REMINDER = 'reorder_reminder';
+    case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
+    case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';
     case MARKETING = 'marketing';
     case NEWSLETTER = 'newsletter';
     case OOS_NOTIFICATION = 'oos_notification';
@@ -76,7 +78,10 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_LOW_STOCK,
 
 
-            OutboxCodeEnum::REORDER_REMINDER => OutboxTypeEnum::MARKETING_NOTIFICATION,
+            OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
+            => OutboxTypeEnum::MARKETING_NOTIFICATION,
             OutboxCodeEnum::TEST => OutboxTypeEnum::TEST,
 
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
@@ -109,6 +114,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART => 'Abandoned cart',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery confirmation',
             OutboxCodeEnum::REORDER_REMINDER => 'Reorder reminder',
+            OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd reorder reminder',
+            OutboxCodeEnum::REORDER_REMINDER_3RD => '3rd reorder reminder',
             OutboxCodeEnum::MARKETING => 'Marketing',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
@@ -146,6 +153,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART => 'Abandoned cart',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery conformation',
             OutboxCodeEnum::REORDER_REMINDER => 'Reorder reminder',
+            OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
+            OutboxCodeEnum::REORDER_REMINDER_3RD => '3rd Reorder reminder',
             OutboxCodeEnum::MARKETING => 'Deals',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
@@ -178,6 +187,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
             OutboxCodeEnum::REGISTRATION_REJECTED,
@@ -226,6 +237,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH
             => ['b2b'],
@@ -291,6 +304,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER
 
@@ -331,6 +346,8 @@ enum OutboxCodeEnum: string
             => EmailOngoingRunTypeEnum::TRANSACTIONAL,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::OOS_NOTIFICATION,
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
@@ -379,6 +396,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH
             => PostRoomCodeEnum::MARKETING,

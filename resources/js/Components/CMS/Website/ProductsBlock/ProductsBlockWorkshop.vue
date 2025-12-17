@@ -55,7 +55,8 @@ interface Props {
 const props = defineProps<Props>()
 const layout = inject("layout", {});
 layout.iris = {
-  is_logged_in: true
+  is_logged_in: true,
+  currency : layout?.group?.currency
 }
 const selectedTab = ref(props.data.layout.data ? 1 : 0)
 const isLoadingSave = ref(false)
@@ -112,30 +113,20 @@ const doAutosave = () => {
 const autosave = debounce(doAutosave, 800)
 
 const onPickTemplate = (template: TemplateData) => {
-  props.data.layout = {
-    ...template,
+ props.data.layout = {
     data: {
-      ...template.data,
       fieldValue: {
         container: {
           properties: null,
         },
       },
+        ...template.data,
     },
+    ...template,
   }
   autosave()
 }
 
-const onChangeDepartment = (value: Record<string, any>) => {
-  const newDepartment = { ...value }
-  delete newDepartment.sub_departments
-
-  if (props.data.layout?.data?.fieldValue) {
-    props.data.layout.data.fieldValue.layout = value
-    props.data.layout.data.fieldValue.sub_departments = value.sub_departments || []
-  }
-  autosave()
-}
 
 const computedTabs = computed(() => {
   return props.data.layout.data ? tabs : [tabs[0]]
@@ -159,7 +150,7 @@ watch(currentView, (newValue) => {
     <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
       <SideMenuFamilyWorkshop :data="data.layout" :webBlockTypes="data.web_block_types" :dataList="data.families"
         v-model:selectedTab="selectedTab" :tabs="computedTabs" @auto-save="autosave" @set-up-template="onPickTemplate"
-        @onChangeDepartment="onChangeDepartment" @update:selectedTab="(e) => (selectedTab = e)" />
+        @update:selectedTab="(e) => (selectedTab = e)" />
     </div>
 
     <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">

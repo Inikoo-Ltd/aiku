@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 04 Apr 2024 10:14:33 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Thu, 04 Apr 2024 10:14:33 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -29,6 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOrgSuppliers extends OrgAction
 {
     use WithOrgAgentSubNavigation;
+
     private Organisation|OrgAgent $parent;
 
     protected function getSupplierElementGroups(Organisation|OrgAgent $parent): array
@@ -49,7 +50,7 @@ class IndexOrgSuppliers extends OrgAction
                             $stats->number_active_org_suppliers,
                             null,
                             [
-                                'icon' => 'fal fa-check',
+                                'icon'  => 'fal fa-check',
                                 'class' => 'text-green-500'
                             ]
                         ],
@@ -58,13 +59,12 @@ class IndexOrgSuppliers extends OrgAction
                             $stats->number_archived_org_suppliers,
                             null,
                             [
-                                'icon' => 'fal fa-check',
+                                'icon'  => 'fal fa-check',
                                 'class' => 'text-red-500'
                             ]
                         ]
                     ],
-                    'engine' => function ($query, $elements) {
-
+                    'engine'   => function ($query, $elements) {
                         if (count($elements) == 1) {
                             $query->where('org_suppliers.status', reset($elements) == 'active');
                         }
@@ -93,7 +93,6 @@ class IndexOrgSuppliers extends OrgAction
 
 
         if (class_basename($parent) == 'OrgAgent') {
-
             $queryBuilder->where('org_suppliers.org_agent_id', $parent->id);
         } else {
             $queryBuilder->where('org_suppliers.organisation_id', $parent->id);
@@ -124,9 +123,7 @@ class IndexOrgSuppliers extends OrgAction
                 'org_suppliers.slug as org_supplier_slug'
             ])
             ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
-
             ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id')
-
             ->allowedSorts(['code', 'name', 'agent_name', 'location', 'number_org_supplier_products', 'number_purchase_orders', 'number_purchase_orders_delivery_state_in_process'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -145,7 +142,7 @@ class IndexOrgSuppliers extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
             foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
                 $table->elementGroup(
@@ -157,6 +154,7 @@ class IndexOrgSuppliers extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('supplier'), __('suppliers')])
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
@@ -165,13 +163,13 @@ class IndexOrgSuppliers extends OrgAction
 
                     ]
                 )
-                ->column(key: 'status', label: '', type: 'icon', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), sortable: true, canBeHidden: false)
-                ->column(key: 'number_org_supplier_products', label: __('products'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders', label: __('purchase orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders_delivery_state_in_process', label: __('orders delivery'), canBeHidden: false, sortable: true)
+                ->column(key: 'status', label: '', canBeHidden: false, sortable: true, searchable: true, type: 'icon')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
+                ->column(key: 'number_org_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_purchase_orders_delivery_state_in_process', label: __('Orders Delivery'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
         };
     }
@@ -219,31 +217,31 @@ class IndexOrgSuppliers extends OrgAction
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('suppliers');
-        $model = '';
-        $icon  = [
+        $title         = __('Suppliers');
+        $model         = '';
+        $icon          = [
             'icon'  => ['fal', 'fa-person-dolly'],
             'title' => __('Suppliers')
         ];
-        $afterTitle = null;
-        $iconRight = null;
+        $afterTitle    = null;
+        $iconRight     = null;
 
         if ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $title = $this->parent->agent->organisation->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->parent->agent->organisation->name;
+            $icon          = [
                 'icon'  => ['fal', 'fa-people-arrows'],
                 'title' => __('Suppliers')
             ];
-            $iconRight    = [
+            $iconRight     = [
                 'icon' => 'fal fa-person-dolly',
             ];
-            $afterTitle = [
+            $afterTitle    = [
 
-                'label'     => __('Suppliers')
+                'label' => __('Suppliers')
             ];
         }
+
         return Inertia::render(
             'Procurement/OrgSuppliers',
             [
@@ -251,7 +249,7 @@ class IndexOrgSuppliers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('suppliers'),
+                'title'       => __('Suppliers'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,

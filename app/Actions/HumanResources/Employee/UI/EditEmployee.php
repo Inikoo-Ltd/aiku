@@ -198,7 +198,7 @@ class EditEmployee extends OrgAction
             'fields' => [
                 'contact_name'             => [
                     'type'        => 'input',
-                    'label'       => __('name'),
+                    'label'       => __('Name'),
                     'placeholder' => __('Name'),
                     'value'       => $employee->contact_name,
                     'required'    => true

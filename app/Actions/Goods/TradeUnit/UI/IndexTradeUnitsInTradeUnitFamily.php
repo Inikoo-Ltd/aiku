@@ -9,32 +9,25 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnitsInTradeUnitFamily extends GrpAction
 {
+    use WithTradeUnitIndex;
+
     public function handle(TradeUnitFamily $tradeUnitFamily, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereStartWith('trade_units.code', $value)
-                    ->orWhereAnyWordStartWith('trade_units.name', $value);
-            });
-        });
+        $globalSearch = $this->tradeUnitGlobalSearch();
 
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
+        $this->updateQueryBuilderParametersIfPrefixed($prefix);
 
-        $queryBuilder = QueryBuilder::for(TradeUnit::class);
+        $queryBuilder = $this->baseTradeUnitIndexBuilder();
         $queryBuilder->where('trade_units.trade_unit_family_id', $tradeUnitFamily->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
 
@@ -53,45 +46,41 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
                 'trade_units.volume',
                 'trade_units.type',
                 'trade_units.id',
+                'trade_units.status',
                 'trade_unit_stats.number_current_stocks',
                 'trade_unit_stats.number_current_products',
             ]);
-
-
-        return $queryBuilder->allowedSorts(['code', 'type', 'name', 'number_current_stocks','number_current_products'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $this->finalizeTradeUnitIndex(
+            queryBuilder: $queryBuilder,
+            allowedSorts: ['code', 'type', 'name', 'number_current_stocks','number_current_products'],
+            globalSearch: $globalSearch,
+            prefix: $prefix
+        );
     }
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
+            $this->setupTradeUnitTable(
+                table: $table,
+                modelOperations: $modelOperations,
+                prefix: $prefix,
+                withLabelRecord: false,
+                emptyState: [
+                    'title' => __("No Trade Units found"),
+                ]
+            );
 
-            $table
-                ->defaultSort('code')
-                ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
-                ->withEmptyState(
-                    [
-                        'title' => __("No Trade Units found"),
-                    ],
-                )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-
-            $table->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $this->addColumnStatusAvatar($table);
+            $this->addColumnCodeAndName($table);
+            $this->addColumnNumberCurrentProducts($table);
+            $this->addColumnNetWeight($table, 'Weight');
+            $this->addColumnType($table, 'Unit label');
         };
     }
 

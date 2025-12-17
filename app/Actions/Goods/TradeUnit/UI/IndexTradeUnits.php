@@ -10,23 +10,22 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnits extends GrpAction
 {
     use WithGoodsAuthorisation;
+    use WithTradeUnitIndex;
 
     private Group $parent;
     private string $bucket;
@@ -38,7 +37,7 @@ class IndexTradeUnits extends GrpAction
         $this->parent = group();
         $this->initialisation($this->parent, $request);
 
-        return $this->handle(bucket: 'all');
+        return $this->handle();
     }
 
     public function inProcess(ActionRequest $request): LengthAwarePaginator
@@ -79,18 +78,11 @@ class IndexTradeUnits extends GrpAction
 
     public function handle($prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereStartWith('trade_units.code', $value)
-                    ->orWhereAnyWordStartWith('trade_units.name', $value);
-            });
-        });
+        $globalSearch = $this->tradeUnitGlobalSearch();
 
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
+        $this->updateQueryBuilderParametersIfPrefixed($prefix);
 
-        $queryBuilder = QueryBuilder::for(TradeUnit::class);
+        $queryBuilder = $this->baseTradeUnitIndexBuilder();
         $queryBuilder->where('trade_units.group_id', $this->group->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
 
@@ -112,7 +104,7 @@ class IndexTradeUnits extends GrpAction
                 'trade_units.name',
                 'trade_units.description',
                 'trade_units.gross_weight',
-                'trade_units.net_weight',
+                'trade_units.marketing_weight',
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
@@ -120,59 +112,53 @@ class IndexTradeUnits extends GrpAction
                 'trade_unit_stats.number_current_products',
                 'trade_units.id'
             ]);
-
-
-        return $queryBuilder->allowedSorts(['code', 'type', 'name','number_current_stocks','number_current_products'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $this->finalizeTradeUnitIndex(
+            queryBuilder: $queryBuilder,
+            allowedSorts: ['code', 'type', 'name', 'number_current_stocks', 'number_current_products','marketing_weight'],
+            globalSearch: $globalSearch,
+            prefix: $prefix
+        );
     }
 
     public function tableStructure(Group $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
+            $emptyState = match (class_basename($parent)) {
+                'Group' => [
+                    'title' => __("No Trade Units found"),
+                ],
+                default => null
+            };
 
-            $table
-                ->defaultSort('code')
-                ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
-                ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Group' => [
-                            'title' => __("No Trade Units found"),
-                        ],
-                        default => null
-                    }
-                )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $this->setupTradeUnitTable(
+                table: $table,
+                modelOperations: $modelOperations,
+                prefix: $prefix,
+                withLabelRecord: true,
+                emptyState: $emptyState
+            );
+
+            $this->addColumnCodeAndName($table);
+            $this->addColumnType($table, 'Unit label');
 
             $routeName = request()->route()->getName();
-
             if (str_starts_with($routeName, 'grp.goods.')) {
-                $table->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true);
+                $this->addColumnNumberCurrentStocks($table);
             } else {
-                $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
+                $this->addColumnNumberCurrentProducts($table);
             }
 
-
-            $table->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $this->addColumnMarketingWeight($table);
         };
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 
-    public function htmlResponse(LengthAwarePaginator $tradeUnit, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $tradeUnits, ActionRequest $request): Response
     {
         $title = match ($this->bucket) {
             'active' => __('Active Trade Units'),
@@ -198,7 +184,7 @@ class IndexTradeUnits extends GrpAction
                         'title' => $title,
                     ],
                 ],
-                'data'        => TradeUnitsResource::collection($tradeUnit),
+                'data'        => TradeUnitsResource::collection($tradeUnits),
 
             ]
         )->table($this->tableStructure(parent: $this->parent));

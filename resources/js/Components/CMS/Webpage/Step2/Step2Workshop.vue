@@ -32,6 +32,7 @@ import {
 	faClock
 } from "@far";
 import { faLambda } from "@fad";
+import TextRender from "./TextRender.vue";
 
 library.add(
 	faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
@@ -79,12 +80,13 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 
 				<div v-for="(step, idx) in modelValue.timeline.timeline_data" :key="idx" @click.stop="
-				sendMessageToParent('activeBlock', indexBlock);
+					sendMessageToParent('activeBlock', indexBlock);
 				sendMessageToParent('activeChildBlock', bKeys[1]);
 				" class="relative mb-16 grid grid-cols-1 md:grid-cols-9 md:items-center">
 					<!-- Left Text -->
 					<div class="order-2 md:order-1 md:col-span-4 md:pr-8 px-4 text-left md:text-right">
-						<Editor v-model="step.text_left" @update:modelValue="() => emits('autoSave')" />
+						<TextRender :webpageData="webpageData" v-model="step.text_left"
+							@update:modelValue="() => emits('autoSave')" :screenType :blockData />
 					</div>
 
 					<!-- Bullet -->
@@ -96,7 +98,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 							</span>
 
 							<FontAwesomeIcon v-if="modelValue.timeline.bullet.type === 'icon'" :icon="step.icon" />
-							<span v-if="modelValue.timeline.bullet.type === 'text'"  >
+							<span v-if="modelValue.timeline.bullet.type === 'text'">
 								<Editor v-model="step.text_bullet" @update:modelValue="() => emits('autoSave')" />
 							</span>
 						</div>
@@ -104,7 +106,8 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 					<!-- Right Text -->
 					<div class="order-3 md:order-3 md:col-span-4 md:pl-8 px-4 text-left">
-						<Editor v-model="step.text_right" @update:modelValue="() => emits('autoSave')" />
+						<TextRender :webpageData="webpageData" v-model="step.text_right"
+							@update:modelValue="() => emits('autoSave')" :screenType :blockData />
 					</div>
 				</div>
 

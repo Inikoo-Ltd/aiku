@@ -110,9 +110,9 @@ trait WithIndexMailshots
                 ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_try_send_success', label: '', icon: 'fal fa-paper-plane', tooltip: __('Sent emails'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'hard_bounce', label: '', icon: 'fal fa-skull', tooltip: __('Hard Bounces'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'soft_bounce', label: '', icon: 'fal fa-dungeon', tooltip: __('Soft Bounces'), canBeHidden: false, sortable: true, searchable: true)

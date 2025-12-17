@@ -141,9 +141,9 @@ const idxSlideLoading = ref<number | null>(null)
         :showNavigators="fieldValue?.carousel_data?.cards?.length > slidesPerView"
         class="w-full">
         <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
-          <div class="space-card">
+          <div class="space-card ">
              <div class="card flex flex-col h-full ">
-                <component :is="data?.link?.href != '/' ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
+                <component :is="data?.link?.href  ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
                   :href="data?.link?.href" :target="data?.link?.target" class="relative flex flex-1 flex-col" :type="data?.link?.type"
                   @start="() => idxSlideLoading = index"
                   @finish="() => idxSlideLoading = null"
@@ -180,6 +180,13 @@ const idxSlideLoading = ref<number | null>(null)
 </template>
 
 <style scoped>
+
+
+
+:deep(.p-carousel-items-container) {
+  align-items: stretch !important;
+}
+
 :deep(.p-carousel-indicator-list) {
   display: none;
 }
@@ -190,6 +197,10 @@ const idxSlideLoading = ref<number | null>(null)
 }
 
 .card {
+  display: flex;
+  flex-direction: column;
+  height: v-bind('cardStyle?.height || "100%"') !important;
+  width: v-bind('cardStyle?.width || "95%"') !important;
   background: v-bind('cardStyle?.background || "transparent"') !important;
 
   padding-top: v-bind('cardStyle?.paddingTop || "0px"') !important;

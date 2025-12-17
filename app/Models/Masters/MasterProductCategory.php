@@ -68,6 +68,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property array<array-key, mixed>|null $web_images
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
@@ -78,6 +79,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @property-read MasterProductCategory|null $masterSubDepartment
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterVariant> $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
@@ -117,6 +119,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'            => 'array',
+        'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
@@ -124,8 +127,9 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
+        'web_images'  => '{}',
     ];
 
     public function generateTags(): array
@@ -202,6 +206,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(MasterProductCategory::class, 'master_sub_department_id');
     }
 
+    public function masterVariant(): HasMany
+    {
+        return $this->hasMany(MasterVariant::class, 'master_family_id');
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_parent_id');
@@ -237,7 +246,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
-
 
 
 }

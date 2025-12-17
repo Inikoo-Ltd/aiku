@@ -71,7 +71,7 @@ class IndexWebUserRequestsInOrganisation extends OrgAction
                 ->column(key: 'url', label: __('url'), canBeHidden: false)
                 ->column(key: 'user_agent', label: __('user agent'), canBeHidden: false)
                 ->column(key: 'location', label: __('location'), canBeHidden: false)
-                ->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true)
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true)
                 ->defaultSort('-date');
         };
     }

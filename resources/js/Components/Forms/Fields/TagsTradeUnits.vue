@@ -16,6 +16,7 @@ import PureImageCrop from '@/Components/Pure/PureImageCrop.vue'
 import { routeType } from '@/types/route'
 import { faPlus } from '@fas'
 import { faTrashAlt } from '@fal'
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 
 library.add(faPlus, faTrashAlt)
 
@@ -27,6 +28,8 @@ const props = defineProps<{
             index_tag: routeType
             store_tag: routeType
             update_tag: routeType
+            attach_tag: routeType
+            detach_tag: routeType
         }
         tags: {}[]
     }
@@ -64,6 +67,7 @@ const onCreateNewTag = () => {
             },
             onFinish: () => {
                 isLoadingCreateTag.value = false
+                fetchProductList()
             },
             onError: (error) => {
                 notify({
@@ -105,9 +109,21 @@ const fetchProductList = async (url?: string) => {
 // Attach/Detach tags directly on parent form
 const formSelectedTags = computed({
     get: () => props.form[props.fieldName] || [],
-    set: (val) => {
-        props.form[props.fieldName] = val
-    },
+    set: (newVal) => {
+        const oldVal = props.form[props.fieldName] || []
+
+        // Find newly added tag (user checked a tag)
+        const addedTags = newVal.filter((id: number) => !oldVal.includes(id))
+
+        // Prevent removal via multiselect - only allow adding
+        if (addedTags.length > 0) {
+            // Attach the new tag (single tag)
+            onAttachTag(addedTags[0])
+        } else {
+            // If user tried to uncheck, revert to old value
+            props.form[props.fieldName] = oldVal
+        }
+    }
 })
 
 watch(
@@ -149,6 +165,7 @@ const onEditTag = () => {
             },
             onFinish: () => {
                 isLoadingUpdateTag.value = false
+                fetchProductList()
             },
             onError: (error) => {
                 console.error('Error editing tag:', error)
@@ -165,6 +182,19 @@ const onEditTag = () => {
 // Utility: find tag by ID safely
 const findTagById = (id: number) => {
     return optionsList.value.find((t) => t.id === id)
+}
+
+// Attach single tag function
+const onAttachTag = (tagId: number) => {
+    if (!props.fieldData?.tag_routes?.attach_tag?.name) {
+        // Fallback: just update form value if no attach route
+        props.form[props.fieldName] = [...(props.form[props.fieldName] || []), tagId]
+        return
+    }
+
+    router[props.fieldData.tag_routes.attach_tag.method || 'post'](
+        route(props.fieldData.tag_routes.attach_tag.name, props.fieldData.tag_routes.attach_tag.parameters), { tags_id: [tagId] }
+    )
 }
 
 onMounted(() => {
@@ -184,19 +214,38 @@ onMounted(() => {
                 }
             }" stringToColor style="cursor: pointer">
                 <template #closeButton>
-                    <div @click="formSelectedTags = formSelectedTags.filter((id) => id !== tagId)"
-                        class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
-                    </div>
+                    <ModalConfirmationDelete
+                        :routeDelete="{ name: fieldData?.tag_routes?.detach_tag.name ?? '', parameters: { ...fieldData?.tag_routes?.detach_tag.parameters, tag: tagId } }"
+                        :title="trans('Are you sure you want to detach this tag?')"
+                        :description="trans('This tag will be removed from this item.')"
+                        :noLabel="trans('Detach')"
+                        noIcon="fal fa-trash-alt"
+                    >
+                        <template #default="{ changeModel }">
+                            <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                                <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
+                            </div>
+                        </template>
+                    </ModalConfirmationDelete>
                 </template>
             </Tag>
         </div>
 
         <!-- Multiselect tags -->
         <div v-if="props.fieldData?.tag_routes?.index_tag?.name" class="w-full max-w-64">
-            <MultiSelect ref="_multiselect_tags" v-model="formSelectedTags"
-                :options="optionsList.length ? optionsList : props.fieldData?.tags" optionLabel="name" optionValue="id"
-                placeholder="Select Tags" :maxSelectedLabels="3" filter class="w-full md:w-80">
+            <MultiSelect
+                ref="_multiselect_tags"
+                v-model="formSelectedTags"
+                :options="optionsList.length ? optionsList : props.fieldData?.tags"
+                optionLabel="name"
+                optionValue="id"
+                :optionDisabled="(option) => formSelectedTags.includes(option.id)"
+                :placeholder="trans('Select tags')"
+                :maxSelectedLabels="3"
+                filter
+                class="w-full md:w-80"
+                :showClear="false"
+            >
                 <template #footer="{ value, options }">
                     <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
                         <LoadingIcon></LoadingIcon>
@@ -211,7 +260,7 @@ onMounted(() => {
                             :key="`${formSelectedTags.isDirty}`"
                             :type="formSelectedTags.isDirty ? 'secondary' : 'tertiary'"
                         />
-                        
+
                         <Button
                             @click="() => (isModalTag = true, _multiselect_tags?.hide())"
                             :label="trans('Create new tag')"

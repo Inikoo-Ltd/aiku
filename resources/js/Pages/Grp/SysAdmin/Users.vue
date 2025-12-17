@@ -10,7 +10,7 @@ import TableUsers from "@/Components/Tables/Grp/SysAdmin/TableUsers.vue";
 import { faRoad, faUserCircle, faUserSlash, faBlender } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { capitalize } from "@/Composables/capitalize";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 
 library.add(faRoad, faUserCircle, faUserSlash, faBlender);

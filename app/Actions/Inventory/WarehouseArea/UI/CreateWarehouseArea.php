@@ -53,14 +53,14 @@ class CreateWarehouseArea extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'        => 'input',
-                                    'label'       => __('code'),
+                                    'label'       => __('Code'),
                                     'placeholder' => __('maximum 16 character long'),
                                     'value'       => '',
                                     'required'    => true,
                                 ],
                                 'name' => [
                                     'type'    => 'input',
-                                    'label'   => __('name'),
+                                    'label'   => __('Name'),
                                     'value'   => '',
                                     'required' => true
                                 ],

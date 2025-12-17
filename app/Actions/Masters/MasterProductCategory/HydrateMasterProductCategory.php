@@ -38,6 +38,8 @@ class HydrateMasterProductCategory extends HydrateModel
         MasterFamilyHydrateMasterAssets::run($masterProductCategory);
         MasterFamilyHydrateFamilies::run($masterProductCategory);
         MasterFamilyHydrateStatus::run($masterProductCategory);
+        UpdateMasterProductCategoryWebImages::run($masterProductCategory);
+
     }
 
 

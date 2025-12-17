@@ -54,7 +54,7 @@ class EditInvoiceCategory extends OrgAction
                                 'fields' => [
                                     'name' => [
                                         'type'     => 'input',
-                                        'label'    => __('name'),
+                                        'label'    => __('Name'),
                                         'value'   => $invoiceCategory->name,
                                         'required' => true,
                                     ],

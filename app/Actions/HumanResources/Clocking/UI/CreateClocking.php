@@ -62,7 +62,7 @@ class CreateClocking extends OrgAction
                                 ],
                                 'date' => [
                                     'type'     => 'date',
-                                    'label'    => __('date'),
+                                    'label'    => __('Date'),
                                     'required' => true
                                 ],
                                 'time' => [

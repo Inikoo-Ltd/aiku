@@ -87,7 +87,7 @@ class EditPayment extends OrgAction
                             'fields' => [
                                 'amount' => [
                                     'type'  => 'input',
-                                    'label' => __('amount'),
+                                    'label' => __('Amount'),
                                     'value' => $payment->amount
                                 ],
                                 'date' => [

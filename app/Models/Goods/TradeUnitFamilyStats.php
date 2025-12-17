@@ -17,6 +17,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_trade_units_status_in_process
+ * @property int $number_trade_units_status_active
+ * @property int $number_trade_units_status_discontinued
+ * @property int $number_trade_units_status_anomality
+ * @property int $number_trade_units_status_discontinuing
  * @property-read \App\Models\Goods\TradeUnitFamily $tradeUnitFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamilyStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamilyStats newQuery()

@@ -34,6 +34,7 @@ import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blu
 import SubDepartment2Blueprint from "@/Components/CMS/Webpage/SubDepartment2/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
+import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
@@ -45,6 +46,7 @@ import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/Carou
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
 import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Blueprint"
 import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
+import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
@@ -89,12 +91,14 @@ export const getBlueprint = (componentName: string, data?: object) => {
 
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,
+		"products-2": ProductsList2Blueprint.blueprint,
 
 		//BestSeller
 		"bestseller-1": BluprintBestseller.blueprint,
 
 		// product
 		"product-1": Product1Blueprint.blueprint,
+		"product-2": Product2.blueprint,
 
 		// see also — accepts dynamic data
 		"see-also-1": () => SeeAlso1Blueprint(data).blueprint,

@@ -91,8 +91,8 @@ class IndexRetinaRecurringBillTransactions extends OrgAction
                 );
 
             $table
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'description', label: __('description'))
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'description', label: __('Description'))
                 ->column(key: 'asset_code', label: __('rental code'), canBeHidden: false, sortable: true, searchable: true)
                 // ->column(key: 'asset_name', label: __('rental name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'asset_price', label: __('base price'), canBeHidden: false, sortable: true, searchable: true)

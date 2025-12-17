@@ -8,8 +8,10 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Http\Resources\Accounting\PaymentAccountsResource;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -80,43 +82,12 @@ trait IsOrder
             ];
         }
 
-        $invoiceData = null;
-        $invoice     = $order->invoices->first();
+        $invoice = $order->invoices->first();
 
-        //todo vika delete this
-        if ($invoice) {
-            if (request()->routeIs('retina.*')) {
-                $routeShow     = [
-                    'name'       => 'retina.dropshipping.invoices.show',
-                    'parameters' => [
-                        'invoice' => $invoice->slug,
-                    ]
-                ];
-                $routeDownload = null;
-            } else {
-                $routeShow = [
-                    'name'       => request()->route()->getName().'.invoices.show',
-                    'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
-                ];
-
-                $routeDownload = [
-                    'name'       => 'grp.org.accounting.invoices.download',
-                    'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'invoice'      => $invoice->slug,
-                    ]
-                ];
-            }
-
-            $invoiceData = [
-                'reference' => $invoice->reference,
-                'routes'    => [
-                    'show'     => $routeShow,
-                    'download' => $routeDownload,
-                ]
-            ];
+        if ($invoice && request()->routeIs('retina.*')) {
+            $routeDownload = null;
         }
-        // ----------- end todo
+
         $customerClientData = null;
 
         if ($order->customerClient) {
@@ -207,9 +178,23 @@ trait IsOrder
                 'price_total' => $order->charges_amount
             ],
             [
-                'label'       => __('Shipping'),
-                'information' => '',
-                'price_total' => $order->shipping_amount
+                'label'                     => __('Shipping'),
+                'information'               => '',
+                'price_total'               => $order->shipping_amount,
+                'slot_name'                 => 'shipping',
+                'data'                      => [
+                    'shipping_amount'     => $order->shipping_amount,
+                    'new_shipping_amount' => $order->shipping_amount,  // FE Helper
+                    'engine'              => $order->shipping_engine,
+                    'is_shipping_tbc'     => $order->is_shipping_tbc,
+                    'shipping_tbc_amount' => $order->shipping_tbc_amount,
+                    'shipping_zone_id'    => $order->shipping_zone_id,
+                    'shipping_zone'       => $order->shipping_zone_id ? [
+                        'slug' => $order->shippingZone->slug,
+                        'code' => $order->shippingZone->code,
+                        'name' => $order->shippingZone->name,
+                    ] : null
+                ]
             ]
         ];
 
@@ -266,9 +251,9 @@ trait IsOrder
 
 
             'order_properties' => [
-                'weight'                 => NaturalLanguage::make()->weight($order->estimated_weight),
-                'customer_order_number'  => $numberOrders,
-                'customer_order_ordinal' => ordinal($numberOrders)." ".__('order'),
+                'weight'                         => NaturalLanguage::make()->weight($order->estimated_weight),
+                'customer_order_number'          => $numberOrders,
+                'customer_order_ordinal'         => ordinal($numberOrders)." ".__('order'),
                 'customer_order_ordinal_tooltip' => __('This is the nth order this customer has placed with this shop.')
             ],
             'delivery_notes'   => $deliveryNotesData,
@@ -308,7 +293,8 @@ trait IsOrder
                 'estimated_weight' => $estWeight,
             ],
 
-            'payments' => PaymentsResource::collection($order->payments)->toArray(request()),
+            'payments'          => PaymentsResource::collection($order->payments)->toArray(request()),
+            'payments_accounts' => PaymentAccountsResource::collection(GetShopPaymentAccounts::run($order->shop))->toArray(request()),
 
 
             'order_summary' => $orderSummary,

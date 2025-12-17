@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, Teleport, inject, nextTick } from "vue"
+import { onBeforeUnmount, onMounted, ref, nextTick } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
 import Select from 'primevue/select'
 import { useFontFamilyList } from '@/Composables/useFont'
@@ -18,7 +18,6 @@ import Strike from "@tiptap/extension-strike"
 import ListItem from "@tiptap/extension-list-item"
 import BulletList from "@tiptap/extension-bullet-list"
 import OrderedList from "@tiptap/extension-ordered-list"
-import Link from "@tiptap/extension-link"
 import TextAlign from '@tiptap/extension-text-align'
 import { Blockquote } from "@tiptap/extension-blockquote"
 import { HardBreak } from "@tiptap/extension-hard-break"
@@ -31,7 +30,6 @@ import { TableHeader } from "@tiptap/extension-table-header"
 import { TableRow } from "@tiptap/extension-table-row"
 import { TableCell } from "@tiptap/extension-table-cell"
 import Gapcursor from "@tiptap/extension-gapcursor"
-import Image from "@tiptap/extension-image"
 import TextStyle from '@tiptap/extension-text-style'
 import customLink from '@/Components/Forms/Fields/BubleTextEditor/CustomLink/CustomLinkExtension.js'
 import { Color } from '@tiptap/extension-color'
@@ -56,8 +54,6 @@ import {
     faUnderline,
     faStrikethrough,
     faImage,
-    faVideo,
-    faTable as farTable,
     faMinus,
     faList,
     faListOl,
@@ -66,13 +62,11 @@ import {
     faAlignRight,
     faFileVideo,
     faPaintBrushAlt,
-    faText,
     faTextSize,
     faDraftingCompass,
     faExternalLink,
-    faTimesCircle,
 } from "@far"
-import { faTable, faPalette, faUnlink, faLanguage, faTimes } from "@fal"
+import { faTable, faPalette, faUnlink, faTimes } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -114,7 +108,6 @@ const emits = defineEmits<{
     (e: 'blur'): void
 }>()
 
-const layout = inject('layout', {})
 const _bubbleMenu = ref(null)
 const showDialog = ref(false)
 const contentResult = ref<string>()
@@ -169,16 +162,6 @@ const editorInstance = useEditor({
                                     .nodeAt(pos)
                                     ?.marks.find((mark) => mark.type === linkMark)?.attrs
 
-                               /*  if (attrs) {
-                                    event.preventDefault()
-                                    if (attrs.workshop) {
-                                        CustomLinkConfirm.value = true
-                                        attrsCustomLink.value = attrs
-                                    } else {
-                                        console.log(attrs.href)
-                                    }
-                                    return true
-                                } */
                                 return false
                             },
                         },
@@ -483,10 +466,6 @@ const convertRemToPx = (remString) => {
 }
 
 
-/* const shouldShow = ({ editor, view, state, from, to }) => {
-    return true
-}
- */
 
 onMounted(async () => {
   await nextTick()
@@ -496,10 +475,6 @@ onMounted(async () => {
   }, 250)
 
 
-  /* tippyOptions.value = {
-    boundary: 'viewport',
-    appendTo: document.getElementById('content-editor-container'),
-  } */
 })
 </script>
 
@@ -1014,13 +989,7 @@ onMounted(async () => {
 }
 
 
-/* .scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-} */
+
 
 :deep(.font-inter) {
     font-family: "Inter", sans-serif;

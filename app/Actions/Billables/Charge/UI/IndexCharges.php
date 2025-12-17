@@ -72,8 +72,8 @@ class IndexCharges extends OrgAction
         $queryBuilder = QueryBuilder::for(Charge::class);
 
         $queryBuilder->leftJoin('organisations', 'charges.organisation_id', '=', 'organisations.id')
-        ->leftJoin('shops', 'charges.shop_id', '=', 'shops.id')
-        ->leftJoin('currencies', 'charges.currency_id', '=', 'currencies.id');
+            ->leftJoin('shops', 'charges.shop_id', '=', 'shops.id')
+            ->leftJoin('currencies', 'charges.currency_id', '=', 'currencies.id');
 
         if (class_basename($parent) == 'Shop') {
             $queryBuilder->where('charges.shop_id', $parent->id);
@@ -132,6 +132,7 @@ class IndexCharges extends OrgAction
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('charge'),__('charges')])
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Organisation' => [
@@ -152,17 +153,17 @@ class IndexCharges extends OrgAction
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon');
 
             if ($parent instanceof Organisation) {
-                $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales_all', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'customers_invoiced_all', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'invoices_all', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sales_all', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'currency');
 
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }

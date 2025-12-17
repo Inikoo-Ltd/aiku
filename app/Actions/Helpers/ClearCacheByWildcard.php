@@ -9,7 +9,7 @@
 namespace App\Actions\Helpers;
 
 use Cache;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ClearCacheByWildcard
@@ -20,19 +20,29 @@ class ClearCacheByWildcard
     /**
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function handle(string $pattern): void
+    public function handle(string $pattern, Command $command = null): void
     {
-        $keys = Redis::connection('cache')->scan('0', [
-            'match' => config('database.redis.options.prefix').config('cache.prefix').
-                $pattern,
-            'count' => 1000000,
-        ]);
-        if ($keys) {
-            foreach ($keys[1] as $key) {
-                $key = str_replace(config('database.redis.options.prefix').config('cache.prefix'), '', $key);
-                Cache::delete($key);
-            }
+
+        $keys = GetRedisKeysByPattern::run($pattern, 'cache');
+        $command?->line('Deleting  '.sprintf('%05d', count($keys)).'  cache keys matching pattern: '.$pattern);
+        foreach ($keys as $key) {
+            Cache::delete($key);
         }
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'cache:clear_by_wildcard {pattern}';
+    }
+
+    /**
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function asCommand(Command $command): int
+    {
+        $this->handle($command->argument('pattern'), $command);
+
+        return 0;
     }
 
 

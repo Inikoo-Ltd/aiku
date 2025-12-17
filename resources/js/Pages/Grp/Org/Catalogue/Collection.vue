@@ -11,7 +11,7 @@ import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 
 import {
-    PageHeading as PageHeadingTypes
+    PageHeadingTypes
 } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { routeType } from '@/types/route'

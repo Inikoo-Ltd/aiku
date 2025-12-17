@@ -72,7 +72,7 @@ class EditMasterDepartment extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $masterProductCategory->code
                                 ],
                             ]

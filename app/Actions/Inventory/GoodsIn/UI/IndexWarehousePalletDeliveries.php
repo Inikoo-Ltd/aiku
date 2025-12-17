@@ -167,7 +167,7 @@ class IndexWarehousePalletDeliveries extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
 
             foreach ($this->getElementGroups($warehouse) as $key => $elementGroup) {
@@ -184,7 +184,7 @@ class IndexWarehousePalletDeliveries extends OrgAction
             $table->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'estimated_delivery_date', label: __('estimated delivery date'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true, className: 'hello');
+            $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true, className: 'hello');
         };
     }
 

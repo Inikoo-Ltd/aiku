@@ -7,7 +7,7 @@ import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
-import FilterProducts from "@/Components/CMS/Webpage/Products1/FilterProduct.vue"
+import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue"
 import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
 import { debounce, get } from "lodash-es"
@@ -18,8 +18,8 @@ import { faSearch } from "@fal"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents"
+import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
 
 
 const props = defineProps<{
@@ -409,7 +409,7 @@ watch(
 </script>
 
 <template>
-    <div id="products-1-ecom">
+    <div id="list-products-ecom-iris" class="">
         <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
@@ -499,13 +499,11 @@ watch(
                     </div>
 
                     <div>
-                        <!-- <ButtonAddCategoryToPortfolio xproduct="fieldValue.product" :products :categoryId
-                            xproductHasPortfolio="productExistenceInChannels" /> -->
                     </div>
                 </div>
 
                 <!-- Product Grid -->
-                <div :class="responsiveGridClass" class="grid gap-6 p-4"
+               <div :class="responsiveGridClass" class="grid gap-6 p-4"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
@@ -519,12 +517,23 @@ watch(
                     
 
                     <template v-else-if="products.length">
-                        <div v-for="(product, index) in products" :key="index"
+                      <div
+                            v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
-                            <component :is="getProductsRenderB2bComponent(code)" 
-                                :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller" :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"/>
+                            class="border relative rounded flex md:flex-1 justify-center"
+                            :class="product.stock &&  code != 'products-1' ? '' : 'bg-red-100'"
+                        >
+                            <RenderProduct 
+                                :code="code" 
+                                :product="product" 
+                                :key="index" 
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" 
+                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
+                                :hasInBasket="productInBasket.list[product.id]" 
+                                :bestSeller="fieldValue.bestseller" 
+                                :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
+                                :button="fieldValue?.button"
+                            />
                         </div>
                     </template>
 
@@ -573,6 +582,10 @@ watch(
 
 aside {
     transition: all 0.3s ease;
+}
+
+.auto-rows-fr {
+    grid-auto-rows: 1fr;
 }
 
 

@@ -60,8 +60,9 @@ export default {
 			],
 		},
 		{
-			name: "hover",
-			key: ['hover',"container", "properties"],
+			name: "Hover",
+			information: trans('This will apply when the user hover over the navigation item'),
+			key: ["hover", "container", "properties"],
 			replaceForm: [
 				{
 					key: ["background"],
@@ -71,6 +72,14 @@ export default {
 				{
 					key: ["text"],
 					type: "textProperty",
+				},
+				{
+					label: "Transition Duration (in ms)",
+					key: ["transition", "duration"],
+					type: "number",
+					props_data: {
+						suffix: "ms",
+					}
 				},
 			],
 		}

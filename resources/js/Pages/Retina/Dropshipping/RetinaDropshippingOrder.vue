@@ -15,12 +15,12 @@ import type {Component} from 'vue'
 import {useTabChange} from "@/Composables/tab-change"
 import {trans} from "laravel-vue-i18n"
 import {routeType} from '@/types/route'
-import {PageHeading as PageHeadingTypes} from '@/types/PageHeading'
+import {PageHeadingTypes} from '@/types/PageHeading'
 import {Tabs as TSTabs} from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
-import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
+import DropshippingTableOrderTransactions from '@/Components/Retina/Dropshipping/DropshippingTableOrderTransactions.vue'
 import {Address, AddressManagement} from "@/types/PureComponent/Address"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
@@ -155,7 +155,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-        transactions: OrderProductTable,
+        transactions: DropshippingTableOrderTransactions,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,
@@ -201,6 +201,9 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 }
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
+const hasModified = props.transactions.data.some(item => 
+  item.quantity_ordered !== item.quantity_dispatched
+);
 
 </script>
 
@@ -209,6 +212,17 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     <Head :title="capitalize(title)"/>
 
     <PageHeading :data="pageHead">
+        <template #other>
+            <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="trans('Order is cancelled')">
+                <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
+                {{ order?.data.state_label }}
+            </span>
+            <!-- To display if order have missing items / items that are not picked -->
+            <span v-if="order?.data.state == 'dispatched' && hasModified" class="py-2 px-3 border border-solid text-purple-500 border-purple-500 rounded-md cursor-default font-medium" v-tooltip="trans('Some items are not being sent. Excessed payments have been refunded automatically')">
+                <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
+                {{ order?.data.state_label }} | Modified
+            </span>
+        </template>
     </PageHeading>
 
     <div v-if="order?.data?.has_insurance || order?.data?.is_premium_dispatch || order?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">

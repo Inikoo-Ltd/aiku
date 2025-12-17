@@ -51,9 +51,6 @@ class UpdateOrder extends OrgAction
         $oldState                = $order->state;
 
 
-
-
-
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
         $order->refresh();
@@ -160,7 +157,7 @@ class UpdateOrder extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference' => [
+            'reference'               => [
                 'sometimes',
                 'string',
                 'max:64',

@@ -58,6 +58,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 'products.unit',
                 'products.units',
                 'products.asset_id',
+                'products.available_quantity',
                 'shops.name as shop_name',
                 'shops.code as shop_code',
                 'currencies.code as currency_code',
@@ -85,16 +86,16 @@ class IndexProductsInMasterProduct extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' =>  __("There is no products"),
+                        'title' => __("There is no products"),
                     ]
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true)
-                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true)
-                ->column(key: 'units', label: __('Units'), canBeHidden: false, sortable: true)
+                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'actions', label: __(''), canBeHidden: false);
         };
     }

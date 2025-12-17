@@ -73,6 +73,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $source_quantity_in_submitted_orders
  * @property string $source_quantity_to_be_picked
  * @property bool $is_on_demand
+ * @property bool $has_been_in_warehouse
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
@@ -101,12 +102,12 @@ use Spatie\Sluggable\SlugOptions;
  */
 class OrgStock extends Model implements Auditable
 {
-    use SoftDeletes;
+    use HasFactory;
+    use HasHistory;
     use HasSlug;
     use HasUniversalSearch;
-    use HasFactory;
     use InOrganisation;
-    use HasHistory;
+    use SoftDeletes;
 
     protected $casts = [
         'data'                             => 'array',
@@ -133,7 +134,7 @@ class OrgStock extends Model implements Auditable
     public function generateTags(): array
     {
         return [
-            'goods'
+            'goods',
         ];
     }
 
@@ -143,12 +144,11 @@ class OrgStock extends Model implements Auditable
         'state',
     ];
 
-
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code . ' ' . $this->organisation->code;
+                return $this->code.' '.$this->organisation->code;
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
@@ -202,7 +202,6 @@ class OrgStock extends Model implements Auditable
 
     public function tradeUnits(): MorphToMany
     {
-
         return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
         //        return $this->morphToMany(
         //            TradeUnit::class,

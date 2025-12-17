@@ -5,6 +5,7 @@
 	"name": "Recommenders: Customer Recently Bought",
 	"website_type" : ["b2b","b2c","dropshipping"],
 	"category": "block",
+	"is_in_test" : false,
 	"fixed": true,
 	"data": {
 		"fieldValue": {

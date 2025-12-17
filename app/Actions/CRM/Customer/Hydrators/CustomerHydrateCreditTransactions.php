@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -63,5 +64,20 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
         UpdateCustomer::make()->action($customer, $modelData);
     }
 
+    public function getCommandSignature(): string
+    {
+        return "crm:customer:hydrate-credit-transactions {customer}";
+    }
+
+    public function getCommandDescription(): string
+    {
+        return "Hydrate credit transactions for customer.";
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $this->handle(Customer::where('slug', $command->argument('customer'))->firstOrFail());
+        return 0;
+    }
 
 }

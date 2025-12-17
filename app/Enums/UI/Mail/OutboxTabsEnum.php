@@ -18,6 +18,7 @@ enum OutboxTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case MAILSHOTS = 'mailshots';
+    case EMAIL_RUNS = 'email_runs';
     case DISPATCHED_EMAILS = 'dispatched_emails';
 
     public function blueprint(): array
@@ -34,6 +35,10 @@ enum OutboxTabsEnum: string
             OutboxTabsEnum::DISPATCHED_EMAILS => [
                 'title' => __('Dispatched emails'),
                 'icon'  => 'far fa-paper-plane',
+            ],
+            OutboxTabsEnum::EMAIL_RUNS => [
+                'title' => __('Email Bulk runs'),
+                'icon'  => 'fal fa-mail-bulk',
             ],
         };
     }

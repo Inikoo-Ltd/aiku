@@ -255,6 +255,7 @@ class IndexProspects extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('prospect'),__('prospects')])
                 ->withGlobalSearch();
 
             if (!($parent instanceof Group)) {
@@ -266,7 +267,7 @@ class IndexProspects extends OrgAction
             }
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_opt_in', label: __('Opt In'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)

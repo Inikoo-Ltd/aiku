@@ -36,10 +36,10 @@ class UpdateFulfilmentCustomer extends OrgAction
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer, array $modelData): FulfilmentCustomer
     {
-        $customerData       = Arr::only($modelData, ['contact_name', 'company_name', 'email', 'phone','tax_number','identity_document_number']);
+        $customerData       = Arr::only($modelData, ['contact_name', 'company_name', 'email', 'phone', 'tax_number', 'identity_document_number', 'is_credit_customer', 'accounting_reference']);
         $contactAddressData = Arr::get($modelData, 'address');
         UpdateCustomer::run($fulfilmentCustomer->customer, $customerData);
-        Arr::forget($modelData, ['contact_name', 'company_name', 'email', 'phone', 'address','tax_number','identity_document_number']);
+        Arr::forget($modelData, ['contact_name', 'company_name', 'email', 'phone', 'address', 'tax_number', 'identity_document_number', 'is_credit_customer', 'accounting_reference']);
 
         $oldData = [
             'pallets_storage' => $fulfilmentCustomer->pallets_storage,
@@ -148,6 +148,8 @@ class UpdateFulfilmentCustomer extends OrgAction
             ],
             'tax_number'               => ['sometimes', 'nullable', 'array'],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
+            'is_credit_customer'       => ['sometimes', 'boolean'],
+            'accounting_reference'     => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 

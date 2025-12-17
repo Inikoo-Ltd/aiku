@@ -157,12 +157,13 @@ class IndexUsers extends OrgAction
 
             $table
                 ->withTitle(title: __('Users'))
+                ->withLabelRecord([__('user'),__('users')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'status', label: ['data' => ['fal', 'fa-yin-yang'], 'type' => 'icon', 'tooltip' => __('status')], type: 'icon')
                 ->column(key: 'image', label: ['data' => ['fal', 'fa-user-circle'], 'type' => 'icon', 'tooltip' => __('avatar')], type: 'avatar')
                 ->column(key: 'username', label: __('username'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'contact_name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('username');
         };
     }

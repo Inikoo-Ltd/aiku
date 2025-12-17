@@ -18,7 +18,6 @@ use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -88,7 +87,6 @@ class ShowOutboxWorkshop extends OrgAction
 
     public function htmlResponse(Email $email, ActionRequest $request): Response
     {
-        $beeFreeSettings = Arr::get($email->group->settings, 'beefree');
 
         return Inertia::render(
             'Org/Web/Workshop/Outbox/OutboxWorkshop',
@@ -154,12 +152,17 @@ class ShowOutboxWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
+                'storeTemplateRoute' => [
+                    'name' => 'grp.models.shop.outboxes.workshop.store.template',
+                    'parameters' => [
+                        'shop' => $email->shop_id,
+                        'outbox' => $email->outbox_id
+                    ],
+                    'method' => 'post'
+                ],
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'status' => $email->outbox->state,
-                'apiKey' => [
-                    'client_id' => Arr::get($beeFreeSettings, 'client_id'),
-                    'client_secret' => Arr::get($beeFreeSettings, 'client_secret'),
-                ]
+                'organisationSlug' => $this->organisation->slug
             ]
         );
     }
@@ -207,7 +210,4 @@ class ShowOutboxWorkshop extends OrgAction
             default => []
         };
     }
-
-
-
 }

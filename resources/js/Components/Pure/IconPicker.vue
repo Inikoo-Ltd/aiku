@@ -3,7 +3,8 @@ import { ref } from "vue";
 import Popover from "primevue/popover";
 import { library, icon } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle } from "@fas";
-import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faBars, faHeart } from "@fal";
+import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faBars, faHeart, faPlus } from "@fal";
+import { faBasketShopping } from "@fortawesome/free-solid-svg-icons"
 import {
   faBackpack,
   faTruckLoading,
@@ -28,11 +29,12 @@ import {
   faMedal,
 } from "@far";
 import { faLambda } from "@fad";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 // Add icons to the library
 library.add(
-  faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
-  faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars,
+  faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faPlus,
+  faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars, faBasketShopping, 
   faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, faHeart
 );
 
@@ -50,9 +52,11 @@ const props = withDefaults(
   }
 );
 
+console.log('IconPicker props.iconList', props.iconList);
+
 const _popover = ref();
 const allIcons = props.listType === "extend"
-  ? [...[faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
+  ? [...[faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faPlus,
     faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars,
     faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, faHeart], ...props.iconList]
   : props.iconList;
@@ -107,6 +111,11 @@ const onChangeIcon = (iconData: any) => {
   _popover.value?.hide();
 };
 
+const clearIcon = () => {
+  emits("update:modelValue", null as any)
+  _popover.value?.hide()
+}
+
 defineExpose({
   allIcons,
   popover: _popover,
@@ -115,23 +124,27 @@ defineExpose({
 </script>
 
 <template>
-    <div @click="toggle" >
-        <span v-html="renderIcon(modelValue)"></span>
+  <div class="relative inline-flex items-center justify-center" @click="toggle">
+    <!-- Current Icon -->
+    <span v-html="renderIcon(modelValue)"></span>
 
-        <Popover ref="_popover">
-          <div class="w-full max-w-[25rem]">
-            <div class="grid grid-cols-4 gap-2 h-44 overflow-y-auto">
-              <div
-                v-for="(iconData, index) in allIcons"
-                :key="index"
-                class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-200 cursor-pointer"
-                @click="() => onChangeIcon(iconData)"
-              >
-                <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
-              </div>
-            </div>
+    <!-- Clear Button (top-right) -->
+    <button v-if="modelValue" type="button"
+      class="absolute -top-5 -right-4 rounded-full text-gray-400 hover:text-red-500" @click="clearIcon">
+      <FontAwesomeIcon :icon="faTimesCircle" class="text-xs text-red-500"></FontAwesomeIcon>
+    </button>
+
+    <Popover ref="_popover">
+      <div class="w-full max-w-[25rem]">
+        <div class="grid grid-cols-4 gap-2 max-h-44 min-h-12 overflow-y-auto">
+          <div v-for="(iconData, index) in allIcons" :key="index"
+            class="flex items-center justify-center p-2 rounded-lg hover:bg-gray-200 cursor-pointer"
+            @click="onChangeIcon(iconData)">
+            <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>
           </div>
-        </Popover>
-    </div>
+        </div>
+      </div>
+    </Popover>
+  </div>
 </template>
 

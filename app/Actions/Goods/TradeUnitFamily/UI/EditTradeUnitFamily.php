@@ -50,17 +50,17 @@ class EditTradeUnitFamily extends GrpAction
                                 'fields' => [
                                     'code' => [
                                         'type'     => 'input',
-                                        'label'    => __('code'),
+                                        'label'    => __('Code'),
                                         'value'    => $tradeUnitFamily->code
                                     ],
                                     'name' => [
                                         'type'     => 'input',
-                                        'label'    => __('name'),
+                                        'label'    => __('Name'),
                                         'value'    => $tradeUnitFamily->name
                                     ],
                                     'description' => [
                                         'type'     => 'textarea',
-                                        'label'    => __('description'),
+                                        'label'    => __('Description'),
                                         'value'    => $tradeUnitFamily->description
                                     ],
                                 ]

@@ -2,7 +2,6 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -55,6 +54,59 @@ trait WithWooCommerceApiRequest
         $this->timeOut = $timeOut;
     }
 
+    public function normalizeErrorMessage(array $errorData): ?array
+    {
+        // If empty array, no error
+        if (empty($errorData)) {
+            return null;
+        }
+
+        // Check if it's an indexed array (has numeric keys starting from 0)
+        $firstError = $errorData[0] ?? $errorData;
+
+        // Case 1: Already has 'message' key (array format)
+        if (is_array($firstError) && isset($firstError['message'])) {
+            return ['message' => $firstError['message']];
+        }
+
+        // Case 2: Has 'code' and 'message' keys
+        if (is_array($firstError) && isset($firstError['code'], $firstError['message'])) {
+            return ['message' => $firstError['message']];
+        }
+
+        // Case 3: Has only 'code' key (like woocommerce_rest_cannot_view)
+        if (is_array($firstError) && isset($firstError['code'])) {
+            return ['message' => 'Error: ' . $firstError['code']];
+        }
+
+        // Case 4: String error (might be JSON string or plain text)
+        if (is_string($firstError)) {
+            // Try to decode if it's JSON
+            $decoded = json_decode($firstError, true);
+
+            // If it decoded successfully and has a message key
+            if (is_array($decoded) && isset($decoded['message'])) {
+                return ['message' => $decoded['message']];
+            }
+
+            // If it has code and message
+            if (is_array($decoded) && isset($decoded['code'], $decoded['message'])) {
+                return ['message' => $decoded['message']];
+            }
+
+            // Check if it's HTML
+            if (str_starts_with(trim($firstError), '<!DOCTYPE') || str_starts_with(trim($firstError), '<')) {
+                return ['message' => 'Server returned HTML error page'];
+            }
+
+            // Plain text error
+            return ['message' => trim($firstError)];
+        }
+
+        // Default fallback
+        return ['message' => 'Unknown error occurred'];
+    }
+
     /**
      * Initialize the WooCommerce API credentials
      *
@@ -62,9 +114,9 @@ trait WithWooCommerceApiRequest
      */
     protected function initWooCommerceApi(): void
     {
-        $this->woocommerceApiUrl         = Arr::get($this->settings, 'credentials.store_url', '');
-        $this->woocommerceConsumerKey    = Arr::get($this->settings, 'credentials.consumer_key', '');
-        $this->woocommerceConsumerSecret = Arr::get($this->settings, 'credentials.consumer_secret', '');
+        $this->woocommerceApiUrl         = $this->store_url;
+        $this->woocommerceConsumerKey    = $this->consumer_key;
+        $this->woocommerceConsumerSecret = $this->consumer_secret;
     }
 
     /**
@@ -538,16 +590,21 @@ trait WithWooCommerceApiRequest
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
 
-    public function checkConnection(): array|null
+    public function checkConnection(): bool
     {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
                 $this->initWooCommerceApi();
             }
 
-            return $this->makeWooCommerceRequest('GET', 'system_status');
+            $result = $this->makeWooCommerceRequest('GET', 'settings');
+
+            return count($result) > 0;
+
         } catch (\Exception $e) {
-            return [$e->getMessage()];
+            \Sentry::captureMessage($e->getMessage());
+
+            return false;
         }
     }
 

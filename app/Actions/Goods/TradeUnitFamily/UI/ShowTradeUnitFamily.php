@@ -12,7 +12,9 @@ use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Actions\Traits\HasBucketAttachment;
 use App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum;
+use App\Http\Resources\Goods\TradeUnitFamilyResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Models\Goods\TradeUnitFamily;
 use Inertia\Inertia;
@@ -22,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowTradeUnitFamily extends GrpAction
 {
     use WithGoodsAuthorisation;
-
+    use HasBucketAttachment;
 
     public function handle(TradeUnitFamily $tradeUnitFamily): TradeUnitFamily
     {
@@ -42,7 +44,7 @@ class ShowTradeUnitFamily extends GrpAction
         return Inertia::render(
             'Goods/TradeUnitFamily',
             [
-                'title'            => __('Trade Unit Family'),
+                'title'            => __('Trade Unit Family')." $tradeUnitFamily->code",
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $tradeUnitFamily,
                     $request->route()->getName(),
@@ -54,10 +56,11 @@ class ShowTradeUnitFamily extends GrpAction
                 ],
                 'pageHead'         => [
                     'icon'    => [
-                        'title' => __('Trade unit family'),
-                        'icon'  => 'fal fa-atom'
+                        'title' => __('Trade Unit Family')." $tradeUnitFamily->code",
+                        'icon'  => 'fal fa-atom-alt'
                     ],
                     'title'   => $tradeUnitFamily->code,
+                    'model'   => __('Trade Unit Family'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -74,7 +77,7 @@ class ShowTradeUnitFamily extends GrpAction
                     'trade_units_route' => [
                         'name' => 'grp.json.trade_unit_family.trade_units',
                         'parameters' => [
-                            'tradeUnitFamily' => $tradeUnitFamily->slug, // key must match your route {trade_unit_family}
+                            'tradeUnitFamily' => $tradeUnitFamily->slug, // the key must match your route {trade_unit_family}
                         ],
                         'method' => 'get'
                     ],
@@ -83,7 +86,7 @@ class ShowTradeUnitFamily extends GrpAction
                     'attach_route' => [
                         'name' => 'grp.models.trade_unit_family.attach_trade_units',
                         'parameters' => [
-                            'tradeUnitFamily' => $tradeUnitFamily->id, // key must match your route {trade_unit_family}
+                            'tradeUnitFamily' => $tradeUnitFamily->id, // the key must match your route {trade_unit_family}
                         ],
                         'method' => 'post'
                     ]
@@ -95,18 +98,48 @@ class ShowTradeUnitFamily extends GrpAction
                 ],
 
                 TradeUnitFamilyTabsEnum::SHOWCASE->value => $this->tab == TradeUnitFamilyTabsEnum::SHOWCASE->value ?
-                fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)
-                : Inertia::lazy(fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)),
+                fn () => $this->getShowcase($tradeUnitFamily)
+                : Inertia::lazy(fn () => $this->getShowcase($tradeUnitFamily)),
 
                 TradeUnitFamilyTabsEnum::TRADE_UNITS->value => $this->tab == TradeUnitFamilyTabsEnum::TRADE_UNITS->value ?
                 fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))
                 : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))),
 
                 TradeUnitFamilyTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitFamilyTabsEnum::ATTACHMENTS->value ?
-                fn () => GetTradeUnitFamilyAttachment::run($tradeUnitFamily)
-                : Inertia::lazy(fn () => GetTradeUnitFamilyAttachment::run($tradeUnitFamily)),
+                fn () => $this->getAttachments($tradeUnitFamily)
+                : Inertia::lazy(fn () => $this->getAttachments($tradeUnitFamily)),
             ]
         )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value));
+    }
+
+    public function getAttachments(TradeUnitFamily $tradeUnitFamily): array
+    {
+        return [
+            'id'                        => $tradeUnitFamily->id,
+            'editable'                  => true,
+            'attachment_category_box'   => $this->getAttachmentData($tradeUnitFamily),
+            'attachRoute' => [
+                'name'       => 'grp.models.trade_unit_family.attachment.attach',
+                'parameters' => [
+                    'tradeUnitFamily' => $tradeUnitFamily->id,
+                ]
+            ],
+            'detachRoute' => [
+                'name'       => 'grp.models.trade_unit_family.attachment.detach',
+                'parameters' => [
+                    'tradeUnitFamily' => $tradeUnitFamily->id,
+                ],
+                'method'     => 'delete'
+            ],
+        ];
+    }
+
+    public function getShowcase(TradeUnitFamily $tradeUnitFamily): array
+    {
+        return [
+            'tradeUnitFamily' => TradeUnitFamilyResource::make($tradeUnitFamily)->resolve(),
+            'attachment_box' =>  $this->getAttachmentData($tradeUnitFamily),
+        ];
     }
 
     public function getBreadcrumbs(TradeUnitFamily $tradeUnitFamily, string $routeName, array $routeParameters, $suffix = null): array

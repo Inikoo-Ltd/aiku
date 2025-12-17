@@ -1,7 +1,7 @@
 <script setup lang="ts">
     
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faClipboard, faDollarSign, faSortNumericDown, faWeight } from "@fal"
+import { faClipboard, faDollarSign, faSortNumericDown, faWeight, faMapPin } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
@@ -9,6 +9,12 @@ import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import NeedToPayV2Retina from "@/Components/Utils/NeedToPayV2Retina.vue"
+import Toggle from "@/Components/Pure/Toggle.vue"
+import { get, set } from "lodash"
+import { notify } from "@kyvg/vue3-notification"
+import { routeType } from "@/types/route"
+import { router } from "@inertiajs/vue3"
 
 const props = defineProps<{
     summary: {
@@ -26,12 +32,32 @@ const props = defineProps<{
             customer_order_ordinal: string
             customer_order_ordinal_tooltip: string
         }
+        products: {
+
+        }
+        delivery_notes: {
+
+        }
+        payments: {
+
+        }
+        invoices: {
+
+        }
+        customer: {
+
+        }
+    }
+    order: {
+        id: number
+        is_collection: boolean
     }
     balance?: string
-    address_management?: AddressManagement
+    address_management: AddressManagement
     is_unable_dispatch?: boolean
     contact_address?: Address | null
-    currency_code?: string
+    isInBasket?: boolean
+    updateRoute: routeType
 }>()
 
 const locale = inject('locale', {})
@@ -45,6 +71,39 @@ const convertToFloat2 = (val: any) => {
     const num = parseFloat(val)
     if (isNaN(num)) return 0.00
     return parseFloat(num.toFixed(2))
+}
+
+// Collection feature methods
+const isLoadingCollection = ref(false)
+const updateCollection = (value: boolean) => {
+    const payload = {
+        collection_address_id: value ? props.address_management?.addresses?.current_selected_address_id : null
+    }
+
+    if (props.updateRoute?.name) {
+        router.patch(
+            route(props.updateRoute?.name, props.updateRoute.parameters),
+            payload,
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => {
+                    isLoadingCollection.value = true
+                },
+                onFinish: () => {
+                    isLoadingCollection.value = false
+                },
+                onError: (error) => {
+                    console.error(error)
+                    notify({
+                        title: trans("Something went wrong."),
+                        text: trans("Failed to update to collection"),
+                        type: "error",
+                    })
+                },
+            }
+        )
+    }
 }
 </script>
 
@@ -62,20 +121,29 @@ const convertToFloat2 = (val: any) => {
                     </dd>
                 </dl>
 
-                <!-- Field: number of order -->
-                <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                    <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
-                        <FontAwesomeIcon :icon="faSortNumericDown" fixed-width aria-hidden="true" class="text-gray-500" />
+                
+                <!-- Field: Collection (toggle) -->
+                <dl class="mt-1 mb-2 flex items-center w-full flex-none gap-x-1.5">
+                    <dt v-tooltip="trans('Collection')" class="flex-none pl-1">
+                        <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
                     </dt>
-                    <dd class="text-gray-500 sep" v-tooltip="summary?.order_properties?.customer_order_ordinal_tooltip ?? trans('Customer order number')">
-                        {{ summary?.order_properties?.customer_order_ordinal || 0 }}
+                    <dd class="text-gray-500 flex items-center gap-x-2" xv-tooltip="trans('Estimated weight of all products')">
+                        <Toggle
+                            :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
+                            @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
+                            :loading="isLoadingCollection"
+                            disabled
+                        />
+                        <span class="text-sm"
+                            :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
+                        >{{ trans("Collection") }}</span>
                     </dd>
-                </dl> -->
+                </dl>
+
             </div>
 
-
             <!-- Section: Billing Address -->
-            <div class="">
+            <div v-if="!get(props.order, ['is_collection'], false)" class="">
                 <div class="font-semibold">
                     <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
                     {{ trans("Billing Address") }}
@@ -89,7 +157,7 @@ const convertToFloat2 = (val: any) => {
             </div>
             
             <!-- Section: Delivery Address -->
-            <div class="">
+            <div v-if="!get(props.order, ['is_collection'], false)" class="">
                 <div class="font-semibold">
                     <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
                     {{ trans("Delivery Address") }}
@@ -146,12 +214,48 @@ const convertToFloat2 = (val: any) => {
 
         <!-- Section: amount of balance, charges, shipping, tax -->
         <div class="col-span-2 md:col-span-1">
-            <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
+            <div v-if="!order" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div>
                     {{ locale.currencyFormat(layout?.iris?.currency?.code, balance ?? 0) }}
                 </div>
             </div>
+
+            <div v-else-if="order?.state === 'cancelled'" class="mb-2.5">
+                <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                    {{ trans("Order cancelled, any payments made have been returned to your balance") }}
+                </div>
+            </div>
+
+            <template v-else-if="summary?.products?.payment?.pay_status != 'no_need' && !isInBasket">
+                <div class="w-full mb-2.5">
+                    <!-- Section: pay with balance (if order Submit without paid) -->
+                    <div class="w-full rounded-md shadow pxb-2 isolate border overflow-hidden"
+                        :class="[
+                            Number(summary.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
+                        ]"
+                    >
+                        <NeedToPayV2Retina
+                            :totalAmount="summary.products.payment.total_amount"
+                            :paidAmount="summary.products.payment.paid_amount"
+                            :payAmount="summary.products.payment.pay_amount"
+                            :balance="balance || 0"
+                            :payments="summary?.payments"
+                            :currencyCode="layout.iris?.currency?.code"
+                            :toBePaidBy="order?.to_be_paid_by"
+                            :order="order"
+                        >
+                            <template #default>
+                
+                
+                
+                            </template>
+                        </NeedToPayV2Retina>
+                    </div>
+                </div>
+            </template>
+
             
             <div class="border border-gray-200 p-2 rounded">
                 <OrderSummary

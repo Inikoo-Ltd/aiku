@@ -66,10 +66,11 @@ import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSub
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
 import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
 import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
+import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
 import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
 
 
-export const componentsList: {[key: string]: Component} = {
+export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
     'input': Input,
     'input_number': FieldInputNumber,
@@ -95,9 +96,9 @@ export const componentsList: {[key: string]: Component} = {
     'interest': Interest,
     'rental': Agreement,
     'webRegistrations': WebRegistrations,
-    'mailshotRecipient' : MailshotRecipient,
+    'mailshotRecipient': MailshotRecipient,
     'select_billing_cycle': SelectBillingCycle,
-    'select_printer' : SelectPrinter,
+    'select_printer': SelectPrinter,
 
     'action': Action,
     'theme': Theme,
@@ -110,32 +111,33 @@ export const componentsList: {[key: string]: Component} = {
     'app_theme': AppTheme,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
-    'pin' : Pin,
-    'tax_number' : TaxNumber,
-    'editor' : EditorHtml,
-    'structure_data_website' : StructureDataWebsite,
+    'pin': Pin,
+    'tax_number': TaxNumber,
+    'editor': EditorHtml,
+    'structure_data_website': StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,
     'delete_webpage': DeleteWebpage,
-    'button' : ButtonForm,
-    'input_translation' : InputTranslation,
+    'button': ButtonForm,
+    'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,
-    'textEditor_translation' : TextEditorTranslation,
+    'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'territory_zone': TerritoryZone,
-    'crop-image-full' : cropImageFull,
-    'list-selector' : ListSelectorFrom,
-    'edit-trade-unit-shop' : FormEditTradeUnit,
-    'tags-trade-unit' : TagsTradeUnits,
-    'brands-trade-unit' : BrandsTradeUnit,
-    'multiselect-tags' : MultiselectTagsInfiniteScroll,
-    'input-dimension' : InputDimensions,
-    'invoice_serial_references' : invoiceSerialReferences,
+    'crop-image-full': cropImageFull,
+    'list-selector': ListSelectorFrom,
+    'edit-trade-unit-shop': FormEditTradeUnit,
+    'tags-trade-unit': TagsTradeUnits,
+    'brands-trade-unit': BrandsTradeUnit,
+    'multiselect-tags': MultiselectTagsInfiniteScroll,
+    'input-dimension': InputDimensions,
+    'invoice_serial_references': invoiceSerialReferences,
     'tags-customer': TagsCustomer,
     'retina-tags-customer': RetinaTagsCustomer,
     'email_subscriptions': WrapperEmailSubscribetion,
-    'input_twin' : InputTwin,
-    'list-selector-trade-unit' : ListSelectorTradeUnit
+    'input_twin': InputTwin,
+    'list-selector-trade-unit': ListSelectorTradeUnit,
+    'file_upload': FileUpload
 }
 
 export const getComponent = (componentName: string) => {

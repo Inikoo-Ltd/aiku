@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import TableIngredients from "@/Components/Tables/Grp/Goods/TableIngredients.vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 
 defineProps<{
   data: object

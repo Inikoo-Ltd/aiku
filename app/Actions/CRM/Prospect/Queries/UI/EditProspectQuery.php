@@ -60,7 +60,7 @@ class EditProspectQuery extends InertiaAction
                                 'fields' => [
                                     'name'          => [
                                         'type'  => 'input',
-                                        'label' => __('name'),
+                                        'label' => __('Name'),
                                         'value' => $query->name
                                     ],
                                     'query_builder' => [

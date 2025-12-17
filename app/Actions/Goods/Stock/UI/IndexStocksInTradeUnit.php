@@ -39,6 +39,7 @@ class IndexStocksInTradeUnit extends OrgAction
                 ->where('model_has_trade_units.model_type', class_basename(Stock::class));
         });
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
+        $queryBuilder->leftJoin('stock_stats', 'stock_stats.stock_id', 'stocks.id');
 
 
         $queryBuilder
@@ -47,12 +48,13 @@ class IndexStocksInTradeUnit extends OrgAction
                 'stocks.code',
                 'stocks.slug',
                 'stocks.name',
-                'stocks.unit_value',
                 'stocks.state',
+                'stock_stats.number_number_org_stocks_state_active',
+                'stock_stats.number_org_stocks'
 
             ]);
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'unit_value'])
+        return $queryBuilder->allowedSorts(['code', 'name', 'number_number_org_stocks_state_active'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -68,16 +70,19 @@ class IndexStocksInTradeUnit extends OrgAction
             }
 
             $table
+                ->withLabelRecord([__('Master SKU'),__('Master SKUs')])
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->dateInterval($this->dateInterval)
                 ->withModelOperations($modelOperations)
                 ->withEmptyState([])
-                ->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'state', label: '', icon: 'fal fa-yin-yang', canBeHidden: false, sortable: true, type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'unit_value', label: __('unit value'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'packed_in', label: __('Packed in'), canBeHidden: false, sortable: true, searchable: true);
+
+            $table->column(key: 'number_number_org_stocks_state_active', label: __('Org SKUs'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 }

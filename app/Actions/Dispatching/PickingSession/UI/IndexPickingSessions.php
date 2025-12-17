@@ -112,7 +112,7 @@ class IndexPickingSessions extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_delivery_notes', label: __('delivery notes'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_items', label: __('items'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'picking_percentage', label: __('picking'), canBeHidden: false, sortable: true, searchable: true)

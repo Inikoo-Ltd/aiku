@@ -13,9 +13,8 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ChargeTabsEnum;
 use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
-use App\Http\Resources\Catalogue\ShippingZoneSchemaResource;
+use App\Http\Resources\Catalogue\ChargeResource;
 use App\Models\Billables\Charge;
-use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -69,15 +68,6 @@ class ShowCharge extends OrgAction
                                     'parameters' => array_values($request->route()->originalParameters())
                                 ]
                             ] : false,
-                            // $this->canDelete ? [
-                            //     'type'  => 'button',
-                            //     'style' => 'delete',
-                            //     'route' => [
-                            //         'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.remove',
-                            //         'parameters' => array_values($request->route()->originalParameters())
-                            //     ]
-
-                            // ] : false
                         ]
                     ],
                     'tabs' => [
@@ -95,9 +85,9 @@ class ShowCharge extends OrgAction
     }
 
 
-    public function jsonResponse(ShippingZoneSchema $shippingZoneSchema): ShippingZoneSchemaResource
+    public function jsonResponse(Charge $charge): ChargeResource
     {
-        return new ShippingZoneSchemaResource($shippingZoneSchema);
+        return new ChargeResource($charge);
     }
 
     public function getBreadcrumbs(Charge $charge, string $routeName, array $routeParameters, $suffix = null): array
@@ -113,7 +103,7 @@ class ShowCharge extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $charge->slug,
+                            'label' => $charge->code,
                         ],
                     ],
                     'suffix' => $suffix,

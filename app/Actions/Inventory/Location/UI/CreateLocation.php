@@ -64,7 +64,7 @@ class CreateLocation extends OrgAction
 
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => '',
                                     'required' => true
                                 ],
@@ -76,12 +76,12 @@ class CreateLocation extends OrgAction
                             'fields' => [
                                 'max_weight' => [
                                     'type'  => 'input',
-                                    'label' => __('max weight (kg)'),
+                                    'label' => __('Max weight (kg)'),
                                     'value' => '',
                                 ],
                                 'max_volume' => [
                                     'type'  => 'input',
-                                    'label' => __('max volume (m³)'),
+                                    'label' => __('Max volume (m³)'),
                                     'value' => '',
                                 ],
                             ]

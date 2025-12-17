@@ -20,7 +20,12 @@ class FetchAuroraOfferCampaign extends FetchAurora
             return;
         }
 
+
+
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Store Key'});
+        if ($shop->is_aiku) {
+            return;
+        }
 
         $status = false;
         //enum('Suspended','Active','Finish','Waiting')
@@ -36,7 +41,7 @@ class FetchAuroraOfferCampaign extends FetchAurora
         }
 
         $type = match ($this->auroraModelData->{'Deal Campaign Code'}) {
-            'CA' => OfferCampaignTypeEnum::COLLECTION_OFFERS,
+            'CA' => OfferCampaignTypeEnum::CATEGORY_OFFERS,
             'CU' => OfferCampaignTypeEnum::CUSTOMER_OFFERS,
             'FO' => OfferCampaignTypeEnum::FIRST_ORDER,
             'OR' => OfferCampaignTypeEnum::ORDER_RECURSION,

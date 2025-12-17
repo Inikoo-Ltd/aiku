@@ -14,6 +14,7 @@ use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\UI\WithFavicon;
 use App\Actions\Traits\UI\WithLogo;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
 use App\Actions\Web\Website\Search\WebsiteRecordSearch;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebsiteResource;
@@ -98,6 +99,13 @@ class UpdateWebsite extends OrgAction
         if (Arr::has($modelData, "script_website")) {
             data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
         }
+
+        // Handle LLMs.txt file upload
+        if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
+            $file = Arr::pull($modelData, 'llms_txt');
+            StoreLlmsTxt::make()->action($website, [], $file);
+        }
+        data_forget($modelData, 'llms_txt');
 
         $website = $this->update($website, $modelData, ['data', 'settings']);
 
@@ -221,6 +229,12 @@ class UpdateWebsite extends OrgAction
                 'sometimes',
                 'nullable',
                 'string',
+            ],
+            'llms_txt'                 => [
+                'sometimes',
+                'nullable',
+                File::types(['txt'])
+                    ->max(50) // 50KB max
             ],
         ];
 

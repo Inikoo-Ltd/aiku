@@ -12,7 +12,7 @@ import { remove as loRemove } from "lodash-es"
 import { ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolderDownload, faFolderTree } from "@fal"
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faFolderDownload, faFolderTree } from "@fal"
 import { faPlay } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Dialog from "primevue/dialog"
@@ -24,11 +24,12 @@ import { RouteParams } from "@/types/route-params"
 import { Collection } from "@/types/collection"
 import { trans } from "laravel-vue-i18n"
 import SelectQuery from "@/Components/SelectQuery.vue"
+import Image from "@/Components/Image.vue"
 
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolderDownload, faFolderTree)
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
     routes: {
@@ -303,14 +304,6 @@ const SetOnline = () => {
 }
 
 
-const onErrorDeleteCollection = (error) => {
-    console.log(error)
-    notify({
-        title: "Failed to Delete",
-        text: error.webpage ? error.webpage : "Please check your Collection.",
-        type: "error"
-    })
-}
 
 const isConfirmOpen = ref(false)
 
@@ -323,6 +316,11 @@ function handleUrlChange(e: string | null) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(image_thumbnail)="{ item: collection }">
+            <div class="flex justify-center">
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(organisation_code)="{ item: collection }">
             <Link :href="organisationRoute(collection) as string" class="secondaryLink">
                 {{ collection["organisation_code"] }}
@@ -409,16 +407,6 @@ function handleUrlChange(e: string | null) {
 
         <template #cell(actions)="{ item }">
             <div class="flex gap-x-2 gap-y-2">
-               <!--  <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive' || item.state == 'in_process'">
-                    <Link v-if="item.route_delete_collection " as="button"
-                          :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
-                          :method="item.route_delete_collection.method" preserve-scroll
-                          @start="() => isLoadingDetach.push('detach' + item.id)" @Error="(e)=>onErrorDeleteCollection(e)"
-                          @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-                        <Button :icon="faTrashAlt" type="negative" size="xs" v-tooltip="'Delete collection'"
-                                :loading="isLoadingDetach.includes('detach' + item.id)" />
-                    </Link>
-                </div> -->
                 <ConfirmPopup>
                     <template #icon>
                         <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />

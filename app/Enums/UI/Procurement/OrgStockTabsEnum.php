@@ -24,7 +24,7 @@ enum OrgStockTabsEnum: string
 
     case PURCHASE_ORDERS = 'purchase_orders';
     case SUPPLIERS_PRODUCTS = 'supplier_products';
-    case PRODUCTS = 'product';
+    case PRODUCTS = 'products';
     case TRADE_UNITS = 'trade_units';
 
     case HISTORY = 'history';

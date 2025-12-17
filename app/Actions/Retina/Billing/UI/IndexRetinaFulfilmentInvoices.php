@@ -94,9 +94,9 @@ class IndexRetinaFulfilmentInvoices extends RetinaAction
 
             $table->column(key: 'type', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->defaultSort('reference');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
 
 

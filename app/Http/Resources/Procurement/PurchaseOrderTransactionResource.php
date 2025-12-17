@@ -23,19 +23,19 @@ class PurchaseOrderTransactionResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'code'              => $this->supplierProduct->code,
-            'name'              => $this->supplierProduct->name,
-            'supplier'          => $this->supplierProduct->supplier->name,
+            'code'              => $this->supplierProduct?->code,
+            'name'              => $this->supplierProduct?->name,
+            'supplier'          => $this->supplierProduct?->supplier?->name,
             'quantity_ordered'  => intval($this->quantity_ordered),
-            'unit_cost'         => intval($this->supplierProduct->cost),
-            'total_cost'        => intval($this->supplierProduct->cost * $this->quantity_ordered),
-            'state'             => $this->supplierProduct->state,
+            'unit_cost'         => ($this->supplierProduct?->cost ?? 0),
+            'total_cost'        => (($this->supplierProduct?->cost ?? 0) * $this->quantity_ordered),
+            'state'             => $this->supplierProduct?->state,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
             'updateRoute'       => [
                 'name' => 'grp.models.purchase-order.transaction.update',
                 'parameters' => [
-                    'purchaseOrder' => $this->purchaseOrder->id,
+                    'purchaseOrder' => $this->purchaseOrder?->id,
                     'purchaseOrderTransaction' => $this->id
                 ]
             ]

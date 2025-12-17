@@ -129,8 +129,6 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     }
 })
 
-console.log('handle', usePage().props)
-
 </script>
 
 <template>
@@ -221,7 +219,7 @@ console.log('handle', usePage().props)
                 <!-- Layout: SideBasket (right) -->
                 <div
                     v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
-                    class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
+                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
                     :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-lg' : 'border-transparent max-w-0'"
                 >
                     <IrisRightsideBasket
@@ -282,7 +280,13 @@ console.log('handle', usePage().props)
     width: 300px !important;
 
     @media (min-width: 640px) {
-        width: 500px !important;;
+        width: 500px !important;
     }
+}
+
+
+// INI-562: live chat
+iframe#launcher {
+    bottom: 30px !important;
 }
 </style>

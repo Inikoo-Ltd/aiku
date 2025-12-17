@@ -15,8 +15,8 @@ enum OrderShippingEngineEnum: string
     use EnumHelperTrait;
 
     case AUTO = 'auto';
-    case TO_BE_CONFIRMED = 'tbc';
-    case TO_BE_CONFIRMED_SET = 'tbc_set';
+    case TO_BE_CONFIRMED = 'tbc'; // todo delete this
+    case TO_BE_CONFIRMED_SET = 'tbc_set'; // todo delete this
     case MANUAL = 'manual';
     case NO_APPLICABLE = 'no_applicable';// when order os for collection
 
