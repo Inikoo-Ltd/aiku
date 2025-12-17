@@ -41,7 +41,7 @@ class FetchAuroraOfferCampaign extends FetchAurora
         }
 
         $type = match ($this->auroraModelData->{'Deal Campaign Code'}) {
-            'CA' => OfferCampaignTypeEnum::COLLECTION_OFFERS,
+            'CA' => OfferCampaignTypeEnum::CATEGORY_OFFERS,
             'CU' => OfferCampaignTypeEnum::CUSTOMER_OFFERS,
             'FO' => OfferCampaignTypeEnum::FIRST_ORDER,
             'OR' => OfferCampaignTypeEnum::ORDER_RECURSION,
