@@ -298,7 +298,7 @@ const showChartButton = computed(() => {
     return !quantityOrdered && currentQuantity.value === 0
 })
 
-const isHovered = ref(false)
+const hoveredButton = ref<string | null>(null)
 
 </script>
 
@@ -328,10 +328,10 @@ const isHovered = ref(false)
             </div>
 
             <!-- Minus button (visible on hover) -->
-            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0" @mouseenter="isHovered = true" @mouseleave="isHovered = false"  type="button"
+            <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0" @mouseenter="hoveredButton = 'minus'" @mouseleave="hoveredButton = null"  type="button"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
                 <FontAwesomeIcon :icon="faMinus" :style="{
-                    color: isHovered ? 'black' : buttonStyleHover?.color
+                    color: hoveredButton === 'minus' ? 'black' : buttonStyleHover?.color
                 }"  />
 
             </button>
@@ -344,17 +344,17 @@ const isHovered = ref(false)
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"  type="button"
-                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock" @mouseenter="isHovered = true" @mouseleave="isHovered = false"
+                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
-                    color: isHovered ? 'black' : buttonStyleHover?.color
+                    color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color
                 }" />
             </button>
         </div>
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 /* Ensure smooth transitions */
 .group:hover .group-hover\:w-20 {
     transition: width 0.2s ease-in-out;
@@ -386,11 +386,11 @@ button {
 
 .button-cart {
     &:hover {
-        background: v-bind(buttonStyleHover?.background) !important;
-        color: v-bind(buttonStyleHover?.color) !important;
-        font-family: v-bind(buttonStyleHover?.fontFamily) !important;
-        font-size: v-bind(buttonStyleHover?.fontSize) !important;
-        font-style: v-bind(buttonStyleHover?.fontStyle) !important;
+        background: v-bind('`${buttonStyleHover?.background ?? "var(--theme-color-2)"}`') !important;
+        color: v-bind('`${buttonStyleHover?.color ?? "var(--theme-color-3)"}`') !important;
+        font-family: v-bind('`${buttonStyleHover?.fontFamily}`') !important;
+        font-size: v-bind('`${buttonStyleHover?.fontSize}`') !important;
+        font-style: v-bind('`${buttonStyleHover?.fontStyle}`') !important;
     }
 }
 </style>
