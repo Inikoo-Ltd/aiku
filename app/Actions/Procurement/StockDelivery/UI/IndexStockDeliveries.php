@@ -82,6 +82,7 @@ class IndexStockDeliveries extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
+                ->withLabelRecord([__('Stock Delivery'), __('Stock Deliveries')])
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('reference');
         };

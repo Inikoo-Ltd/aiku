@@ -129,6 +129,7 @@ class IndexPurchaseOrders extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('Purchase Order'), __('Purchase Orders')])
                 ->withModelOperations($modelOperations)
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)

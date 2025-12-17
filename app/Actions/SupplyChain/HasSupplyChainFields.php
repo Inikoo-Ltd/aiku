@@ -38,21 +38,21 @@ trait HasSupplyChainFields
 
                     'contact_name' => [
                         'type'    => 'input',
-                        'label'   => __('contact name'),
+                        'label'   => __('Contact Name'),
                         'value'   => '',
                         'required' => true
                     ],
 
                     'contact_website' => [
                         'type'    => 'input',
-                        'label'   => __('contact website'),
+                        'label'   => __('Contact Website'),
                         'value'   => '',
                         'required' => false
                     ],
 
                     'email' => [
                         'type'    => 'input',
-                        'label'   => __('email'),
+                        'label'   => __('Email'),
                         'value'   => '',
                         'options' => [
                             'inputType' => 'email'
@@ -60,7 +60,7 @@ trait HasSupplyChainFields
                     ],
                     'phone' => [
                         'type'  => 'phone',
-                        'label' => __('phone'),
+                        'label' => __('Phone'),
                         'value' => ''
                     ],
                     'address' => [
@@ -70,7 +70,6 @@ trait HasSupplyChainFields
                             new Address(
                                 [
                                     'country_id' => app('group')->country_id,
-
                                 ]
                             )
                         )->getArray(),
@@ -83,12 +82,12 @@ trait HasSupplyChainFields
                 ]
             ],
             [
-                'title'  => __('settings'),
+                'title'  => __('Settings'),
                 'icon'   => 'fa-light fa-cog',
                 'fields' => [
                     'currency_id' => [
                         'type'        => 'select',
-                        'label'       => __('currency'),
+                        'label'       => __('Currency'),
                         'placeholder' => __('Select a currency'),
                         'options'     => GetCurrenciesOptions::run(),
                         'required'    => true,

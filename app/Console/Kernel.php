@@ -357,7 +357,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->hourly()->timezone('UTC')->sentryMonitor(
+            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'CustomersHydrateReorderRemainderEmails',
             ),
             name: 'CustomersHydrateReorderRemainderEmails',

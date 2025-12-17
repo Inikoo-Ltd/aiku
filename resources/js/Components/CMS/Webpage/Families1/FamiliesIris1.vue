@@ -74,7 +74,7 @@ const idxSlideLoading = ref<string | null>(null)
                     </template>
                 </LinkIris>
 
-                <LinkIris
+                <!-- <LinkIris
                     v-for="(item, index) in props?.fieldValue?.collections || []"
                     :key="index"
                     :href="`${item.url}`"
@@ -89,7 +89,7 @@ const idxSlideLoading = ref<string | null>(null)
                             <LoadingIcon />
                         </div>
                     </template>
-                </LinkIris>
+                </LinkIris> -->
             </div>
         </div>
     </div>
