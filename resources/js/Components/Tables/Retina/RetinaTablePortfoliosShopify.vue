@@ -423,8 +423,7 @@ onMounted(() => {
         </ul>
     </Message>
 
-
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="disabled" @onChecked="(item) => onChangeCheked(true, item)"
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
            :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table">
 
@@ -761,7 +760,7 @@ onMounted(() => {
             						preserveScroll: true,
             					}"
             />
-            <ButtonWithLink 
+            <ButtonWithLink
                 v-if="item.platform_status"
                 v-tooltip="trans('unlink product')"
                 type="negative"
@@ -778,12 +777,18 @@ onMounted(() => {
     <!-- <pre>{{ data.data[0] }}</pre> -->
 
 
-    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModal = false">
+    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []}">
         <div class="relative isolate">
 
             <div v-if="isLoadingSubmit"
                  class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
                 <LoadingIcon/>
+            </div>
+
+            <div class="mb-2">
+                <strong> 
+                    {{ trans('List of Products under your :_storetype Store', {_storetype: 'Shopify'}) }}
+                </strong>
             </div>
 
             <div class="mb-2 relative">
@@ -803,15 +808,16 @@ onMounted(() => {
 
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
-                    <div class="h-full md:h-[400px] overflow-auto py-2 relative">
+                    <div class="h-full md:h-[400px] overflow-x-clip overflow-y-scroll py-2 relative" style="scrollbar-width: thin; scrollbar-gutter: stable;">
                         <!-- Products list -->
                         <!-- {{ selectedVariant }} -->
-
-                        <div v-if="querySearchPortfolios || resultOfFetchShopifyProduct?.length"
-                             class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
+                        <div v-if="isLoadingFetchShopifyProduct" class="text-center text-gray-500 col-span-3">
+                            <LoadingIcon class="ml-1"/> {{ trans("Fetching your :_storetype product list", {_storetype: platform_data.name}) }}
+                        </div>
+                        <div v-else-if="querySearchPortfolios || resultOfFetchShopifyProduct?.length" class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
                             <template v-if="resultOfFetchShopifyProduct?.length">
                                 <div v-for="(item, index) in resultOfFetchShopifyProduct" :key="index"
-                                     @click="() => selectedVariant = item"
+                                     @click="() => {selectedVariant = item}"
                                      class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                      :class="[
                                         selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
@@ -862,20 +868,10 @@ onMounted(() => {
                                     </slot>
                                 </div>
                             </template>
-
-                            <div v-else class="text-center text-gray-500 col-span-3">
-                                {{ trans("No products found") }}
-                            </div>
-                            <div v-if="isLoadingFetchShopifyProduct"
-                                 class="bg-black/50 text-2xl text-white inset-0 absolute flex items-center justify-center">
-                                <LoadingIcon/>
-                            </div>
                         </div>
-
-                        <div class="text-center text-gray-500" v-else>
-                            Start typing to search for products in Shopify
+                        <div v-else class="text-center text-gray-500 col-span-3">
+                            {{ trans("No products found") }}
                         </div>
-
                     </div>
                     <!-- Pagination -->
                     <!-- <Pagination
@@ -889,11 +885,11 @@ onMounted(() => {
                     /> -->
 
                     <div class="mt-4">
-                        <Button @click="() => onSubmitVariant()" xdisabled="selectedProduct.length < 1"
-                                xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                                xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
-                                :label="trans('Match the product')" type="primary" full xicon="fas fa-plus"
-                                :loading="isLoadingSubmit"/>
+                        <Button @click="() => onSubmitVariant()" 
+                            :disabled="!selectedVariant?.id"
+                            v-tooltip="!selectedVariant?.id ? trans('Select at least one product on your platform') : ''"
+                            :label="trans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.code ?? 'it'})" type="primary" full icon="fas fa-plus"
+                            :loading="isLoadingSubmit"/>
                     </div>
                 </div>
             </div>

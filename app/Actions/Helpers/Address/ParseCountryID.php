@@ -19,12 +19,21 @@ class ParseCountryID
     {
         if ($country != '') {
             try {
+                $country = trim((string) $country);
+                $lc = mb_strtolower($country);
+
                 if (strlen($country) == 2) {
-                    return Country::withTrashed()->where('code', $country)->firstOrFail()->id;
+                    return Country::withTrashed()
+                        ->whereRaw('LOWER(code) = ?', [$lc])
+                        ->firstOrFail()->id;
                 } elseif (strlen($country) == 3) {
-                    return Country::withTrashed()->where('iso3', $country)->firstOrFail()->id;
+                    return Country::withTrashed()
+                        ->whereRaw('LOWER(iso3) = ?', [$lc])
+                        ->firstOrFail()->id;
                 } else {
-                    return Country::withTrashed()->where('name', $country)->firstOrFail()->id;
+                    return Country::withTrashed()
+                        ->whereRaw('LOWER(name) = ?', [$lc])
+                        ->firstOrFail()->id;
                 }
             } catch (Exception) {
                 abort(404, "Country not found: $country \n");

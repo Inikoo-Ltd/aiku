@@ -13,56 +13,111 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTag extends OrgAction
 {
-    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): Tag
+    private ?TagScopeEnum $forcedScope = null;
+
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void
     {
+        $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        return $this->handle($tradeUnit, $this->validatedData);
+        $this->handle($tradeUnit, $this->validatedData);
     }
 
-    public function inCustomer(Customer $customer, ActionRequest $request): Tag
+    public function inCustomer(Customer $customer, ActionRequest $request): void
     {
-        $this->initialisation($customer->organisation, $request);
+        $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+        $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        $this->handle($customer, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): Tag
+    public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation($organisation, $request);
+        try {
+            $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
+            $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($organisation, $this->validatedData);
+            $this->handle($shop, $this->validatedData);
+
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag created.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.self_filled_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
-    public function htmlResponse(): void
+    public function inInternalTags(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
     {
-        request()->session()->flash('notification', [
-            'status'      => 'success',
-            'title'       => __('Success!'),
-            'description' => __('Tag successfully created.'),
-        ]);
+        try {
+            $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+            $this->initialisationFromShop($shop, $request);
+
+            $this->handle($shop, $this->validatedData);
+
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tag created.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::route('grp.org.shops.show.crm.internal_tags.index', [
+                $this->organisation->slug,
+                $this->shop->slug
+            ])->with('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
-    public function handle(Organisation|Customer|TradeUnit $parent, array $modelData): Tag
+    public function handle(Shop|Customer|TradeUnit $parent, array $modelData): Tag
     {
-        if ($parent instanceof Customer) {
-            data_set($modelData, 'scope', TagScopeEnum::ADMIN_CUSTOMER);
+        if (isset($this->group)) {
+            data_set($modelData, 'group_id', $this->group->id);
         }
 
-        if ($parent instanceof TradeUnit) {
-            data_set($modelData, 'scope', TagScopeEnum::PRODUCT_PROPERTY);
+        if (isset($this->organisation)) {
+            data_set($modelData, 'organisation_id', $this->organisation->id);
         }
 
-        data_set($modelData, 'group_id', $parent->group->id);
+        if (isset($this->shop)) {
+            data_set($modelData, 'shop_id', $this->shop->id);
+        }
+
+        if ($this->forcedScope) {
+            data_set($modelData, 'scope', $this->forcedScope);
+        }
 
         $image = Arr::pull($modelData, 'image');
 
@@ -74,7 +129,7 @@ class StoreTag extends OrgAction
                 'originalName' => $image->getClientOriginalName(),
                 'extension'    => $image->getClientOriginalExtension(),
             ];
-            $tag       = SaveModelImage::run(
+            $tag = SaveModelImage::run(
                 model: $tag,
                 imageData: $imageData,
                 scope: 'image',
@@ -98,8 +153,23 @@ class StoreTag extends OrgAction
 
     public function rules(): array
     {
+        $nameRules = ['required', 'string', 'max:255'];
+
+        // Add unique validation based on context (group level or shop level)
+        if (isset($this->shop)) {
+            // Shop level: unique per scope + shop_id + name
+            $nameRules[] = Rule::unique('tags', 'name')
+                ->where('scope', $this->forcedScope?->value)
+                ->where('shop_id', $this->shop->id);
+        } else {
+            // Group level: unique per scope + name (shop_id is NULL)
+            $nameRules[] = Rule::unique('tags', 'name')
+                ->where('scope', $this->forcedScope?->value)
+                ->whereNull('shop_id');
+        }
+
         return [
-            'name'  => ['required', 'string', 'max:255', 'unique:tags,name'],
+            'name'  => $nameRules,
             'scope' => [
                 'sometimes',
                 'nullable',

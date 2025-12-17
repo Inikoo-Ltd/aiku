@@ -70,7 +70,7 @@ class ShowOrgStockFamily extends OrgAction
                     'title'       => $orgStockFamily->name,
                    'afterTitle'   => [
                        'label'     => $orgStockFamily->code,
-                       'tooltip'   => __('reference')
+                       'tooltip'   => __('Reference')
                    ],
                     'meta'    => [
                         [

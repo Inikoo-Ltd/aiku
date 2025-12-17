@@ -24,11 +24,19 @@ class RepairProductOrgStocks
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $shop, Command $command = null): void
+    public function handle(Shop|Product $subject, Command $command = null): void
     {
+
+        if ($subject instanceof Product) {
+            SyncProductOrgStocksFromTradeUnits::run($subject);
+            ProductHydrateAvailableQuantity::run($subject);
+            return;
+        }
+
+        $shop = $subject;
+
         $baseQuery = DB::table('products')
             ->select('id')
-            //    ->where('slug', 'zci-11-awd')
             ->where('shop_id', $shop->id);
 
         $total = (clone $baseQuery)->count();
@@ -64,7 +72,7 @@ class RepairProductOrgStocks
         $baseQuery
             ->orderBy('id', 'desc')
             ->chunkById($chunkSize, function ($rows) use (&$processed, $command, &$progress) {
-                // Eager load products in the current chunk to avoid N+1 lookups
+                // Eager to load products in the current chunk to avoid N+1 lookups
                 $ids      = collect($rows)->pluck('id')->all();
                 $products = Product::query()->whereIn('id', $ids)->get();
 
@@ -98,7 +106,7 @@ class RepairProductOrgStocks
 
     public function getCommandSignature(): string
     {
-        return 'shop:fix_product_org_stocks {shop}';
+        return 'shop:fix_product_org_stocks {type} {slug}';
     }
 
     /**
@@ -106,11 +114,17 @@ class RepairProductOrgStocks
      */
     public function asCommand(Command $command): int
     {
-        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
-        $command->info("Fixing product org stocks fot $shop->name");
+        if ($command->argument('type') == 'Product') {
+            $subject = Product::where('slug', $command->argument('slug'))->firstOrFail();
+        } else {
+            $subject = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+        }
 
 
-        $this->handle($shop, $command);
+        $command->info("Fixing product org stocks for ".$command->argument('type')."  $subject->code");
+
+
+        $this->handle($subject, $command);
 
         return 0;
     }

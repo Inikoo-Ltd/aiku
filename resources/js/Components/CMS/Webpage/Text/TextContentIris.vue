@@ -47,8 +47,8 @@ const valueForField = computed({
 <template>
     <div id="text">
         <div :style="{
-            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            ...getStyles(fieldValue.container?.properties, screenType)
+            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType,true,false),
+            ...getStyles(fieldValue.container?.properties, screenType, true,false)
         }">
             <div class="editor-class" v-html="valueForField"></div>
         </div>

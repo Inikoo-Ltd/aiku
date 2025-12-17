@@ -83,7 +83,7 @@ class EditShippingZone extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $shippingZone->name
                                 ],
                                 'territories' => [
@@ -94,7 +94,7 @@ class EditShippingZone extends OrgAction
                                 ],
                                 'price' => [
                                     'type'  => 'pricing_zone',
-                                    'label' => __('price'),
+                                    'label' => __('Price'),
                                     'value' => $shippingZone->price
                                 ],
                             ],

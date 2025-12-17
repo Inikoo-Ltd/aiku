@@ -43,6 +43,12 @@ function orderRoute(order: Order) {
         "grp.org.shops.show.ordering.orders.show",
         [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug]);
 
+    case 'grp.org.overview.ordering.backlog':
+    case 'grp.overview.ordering.backlog':
+      return route(
+        "grp.org.shops.show.ordering.orders.show",
+        [order.organisation_slug, order.shop_slug, order.slug]);
+
     case "grp.org.shops.show.crm.show.orders.index":
       return route(
         "grp.org.shops.show.crm.show.orders.show",
@@ -89,6 +95,8 @@ function customerRoute(order: Order) {
     case "grp.org.overview.orders_in_basket.index":
     case "grp.org.overview.orders.index":
     case "grp.overview.ordering.orders_in_basket.index":
+    case "grp.org.overview.ordering.backlog":
+    case "grp.overview.ordering.backlog":
       return route(
         "grp.org.shops.show.crm.customers.show",
         [order.organisation_slug, order.shop_slug, order.customer_slug]

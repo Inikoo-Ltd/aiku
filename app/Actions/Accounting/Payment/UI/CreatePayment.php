@@ -44,7 +44,7 @@ class CreatePayment extends OrgAction
                             'fields' => [
                                 'reference' => [
                                     'type'  => 'input',
-                                    'label' => __('reference'),
+                                    'label' => __('Reference'),
                                     'value' => ''
                                 ],
                                 'customer' => [
@@ -59,7 +59,7 @@ class CreatePayment extends OrgAction
                             'fields' => [
                                 'amount' => [
                                     'type'  => 'input',
-                                    'label' => __('amount'),
+                                    'label' => __('Amount'),
                                     'value' => ''
                                 ],
                                 'grp_amount' => [
@@ -80,7 +80,7 @@ class CreatePayment extends OrgAction
                                 ],
                                 'date' => [
                                     'type'  => 'date',
-                                    'label' => __('date'),
+                                    'label' => __('Date'),
                                     'value' => ''
                                 ]
                             ]

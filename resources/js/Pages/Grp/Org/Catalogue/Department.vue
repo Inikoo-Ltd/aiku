@@ -27,7 +27,7 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -120,7 +120,7 @@ const component = computed(() => {
 
          <template #afterTitle>
            <div class="whitespace-nowrap">
-            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon
                     :icon="faOctopusDeploy"
                     color="#4B0082"

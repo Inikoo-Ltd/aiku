@@ -35,6 +35,12 @@ class IndexProductsInOrgStock extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftjoin('product_has_org_stocks', 'products.id', 'product_has_org_stocks.product_id');
+        $queryBuilder->leftjoin('shops', 'shops.id', 'products.shop_id');
+        $queryBuilder->leftjoin('organisations', 'organisations.id', 'products.organisation_id');
+
+        $queryBuilder->leftjoin('currencies', 'currencies.id', 'shops.currency_id');
+
+
         $queryBuilder->where('product_has_org_stocks.org_stock_id', $orgStock->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
@@ -48,7 +54,19 @@ class IndexProductsInOrgStock extends OrgAction
                 'products.price',
                 'products.created_at',
                 'products.updated_at',
+                'products.asset_id',
                 'products.slug',
+                'products.master_product_id',
+                'shops.slug as shop_slug',
+                'shops.code as shop_code',
+                'shops.name as shop_name',
+                'organisations.code as organisation_code',
+                'organisations.name as organisation_name',
+                'organisations.slug as organisation_slug',
+
+                'product_has_org_stocks.quantity',
+                'trade_units_per_org_stock',
+                'currencies.code as currency_code',
             ]);
 
         return $queryBuilder->allowedSorts(['code', 'name', 'price'])
@@ -57,7 +75,7 @@ class IndexProductsInOrgStock extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null, string $bucket = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
@@ -75,10 +93,11 @@ class IndexProductsInOrgStock extends OrgAction
                 );
 
 
-            $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

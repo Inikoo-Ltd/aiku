@@ -21,8 +21,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetMasterProductsNotAttachedToAMasterCollection extends GrpAction
 {
-    private MasterShop $parent;
-
     public function handle(MasterShop $parent, MasterCollection $collection, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -64,7 +62,6 @@ class GetMasterProductsNotAttachedToAMasterCollection extends GrpAction
 
     public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $masterShop;
         $this->initialisation($masterShop->group, $request);
 
         return $this->handle(parent: $masterShop, collection: $masterCollection);

@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 
 import { faNarwhal } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import TableStoredItemsInWarehouse from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsInWarehouse.vue'
 library.add(faNarwhal)
 

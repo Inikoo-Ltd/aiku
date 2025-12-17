@@ -443,7 +443,7 @@ test('show fulfilment banner workshop', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Workshop')->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Banner's workshop")->etc()
             )
             ->has('publishRoute')
             ->has('imagesUploadRoute')

@@ -64,6 +64,7 @@ class RepairProductPricesAndUnits
         $tradeUnits = [];
         foreach ($fromProduct->tradeUnits as $tradeUnit) {
             $tradeUnits[$tradeUnit->id] = [
+                'id'       => $tradeUnit->id,
                 'quantity' => $tradeUnit->pivot->quantity,
             ];
         }

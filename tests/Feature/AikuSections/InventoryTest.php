@@ -79,7 +79,6 @@ beforeEach(
         Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
         $this->user = $this->guest->getUser();
         actingAs($this->user);
-
     }
 );
 
@@ -194,7 +193,6 @@ test('create location in warehouse', function ($warehouse) {
 })->depends('create warehouse');
 
 test('create other location in warehouse', function ($warehouse) {
-
     StoreLocation::make()->action(
         $warehouse,
         [
@@ -237,17 +235,12 @@ test('delete location', function (Location $location) {
 })->depends('create location in warehouse');
 
 
-
-
-
-
 test('create org stock', function () {
-
     $stock = StoreStock::make()->action(
         $this->group,
         array_merge(Stock::factory()->definition(), [
-           'state' => StockStateEnum::ACTIVE
-       ])
+            'state' => StockStateEnum::ACTIVE
+        ])
     );
 
     $orgStock = StoreOrgStock::make()->action(
@@ -266,10 +259,7 @@ test('create org stock', function () {
 });
 
 
-
-
 test('update org stock', function (OrgStock $orgStock) {
-
     $orgStock = UpdateOrgStock::make()->action(
         orgStock: $orgStock,
         modelData: [
@@ -284,12 +274,11 @@ test('update org stock', function (OrgStock $orgStock) {
 })->depends('create org stock');
 
 test('create org stock family', function () {
-
     $stockFamily = StoreStockFamily::make()->action(
         $this->group,
         StockFamily::factory()->definition()
     );
-    $stock = StoreStock::make()->action(
+    $stock       = StoreStock::make()->action(
         $stockFamily,
         array_merge(Stock::factory()->definition(), [
             'state' => StockStateEnum::ACTIVE
@@ -301,16 +290,15 @@ test('create org stock family', function () {
     expect($stockFamily)->toBeInstanceOf(StockFamily::class);
     $orgStockFamily = StoreOrgStockFamily::make()->action($this->organisation, $stockFamily, []);
     expect($orgStockFamily)->toBeInstanceOf(OrgStockFamily::class)
-        ->and($orgStockFamily->state)->toBe(OrgStockFamilyStateEnum::ACTIVE)
+        ->and($orgStockFamily->state)->toBe(OrgStockFamilyStateEnum::IN_PROCESS)
         ->and($this->organisation->inventoryStats->number_org_stock_families)->toBe(1)
         ->and($this->organisation->inventoryStats->number_org_stocks)->toBe(1)
         ->and($this->organisation->inventoryStats->number_current_org_stocks)->toBe(1);
+
     return $orgStockFamily;
 });
 
 test('create org stock from 2nd stock (within stock family)', function () {
-
-
     /** @var Stock $stock */
     $stock = Stock::find(2);
     expect($stock)->toBeInstanceOf(Stock::class);
@@ -329,15 +317,13 @@ test('create org stock from 2nd stock (within stock family)', function () {
     $this->organisation->refresh();
     expect($orgStock)->toBeInstanceOf($orgStock::class)
         ->and($orgStock->orgStockFamily)->toBeInstanceOf(OrgStockFamily::class)
-        ->and($orgStock->orgStockFamily->state)->toBe(OrgStockFamilyStateEnum::ACTIVE)
+        ->and($orgStock->orgStockFamily->state)->toBe(OrgStockFamilyStateEnum::IN_PROCESS)
         ->and($this->organisation->inventoryStats->number_org_stock_families)->toBe(1)
         ->and($this->organisation->inventoryStats->number_org_stocks)->toBe(2)
         ->and($this->organisation->inventoryStats->number_current_org_stocks)->toBe(2);
 
     return $orgStock;
 });
-
-
 
 
 test('attach org-stock to location', function (Location $location) {
@@ -363,6 +349,7 @@ test('update location org stock', function (LocationOrgStock $locationOrgStock) 
 
     expect($locationOrgStock)->toBeInstanceOf(LocationOrgStock::class)
         ->and($locationOrgStock->type)->toBe(LocationStockTypeEnum::STORING);
+
     return $locationOrgStock;
 })->depends('attach org-stock to location');
 
@@ -442,7 +429,6 @@ test('remove found stock', function ($lostAndFoundStock) {
 })->depends('add found stock');
 
 
-
 test('hydrate warehouses', function (Warehouse $warehouse) {
     HydrateWarehouse::run($warehouse);
     $this->artisan('hydrate:warehouses')->assertExitCode(0);
@@ -460,7 +446,6 @@ test('hydrate locations', function () {
 });
 
 test("UI Index locations", function () {
-
     $warehouse = Warehouse::first();
     $this->withoutExceptionHandling();
     $response = get(
@@ -483,9 +468,8 @@ test("UI Index locations", function () {
 });
 
 test("UI Create location", function () {
-
     $warehouse = Warehouse::first();
-    $response = get(
+    $response  = get(
         route("grp.org.warehouses.show.infrastructure.locations.create", [
             $this->organisation->slug,
             $warehouse->slug,
@@ -505,10 +489,9 @@ test("UI Create location", function () {
 });
 
 test("UI Show location", function () {
-
     $warehouse = Warehouse::first();
-    $location = Location::first();
-    $response = get(
+    $location  = Location::first();
+    $response  = get(
         route("grp.org.warehouses.show.infrastructure.locations.show", [
             $this->organisation->slug,
             $warehouse->slug,
@@ -531,8 +514,8 @@ test("UI Show location", function () {
 
 test("UI Show location (showcase tab)", function () {
     $warehouse = Warehouse::first();
-    $location = Location::first();
-    $response = get(
+    $location  = Location::first();
+    $response  = get(
         route("grp.org.warehouses.show.infrastructure.locations.show", [
             $this->organisation->slug,
             $warehouse->slug,
@@ -557,8 +540,8 @@ test("UI Show location (showcase tab)", function () {
 
 test("UI Edit location", function () {
     $warehouse = Warehouse::first();
-    $location = Location::first();
-    $response = get(
+    $location  = Location::first();
+    $response  = get(
         route("grp.org.warehouses.show.infrastructure.locations.edit", [
             $this->organisation->slug,
             $warehouse->slug,
@@ -606,7 +589,7 @@ test("UI Index fulfilment locations", function () {
 
 test("UI Show fulfilment location", function () {
     $warehouse = Warehouse::first();
-    $location = Location::first();
+    $location  = Location::first();
     $this->withoutExceptionHandling();
     $response = get(
         route("grp.org.warehouses.show.fulfilment.locations.show", [
@@ -763,7 +746,7 @@ test("UI Index warehouse areas", function () {
 });
 
 test("UI Show warehouse area", function () {
-    $warehouse = Warehouse::first();
+    $warehouse     = Warehouse::first();
     $warehouseArea = $warehouse->warehouseAreas->first();
     $this->withoutExceptionHandling();
     $response = get(
@@ -935,7 +918,7 @@ test("UI index inventory stored item", function () {
 });
 
 test('UI get section route inventory dashboard', function () {
-    $warehouse = Warehouse::first();
+    $warehouse    = Warehouse::first();
     $sectionScope = GetSectionRoute::make()->handle('grp.org.warehouses.show.inventory.dashboard', [
         'organisation' => $this->organisation->slug,
         'warehouse'    => $warehouse->slug
@@ -946,7 +929,7 @@ test('UI get section route inventory dashboard', function () {
 });
 
 test('UI get section route infrastructure index', function () {
-    $warehouse = Warehouse::first();
+    $warehouse    = Warehouse::first();
     $sectionScope = GetSectionRoute::make()->handle("grp.org.warehouses.show.infrastructure.locations.index", [
         'organisation' => $this->organisation->slug,
         'warehouse'    => $warehouse->slug,
@@ -958,7 +941,7 @@ test('UI get section route infrastructure index', function () {
 });
 
 test('UI get section route incoming backlog', function () {
-    $warehouse = Warehouse::first();
+    $warehouse    = Warehouse::first();
     $sectionScope = GetSectionRoute::make()->handle("grp.org.warehouses.show.incoming.backlog", [
         'organisation' => $this->organisation->slug,
         'warehouse'    => $warehouse->slug,
@@ -1024,7 +1007,6 @@ test('org stock hydrator', function () {
 
     $orgStock = OrgStock::first();
     HydrateOrgStock::run($orgStock);
-
 });
 
 test('org stock families  hydrator', function () {
@@ -1032,7 +1014,6 @@ test('org stock families  hydrator', function () {
 
     $orgStockFamily = OrgStockFamily::first();
     HydrateOrgStockFamily::run($orgStockFamily);
-
 });
 
 test('inventory  hydrator', function () {

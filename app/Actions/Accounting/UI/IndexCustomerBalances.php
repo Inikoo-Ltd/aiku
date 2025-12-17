@@ -105,7 +105,7 @@ class IndexCustomerBalances extends OrgAction
                 ->column(key: 'balance', label: __('balance'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
+                $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
             $table->defaultSort('id');
         };

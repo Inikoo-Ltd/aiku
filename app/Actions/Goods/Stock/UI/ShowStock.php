@@ -9,13 +9,17 @@
 namespace App\Actions\Goods\Stock\UI;
 
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInStock;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInStock;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\StockTabsEnum;
+use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
+use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\SysAdmin\Group;
@@ -58,7 +62,7 @@ class ShowStock extends OrgAction
         return Inertia::render(
             'Goods/Stock',
             [
-                'title'                        => __('stock'),
+                'title'                        => __('Master SKU').' '.$stock->code,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $stock,
                     $request->route()->getName(),
@@ -69,11 +73,12 @@ class ShowStock extends OrgAction
                     'next'     => $this->getNext($stock, $request),
                 ],
                 'pageHead'                     => [
-                    'icon'    => [
-                        'title' => __('Skus'),
-                        'icon'  => 'fal fa-box'
+                    'icon'  => [
+                        'title' => __('Master SKU'),
+                        'icon'  => 'fal fa-cloud-rainbow'
                     ],
-                    'title'   => $stock->slug,
+                    'title' => $stock->code,
+
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
@@ -103,13 +108,23 @@ class ShowStock extends OrgAction
                     fn () => GetStockShowcase::run($stock)
                     : Inertia::lazy(fn () => GetStockShowcase::run($stock)),
 
+                StockTabsEnum::ORG_STOCKS->value => $this->tab == StockTabsEnum::ORG_STOCKS->value ?
+                    fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))
+                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))),
+
+                StockTabsEnum::TRADE_UNITS->value => $this->tab == StockTabsEnum::TRADE_UNITS->value ?
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))),
+
                 StockTabsEnum::HISTORY->value => $this->tab == StockTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($stock))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($stock)))
+                    fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value)))
 
 
             ]
-        )->table();
+        )->table(IndexTradeUnitsInStock::make()->tableStructure(prefix: StockTabsEnum::TRADE_UNITS->value))
+            ->table(IndexOrgStocksInStock::make()->tableStructure(prefix: StockTabsEnum::ORG_STOCKS->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: StockTabsEnum::HISTORY->value));
     }
 
 
@@ -139,7 +154,7 @@ class ShowStock extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $stock->slug,
+                            'label' => $stock->code,
                         ],
                     ],
                     'suffix'         => $suffix,

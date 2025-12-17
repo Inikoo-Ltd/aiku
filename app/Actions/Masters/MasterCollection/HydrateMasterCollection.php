@@ -33,6 +33,7 @@ class HydrateMasterCollection extends HydrateModel
         MasterCollectionHydrateMasterProducts::run($masterCollection);
         MasterCollectionHydrateParents::run($masterCollection);
         MasterCollectionHydrateCollections::run($masterCollection);
+        UpdateMasterCollectionWebImages::run($masterCollection);
     }
 
 

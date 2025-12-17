@@ -3,7 +3,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableCustomerSalesChannels from "@/Components/Tables/Grp/Org/CRM/TableCustomerSalesChannels.vue"
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import { Table } from '@/types/Table'
 
 

@@ -7,27 +7,36 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
-defineProps<{
+const props = defineProps<{
   data: {
     name: string
     description: string
     images: { source: string }[]
   }
-  style : any
+  screenType: 'mobile' | 'tablet' | 'desktop'
+  style: any
 }>()
-
-
 </script>
 
 <template>
   <div
-    class="w-full bg-black rounded-3xl py-3 px-5 border border-white/10"
+    class="inline-flex items-center bg-black rounded-3xl border border-white/10
+          justify-center h-auto px-3  sm:py-3
+           text-white text-base font-semibold leading-tight text-center
+           overflow-hidden sm:overflow-visible"
+    :class="{
+      '!w-full py-2': screenType === 'mobile'
+    }"
     :style="style"
   >
-    <div
-      class="mt-1 px-2 text-base font-semibold text-white leading-tight text-center"   :style="style"
+    <span
+      class="whitespace-normal break-words w-full text-center
+             sm:whitespace-normal sm:max-w-full"
+             :class="{
+      '!w-full !text-xs': screenType === 'mobile'
+    }"
     >
       {{ data?.name }}
-    </div>
+    </span>
   </div>
 </template>

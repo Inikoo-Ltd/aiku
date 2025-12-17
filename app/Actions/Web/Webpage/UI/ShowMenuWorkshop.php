@@ -57,15 +57,15 @@ class ShowMenuWorkshop extends OrgAction
                         'tooltip' => __('Header'),
                         'icon'    => 'fal fa-browser'
                     ],
-                    'meta'          => [
-                        [
-                            'key'      => 'website',
-                            'label'    => $website->domain,
-                            'leftIcon' => [
-                                'icon' => 'fal fa-globe'
-                            ]
-                        ]
-                    ],
+                    // 'meta'          => [
+                    //     [
+                    //         'key'      => 'website',
+                    //         'label'    => $website->domain,
+                    //         'leftIcon' => [
+                    //             'icon' => 'fal fa-globe'
+                    //         ]
+                    //     ]
+                    // ],
                     'actions'       => $this->getActions($website, 'grp.models.website.publish.menu')
 
                 ],

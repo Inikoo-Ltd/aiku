@@ -90,7 +90,7 @@ class EditRawMaterial extends OrgAction
                                 'type' => [
                                     'type'     => 'select',
                                     'options'  => RawMaterialTypeEnum::values(),
-                                    'label'    => __('type'),
+                                    'label'    => __('Type'),
                                     'value'    => $rawMaterial->type,
                                     'required' => true
                                 ],
@@ -103,13 +103,13 @@ class EditRawMaterial extends OrgAction
                                 ],
                                 'code' => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => $rawMaterial->code,
                                     'required' => true
                                 ],
                                 'description' => [
                                     'type'     => 'input',
-                                    'label'    => __('description'),
+                                    'label'    => __('Description'),
                                     'value'    => $rawMaterial->description,
                                     'required' => true
                                 ],
@@ -141,7 +141,7 @@ class EditRawMaterial extends OrgAction
                                 ],
                                 // 'type' => [
                                 //     'type'    => 'select',
-                                //     'label'   => __('type'),
+                                //     'label'   => __('Type'),
                                 //     'value'   => $storedItem->type,
                                 //     'required'=> true,
                                 //     'options' => PalletTypeEnum::values()

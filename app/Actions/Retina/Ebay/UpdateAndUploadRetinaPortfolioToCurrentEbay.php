@@ -10,7 +10,10 @@ namespace App\Actions\Retina\Ebay;
 
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
+use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,7 +27,12 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
         $portfolio = UpdatePortfolio::run($portfolio, $modelData);
 
         if (! $isDraft) {
-            StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio);
+            match ($portfolio->platform->type) {
+                PlatformTypeEnum::EBAY => StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio),
+                PlatformTypeEnum::WOOCOMMERCE => StoreWooCommerceProduct::run($portfolio->customerSalesChannel->user, $portfolio),
+                PlatformTypeEnum::SHOPIFY => StoreNewProductToCurrentShopify::run($portfolio),
+                default => null
+            };
         }
     }
 
@@ -40,7 +48,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('customer_product_name', $request->input('title'));
-        $this->set('customer_price', $request->input('price'));
+        $this->set('customer_price', (string) $request->input('price'));
         $this->set('customer_description', $request->input('description'));
     }
 

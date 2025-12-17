@@ -14,7 +14,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateInventoryInWooPortfolio
@@ -24,10 +23,20 @@ class UpdateInventoryInWooPortfolio
     public string $commandSignature = 'woo:update-inventory';
 
 
-    public function handle(): void
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
         $platform              = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
-        $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
+
+        if ($customerSalesChannel === null) {
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
+                ->where('platform_status', true)
+                ->where('stock_update', true)
+                ->get();
+        } else {
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
+                ->where('id', $customerSalesChannel->id)
+                ->get();
+        }
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
@@ -51,7 +60,7 @@ class UpdateInventoryInWooPortfolio
 
             $wooCommerceUser->setTimeout(20);
             $result = $wooCommerceUser->checkConnection();
-            if ($result && Arr::has($result, 'environment')) {
+            if ($result) {
 
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => null

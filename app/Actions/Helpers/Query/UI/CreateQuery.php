@@ -59,7 +59,7 @@ class CreateQuery extends InertiaAction
                             'fields' => [
                                 'name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'required' => true,
                                     'value'    => ''
                                 ],

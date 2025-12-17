@@ -74,7 +74,7 @@ class EditPurge extends OrgAction
                             'fields' => [
                                 'type' => [
                                     'type'  => 'select',
-                                    'label' => __('type'),
+                                    'label' => __('Type'),
                                     'options'  => Options::forEnum(PurgeTypeEnum::class),
                                     'value' => $purge->type
                                 ],

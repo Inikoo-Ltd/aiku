@@ -13,12 +13,14 @@ use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\HasBucketAttachment;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
+use App\Models\Helpers\Media;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -27,16 +29,13 @@ class StoreWooCommerceProduct extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
+    use HasBucketAttachment;
 
     /**
      * @throws \Exception
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
-        if ($wooCommerceUser->customerSalesChannel->ban_stock_update_util && $wooCommerceUser->customerSalesChannel->ban_stock_update_util->gt(now())) {
-            return null;
-        }
-
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
@@ -44,6 +43,7 @@ class StoreWooCommerceProduct extends RetinaAction
         try {
             /** @var Product $product */
             $product = $portfolio->item;
+            $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
 
             $images = [];
             if (app()->isProduction()) {
@@ -54,22 +54,51 @@ class StoreWooCommerceProduct extends RetinaAction
                 }
             }
 
+            $customAttributes = [];
+            $tradeUnitAttachments = Arr::get($this->getAttachmentData($product), 'public', []);
+            foreach ($tradeUnitAttachments as $key => $tradeUnitAttachment) {
+                /** @var Media|null $attachment */
+                $attachment = Arr::get($tradeUnitAttachment, 'attachment');
+
+                if ($attachment) {
+                    $customAttributes[] = [
+                        'id' => (string)$attachment->id,
+                        'name' => '<strong>' . Arr::get($tradeUnitAttachment, 'label') . '</strong>',
+                        'option' => '<a href="' . GetImgProxyUrl::run($attachment->getImage()) . '">' .
+                            Arr::get($tradeUnitAttachment, 'label') . '</a>'
+                    ];
+                }
+            }
+
+            $attachmentLinks = '';
+            foreach ($customAttributes as $attr) {
+                $attachmentLinks .= $attr['name'] . ': ' . $attr['option'] . '<br>';
+            }
+
+            $description = $portfolio->customer_description . '<br><br>' . $attachmentLinks;
+
+            $availableQuantity = $product->available_quantity;
+
+            if ($customerSalesChannel->max_quantity_advertise > 0) {
+                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+            }
 
             $wooCommerceProduct = [
                 'name'              => $portfolio->customer_product_name,
                 'type'              => 'simple',
                 'regular_price'     => (string)$portfolio->customer_price,
-                'description'       => $portfolio->customer_description,
-                'short_description' => $portfolio->customer_description,
+                'description'       => $description,
+                'short_description' => $description,
+                'global_unique_id'  => $product->barcode,
                 'categories'        => [],
                 'images'            => $images,
-                'stock_quantity'    => $product->available_quantity,
-                'manage_stock'      => !is_null($product->available_quantity),
+                'stock_quantity'    => $availableQuantity,
+                'manage_stock'      => !is_null($availableQuantity),
                 'stock_status'      => Arr::get($product, 'stock_status', 'instock'),
-                'attributes'        => Arr::get($product, 'attributes', []),
                 'sku'               => $portfolio->sku,
                 'weight'            => (string)($product->gross_weight / 100),
-                'status'            => $this->mapProductStateToWooCommerce($product->status->value)
+                'status'            => $this->mapProductStateToWooCommerce($product->status->value),
+                'default_attributes'         => $customAttributes
             ];
 
             $isOnDemand = false;

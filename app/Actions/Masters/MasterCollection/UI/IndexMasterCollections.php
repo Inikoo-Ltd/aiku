@@ -58,9 +58,11 @@ class IndexMasterCollections extends OrgAction
                 'master_collections.data',
                 'master_collections.name',
                 'master_collections.status',
+                'master_collections.web_images',
                 'master_collection_stats.number_current_master_families',
                 'master_collection_stats.number_current_master_products',
                 'master_collection_stats.number_current_master_collections',
+                'master_collections.web_images',
             ]
         )
             ->selectRaw("EXISTS(SELECT 1 FROM collections JOIN webpages ON collections.id = webpages.model_id WHERE collections.master_collection_id = master_collections.id AND collections.webpage_id IS NOT NULL AND webpages.deleted_at IS NULL AND webpages.model_type = 'Collection') as has_active_webpage")
@@ -124,6 +126,7 @@ class IndexMasterCollections extends OrgAction
             $table
                 ->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
+            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);

@@ -5,6 +5,7 @@
 	"name": "Topbar Simple [fulfilment]",
 	"component": "topbar",
 	"website_type" : ["fulfilment"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",

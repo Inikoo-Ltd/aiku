@@ -125,6 +125,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.updated_at',
                 'products.slug',
                 'products.asset_id',
+                'products.available_quantity',
                 'invoices_all',
                 'sales_all',
                 'products.units',
@@ -168,10 +169,10 @@ class IndexProductsInProductCategory extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'unit', label: __('Unit label'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'rrp', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 
@@ -207,9 +208,9 @@ class IndexProductsInProductCategory extends OrgAction
         $model      = null;
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $title = $productCategory->name;
-            $model = '';
-            $icon  = [
+            $title      = $productCategory->name;
+            $model      = '';
+            $icon       = [
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('Department')
             ];
@@ -218,9 +219,9 @@ class IndexProductsInProductCategory extends OrgAction
                 'label' => __('Products')
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $title = $productCategory->name;
-            $model = '';
-            $icon  = [
+            $title      = $productCategory->name;
+            $model      = '';
+            $icon       = [
                 'icon'  => ['fal', 'fa-folder'],
                 'title' => __('Family')
             ];
@@ -229,9 +230,9 @@ class IndexProductsInProductCategory extends OrgAction
                 'label' => __('Products')
             ];
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $title = $productCategory->name;
-            $model = '';
-            $icon  = [
+            $title      = $productCategory->name;
+            $model      = '';
+            $icon       = [
                 'icon'  => ['fal', 'fa-dot-circle'],
                 'title' => __('Sub Department')
             ];
@@ -264,7 +265,7 @@ class IndexProductsInProductCategory extends OrgAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New product'),
-                            'label'   => __('product'),
+                            'label'   => __('Product'),
                             'route'   => [
                                 'name'       => str_replace('index', 'create', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -326,6 +327,7 @@ class IndexProductsInProductCategory extends OrgAction
 
         return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
     {
@@ -362,8 +364,6 @@ class IndexProductsInProductCategory extends OrgAction
 
         return $this->handle(productCategory: $subDepartment, prefix: ProductsTabsEnum::INDEX->value);
     }
-
-
 
 
     public function getBreadcrumbs(ProductCategory $productCategory, string $routeName, array $routeParameters, string $suffix = null): array

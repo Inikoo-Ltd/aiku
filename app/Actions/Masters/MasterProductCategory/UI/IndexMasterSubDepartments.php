@@ -83,6 +83,7 @@ class IndexMasterSubDepartments extends GrpAction
                 'master_product_categories.description',
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',
+                'master_product_categories.web_images',
                 'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
                 'master_product_category_stats.number_current_master_assets_type_product as number_products',
             ])
@@ -112,9 +113,10 @@ class IndexMasterSubDepartments extends GrpAction
                 );
 
             $table
-                ->column(key: 'status_icon', label: '', canBeHidden: false, sortable: false, searchable: true, type: 'icon')
-                ->column(key: 'code', label: __('code'), sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), sortable: true, searchable: true)
+                ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'number_families', label: __('M. Families'), sortable: true)
                 ->column(key: 'number_products', label: __('M. Products'), sortable: true);
         };

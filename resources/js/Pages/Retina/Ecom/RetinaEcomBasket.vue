@@ -15,7 +15,7 @@ import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import { Image as ImageTS } from "@/types/Image"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -42,7 +42,7 @@ interface ChargeResource {
 }
 
 const props = defineProps<{
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     order: {
         id: string
         reference: string
@@ -536,7 +536,6 @@ const onChangeInsurance = async (val: boolean) => {
 					class="rounded-none border-0"
 				/> -->
                 <Button
-                   v-if="is_in_basket"
                     @click="() => isModalProductListOpen = true"
                     :label="trans('Add products')"
                     type="tertiary"

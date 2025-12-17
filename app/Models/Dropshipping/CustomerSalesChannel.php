@@ -75,6 +75,9 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property int $ping_error_count
  * @property \Illuminate\Support\Carbon|null $ban_stock_update_util
  * @property array<array-key, mixed>|null $settings
+ * @property bool $stock_update This to filter whether the user want update stock automatic or not
+ * @property int $stock_threshold
+ * @property int $max_quantity_advertise
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer

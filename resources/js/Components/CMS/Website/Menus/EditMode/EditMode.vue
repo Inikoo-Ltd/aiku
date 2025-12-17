@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, toRaw, watch } from 'vue'
-import draggable from "vuedraggable"
-import { v4 as uuid } from "uuid"
+import { ref, watch } from 'vue'
+import draggable from 'vuedraggable'
+import { v4 as uuid } from 'uuid'
+import cloneDeep from 'lodash-es/cloneDeep'
 
 // Components
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -15,31 +16,32 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 // FontAwesome
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { 
-  faChevronRight, faSignOutAlt, faShoppingCart, faSearch, faChevronDown, 
-  faChevronUp, faTimes, faPlusCircle, faBars, faTrashAlt, 
-  faGlobe, 
+import {
+  faChevronRight, faSignOutAlt, faShoppingCart, faSearch,
+  faChevronDown, faChevronUp, faTimes,
+  faPlusCircle, faBars, faTrashAlt, faGlobe
 } from '@fas'
-import {  faHeart } from '@fortawesome/free-regular-svg-icons'
+import { faHeart } from '@fortawesome/free-regular-svg-icons'
 import { faExclamationTriangle, faTimesCircle } from '@fal'
 
 library.add(
-  faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, 
-  faChevronDown, faTimes, faPlusCircle, faBars, faTrashAlt, 
-  faGlobe, faChevronUp
+  faChevronRight, faSignOutAlt, faShoppingCart,
+  faHeart, faSearch, faChevronDown,
+  faChevronUp, faTimes, faPlusCircle,
+  faBars, faTrashAlt, faGlobe
 )
 
-// Types
+// ================= TYPES =================
 interface NavigationLink {
-  label: string
-  link?: { href?: string; type?: string; workshop?: string }
   id: string
+  label: string
   icon?: any
+  link?: { href?: string; type?: string; workshop?: string }
 }
 
 interface SubNavigation {
-  title: string
   id: string
+  title: string
   links: NavigationLink[]
 }
 
@@ -47,124 +49,161 @@ interface Navigation {
   label: string
   type: string
   icon?: any
-  link?: { href?: string; type?: string; workshop?: string }
+  link?: any
   subnavs?: SubNavigation[]
 }
 
-// Props & Emits
+// ================= PROPS =================
 const props = defineProps<{ modelValue: Navigation }>()
-const emits = defineEmits<{ (e: 'update:modelValue', value: Navigation): void }>()
+const emits = defineEmits<{
+  (e: 'update:modelValue', val: Navigation): void
+}>()
 
-// States
+// ================= LOCAL STATE =================
+const localNav = ref<Navigation>(cloneDeep(props.modelValue))
+
+const commit = (patch: Partial<Navigation>) => {
+  localNav.value = { ...localNav.value, ...patch }
+  emits('update:modelValue', cloneDeep(localNav.value))
+}
+
+// ================= UI STATE =================
 const visibleNameDialog = ref(false)
 const visibleDialog = ref(false)
 const visibleNavigation = ref(false)
 
-const nameValue = ref<NavigationLink | SubNavigation | null>(null)
+const nameValue = ref<any>(null)
 const linkValue = ref<NavigationLink | null>(null)
 
-const parentIdx = ref<number>(-1)
-const linkIdx = ref<number>(-1)
+const parentIdx = ref(-1)
+const linkIdx = ref(-1)
 
-// --- Helper Functions ---
-const emitUpdate = (value: Navigation) => emits('update:modelValue', value)
-
-const addLink = (subnav: SubNavigation) => {
-  subnav.links.push({ label: "New Link", link: {}, id: uuid(), icon: null })
-  emitUpdate(props.modelValue)
+// ================= ACTIONS =================
+const changeType = (type: string) => {
+  commit({
+    type,
+    subnavs: type === 'multiple' ? [] : undefined
+  })
 }
 
 const addSubNavigation = () => {
-  const newSub: SubNavigation = {
-    title: "New Navigation",
+  const subnavs = cloneDeep(localNav.value.subnavs ?? [])
+  subnavs.push({
     id: uuid(),
-    links: [{ label: "New Link", link: {}, id: uuid(), icon: null }]
-  }
-  props.modelValue.subnavs = props.modelValue.subnavs ?? []
-  props.modelValue.subnavs.push(newSub)
+    title: 'New Navigation',
+    links: [{ id: uuid(), label: 'New Link', icon: null, link: {} }]
+  })
+  commit({ subnavs })
 }
 
 const deleteSubNavigation = (index: number) => {
-  props.modelValue.subnavs?.splice(index, 1)
+  const subnavs = cloneDeep(localNav.value.subnavs ?? [])
+  subnavs.splice(index, 1)
+  commit({ subnavs })
 }
 
-const changeType = (type: string) => {
-  if (type === 'multiple') props.modelValue.subnavs = []
+const addLink = (subnavIndex: number) => {
+  const subnavs = cloneDeep(localNav.value.subnavs ?? [])
+  subnavs[subnavIndex]?.links.push({
+    id: uuid(),
+    label: 'New Link',
+    icon: null,
+    link: {}
+  })
+  commit({ subnavs })
 }
 
-const openNameDialog = (subnav?: SubNavigation, index = -1) => {
-  parentIdx.value = index
-  nameValue.value = toRaw({ ...subnav, label: subnav?.title })
-  visibleNameDialog.value = true
-}
 
-const openLinkDialog = (link?: NavigationLink, parentIndex = -1, index = -1) => {
-  parentIdx.value = parentIndex
-  linkIdx.value = index
-  linkValue.value = toRaw(link)
-  visibleDialog.value = true
+const saveSubnavTitle = (data) => {
+  const subnavs = cloneDeep(localNav.value.subnavs ?? [])
+  subnavs[parentIdx.value].title = data.label
+  subnavs[parentIdx.value].link = data.link
+  commit({ subnavs })
+  resetDialog()
 }
 
 const saveLink = (data: NavigationLink) => {
-  const subnav = props.modelValue.subnavs?.[parentIdx.value]
-  if (!subnav) return
-  subnav.links[linkIdx.value] = { ...subnav.links[linkIdx.value], ...data }
+  const subnavs = cloneDeep(localNav.value.subnavs ?? [])
+  subnavs[parentIdx.value].links[linkIdx.value] = {
+    ...subnavs[parentIdx.value].links[linkIdx.value],
+    ...data
+  }
+  commit({ subnavs })
   resetDialog()
 }
 
-const saveSubnavTitle = (data: { label: string; link?: any }) => {
-  console.log('sss',data)
-  const subnav = props.modelValue.subnavs?.[parentIdx.value]
-  if (!subnav) return
-  subnav.title = data.label
-  resetDialog()
-}
-
-const saveNavigationLink = (data: { label: string; link?: any }) => {
-  props.modelValue.label = data.label
-  props.modelValue.link = data.link
+const saveNavigationLink = (data: any) => {
+  commit({
+    label: data.label,
+    link: data.link
+  })
   visibleNavigation.value = false
 }
 
+const openNameDialog = (subnav: SubNavigation, index: number) => {
+  parentIdx.value = index
+  nameValue.value = { label: subnav.title, link: subnav.link }
+  visibleNameDialog.value = true
+}
+
+const openLinkDialog = (link: NavigationLink, pIdx: number, lIdx: number) => {
+  parentIdx.value = pIdx
+  linkIdx.value = lIdx
+  linkValue.value = cloneDeep(link)
+  visibleDialog.value = true
+}
+
 const resetDialog = () => {
+  visibleDialog.value = false
+  visibleNameDialog.value = false
+  visibleNavigation.value = false
   nameValue.value = null
   linkValue.value = null
   parentIdx.value = -1
   linkIdx.value = -1
-  visibleDialog.value = false
-  visibleNameDialog.value = false
 }
 
-// Watcher
-watch(() => props.modelValue, (newVal) => emitUpdate(newVal), { deep: true })
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    localNav.value = cloneDeep(newVal)
+  }
+)
 </script>
 
-<template>
-<div class="bg-slate-50 p-6 max-w-4xl mx-auto">
-  <!-- Navigation Title + Icon -->
-  <section class="bg-white rounded-lg shadow-md p-6 mb-6 space-y-6">
-    <div>
-      <h2 class="font-medium text-gray-800 text-lg mb-4">Navigation Title</h2>
-      <div class="flex items-center gap-3">
-        <button type="button" class="border border-gray-300 rounded px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <IconPicker v-model="props.modelValue.icon" />
-        </button>
-        <input v-model="props.modelValue.label" type="text" placeholder="Enter Navigation Title"
-          class="flex-grow border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-      </div>
-    </div>
 
-    <!-- Type Selector -->
-    <div>
-      <h3 class="font-medium text-gray-800 text-md mb-3">Type</h3>
-      <PureMultiselect 
-        :required="true" 
-        v-model="props.modelValue.type" 
-        label="label" value-prop="value" 
-        :options="[{ label: 'Single', value: 'single' }, { label: 'Multiple', value: 'multiple' }]" 
-        @change="(e) => changeType(e)" 
-      />
-    </div>
+
+<template>
+  <div class="bg-slate-50 p-6 max-w-4xl mx-auto">
+    <!-- Navigation Title + Icon -->
+    <section class="bg-white rounded-lg shadow-md p-6 mb-6 space-y-6">
+      <!-- Navigation Title + Icon -->
+      <div>
+        <h2 class="font-medium text-gray-800 text-lg mb-4">Navigation Title</h2>
+
+        <div class="flex items-center gap-3">
+          <button type="button"
+            class="border border-gray-300 rounded px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <IconPicker :model-value="localNav.icon" @update:model-value="icon => commit({ icon })" />
+          </button>
+
+          <input :value="localNav.label" @input="e => commit({ label: e.target.value })" type="text"
+            placeholder="Enter Navigation Title"
+            class="flex-grow border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+      </div>
+
+      <!-- Type Selector -->
+      <div>
+        <h3 class="font-medium text-gray-800 text-md mb-3">Type</h3>
+
+        <PureMultiselect :required="true" :model-value="localNav.type" label="label" value-prop="value" :options="[
+          { label: 'Single', value: 'single' },
+          { label: 'Multiple', value: 'multiple' }
+        ]" @update:model-value="changeType" />
+      </div>
+
 
     <!-- Navigation Link -->
     <div>
@@ -201,7 +240,7 @@ watch(() => props.modelValue, (newVal) => emitUpdate(newVal), { deep: true })
                       </div>
                     </div>
                     <div class="flex items-center gap-3">
-                      <FontAwesomeIcon v-if="element.links.length < 8" icon="fas fa-plus-circle" class="cursor-pointer text-blue-500" @click.stop="() => addLink(element)"/>
+                      <FontAwesomeIcon v-if="element.links.length < 8" icon="fas fa-plus-circle" class="cursor-pointer text-blue-500" @click.stop="() => addLink(index)"/>
                       <FontAwesomeIcon icon="fas fa-trash-alt" class="cursor-pointer text-red-500" @click.stop="() => deleteSubNavigation(index)"/>
                       <FontAwesomeIcon :icon="open ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="text-gray-400"/>
                     </div>
@@ -255,7 +294,7 @@ watch(() => props.modelValue, (newVal) => emitUpdate(newVal), { deep: true })
   </Dialog>
 
   <Dialog v-model:visible="visibleNavigation" modal header="Edit Navigation Link" :style="{ width: '25rem' }" :contentStyle="{ overflowY: 'visible'}">
-    <DialogEditLink :modelValue="toRaw({ ...props.modelValue })" @on-save="saveNavigationLink"/>
+    <DialogEditLink :modelValue="props.modelValue" @on-save="saveNavigationLink"/>
   </Dialog>
 
   <ConfirmPopup>

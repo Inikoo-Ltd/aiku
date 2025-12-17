@@ -149,7 +149,7 @@ class IndexPalletsInCustomer extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'customer_reference', label: __("Pallet reference (customer's), notes"), canBeHidden: false, sortable: true, searchable: true);
             if ($prefix == FulfilmentCustomerPalletsTabsEnum::RETURNED->value) {
                 $table->column(key: 'dispatched_at', label: __('dispatched'), canBeHidden: false, sortable: true, searchable: true);

@@ -120,7 +120,7 @@ const handleUpload = async (files: File[]) => {
 	if (!files || !files.length) return
 	const file = files[0]
 
-	// Validate file type
+	// Validate file type (allow gif)
 	if (!file.type.startsWith("image/")) {
 		notify({
 			title: "Invalid File",
@@ -130,10 +130,55 @@ const handleUpload = async (files: File[]) => {
 		return
 	}
 
+	if (file.type === "image/gif") {
+		try {
+			isLoadingSubmit.value = true
+
+			const formData = new FormData()
+			formData.append("images[0]", file, file.name)
+
+			console.log('Uploading GIF file directly', file)
+
+			const response = await axios.post(
+				route(props.uploadRoutes.name, props.uploadRoutes.parameters),
+				formData,
+				{
+					headers: { "Content-Type": "multipart/form-data" },
+				}
+			)
+
+			const merged = {
+				...props.modelValue,
+				...cloneDeep(response.data.data[0].source),
+			}
+
+			emits("update:modelValue", merged)
+			emits("dialog", false)
+
+			notify({
+				title: "Success",
+				text: "GIF uploaded successfully.",
+				type: "success",
+			})
+		} catch (error: any) {
+			const message = error.response?.data?.message || "Error uploading GIF"
+			notify({
+				title: "Upload Failed",
+				text: message,
+				type: "error",
+			})
+		} finally {
+			isLoadingSubmit.value = false
+		}
+
+		return 
+	}
+
 	selectedFile.value = file
 	imagePreview.value = URL.createObjectURL(file)
 	isCropping.value = true
 }
+
 
 /**
  * Confirm and upload cropped image

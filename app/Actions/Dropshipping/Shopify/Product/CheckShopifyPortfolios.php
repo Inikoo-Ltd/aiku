@@ -54,11 +54,19 @@ class CheckShopifyPortfolios extends OrgAction
         }
 
 
+        $count = 0;
         foreach ($query->orderBy('status')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
             if ($portfolio) {
                 try {
+                    $count++;
+
                     $portfolio = CheckShopifyPortfolio::run($portfolio);
+                    if($count === 100) {
+                        $count = 0;
+
+                        sleep(5);
+                    }
                 } catch (\Exception $e) {
                     Sentry::captureException($e);
                 }

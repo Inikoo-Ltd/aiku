@@ -10,10 +10,11 @@ namespace App\Actions\Traits\Hydrators;
 
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
+use App\Models\Masters\MasterAsset;
 
 trait WithWeightFromTradeUnits
 {
-    public function getWeightFromTradeUnits(Stock|Product $model): ?int
+    public function getWeightFromTradeUnits(Stock|Product|MasterAsset $model): ?int
     {
         $changed = false;
         $weight  = 0;

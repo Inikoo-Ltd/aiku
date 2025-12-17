@@ -45,54 +45,6 @@ defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 const isLoading = ref<string | boolean>(false)
 
-// Example data in BE
-// 'dashboard_stats'   => [
-//     'widgets'   => [
-//         'column_count'  => 1,
-//         'components'    => [
-//             [
-//                 'type'      => 'flat_tree_map',  // 'basic'
-//                 // 'col_span'  => '2',
-//                 // 'row_span'  => '2',
-//                 'visual'    => [],
-//                 'data'      => [
-//                     'nodes'     => [
-//                         [
-//                             'name'  => __('agents'),
-//                             'icon'  => ['fal', 'fa-people-arrows'],
-//                             'route'  => [
-//                                 'name' => 'grp.supply-chain.agents.index'
-//                             ],
-//                             'index' => [
-//                                 'number' => $this->group->supplyChainStats->number_active_agents
-//                             ],
-//                         ],
-//                         [
-//                             'name'  => __('suppliers'),
-//                             'icon'  => ['fal', 'fa-person-dolly'],
-//                             'route'  => ['name' => 'grp.supply-chain.suppliers.index'],
-//                             'index' => [
-//                                 'number' => $this->group->supplyChainStats->number_active_independent_suppliers
-//                             ],
-
-//                         ],
-//                         [
-//                             'name'      => __('Supplier products'),
-//                             'shortName' => __('products'),
-//                             'icon'      => ['fal', 'fa-box-usd'],
-//                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],
-//                             'index'     => [
-//                                 'number' => $this->group->supplyChainStats->number_current_supplier_products
-//                             ],
-
-//                         ],
-//                     ],
-//                     // 'mode'  => 'compact'
-//                 ],
-//             ]
-//         ],
-//     ]
-// ]
 </script>
 
 <template>

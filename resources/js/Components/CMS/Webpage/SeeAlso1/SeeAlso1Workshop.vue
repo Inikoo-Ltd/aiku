@@ -107,22 +107,27 @@ const compSwiperOptions = computed(() => {
       </button>
 
       <!-- Swiper -->
-      <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
-        :navigation="{ prevEl, nextEl }" pagination>
-        <SwiperSlide v-for="(product, index) in  compSwiperOptions" :key="product.slug"
-          class="h-full">
-          <div class="h-full">
-            <div v-if="product" class="h-full flex flex-col">
+      <Swiper   
+        :modules="[Navigation]"
+        :slides-per-view="slidesPerView"
+        :space-between="20"
+        :navigation="{ prevEl, nextEl }"
+        :autoHeight="false"
+        pagination
+        :loop="true"
+      >
+        <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
+          <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
+            <div v-if="product" class="flex-1 flex flex-col">
               <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
-            <div v-else
-              class="h-full text-gray-400 text-sm text-center py-6 p-3 relative rounded-lg shadow-sm bg-white hover:shadow-md transition-all duration-200">
+
+            <div v-else class="flex-1 flex items-center justify-center text-gray-400">
               No Product
             </div>
           </div>
         </SwiperSlide>
-
       </Swiper>
     </div>
   </div>

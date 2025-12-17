@@ -19,7 +19,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
-    public function handle(DeliveryNote $parent, $prefix = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -62,7 +62,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($ignoreParentPagination ? 'deliveryNoteItems' : $prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
@@ -77,6 +77,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
 
             $table
+                ->withLabelRecord([__('delivery note'),__('delivery notes')])
                 ->withEmptyState(
                     [
                         'title' => __("delivery note empty"),

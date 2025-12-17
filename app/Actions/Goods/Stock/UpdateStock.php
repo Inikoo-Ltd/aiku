@@ -9,14 +9,11 @@
 namespace App\Actions\Goods\Stock;
 
 use App\Actions\Goods\Stock\Search\StockRecordSearch;
-use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Goods\Stock\StockStateEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Http\Resources\Inventory\OrgStockResource;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
@@ -42,24 +39,16 @@ class UpdateStock extends OrgAction
         $stock   = $this->update($stock, $modelData, ['data', 'settings']);
         $changes = Arr::except($stock->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changes, ['code', 'name', 'stock_family_id', 'unit_value', 'state']) && $stock->state != StockStateEnum::IN_PROCESS) {
-
+        if (Arr::hasAny($changes, ['code', 'name', 'stock_family_id', 'unit_value']) && $stock->state != StockStateEnum::IN_PROCESS) {
             foreach ($stock->orgStocks as $orgStock) {
                 $orgStock->update(
                     [
                         'code'       => $stock->code,
                         'name'       => $stock->name,
                         'unit_value' => $stock->unit_value,
-                        'state'      => match ($stock->state) {
-                            StockStateEnum::ACTIVE        => OrgStockStateEnum::ACTIVE,
-                            StockStateEnum::DISCONTINUING => OrgStockStateEnum::DISCONTINUING,
-                            StockStateEnum::DISCONTINUED  => OrgStockStateEnum::DISCONTINUED,
-                            StockStateEnum::SUSPENDED     => OrgStockStateEnum::SUSPENDED,
-                        }
                     ]
                 );
             }
-
         }
 
         if (Arr::has($changes, 'stock_family_id')) {
@@ -76,15 +65,6 @@ class UpdateStock extends OrgAction
                         ]
                     );
                 }
-            }
-        }
-
-        if (Arr::has($changes, 'state')) {
-            GroupHydrateStocks::dispatch($stock->group)->delay($this->hydratorsDelay);
-
-
-            if ($stock->stockFamily) {
-                StockFamilyHydrateStocks::dispatch($stock->stockFamily)->delay($this->hydratorsDelay);
             }
         }
 
@@ -123,11 +103,15 @@ class UpdateStock extends OrgAction
             ],
             'name'            => ['sometimes', 'required', 'string', 'max:255'],
             'stock_family_id' => ['sometimes', 'nullable', 'exists:stock_families,id'],
-            'state'           => ['sometimes', 'required', Rule::enum(StockStateEnum::class)],
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules                    = $this->noStrictUpdateRules($rules);
+            $rules['code']            = ['sometimes', 'string'];
+            $rules['activated_at']    = ['sometimes', 'nullable', 'date'];
+            $rules['discontinued_at'] = ['sometimes', 'nullable', 'date'];
+            $rules['state']           = ['sometimes', Rule::enum(StockStateEnum::class)];
+            $rules['source_slug']     = ['sometimes', 'string', 'max:255'];
         }
 
         return $rules;
@@ -140,8 +124,8 @@ class UpdateStock extends OrgAction
         if (!$audit) {
             Stock::disableAuditing();
         }
-        $this->asAction = true;
-        $this->stock    = $stock;
+        $this->asAction       = true;
+        $this->stock          = $stock;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromGroup($stock->group, $modelData);
 

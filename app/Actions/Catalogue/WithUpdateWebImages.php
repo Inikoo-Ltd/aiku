@@ -13,10 +13,13 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Media;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterProductCategory;
 
 trait WithUpdateWebImages
 {
-    public function updateWebImages(Product|ProductCategory|Collection $model): Product|ProductCategory|Collection
+    public function updateWebImages(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection
     {
         $webImagesData = [
             'main' => $this->getMainWebImageData($model),
@@ -43,7 +46,7 @@ trait WithUpdateWebImages
         return $model;
     }
 
-    public function getMainWebImageData(Product|ProductCategory|Collection $model): array
+    public function getMainWebImageData(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): array
     {
         $media = null;
         if ($model->image_id) {
@@ -65,7 +68,7 @@ trait WithUpdateWebImages
         ];
     }
 
-    public function getAllWebImageData(Product|ProductCategory|Collection $model): array
+    public function getAllWebImageData(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): array
     {
         $images = [];
 

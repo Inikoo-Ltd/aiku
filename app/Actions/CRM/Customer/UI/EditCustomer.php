@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
@@ -73,8 +74,8 @@ class EditCustomer extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('contact information'),
-                            'label'  => __('contact'),
+                            'title'  => __('Contact information'),
+                            'label'  => __('Contact'),
                             'fields' => [
                                 'contact_name'             => [
                                     'type'  => 'input',
@@ -138,13 +139,33 @@ class EditCustomer extends OrgAction
                             ]
                         ],
                         [
+                            'title'  => __('Accounting'),
+                            'label'  => __('Accounting'),
+                            'fields' => [
+
+                                'is_credit_customer' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Credit Customer'),
+                                    'value' => $customer->is_credit_customer,
+                                ],
+                                'accounting_reference' => [
+                                    'type'     => 'input',
+                                    'label'    => __('Sage Customer Number'),
+                                    'value'    => $customer->accounting_reference,
+                                    'required' => false,
+                                ],
+                            ]
+                        ],
+                        [
                             'title'  =>  __('Tags'),
                             'label'  => __('Tags'),
                             'fields' => [
                                 'tags' => [
                                     'type'       => 'tags-customer',
                                     'label'      => __('Tags'),
-                                    'value'      => $customer->tags->pluck('id')->toArray(),
+                                    'value'      => $customer->tags->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->pluck('id')->toArray(),
+                                    'noSaveButton' => true,
+                                    'isWithRefreshFieldForm' => true,
                                     'tag_routes' => [
                                         'index_tag' => [
                                             'name'       => 'grp.json.customer.tags.index',

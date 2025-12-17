@@ -41,6 +41,7 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
         [route().params["organisation"], route().params["orgPartner"], purchaseOrder.slug]);
     case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
     case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
       return route(
         "grp.org.procurement.purchase_orders.show",
         [route().params["organisation"], purchaseOrder.slug]);
@@ -61,6 +62,7 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
         [route().params["organisation"], route().params["orgAgent"], purchaseOrder.parent_slug]);
     case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
     case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
       return route(
         "grp.supply-chain.suppliers.show",
         [purchaseOrder.supplier_slug]);
@@ -77,6 +79,7 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
         [route().params["organisation"], purchaseOrder.parent_slug]);
     case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
     case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
+    case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
       return route(
         "grp.supply-chain.agents.show",
         [purchaseOrder.agent_slug]);

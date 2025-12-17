@@ -22,6 +22,14 @@ class UpdateMultipleMasterProductsFamily extends GrpAction
     use WithActionUpdate;
     use WithMasterProductCategoryAction;
 
+    /**
+     * @var \App\Models\Masters\MasterProductCategory
+     */
+    private MasterProductCategory $masterFamily;
+
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterProductCategory $masterFamily, array $modelData): void
     {
         foreach ($modelData['master_assets'] as $masterAssetId) {
@@ -48,6 +56,7 @@ class UpdateMultipleMasterProductsFamily extends GrpAction
 
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request): void
     {
+        $this->masterFamily = $masterFamily;
         $this->masterProductCategory = $masterFamily;
         $this->initialisation($masterFamily->group, $request);
 

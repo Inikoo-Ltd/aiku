@@ -164,6 +164,7 @@ class IndexStocks extends OrgAction
                 'stocks.code',
                 'stocks.slug',
                 'stocks.name',
+                'stocks.state',
                 'stocks.unit_value',
                 'stock_sales_intervals.*',
                 'stock_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',
@@ -213,11 +214,11 @@ class IndexStocks extends OrgAction
                 ->dateInterval($this->dateInterval)
                 ->withModelOperations($modelOperations)
                 ->withEmptyState($this->getEmptyState($parent))
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
-                $table->column(key: 'family_code', label: __('family'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'family_code', label: __('Family'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true);
         };
     }

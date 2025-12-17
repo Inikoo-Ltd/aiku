@@ -45,6 +45,8 @@ class StoreEbayProduct extends RetinaAction
             $includeVat = Arr::get($ebayUser->customerSalesChannel->settings, 'tax_category.checked', false);
             $customerPrice = $includeVat ? $portfolio->customer_price : $portfolio->customer_price * 0.8;
 
+            $customerSalesChannel = $ebayUser->customerSalesChannel;
+
             $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
                 if (isset($result['error']) || isset($result['errors'])) {
                     $params = '';
@@ -160,6 +162,12 @@ class StoreEbayProduct extends RetinaAction
             $width = Arr::get($product->marketing_dimensions, 'w');
             $w = in_array($width, [null, 0]) ? 0.5 : $width;
 
+            $availableQuantity = $product->available_quantity;
+
+            if ($customerSalesChannel->max_quantity_advertise > 0) {
+                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+            }
+
             $inventoryItem = [
                 'sku' => $portfolio->sku,
                 'availability' => [
@@ -167,10 +175,10 @@ class StoreEbayProduct extends RetinaAction
                         'availabilityDistributions' => [
                                 [
                                     'merchantLocationKey' => $ebayUser->location_key,
-                                    'quantity' => $product->available_quantity
+                                    'quantity' => $availableQuantity
                                 ]
                             ],
-                        'quantity' => $product->available_quantity
+                        'quantity' => $availableQuantity
                     ]
                 ],
                 'condition' => 'NEW',

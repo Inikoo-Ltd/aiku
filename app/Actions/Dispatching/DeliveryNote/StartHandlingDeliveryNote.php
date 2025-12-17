@@ -35,6 +35,16 @@ class StartHandlingDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         $oldState = $deliveryNote->state;
+
+        if (in_array($deliveryNote->state, [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED,
+
+        ])) {
+            return $deliveryNote;
+        }
+
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED) {
             $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
         }
@@ -64,6 +74,7 @@ class StartHandlingDeliveryNote extends OrgAction
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+
         return $deliveryNote;
     }
 

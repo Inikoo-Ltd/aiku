@@ -9,17 +9,16 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree, faFolderDownload } from "@fal"
+import { faTrash, faEdit,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree, faFolderDownload } from "@fal"
 import { faPlay,faTimesCircle, faCheckCircle  as fasCheckCircle} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
-import { remove as loRemove } from 'lodash-es'
 import { ref } from 'vue'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faTrash, faEdit } from "@fal"
+import Image from "@/Components/Image.vue"
 
 library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit)
 
@@ -37,17 +36,23 @@ defineProps<{
 
 const inMasterCollection = route().current() === 'grp.masters.master_shops.show.master_collections.index';
 
-function collectionRoute(collection: {}) {
-    const currentRoute = route().current();
+function collectionRoute(collection: { slug: string }) {
+  const currentRoute = route().current();
 
-    if (currentRoute === "grp.masters.master_shops.show.master_collections.index") {
-        return route(
-            "grp.masters.master_shops.show.master_collections.show",
-            [
-                (route().params as RouteParams).masterShop,
-                collection.slug
-            ]);
-    }
+  switch (currentRoute) {
+    case "grp.masters.master_shops.show.master_collections.index":
+    case 'grp.masters.master_shops.show.master_departments.show.master_collections.index':
+      return route(
+        "grp.masters.master_shops.show.master_collections.show",
+        [
+          (route().params as RouteParams).masterShop,
+          collection.slug
+        ]
+      );
+
+    default:
+      return null;
+  }
 }
 
 function parentRoute(slug: string, type: string) {
@@ -87,6 +92,11 @@ const isLoadingDetach = ref<string[]>([])
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(image_thumbnail)="{ item: collection }">
+            <div class="flex justify-center">
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(state_icon)="{ item: collection }">
             <Icon :data="collection.state_icon" />
         </template>

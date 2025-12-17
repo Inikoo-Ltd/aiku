@@ -126,13 +126,13 @@ class IndexBanners extends OrgAction
                 ->withEmptyState($emptyState)
                 ->withExportLinks($exportLinks)
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'name', label: __('name'), sortable: true);
+                ->column(key: 'name', label: __('Name'), sortable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'image_thumbnail', label: ['fal', 'fa-image'])
-                ->column(key: 'date', label: __('date'), sortable: true)
+                ->column(key: 'date', label: __('Date'), sortable: true)
                 ->defaultSort('-date');
         };
     }

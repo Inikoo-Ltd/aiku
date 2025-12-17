@@ -229,6 +229,7 @@ class AppServiceProvider extends ServiceProvider
                 'ShippingZone'                  => 'App\Models\Billables\ShippingZone',
                 'ShippingZoneSchema'            => 'App\Models\Billables\ShippingZoneSchema',
                 'Transaction'                   => 'App\Models\Ordering\Transaction',
+                'ShippingCountry'               => 'App\Models\Ordering\ShippingCountry',
 
                 // Procurement
                 'OrgAgent'                      => 'App\Models\Procurement\OrgAgent',

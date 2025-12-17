@@ -108,9 +108,9 @@ class IndexWorkplaces extends OrgAction
                         ] : null
                     ]
                 )
-                ->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }

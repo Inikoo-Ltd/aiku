@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
@@ -42,6 +43,7 @@ class StoreTransactionFromCharge extends OrgAction
         if ($this->strict) {
             CalculateOrderTotalAmounts::run($order);
             OrderHydrateTransactions::dispatch($order);
+            AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
         }
 
         return $transaction;
@@ -80,7 +82,7 @@ class StoreTransactionFromCharge extends OrgAction
     public function afterValidator(Validator $validator): void
     {
 
-        if ($this->charge and $this->charge->shop_id != $this->shop->id) {
+        if ($this->charge && $this->charge->shop_id != $this->shop->id) {
             $validator->errors()->add('charge', 'Charge does not belong to this shop');
         }
 

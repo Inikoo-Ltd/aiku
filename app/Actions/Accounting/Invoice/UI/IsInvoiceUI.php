@@ -134,7 +134,7 @@ trait IsInvoiceUI
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-    public function getInvoiceActions(Invoice $invoice, ActionRequest $request, array $payBoxData): array
+    public function getInvoiceActions(Invoice $invoice, ActionRequest $request, array $payBoxData, bool $isWithSendInvoice = false): array
     {
         $wrappedActions = [];
 
@@ -229,8 +229,8 @@ trait IsInvoiceUI
         }
 
 
-        $wrappedActions[] =
-            [
+        if ($isWithSendInvoice) {
+            $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
                 'label' => __('Send invoice'),
@@ -244,6 +244,7 @@ trait IsInvoiceUI
                     ]
                 ]
             ];
+        }
 
         if ($payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
             $wrappedActions[] =

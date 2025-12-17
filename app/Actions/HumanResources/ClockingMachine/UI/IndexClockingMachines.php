@@ -108,8 +108,8 @@ class IndexClockingMachines extends OrgAction
 
                     ]
                 )
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Organisation) {
                 $table->column(key: 'workplace_name', label: __('workplace'), canBeHidden: false, sortable: true, searchable: true);
             } elseif ($parent instanceof Group) {

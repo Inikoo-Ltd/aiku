@@ -176,7 +176,7 @@ class IndexWarehouseAreas extends OrgAction
                         default => null
                     }
                 )
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'picking_position', label: __('Picking Order'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_empty_locations', label: __('empty locations'), canBeHidden: false, sortable: true, searchable: true)

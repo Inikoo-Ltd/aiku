@@ -44,8 +44,8 @@ trait HasIndexOrdersInBasket
                 $table->column(key: 'organisation_code', label: __('Org'), canBeHidden: false, searchable: true);
             }
 
-            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
             $table->column(key: 'updated_by_customer_at', label: __('Updated'), tooltip: __('Last updated by customer at'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hm');
             $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);

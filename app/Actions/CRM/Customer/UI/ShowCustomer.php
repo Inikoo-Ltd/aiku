@@ -156,7 +156,7 @@ class ShowCustomer extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
-                'notes'            => $this->getOrderNotes($customer),
+                'notes'            => $this->getCustomerNotes($customer),
                 'updateRoute'      => [
                     'name'       => 'grp.models.customer.update',
                     'parameters' => [
@@ -232,14 +232,14 @@ class ShowCustomer extends OrgAction
     }
 
 
-    public function getOrderNotes(Customer $customer): array
+    public function getCustomerNotes(Customer $customer): array
     {
         return [
             "note_list" => [
                 [
                     "label"       => __("Private"),
                     "note"        => $customer->internal_notes ?? '',
-                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
                     "editable"    => true,
                     "bgColor"     => "#FF7DBD",
                     "field"       => "internal_notes"
@@ -255,7 +255,7 @@ class ShowCustomer extends OrgAction
                 [
                     "label"       => __("Warehouse internal"),
                     "note"        => $customer->warehouse_internal_notes ?? '',
-                    "information" => __("This note is from customer in the platform. Not editable."),
+                    "information" => __("Warehouse internal notes"),
                     "editable"    => false,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "warehouse_internal_notes"

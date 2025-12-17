@@ -14,7 +14,7 @@ import { routeType } from "@/types/route"
 import DropshippingSummaryCheckout from "@/Components/Retina/Dropshipping/DropshippingSummaryCheckout.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(faCreditCardFront, faUniversity, faInfoCircle, faExclamationTriangle)
 

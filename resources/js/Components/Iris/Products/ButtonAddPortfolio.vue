@@ -15,6 +15,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { toInteger } from 'lodash-es'
+import LabelComingSoon from './LabelComingSoon.vue'
 
 
 interface ProductResource {
@@ -220,7 +221,8 @@ watch(
     <!-- Bottom Section (fixed position in layout) -->
     <div v-if="layout?.iris?.is_logged_in" class="w-full">
         <div v-if="product.is_coming_soon">
-            <Button :label="trans('Coming soon')" type="tertiary" disabled full />
+            <LabelComingSoon v-if="product.is_coming_soon" :product="product" class="w-full inline-block text-center" />
+
         </div>
 
         <div v-else-if="product.stock > 0" class="flex items-center gap-2 xmt-2">

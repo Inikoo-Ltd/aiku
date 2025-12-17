@@ -100,8 +100,8 @@ class IndexProspectQueries extends InertiaAction
                         'count'       => 0
                     ]
                 )
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'description', label: __('description'), sortable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'description', label: __('Description'), sortable: true)
                 ->column(key: 'number_items', label: __('prospects'))
                 ->column(key: 'actions', label: __('actions'));
         };
