@@ -104,6 +104,7 @@ const component = computed(() => {
         <DropshippingSummaryCheckout
             :summary="box_stats"
             :balance
+            :order="order"
         />
 
         <!-- If 'Total' is 0 or less -->

@@ -12,6 +12,8 @@ import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { get, set } from "lodash"
+import Toggle from "@/Components/Pure/Toggle.vue"
 
 library.add(faIdCardAlt, faWeight, faMapPin)
 
@@ -52,6 +54,7 @@ const props = defineProps<{
     }
     balance?: string
     address_management: AddressManagement
+    order: {}
     dataPalletReturn?: {
         is_collection: boolean
     }
@@ -139,27 +142,11 @@ const isModalShippingAddress = ref(false)
                 <a :href="`tel:${summary?.customer_client.phone}`" v-tooltip="'Click to make a phone call'"
                    class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer_client.phone }}</a>
             </div>
-
-
-            <!-- Collection Options -->
-            <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
-
-                <div class="w-full text-xs text-gray-500" :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
-                    <dd
-                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                        <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
-                        <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
-                            class="underline cursor-pointer hover:text-gray-700">
-                            {{ trans("Edit") }}
-                            <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
-                        </div>
-                    </dd>
-                </div>
-            </div>
         </div>
 
         <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-3">
 
+            <!-- Field: Weight -->
             <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                 <dt v-tooltip="trans('Weight')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400"/>
@@ -169,6 +156,29 @@ const isModalShippingAddress = ref(false)
                     {{ summary.order_properties?.weight ?? '-' }}
                 </dd>
             </dl>
+
+            <!-- Field: Collection Toggle -->
+            <div class="mt-2 flex items-center w-full flex-none gap-x-2">
+                <FontAwesomeIcon icon='fal fa-map-pin' class='text-gray-400' fixed-width aria-hidden='true'/>
+                <Toggle
+                    :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
+                    disabled
+                />
+                <span class="text-sm text-gray-500">
+                    {{ trans("Collection") }}
+                </span>
+            </div>
+
+            <!-- Collection Options -->
+            <div v-if="!get(props.order, ['is_collection'], false)" class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
+                <div class="w-full text-xs text-gray-500"
+                    :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
+                    <dd
+                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                        <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
+                    </dd>
+                </div>
+            </div>
 
             <div v-if="summary?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                 <!-- Section Title -->
