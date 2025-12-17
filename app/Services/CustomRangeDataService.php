@@ -11,8 +11,10 @@ namespace App\Services;
 use App\Actions\Accounting\InvoiceCategory\InvoiceCategoryCalculateCustomRangeSales;
 use App\Actions\Catalogue\Shop\ShopCalculateCustomRangeSales;
 use App\Actions\Dropshipping\Platform\PlatformCalculateCustomRangeSales;
+use App\Actions\Dropshipping\Platform\PlatformShopCalculateCustomRangeSales;
 use App\Actions\Masters\MasterShop\MasterShopCalculateCustomRangeSales;
 use App\Actions\SysAdmin\Organisation\OrganisationCalculateCustomRangeSales;
+use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -59,6 +61,21 @@ class CustomRangeDataService
 
         foreach ($organisation->invoiceCategories as $invoiceCategory) {
             $data['invoice_categories'][$invoiceCategory->id] = InvoiceCategoryCalculateCustomRangeSales::run($invoiceCategory, $startDate, $endDate);
+        }
+
+        return $data;
+    }
+
+    public function getShopCustomRangeData(Shop $shop, string $startDate, string $endDate): array
+    {
+        $data = [];
+
+        $data['shops'][$shop->id] = ShopCalculateCustomRangeSales::run($shop, $startDate, $endDate);
+
+        $platforms = Platform::where('group_id', $shop->group_id)->get();
+
+        foreach ($platforms as $platform) {
+            $data['ds_platforms'][$platform->id] = PlatformShopCalculateCustomRangeSales::run($platform, $shop->id, $startDate, $endDate);
         }
 
         return $data;

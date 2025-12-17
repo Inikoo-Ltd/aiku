@@ -58,9 +58,9 @@ class ShopCalculateCustomRangeSales
         $stats['revenue_org_currency_ctm'] = $metrics->sum('revenue_org_currency');
 
         // Lost revenue calculations
-        $stats['lost_revenue_ctm'] = $metrics->sum('lost_revenue');
-        $stats['lost_revenue_grp_currency_ctm'] = $metrics->sum('lost_revenue_grp_currency');
-        $stats['lost_revenue_org_currency_ctm'] = $metrics->sum('lost_revenue_org_currency');
+        $stats['lost_revenue_other_amount_ctm'] = $metrics->sum('lost_revenue');
+        $stats['lost_revenue_other_amount_grp_currency_ctm'] = $metrics->sum('lost_revenue_grp_currency');
+        $stats['lost_revenue_other_amount_org_currency_ctm'] = $metrics->sum('lost_revenue_org_currency');
 
         return $stats;
     }
@@ -97,9 +97,9 @@ class ShopCalculateCustomRangeSales
         $stats['revenue_org_currency_ctm_ly'] = $metrics->sum('revenue_org_currency');
 
         // Lost revenue calculations (last year)
-        $stats['lost_revenue_ctm_ly'] = $metrics->sum('lost_revenue');
-        $stats['lost_revenue_grp_currency_ctm_ly'] = $metrics->sum('lost_revenue_grp_currency');
-        $stats['lost_revenue_org_currency_ctm_ly'] = $metrics->sum('lost_revenue_org_currency');
+        $stats['lost_revenue_other_amount_ctm_ly'] = $metrics->sum('lost_revenue');
+        $stats['lost_revenue_other_amount_grp_currency_ctm_ly'] = $metrics->sum('lost_revenue_grp_currency');
+        $stats['lost_revenue_other_amount_org_currency_ctm_ly'] = $metrics->sum('lost_revenue_org_currency');
 
         return $stats;
     }
