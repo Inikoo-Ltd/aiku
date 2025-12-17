@@ -10,13 +10,12 @@ namespace App\Actions\Dropshipping\WooCommerce;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 
 class CheckWooStatus extends RetinaAction
 {
-    public function handle($slug):bool
+    public function handle($slug): bool
     {
         $canConnectToPlatform = false;
 
@@ -25,7 +24,7 @@ class CheckWooStatus extends RetinaAction
 
         $connection = $wooCommerceUser->checkConnection();
 
-        if (Arr::has($connection, 'environment')) {
+        if ($connection) {
             $canConnectToPlatform = true;
         }
 

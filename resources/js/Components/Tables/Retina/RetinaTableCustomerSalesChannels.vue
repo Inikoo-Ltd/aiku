@@ -15,6 +15,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt } from "@fortawesome/free-solid-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import axios from "axios"
+import { notify } from '@kyvg/vue3-notification'
 library.add(faSyncAlt)
 
 defineProps<{
@@ -47,19 +49,29 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 }
 
 
-function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
-    console.log(customerSalesChannel)
-   router.post(route('retina.dropshipping.platform.wc.check_status', [customerSalesChannel.slug]), {
-       onSuccess: async (response) => {
-           await router.push(route('retina.dropshipping.customer_sales_channels.index'))
-       },
-       onError: (errors) => {
-           console.error('Check status failed:', errors)
-       },
-       onFinish: () => {
-           // This runs regardless of success or error
-       }
-   })
+async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
+    const response = await axios.post(route('retina.dropshipping.platform.wc.check_status', [customerSalesChannel.slug]))
+    if (response.status === 200) {
+        if (response.data) {
+            notify({
+                type: 'success',
+                title: 'Success',
+                text: 'Channel is live',
+            })
+        }else {
+             notify({
+                type: 'error',
+                title: 'Error',
+                text: 'Channel is down',
+            })
+        }
+    } else {
+        notify({
+            type: 'error',
+            title: 'Error',
+            text: 'Failed to check channel status',
+        })
+    }
 }
 
 </script>
