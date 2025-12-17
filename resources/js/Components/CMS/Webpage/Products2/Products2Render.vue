@@ -92,7 +92,10 @@ const toggleBackInStock = () =>
                     @start="idxSlideLoading = true" @finish="idxSlideLoading = false">
                     <slot name="image" :product="product">
                         <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery"
-                            :alt="product.name" style="object-fit:contain" />
+                            :alt="product.name" :style="{
+                                objectFit: 'contain',
+                                opacity: product.stock <= 0 ? 0.4 : 1
+                            }" />
 
                         <FontAwesomeIcon v-else icon="fal fa-image"
                             class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
@@ -106,10 +109,10 @@ const toggleBackInStock = () =>
                                 class="
                                     w-full 
                                     bg-white/95 text-gray-900
-                                    text-xs sm:text-sm md:text-xl
+                                    text-xs sm:text-sm md:text-sm
                                     font-semibold md:font-bold
                                     tracking-wide uppercase
-                                    py-1.5 sm:py-2
+                                    py-1 sm:py-1
                                     text-center
                                     shadow-sm md:shadow-md
                                     backdrop-blur-sm

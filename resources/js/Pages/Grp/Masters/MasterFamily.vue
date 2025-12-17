@@ -38,6 +38,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
+import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
 
 library.add(
     faFolder,
@@ -74,6 +75,7 @@ const props = defineProps<{
     masterProductCategory?:number
     images?:object
     mini_breadcrumbs?: any[]
+    variants?:object
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
@@ -92,7 +94,8 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images : ImagesManagement,
-        sales: ProductCategorySales
+        sales: ProductCategorySales,
+        variants: TableVariants,
     }
     return components[currentTab.value] ?? ModelDetails
 })

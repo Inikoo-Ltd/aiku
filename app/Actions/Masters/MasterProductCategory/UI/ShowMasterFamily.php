@@ -107,6 +107,74 @@ class ShowMasterFamily extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
+        $tabs = [
+            MasterFamilyTabsEnum::SALES->value =>
+            $this->tab === MasterFamilyTabsEnum::SALES->value
+                ? fn() => MasterFamiliesSalesResource::collection(
+                    IndexMasterFamilySales::run($masterFamily)
+                )
+                : Inertia::lazy(
+                    fn() =>
+                    MasterFamiliesSalesResource::collection(
+                        IndexMasterFamilySales::run($masterFamily)
+                    )
+                ),
+
+            MasterFamilyTabsEnum::SHOWCASE->value =>
+            $this->tab === MasterFamilyTabsEnum::SHOWCASE->value
+                ? fn() => GetMasterProductCategoryShowcase::run($masterFamily)
+                : Inertia::lazy(
+                    fn() =>
+                    GetMasterProductCategoryShowcase::run($masterFamily)
+                ),
+
+            MasterFamilyTabsEnum::FAMILIES->value =>
+            $this->tab === MasterFamilyTabsEnum::FAMILIES->value
+                ? fn() => FamiliesResource::collection(
+                    IndexFamilies::run($masterFamily)
+                )
+                : Inertia::lazy(
+                    fn() =>
+                    FamiliesResource::collection(
+                        IndexFamilies::run($masterFamily)
+                    )
+                ),
+
+            MasterFamilyTabsEnum::IMAGES->value =>
+            $this->tab === MasterFamilyTabsEnum::IMAGES->value
+                ? fn() => GetMasterProductCategoryImages::run($masterFamily)
+                : Inertia::lazy(
+                    fn() =>
+                    GetMasterProductCategoryImages::run($masterFamily)
+                ),
+        ];
+
+        $navigation = MasterFamilyTabsEnum::navigation();
+        if (app()->environment('production')) {
+            $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
+                $this->tab === MasterFamilyTabsEnum::VARIANTS->value
+                ? fn() => MasterVariantsResource::collection(
+                    IndexMasterVariant::run(
+                        $masterFamily,
+                        MasterFamilyTabsEnum::VARIANTS->value
+                    )
+                )
+                : Inertia::lazy(
+                    fn() =>
+                    MasterVariantsResource::collection(
+                        IndexMasterVariant::run(
+                            $masterFamily,
+                            MasterFamilyTabsEnum::VARIANTS->value
+                        )
+                    )
+                );
+        }
+
+        if (app()->environment('production')) {
+           $navigation =  data_forget($navigation,MasterFamilyTabsEnum::VARIANTS->value);
+        }
+
+
         return Inertia::render(
             'Masters/MasterFamily',
             [
@@ -217,12 +285,13 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'tabs'                  => [
                     'current'    => $this->tab,
-                    'navigation' => MasterFamilyTabsEnum::navigation()
+                    'navigation' => $navigation
                 ],
                 'masterProductCategory' => $masterFamily->id,
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
+                 ...$tabs,
 
-                MasterFamilyTabsEnum::SALES->value => $this->tab == MasterFamilyTabsEnum::SALES->value ?
+                /* MasterFamilyTabsEnum::SALES->value => $this->tab == MasterFamilyTabsEnum::SALES->value ?
                     fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))
                     : Inertia::lazy(fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))),
 
@@ -238,9 +307,9 @@ class ShowMasterFamily extends GrpAction
                     fn () => GetMasterProductCategoryImages::run($masterFamily)
                     : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterFamily)),
 
-                // MasterFamilyTabsEnum::VARIANTS->value => $this->tab == MasterFamilyTabsEnum::VARIANTS->value ?
-                //     fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily))
-                //     : Inertia::lazy(fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily))),
+                MasterFamilyTabsEnum::VARIANTS->value => $this->tab == MasterFamilyTabsEnum::VARIANTS->value ?
+                    fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily, MasterFamilyTabsEnum::VARIANTS->value))
+                    : Inertia::lazy(fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily, MasterFamilyTabsEnum::VARIANTS->value))), */
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
                 //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
@@ -254,7 +323,8 @@ class ShowMasterFamily extends GrpAction
             // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($masterFamily))
             ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
-            ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value));
+            ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value))
+            ->table(IndexMasterVariant::make()->tableStructure($masterFamily,prefix: MasterFamilyTabsEnum::VARIANTS->value));
     }
 
 
