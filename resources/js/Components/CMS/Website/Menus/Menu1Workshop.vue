@@ -58,8 +58,8 @@ const isCollapsedOpen = ref(false);
 const hoveredNavigation = ref<any>(null);
 const loadingItem = ref<string | null>(null);
 
-const debSetCollapsedTrue = debounce(() => (isCollapsedOpen.value = true), 150);
-const debSetCollapsedFalse = debounce(() => (isCollapsedOpen.value = false), 400);
+const debSetCollapsedTrue = debounce(() => (isCollapsedOpen.value = true), 500);
+const debSetCollapsedFalse = debounce(() => (isCollapsedOpen.value = false), 500);
 
 const onMouseEnterMenu = (navigation: any) => {
     debSetCollapsedTrue();
