@@ -70,19 +70,6 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
-        $paymentsData = [];
-        foreach ($order->payments as $payment) {
-            $paymentsData[] = [
-                'id'              => $payment->id,
-                'amount'          => $payment->amount,
-                'created_at'      => $payment->created_at,
-                'payment_account' => [
-                    'type' => $payment->paymentAccount?->type,
-                    'code' => $payment->paymentAccount?->code,
-                    'name' => $payment->paymentAccount?->name,
-                ]
-            ];
-        }
 
 
         return Inertia::render(
@@ -129,7 +116,6 @@ class ShowRetinaEcomOrder extends RetinaAction
 
                 ],
                 'summary'       => $this->getOrderBoxStats($order),
-                'payments_data' => $paymentsData,
 
 
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),

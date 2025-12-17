@@ -40,9 +40,6 @@ const props = defineProps<{
         delivery_notes: {
 
         }
-        payments_data: {
-
-        }
         invoices: {
 
         }
@@ -241,7 +238,6 @@ const updateCollection = (value: boolean) => {
                             :paidAmount="summary.products.payment.paid_amount"
                             :payAmount="summary.products.payment.pay_amount"
                             :balance="balance || 0"
-                            :payments="order?.payments_data"
                             :currencyCode="layout.iris?.currency?.code"
                             :toBePaidBy="order?.to_be_paid_by"
                             :order="order"
