@@ -23,9 +23,9 @@ class CustomerHydrateOrders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(int $customerId): int
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customerId;
+        return $customerId ?? 'empty';
     }
 
     public function handle(int|null $customerId): void

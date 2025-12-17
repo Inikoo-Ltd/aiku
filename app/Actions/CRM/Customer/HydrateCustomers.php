@@ -17,6 +17,8 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRevenue;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRfm;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\Fulfilment\FulfilmentCustomer\HydrateFulfilmentCustomer;
@@ -49,6 +51,8 @@ class HydrateCustomers
         CustomerHydrateExclusiveProducts::run($customer->id);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
         CustomerHydrateClv::run($customer->id);
+        CustomerHydrateRevenue::run($customer->id);
+        CustomerHydrateRfm::run($customer->id);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);
