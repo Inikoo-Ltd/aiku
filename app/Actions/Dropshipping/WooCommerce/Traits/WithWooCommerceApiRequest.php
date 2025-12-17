@@ -115,8 +115,8 @@ trait WithWooCommerceApiRequest
     protected function initWooCommerceApi(): void
     {
         $this->woocommerceApiUrl         = $this->store_url;
-        $this->woocommerceConsumerKey    = $this->consumer_key;
-        $this->woocommerceConsumerSecret = $this->consumer_secret;
+        $this->woocommerceConsumerKey    = $this->consumer_key ?? ''; // Add fallback
+        $this->woocommerceConsumerSecret = $this->consumer_secret ?? ''; // Add fallback
     }
 
     /**
