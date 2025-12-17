@@ -20,6 +20,7 @@ import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTimesCircle, faCheckCircle, faSeedling } from "@fal"
 import Image from "@/Components/Image.vue"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faSeedling, faOctopusDeploy)
 
