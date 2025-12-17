@@ -50,28 +50,32 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 
 
 async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
-    const response = await axios.post(route('retina.dropshipping.platform.wc.check_status', [customerSalesChannel.slug]))
-    if (response.status === 200) {
-        if (response.data) {
+    await axios.post(route('retina.dropshipping.platform.wc.check_status', [customerSalesChannel.slug]))
+        .then((response) => {
+            if (response.data) { 
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'WooCommerce Website is live',
+                })
+            } else {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'WooCommerce Website is down',
+                })
+            }
+        })
+        .catch((exception) => {
+            console.log(exception);
             notify({
-                type: 'success',
-                title: 'Success',
-                text: 'Channel is live',
-            })
-        }else {
-             notify({
                 type: 'error',
                 title: 'Error',
-                text: 'Channel is down',
+                text: 'Failed to check WooCommerce Website status',
             })
-        }
-    } else {
-        notify({
-            type: 'error',
-            title: 'Error',
-            text: 'Failed to check channel status',
         })
-    }
+
+    router.reload();
 }
 
 </script>
@@ -137,7 +141,7 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
 
                 <Button
                     v-if="customerSalesChannel.platform_code === 'woocommerce'"
-                    v-tooltip="trans('check down status')"
+                    v-tooltip="trans('Check WooCommerce Website status')"
                     @click="checkCustomerSalesChannel(customerSalesChannel)"
                     type="secondary"
                     size="s"
@@ -147,7 +151,7 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
                     <FontAwesomeIcon icon="sync-alt" />
                 </Button>
 
-                <span class="text-red-500" v-if="customerSalesChannel.is_down && customerSalesChannel.platform_code === 'woocommerce'" v-tooltip="trans('Channel is down')">
+                <span class="text-red-500" v-if="customerSalesChannel.is_down && customerSalesChannel.platform_code === 'woocommerce'" v-tooltip="trans('The selected WooCommerce Website is down')">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" />
                 </span>
             </div>
