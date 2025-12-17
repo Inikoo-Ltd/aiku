@@ -18,6 +18,9 @@ import { routeType } from "@/types/route"
 import { faCheckCircle, faExclamationCircle } from "@fas"
 import axios from "axios"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import { get, set } from "lodash"
+import Toggle from "@/Components/Pure/Toggle.vue"
 
 library.add(faIdCardAlt, faWeight, faMapPin)
 
@@ -76,6 +79,9 @@ const props = defineProps<{
     updateOrderRoute: routeType
     isCollection?: boolean
     is_unable_dispatch?: boolean
+    order: {
+
+    }
 }>()
 
 const locale = inject('locale', {})
@@ -88,26 +94,31 @@ const isCollection = ref(false)
 const isLoading = ref(false);
 
 // Collection feature methods
-const updateCollection = async (e: Event) => {
-    const target = e.target as HTMLInputElement
+const isLoadingCollection = ref(false)
+const updateCollection = async (value: boolean) => {
     const payload = {
-        collection_address_id: target.checked ? props.address_management.addresses.current_selected_address_id : null
+        collection_address_id: value ? props.address_management?.addresses?.current_selected_address_id : null
     }
-    try {
-        router.patch(route(props.updateOrderRoute?.name, props.updateOrderRoute.parameters), {
-            ...payload
-        }, {
-            preserveScroll: true,
-            preserveState: true,
-        })
-    } catch (error) {
-        console.error(error)
-        notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to update to collection"),
-            type: "error",
-        })
-    }
+    router.patch(route(props.updateOrderRoute?.name, props.updateOrderRoute.parameters), {
+        ...payload
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onStart: () => {
+            isLoadingCollection.value = true
+        },
+        onFinish: () => {
+            isLoadingCollection.value = false
+        },
+        onError: (error) => {
+            console.error(error)
+            notify({
+                title: trans("Something went wrong."),
+                text: trans("Failed to update to collection"),
+                type: "error",
+            })
+        },
+    })
 }
 
 const validateTaxNum = async () => {
@@ -220,16 +231,38 @@ onMounted(() => {
                 </div>
             </div>
 
+        </div>
+
+        <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-3">
+            <!-- Field: Weight -->
+            <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                <dt v-tooltip="trans('Weight')" class="flex-none">
+                    <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400"/>
+                </dt>
+
+                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products')">
+                    {{ summary.order_properties?.weight ?? '-' }}
+                </dd>
+            </dl>
+
+            
             <!-- Collection Toggle -->
-            <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
+            <div class="mt-2 flex items-center w-full flex-none gap-x-2">
                 <FontAwesomeIcon icon='fal fa-map-pin' class='text-gray-400' fixed-width aria-hidden='true'/>
-                <ToggleSwitch @change="updateCollection" v-model="isCollection"/>
-                <span class="text-sm text-gray-500">Collection</span>
+                <Toggle
+                    :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
+                    @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
+                    :loading="isLoadingCollection"
+                    :disabled="props.order?.state !== 'creating'"
+                />
+                <span class="text-sm text-gray-500">
+                    {{ trans("Collection") }}
+                    <InformationIcon :information="trans('Select this if you want to come to our premisses to collect the order')" class="align-middle" />
+                </span>
             </div>
 
             <!-- Collection Options -->
-            <div v-if="!isCollection" class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
-
+            <div v-if="!get(props.order, ['is_collection'], false)" class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
                 <div class="w-full text-xs text-gray-500"
                     :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
                     <dd
@@ -246,26 +279,6 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-3">
-            <dl v-if="false" class="relative flex items-start w-full flex-none gap-x-1">
-                <dt class="flex-none pt-0.5">
-                    <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500"/>
-                </dt>
-
-
-            </dl>
-
-            <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                <dt v-tooltip="trans('Weight')" class="flex-none">
-                    <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400"/>
-                </dt>
-
-                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products')">
-                    {{ summary.order_properties?.weight ?? '-' }}
-                </dd>
-            </dl>
 
             <div v-if="summary?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                 <!-- Section Title -->
