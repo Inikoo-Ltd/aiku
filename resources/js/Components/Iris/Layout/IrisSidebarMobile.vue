@@ -381,7 +381,7 @@ const handleViewAllSubDepartment = (url: string) => {
                     <!-- Section: Custom Top -->
                     <div v-if="customMenusTop?.length > 0">
                         <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex" class="flex justify-between items-center w-full text-left font-semibold borderBottomColorSameAsText">
-                            <LinkIris v-if="customTopItem?.url !== null"
+                            <LinkIris v-if="customTopItem?.url !== null && customTopItem.sub_departments?.length == 0"
                                 :href="customTopItem.type === 'internal' ? internalHref(customTopItem) : customTopItem.url"
                                 :target="getTarget(customTopItem)"
                                 @success="() => closeSidebar()"
@@ -389,7 +389,7 @@ const handleViewAllSubDepartment = (url: string) => {
                                 {{ customTopItem.name }}
                             </LinkIris>
                             <span v-else
-                                class="font-bold pl-2 py-2 ">
+                                class="font-bold pl-2 py-2" @click="setActiveCustomTopCategory(customTopIndex)">
                                 {{ customTopItem.name }}
                             </span>
 
@@ -429,7 +429,7 @@ const handleViewAllSubDepartment = (url: string) => {
                     
                     <!-- Section: Custom Bottom -->
                     <div v-for="(customBot, customIdxBot) in customMenusBottom" :key="'custom-bot' + customIdxBot" class="flex justify-between items-center w-full text-left font-semibold borderBottomColorSameAsText">
-                        <LinkIris v-if="customBot?.url !== null"
+                        <LinkIris v-if="customBot?.url !== null && customBot.sub_departments?.length == 0"
                             :href="customBot.type === 'internal' ? internalHref(customBot) : customBot.url"
                             :target="getTarget(customBot)"
                             @success="() => closeSidebar()"
@@ -437,7 +437,7 @@ const handleViewAllSubDepartment = (url: string) => {
                             {{ customBot.name }}
                         </LinkIris>
                         <span v-else
-                            class="font-bold pl-2 py-2 ">
+                            class="font-bold pl-2 py-2" @click="setActiveCustomCategory(customIdxBot)">
                             {{ customBot.name }}
                         </span>
 
