@@ -12,13 +12,10 @@ use App\Actions\GrpAction;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnitsInTradeUnitFamily extends GrpAction
 {

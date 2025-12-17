@@ -12,7 +12,6 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\Group;
-use App\Models\Masters\MasterVariant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
@@ -80,6 +79,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @property-read MasterProductCategory|null $masterSubDepartment
+ * @property-read LaravelCollection<int, MasterVariant> $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats

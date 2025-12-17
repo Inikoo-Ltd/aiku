@@ -60,11 +60,11 @@ class StoreMasterVariant extends OrgAction
         $code = MasterAsset::find($this->product_leader)->code . '-var-' . now()->format('His');
         $this->set('code', $code);
 
-        if($this->product_leader){
+        if ($this->product_leader) {
             $this->set('leader_id', $this->product_leader);
         }
 
-        if($this->data_variants){
+        if ($this->data_variants) {
             $this->set('data', $this->data_variants);
         }
     }

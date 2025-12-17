@@ -20,7 +20,7 @@ class FetchAuroraOffer extends FetchAurora
     {
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Deal Store Key'});
 
-        if($shop->is_aiku){
+        if ($shop->is_aiku) {
             return;
         }
 

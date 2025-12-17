@@ -62,7 +62,7 @@ class CheckShopifyPortfolios extends OrgAction
                     $count++;
 
                     $portfolio = CheckShopifyPortfolio::run($portfolio);
-                    if($count === 100) {
+                    if ($count === 100) {
                         $count = 0;
 
                         sleep(5);

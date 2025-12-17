@@ -14,16 +14,13 @@ use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
-use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnits extends GrpAction
 {
