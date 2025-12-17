@@ -132,7 +132,7 @@ const updateCollection = (value: boolean) => {
                             :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
                             @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
                             :loading="isLoadingCollection"
-                            disabled
+                            :disabled="!props.isInBasket"
                         />
                         <span class="text-sm"
                             :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
