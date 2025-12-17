@@ -25,10 +25,13 @@ const props = defineProps<{
 const layout = inject('layout', layoutStructure)
 
 
+console.log('props_ssss',props)
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+      
     </Table>
 </template>
 
