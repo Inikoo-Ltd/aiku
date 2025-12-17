@@ -380,20 +380,20 @@ const handleViewAllSubDepartment = (url: string) => {
                 <div class="flex-1 overflow-y-auto pb-4 mb-4">
                     <!-- Section: Custom Top -->
                     <div v-if="customMenusTop?.length > 0">
-                        <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex" class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
+                        <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex" class="flex justify-between items-center w-full text-left font-semibold borderBottomColorSameAsText">
                             <LinkIris v-if="customTopItem?.url !== null"
                                 :href="customTopItem.type === 'internal' ? internalHref(customTopItem) : customTopItem.url"
                                 :target="getTarget(customTopItem)"
                                 @success="() => closeSidebar()"
-                                class="font-bold">
+                                class="font-bold pl-2 py-2 ">
                                 {{ customTopItem.name }}
                             </LinkIris>
                             <span v-else
-                                class="font-bold">
+                                class="font-bold pl-2 py-2 ">
                                 {{ customTopItem.name }}
                             </span>
 
-                            <div v-if="!!customTopItem.sub_departments?.length" @click="setActiveCustomTopCategory(customTopIndex)" class="text-sm">
+                            <div v-if="!!customTopItem.sub_departments?.length" @click="setActiveCustomTopCategory(customTopIndex)" class="text-sm pr-2 py-2 ">
                                 <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
                             </div>
                         </div>
@@ -428,20 +428,20 @@ const handleViewAllSubDepartment = (url: string) => {
 
                     
                     <!-- Section: Custom Bottom -->
-                    <div v-for="(customBot, customIdxBot) in customMenusBottom" :key="'custom-bot' + customIdxBot" class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
+                    <div v-for="(customBot, customIdxBot) in customMenusBottom" :key="'custom-bot' + customIdxBot" class="flex justify-between items-center w-full text-left font-semibold borderBottomColorSameAsText">
                         <LinkIris v-if="customBot?.url !== null"
                             :href="customBot.type === 'internal' ? internalHref(customBot) : customBot.url"
                             :target="getTarget(customBot)"
                             @success="() => closeSidebar()"
-                            class="font-bold">
+                            class="font-bold pl-2 py-2 ">
                             {{ customBot.name }}
                         </LinkIris>
                         <span v-else
-                            class="font-bold">
+                            class="font-bold pl-2 py-2 ">
                             {{ customBot.name }}
                         </span>
 
-                        <div v-if="!!customBot.sub_departments?.length" @click="setActiveCustomCategory(customIdxBot)" class="text-sm">
+                        <div v-if="!!customBot.sub_departments?.length" @click="setActiveCustomCategory(customIdxBot)" class="text-sm pr-2 py-2 ">
                             <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
                         </div>
                     </div>
