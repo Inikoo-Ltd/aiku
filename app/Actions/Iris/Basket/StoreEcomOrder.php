@@ -31,7 +31,7 @@ class StoreEcomOrder extends IrisAction
     {
         $order = StoreOrder::make()->action($customer, []);
         $customer->refresh();
-        CustomerHydrateBasket::run($customer);
+        CustomerHydrateBasket::run($customer->id);
 
         return $order;
     }

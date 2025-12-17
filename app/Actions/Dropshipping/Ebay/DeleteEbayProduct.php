@@ -11,7 +11,6 @@
 namespace App\Actions\Dropshipping\Ebay;
 
 use App\Actions\RetinaAction;
-use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Facades\Log;

@@ -31,17 +31,32 @@ class CustomerHydrateClv implements ShouldBeUnique
         $this->modelAsHandleArg = false;
     }
 
-    public function getJobUniqueId(int $customerID): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customerID;
+        return $customerId ?? 'empty';
     }
 
 
-    public function handle(int $customerID): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
 
-        $customer = Customer::find($customerID);
+        $customer = Customer::find($customerId);
         if (!$customer) {
+            return;
+        }
+
+        // Check if customer has invoices in the last year
+        $oneYearAgo = now()->subYear();
+        $hasRecentInvoices = $customer->invoices()
+            ->where('in_process', false)
+            ->where('created_at', '>=', $oneYearAgo)
+            ->exists();
+
+        if (!$hasRecentInvoices) {
+            $this->setDefaultStats($customer);
             return;
         }
 

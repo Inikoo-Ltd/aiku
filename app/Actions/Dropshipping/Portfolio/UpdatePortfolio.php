@@ -68,7 +68,7 @@ class UpdatePortfolio extends OrgAction
             GroupHydratePortfolios::dispatch($portfolio->group)->delay($this->hydratorsDelay);
             OrganisationHydratePortfolios::dispatch($portfolio->organisation)->delay($this->hydratorsDelay);
             ShopHydratePortfolios::dispatch($portfolio->shop)->delay($this->hydratorsDelay);
-            CustomerHydratePortfolios::dispatch($portfolio->customer)->delay($this->hydratorsDelay);
+            CustomerHydratePortfolios::dispatch($portfolio->customer_id)->delay($this->hydratorsDelay);
         }
 
 

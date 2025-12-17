@@ -23,15 +23,25 @@ class CustomerHydrateOrders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customer->id;
+        return $customerId ?? 'empty';
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats = [
-            'number_orders' => DB::table('orders')->where('customer_id', $customer->id)->count(),
+            'number_orders' => DB::table('orders')->where('customer_id', $customerId)->count(),
         ];
 
         $stats = array_merge(
@@ -41,8 +51,8 @@ class CustomerHydrateOrders implements ShouldBeUnique
                 field: 'state',
                 enum: OrderStateEnum::class,
                 models: Order::class,
-                where: function ($q) use ($customer) {
-                    $q->where('customer_id', $customer->id);
+                where: function ($q) use ($customerId) {
+                    $q->where('customer_id', $customerId);
                 }
             )
         );
@@ -54,8 +64,8 @@ class CustomerHydrateOrders implements ShouldBeUnique
                 field: 'status',
                 enum: OrderStatusEnum::class,
                 models: Order::class,
-                where: function ($q) use ($customer) {
-                    $q->where('customer_id', $customer->id);
+                where: function ($q) use ($customerId) {
+                    $q->where('customer_id', $customerId);
                 }
             )
         );
@@ -67,8 +77,8 @@ class CustomerHydrateOrders implements ShouldBeUnique
                 field: 'handing_type',
                 enum: OrderHandingTypeEnum::class,
                 models: Order::class,
-                where: function ($q) use ($customer) {
-                    $q->where('customer_id', $customer->id);
+                where: function ($q) use ($customerId) {
+                    $q->where('customer_id', $customerId);
                 }
             )
         );

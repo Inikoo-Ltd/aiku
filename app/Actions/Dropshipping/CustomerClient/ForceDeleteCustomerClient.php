@@ -41,7 +41,7 @@ class ForceDeleteCustomerClient extends OrgAction
             return $customerClient;
         });
 
-        CustomerHydrateClients::dispatch($customerClient->customer);
+        CustomerHydrateClients::dispatch($customerClient->customer_id);
         ShopHydrateCustomerClients::dispatch($customerClient->shop);
         OrganisationHydrateCustomerClients::dispatch($customerClient->organisation);
         GroupHydrateCustomerClients::dispatch($customerClient->group);

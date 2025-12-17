@@ -81,9 +81,9 @@ class RefundToInvoice extends OrgAction
 
         if ($type === 'credit') {
             if ($this->asAction) {
-                CustomerHydrateCreditTransactions::run($invoice->customer);
+                CustomerHydrateCreditTransactions::run($invoice->customer_id);
             } else {
-                CustomerHydrateCreditTransactions::dispatch($invoice->customer);
+                CustomerHydrateCreditTransactions::dispatch($invoice->customer_id);
             }
         }
 

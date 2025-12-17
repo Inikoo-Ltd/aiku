@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRevenue;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsInvoices;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSales;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
@@ -106,6 +107,7 @@ class RunInvoiceHydrators
         }
 
         CustomerHydrateClv::dispatch($invoice->customer_id)->delay($hydratorsDelay);
+        CustomerHydrateRevenue::dispatch($invoice->customer_id)->delay($hydratorsDelay);
 
         InvoiceRecordSearch::dispatch($invoice);
     }
