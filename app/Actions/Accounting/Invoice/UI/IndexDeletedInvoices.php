@@ -155,14 +155,14 @@ class IndexDeletedInvoices extends OrgAction
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_code', label: __('org'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
+                $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, searchable: true);
             }
             if ($parent instanceof Organisation) {
-                $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
+                $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, searchable: true);
             }
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Shop || $parent instanceof Fulfilment || $parent instanceof Organisation) {
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);

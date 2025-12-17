@@ -36,8 +36,8 @@ class ExportIntrastatXml extends OrgAction
         }
 
         if (!empty($filters['elements']['vat_status'])) {
-            $vatStatuses = is_array($filters['elements']['vat_status']) 
-                ? $filters['elements']['vat_status'] 
+            $vatStatuses = is_array($filters['elements']['vat_status'])
+                ? $filters['elements']['vat_status']
                 : explode(',', $filters['elements']['vat_status']);
 
             if (count($vatStatuses) === 1) {

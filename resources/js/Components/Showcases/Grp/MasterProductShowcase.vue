@@ -222,11 +222,11 @@ const isModalProductForSale = ref(false)
 				:trade_units="data.trade_units"
 				:routeFunction="tradeUnitRoute"
 			/>
-			
+			dsfsfd
 			<span v-if="data.availability_status"
 				v-on:click="isModalProductForSale = true"
 				v-tooltip="getTooltips()"
-				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
 				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
 			>
 				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}

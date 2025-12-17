@@ -16,6 +16,13 @@ class FetchAuroraOfferComponent extends FetchAurora
 {
     protected function parseModel(): void
     {
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Store Key'});
+
+        if ($shop->is_aiku) {
+            return;
+        }
+
+
         $offer = $this->parseOffer($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Deal Key'});
         if (!$offer) {
             print "Offer not found ".$this->auroraModelData->{'Deal Component Deal Key'}." \n";

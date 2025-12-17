@@ -10,29 +10,21 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\OrgAction;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\InertiaTable\InertiaTable;
-use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterVariant;
-use App\Rules\AlphaDashDot;
-use App\Rules\IUnique;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexMasterVariant extends OrgAction
 {
     /**
      * @throws \Throwable
      */
-    public function handle(MasterProductCategory $parent,  $prefix = null): LengthAwarePaginator
+    public function handle(MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -46,18 +38,18 @@ class IndexMasterVariant extends OrgAction
 
         $queryBuilder = QueryBuilder::for(MasterVariant::class);
 
-        if($parent instanceof MasterProductCategory){
+        if ($parent instanceof MasterProductCategory) {
             if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $queryBuilder->where('master_variants.master_family_id', $parent->id);
-            } else if ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $queryBuilder->where('master_variants.master_sub_department_id', $parent->id);
-            } else if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('master_variants.master_department_id', $parent->id);
             } else {
                 abort(419);
             }
         }
-        
+
         return $queryBuilder
             ->defaultSort('master_variants.code')
             ->select([

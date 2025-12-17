@@ -55,7 +55,7 @@ class FulfilmentCustomerRecordSearch
                     ],
                     'code'        => [
                         'label'   => $fulfilmentCustomer->customer->reference,
-                        'tooltip' => __('reference')
+                        'tooltip' => __('Reference')
                     ],
                     'icon'          => [
                         'icon'  => 'fal fa-user',

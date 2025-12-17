@@ -106,7 +106,7 @@ class IndexWebUsersInOrganisation extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState();
             $table
-                ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'username', label: __('username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Created at'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('username');

@@ -88,7 +88,7 @@ class IndexEmailBulkRuns extends OrgAction
                 ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
+                $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
