@@ -13,6 +13,7 @@ use App\Actions\Accounting\Invoice\UI\ShowFulfilmentInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
+use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\ShowAccountingShopDashboard;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -96,6 +97,8 @@ Route::prefix('recurring_bills')->as('recurring_bills')->group(function () {
 Route::get('accounting-dashboard', [ShowAccountingShopDashboard::class, 'inFulfilment'])->name('accounting.dashboard');
 
 Route::get('accounting-dashboard/accounts', [IndexPaymentAccountShops::class, 'inFulfilment'])->name('accounting.accounts.index');
+Route::get('accounting-dashboard/accounts/{paymentAccountShop}', [ShowPaymentAccountShop::class,'inFulfilment'])->name('accounting.accounts.show');
+
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inFulfilment'])->name('accounting.payments.index');
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inFulfilment'])->name('accounting.customer_balances.index');
 

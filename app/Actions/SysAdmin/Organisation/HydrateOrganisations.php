@@ -137,7 +137,7 @@ class HydrateOrganisations extends HydrateModel
 
 
         if ($organisation->type == OrganisationTypeEnum::SHOP) {
-            OrganisationHydrateRegistrationIntervals::run($organisation);
+            OrganisationHydrateRegistrationIntervals::run($organisation->id);
             OrganisationHydrateInvoiceIntervals::run($organisation);
 
             OrganisationHydrateDepartments::run($organisation);

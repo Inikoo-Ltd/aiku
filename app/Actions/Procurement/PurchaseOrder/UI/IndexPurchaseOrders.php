@@ -81,11 +81,15 @@ class IndexPurchaseOrders extends OrgAction
                 ->where('purchase_order_transactions.org_stock_id', $parent->id)
                 ->with('purchaseOrderTransactions');
             $query->distinct('purchase_orders.id');
+            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👇
+            $query->orderBy('purchase_orders.id');
+            // added orderBy prefix to show the purchase orders to the table at specific SKU's 👆
         } elseif ($parent instanceof OrgSupplierProduct) {
             $query->leftJoin('purchase_order_transactions', 'purchase_orders.id', '=', 'purchase_order_transactions.purchase_order_id')
                 ->where('purchase_order_transactions.org_supplier_product_id', $parent->id)
                 ->with('purchaseOrderTransactions');
             $query->distinct('purchase_orders.id');
+            $query->orderBy('purchase_orders.id');
         } else {
             $query->where('purchase_orders.organisation_id', $parent->id);
         }
@@ -96,8 +100,19 @@ class IndexPurchaseOrders extends OrgAction
             ->select([
                 'purchase_orders.*',
             ])
-            ->selectRaw('cost_total*org_exchange  as org_total_cost')
+            // ->selectRaw('cost_total*org_exchange  as org_total_cost')
+            // changed this section 👇
+            ->selectRaw('purchase_orders.org_exchange * purchase_orders.cost_total as org_total_cost')
+            // changed this section 👆
             ->selectRaw('\''.$organisation->currency->code.'\' as org_currency_code')
+            ->with([
+                'parent' => function ($morphTo) {
+                    $morphTo->morphWith([
+                        OrgSupplier::class => ['supplier'],
+                        OrgAgent::class => ['agent'],
+                    ]);
+                }
+            ])
             ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -116,14 +131,14 @@ class IndexPurchaseOrders extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'parent_name', label: __('supplier/agents'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'parent_name', label: __('Supplier/Agents'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'date', label: __('date Created'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_current_purchase_order_transactions', label: __('items'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_total_cost', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
+            $table->column(key: 'date', label: __('Date Created'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_current_purchase_order_transactions', label: __('Items'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'org_total_cost', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
                 ->defaultSort('reference');
         };
     }
@@ -186,9 +201,15 @@ class IndexPurchaseOrders extends OrgAction
         return $this->handle($orgSupplier);
     }
 
-
     public function jsonResponse(LengthAwarePaginator $purchaseOrders): AnonymousResourceCollection
     {
+        foreach ($purchaseOrders as $purchaseOrder) {
+            if ($purchaseOrder->parent_type === 'OrgSupplier' && $purchaseOrder->relationLoaded('parent')) {
+                $purchaseOrder->parent->load('supplier');
+            } elseif ($purchaseOrder->parent_type === 'OrgAgent' && $purchaseOrder->relationLoaded('parent')) {
+                $purchaseOrder->parent->load('agent');
+            }
+        }
         return PurchaseOrdersResource::collection($purchaseOrders);
     }
 
@@ -197,7 +218,7 @@ class IndexPurchaseOrders extends OrgAction
     {
         $subNavigation = null;
         $actions       = [];
-        $title         = __('purchase orders');
+        $title         = __('Purchase Orders');
 
         $icon       = [
             'icon'  => ['fal', 'fa-clipboard-list'],

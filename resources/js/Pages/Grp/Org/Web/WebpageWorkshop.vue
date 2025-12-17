@@ -33,7 +33,7 @@ import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedF
 
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
 
 import {

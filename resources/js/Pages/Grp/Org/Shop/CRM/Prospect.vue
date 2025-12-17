@@ -18,7 +18,7 @@ import TableDispatchedEmails  from '@/Components/Tables/TableDispatchedEmails.vu
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
   
   import { capitalize } from "@/Composables/capitalize"
-  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+  import { PageHeadingTypes } from '@/types/PageHeading'
 
   library.add(
       faFolder,

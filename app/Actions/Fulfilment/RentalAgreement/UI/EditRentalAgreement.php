@@ -12,7 +12,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
-use App\Http\Resources\Catalogue\OutersResource;
+use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\RentalsResource;
 use App\Http\Resources\Catalogue\ServicesResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -28,7 +28,7 @@ use Spatie\LaravelOptions\Options;
 
 class EditRentalAgreement extends OrgAction
 {
-    private function getOrdinal($number)
+    private function getOrdinal($number): string
     {
         if (is_integer($number)) {
             $suffixes = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'];
@@ -158,7 +158,7 @@ class EditRentalAgreement extends OrgAction
                                         'noSaveButton'   => true,
                                         'rentals'        => RentalsResource::collection($rentalAgreement->fulfilment->rentals),
                                         'services'       => ServicesResource::collection($rentalAgreement->fulfilment->shop->services),
-                                        'physical_goods' => OutersResource::collection($rentalAgreement->fulfilment->shop->products),
+                                        'physical_goods' => ProductsResource::collection($rentalAgreement->fulfilment->shop->products),
                                         'value'          => $clauses
                                     ]
 

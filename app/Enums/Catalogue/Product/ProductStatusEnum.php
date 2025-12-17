@@ -24,6 +24,7 @@ enum ProductStatusEnum: string
     case FOR_SALE = 'for-sale';
     case NOT_FOR_SALE = 'not-for-sale';
     case OUT_OF_STOCK = 'out-of-stock';
+    case COMING_SOON = 'coming-soon';
     case DISCONTINUED = 'discontinued';
 
 
@@ -32,6 +33,7 @@ enum ProductStatusEnum: string
         return [
             'in_process'   => __('In Process'),
             'for-sale'     => __('For Sale'),
+            'coming-soon'  => __('Coming Soon'),
             'not-for-sale' => __('Not For Sale'),
             'out-of-stock' => __('Out of Stock'),
             'discontinued' => __('Discontinued'),
@@ -90,7 +92,17 @@ enum ProductStatusEnum: string
                     'name' => 'times',
                     'type' => 'font-awesome-5'
                 ]
-            ]
+            ],
+            'coming-soon' => [
+                'tooltip' => __('Coming Soon'),
+                'icon'    => 'fal fa-clock',
+                'class'   => 'text-yellow-500',
+                'color'   => 'yellow',
+                'app'     => [
+                    'name' => 'clock',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
         ];
     }
 
@@ -107,7 +119,8 @@ enum ProductStatusEnum: string
             'for-sale'     => $stats->number_products_state_for_sale,
             'not-for-sale' => $stats->number_products_state_not_for_sale,
             'out-of-stock' => $stats->number_products_state_out_of_stock,
-            'discontinued' => $stats->number_products_state_discontinued
+            'discontinued' => $stats->number_products_state_discontinued,
+            'coming-soon'  => $stats->number_products_state_coming_soon,
 
         ];
     }

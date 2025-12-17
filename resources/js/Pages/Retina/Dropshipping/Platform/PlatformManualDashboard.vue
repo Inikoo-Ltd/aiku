@@ -12,13 +12,13 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
 
 const props = defineProps<{
-    pageHead: PageHeadingTS
+    pageHead: PageHeadingTypes
     platformData: {
         orders: {
             label: string

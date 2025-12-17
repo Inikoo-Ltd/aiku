@@ -10,6 +10,8 @@ namespace App\Actions\Helpers\Intervals;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateInvoiceIntervals;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
@@ -47,6 +49,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateFin
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -56,6 +59,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Goods\Stock;
@@ -108,7 +112,7 @@ trait WithResetIntervals
                 doPreviousPeriods: $this->doPreviousPeriods
             );
             GroupHydrateRegistrationIntervals::dispatch(
-                group: $group,
+                groupId: $group->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
@@ -158,7 +162,7 @@ trait WithResetIntervals
             );
 
             OrganisationHydrateRegistrationIntervals::dispatch(
-                organisation: $organisation,
+                organisationId: $organisation->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
@@ -250,7 +254,7 @@ trait WithResetIntervals
             );
 
             ShopHydrateRegistrationIntervals::dispatch(
-                shop: $shop,
+                shopId: $shop->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
@@ -307,7 +311,7 @@ trait WithResetIntervals
             )->delay(now()->addMinute())->onQueue('low-priority');
 
             ShopHydrateRegistrationIntervals::dispatch(
-                shop: $shop,
+                shopId: $shop->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             )->delay(now()->addMinute())->onQueue('low-priority');
@@ -524,7 +528,48 @@ trait WithResetIntervals
                 platform: $platform,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(15))->onQueue('sales');
+            );
+        }
+    }
+
+    protected function resetProductCategories(): void
+    {
+        foreach (
+            ProductCategory::whereIn('state', [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])->get() as $productCategory
+        ) {
+            ProductCategoryHydrateSalesIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(5))->onQueue('sales');
+
+            ProductCategoryHydrateInvoiceIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(5))->onQueue('sales');
+        }
+
+        foreach (
+            ProductCategory::whereNotIn('state', [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])->get() as $productCategory
+        ) {
+            ProductCategoryHydrateSalesIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(60))->onQueue('low-priority');
+
+            ProductCategoryHydrateInvoiceIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(60))->onQueue('low-priority');
         }
     }
 
@@ -534,10 +579,11 @@ trait WithResetIntervals
         $this->resetOrganisations();
         $this->resetMasterShops();
         $this->resetShops();
+        $this->resetPlatforms();
         $this->resetInvoiceCategories();
+        $this->resetProductCategories();
         $this->resetStocks();
         $this->resetStockFamilies();
-        $this->resetPlatforms();
     }
 
 

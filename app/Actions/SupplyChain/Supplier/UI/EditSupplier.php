@@ -83,7 +83,7 @@ class EditSupplier extends GrpAction
 
                                 'code'         => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'value'    => $supplier->code,
                                     'required' => true,
                                 ],

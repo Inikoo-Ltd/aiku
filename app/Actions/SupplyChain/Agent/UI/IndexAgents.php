@@ -116,6 +116,7 @@ class IndexAgents extends GrpAction
 
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('agent'),__('agents')])
                 ->withEmptyState(
                     [
                         'title'       => __('no agents'),
@@ -133,11 +134,11 @@ class IndexAgents extends GrpAction
                     ]
                 )
 
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
-                ->column(key: 'number_suppliers', label: __('suppliers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_supplier_products', label: __('products'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'number_suppliers', label: __('Suppliers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -168,21 +169,21 @@ class IndexAgents extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("agents"),
+                'title'       => __("Agents"),
                 'pageHead'    => [
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-people-arrows'],
                             'title' => __('Agents')
                         ],
-                    'title'  => __("agents"),
+                    'title'  => __("Agents"),
 
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.supply-chain.agents.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
+                            'label'   => __('Agent'),
                             'route'   => [
                                 'name'       => 'grp.supply-chain.agents.create',
                             ]

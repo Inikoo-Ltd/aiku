@@ -12,6 +12,7 @@ use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
+use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -26,11 +27,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowMastersDashboard extends OrgAction
 {
-    use WithMastersAuthorisation;
+    use WithCustomRangeDashboard;
     use WithDashboard;
-    use WithDashboardSettings;
-    use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
+    use WithDashboardIntervalOption;
+    use WithDashboardSettings;
+    use WithMastersAuthorisation;
 
     public function handle(Group $group): Group
     {
@@ -44,22 +46,18 @@ class ShowMastersDashboard extends OrgAction
         return $this->handle($this->group);
     }
 
-
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
 
         $currentTab = Arr::get($userSettings, 'masters_dashboard_tab', Arr::first(MastersDashboardSalesTableTabsEnum::values()));
 
-        if (!in_array($currentTab, MastersDashboardSalesTableTabsEnum::values())) {
+        if (! in_array($currentTab, MastersDashboardSalesTableTabsEnum::values())) {
             $currentTab = Arr::first(MastersDashboardSalesTableTabsEnum::values());
         }
 
+        $customRangeData = $this->setupCustomRange($userSettings, $group);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $saved_interval = DateIntervalEnum::ALL;
-        }
 
         $dashboard = [
             'super_blocks' => [
@@ -88,12 +86,12 @@ class ShowMastersDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => MastersDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => MastersDashboardSalesTableTabsEnum::tables($group),
-                            'charts'      => [] // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
-                        ]
-                    ]
-                ]
-            ]
+                            'tables'      => MastersDashboardSalesTableTabsEnum::tables($group, $customRangeData),
+                            'charts'      => [], // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         return Inertia::render(
@@ -102,13 +100,13 @@ class ShowMastersDashboard extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('masters'),
                 'pageHead'    => [
-                    'icon'  => [
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-ruler-combined'],
-                        'title' => __('Masters')
+                        'title' => __('Masters'),
                     ],
                     'title' => __('Master catalogue'),
                 ],
-                'dashboard'   => $dashboard
+                'dashboard'   => $dashboard,
             ]
         );
     }
@@ -122,11 +120,11 @@ class ShowMastersDashboard extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'grp.masters.dashboard'
+                            'name' => 'grp.masters.dashboard',
                         ],
                         'label' => __('Masters'),
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
     }

@@ -111,10 +111,10 @@ class IndexRetinaTopUp extends RetinaAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, searchable: true);
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, searchable: true, align: 'right');
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, searchable: true);
+            $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, searchable: true, align: 'right');
             $table->column(key: 'status', label: __('status'), canBeHidden: false, searchable: true);
-            $table->column(key: 'action', label: __('action'), canBeHidden: false, searchable: true);
+            $table->column(key: 'action', label: __('Action'), canBeHidden: false, searchable: true);
         };
     }
 

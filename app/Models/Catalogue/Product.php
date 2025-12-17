@@ -169,6 +169,7 @@ use Spatie\Translatable\HasTranslations;
  * @property \Illuminate\Support\Carbon|null $not_for_sale_since
  * @property bool $not_for_sale_from_master
  * @property bool $not_for_sale_from_trade_unit
+ * @property bool|null $is_unit_reviewed
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -354,6 +355,13 @@ class Product extends Model implements Auditable, HasMedia
     public function brands(): MorphToMany
     {
         return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
+    }
+
+    public function brand(): ?Brand
+    {
+        /** @var Brand $brand */
+        $brand = $this->brands()->first();
+        return $brand;
     }
 
     public function productVariants(): HasMany

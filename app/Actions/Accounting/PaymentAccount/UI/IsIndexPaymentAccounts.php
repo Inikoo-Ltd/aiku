@@ -107,8 +107,8 @@ trait IsIndexPaymentAccounts
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }
@@ -121,7 +121,7 @@ trait IsIndexPaymentAccounts
 
             $table->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_customers', label: __('customers'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_amount_successfully_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'org_amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
 
             $table->defaultSort('code');
         };

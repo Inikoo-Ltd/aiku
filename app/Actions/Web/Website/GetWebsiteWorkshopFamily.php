@@ -33,7 +33,13 @@ class GetWebsiteWorkshopFamily
             ];
         }
 
-        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::LIST_PRODUCTS->value)->get();
+        /*  $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::LIST_PRODUCTS->value)->get(); */
+
+        $webBlockTypes = WebBlockType::query()
+            ->where('category', WebBlockCategoryScopeEnum::LIST_PRODUCTS->value)
+            ->whereJsonContains('website_type', $website->shop->type)
+            ->get();
+
         $products = IrisProductsInWebpageResource::collection(
             GetIrisProductsInProductCategory::run(productCategory: $family, stockMode: 'all', topSeller: false)
         );

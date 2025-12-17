@@ -43,7 +43,7 @@ class IndexCollections extends OrgAction
     use WithFamilySubNavigation;
     use WithCollectionsSubNavigation;
 
-    private $bucket;
+    private string $bucket;
 
     protected function getElementGroups(Shop $parent): array
     {
@@ -122,6 +122,7 @@ class IndexCollections extends OrgAction
                 'collections.created_at',
                 'collections.updated_at',
                 'collections.slug',
+                'collections.web_images',
                 'collections.master_collection_id',
                 'collection_stats.number_families',
                 'collection_stats.number_products',
@@ -175,6 +176,7 @@ class IndexCollections extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('collection'),__('collections')])
                 ->withEmptyState(
                     [
                         'title'       => __("No collections found"),
@@ -186,7 +188,7 @@ class IndexCollections extends OrgAction
             $table
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
-
+            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
@@ -221,19 +223,7 @@ class IndexCollections extends OrgAction
                 ]
             ],
         ];
-        $actions   = [];
-        if ($this->canEdit) {
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'create',
-                'tooltip' => __('New collection'),
-                'label'   => __('collection'),
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.collections.create',
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ];
-        }
+
 
         $websiteDomain = null;
         if ($this->shop->website) {
@@ -252,11 +242,10 @@ class IndexCollections extends OrgAction
                     'title'         => $title,
                     'icon'          => $icon,
                     'afterTitle'    => [
-                        'label' => '@ '.__('shop').' '.$this->shop->code,
+                        'label' => '@ '.__('Shop').' '.$this->shop->code,
                     ],
                     'iconRight'     => $iconRight,
                     'container'     => $container,
-                    'actionsx'      => $actions,
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'         => $routes,
@@ -269,17 +258,17 @@ class IndexCollections extends OrgAction
                             'fields' => [
                                 'code'        => [
                                     'type'     => 'input',
-                                    'label'    => __('code'),
+                                    'label'    => __('Code'),
                                     'required' => true
                                 ],
                                 'name'        => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
+                                    'label'    => __('Name'),
                                     'required' => true,
                                 ],
                                 'description' => [
                                     'type'     => 'textarea',
-                                    'label'    => __('description'),
+                                    'label'    => __('Description'),
                                     'required' => false,
                                 ],
                                 "image"       => [
@@ -313,6 +302,7 @@ class IndexCollections extends OrgAction
         return $this->handle(shop: $shop);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function active(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'active';
@@ -321,6 +311,7 @@ class IndexCollections extends OrgAction
         return $this->handle(shop: $shop);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inactive(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'inactive';
@@ -329,6 +320,7 @@ class IndexCollections extends OrgAction
         return $this->handle(shop: $shop);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inProcess(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'in_process';

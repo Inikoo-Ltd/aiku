@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\Amazon\Product\DeleteAmazonProduct;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
+use App\Actions\Dropshipping\Ebay\DeleteEbayProduct;
 use App\Actions\Dropshipping\Magento\Product\DeleteProductFromMagento;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewPortfolios;
 use App\Actions\Dropshipping\Shopify\Product\DeactivateShopifyProduct;
@@ -40,6 +41,7 @@ class DeletePortfolio extends OrgAction
             PlatformTypeEnum::WOOCOMMERCE => DeleteProductFromWooCommerce::run($portfolio, true, $fromWebhook),
             PlatformTypeEnum::MAGENTO => DeleteProductFromMagento::run($portfolio, true, $fromWebhook),
             PlatformTypeEnum::AMAZON => DeleteAmazonProduct::run($portfolio),
+            PlatformTypeEnum::EBAY => DeleteEbayProduct::run($portfolio),
             PlatformTypeEnum::SHOPIFY => DeactivateShopifyProduct::run($portfolio),
             default => null
         };
@@ -50,7 +52,7 @@ class DeletePortfolio extends OrgAction
         GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
         OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
         ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
-        CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
+        CustomerHydratePortfolios::dispatch($customerSalesChannel->customer_id)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel)->delay($this->hydratorsDelay);
 
         if ($portfolio->shop && $portfolio->platform->id) {

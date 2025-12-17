@@ -67,7 +67,7 @@ class StoreTopUp extends OrgAction
         $topUp = $payment->topUp()->create($modelData);
 
 
-        CustomerHydrateTopUps::dispatch($topUp->customer)->delay($this->hydratorsDelay);
+        CustomerHydrateTopUps::dispatch($topUp->customer_id)->delay($this->hydratorsDelay);
         ShopHydrateTopUps::dispatch($topUp->shop)->delay($this->hydratorsDelay);
         OrganisationHydrateTopUps::dispatch($topUp->organisation)->delay($this->hydratorsDelay);
         GroupHydrateTopUps::dispatch($topUp->group)->delay($this->hydratorsDelay);

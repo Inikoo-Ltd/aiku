@@ -11,6 +11,7 @@ import { Stock } from "@/types/stock";
 import { computed, inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { RouteParams } from "@/types/route-params";
+import Icon from "@/Components/Icon.vue"
 
 
 defineProps<{
@@ -83,12 +84,17 @@ function stockFamilyRoute(stock: Stock) {
     <template #cell(description)="{ item: stock }">
       {{ stock["description"] }}
     </template>
-    <template #cell(unit_value)="{ item: stock }">
-      {{ stock["unit_value"] }}
+    <template #cell(state)="{ item: stock }">
+        <Icon :data="stock.state_icon" />
     </template>
     <template #cell(revenue_grp_currency)="{ item: stockFamily }">
       {{ locale.currencyFormat(stockFamily["grp_currency"], Number(stockFamily["revenue_grp_currency_" + interval])) }}
     </template>
+      <template #cell(number_number_org_stocks_state_active)="{ item: stock }">
+          {{ stock["number_number_org_stocks_state_active"] }} / {{ stock["number_org_stocks"] }}
+      </template>
+
+
   </Table>
 </template>
 

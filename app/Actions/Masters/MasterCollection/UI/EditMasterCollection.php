@@ -57,19 +57,19 @@ class EditMasterCollection extends OrgAction
                                 'fields' => [
                                     'code' => [
                                         'type'     => 'input',
-                                        'label'    => __('code'),
+                                        'label'    => __('Code'),
                                         'value'    => $masterCollection->code,
                                         'required' => true
                                     ],
                                     'name' => [
                                         'type'     => 'input',
-                                        'label'    => __('name'),
+                                        'label'    => __('Name'),
                                         'value'    => $masterCollection->name,
                                         'required' => true
                                     ],
                                     'description' => [
                                         'type'     => 'textarea',
-                                        'label'    => __('description'),
+                                        'label'    => __('Description'),
                                         'value'    => $masterCollection->description,
                                         'required' => false
                                     ],

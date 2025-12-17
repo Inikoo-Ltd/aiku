@@ -70,17 +70,11 @@ const onClickPick = () => {
 
 const selectedDeliveryNotes = defineModel<number[]>('selectedDeliveryNotes')
 
-const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
-    if (!selectedDeliveryNotes.value) return
 
-    if (checked) {
-        if (!selectedDeliveryNotes.value.includes(item.id)) {
-            selectedDeliveryNotes.value.push(item.id)
-        }
-    } else {
-        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => id != item.id)
-    }
-}
+const emits = defineEmits<{
+    (e: "update:selectedDeliveryNotes", value: {}): void
+}>()
+
 
 const onCheckedAll = ({ data, allChecked }) => {
     if (!selectedDeliveryNotes.value) return
@@ -173,11 +167,33 @@ function customerRoute(deliveryNote: DeliveryNote) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true"
-        @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
-        @onCheckedAll="(data) => onCheckedAll(data)" checkboxKey='id'
-        :isChecked="(item) => selectedDeliveryNotes.includes(item.id)"
-        :disabledCheckbox="(item) => item.picking_sessions_count > 0">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onCheckedAll="(data) => onCheckedAll(data)" checkboxKey='id'>
+        <template #checkbox="data">
+            <div v-if="data?.data?.picking_sessions_count > 0">
+                <span class="text-gray-400 text-center block">—</span>
+            </div>
+
+            <template v-else>
+                <FontAwesomeIcon
+                    v-if="selectedDeliveryNotes.includes(data.data.id)"
+                    icon="fas fa-check-square"
+                    class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
+                    fixed-width
+                    aria-hidden="true"
+                    @click="() => emits('update:selectedDeliveryNotes', selectedDeliveryNotes.filter(id => id !== data.data.id))"
+                    />
+
+                <FontAwesomeIcon
+                    v-else
+                    icon="fal fa-square"
+                    class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
+                    fixed-width
+                    aria-hidden="true"
+                    @click="() => emits('update:selectedDeliveryNotes', [...selectedDeliveryNotes, data.data.id])"
+                    />
+            </template>
+        </template>
+
 
         <template #disable-checkbox>
             <div></div>

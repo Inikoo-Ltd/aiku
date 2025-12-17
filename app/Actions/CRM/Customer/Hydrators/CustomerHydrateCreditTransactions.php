@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -21,13 +22,23 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
     use WithActionUpdate;
 
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customer->id;
+        return $customerId ?? 'empty';
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats          = [
             'number_credit_transactions' => $customer->creditTransactions()->count(),
         ];
@@ -36,6 +47,8 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
         $creditTransactions = $customer->creditTransactions()
         ->orderBy('date')
         ->get();
+
+        $modelData = [];
 
         /** @var CreditTransaction $creditTransaction */
         foreach ($creditTransactions as $creditTransaction) {
@@ -51,5 +64,20 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
         UpdateCustomer::make()->action($customer, $modelData);
     }
 
+    public function getCommandSignature(): string
+    {
+        return "crm:customer:hydrate-credit-transactions {customer}";
+    }
+
+    public function getCommandDescription(): string
+    {
+        return "Hydrate credit transactions for customer.";
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $this->handle(Customer::where('slug', $command->argument('customer'))->firstOrFail());
+        return 0;
+    }
 
 }

@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { useFormatTime } from "@/Composables/useFormatTime"
 library.add(faFileInvoiceDollar, faHandHoldingUsd)
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { PageHeadingTypes } from "@/types/PageHeading"
 import { Head } from '@inertiajs/vue3'
   import PageHeading from '@/Components/Headings/PageHeading.vue'
 

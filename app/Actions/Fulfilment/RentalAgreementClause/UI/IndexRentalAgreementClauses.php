@@ -91,9 +91,9 @@ class IndexRentalAgreementClauses extends OrgAction
                     'title'       => __("No agreed prices found"),
                     ]
                 )
-            ->column(key: 'asset_code', label: __('code'), canBeHidden: false, sortable: true)
-            ->column(key: 'asset_name', label: __('name'), canBeHidden: false)
-            ->column(key: 'asset_type', label: __('type'), canBeHidden: false, sortable: true)
+            ->column(key: 'asset_code', label: __('Code'), canBeHidden: false, sortable: true)
+            ->column(key: 'asset_name', label: __('Name'), canBeHidden: false)
+            ->column(key: 'asset_type', label: __('Type'), canBeHidden: false, sortable: true)
             ->column(key: 'percentage_off', label: __('discount'), canBeHidden: false)
             ->column(key: 'agreed_price', label: __('agreed price'), canBeHidden: false);
         };

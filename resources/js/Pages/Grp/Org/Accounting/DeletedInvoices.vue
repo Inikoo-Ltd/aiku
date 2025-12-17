@@ -13,7 +13,7 @@ import {
   faFileMinus,
   faHandHoldingUsd
 } from "@fal";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import TableDeletedInvoices from '@/Components/Tables/Grp/Org/Accounting/TableDeletedInvoices.vue'
 
 library.add(faFileMinus, faHandHoldingUsd);

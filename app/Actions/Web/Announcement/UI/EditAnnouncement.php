@@ -41,7 +41,7 @@ class EditAnnouncement extends OrgAction
             'fields' => [
                 'name' => [
                     'type'        => 'input',
-                    'label'       => __('name'),
+                    'label'       => __('Name'),
                     'placeholder' => __('Name for announcement'),
                     'required'    => true,
                     'value'       => $announcement->name,

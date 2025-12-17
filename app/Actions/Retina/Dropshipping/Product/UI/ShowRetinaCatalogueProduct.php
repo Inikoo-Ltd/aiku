@@ -53,7 +53,7 @@ class ShowRetinaCatalogueProduct extends RetinaAction
         return Inertia::render(
             'Dropshipping/Product/Product',
             [
-                'title'       => __('product'),
+                'title'       => __('Product'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
@@ -69,7 +69,6 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                         'title' => $title
                     ],
                     'model' => __('Product'),
-                    /* 'actions'       => $actions, */
                     'exports' => [
                         [
                             'routes' => [

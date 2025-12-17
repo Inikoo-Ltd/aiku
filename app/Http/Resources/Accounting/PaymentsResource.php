@@ -32,6 +32,11 @@ class PaymentsResource extends JsonResource
             'status'     => $this->status,
             'type'      => $this->type,
             'payment_account_name' => $this->payment_account_name,
+            'payment_account' => $this->paymentAccount ? [
+                'type' => $this->paymentAccount->type,
+                'code' => $this->paymentAccount->code,
+                'name' => $this->paymentAccount->name,
+            ] : null,
             'state_icon' => $this->status->stateIcon()[$this->status->value],
             'date'       => $this->date,
             'reference'  => $this->reference,

@@ -112,7 +112,7 @@ class IndexWebUsersInGroup extends OrgAction
 
             $table
                 ->column(key: 'organisation_code', label: __('org'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'username', label: __('username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Created at'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('username');

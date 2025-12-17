@@ -71,6 +71,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
  * @property bool $is_single_trade_unit Indicates if the stock has a single trade unit
+ * @property int|null $packed_in
+ * @property string|null $packed_in_data
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcode
  * @property-read Group $group

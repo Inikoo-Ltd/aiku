@@ -25,6 +25,9 @@ import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import Image from "@/Components/Image.vue"
+import { trans } from "laravel-vue-i18n"
+
 
 
 
@@ -42,6 +45,7 @@ defineProps<{
     },
     isCheckboxProducts?: boolean
     master?: boolean
+    selectedProductsId?: {}
 }>()
 
 const emits = defineEmits<{
@@ -88,7 +92,7 @@ function onSave(item) {
                 loadingSave.value.push(item.id)
             },
             onSuccess: () => {
-                // merge back into original item so the table updates immediately
+                // merge back into the original item so the table updates immediately
                 Object.assign(item, updated)
 
                 // cleanup
@@ -121,6 +125,7 @@ function productRoute(product: Product) {
         return ""
     }
 
+    console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.catalogue.products.current_products.index":
             return route(
@@ -252,14 +257,7 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug])
-        /*  case "grp.masters.master_shops.show.master_families.master_products.show":
-             return route(
-                 "grp.org.shops.show.catalogue.products.current_products.show",
-                 [
-                     product.organisation_slug,
-                     product.shop_slug,
-                     product.slug
-                 ]); */
+
         default:
             if (product.asset_id) {
                 return route(
@@ -346,19 +344,17 @@ const locale = inject("locale", aikuLocaleStructure)
 const _table = ref<InstanceType<typeof Table> | null>(null)
 
 
-onMounted(() => {
-    if (_table.value) {
-        _table.value.selectRow['113836'] = true
-        console.log(_table.value.selectRow)
-    }
-})
-
 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts"
-        @onSelectRow="(item) => emits('selectedRow', item)" key="product-table" ref="_table">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
+        <template #cell(image_thumbnail)="{ item: product }">
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
+
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
             {{ refund["organisation_code"] }}
@@ -380,7 +376,7 @@ onMounted(() => {
             </div>
         </template>
 
-        <template #cell(unit)="{ item: product }"> 
+        <template #cell(unit)="{ item: product }">
                 <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput>
                 <span v-else>{{ product.unit }}</span>
         </template>
@@ -403,6 +399,10 @@ onMounted(() => {
             </div>
         </template>
 
+        <template #cell(rrp_per_unit)="{ item: product }">
+            {{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}
+
+        </template>
 
         <template #cell(rrp)="{ item: product }">
             <div>
@@ -440,7 +440,7 @@ onMounted(() => {
 
         <template #cell(code)="{ item: product }">
             <div class="whitespace-nowrap">
-                <Link :href="(masterProductRoute(product) as string)" v-tooltip="'Go to Master'" class="mr-1"
+                <Link :href="(masterProductRoute(product) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
                 </Link>
@@ -459,6 +459,12 @@ onMounted(() => {
         <template #cell(type)="{ item: product }">
             <Icon :data="product['type_icon']" />
             <Icon :data="product['state_icon']" />
+        </template>
+
+        <template #cell(customers_invoiced_all)="{ item }">
+            <Link :href="productRoute(item) + '?tab=customers'" class="secondaryLink">
+                {{ item.customers_invoiced_all }}
+            </Link>
         </template>
 
         <template #cell(actions)="{ item }">
@@ -504,5 +510,27 @@ onMounted(() => {
             </div>
 
         </template>
+
+
+        <template #checkbox="data">
+            <FontAwesomeIcon
+                v-if="selectedProductsId[data.data.id]"
+                @click="() => emits('selectedRow', { [data.data.id]: false })"
+                icon='fas fa-check-square'
+                class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
+                fixed-width aria-hidden='true' />
+            <FontAwesomeIcon
+                v-if="!selectedProductsId[data.data.id]"
+                @click="() => emits('selectedRow', { [data.data.id]: true })"
+                icon='fal fa-square'
+                class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
+                fixed-width aria-hidden='true' />
+        </template>
+
+
+        <template #header-checkbox>
+            <div></div>
+        </template>
+
     </Table>
 </template>

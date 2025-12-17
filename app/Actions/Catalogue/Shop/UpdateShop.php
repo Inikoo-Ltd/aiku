@@ -91,6 +91,9 @@ class UpdateShop extends OrgAction
                     'vat_number' => 'data.vat_number',
                     'ebay_redirect_key' => 'settings.ebay.redirect_key',
                     'ebay_marketplace_id' => 'settings.ebay.marketplace_id',
+                    'ebay_warehouse_city' => 'settings.ebay.warehouse_city',
+                    'ebay_warehouse_state' => 'settings.ebay.warehouse_state',
+                    'ebay_warehouse_country' => 'settings.ebay.warehouse_country',
                     'portal_link'   => 'settings.portal.link',
                     default => $key
                 },
@@ -106,6 +109,9 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'vat_number');
         data_forget($modelData, 'ebay_redirect_key');
         data_forget($modelData, 'ebay_marketplace_id');
+        data_forget($modelData, 'ebay_warehouse_country');
+        data_forget($modelData, 'ebay_warehouse_city');
+        data_forget($modelData, 'ebay_warehouse_state');
         data_forget($modelData, 'portal_link');
 
         if (Arr::exists($modelData, 'widget_key')) {
@@ -271,6 +277,9 @@ class UpdateShop extends OrgAction
             'vat_number'                   => ['sometimes', 'string'],
             'ebay_redirect_key'            => ['sometimes', 'string'],
             'ebay_marketplace_id'          => ['sometimes', 'string'],
+            'ebay_warehouse_city'          => ['sometimes', 'string'],
+            'ebay_warehouse_state'         => ['sometimes', 'string'],
+            'ebay_warehouse_country'       => ['sometimes', 'string'],
             'portal_link'                  => ['sometimes', 'string'],
             'widget_key'                   => ['sometimes', 'string'],
             'required_approval'            => ['sometimes', 'boolean'],

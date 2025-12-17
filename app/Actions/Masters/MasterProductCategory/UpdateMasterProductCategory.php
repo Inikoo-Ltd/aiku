@@ -26,12 +26,12 @@ use Illuminate\Validation\Rules\File;
 
 class UpdateMasterProductCategory extends OrgAction
 {
-    use WithMasterProductCategoryAction;
     use WithImageCatalogue;
+    use WithMasterProductCategoryAction;
+
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-
         $originalImageId = $masterProductCategory->image_id;
         if (Arr::has($modelData, 'master_department_id')) {
             $departmentId = Arr::pull($modelData, 'master_department_id');
@@ -67,38 +67,38 @@ class UpdateMasterProductCategory extends OrgAction
         if (Arr::has($modelData, 'name_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'name' => Arr::pull($modelData, 'name_i8n')
-                ]
+                    'name' => Arr::pull($modelData, 'name_i8n'),
+                ],
             ]);
         }
 
         if (Arr::has($modelData, 'description_title_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
-                ]
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n'),
+                ],
             ]);
         }
 
         if (Arr::has($modelData, 'description_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'description' => Arr::pull($modelData, 'description_i8n')
-                ]
+                    'description' => Arr::pull($modelData, 'description_i8n'),
+                ],
             ]);
         }
 
         if (Arr::has($modelData, 'description_extra_i8n')) {
             UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
                 'translations' => [
-                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
-                ]
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n'),
+                ],
             ]);
         }
 
         $modelData['offers_data'] = $masterProductCategory->offers_data;
         if (Arr::has($modelData, 'vol_gr')) {
-            $modelData['vol_gr'] = $modelData['vol_gr'][0];
+            $modelData['vol_gr']                = $modelData['vol_gr'][0];
             $modelData['offers_data']['vol_gr'] = Arr::pull($modelData, 'vol_gr');
         }
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
@@ -163,7 +163,6 @@ class UpdateMasterProductCategory extends OrgAction
         return $masterProductCategory;
     }
 
-
     public function rules(): array
     {
         $rules = [
@@ -177,7 +176,7 @@ class UpdateMasterProductCategory extends OrgAction
                         ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'type', 'value' => $this->masterProductCategory->type, 'operator' => '='],
-                        ['column' => 'id', 'value' => $this->masterProductCategory->id, 'operator' => '!=']
+                        ['column' => 'id', 'value' => $this->masterProductCategory->id, 'operator' => '!='],
 
                     ]
                 ),
@@ -195,14 +194,14 @@ class UpdateMasterProductCategory extends OrgAction
                 'sometimes',
                 'nullable',
                 File::image()
-                    ->max(12 * 1024)
+                    ->max(12 * 1024),
             ],
             'name_i8n'                 => ['sometimes', 'array'],
             'description_title_i8n'    => ['sometimes', 'array'],
             'description_i8n'          => ['sometimes', 'array'],
             'description_extra_i8n'    => ['sometimes', 'array'],
             'vol_gr'                   => ['sometimes', 'array'],
-            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
+            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
         ];
 
         if (!$this->strict) {

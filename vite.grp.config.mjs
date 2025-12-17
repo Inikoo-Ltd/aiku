@@ -9,7 +9,6 @@ import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
-import { codecovVitePlugin } from "@codecov/vite-plugin";
 import path from "node:path";
 
 export default ({ mode }) => {
@@ -20,6 +19,7 @@ export default ({ mode }) => {
       server : {
         cors : true,
         watch: {
+          usePolling: false,
           ignored: ["**/storage/media/**"]
         }
       },
@@ -39,13 +39,7 @@ export default ({ mode }) => {
                 }
               }
             }),
-        i18n(),
-        codecovVitePlugin({
-                            enableBundleAnalysis: process.env.CODECOV_TOKEN !==
-                              undefined,
-                            bundleName          : "aiku",
-                            uploadToken         : process.env.CODECOV_TOKEN
-                          })
+        i18n()
       ],
       ssr    : {
         noExternal: ["@inertiajs/server"]

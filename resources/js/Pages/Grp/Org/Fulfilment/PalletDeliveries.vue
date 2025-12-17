@@ -10,7 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TablePalletDeliveries from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveries.vue"
 import TablePalletUploads from "@/Components/Tables/TablePalletUploads.vue"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from '@/types/PageHeading'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import type { Component } from "vue"

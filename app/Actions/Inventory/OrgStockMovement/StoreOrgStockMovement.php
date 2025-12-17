@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStockMovement;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateHasBeenInWarehouse;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
@@ -84,6 +85,7 @@ class StoreOrgStockMovement extends OrgAction
         }
 
         OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
+        OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock)->delay($this->hydratorsDelay);
 
 
         return $orgStockMovement;

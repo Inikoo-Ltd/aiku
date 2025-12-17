@@ -56,13 +56,13 @@ class CreateStoredItem extends OrgAction
                                     'reference' => [
                                         'type'     => 'input',
                                         'required' => true,
-                                        'label'    => __('reference')
+                                        'label'    => __('Reference')
                                     ],
 
                                     'name'        => [
                                         'type'     => 'input',
                                         'required' => true,
-                                        'label'    => __('name')
+                                        'label'    => __('Name')
                                     ],
                                 ]
                             ]

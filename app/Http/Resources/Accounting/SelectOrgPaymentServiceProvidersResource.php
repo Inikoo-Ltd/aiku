@@ -50,13 +50,13 @@ class SelectOrgPaymentServiceProvidersResource extends JsonResource
                     'fields' => [
                         'code' => [
                             'type'     => 'input',
-                            'label'    => __('code'),
+                            'label'    => __('Code'),
                             'required' => true,
                          /*    'column'   => '1/2' */
                         ],
                         'name' => [
                             'type'     => 'input',
-                            'label'    => __('name'),
+                            'label'    => __('Name'),
                             'required' => true,
                        /*      'column'   => '1/2' */
                         ],

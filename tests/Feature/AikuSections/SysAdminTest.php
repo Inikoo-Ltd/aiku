@@ -858,9 +858,9 @@ test('parse country', function () {
 
 test('get helpers select options data', function () {
     $countryData = GetAddressData::run();
-    expect($countryData)->toHaveCount(259);
+    expect($countryData)->toHaveCount(247);
     $countryDataBis = GetCountriesOptions::run();
-    expect($countryDataBis)->toHaveCount(259);
+    expect($countryDataBis)->toHaveCount(247);
     $currencyData = GetCurrenciesOptions::run();
     expect($currencyData)->toHaveCount(157);
     $timezonesData = GetTimeZonesOptions::run();

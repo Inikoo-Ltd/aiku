@@ -59,9 +59,21 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 $tradeUnit = TradeUnit::withTrashed()->where('source_id', $tradeUnitData['trade_unit']['source_id'])->first();
                 if ($tradeUnit) {
                     try {
+                        $dataToUpdate = Arr::only(
+                            $tradeUnitData['trade_unit'],
+                            [
+                                'name',
+                                'code',
+                                'source_id',
+                                'source_slug',
+                                'fetched_at',
+                                'last_fetched_at'
+                            ]
+                        );
+
                         $tradeUnit = UpdateTradeUnit::make()->action(
                             tradeUnit: $tradeUnit,
-                            modelData: $tradeUnitData['trade_unit'],
+                            modelData: $dataToUpdate,
                             hydratorsDelay: $this->hydratorsDelay,
                             strict: false,
                             audit: false
@@ -76,29 +88,30 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
 
                 if ($organisation->id == 2) {
-                    $dataToUpdate = Arr::only(
-                        $tradeUnitData['trade_unit'],
-                        ['gross_weight', 'marketing_weight', 'marketing_dimensions']
-                    );
-
-                    if (!Arr::get($tradeUnitData, 'trade_unit.gross_weight')) {
-                        data_forget($tradeUnitData, 'trade_unit.gross_weight');
-                    }
-                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_weight')) {
-                        data_forget($tradeUnitData, 'trade_unit.marketing_weight');
-                    }
-                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_dimensions')) {
-                        data_forget($tradeUnitData, 'trade_unit.marketing_dimensions');
-                    }
-
-
-                    $tradeUnit = UpdateTradeUnit::make()->action(
-                        tradeUnit: $metaTradeUnit,
-                        modelData: $dataToUpdate,
-                        hydratorsDelay: $this->hydratorsDelay,
-                        strict: false,
-                        audit: false
-                    );
+                    // Tue 16 Dec 2025 stop updating weights and dimensions from Aurora
+                    //                    $dataToUpdate = Arr::only(
+                    //                        $tradeUnitData['trade_unit'],
+                    //                        ['gross_weight', 'marketing_weight', 'marketing_dimensions']
+                    //                    );
+                    //
+                    //                    if (!Arr::get($tradeUnitData, 'trade_unit.gross_weight')) {
+                    //                        data_forget($tradeUnitData, 'trade_unit.gross_weight');
+                    //                    }
+                    //                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_weight')) {
+                    //                        data_forget($tradeUnitData, 'trade_unit.marketing_weight');
+                    //                    }
+                    //                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_dimensions')) {
+                    //                        data_forget($tradeUnitData, 'trade_unit.marketing_dimensions');
+                    //                    }
+                    //
+                    //
+                    //                    $tradeUnit = UpdateTradeUnit::make()->action(
+                    //                        tradeUnit: $metaTradeUnit,
+                    //                        modelData: $dataToUpdate,
+                    //                        hydratorsDelay: $this->hydratorsDelay,
+                    //                        strict: false,
+                    //                        audit: false
+                    //                    );
 
 
                     $skSource = null;
@@ -122,7 +135,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                             DB::connection('aurora')->table('Part Material Bridge')
                                 ->where('Part SKU', $skSource)->orderBy('Part Material Key')->get() as $auroraIngredients
                         ) {
-
                             $ingredient = $this->parseIngredient(
                                 $organisation->id.
                                 ':'.$auroraIngredients->{'Material Key'}
@@ -212,7 +224,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                     $dataSource  = explode(':', $tradeUnit->source_id);
                     $ingredients = [];
-                    $position = 0;
+                    $position    = 0;
                     foreach (
                         DB::connection('aurora')->table('Part Material Bridge')
                             ->where('Part SKU', $dataSource[1])->get() as $auroraIngredients
@@ -226,7 +238,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                             $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
 
-                            $arguments                    = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
+                            $arguments = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
                             $position++;
                             $arguments['position']        = $position;
                             $ingredients[$ingredient->id] = $arguments;

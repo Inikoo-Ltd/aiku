@@ -10,6 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -44,6 +45,9 @@ use App\Http\Resources\Helpers\ImageResource;
  * @property mixed $rrp
  * @property mixed $gross_weight
  * @property mixed $images
+ * @property mixed $unit
+ * @property mixed $master_product_id
+ * @property mixed $web_images
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -72,20 +76,21 @@ class ProductsResource extends JsonResource
             'family_code'               => $this->family_code,
             'family_name'               => $this->family_name,
             'price'                     => $this->price,
-            'units'                     => $this->units,
+            'units'                     => trimDecimalZeros($this->units),
             'unit'                      => $this->unit,
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
-            'available_quantity'        => $this->available_quantity,
+            'available_quantity'        => trimDecimalZeros($this->available_quantity),
             'gross_weight'              => $this->gross_weight,
             'rrp'                       => $this->rrp,
+            'rrp_per_unit'              => $this->units != 0 ? $this->rrp / $this->units : '',
             'customers_invoiced_all'    => $this->customers_invoiced_all,
             'invoices_all'              => $this->invoices_all,
             'sales_all'                 => $this->sales_all,
             'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
             'images'                    => ImageResource::collection($this->images),
-            'image_thumbnail'           => $this->imageSources(720, 480),
+            'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
             'master_product_id'         => $this->master_product_id
         ];
     }

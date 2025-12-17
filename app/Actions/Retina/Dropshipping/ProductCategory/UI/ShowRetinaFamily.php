@@ -39,7 +39,7 @@ class ShowRetinaFamily extends RetinaAction
         return Inertia::render(
             'Catalogue/RetinaFamily',
             [
-                'title'       => __('family'),
+                'title'       => __('Family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

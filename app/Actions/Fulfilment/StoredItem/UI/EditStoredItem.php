@@ -85,13 +85,13 @@ class EditStoredItem extends OrgAction
                             'fields' => [
                                 'reference' => [
                                     'type'    => 'input',
-                                    'label'   => __('reference'),
+                                    'label'   => __('Reference'),
                                     'value'   => $storedItem->reference,
                                     'required' => true
                                 ],
                                 'name' => [
                                     'type'    => 'input',
-                                    'label'   => __('name'),
+                                    'label'   => __('Name'),
                                     'placeholder'   => __("Customer's SKU name"),
                                     'value'   => $storedItem->name,
                                     // 'required' => true

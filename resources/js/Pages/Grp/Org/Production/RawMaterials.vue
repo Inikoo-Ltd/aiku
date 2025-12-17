@@ -14,7 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Navigation } from "@/types/Tabs";
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { get } from 'lodash-es'

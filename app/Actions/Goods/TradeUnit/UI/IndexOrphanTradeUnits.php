@@ -100,8 +100,8 @@ class IndexOrphanTradeUnits extends GrpAction
                         default => null
                     }
                 )
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             $routeName = request()->route()->getName();
 
@@ -112,18 +112,18 @@ class IndexOrphanTradeUnits extends GrpAction
             }
 
 
-            $table->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'net_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $tradeUnit): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnit);
+        return TradeUnitsResource::collection($tradeUnits);
     }
 
-    public function htmlResponse(LengthAwarePaginator $tradeUnit, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $tradeUnits, ActionRequest $request): Response
     {
         return Inertia::render(
             'Goods/TradeUnits',
@@ -140,7 +140,7 @@ class IndexOrphanTradeUnits extends GrpAction
                         'title' => __('Orphan Trade Units'),
                     ],
                 ],
-                'data'        => TradeUnitsResource::collection($tradeUnit),
+                'data'        => TradeUnitsResource::collection($tradeUnits),
 
             ]
         )->table($this->tableStructure(parent: $this->parent));

@@ -12,7 +12,6 @@ import type { Table as TableTS } from "@/types/Table"
 import Icon from "@/Components/Icon.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import { get, set } from "lodash-es"
-import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { ref, onMounted, reactive, inject } from "vue"
@@ -29,7 +28,6 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { faPencil } from "@far"
 import MiniDeliveryNote from "@/Components/MiniDeliveryNote.vue"
-// import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { DeliveryNoteItem } from "@/types/delivery-note-item"
 import { RouteParams } from "@/types/route-params"
@@ -38,7 +36,7 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes)
 
 
-const props = defineProps<{
+defineProps<{
     data: TableTS
     tab?: string
     pickingSession: object
@@ -50,14 +48,18 @@ const modalDetail = ref(false)
 
 
 function showOrgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
-    return route(
-        "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
-        [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).warehouse,
-            deliveryNoteItem.org_stock_slug
-        ]
-    )
+    if (deliveryNoteItem.org_stock_slug) {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).warehouse,
+                deliveryNoteItem.org_stock_slug
+            ]
+        )
+    } else {
+        return ''
+    }
 }
 
 function showDeliveryNoteRoute(deliveryNoteItem: DeliveryNoteItem) {
@@ -76,34 +78,6 @@ const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
 })
-
-const onPickingQuantity = (pick_route: routeType, quantity: number) => {
-    router[pick_route.method || "post"](
-        route(pick_route.name, pick_route.parameters),
-        {
-            quantity: quantity
-        },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: "",
-                    type: "error"
-                })
-            },
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: "",
-                    type: "error"
-                })
-            }
-        }
-    )
-}
-
 
 const generateLocationRoute = (location: any) => {
     if (!location.location_slug) {
@@ -177,11 +151,7 @@ onMounted(() => {
     innerWidth.value = window.innerWidth
 })
 
-// console.log("props", props.pickingSession)
 
-// Section: Note
-// const isModalNote = ref(false)
-// const selectedDelivery = ref(null)
 </script>
 
 <template>
@@ -489,7 +459,7 @@ onMounted(() => {
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
-                                        {{ findLocation(itemValue.locations, proxyItem.hehe).quantity }}
+                                        {{ Number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity ?? 0) }}
                                     </span>
 
                                     <span v-if="itemValue.locations?.length > 1" @click="() => {
@@ -504,8 +474,6 @@ onMounted(() => {
                                     </span>
                                 </div>
                             </Transition>
-
-
                         </div>
 
                         <div>
@@ -652,7 +620,7 @@ onMounted(() => {
                     <span v-tooltip="trans('Total stock in this location')"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                        {{ location.quantity }}
+                        {{ Number(location.quantity ?? 0) }}
                     </span>
                 </label>
 
@@ -668,46 +636,6 @@ onMounted(() => {
         <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"
                           @SuccsesUpdateState="() => { onCloseModalDetail() }" />
     </Modal>
-
-    <!-- Modal: Note -->
-    <!-- <Modal :isOpen="isModalNote" @onClose="() => isModalNote = false" width="max-w-md w-full">
-        <div class="">
-            <div class="text-center text-xl font-semibold">
-                Delivery Note: {{ selectedDelivery?.delivery_note_reference }}
-            </div>
-
-
-            <div class="relative w-full xpt-4 rounded overflow-hidden mt-2" :style="{
-                backgroundColor: `rgba(56, 189, 248, 0.1)`,
-                border:`1px solid rgb(56, 189, 248)`
-            }">
-                
-                <div class="top-0 left-0 w-full flex gap-x-1 lg:pr-0 justify-between lg:justify-normal">
-                    <div class="w-full flex items-center justify-between text-xs truncate gap-x-2 text-center py-0.5 pl-3 pr-3" :style="{
-                        backgroundColor: 'rgb(56, 189, 248)',
-                    }">
-                        <div
-                            class="flex flex-wrap items-center gap-x-1"
-                        >
-                            <FontAwesomeIcon icon="fas fa-sticky-note" class="" fixed-width aria-hidden="true" />
-                            {{ trans("Delivery Instructions") }}
-                            <InformationIcon :information="trans('This note will be printed in the shipping label')" />
-
-                        </div>
-
-                    </div>
-                </div>
-
-               
-                <p class="h-full max-h-32 mx-auto items-center px-4 pt-2 pb-2 text-xxs break-words">
-                    <template v-if="selectedDelivery?.delivery_note_shipping_notes">{{ selectedDelivery?.delivery_note_shipping_notes }}</template>
-                    <div v-else class="text-gray-400 italic">
-                        {{ "No notes" }}
-                    </div>
-                </p>
-            </div>
-        </div>
-    </Modal> -->
 
 
 </template>

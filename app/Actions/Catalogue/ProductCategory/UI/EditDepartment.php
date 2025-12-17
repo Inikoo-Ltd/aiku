@@ -109,7 +109,7 @@ class EditDepartment extends OrgAction
                                 'fields' => [
                                     'code' => [
                                         'type'  => 'input',
-                                        'label' => __('code'),
+                                        'label' => __('Code'),
                                         'value' => $department->code
                                     ],
                                 ]
@@ -120,7 +120,7 @@ class EditDepartment extends OrgAction
                                 'fields' => [
                                     'name' => $department->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('name'),
+                                        'label' => __('Name'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $department->masterProductCategory->name,
@@ -129,7 +129,7 @@ class EditDepartment extends OrgAction
                                         'mode' => 'single'
                                     ] : [
                                         'type'  => 'input',
-                                        'label' => __('name'),
+                                        'label' => __('Name'),
                                         'value' =>  $department->name
                                     ],
                                     'description_title' => $department->masterProductCategory ? [
@@ -148,7 +148,7 @@ class EditDepartment extends OrgAction
                                     ],
                                     'description' => $department->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('description'),
+                                        'label' => __('Description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $department->masterProductCategory->description,
@@ -157,7 +157,7 @@ class EditDepartment extends OrgAction
                                         'mode' => 'single'
                                     ] : [
                                         'type'  => 'textEditor',
-                                        'label' => __('description'),
+                                        'label' => __('Description'),
                                         'value' => $department->description
                                     ],
                                     'description_extra' => $department->masterProductCategory ? [

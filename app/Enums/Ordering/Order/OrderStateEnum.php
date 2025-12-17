@@ -33,7 +33,7 @@ enum OrderStateEnum: string
     public static function labels(): array
     {
         return [
-            'creating'         => __('Creating'),
+            'creating'         => __('In Basket'),
             'submitted'        => __('Submitted'),
             'in_warehouse'     => __('In Warehouse'),
             'handling'         => __('Handling'),
@@ -49,7 +49,7 @@ enum OrderStateEnum: string
     {
         return [
             'creating'         => [
-                'tooltip' => __('Creating'),
+                'tooltip' => __('In Basket'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
                 'color'   => 'lime',  // Color for box (Retina)
@@ -132,7 +132,7 @@ enum OrderStateEnum: string
                 'tooltip' => __('Cancelled'),
                 'icon'    => 'fal fa-times-circle',
                 'class'   => 'text-red-500',
-                'color'   => 'purple',
+                'color'   => 'red',
                 'app'     => [
                     'name' => 'check-double',
                     'type' => 'font-awesome-5'

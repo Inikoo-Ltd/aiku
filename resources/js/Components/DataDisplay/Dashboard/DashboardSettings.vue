@@ -156,7 +156,7 @@ onMounted(() => {
                     <div v-if="hasOverflowLeft"
                          @click="scrollLeft"
                          class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-3 sm:pr-6">
-                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors">
+                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center min-h-full px-2">
                             <FontAwesomeIcon icon="far fa-chevron-left" class="text-[10px] sm:text-xs" />
                         </div>
                     </div>
@@ -167,7 +167,7 @@ onMounted(() => {
                     <div v-if="hasOverflowRight"
                          @click="scrollRight"
                          class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-3 sm:pl-6">
-                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors">
+                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center min-h-full px-2">
                             <FontAwesomeIcon icon="far fa-chevron-right" class="text-[10px] sm:text-xs" />
                         </div>
                     </div>
@@ -178,7 +178,13 @@ onMounted(() => {
                     @scroll="checkOverflow"
                     class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
-                    <div v-if="(layout.currentRoute === 'grp.dashboard.show') || (layout.currentRoute === 'grp.org.dashboard.show')">
+                    <div
+						v-if="
+							(layout.currentRoute === 'grp.dashboard.show') ||
+							(layout.currentRoute === 'grp.org.dashboard.show') ||
+							(layout.currentRoute === 'grp.masters.dashboard')
+						"
+					>
                         <DashboardCustomDateRange :intervals="intervals" />
                     </div>
 

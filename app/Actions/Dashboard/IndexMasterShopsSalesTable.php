@@ -13,6 +13,7 @@ use App\Http\Resources\Dashboards\DashboardMasterShopSalesInGroupResource;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Services\CustomRangeDataService;
 use App\Services\QueryBuilder;
 
 class IndexMasterShopsSalesTable extends OrgAction
@@ -23,9 +24,7 @@ class IndexMasterShopsSalesTable extends OrgAction
         $queryBuilder->leftJoin('master_shop_sales_intervals', 'master_shops.id', 'master_shop_sales_intervals.master_shop_id');
         $queryBuilder->leftJoin('master_shop_ordering_intervals', 'master_shops.id', 'master_shop_ordering_intervals.master_shop_id');
 
-
         $queryBuilder->where('master_shops.group_id', $group->id);
-
 
         $queryBuilder
             ->defaultSort('master_shops.code')
@@ -41,19 +40,23 @@ class IndexMasterShopsSalesTable extends OrgAction
             ]);
         $queryBuilder->selectRaw('\''.$group->currency->code.'\' as group_currency_code');
 
-
         return $queryBuilder->allowedSorts(['code', 'name', 'type', 'state'])
             ->withPaginator(null, 1000)
             ->withQueryString();
     }
 
-
-    public function action(Group|Organisation $parent): array
+    public function action(Group|Organisation $parent, array $customRangeData = []): array
     {
         $this->initialisationFromGroup($parent, []);
         $shops = $this->handle($parent);
 
+        if (! empty($customRangeData) && ! empty($customRangeData['master_shops'])) {
+            $customRangeService = app(CustomRangeDataService::class);
+            $shops->setCollection(
+                $customRangeService->injectCustomRangeData($shops->getCollection(), $customRangeData, 'master_shops')
+            );
+        }
+
         return json_decode(DashboardMasterShopSalesInGroupResource::collection($shops)->toJson(), true);
     }
-
 }

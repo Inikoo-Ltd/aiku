@@ -117,14 +117,14 @@ trait WithDepartmentsInOverview
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_code', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
 
 
             $table->column(key: 'number_current_sub_departments', label: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);

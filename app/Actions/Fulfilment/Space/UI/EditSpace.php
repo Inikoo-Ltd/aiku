@@ -60,7 +60,7 @@ class EditSpace extends OrgAction
                                         'type'     => 'input',
                                         'required' => true,
                                         'value' => $space->reference,
-                                        'label'    => __('reference')
+                                        'label'    => __('Reference')
                                     ],
 
 //                                    'start_at'        => [

@@ -27,7 +27,7 @@ class DeleteCustomerClient extends OrgAction
         $customerClient = $this->update($customerClient, $deletedData, ['data']);
         $customerClient->delete();
 
-        CustomerHydrateClients::dispatch($customerClient->customer);
+        CustomerHydrateClients::dispatch($customerClient->customer_id);
         ShopHydrateCustomerClients::dispatch($customerClient->shop);
         OrganisationHydrateCustomerClients::dispatch($customerClient->organisation);
         GroupHydrateCustomerClients::dispatch($customerClient->group);

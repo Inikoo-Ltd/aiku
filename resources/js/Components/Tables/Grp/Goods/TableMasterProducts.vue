@@ -16,10 +16,10 @@ import { RouteParams } from "@/types/route-params"
 import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
-import PureInput from "@/Components/Pure/PureInput.vue"
 import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import Image from "@/Components/Image.vue"
 
 defineProps<{
     data: {}
@@ -210,6 +210,11 @@ function onCancel(item) {
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="editable_table"
         @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
 
+        <template #cell(image_thumbnail)="{ item: collection }">
+            <div class="flex justify-center">
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(status)="{ item: masterProduct }">
             <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="trans('Active')" />
             <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="trans('Inactive')" />

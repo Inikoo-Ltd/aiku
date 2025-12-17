@@ -5,34 +5,35 @@
  * Copyright (c) 2023-2025, Raul A Perusquia Flores
  */
 
-import { routeType } from "./route"
+import {routeType} from "./route"
 
 // This interface mirrors App\Http\Resources\CRM\CustomerSalesChannelsResource
 // Keep fields aligned with the resource payload keys.
 export interface CustomerSalesChannel {
-  slug: string
-  id: number
-  reference: string | null
-  name: string | null
-  number_portfolios: number
-  number_portfolio_broken: number
-  number_clients: number
-  number_customer_clients: number
-  number_orders: number
-  type: string
-  status: string
-  total_amount: number | string | null
-  platform_code: string
-  platform_name: string
-  platform_image: string
+    slug: string
+    id: number
+    reference: string | null
+    name: string | null
+    number_portfolios: number
+    number_portfolio_broken: number
+    number_clients: number
+    number_customer_clients: number
+    number_orders: number
+    type: string
+    status: string
+    total_amount: number | string | null
+    platform_code: string
+    platform_name: string
+    platform_image: string
+    user_data: string
 
-  reconnect_route: routeType
+    reconnect_route: routeType
 
-  can_connect_to_platform: boolean
-  exist_in_platform: boolean
-  platform_status: boolean
+    can_connect_to_platform: boolean
+    exist_in_platform: boolean
+    platform_status: boolean
 
-  customer_company_name: string
-  customer_slug: string
-  customer_id: number
+    customer_company_name: string
+    customer_slug: string
+    customer_id: number
 }

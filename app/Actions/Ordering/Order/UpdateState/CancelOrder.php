@@ -12,8 +12,10 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
+use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -22,8 +24,10 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
@@ -44,7 +48,6 @@ class CancelOrder extends OrgAction
 
     public function handle(Order $order): Order
     {
-
         $oldState = $order->state;
 
         $modelData = [
@@ -62,7 +65,10 @@ class CancelOrder extends OrgAction
 
         /** @var Transaction $transaction */
         foreach ($transactions as $transaction) {
-            $transactionData = ['state' => TransactionStateEnum::CANCELLED];
+            $transactionData = [
+                'state' => TransactionStateEnum::CANCELLED,
+                'cancelled_at' => $date
+            ];
             data_set($transactionData, 'quantity_cancelled', $transaction->quantity_ordered);
 
             $transaction->update($transactionData);
@@ -89,14 +95,11 @@ class CancelOrder extends OrgAction
             ];
 
 
-
-            $payment     = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+            $payment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
                 'amount' => $payment->amount
             ]);
-
-
         }
 
         $deliveryNotes = $order->deliveryNotes;
@@ -105,7 +108,20 @@ class CancelOrder extends OrgAction
         }
 
         if ($oldState == OrderStateEnum::CREATING) {
-            CustomerHydrateBasket::run($order->customer);
+            CustomerHydrateBasket::run($order->customer_id);
+        }
+
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($order->customerSalesChannel?->user && app()->isProduction()) {
+                match ($order->customerSalesChannel->platform->type) {
+                    PlatformTypeEnum::SHOPIFY => CancelFulfillOrderToShopify::run($order),
+                    default => null,
+                };
+            } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {
+                UpdateOrder::run($order, [
+                    'public_notes' => __('We\'re unable update order to customer\'s sales channel due to their sales channel are not found or already deleted.')
+                ]);
+            }
         }
 
         $this->orderHydrators($order);

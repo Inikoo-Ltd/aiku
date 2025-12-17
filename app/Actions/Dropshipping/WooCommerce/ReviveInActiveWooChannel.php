@@ -31,7 +31,6 @@ class ReviveInActiveWooChannel
         $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
 
         $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
-            ->where('can_connect_to_platform', true)
             ->where('platform_status', false)
             ->get();
 
@@ -39,6 +38,8 @@ class ReviveInActiveWooChannel
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
                 CheckWooChannel::run($customerSalesChannel->user);
+
+                echo $customerSalesChannel->name . "\n";
             }
         }
     }

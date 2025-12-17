@@ -21,13 +21,17 @@ class CustomerHydrateDeliveryNotes implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 
-    public function getJobUniqueId(int $customerId, DeliveryNoteTypeEnum $type): string
+    public function getJobUniqueId(int|null $customerId, DeliveryNoteTypeEnum $type): string
     {
-        return $customerId.'-'.$type->value;
+        return $customerId ?? 'empty'.'-'.$type->value;
     }
 
-    public function handle(int $customerId, DeliveryNoteTypeEnum $type): void
+    public function handle(int|null $customerId, DeliveryNoteTypeEnum $type): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
         $customer = Customer::find($customerId);
         if (!$customer) {
             return;

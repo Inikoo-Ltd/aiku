@@ -27,7 +27,7 @@ class DeleteBackInStockReminder extends OrgAction
     {
         $backInStockReminder->delete();
 
-        CustomerHydrateBackInStockReminders::dispatch($this->backInStockReminder->customer);
+        CustomerHydrateBackInStockReminders::dispatch($this->backInStockReminder->customer_id);
         ProductHydrateCustomersWhoReminded::dispatch($this->backInStockReminder->product);
         ProductHydrateCustomersWhoRemindedInCategories::dispatch($this->backInStockReminder->product);
 

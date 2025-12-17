@@ -119,10 +119,10 @@ class IndexRefundsInGroup extends OrgAction
 
             $table->column(key: 'in_process', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'organisation_code', label: __('org'), canBeHidden: false, searchable: true);
-            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, searchable: true);
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');
         };

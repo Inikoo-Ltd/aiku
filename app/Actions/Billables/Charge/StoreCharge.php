@@ -41,13 +41,23 @@ class StoreCharge extends OrgAction
      */
     public function handle(Shop $shop, array $modelData): Charge
     {
+        $type = Arr::get($modelData, 'type');
+        if (!Arr::has($modelData, 'state')
+            && in_array($type, [
+                ChargeTypeEnum::OTHER,
+                ChargeTypeEnum::OTHER->value,
+                ChargeTypeEnum::MARKETPLACE_FEE,
+                ChargeTypeEnum::MARKETPLACE_FEE->value
+            ])) {
+            $modelData['state'] = ChargeStateEnum::ACTIVE;
+        }
+
         $status = false;
         if (Arr::get($modelData, 'state') == ChargeStateEnum::ACTIVE) {
             $status = true;
         }
 
 
-        $type = Arr::get($modelData, 'type');
         if (in_array($type, [ChargeTypeEnum::HANGING, ChargeTypeEnum::HANGING->value])) {
             data_set($modelData, 'trigger', ChargeTriggerEnum::ORDER);
         } elseif (in_array($type, [
@@ -66,6 +76,13 @@ class StoreCharge extends OrgAction
             ChargeTypeEnum::INSURANCE->value
         ])) {
             data_set($modelData, 'trigger', ChargeTriggerEnum::SELECTED_BY_CUSTOMER);
+        } elseif (in_array($type, [
+            ChargeTypeEnum::OTHER,
+            ChargeTypeEnum::OTHER->value,
+            ChargeTypeEnum::MARKETPLACE_FEE,
+            ChargeTypeEnum::MARKETPLACE_FEE->value,
+        ])) {
+            data_set($modelData, 'trigger', ChargeTriggerEnum::SELECTED_BY_USER);
         }
 
         data_set($modelData, 'status', $status);

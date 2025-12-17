@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Catalogue\Product\UI\IndexProductsInOrgStock;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInOrgStock;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -17,6 +18,7 @@ use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
@@ -50,6 +52,7 @@ class ShowOrgStock extends OrgAction
         return $this->handle($orgStock);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inStockFamily(Organisation $organisation, Warehouse $warehouse, OrgStockFamily $orgStockFamily, OrgStock $orgStock, ActionRequest $request): OrgStock
     {
         $this->parent = $orgStockFamily;
@@ -70,20 +73,22 @@ class ShowOrgStock extends OrgAction
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
+        $hasMaster = $orgStock->stock;
+
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
-                'title'                           => __('stock'),
-                'breadcrumbs'                     => $this->getBreadcrumbs(
+                'title'       => __('stock'),
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                      => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($orgStock, $request),
                     'next'     => $this->getNext($orgStock, $request),
                 ],
-                'pageHead'                        => [
+                'pageHead'    => [
                     'icon'    => [
                         'title' => __('Sku'),
                         'icon'  => 'fal fa-box'
@@ -102,22 +107,36 @@ class ShowOrgStock extends OrgAction
                         ]
                     ]
                 ],
-                'tabs'                            => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => OrgStockTabsEnum::navigation()
-
                 ],
+
+                'master'      => $hasMaster,
+                'masterRoute' => $hasMaster ? [
+                    'name'       => 'grp.goods.stocks.show',
+                    'parameters' => [
+                        'stock' => $orgStock->stock->slug
+                    ]
+                ] : null,
+
+
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
                     : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
 
                 OrgStockTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgStockTabsEnum::PURCHASE_ORDERS->value ?
-                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock))
-                    : Inertia::lazy(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock))),
+                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, OrgStockTabsEnum::PURCHASE_ORDERS->value))
+                    : Inertia::lazy(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, OrgStockTabsEnum::PURCHASE_ORDERS->value))),
 
                 OrgStockTabsEnum::PRODUCTS->value => $this->tab == OrgStockTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock))),
+
+                OrgStockTabsEnum::TRADE_UNITS->value => $this->tab == OrgStockTabsEnum::TRADE_UNITS->value ?
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
+
 
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStock))
@@ -126,8 +145,9 @@ class ShowOrgStock extends OrgAction
 
             ]
         )
+            ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value))
             ->table(IndexProductsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::PRODUCTS->value))
-            ->table(IndexPurchaseOrders::make()->tableStructure($orgStock));
+            ->table(IndexPurchaseOrders::make()->tableStructure($orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value));
     }
 
 
@@ -161,7 +181,7 @@ class ShowOrgStock extends OrgAction
 
         return match ($routeName) {
             'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
-            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show' =>
+            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit', 'maya.org.warehouses.show.inventory.org_stocks.edit' =>
             array_merge(
                 (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
                 $headCrumb(
@@ -198,31 +218,6 @@ class ShowOrgStock extends OrgAction
                                 $routeParameters['orgStockFamily']->slug,
                                 $routeParameters['orgStock']->slug
                             ]
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit',
-            'maya.org.warehouses.show.inventory.org_stocks.edit' =>
-            array_merge(
-                (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $orgStock,
-                    [
-                        'index' => [
-                            'name'       => preg_replace('/\.show$/', '.index', $routeName),
-                            'parameters' => Arr::except($routeParameters, ['orgStock'])
-                        ],
-                        'model' => [
-                            'name'       => $routeName,
-                            'parameters' => $routeParameters
                         ]
                     ],
                     $suffix
@@ -282,7 +277,7 @@ class ShowOrgStock extends OrgAction
                         'organisation'   => $orgStock->organisation->slug,
                         'warehouse'      => $this->warehouse->slug,
                         'orgStockFamily' => $orgStock->orgStockFamily->slug,
-                        'orgStock'          => $orgStock->slug
+                        'orgStock'       => $orgStock->slug
                     ]
 
                 ]

@@ -10,7 +10,7 @@
   import { library } from '@fortawesome/fontawesome-svg-core'
   import { faGlobe } from '@fal'
   import { capitalize } from "@/Composables/capitalize"
-  import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+  import { PageHeadingTypes } from '@/types/PageHeading'
   import { useFormatTime } from '@/Composables/useFormatTime'
   import { trans } from 'laravel-vue-i18n'
   import Tag from '@/Components/Tag.vue'

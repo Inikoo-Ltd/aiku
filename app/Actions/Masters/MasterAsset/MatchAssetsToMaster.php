@@ -23,7 +23,7 @@ class MatchAssetsToMaster extends OrgAction
     use AsAction;
 
 
-    public function handle(Asset $asset): Asset
+    public function handle(Asset $asset, Command $command): Asset
     {
         $masterShop = $asset->shop->masterShop;
 
@@ -47,6 +47,7 @@ class MatchAssetsToMaster extends OrgAction
         );
 
         if ($asset->type == AssetTypeEnum::PRODUCT) {
+            $command->info("Updating product {$asset->product->code} to master asset");
             UpdateProduct::make()->action($asset->product, [
                 'master_product_id' => $masterAsset->id,
             ]);
@@ -76,13 +77,13 @@ class MatchAssetsToMaster extends OrgAction
         $bar->start();
 
 
-        Asset::whereNull('master_asset_id')->chunk(
+        Asset::whereNull('master_asset_id')->orderBy('id', 'desc')->chunk(
             $chunkSize,
             function ($assets) use (&$count, &$matchedCount, $bar, $command) {
                 foreach ($assets as $asset) {
                     try {
                         $hadMaster = (bool)$asset->master_asset_id;
-                        $this->handle($asset);
+                        $this->handle($asset, $command);
                         $hasNowMaster = (bool)$asset->master_asset_id;
 
                         if (!$hadMaster && $hasNowMaster) {

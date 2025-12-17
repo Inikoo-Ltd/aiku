@@ -46,7 +46,7 @@ class StoredItemRecordSearch
                     ],
                     'code'        => [
                         'label'   => $storedItem->reference,
-                        'tooltip' => __('reference')
+                        'tooltip' => __('Reference')
                     ],
                     'icon'          => [
                         'icon'  => 'fal fa-user',

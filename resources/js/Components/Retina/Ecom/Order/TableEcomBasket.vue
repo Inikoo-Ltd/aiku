@@ -127,13 +127,14 @@ const debounceUpdateQuantity = debounce(
             <div class="px-2 relative text-right w-full">
                 <div class="w-fit ml-auto">
                     <NumberWithButtonSave
-                        v-model="item.quantity_ordered"
+                        :modelValue="item.quantity_ordered"
                         @update:modelValue="(value: number) => {
-                            debounceUpdateQuantity(item.updateRoute, item.id, value)
+                            console.log('item.quantity_ordered', item.quantity_ordered, value)
+                            item.quantity_ordered != value ? debounceUpdateQuantity(item.updateRoute, item.id, value) : null
                         }"
                         :routeSubmit="item.updateRoute"
                         key-submit="quantity_ordered"
-                        xxsaveOnForm
+                        isWithRefreshModel
                         noSaveButton
                         noUndoButton
                         :min="1"

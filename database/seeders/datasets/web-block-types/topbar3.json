@@ -4,6 +4,7 @@
 	"code": "top-bar-3",
 	"name": "Topbar Awesome",
 	"component": "topbar",
+	"is_in_test" : false,
 	"fixed": true,
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"data": {

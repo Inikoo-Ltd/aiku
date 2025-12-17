@@ -9,6 +9,8 @@
 namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
@@ -16,8 +18,10 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -36,9 +40,11 @@ class UpdateOrgStock extends OrgAction
         $changes = $orgStock->getChanges();
 
         if (Arr::has($changes, 'state')) {
+            StockHydrateStateFromOrgStocks::dispatch($orgStock->id);
             OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
 
             foreach ($orgStock->tradeUnits as $tradeUnit) {
+                TradeUnitHydrateStatusFromOrgStocks::dispatch($tradeUnit);
                 TradeUnitsHydrateOrgStocks::dispatch($tradeUnit);
             }
 
@@ -65,11 +71,16 @@ class UpdateOrgStock extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'unit_cost'           => ['sometimes','numeric','min:0'],
-            'is_on_demand'        => ['sometimes','boolean'],
+            'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
+            'unit_cost'    => ['sometimes', 'numeric', 'min:0'],
+            'is_on_demand' => ['sometimes', 'boolean'],
+            'name'         => ['sometimes', 'string', 'max:255'],
+            'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+
         ];
         if (!$this->strict) {
             $rules['discontinued_in_organisation_at'] = ['sometimes', 'nullable', 'date'];
+            $rules['code']                            = ['sometimes', 'string'];
             $rules                                    = $this->noStrictUpdateRules($rules);
         }
 

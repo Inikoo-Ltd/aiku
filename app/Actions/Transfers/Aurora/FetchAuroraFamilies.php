@@ -11,7 +11,6 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Media\SaveModelImages;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -31,14 +30,9 @@ class FetchAuroraFamilies extends FetchAuroraAction
             if ($family = ProductCategory::where('source_family_id', $familyData['family']['source_family_id'])
                 ->first()) {
                 try {
-                    $shop      = $family->shop;
-                    $modelData = [];
 
-                    if ($shop->type == ShopTypeEnum::B2B) {
-                        $modelData = $familyData['family'];
-                    } elseif ($shop->type == ShopTypeEnum::DROPSHIPPING && !$family->image_id) {
-                        $modelData = Arr::only($familyData['family'], ['image', 'fetched_at', 'last_fetched_at']);
-                    }
+                    $modelData = Arr::only($familyData['family'], ['image', 'fetched_at', 'last_fetched_at']);
+
 
                     $imageData = Arr::pull($modelData, 'image');
 
@@ -51,7 +45,7 @@ class FetchAuroraFamilies extends FetchAuroraAction
                     );
 
 
-                    if (isset($imageData['image_path']) and isset($imageData['filename'])) {
+                    if (!$family->image_id  && isset($imageData['image_path']) and isset($imageData['filename'])) {
                         SaveModelImages::run(
                             model: $family,
                             mediaData: [

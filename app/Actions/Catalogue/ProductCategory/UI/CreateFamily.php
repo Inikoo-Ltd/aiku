@@ -125,11 +125,11 @@ class CreateFamily extends OrgAction
                     'blueprint' =>
                         [
                             [
-                                'title'  => __('family'),
+                                'title'  => __('Family'),
                                 'fields' => [
                                     'type' => [
                                         'type'     => 'select',
-                                        'label'    => __('type'),
+                                        'label'    => __('Type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(ProductCategoryTypeEnum::class),
                                         'value'    => ProductCategoryTypeEnum::FAMILY->value,
@@ -137,17 +137,17 @@ class CreateFamily extends OrgAction
                                     ],
                                     'code' => [
                                         'type'     => 'input',
-                                        'label'    => __('code'),
+                                        'label'    => __('Code'),
                                         'required' => true
                                     ],
                                     'name' => [
                                         'type'     => 'input',
-                                        'label'    => __('name'),
+                                        'label'    => __('Name'),
                                         'required' => true
                                     ],
                                     'description' => [
                                         'type'     => 'textarea',
-                                        'label'    => __('description'),
+                                        'label'    => __('Description'),
                                         'required' => true
                                     ],
                                     "image"         => [

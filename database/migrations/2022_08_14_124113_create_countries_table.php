@@ -16,12 +16,12 @@ return new class () extends Migration {
     {
         Schema::create('countries', function (Blueprint $table) {
             $table->smallIncrements('id');
-            $table->string('code', 2)->unique()->collation('und_ci');
-            $table->string('iso3', 3)->nullable()->index()->collation('und_ci');
+            $table->string('code', 2)->unique();
+            $table->string('iso3', 3)->nullable()->index();
             $table->string('phone_code')->nullable()->collation('und_ns');
-            $table->string('name')->collation('und_ci');
-            $table->string('continent')->collation('und_ci')->nullable();
-            $table->string('capital')->nullable()->collation('und_ci');
+            $table->string('name');
+            $table->string('continent')->nullable();
+            $table->string('capital')->nullable();
             $table->unsignedSmallInteger('timezone_id')->nullable()->comment('Timezone in capital')->index();
             $table->unsignedSmallInteger('currency_id')->nullable()->index();
             $table->string('type')->nullable()->index()->default('independent');

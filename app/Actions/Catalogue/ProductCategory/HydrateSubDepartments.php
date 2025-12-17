@@ -39,8 +39,8 @@ class HydrateSubDepartments
         ProductCategoryHydrateSales::run($productCategory);
         ProductCategoryHydrateCollections::run($productCategory);
         ProductCategoryHydrateImages::run($productCategory);
-        ProductCategoryHydrateInvoiceIntervals::run($productCategory);
-        ProductCategoryHydrateSalesIntervals::run($productCategory);
+        ProductCategoryHydrateInvoiceIntervals::run($productCategory->id);
+        ProductCategoryHydrateSalesIntervals::run($productCategory->id);
     }
 
 }

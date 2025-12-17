@@ -126,11 +126,11 @@ class IndexCustomersInPaymentAccount extends OrgAction
                             'count'       => $paymentAccount->stats->number_customers,
                 ]
                 )
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'total_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'total_amount_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'total_amount_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->defaultSort('-created_at');
         };
     }

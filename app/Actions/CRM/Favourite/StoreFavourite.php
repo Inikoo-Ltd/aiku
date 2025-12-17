@@ -56,7 +56,7 @@ class StoreFavourite extends OrgAction
 
         }
 
-        CustomerHydrateFavourites::run($customer);
+        CustomerHydrateFavourites::run($customer->id);
         ProductHydrateCustomersWhoFavourited::dispatch($product);
         ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
         return $favourite;

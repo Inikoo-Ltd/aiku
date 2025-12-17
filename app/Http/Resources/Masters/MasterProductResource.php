@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Masters;
 
 use App\Actions\Traits\HasBucketImages;
+use App\Models\Masters\MasterAsset;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Helpers\NaturalLanguage;
 use App\Actions\Traits\HasBucketAttachment;
@@ -14,7 +15,10 @@ class MasterProductResource extends JsonResource
 
     public function toArray($request): array
     {
-        $tradeUnits = $this->tradeUnits;
+        /** @var MasterAsset $masterProduct */
+        $masterProduct = $this;
+
+        $tradeUnits = $masterProduct->tradeUnits;
 
         $tradeUnits->loadMissing('ingredients');
 
@@ -23,40 +27,37 @@ class MasterProductResource extends JsonResource
         })->unique()->values()->all();
 
 
-
         return [
-            'slug'                          => $this->slug,
-            'code'                          => $this->code,
-            'name'                          => $this->name,
-            'price'                         => $this->price,
-            'currency'                      => $this->group->currency->code,
-            'description'                   => $this->description,
-            'description_title'             => $this->description_title,
-            'stock'                         => $this->stock,
-            'created_at'                    => $this->created_at,
-            'updated_at'                    => $this->updated_at,
-            'description_extra'             => $this->description_extra,
-            'units'                         => (int) $this->units,
-            'unit'                          => $this->unit,
-            'name_i8n'                      => $this->getTranslations('name_i8n'),
-            'description_i8n'               => $this->getTranslations('description_i8n'),
-            'description_title_i8n'         => $this->getTranslations('description_title_i8n'),
-            'description_extra_i8n'         => $this->getTranslations('description_extra_i8n'),
-            'marketing_ingredients'         => $ingredients,
-            'country_of_origin'             => NaturalLanguage::make()->country($this->tradeUnits()->first()?->country_of_origin),
-            'marketing_dimensions'          => NaturalLanguage::make()->dimensions($this->marketing_dimensions),
-            'marketing_ingredients'         => $this->marketing_ingredients,
-            'marketing_weight'              => NaturalLanguage::make()->weight($this->marketing_weight),
-            'gross_weight'                  => NaturalLanguage::make()->weight($this->gross_weight),
-            'cpnp_number'                   => $this->cpnp_number,
-            'ufi_number'                    => $this->ufi_number,
-            'scpn_number'                   => $this->scpn_number,
-            'hts_us'                        => $this->hts_us,
-            'un_number'                     => $this->un_number,
-            'un_class'                      => $this->un_class,
-            'packing_group'                 => $this->packing_group,
-            'proper_shipping_name'          => $this->proper_shipping_name,
-            'hazard_identification_number'  => $this->hazard_identification_number,
+            'slug'                          => $masterProduct->slug,
+            'code'                          => $masterProduct->code,
+            'name'                          => $masterProduct->name,
+            'price'                         => $masterProduct->price,
+            'currency'                      => $masterProduct->group->currency->code,
+            'description'                   => $masterProduct->description,
+            'description_title'             => $masterProduct->description_title,
+            'created_at'                    => $masterProduct->created_at,
+            'updated_at'                    => $masterProduct->updated_at,
+            'description_extra'             => $masterProduct->description_extra,
+            'units'                         => trimDecimalZeros($masterProduct->units),
+            'unit'                          => $masterProduct->unit,
+            'name_i8n'                      => $masterProduct->getTranslations('name_i8n'),
+            'description_i8n'               => $masterProduct->getTranslations('description_i8n'),
+            'description_title_i8n'         => $masterProduct->getTranslations('description_title_i8n'),
+            'description_extra_i8n'         => $masterProduct->getTranslations('description_extra_i8n'),
+            'country_of_origin'             => NaturalLanguage::make()->country($masterProduct->tradeUnits()->first()?->country_of_origin),
+            'marketing_dimensions'          => NaturalLanguage::make()->dimensions($masterProduct->marketing_dimensions),
+            'marketing_ingredients'         => $masterProduct->marketing_ingredients,
+            'marketing_weight'              => NaturalLanguage::make()->weight($masterProduct->marketing_weight),
+            'gross_weight'                  => NaturalLanguage::make()->weight($masterProduct->gross_weight),
+            'cpnp_number'                   => $masterProduct->cpnp_number,
+            'ufi_number'                    => $masterProduct->ufi_number,
+            'scpn_number'                   => $masterProduct->scpn_number,
+            'hts_us'                        => $masterProduct->hts_us,
+            'un_number'                     => $masterProduct->un_number,
+            'un_class'                      => $masterProduct->un_class,
+            'packing_group'                 => $masterProduct->packing_group,
+            'proper_shipping_name'          => $masterProduct->proper_shipping_name,
+            'hazard_identification_number'  => $masterProduct->hazard_identification_number,
         ];
     }
 }

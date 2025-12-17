@@ -48,6 +48,7 @@ class StoreProductFromMasterProduct extends GrpAction
                     $tradeUnits = [];
                     foreach ($masterAsset->tradeUnits as $tradeUnit) {
                         $tradeUnits[$tradeUnit->id] = [
+                            'id'       => $tradeUnit->id,
                             'quantity' => $tradeUnit->pivot->quantity,
                         ];
                     }
@@ -58,8 +59,6 @@ class StoreProductFromMasterProduct extends GrpAction
                         'description'       => $masterAsset->description,
                         'description_title' => $masterAsset->description_title,
                         'description_extra' => $masterAsset->description_extra,
-
-
                         'price'             => $price,
                         'rrp'               => $rrp,
                         'unit'              => $masterAsset->unit,
@@ -104,7 +103,13 @@ class StoreProductFromMasterProduct extends GrpAction
 
                     TranslateCategoryModel::dispatch(
                         $product,
-                        Arr::only($data, ['name', 'description', 'description_title', 'description_extra'])
+                        Arr::only($data, [
+                            'unit',
+                            'name',
+                            'description',
+                            'description_title',
+                            'description_extra'
+                        ])
                     );
                 }
             }

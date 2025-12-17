@@ -61,6 +61,10 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
             'payment_policy_id' => ['sometimes', 'required', 'string'],
             'fulfillment_policy_id' => ['sometimes', 'required', 'string'],
 
+            'stock_update' => ['sometimes', 'boolean'],
+            'stock_threshold' => ['sometimes', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'numeric'],
+
             'return_accepted' => ['sometimes', 'required', 'boolean'],
             'return_payer' => ['sometimes', 'required_if:return_accepted,true'],
             'return_within' => ['sometimes', 'required_if:return_accepted,true'],

@@ -105,7 +105,7 @@ const getAvailableNoteTypes = computed(() => {
     const noteTypes = []
 
     // Use custom note types if provided, otherwise use default ones
-    console.log(props);
+    // console.log(props);
     if (props.customNoteTypes) {
         props.customNoteTypes.forEach(customType => {
             const noteContent = props.item[customType.field]
@@ -124,7 +124,7 @@ const getAvailableNoteTypes = computed(() => {
         // Default note types
         Object.entries(noteFields.value).forEach(([key, fieldName]) => {
             const noteContent = props.item[fieldName];
-            console.log(key);
+            // console.log(key);
             if (hasNote(noteContent)) {
                 const config = defaultNoteTypeConfigs[key] || {
                     bgColor: fallbackBgColor,

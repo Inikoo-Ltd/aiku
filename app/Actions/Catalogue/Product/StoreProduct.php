@@ -28,7 +28,6 @@ use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
-use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -57,14 +56,15 @@ class StoreProduct extends OrgAction
      */
     public function handle(Shop|ProductCategory $parent, array $modelData): Product
     {
-
-
+        data_set($modelData, 'is_for_sale', true, false);
+        data_set($modelData, 'status', ProductStatusEnum::FOR_SALE, false);
+        data_set($modelData, 'state', ProductStateEnum::ACTIVE, false);
 
         if (!Arr::has($modelData, 'unit_price')) {
             data_set($modelData, 'unit_price', Arr::get($modelData, 'price') / Arr::get($modelData, 'units', 1));
         }
 
-        $orgStocks = null;
+        $orgStocks  = null;
         $tradeUnits = null;
         if ($this->strict) {
             $tradeUnits = Arr::pull($modelData, 'trade_units', []);
@@ -72,7 +72,6 @@ class StoreProduct extends OrgAction
             //todo: remove this when total migration from aurora
             $orgStocks = Arr::pull($modelData, 'org_stocks', []);
         }
-
 
 
         data_set($modelData, 'organisation_id', $parent->organisation_id);
@@ -115,9 +114,7 @@ class StoreProduct extends OrgAction
             } else {
                 //todo: remove this when total migration from aurora
                 $product = $this->syncOrgStocksToBeDeleted($product, $orgStocks);
-
             }
-
 
 
             ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
@@ -147,7 +144,7 @@ class StoreProduct extends OrgAction
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
 
         if ($product->exclusive_for_customer_id) {
-            CustomerHydrateExclusiveProducts::dispatch($product->exclusiveForCustomer)->delay($this->hydratorsDelay);
+            CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
         $this->productHydrators($product);
@@ -201,17 +198,6 @@ class StoreProduct extends OrgAction
         return $product;
     }
 
-    // todo: delete this asap is not used
-    public function getUnitRelationshipType(array $orgStocks): ?ProductUnitRelationshipType
-    {
-        if (count($orgStocks) == 1) {
-            return ProductUnitRelationshipType::SINGLE;
-        } elseif (count($orgStocks) > 1) {
-            return ProductUnitRelationshipType::MULTIPLE;
-        }
-
-        return null;
-    }
 
     public function rules(): array
     {
@@ -273,9 +259,9 @@ class StoreProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
             'master_product_id'         => ['sometimes'],
-            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
-            'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
-            'marketing_dimensions'   => ['sometimes'],
+            'marketing_weight'          => ['sometimes', 'numeric', 'min:0'],
+            'gross_weight'              => ['sometimes', 'numeric', 'min:0'],
+            'marketing_dimensions'      => ['sometimes'],
         ];
 
         if ($this->state == ProductStateEnum::DISCONTINUED) {
@@ -285,7 +271,6 @@ class StoreProduct extends OrgAction
                 'alpha_dash',
             ];
         }
-
 
 
         if (!$this->strict) {

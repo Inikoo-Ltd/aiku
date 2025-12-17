@@ -180,7 +180,7 @@ class IndexPallets extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'customer_reference', label: __("Pallet reference (customer's), notes"), shortLabel: 'PR/N', canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'contents', label: __('Contents'), canBeHidden: false, searchable: true);
 

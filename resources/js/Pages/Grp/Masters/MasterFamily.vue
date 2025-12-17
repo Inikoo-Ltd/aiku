@@ -113,7 +113,7 @@ const showDialog = ref(false);
 
         <template #afterTitle2>
            <div class="whitespace-nowrap">
-            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon
                     :icon="faOctopusDeploy"
                     color="#4B0082"

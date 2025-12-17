@@ -2,11 +2,12 @@
 	"slug": "families-1",
 	"scope": "webpage",
 	"code": "families-1",
-	"name": "families-1",
+	"name": "families",
 	"category": "family",
 	"fixed": true,
 	"icon": ["fal", "folder"],
 	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
 	"data": {
 		"fieldValue": {}
 	}

@@ -87,7 +87,7 @@ class CreateDepartment extends OrgAction
                                 'fields' => [
                                     'type' => [
                                         'type'     => 'select',
-                                        'label'    => __('type'),
+                                        'label'    => __('Type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(ProductCategoryTypeEnum::class),
                                         'value'    => ProductCategoryTypeEnum::DEPARTMENT->value,
@@ -95,12 +95,12 @@ class CreateDepartment extends OrgAction
                                     ],
                                     'code' => [
                                         'type'     => 'input',
-                                        'label'    => __('code'),
+                                        'label'    => __('Code'),
                                         'required' => true
                                     ],
                                     'name' => [
                                         'type'     => 'input',
-                                        'label'    => __('name'),
+                                        'label'    => __('Name'),
                                         'required' => true
                                     ],
                                 ]

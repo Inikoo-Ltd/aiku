@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
+use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Mailshot\StoreMailshot;
@@ -19,7 +21,6 @@ use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
 use App\Actions\CRM\Favourite\StoreFavourite;
@@ -45,6 +46,7 @@ use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -1109,11 +1111,12 @@ test('inventory  hydrator', function () {
 
 // update balance
 test('add balance customer', function (Customer $customer) {
-    $creditTransaction = UpdateBalanceCustomer::make()->action(
+    $creditTransaction = IncreaseCreditTransactionCustomer::make()->action(
         $customer,
         [
             'amount' => 100,
             'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER->value,
+            'reason' => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER,
             'notes'  => 'test',
         ]
     );
@@ -1130,11 +1133,12 @@ test('add balance customer', function (Customer $customer) {
 })->depends('create customer');
 
 test('withdraw balance customer', function (Customer $customer) {
-    $creditTransaction = UpdateBalanceCustomer::make()->action(
+    $creditTransaction = DecreaseCreditTransactionCustomer::make()->action(
         $customer,
         [
-            'amount' => 100,
+            'amount' => -100,
             'type'   => CreditTransactionTypeEnum::MONEY_BACK->value,
+            'reason' => CreditTransactionReasonEnum::OTHER
         ]
     );
     $customer->refresh();
@@ -1150,7 +1154,8 @@ test('withdraw balance customer', function (Customer $customer) {
 
 test('Customer basket hydrator', function () {
     $customer = Customer::find(1);
-    CustomerHydrateBasket::run($customer);
+    CustomerHydrateBasket::run($customer->id);
+    $customer->refresh();
     expect($customer)->toBeInstanceOf(Customer::class)
         ->and($customer->amount_in_basket)->toEqual(0)
         ->and($customer->current_order_in_basket_id)->toBeNull();

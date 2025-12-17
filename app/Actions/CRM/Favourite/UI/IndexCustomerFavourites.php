@@ -79,7 +79,7 @@ class IndexCustomerFavourites extends OrgAction
                 'products.top_seller',
                 'products.web_images',
                 'products.slug',
-                'webpages.url',
+                'webpages.canonical_url',
         ]);
 
         return $query->defaultSort('products.code')
@@ -118,8 +118,8 @@ class IndexCustomerFavourites extends OrgAction
                 );
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true, );
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true, );
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
