@@ -554,12 +554,15 @@ const onChangeInsurance = async (val: boolean) => {
     </div>
 
     <EcomCheckoutSummary
+        :order
         :summary
         :balance
         :address_management
         :is_unable_dispatch
         :contact_address
         :currency_code="order?.currency_code"
+        :isInBasket="true"
+        :updateRoute="routes.update_route"
     />
     
     <template v-if="order">

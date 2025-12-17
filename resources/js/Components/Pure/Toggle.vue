@@ -11,6 +11,7 @@ const props = defineProps<{
     modelValue: boolean|undefined
     classes?: string
     loading?: boolean
+    disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +35,7 @@ const emit = defineEmits<{
                     : 'bg-slate-300',
             classes,
         ]"
+        :disabled
         class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
     >
         <span aria-hidden="true" :class="modelValue ? 'translate-x-6 bg-white ' : 'translate-x-0 bg-gray-50'"
