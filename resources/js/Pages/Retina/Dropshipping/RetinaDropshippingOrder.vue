@@ -53,6 +53,7 @@ import {aikuLocaleStructure} from '@/Composables/useLocaleStructure'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import {debounce} from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
+import { notify } from '@kyvg/vue3-notification'
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
 

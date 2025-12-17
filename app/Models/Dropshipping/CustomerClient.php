@@ -136,7 +136,7 @@ class CustomerClient extends Model implements Auditable
 
         static::updated(function (CustomerClient $customerClient) {
             if ($customerClient->wasChanged('status')) {
-                CustomerHydrateClients::dispatch($customerClient->customer);
+                CustomerHydrateClients::dispatch($customerClient->customer_id);
             }
             if ($customerClient->wasChanged(['company_name', 'contact_name'])) {
                 $name = $customerClient->company_name == '' ? $customerClient->contact_name : $customerClient->company_name;

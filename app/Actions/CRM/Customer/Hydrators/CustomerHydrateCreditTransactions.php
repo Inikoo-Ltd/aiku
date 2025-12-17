@@ -22,13 +22,23 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
     use WithActionUpdate;
 
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customer->id;
+        return $customerId ?? 'empty';
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats          = [
             'number_credit_transactions' => $customer->creditTransactions()->count(),
         ];
@@ -37,6 +47,8 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
         $creditTransactions = $customer->creditTransactions()
         ->orderBy('date')
         ->get();
+
+        $modelData = [];
 
         /** @var CreditTransaction $creditTransaction */
         foreach ($creditTransactions as $creditTransaction) {

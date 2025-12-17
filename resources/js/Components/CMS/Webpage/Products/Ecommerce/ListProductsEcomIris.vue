@@ -409,7 +409,7 @@ watch(
 </script>
 
 <template>
-    <div id="products-1-ecom">
+    <div id="list-products-ecom-iris" class="">
         <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />

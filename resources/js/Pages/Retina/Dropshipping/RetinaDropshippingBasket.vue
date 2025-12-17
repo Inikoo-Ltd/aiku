@@ -421,6 +421,7 @@ const onChangeInsurance = async (val: boolean) => {
         :address_management
         :updateOrderRoute="routes?.update_route"
         :is_unable_dispatch
+        :order="data.data"
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"

@@ -78,7 +78,7 @@ const toggleBackInStock = () =>
 </script>
 
 <template>
-    <div class="pb-3 relative flex flex-col h-full" comp="product-2-render-ecom">
+    <div id="products-2-render" class="pb-3 relative flex flex-col h-full" comp="product-2-render-ecom">
         <div class="text-gray-800 isolate flex flex-col h-full">
 
             <!-- TOP AREA (GROWS) -->
@@ -92,7 +92,10 @@ const toggleBackInStock = () =>
                     @start="idxSlideLoading = true" @finish="idxSlideLoading = false">
                     <slot name="image" :product="product">
                         <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery"
-                            :alt="product.name" style="object-fit:contain" />
+                            :alt="product.name" :style="{
+                                objectFit: 'contain',
+                                opacity: product.stock <= 0 ? 0.4 : 1
+                            }" />
 
                         <FontAwesomeIcon v-else icon="fal fa-image"
                             class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
@@ -106,16 +109,16 @@ const toggleBackInStock = () =>
                                 class="
                                     w-full 
                                     bg-white/95 text-gray-900
-                                    text-xs sm:text-sm md:text-xl
+                                    text-xs sm:text-sm md:text-sm
                                     font-semibold md:font-bold
                                     tracking-wide uppercase
-                                    py-1.5 sm:py-2
+                                    py-1 sm:py-1
                                     text-center
                                     shadow-sm md:shadow-md
                                     backdrop-blur-sm
                                 "
                             >
-                                Out of Stock
+                                {{ trans("Out of Stock") }}
                             </div>
                         </div>
                     </slot>
@@ -163,7 +166,7 @@ const toggleBackInStock = () =>
                         </span>
 
                         <span  class="text-left md:text-right text-xs break-words">
-                            RRP :
+                            {{ trans("RRP") }}:
                             {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}
                             / {{ product.unit }}
                         </span>
@@ -173,14 +176,14 @@ const toggleBackInStock = () =>
             </div>
 
             <!-- PRICE + BUTTON (FIXED AT BOTTOM) -->
-            <div  v-if="layout?.iris?.is_logged_in" class="px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
-                <div>
+            <div  v-if="layout?.iris?.is_logged_in" class="relative px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
+                <div class="">
                     <div class="font-extrabold text-black text-sm">
-                        Price :
+                        {{ trans("Price") }}:
                         {{ locale.currencyFormat(currency?.code, product.price) }}
                     </div>
 
-                    <div class="mt-1">
+                    <div class="mt-1 mr-9">
                         <span class="price_per_unit">
                             ( {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}<span class="text-gray-600">/{{ product.unit }}</span> )
                         </span>
@@ -188,13 +191,19 @@ const toggleBackInStock = () =>
                 </div>
 
                 <!-- BUTTON -->
-                <div class="flex items-center justify-end">
+                <div class="absolute right-2 bottom-2 flex items-center justify-end">
                     <template v-if="layout?.iris?.is_logged_in">
                         <!-- In stock -->
-                        <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket="hasInBasket"
-                            :product="product" :addToBasketRoute="addToBasketRoute"
-                            :updateBasketQuantityRoute="updateBasketQuantityRoute" :buttonStyleHover="buttonStyleHover"
-                            :buttonStyle="buttonStyle" :icon="button?.icon"/>
+                        <NewAddToCartButton
+                            v-if="product.stock > 0 && basketButton"
+                            :hasInBasket="hasInBasket"
+                            :product="product"
+                            :addToBasketRoute="addToBasketRoute"
+                            :updateBasketQuantityRoute="updateBasketQuantityRoute"
+                            :buttonStyleHover="buttonStyleHover"
+                            :buttonStyle="buttonStyle"
+                            :icon="button?.icon"
+                        />
 
                         <!-- Back in stock notify -->
                         <button v-else-if="layout?.app?.environment === 'local'" @click.prevent="toggleBackInStock"

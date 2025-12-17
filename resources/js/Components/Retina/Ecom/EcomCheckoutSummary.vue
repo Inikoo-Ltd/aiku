@@ -15,6 +15,7 @@ import { get, set } from "lodash"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 const props = defineProps<{
     summary: {
@@ -110,40 +111,8 @@ const updateCollection = (value: boolean) => {
 <template>
     <div class="py-4 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 px-4">
         <div class="col-span-2 grid grid-cols-2 gap-y-4">
-            <div class="col-span-2 border-b border-gray-300">
-                <!-- Field: weight -->
-                <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                    <dt v-tooltip="trans('Weight')" class="flex-none pl-1">
-                        <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-500" />
-                    </dt>
-                    <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
-                        {{ summary?.order_properties?.weight || 0 }}
-                    </dd>
-                </dl>
-
-                
-                <!-- Field: Collection (toggle) -->
-                <dl class="mt-1 mb-2 flex items-center w-full flex-none gap-x-1.5">
-                    <dt v-tooltip="trans('Collection')" class="flex-none pl-1">
-                        <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
-                    </dt>
-                    <dd class="text-gray-500 flex items-center gap-x-2" xv-tooltip="trans('Estimated weight of all products')">
-                        <Toggle
-                            :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
-                            @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
-                            :loading="isLoadingCollection"
-                            disabled
-                        />
-                        <span class="text-sm"
-                            :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
-                        >{{ trans("Collection") }}</span>
-                    </dd>
-                </dl>
-
-            </div>
-
             <!-- Section: Billing Address -->
-            <div v-if="!get(props.order, ['is_collection'], false)" class="">
+            <div class="">
                 <div class="font-semibold">
                     <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
                     {{ trans("Billing Address") }}
@@ -157,24 +126,47 @@ const updateCollection = (value: boolean) => {
             </div>
             
             <!-- Section: Delivery Address -->
-            <div v-if="!get(props.order, ['is_collection'], false)" class="">
-                <div class="font-semibold">
-                    <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Delivery Address") }}
-                </div>
-                <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
-                </div>
-                <div v-else class="text-gray-400 italic pl-6 pr-3">
-                    {{ trans("No delivery address") }}
-                </div>
-                <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
-                    class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
-                    {{ trans("Edit") }}
-                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
-                </div>
-            
-                <div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
-                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+            <div>
+                <!-- Field: Collection (toggle) -->
+                <dl class="mt-1 mb-2 flex items-center w-full flex-none gap-x-1.5">
+                    <dt v-tooltip="trans('Collection')" class="flex-none">
+                        <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
+                    </dt>
+                    <dd class="text-gray-500 flex items-center gap-x-2" xv-tooltip="trans('Estimated weight of all products')">
+                        <Toggle
+                            :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
+                            @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
+                            :loading="isLoadingCollection"
+                            :disabled="!props.isInBasket"
+                        />
+                        <span class="text-sm"
+                            :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
+                        >
+                            {{ trans("Collection") }}
+                            <InformationIcon :information="trans('Select this if you want to come to our premisses to collect the order')" class="align-middle" />
+                        </span>
+                    </dd>
+                </dl>
+
+                <div v-if="!get(props.order, ['is_collection'], false)" class="">
+                    <div class="font-semibold">
+                        <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
+                        {{ trans("Delivery Address") }}
+                    </div>
+                    <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
+                    </div>
+                    <div v-else class="text-gray-400 italic pl-6 pr-3">
+                        {{ trans("No delivery address") }}
+                    </div>
+                    <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
+                        class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
+                        {{ trans("Edit") }}
+                        <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
+                    </div>
+                
+                    <div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+                    </div>
                 </div>
             </div>
 
@@ -256,7 +248,18 @@ const updateCollection = (value: boolean) => {
                 </div>
             </template>
 
-            
+            <div>
+                <!-- Field: weight -->
+                <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                    <dt v-tooltip="trans('Weight')" class="flex-none pl-1">
+                        <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-500" />
+                    </dt>
+                    <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
+                        {{ summary?.order_properties?.weight || 0 }}
+                    </dd>
+                </dl>
+            </div>
+
             <div class="border border-gray-200 p-2 rounded">
                 <OrderSummary
                     :order_summary="summary.order_summary"

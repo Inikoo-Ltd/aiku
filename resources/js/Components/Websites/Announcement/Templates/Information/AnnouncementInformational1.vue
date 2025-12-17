@@ -8,7 +8,7 @@ import { ref } from "vue"
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { uniqueId } from "lodash-es"
 
-import { inject } from "vue";
+import { inject, computed, onMounted, onUnmounted } from "vue";
 library.add(faTimes)
 
 const props = defineProps<{
@@ -38,7 +38,7 @@ const props = defineProps<{
 }>()
 
 const emits = defineEmits<{
-    (e: 'templateClicked',  template: typeof componentDefaultData): void
+    (e: 'templateClicked', template: typeof componentDefaultData): void
 }>()
 
 const _text_1 = ref(null)
@@ -55,7 +55,7 @@ const fieldSideEditor = [
         replaceForm: [
             {
                 key: ["background"],
-                label : "Background",
+                label: "Background",
                 type: "background",
             },
             {
@@ -64,27 +64,27 @@ const fieldSideEditor = [
             },
             {
                 key: ["margin"],
-                label : "Margin",
+                label: "Margin",
                 type: "margin",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
             {
                 key: ["padding"],
-                label : "Padding",
+                label: "Padding",
                 type: "padding",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
             {
                 key: ["border"],
-                label : "Border",
+                label: "Border",
                 type: "border",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
             {
                 key: ["dimension"],
-                label:"Dimension",
+                label: "Dimension",
                 type: "dimension",
-                useIn : ["desktop", "tablet", "mobile"],
+                useIn: ["desktop", "tablet", "mobile"],
             },
         ]
     },
@@ -132,10 +132,10 @@ const fieldSideEditor = [
                 label: "Gap between texts",
                 key: ["gap"],
                 type: "number",
-                props_data : {
-                    suffix : 'px'
+                props_data: {
+                    suffix: 'px'
                 }
-			},
+            },
         ]
     },
 ]
@@ -270,10 +270,44 @@ const componentDefaultData = {
 
 const openFieldWorkshop = inject('openFieldWorkshop', ref<number | null>(null))
 const onClickOpenFieldWorkshop = (index?: number) => {
-    if(openFieldWorkshop && index) {
+    if (openFieldWorkshop && index) {
         openFieldWorkshop.value = index
     }
 }
+
+const activeIndex = ref(0)
+let intervalId: number | null = null
+
+const isMobile = computed(() => {
+    return window.innerWidth < 768
+})
+
+const texts = computed(() => {
+    return props.announcementData?.fields?.text_transition_data?.multi_text ?? []
+})
+
+const startCarousel = () => {
+    if (!isMobile.value || texts.value.length <= 1) return
+
+    intervalId = window.setInterval(() => {
+        activeIndex.value = (activeIndex.value + 1) % texts.value.length
+    }, 5000)
+}
+
+const stopCarousel = () => {
+    if (intervalId) {
+        clearInterval(intervalId)
+        intervalId = null
+    }
+}
+
+onMounted(() => {
+    startCarousel()
+})
+
+onUnmounted(() => {
+    stopCarousel()
+})
 
 defineExpose({
     fieldSideEditor
@@ -281,30 +315,29 @@ defineExpose({
 </script>
 
 <template>
-    <div
-        v-if="!isToSelectOnly"
-        :style="getStyles(announcementData?.container_properties)"
-    >
-        <div @click="() => onClickOpenFieldWorkshop(1)" class="flex justify-center announcement-component-editable">
-            <div v-for="(abc, idx) in announcementData?.fields?.text_transition_data?.multi_text"
-                :key="abc.title"
-                class="flex gap-x-2 items-center transition-all"
-                :class="idx + 1 < announcementData?.fields?.text_transition_data?.multi_text?.length ? 'border-r border-black/20' : ''"
-                :style="{
+    <div v-if="!isToSelectOnly" :style="getStyles(announcementData?.container_properties)">
+        <div @click="() => onClickOpenFieldWorkshop(1)"
+            class="flex justify-center announcement-component-editable overflow-hidden">
+            <!-- MOBILE : Carousel -->
+            <div v-if="isMobile" class="flex items-center transition-all duration-500">
+                <FontAwesomeIcon v-if="texts[activeIndex]?.icon" :icon="texts[activeIndex].icon"
+                    class="opacity-50 mr-2" />
+                <span v-html="texts[activeIndex]?.text"></span>
+            </div>
+
+            <!-- DESKTOP & TABLET : Normal layout -->
+            <div v-else v-for="(abc, idx) in texts" :key="idx" class="flex gap-x-2 items-center transition-all"
+                :class="idx + 1 < texts.length ? 'border-r border-black/20' : ''" :style="{
                     paddingLeft: announcementData?.fields?.text_transition_data?.gap + 'px',
                     paddingRight: announcementData?.fields?.text_transition_data?.gap + 'px',
-                }"
-            >
+                }">
                 <FontAwesomeIcon v-if="abc.icon" :icon="abc.icon" class="opacity-50" />
-                <span class="" v-html="abc.text"></span>
+                <span v-html="abc.text"></span>
             </div>
         </div>
     </div>
 
-    <div
-        v-else @click="() => emits('templateClicked', componentDefaultData)"
-        class="inset-0 absolute"
-    >
+    <div v-else @click="() => emits('templateClicked', componentDefaultData)" class="inset-0 absolute">
     </div>
 
 </template>

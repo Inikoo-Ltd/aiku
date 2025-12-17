@@ -19,13 +19,23 @@ class CustomerHydratePortfolios implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customer->id;
+        return $customerId ?? 'empty';
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats = [
             'number_portfolios'         => DB::table('portfolios')->where('customer_id', $customer->id)->count(),
             'number_current_portfolios' => DB::table('portfolios')->where('customer_id', $customer->id)->where('status', true)->count(),

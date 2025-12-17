@@ -23,13 +23,23 @@ class CustomerHydrateInvoices implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateInvoices;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customer->id;
+        return $customerId ?? 'empty';
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats = $this->getInvoicesStats($customer);
 
         $updateData['trade_state'] = match ($stats['number_invoices']) {
@@ -43,8 +53,8 @@ class CustomerHydrateInvoices implements ShouldBeUnique
             field: 'type',
             enum: InvoiceTypeEnum::class,
             models: Invoice::class,
-            where: function ($q) use ($customer) {
-                $q->where('customer_id', $customer->id);
+            where: function ($q) use ($customerId) {
+                $q->where('customer_id', $customerId);
             }
         ));
 

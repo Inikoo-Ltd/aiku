@@ -98,6 +98,8 @@ const locale = inject("locale", aikuLocaleStructure)
         <EcomCheckoutSummary
             :summary
             :balance
+            :order="order"
+            isInBasket
         />
 
         <!-- If 'Total' is 0 or less -->
