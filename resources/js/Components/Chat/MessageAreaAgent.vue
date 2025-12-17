@@ -12,7 +12,7 @@ import {
 	faHistory,
 	faAddressCard,
 	faExchange,
-	faTags,
+	faMessage,
 } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
@@ -29,8 +29,7 @@ const emit = defineEmits<{
 	(e: "close-session"): void
 	(e: "view-history"): void
 	(e: "view-user-profile"): void
-	(e: "transfer-chat"): void
-	(e: "update-priority"): void
+	(e: "view-message-details"): void
 }>()
 
 const newMessage = ref("")
@@ -248,13 +247,9 @@ const onViewUserProfile = () => {
 	emit("view-user-profile", slug)
 }
 
-const onTransferChat = () => {
+const onViewMessageDetails = () => {
 	isMenuOpen.value = false
-	emit("transfer-chat")
-}
-const onUpdatePriority = () => {
-	isMenuOpen.value = false
-	emit("update-priority")
+	emit("view-message-details")
 }
 
 const initWebSocket = () => {
@@ -413,20 +408,10 @@ onUnmounted(() => {
 					<div
 						class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
 						<FontAwesomeIcon
-							:icon="faExchange"
+							:icon="faMessage"
 							class="text-base text-gray-400 group-hover:text-blue-500" />
-						<button @click="onTransferChat" class="w-full text-left">
-							{{ trans("Transfer Chat To Another Agent") }}
-						</button>
-					</div>
-
-					<div
-						class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-100 group">
-						<FontAwesomeIcon
-							:icon="faTags"
-							class="text-base text-gray-400 group-hover:text-blue-500" />
-						<button @click="onUpdatePriority" class="w-full text-left">
-							{{ trans("Update Label Priority") }}
+						<button @click="onViewMessageDetails" class="w-full text-left">
+							{{ trans("Message Details") }}
 						</button>
 					</div>
 				</div>

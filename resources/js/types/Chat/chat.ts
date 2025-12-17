@@ -23,7 +23,10 @@ export interface SessionAPI {
 	priority: string
 	customer: boolean
 	last_message?: LastMessage
-	assigned_agent?: any | null
+	assigned_agent?: {
+		id: string
+		name: string
+	}
 	unread_count: number
 	message_count: number
 	duration: string
@@ -99,6 +102,10 @@ export interface Contact {
 		email: string
 		phone: string
 	} | null
+	agent?: {
+		id: string
+		name: string
+	}
 }
 
 export interface ChatMessage {

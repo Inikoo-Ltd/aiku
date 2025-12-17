@@ -6,7 +6,6 @@ import { capitalize } from "@/Composables/capitalize"
 import { Contact, SessionAPI, ChatMessage } from "@/types/Chat/chat"
 import MessageAreaAgent from "@/Components/Chat/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
-import { notify } from "@kyvg/vue3-notification"
 import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
 
 const layout: any = inject("layout", {})
@@ -21,7 +20,7 @@ const isAssigning = ref<Record<string, boolean>>({})
 const errorPerContact = ref<Record<string, string>>({})
 
 const sidePanelVisible = ref(false)
-const sidePanelInitialTab = ref<"history" | "profile">("history")
+const sidePanelInitialTab = ref<"history" | "profile" | "message-details">("history")
 
 const showHistoryPanel = () => {
 	sidePanelInitialTab.value = "history"
@@ -31,6 +30,11 @@ const showProfilePanel = () => {
 	sidePanelInitialTab.value = "profile"
 	sidePanelVisible.value = true
 }
+const showMessageDetailsPanel = () => {
+	sidePanelInitialTab.value = "message-details"
+	sidePanelVisible.value = true
+}
+
 const closeSidePanel = () => {
 	sidePanelVisible.value = false
 }
@@ -63,6 +67,7 @@ const reloadContacts = async () => {
 				webUser: s.web_user,
 				priority: s.priority,
 				guest_profile: s.guest_profile,
+				agent: s.assigned_agent,
 			})
 		)
 	} catch (e) {
@@ -132,6 +137,7 @@ const openChat = (c: Contact) => {
 		priority: c.priority,
 		web_user: c.webUser,
 		guest_profile: c.guest_profile,
+		assigned_agent: c.agent,
 	} as SessionAPI
 	messages.value = c.messages ?? []
 }
@@ -343,7 +349,8 @@ const formatLastMessage = (msg: string) => {
 						@send-message="handleSendMessage"
 						@close-session="closeSession"
 						@view-history="showHistoryPanel"
-						@view-user-profile="showProfilePanel" />
+						@view-user-profile="showProfilePanel"
+						@view-message-details="showMessageDetailsPanel" />
 				</div>
 			</div>
 		</div>

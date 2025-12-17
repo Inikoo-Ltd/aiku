@@ -372,10 +372,32 @@ onMounted(() => {
 				</div>
 			</template>
 
-			<!-- Loading indicator saat messages loading -->
 			<div v-if="activeMenu === 'chat' && loading" class="flex justify-center py-4">
 				<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
 			</div>
+		</div>
+
+		<div
+			v-if="activeMenu === 'chat' && isLoggedIn && messages.length === 0"
+			class="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500 bg-gray-50">
+			<div class="mb-4">
+				<svg
+					class="w-16 h-16 mx-auto text-gray-300"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="1"
+						d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+				</svg>
+			</div>
+
+			<h3 class="text-lg font-medium mb-2">{{ trans("No messages yet") }}</h3>
+			<p class="text-sm mb-4">
+				{{ trans("Start the conversation by sending a message") }}
+			</p>
 		</div>
 
 		<div v-if="activeMenu === 'chat' && isRating">
@@ -411,7 +433,7 @@ onMounted(() => {
 		<div v-if="activeMenu === 'chat' && !isRating">
 			<div
 				v-if="!isLoggedIn && !guestProfileSubmitted"
-				class="border-t border-gray-200 bg-white p-4">
+				class="flex-1 flex flex-col items-center justify-center border-gray-200 bg-white p-4">
 				<GuestProfileForm
 					:sessionUlid="session?.ulid"
 					@submitted="onGuestProfileSubmitted" />
@@ -438,7 +460,6 @@ onMounted(() => {
 			</div>
 		</div>
 
-		<!-- Session Info (debug) -->
 		<div v-if="false" class="text-xs text-gray-500 p-2 border-t border-gray-100 bg-gray-50">
 			<div v-if="session">Session: {{ session.ulid?.substring(0, 12) }}...</div>
 			<div v-else>No active session</div>

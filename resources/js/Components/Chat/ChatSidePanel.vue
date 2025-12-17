@@ -4,15 +4,26 @@ import { trans } from "laravel-vue-i18n"
 import { Link } from "@inertiajs/vue3"
 import axios from "axios"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
+import Button from "../Elements/Buttons/Button.vue"
 import type { SessionAPI } from "@/types/Chat/chat"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faClose, faUser } from "@fortawesome/free-solid-svg-icons"
+import {
+	faUser,
+	faClose,
+	faSync,
+	faAngleUp,
+	faAngleDown,
+	faAngleDoubleUp,
+	faEquals,
+	faEnvelopeCircleCheck,
+	faHourglassHalf,
+} from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
 import AlertMessage from "@/Components/Utils/AlertMessage.vue"
 
 const props = defineProps<{
 	session: SessionAPI | null
-	initialTab?: "history" | "profile"
+	initialTab?: "history" | "profile" | "message-details"
 }>()
 
 const selectedHistory = ref<{
@@ -29,20 +40,20 @@ const emit = defineEmits<{
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
-const activeTab = ref<"history" | "profile">(props.initialTab ?? "history")
-const userProfile = ref<any | null>(null)
+const activeTab = ref<"history" | "profile" | "message-details">(props.initialTab ?? "history")
 const syncEmail = ref(props.session?.guest_profile?.email || "")
-const syncEmailAlert = ref<{
+const alert = ref<{
 	status: string
 	title?: string
 	description?: string
 } | null>(null)
 const isSyncing = ref(false)
-
+const isUpdatingPriority = ref(false)
+const currentPriority = ref(props.session?.priority || "")
 const isLoadingHistory = ref(false)
 const historyError = ref<string | null>(null)
 const userSessions = ref<SessionAPI[]>([])
-
+const isEditingPriority = ref(false)
 const loadUserSessions = async () => {
 	if (!props.session?.web_user?.id) return
 	try {
@@ -57,27 +68,72 @@ const loadUserSessions = async () => {
 	}
 }
 
+const priorityClass = (p?: string) => {
+	const key = String(p || "").toLowerCase()
+	switch (key) {
+		case "low":
+			return "bg-blue-50 border-blue-500 text-blue-500"
+		case "normal":
+			return "bg-gray-50 border-gray-400 text-gray-400"
+		case "high":
+			return "bg-yellow-50 border-yellow-500 text-yellow-500"
+		case "urgent":
+			return "bg-red-50 border-red-500 text-red-500"
+		default:
+			return "bg-gray-50 border-gray-300 text-gray-300"
+	}
+}
+
+const statusClass = (p?: string) => {
+	const key = String(p || "").toLowerCase()
+	switch (key) {
+		case "waiting":
+			return "bg-yellow-50 border-yellow-500 text-yellow-500"
+		case "active":
+			return "bg-green-50 border-green-400 text-green-400"
+		case "closed":
+			return "bg-red-50 border-red-500 text-red-500"
+		default:
+			return "bg-gray-50 border-gray-300 text-gray-300"
+	}
+}
+
+const priorityIcon = (p?: string) => {
+	const key = String(p || "").toLowerCase()
+	switch (key) {
+		case "urgent":
+			return faAngleDoubleUp
+		case "high":
+			return faAngleUp
+		case "normal":
+			return faEquals
+		case "low":
+			return faAngleDown
+		default:
+			return faEquals
+	}
+}
+
+const statusIcon = (p?: string) => {
+	const key = String(p || "").toLowerCase()
+	switch (key) {
+		case "waiting":
+			return faHourglassHalf
+		case "active":
+			return faEnvelopeCircleCheck
+		case "closed":
+			return faClose
+		default:
+			return faUser
+	}
+}
+const priorityOptions = ["urgent", "high", "normal", "low"]
 const displayName = computed(() => {
 	return props.session?.contact_name || props.session?.guest_identifier || ""
 })
 const avatarUrl = computed(() => {
 	return `https://i.pravatar.cc/100?u=${props.session?.ulid}`
 })
-
-const fetchUserProfile = async () => {
-	userProfile.value = {
-		name: displayName.value,
-		email: props.session?.guest_profile?.email || null,
-		phone: props.session?.guest_profile?.phone || null,
-	}
-	try {
-		const slug = props.session?.web_user?.slug
-		if (slug) {
-			const res = await axios.get(`${baseUrl}/app/api/web-users/${slug}`)
-			userProfile.value = res.data?.data ?? res.data ?? userProfile.value
-		}
-	} catch (e) {}
-}
 
 const onSyncByEmail = async () => {
 	if (!syncEmail.value || !props.session?.ulid) return
@@ -89,38 +145,61 @@ const onSyncByEmail = async () => {
 				email: syncEmail.value,
 			}
 		)
-		syncEmailAlert.value = {
+		alert.value = {
 			status: "success",
 			title: "Success",
-			description: response.data.message,
+			description: response.data?.message || "Email synced",
 		}
 
 		setTimeout(() => {
-			syncEmailAlert.value = null
-			emit("close")
+			alert.value = null
+			emit("sync-success")
 		}, 3000)
-
-		emit("sync-success")
-		// emit("close")
 	} catch (e: any) {
-		syncEmailAlert.value = {
+		alert.value = {
 			status: "danger",
 			title: "Error",
 			description: e.response?.data?.message || e.message,
 		}
+		setTimeout(() => {
+			alert.value = null
+		}, 3000)
 	} finally {
 		isSyncing.value = false
 	}
 }
-
-watch(
-	() => props.session?.ulid,
-	async () => {
-		if (activeTab.value === "profile") {
-			await fetchUserProfile()
+const updatePriority = async (val: string) => {
+	if (!props.session?.ulid) return
+	try {
+		isUpdatingPriority.value = true
+		const response = await axios.put(
+			`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/update`,
+			{ priority: val }
+		)
+		currentPriority.value = val
+		alert.value = {
+			status: "success",
+			title: "Success",
+			description: response.data?.message || "Priority updated",
 		}
+		setTimeout(() => {
+			alert.value = null
+		}, 2000)
+		isEditingPriority.value = false
+		emit("sync-success")
+	} catch (e: any) {
+		alert.value = {
+			status: "danger",
+			title: "Error",
+			description: e.response?.data?.message || e.message,
+		}
+		setTimeout(() => {
+			alert.value = null
+		}, 3000)
+	} finally {
+		isUpdatingPriority.value = false
 	}
-)
+}
 
 watch(
 	() => activeTab.value,
@@ -132,9 +211,6 @@ watch(
 )
 
 onMounted(async () => {
-	if (activeTab.value === "profile") {
-		await fetchUserProfile()
-	}
 	if (activeTab.value === "history") {
 		await loadUserSessions()
 	}
@@ -199,6 +275,16 @@ onMounted(async () => {
 				@click="activeTab = 'profile'">
 				{{ trans("Profile") }}
 			</button>
+			<button
+				class="px-4 py-2"
+				:class="
+					activeTab === 'message-details'
+						? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
+						: 'text-gray-600'
+				"
+				@click="activeTab = 'message-details'">
+				{{ trans("Message Details") }}
+			</button>
 		</div>
 
 		<div class="flex-1 overflow-y-auto">
@@ -247,34 +333,38 @@ onMounted(async () => {
 					@back="selectedHistory = null" />
 			</div>
 
-			<div v-else class="p-4 space-y-3">
+			<div v-if="activeTab === 'profile'" class="p-4 space-y-3">
 				<div class="grid grid-cols-3 gap-2 items-center">
-					<div class="text-gray-500">{{ trans("Name") }}</div>
-					<div class="col-span-2 font-medium">
+					<div class="text-gray-500 text-sm">{{ trans("Name") }}</div>
+					<div class="col-span-2 text-sm">
 						{{ displayName || "-" }}
 					</div>
 				</div>
 
 				<div class="grid grid-cols-3 gap-2 items-center">
-					<div class="text-gray-500">{{ trans("Email") }}</div>
-					<div class="col-span-2 font-medium">{{ userProfile?.email || "-" }}</div>
+					<div class="text-gray-500 text-sm">{{ trans("Email") }}</div>
+					<div class="col-span-2 text-sm">
+						{{ props.session?.guest_profile?.email || "-" }}
+					</div>
 				</div>
 
 				<div class="grid grid-cols-3 gap-2 items-center">
-					<div class="text-gray-500">{{ trans("Phone") }}</div>
-					<div class="col-span-2 font-medium">{{ userProfile?.phone || "-" }}</div>
+					<div class="text-gray-500 text-sm">{{ trans("Phone") }}</div>
+					<div class="col-span-2 text-sm">
+						{{ props.session?.guest_profile?.phone || "-" }}
+					</div>
 				</div>
 
 				<div v-if="props.session?.web_user" class="grid grid-cols-3 gap-2 items-center">
-					<div class="text-gray-500">{{ trans("Organisation") }}</div>
-					<div class="col-span-2 font-medium">
-						{{ props.session?.web_user?.organisation || "-" }}
+					<div class="text-gray-500 text-sm">{{ trans("Organisation") }}</div>
+					<div class="col-span-2 text-sm">
+						{{ capitalize(props.session?.web_user?.organisation || "-") }}
 					</div>
 				</div>
 				<div v-if="props.session?.web_user" class="grid grid-cols-3 gap-2 items-center">
-					<div class="text-gray-500">{{ trans("Shop") }}</div>
-					<div class="col-span-2 font-medium">
-						{{ props.session?.web_user?.shop || "-" }}
+					<div class="text-gray-500 text-sm">{{ trans("Shop") }}</div>
+					<div class="col-span-2 text-sm">
+						{{ capitalize(props.session?.web_user?.shop || "-") }}
 					</div>
 				</div>
 
@@ -292,18 +382,73 @@ onMounted(async () => {
 						class="w-full px-3 py-2 buttonPrimary rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
 						:disabled="isSyncing || !syncEmail"
 						@click="onSyncByEmail">
+						<FontAwesomeIcon :icon="faSync" class="text-base text-white" />
 						{{ isSyncing ? trans("Syncing...") : trans("Sync by email") }}
 					</button>
 					<AlertMessage v-if="syncEmailAlert" :alert="syncEmailAlert" />
 				</div>
 				<div v-else class="pt-2 space-y-2">
-					<div class="text-xs text-gray-500">{{ trans("Click to Customer Detail") }}</div>
+					<div class="text-xs text-gray-500 mb-1">
+						{{ trans("Click to Customer Detail") }}
+					</div>
 					<Link
-						:href="`/org/${props.session.web_user.organisation_slug}/shops/${props.session.web_user.shop_slug}/crm/customers/${props.session.web_user.slug}`"
-						class="w-full px-3 py-2 buttonPrimary rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
-						as="button">
-						{{ trans("View Customer Profile") }}
+						:href="`/org/${props.session.web_user.organisation_slug}/shops/${props.session.web_user.shop_slug}/crm/customers/${props.session.web_user.slug}`">
+						<Button
+							:icon="faUser"
+							:full="true"
+							:label="trans('View Customer Profile')" />
 					</Link>
+				</div>
+			</div>
+
+			<div v-if="activeTab === 'message-details'" class="p-4 space-y-3">
+				<div class="grid grid-cols-3 gap-2 items-center">
+					<div class="text-gray-500 text-sm">{{ trans("Status") }}</div>
+					<div class="flex items-center text-sm">
+						<FontAwesomeIcon
+							:icon="statusIcon(props.session?.status)"
+							class="mr-1 text-sm"
+							:class="statusClass(props.session?.status)" />
+						{{ capitalize(props.session?.status || "") }}
+					</div>
+				</div>
+				<div class="grid grid-cols-3 gap-2 items-center">
+					<div class="text-gray-500 text-sm">{{ trans("Priority") }}</div>
+					<div
+						v-if="!isEditingPriority"
+						class="flex items-center text-sm cursor-pointer"
+						@click="isEditingPriority = true">
+						<FontAwesomeIcon
+							:icon="priorityIcon(currentPriority)"
+							class="mr-1 text-sm"
+							:class="priorityClass(currentPriority)" />
+						{{ capitalize(currentPriority || "") }}
+					</div>
+					<div v-else class="flex flex-wrap items-center gap-2">
+						<button
+							v-for="opt in priorityOptions"
+							:key="opt"
+							:disabled="isUpdatingPriority"
+							class="items-center justify-center border px-2 py-0.5 rounded-sm text-[11px]"
+							:class="priorityClass(opt)"
+							@click="updatePriority(opt)">
+							<FontAwesomeIcon :icon="priorityIcon(opt)" class="mr-1 text-xs" />
+							{{ capitalize(opt) }}
+						</button>
+						<button
+							class="px-2 py-1 text-xs border rounded"
+							:disabled="isUpdatingPriority"
+							@click="isEditingPriority = false">
+							{{ trans("Cancel") }}
+						</button>
+					</div>
+					<AlertMessage v-if="priorityAlert" :alert="priorityAlert" />
+				</div>
+				<div class="grid grid-cols-3 gap-2 items-center">
+					<div class="text-gray-500 text-sm">{{ trans("Agent") }}</div>
+					<div class="col-span-2 font-medium text-sm">
+						{{ props.session?.assigned_agent?.name || "-" }}
+					</div>
 				</div>
 			</div>
 		</div>
