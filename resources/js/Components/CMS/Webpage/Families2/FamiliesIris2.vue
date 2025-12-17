@@ -65,7 +65,7 @@ const refreshCarousel = async (delay = 100) => {
 
 const allItems = computed(() => [
   ...(props.fieldValue?.families || []),
-  ...(props.fieldValue?.collections || [])
+/*   ...(props.fieldValue?.collections || []) */
 ])
 
 const spaceBetween = computed(() => (props.screenType === 'mobile' ? 8 : 24))
