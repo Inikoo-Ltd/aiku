@@ -28,6 +28,7 @@ use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\RemoveLostAndFoundStock;
 use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Actions\Inventory\OrgStock\DeleteOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\HydrateOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\Search\ReindexOrgStockFamilySearch;
@@ -60,6 +61,7 @@ use App\Models\Inventory\WarehouseArea;
 use Config;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -461,7 +463,7 @@ test("UI Index locations", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Locations")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "Locations")->etc()
             )
             ->has("data");
     });
@@ -482,7 +484,7 @@ test("UI Create location", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "New location")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "New location")->etc()
             )
             ->has("formData");
     });
@@ -505,7 +507,7 @@ test("UI Show location", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $location->slug)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $location->slug)->etc()
             )
             ->has("navigation")
             ->has("tabs");
@@ -530,7 +532,7 @@ test("UI Show location (showcase tab)", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $location->slug)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $location->slug)->etc()
             )
             ->has("navigation")
             ->has("tabs")
@@ -555,7 +557,7 @@ test("UI Edit location", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $location->code)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $location->code)->etc()
             )
             ->has("navigation")
             ->has("formData");
@@ -581,7 +583,7 @@ test("UI Index fulfilment locations", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Locations")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "Locations")->etc()
             )
             ->has("data");
     });
@@ -605,7 +607,7 @@ test("UI Show fulfilment location", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $location->slug)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $location->slug)->etc()
             )
             ->has("navigation")
             ->has("tabs");
@@ -628,7 +630,7 @@ test("UI Index warehouses", function () {
             ->has("breadcrumbs", 2)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $warehouse->name)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $warehouse->name)->etc()
             )
             ->has("tabs");
     });
@@ -652,7 +654,7 @@ test("UI show org stock", function (OrgStock $orgStock) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
             )
             ->has("tabs");
     });
@@ -674,7 +676,7 @@ test("UI index org stocks all", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
             )
             ->has("data");
     });
@@ -696,7 +698,7 @@ test("UI index org stocks discontinued", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
             )
             ->has("data");
     });
@@ -718,7 +720,7 @@ test("UI index org stocks abnormally", function () {
             ->has("breadcrumbs")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
             )
             ->has("data");
     });
@@ -740,7 +742,7 @@ test("UI Index warehouse areas", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'warehouse areas')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'warehouse areas')->etc()
             );
     });
 });
@@ -766,7 +768,7 @@ test("UI Show warehouse area", function () {
             ->has('tabs')
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $warehouseArea->name)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $warehouseArea->name)->etc()
             );
     });
 });
@@ -787,7 +789,7 @@ test("UI Index Org Stocks", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
             )
             ->has("data");
     });
@@ -809,7 +811,7 @@ test("UI Index Org Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
             )
             ->has("data");
     });
@@ -832,7 +834,7 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
             )
             ->has("tabs");
     });
@@ -856,7 +858,7 @@ test("UI Show Org Stock Family (tab org stocks)", function (OrgStockFamily $orgS
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
+                fn(AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
             )
             ->has("tabs");
     });
@@ -874,7 +876,7 @@ test("UI Index Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
+                fn(AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
             )
             ->has("data");
     });
@@ -891,7 +893,7 @@ test("UI Create stock family", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
             )
             ->has("formData");
     });
@@ -911,7 +913,7 @@ test("UI index inventory stored item", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Customer's SKUs")->etc()
+                fn(AssertableInertia $page) => $page->where("title", "Customer's SKUs")->etc()
             )
             ->has("tabs");
     });
@@ -961,6 +963,73 @@ test('UI get section route org warehouses index', function () {
         ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_WAREHOUSE->value)
         ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
 });
+
+
+test('delete org stock succeeds when unused', function () {
+    $stock = StoreStock::make()->action(
+        $this->group,
+        array_merge(Stock::factory()->definition(), [
+            'state' => StockStateEnum::ACTIVE
+        ])
+    );
+
+    $orgStock = StoreOrgStock::make()->action(
+        $this->organisation,
+        $stock
+    );
+
+    $id = $orgStock->id;
+
+    DeleteOrgStock::make()->action($orgStock);
+
+    expect(OrgStock::query()->whereKey($id)->exists())->toBeFalse();
+});
+
+test('delete org stock is blocked when linked to a location', function () {
+    $stock = StoreStock::make()->action(
+        $this->group,
+        array_merge(Stock::factory()->definition(), [
+            'state' => StockStateEnum::ACTIVE
+        ])
+    );
+
+    $orgStock = StoreOrgStock::make()->action(
+        $this->organisation,
+        $stock
+    );
+
+    // Create a warehouse and a location, then attach the org stock to that location
+    $warehouse = StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WH-DEL',
+        'name' => 'Warehouse for delete test',
+    ]);
+
+    $area = StoreWarehouseArea::make()->action($warehouse, [
+        'code' => 'A1',
+        'name' => 'Area 1',
+    ]);
+
+    $location = StoreLocation::make()->action(
+        $area,
+        [
+            'code' => 'L1',
+            'name' => 'Loc 1',
+        ] + Location::factory()->definition()
+    );
+
+    StoreLocationOrgStock::make()->action(
+        $orgStock,
+        $location,
+        [
+            'quantity' => 0,
+        ]
+    );
+
+    expect(function () use ($orgStock) {
+        DeleteOrgStock::make()->action($orgStock);
+    })->toThrow(HttpException::class);
+});
+
 
 test('warehouse search', function () {
     $this->artisan('search:warehouses')->assertExitCode(0);
