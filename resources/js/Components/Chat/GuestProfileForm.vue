@@ -49,25 +49,40 @@ const submit = async () => {
 <template>
 	<div class="p-4 space-y-3">
 		<div class="text-sm text-gray-700 font-medium">Please fill your details to start chat</div>
-		<div class="space-y-2">
-			<input
-				v-model="name"
-				type="text"
-				placeholder="Name"
-				class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none" />
+		<div class="space-y-3">
+			<div>
+				<label class="text-xs font-medium text-gray-700">
+					Name <span class="text-red-500">*</span>
+				</label>
+				<input
+					v-model="name"
+					type="text"
+					required
+					class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none" />
+			</div>
 
-			<input
-				v-model="email"
-				type="email"
-				placeholder="Email"
-				class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none" />
+			<div>
+				<label class="text-xs font-medium text-gray-700">
+					Email <span class="text-red-500">*</span>
+				</label>
+				<input
+					v-model="email"
+					type="email"
+					required
+					class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none" />
+			</div>
 
-			<input
-				v-model="phone"
-				type="tel"
-				placeholder="Phone"
-				class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none" />
+			<div>
+				<label class="text-xs font-medium text-gray-500">
+					Phone <span class="text-gray-400">(optional)</span>
+				</label>
+				<input
+					v-model="phone"
+					type="tel"
+					class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none" />
+			</div>
 		</div>
+
 		<div class="flex flex-col items-center justify-between gap-2">
 			<div v-if="error" class="text-xs text-red-600">{{ error }}</div>
 			<Button

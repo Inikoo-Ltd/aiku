@@ -23,7 +23,7 @@ class StoreGuestProfile
         return [
             'name'  => ['sometimes', 'required', 'string', 'max:255'],
             'email' => ['sometimes', 'required', 'string', 'max:255', 'email'],
-            'phone' => ['sometimes', 'required', 'string', 'max:50'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
             'message_text' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -84,9 +84,11 @@ class StoreGuestProfile
     {
         $name  = $data['name']  ?? '-';
         $email = $data['email'] ?? '-';
-        $phone = $data['phone'] ?? '-';
-
-        return "Guest profile submitted: Name: {$name}, Email: {$email}, Phone: {$phone}";
+        if (!empty($data['phone'])) {
+            $phone = $data['phone'] ?? '-';
+            return "Guest profile submitted: Name: {$name}, Email: {$email}, Phone: {$phone}";
+        }
+        return "Guest profile submitted: Name: {$name}, Email: {$email}";
     }
 
     public function jsonResponse($result): JsonResponse

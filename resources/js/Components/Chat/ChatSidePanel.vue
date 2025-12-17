@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, watch, computed } from "vue"
+import { ref, type Ref, inject, onMounted, watch, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { Link } from "@inertiajs/vue3"
 import axios from "axios"
@@ -20,6 +20,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
 import AlertMessage from "@/Components/Utils/AlertMessage.vue"
+
+interface AlertType {
+	status: "success" | "danger" | "warning" | "info"
+	title?: string
+	description?: string
+}
 
 const props = defineProps<{
 	session: SessionAPI | null
@@ -42,11 +48,18 @@ const baseUrl = layout?.appUrl ?? ""
 
 const activeTab = ref<"history" | "profile" | "message-details">(props.initialTab ?? "history")
 const syncEmail = ref(props.session?.guest_profile?.email || "")
-const alert = ref<{
-	status: string
-	title?: string
-	description?: string
-} | null>(null)
+const syncEmailAlert = ref<AlertType | null>(null)
+const priorityAlert = ref<AlertType | null>(null)
+
+const showAlert = (target: Ref<AlertType | null>, data: AlertType, timeout = 3000) => {
+	target.value = data
+	if (timeout > 0) {
+		setTimeout(() => {
+			target.value = null
+		}, timeout)
+	}
+}
+
 const isSyncing = ref(false)
 const isUpdatingPriority = ref(false)
 const currentPriority = ref(props.session?.priority || "")
@@ -145,24 +158,24 @@ const onSyncByEmail = async () => {
 				email: syncEmail.value,
 			}
 		)
-		alert.value = {
+		showAlert(syncEmailAlert, {
 			status: "success",
 			title: "Success",
 			description: response.data?.message || "Email synced",
-		}
+		})
 
 		setTimeout(() => {
-			alert.value = null
+			showAlert(syncEmailAlert, null)
 			emit("sync-success")
 		}, 3000)
 	} catch (e: any) {
-		alert.value = {
+		showAlert(syncEmailAlert, {
 			status: "danger",
 			title: "Error",
 			description: e.response?.data?.message || e.message,
-		}
+		})
 		setTimeout(() => {
-			alert.value = null
+			showAlert(syncEmailAlert, null)
 		}, 3000)
 	} finally {
 		isSyncing.value = false
@@ -177,24 +190,24 @@ const updatePriority = async (val: string) => {
 			{ priority: val }
 		)
 		currentPriority.value = val
-		alert.value = {
+		showAlert(priorityAlert, {
 			status: "success",
 			title: "Success",
 			description: response.data?.message || "Priority updated",
-		}
+		})
 		setTimeout(() => {
-			alert.value = null
+			showAlert(priorityAlert, null)
 		}, 2000)
 		isEditingPriority.value = false
 		emit("sync-success")
 	} catch (e: any) {
-		alert.value = {
+		showAlert(priorityAlert, {
 			status: "danger",
 			title: "Error",
 			description: e.response?.data?.message || e.message,
-		}
+		})
 		setTimeout(() => {
-			alert.value = null
+			showAlert(priorityAlert, null)
 		}, 3000)
 	} finally {
 		isUpdatingPriority.value = false
@@ -442,7 +455,6 @@ onMounted(async () => {
 							{{ trans("Cancel") }}
 						</button>
 					</div>
-					<AlertMessage v-if="priorityAlert" :alert="priorityAlert" />
 				</div>
 				<div class="grid grid-cols-3 gap-2 items-center">
 					<div class="text-gray-500 text-sm">{{ trans("Agent") }}</div>
@@ -450,6 +462,7 @@ onMounted(async () => {
 						{{ props.session?.assigned_agent?.name || "-" }}
 					</div>
 				</div>
+				<AlertMessage v-if="priorityAlert" :alert="priorityAlert" />
 			</div>
 		</div>
 	</div>

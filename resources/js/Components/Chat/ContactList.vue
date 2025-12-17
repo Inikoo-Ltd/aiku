@@ -7,6 +7,7 @@ import { Contact, SessionAPI, ChatMessage } from "@/types/Chat/chat"
 import MessageAreaAgent from "@/Components/Chat/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
 import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 const layout: any = inject("layout", {})
 
@@ -190,7 +191,6 @@ const assignToSelf = async (ulid: string) => {
 			{},
 			{ withCredentials: true }
 		)
-
 		return { success: true, data: response.data }
 	} catch (error: any) {
 		return {
@@ -283,8 +283,13 @@ const formatLastMessage = (msg: string) => {
 				<div class="overflow-y-auto h-[calc(100vh-160px)]">
 					<div v-for="c in filteredContacts" :key="c.id">
 						<div
-							class="flex items-center gap-4 px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
+							class="relative flex items-center gap-4 px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
 							@click="handleClickContact(c)">
+							<div
+								v-if="isAssigning[c.ulid]"
+								class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
+								<LoadingIcon class="w-20 h-20 text-white" />
+							</div>
 							<img :src="c.avatar" class="w-12 h-12 rounded-full object-cover" />
 							<div class="flex-1">
 								<div class="font-semibold text-gray-800">
