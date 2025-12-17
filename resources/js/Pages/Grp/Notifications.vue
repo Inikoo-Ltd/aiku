@@ -6,8 +6,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Table from '@/Components/Table/Table.vue'
 
-
-const props = defineProps<{
+defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     data: {}

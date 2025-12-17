@@ -121,7 +121,7 @@ trait IsIndexPaymentAccounts
 
             $table->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_customers', label: __('customers'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_amount_successfully_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'org_amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
 
             $table->defaultSort('code');
         };

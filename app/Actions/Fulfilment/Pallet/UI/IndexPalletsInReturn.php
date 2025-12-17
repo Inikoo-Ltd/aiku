@@ -105,7 +105,7 @@ class IndexPalletsInReturn extends OrgAction
                 ->withModelOperations($modelOperations);
             $table->column(key: 'pallet_id', label: __('Id'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
             $customersReferenceLabel = __("Pallet reference (customer's), notes");
 

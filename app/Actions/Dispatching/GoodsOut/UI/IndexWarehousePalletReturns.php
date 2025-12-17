@@ -260,7 +260,7 @@ class IndexWarehousePalletReturns extends OrgAction
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'platform_name', label: __('platform'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true);
 
             // if ($this->restriction == 'picking') {
@@ -273,22 +273,22 @@ class IndexWarehousePalletReturns extends OrgAction
             if ($this->restriction) {
                 switch ($this->restriction) {
                     case 'dispatched':
-                        $table->column(key: 'dispatched_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        $table->column(key: 'dispatched_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                         break;
                     case 'confirmed':
-                        $table->column(key: 'confirmed_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        $table->column(key: 'confirmed_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                         break;
                     case 'picking':
-                        $table->column(key: 'picking_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        $table->column(key: 'picking_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                         break;
                     case 'picked':
-                        $table->column(key: 'picked_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        $table->column(key: 'picked_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                         break;
                     case 'cancelled':
-                        $table->column(key: 'cancel_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        $table->column(key: 'cancel_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                         break;
                     default:
-                        $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 }
             }
         };

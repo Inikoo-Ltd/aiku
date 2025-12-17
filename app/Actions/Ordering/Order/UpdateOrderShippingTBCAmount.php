@@ -38,7 +38,7 @@ class UpdateOrderShippingTBCAmount extends OrgAction
         );
 
         $order->refresh();
-        CalculateOrderTotalAmounts::run($order, false);
+        CalculateOrderTotalAmounts::run(order: $order, forceRecalculate: true);
 
         return $order;
 

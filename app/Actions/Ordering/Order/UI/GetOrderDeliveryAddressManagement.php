@@ -20,7 +20,14 @@ class GetOrderDeliveryAddressManagement
 
     public function handle(Order $order, bool $isRetina = false): array
     {
-        $addresses = Collect([$order->deliveryAddress]);
+
+
+        if($order->deliveryAddress){
+            $addresses = Collect([$order->deliveryAddress]);
+        }else{
+            $addresses = Collect([]);
+        }
+
 
         $processedAddresses = $addresses->map(function ($address) {
             if (!DB::table('model_has_addresses')->where('address_id', $address->id)->where('model_type', '=', 'Customer')->exists()) {

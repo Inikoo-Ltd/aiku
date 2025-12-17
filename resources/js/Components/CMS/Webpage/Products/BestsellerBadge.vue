@@ -3,6 +3,7 @@ import { faMedal } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { getStyles } from "@/Composables/styles"
 import { ref, watch } from "vue"
+import { get } from "lodash-es"
 
 const props = defineProps<{
     data: any
@@ -22,7 +23,6 @@ const bestSeller1Layout = ref(getStyles(props.data?.bestseller1?.container?.prop
 const bestSeller2Layout = ref(getStyles(props.data?.bestseller2?.container?.properties, props.screenType, false))
 const bestSeller3Layout = ref(getStyles(props.data?.bestseller3?.container?.properties, props.screenType, false))
 
-// Watch for data changes and update styles reactively
 watch(
     () => props.data,
     () => {
@@ -41,18 +41,23 @@ watch(
     { deep: true }
 )
 </script>
-
 <template>
     <div class="absolute top-2 left-2 border border-black text-xs font-bold px-2 py-0.5 rounded z-10" :class="{
         'best-seller-1-container': props.topSeller === 1,
         'best-seller-2-container': props.topSeller === 2,
         'best-seller-3-container': props.topSeller === 3
     }">
-        <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-1" :class="{
-            'best-seller-1-icon': props.topSeller === 1,
-            'best-seller-2-icon': props.topSeller === 2,
-            'best-seller-3-icon': props.topSeller === 3
-        }" />
+        <!-- Best Seller 1 Icon -->
+        <FontAwesomeIcon v-if="props.topSeller === 1 && get(props.data, ['bestseller1', 'icon', 'use_icon'], true)" :icon="faMedal"
+            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-1-icon': props.topSeller === 1 }" />
+
+        <!-- Best Seller 2 Icon -->
+        <FontAwesomeIcon v-if="props.topSeller === 2 && get(props.data, ['bestseller2', 'icon', 'use_icon'], true)" :icon="faMedal"
+            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-2-icon': props.topSeller === 2 }" />
+
+        <!-- Best Seller 3 Icon -->
+        <FontAwesomeIcon v-if="props.topSeller === 3 && get(props.data, ['bestseller3', 'icon', 'use_icon'], true)" :icon="faMedal"
+            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-3-icon': props.topSeller === 3 }" />
         <span v-if="props.screenType !== 'mobile'" class="hidden md:inline" :class="{
             'best-seller-1-text': props.topSeller === 1,
             'best-seller-2-text': props.topSeller === 2,

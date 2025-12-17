@@ -35,7 +35,7 @@ class UpdateOrderShippingEngineAsAuto extends OrgAction
             ]
         );
 
-        CalculateOrderTotalAmounts::run($order);
+        CalculateOrderTotalAmounts::run(order: $order, forceRecalculate: true);
 
         return $order;
     }

@@ -62,7 +62,7 @@ class CreateSpace extends OrgAction
                                     'reference' => [
                                         'type'     => 'input',
                                         'required' => true,
-                                        'label'    => __('reference')
+                                        'label'    => __('Reference')
                                     ],
 
                                     'start_at'        => [

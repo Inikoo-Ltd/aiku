@@ -34,8 +34,6 @@ enum StockTabsEnum: string
     {
         return match ($this) {
             StockTabsEnum::SALES => [
-                'align' => 'right',
-                'type'  => 'icon',
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
@@ -73,8 +71,6 @@ enum StockTabsEnum: string
             ],
 
             StockTabsEnum::TRADE_UNITS => [
-                'type'  => 'icon',
-                'align' => 'right',
                 'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
             ],

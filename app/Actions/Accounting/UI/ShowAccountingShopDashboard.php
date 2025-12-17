@@ -80,7 +80,7 @@ class ShowAccountingShopDashboard extends OrgAction
 
 
                         [
-                            'name'  => __('payments'),
+                            'name'  => __('Payments'),
                             'icon'  => ['fal', 'fa-coins'],
                             'route' => [
                                 'name'       => $parent instanceof Shop ? 'grp.org.shops.show.dashboard.payments.accounting.payments.index' : 'grp.org.fulfilments.show.operations.accounting.payments.index',
@@ -92,7 +92,7 @@ class ShowAccountingShopDashboard extends OrgAction
 
                         ],
                         [
-                            'name'  => __('invoices'),
+                            'name'  => __('Invoices'),
                             'icon'  => ['fal', 'fa-file-invoice-dollar'],
                             'route' => [
                                 'name'       => $parent instanceof Shop ? 'grp.org.shops.show.dashboard.invoices.index' : 'grp.org.fulfilments.show.operations.invoices.paid_invoices.index',

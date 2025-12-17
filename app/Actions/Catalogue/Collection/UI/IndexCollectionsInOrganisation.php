@@ -88,7 +88,7 @@ class IndexCollectionsInOrganisation extends OrgAction
                 );
 
             $table
-                ->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)

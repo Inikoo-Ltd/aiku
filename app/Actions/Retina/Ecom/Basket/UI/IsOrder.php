@@ -184,6 +184,7 @@ trait IsOrder
                 'slot_name'                 => 'shipping',
                 'data'                      => [
                     'shipping_amount'     => $order->shipping_amount,
+                    'new_shipping_amount' => $order->shipping_amount,  // FE Helper
                     'engine'              => $order->shipping_engine,
                     'is_shipping_tbc'     => $order->is_shipping_tbc,
                     'shipping_tbc_amount' => $order->shipping_tbc_amount,
