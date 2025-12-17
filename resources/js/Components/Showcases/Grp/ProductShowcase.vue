@@ -198,7 +198,7 @@ const getTooltips = () => {
 
 			<span 
 				v-tooltip="getTooltips()"
-				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
 				v-on:click="editIsForSale"
 				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
 			>
