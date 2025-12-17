@@ -77,7 +77,7 @@ class IndexStoredItemsInWarehouse extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState([])
                 ->column(key: 'state', label: __('Delivery State'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('slug');

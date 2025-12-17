@@ -133,7 +133,7 @@ class IndexTimesheets extends OrgAction
                     ]
                 )
                 ->withModelOperations($modelOperations)
-                ->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true);
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true);
 
             if ($parent instanceof Organisation) {
                 $table->column(key: 'subject_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);

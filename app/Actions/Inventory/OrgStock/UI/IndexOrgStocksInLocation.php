@@ -74,7 +74,7 @@ class IndexOrgStocksInLocation extends OrgAction
             $table
                 ->defaultSort('code')
                 ->withGlobalSearch()
-                ->column(key: 'code', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'picking_priority', label: __('picking priority'), canBeHidden: false, sortable: true, searchable: true)

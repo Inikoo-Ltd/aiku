@@ -242,7 +242,7 @@ class IndexCollections extends OrgAction
                     'title'         => $title,
                     'icon'          => $icon,
                     'afterTitle'    => [
-                        'label' => '@ '.__('shop').' '.$this->shop->code,
+                        'label' => '@ '.__('Shop').' '.$this->shop->code,
                     ],
                     'iconRight'     => $iconRight,
                     'container'     => $container,

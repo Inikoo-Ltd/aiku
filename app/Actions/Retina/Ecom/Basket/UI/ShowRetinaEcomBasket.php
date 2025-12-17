@@ -58,6 +58,13 @@ class ShowRetinaEcomBasket extends RetinaAction
         $extraPacking    = $order?->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
         $insurance       = $order?->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
 
+        $isUnableDispatch = false;
+
+        if ($order && $order->deliveryAddress) {
+            $isUnableDispatch = in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? []));
+        }
+
+
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
             [
@@ -144,12 +151,12 @@ class ShowRetinaEcomBasket extends RetinaAction
                         ]
                     ],
 
-                'is_unable_dispatch' => $order && in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
+                'is_unable_dispatch' => $isUnableDispatch,
 
                 'charges' => [
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
-                    'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
-                    'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
+                    'extra_packing'    => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
+                    'insurance'        => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
 
                 'contact_address'    => $order ? AddressResource::make($order->customer->address)->getArray() : null,
