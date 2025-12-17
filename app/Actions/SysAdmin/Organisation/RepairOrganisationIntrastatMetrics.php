@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Organisation;
 
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatMetrics;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatExportMetrics;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Country;
@@ -109,7 +109,7 @@ class RepairOrganisationIntrastatMetrics
             $jobsDispatched = 0;
             foreach ($organisationPeriods as $orgPeriod) {
                 foreach ($orgPeriod['period'] as $date) {
-                    OrganisationHydrateIntrastatMetrics::dispatch($orgPeriod['organisation'], $date);
+                    OrganisationHydrateIntrastatExportMetrics::dispatch($orgPeriod['organisation'], $date);
                     $jobsDispatched++;
                 }
             }
@@ -127,7 +127,7 @@ class RepairOrganisationIntrastatMetrics
 
             foreach ($organisationPeriods as $orgPeriod) {
                 foreach ($orgPeriod['period'] as $date) {
-                    OrganisationHydrateIntrastatMetrics::run($orgPeriod['organisation'], $date);
+                    OrganisationHydrateIntrastatExportMetrics::run($orgPeriod['organisation'], $date);
                     $bar->advance();
                 }
             }
