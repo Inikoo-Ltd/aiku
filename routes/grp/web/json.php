@@ -233,4 +233,4 @@ Route::get('dashboard-custom-dates/organisation/{organisation:id}/invoice-catego
 
 Route::get('timezones', IndexTimeZones::class)->name('timezones');
 
-Route::post('beefree/authenticate', AuthenticateBeefreeAccount::class)->name('beefree.authenticate');
+Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::class)->name('beefree.authenticate');
