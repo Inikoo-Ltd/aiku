@@ -8,10 +8,8 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
-use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Accounting\PaymentAccountsResource;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -19,7 +17,6 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
-use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use Illuminate\Support\Facades\DB;
 
@@ -292,10 +289,6 @@ trait IsOrder
                 ],
                 'estimated_weight' => $estWeight,
             ],
-
-            'payments'          => PaymentsResource::collection($order->payments)->toArray(request()),
-            'payments_accounts' => PaymentAccountsResource::collection(GetShopPaymentAccounts::run($order->shop))->toArray(request()),
-
 
             'order_summary' => $orderSummary,
             'currency'      => CurrencyResource::make($order->currency)

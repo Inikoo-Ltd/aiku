@@ -204,7 +204,7 @@ class ShowOrder extends OrgAction
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
         $wrapped_actions = [];
-        $finalTimeline = $this->getOrderTimeline($order);
+        $finalTimeline   = $this->getOrderTimeline($order);
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
@@ -217,12 +217,12 @@ class ShowOrder extends OrgAction
         if ($order->state != OrderStateEnum::CANCELLED) {
             $wrapped_actions = [
                 [
-                    'type'  => 'button',
+                    'type'    => 'button',
                     'icon'    => 'fal fa-pencil',
-                    'style' => 'tertiary',
+                    'style'   => 'tertiary',
                     'tooltip' => __('Edit the order reference'),
-                    'label' => __('Edit'),
-                    'route' => [
+                    'label'   => __('Edit'),
+                    'route'   => [
                         'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                         'parameters' => array_values($request->route()->originalParameters())
                     ]
@@ -234,7 +234,7 @@ class ShowOrder extends OrgAction
             'type'  => 'button',
             'style' => 'save',
             'label' => __('Add note'),
-            'key' => 'add-note'
+            'key'   => 'add-note'
         ];
 
         $deliveryNoteRoute    = null;
@@ -268,6 +268,27 @@ class ShowOrder extends OrgAction
         }
 
 
+        $paymentAccountData = [];
+        foreach ($this->shop->paymentAccountShops as $paymentAccountShop) {
+            $paymentAccountData[] = [
+                'id'   => $paymentAccountShop->payment_account_id,
+                'name' => $paymentAccountShop->paymentAccount->name,
+            ];
+        }
+
+        $paymentsData = [];
+        foreach ($order->payments as $payment) {
+            $paymentsData[] = [
+                'id'              => $payment->id,
+                'amount'          => $payment->amount,
+                'created_at'      => $payment->created_at,
+                'payment_account' => [
+                    'type' => $payment->paymentAccount->type,
+                    'code' => $payment->paymentAccount->code,
+                    'name' => $payment->paymentAccount->name,
+                ]
+            ];
+        }
 
         return Inertia::render(
             'Org/Ordering/Order',
@@ -283,18 +304,18 @@ class ShowOrder extends OrgAction
                     'next'     => $this->getNext($order, $request),
                 ],
                 'pageHead'    => [
-                    'title'      => $order->reference,
-                    'model'      => __('Order'),
-                    'icon'       => [
+                    'title'           => $order->reference,
+                    'model'           => __('Order'),
+                    'icon'            => [
                         'icon'  => 'fal fa-shopping-cart',
                         'title' => __('Customer client')
                     ],
-                    'afterTitle' => [
+                    'afterTitle'      => [
                         'label' => $order->state->labels()[$order->state->value],
                     ],
-                    'actions'    => $actions,
+                    'actions'         => $actions,
                     'wrapped_actions' => $wrapped_actions,
-                    'platform'   => $platform ? [
+                    'platform'        => $platform ? [
                         'icon'  => $platform->imageSources(24, 24),
                         'type'  => $platform->type,
                         'title' => __('Platform :platform', ['platform' => $platform->name]),
@@ -350,6 +371,10 @@ class ShowOrder extends OrgAction
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
+
+                'payments_data'     => $paymentsData,
+                'payments_accounts' => $paymentAccountData,
+
 
                 'proforma_invoice' => [
                     'check_list'         => [
@@ -421,7 +446,7 @@ class ShowOrder extends OrgAction
 
                 'upload_excel' => [
                     'title'               => [
-                        'label'       => __('Upload product'),
+                        'label'       => __('Upload Product'),
                         'information' => __('The list of column file: code, quantity')
                     ],
                     'progressDescription' => __('Adding Products'),
@@ -429,14 +454,14 @@ class ShowOrder extends OrgAction
                         'header' => ['code', 'quantity'],
                         'rows'   => [
                             [
-                                'code'     => 'product-001',
+                                'code'     => 'Product-001',
                                 'quantity' => '1'
                             ]
                         ]
                     ],
                     'upload_spreadsheet'  => [
                         'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'channel'         => 'grp.personal.'.request()->user()->id,
                         'required_fields' => ['code', 'quantity'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)'

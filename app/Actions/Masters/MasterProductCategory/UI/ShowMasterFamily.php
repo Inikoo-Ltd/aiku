@@ -150,7 +150,7 @@ class ShowMasterFamily extends GrpAction
         ];
 
         $navigation = MasterFamilyTabsEnum::navigation();
-        if (app()->environment('production')) {
+        if (app()->environment('local')) {
             $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
                 $this->tab === MasterFamilyTabsEnum::VARIANTS->value
                 ? fn() => MasterVariantsResource::collection(
