@@ -112,7 +112,7 @@ const submitUpload = async () => {
             text: 'Route is not set yet.',
             type: 'error',
         })
-        return 
+        return
     }
     isDraggedFile.value = false
     errorMessage.value = null
@@ -132,14 +132,13 @@ const submitUpload = async () => {
                 // }
             }
         )
-        
+
         selectedFile.value = null  // Clear the selected file
         csvData.value = []  // Clear the preview table
-        
+
         idRecentUpload.value = aaa.data.id
-        // selectedEchopersonal.isShowProgress = true
         set(selectedEchopersonal, 'isShowProgress', true)
-        
+
 
     } catch (error: any) {
         console.error(error)
@@ -202,7 +201,7 @@ watch(() => selectedEchopersonal?.recentlyUploaded?.find((upload: {id: number}) 
                         text: trans('Data in table has reloaded.'),
                         type: 'success',
                     })
-                    model.value = false                    
+                    model.value = false
                 },
                 onError: (e) => {
                     // console.log('eeerr', e)
@@ -216,7 +215,7 @@ watch(() => selectedEchopersonal?.recentlyUploaded?.find((upload: {id: number}) 
             })
         }
 
-        
+
     }
 })
 
@@ -270,7 +269,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                                         </th>
                                     </tr>
                                 </thead>
-                                
+
                                 <tbody>
                                     <tr v-for="(row, rowIndex) in preview_template.rows" class="hover:bg-gray-50 border-t first:border-gray-400 border-gray-300 font-semibold">
                                         <template v-for="(column, columnIndex) in row" key="cellIndex">
@@ -347,13 +346,13 @@ const isLoadingVisitHistory = ref<string | null>(null)
                     <div v-if="errorMessage" class="mt-1 text-red-500 text-xs italic">
                         *{{ errorMessage }}
                     </div>
-                
+
                     <!-- Section: Excel preview -->
                     <Transition name="headlessui">
                         <div v-if="csvData?.length" class="text-xxs mt-3 max-w-3xl overflow-x-hidden">
                             <div class="text-sm py-1 flex justify-between">
                                 <div>{{ trans('Preview your data') }}</div>
-                                
+
                                 <!-- Hide for now -->
                                 <!-- <div v-if="additionalDataToSend?.includes('stored_items')" class="text-xxs flex items-center gap-x-1 text-gray-500 hover:text-gray-600 italic">
                                     <label for="include_stored_items" class="select-none cursor-pointer">Include stored items</label>
@@ -373,7 +372,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                                                         :class="upload_spreadsheet?.required_fields?.length ? upload_spreadsheet?.required_fields.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? 'bg-green-100' : 'bg-red-100 hover:bg-red-200' : 'bg-gray-100'"
                                                         v-tooltip="upload_spreadsheet?.required_fields?.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? trans('Correct column') : trans('This column is not match, will not be processed.') + (upload_spreadsheet?.required_fields?.length > 0 ? (' Must be one of these:') + ' ' + upload_spreadsheet?.required_fields?.join(', ') : null)"
                                                     >
-                                                        {{ header }} 
+                                                        {{ header }}
                                                         <FontAwesomeIcon v-if="upload_spreadsheet?.required_fields?.includes(header.trim().replace(/ /g,'_').toLowerCase())" icon='fas fa-check-circle' class='text-green-600' fixed-width aria-hidden='true' />
                                                         <FontAwesomeIcon v-else icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
                                                     </th>

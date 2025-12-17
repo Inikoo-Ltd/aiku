@@ -79,7 +79,7 @@ const debounceUpdateQuantity = debounce(
     <Table :resource="data" :name="tab">
         <!-- Column: Image -->
         <template #cell(image)="{ item }">
-            <div class="flex relative w-8 aspect-square overflow-hidden">
+            <div class="flex relative w-16 aspect-square overflow-hidden">
                 <Image
                     :src="item.image?.thumbnail"
                     class="w-full h-full object-contain"
