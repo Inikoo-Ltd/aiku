@@ -24,14 +24,17 @@ class GetIrisProductCategoryNavigation extends IrisAction
         $departments = DB::table('product_categories')
             ->where('type', 'department')
             ->where('shop_id', $shop->id)
-            ->where('state', ProductCategoryStateEnum::ACTIVE->value)
+            ->whereIn('state', [
+                ProductCategoryStateEnum::ACTIVE->value,
+                ProductCategoryStateEnum::DISCONTINUING->value
+            ])
             ->whereNotNull('webpage_id')
             ->whereNull('deleted_at')
             ->select('id', 'name', 'url')
             ->get();
 
         foreach ($departments as $department) {
-            $departmentUrl = '/' . $department->url;
+            $departmentUrl = '/'.$department->url;
 
             $collectionsRaw = DB::table('model_has_collections')
                 ->where('model_has_collections.model_id', $department->id)
@@ -46,23 +49,27 @@ class GetIrisProductCategoryNavigation extends IrisAction
             $collections = [];
             foreach ($collectionsRaw as $collection) {
                 $collections[] = [
-                    'id' => $collection->id,
+                    'id'   => $collection->id,
                     'name' => $collection->name,
-                    'url' => $departmentUrl . '/' . $collection->url
+                    'url'  => $departmentUrl.'/'.$collection->url
                 ];
             }
 
             $departmentData = [
-                'name' => $department->name,
-                'url' => $departmentUrl,
+                'name'            => $department->name,
+                'url'             => $departmentUrl,
                 'sub_departments' => [],
-                'collections' => $collections
+                'collections'     => $collections
             ];
 
             $subDepartments = DB::table('product_categories')
                 ->where('type', 'sub_department')
                 ->where('department_id', $department->id)
-                ->where('state', ProductCategoryStateEnum::ACTIVE->value)
+                ->whereIn('state', [
+                        ProductCategoryStateEnum::ACTIVE->value,
+                        ProductCategoryStateEnum::DISCONTINUING->value
+                    ]
+                )
                 ->whereNotNull('webpage_id')
                 ->whereNull('deleted_at')
                 ->select('id', 'name', 'url')
@@ -70,7 +77,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 ->get();
 
             foreach ($subDepartments as $subDepartment) {
-                $subDepartmentUrl = $departmentUrl . '/' . $subDepartment->url;
+                $subDepartmentUrl = $departmentUrl.'/'.$subDepartment->url;
 
                 $subCollectionsRaw = DB::table('model_has_collections')
                     ->where('model_has_collections.model_id', $subDepartment->id)
@@ -85,34 +92,38 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 $subCollections = [];
                 foreach ($subCollectionsRaw as $subCollection) {
                     $subCollections[] = [
-                        'id' => $subCollection->id,
+                        'id'   => $subCollection->id,
                         'name' => $subCollection->name,
-                        'url' => $subDepartmentUrl . '/' . $subCollection->url
+                        'url'  => $subDepartmentUrl.'/'.$subCollection->url
                     ];
                 }
 
                 $subDepartmentData = [
-                    'name' => $subDepartment->name,
-                    'url' => $subDepartmentUrl,
-                    'families' => [],
+                    'name'        => $subDepartment->name,
+                    'url'         => $subDepartmentUrl,
+                    'families'    => [],
                     'collections' => $subCollections
                 ];
 
                 $families = DB::table('product_categories')
                     ->where('type', 'family')
                     ->where('sub_department_id', $subDepartment->id)
-                    ->where('state', ProductCategoryStateEnum::ACTIVE->value)
+                    ->whereIn('state', [
+                            ProductCategoryStateEnum::ACTIVE->value,
+                            ProductCategoryStateEnum::DISCONTINUING->value
+                        ]
+                    )
                     ->whereNotNull('webpage_id')
                     ->select('id', 'name', 'url')
                     ->limit(10)
                     ->get();
 
                 foreach ($families as $family) {
-                    $familyUrl = $subDepartmentUrl . '/' . $family->url;
+                    $familyUrl = $subDepartmentUrl.'/'.$family->url;
 
                     $subDepartmentData['families'][] = [
                         'name' => $family->name,
-                        'url' => $familyUrl
+                        'url'  => $familyUrl
                     ];
                 }
 
