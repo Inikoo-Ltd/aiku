@@ -12,6 +12,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
+use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -29,10 +30,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShop extends OrgAction
 {
+    use WithCustomRangeDashboard;
     use WithDashboard;
-    use WithDashboardSettings;
-    use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
+    use WithDashboardIntervalOption;
+    use WithDashboardSettings;
     use WithTabsBox;
 
     public function handle(Shop $shop, ActionRequest $request): Response
@@ -45,11 +47,8 @@ class ShowShop extends OrgAction
             $currentTab = Arr::first(ShopDashboardSalesTableTabsEnum::values());
         }
 
+        $customRangeData = $this->setupCustomRange($userSettings, $shop);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $saved_interval = DateIntervalEnum::ALL;
-        }
 
         $tabsBox = $this->getTabsBox($shop);
 
@@ -69,7 +68,7 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => array_merge(
                         [
-                            'interval_data' => json_decode(ShopIntervalsResource::make($shop)->toJson()),
+                            'interval_data' => json_decode(ShopIntervalsResource::make($shop)->setCustomRangeData($customRangeData)->toJson()),
                             'currency_code' => $shop->currency->code,
                         ],
                         $this->getAverageClv($shop)
@@ -89,9 +88,9 @@ class ShowShop extends OrgAction
                     'type'        => 'table',
                     'current_tab' => $currentTab,
                     'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop),
-                    'charts'      => []
-                ]
+                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $customRangeData),
+                    'charts'      => [],
+                ],
             ];
         }
 
