@@ -94,7 +94,7 @@ class StoreRefund extends OrgAction
             $refund->stats()->create();
 
             if ($refund->customer_id) {
-                CustomerHydrateInvoices::dispatch($refund->customer)->delay($this->hydratorsDelay);
+                CustomerHydrateInvoices::dispatch($refund->customer_id)->delay($this->hydratorsDelay);
             }
 
             return $refund;

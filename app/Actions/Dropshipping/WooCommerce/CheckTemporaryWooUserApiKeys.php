@@ -42,7 +42,7 @@ class CheckTemporaryWooUserApiKeys extends RetinaAction
 
             $response = $this->checkConnection();
 
-            if (! Arr::get($response, 'environment')) {
+            if (! $response) {
                 throw ValidationException::withMessages(['url' => __('We can\'t access your store, make sure you already put correct store url.')]);
             }
 

@@ -188,18 +188,19 @@ class IndexPayments extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('payment'),__('payments')])
                 ->withModelOperations($modelOperations)
                 ->defaultSort('-date')
-                ->column(key: 'status', label: __('status'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'payment_account_name', label: __('Payment Account'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+                $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
+            $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
         };
     }
 

@@ -49,7 +49,7 @@ class CreateStockDelivery extends OrgAction
                                 ],
                                 'date' => [
                                     'type'  => 'date',
-                                    'label' => __('date'),
+                                    'label' => __('Date'),
                                     'value' => ''
                                 ],
                             ]

@@ -554,12 +554,15 @@ const onChangeInsurance = async (val: boolean) => {
     </div>
 
     <EcomCheckoutSummary
+        :order
         :summary
         :balance
         :address_management
         :is_unable_dispatch
         :contact_address
         :currency_code="order?.currency_code"
+        :isInBasket="true"
+        :updateRoute="routes.update_route"
     />
     
     <template v-if="order">
@@ -683,9 +686,8 @@ const onChangeInsurance = async (val: boolean) => {
                         />
                     </div>
                 </div>
-                
                 <!-- Section: button Place Order & button Checkout -->
-                <div v-if="!is_unable_dispatch" class="w-72 pt-5">
+                <div v-if="!is_unable_dispatch || order.is_collection" class="w-72 pt-5">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink

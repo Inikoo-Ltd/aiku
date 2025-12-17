@@ -90,8 +90,6 @@ class FetchAuroraStocks extends FetchAuroraAction
                 'created_at'
             ]);
             try {
-
-
                 $stock       = UpdateStock::make()->action(
                     stock: $stock,
                     modelData: $dataToUpdate,
@@ -185,7 +183,6 @@ class FetchAuroraStocks extends FetchAuroraAction
 
 
             if ($stock->state != StockStateEnum::IN_PROCESS) {
-
                 $orgStock = $this->processOrgStock($organisationSource, $stock, $stockData);
 
                 if ($orgStock) {

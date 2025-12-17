@@ -3,14 +3,12 @@
 namespace App\Actions\Accounting\SageInvoices\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Reports\WithReportsSubNavigation;
 use App\Actions\UI\Reports\IndexReports;
 use App\Http\Resources\Accounting\SageInvoiceResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
-use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -21,8 +19,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexSageInvoicesReport extends OrgAction
 {
-    use WithReportsSubNavigation;
-
     private int $records;
 
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
@@ -51,7 +47,7 @@ class IndexSageInvoicesReport extends OrgAction
 
         $queryBuilder
             ->defaultSort('-date')
-            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer'])
+            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer', 'accounting_reference'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix)
@@ -102,7 +98,7 @@ class IndexSageInvoicesReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
-                ->column(key: 'accounting_reference', label: 'Sage Ref')
+                ->column(key: 'accounting_reference', label: 'Sage Ref', sortable: true)
                 ->column(key: 'type', label: __('Type'))
                 ->column(key: 'is_credit_customer', label: __('Credit Customer'), sortable: true)
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
@@ -140,6 +136,12 @@ class IndexSageInvoicesReport extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function inReports(Organisation $organisation): int
+    {
+        return $this->handle($organisation)->total();
+    }
+
+
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -153,7 +155,6 @@ class IndexSageInvoicesReport extends OrgAction
                         'title' => __('Sage Invoices'),
                         'icon'  => 'fal fa-file-invoice'
                     ],
-                    'subNavigation' => $this->getReportsNavigation($this->organisation),
                 ],
                 'data'        => SageInvoiceResource::collection($invoices),
             ]

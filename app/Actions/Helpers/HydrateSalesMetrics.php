@@ -11,12 +11,15 @@ namespace App\Actions\Helpers;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesMetrics;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesMetrics;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateSalesMetrics;
+use App\Actions\Dropshipping\Platform\Hydrators\PlatformShopHydrateSalesMetrics;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesMetrics;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesMetrics;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatMetrics;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesMetrics;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
@@ -38,8 +41,10 @@ class HydrateSalesMetrics
         $groups = Group::all();
         $organisations = Organisation::all();
         $shops = Shop::all();
+        $dropshippingShops = Shop::where('type', 'dropshipping')->get();
         $invoiceCategories = InvoiceCategory::all();
         $platforms = Platform::all();
+        $masterShops = MasterShop::all();
 
         $today = Carbon::today('UTC');
 
@@ -62,6 +67,14 @@ class HydrateSalesMetrics
 
         foreach ($platforms as $platform) {
             PlatformHydrateSalesMetrics::dispatch($platform, $today);
+
+            foreach ($dropshippingShops as $shop) {
+                PlatformShopHydrateSalesMetrics::dispatch($platform, $shop, $today);
+            }
+        }
+
+        foreach ($masterShops as $masterShop) {
+            MasterShopHydrateSalesMetrics::dispatch($masterShop, $today);
         }
     }
 }

@@ -65,7 +65,7 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
             </Link>
         </template>
         <template #cell(number_customer_clients)="{ item: customerSalesChannel }">
-            <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
+            <Link v-if="customerSalesChannel['platform_code'] == 'manual'" :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
                 {{ customerSalesChannel["number_customer_clients"] }}
             </Link>
         </template>

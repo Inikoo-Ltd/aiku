@@ -87,6 +87,7 @@ use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
@@ -231,3 +232,5 @@ Route::get('dashboard-custom-dates/organisation/{organisation:id}/shops-sales', 
 Route::get('dashboard-custom-dates/organisation/{organisation:id}/invoice-categories-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.organisation.invoice_categories_sales');
 
 Route::get('timezones', IndexTimeZones::class)->name('timezones');
+
+Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::class)->name('beefree.authenticate');

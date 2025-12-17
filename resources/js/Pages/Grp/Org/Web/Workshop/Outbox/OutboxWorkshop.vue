@@ -38,11 +38,7 @@ const props = defineProps<{
     publishRoute: routeType
     sendTestRoute : routeType
     storeTemplateRoute: routeType
-    apiKey: {
-        client_id: string,
-        client_secret: string,
-        grant_type: string
-    }
+    organisationSlug: string
 }>()
 
 const comment = ref('')
@@ -251,8 +247,8 @@ const schedulePublish = async () =>{
         :updateRoute="updateRoute"
         :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot"
-        :apiKey="apiKey"
         :mergeTags="mergeTags"
+        :organisationSlug="organisationSlug"
         @onSave="onSendPublish"
         @sendTest="openSendTest"
         @auto-save="autoSave"

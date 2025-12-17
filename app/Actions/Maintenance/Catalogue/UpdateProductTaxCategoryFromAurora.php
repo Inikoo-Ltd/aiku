@@ -45,7 +45,7 @@ class UpdateProductTaxCategoryFromAurora
 
         $auroraProducts = DB::connection('aurora')->table('Product Dimension')->select(['Product ID', 'Product Code', 'Product Tax Category Key', 'Product Tax Category Data'])->where('Product Tax Category Data', '!=', '{}')->get();
         foreach ($auroraProducts as $auroraProduct) {
-            if($auroraProduct->{'Product Tax Category Data'} == '{}'){
+            if ($auroraProduct->{'Product Tax Category Data'} == '{}') {
                 continue;
             }
 

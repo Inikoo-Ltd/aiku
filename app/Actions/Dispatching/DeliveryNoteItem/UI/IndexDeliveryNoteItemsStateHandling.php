@@ -77,6 +77,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
 
             $table
+                ->withLabelRecord([__('delivery note'),__('delivery notes')])
                 ->withEmptyState(
                     [
                         'title' => __("delivery note empty"),

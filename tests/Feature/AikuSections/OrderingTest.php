@@ -16,6 +16,7 @@ use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
@@ -1045,4 +1046,116 @@ test('shipping zone hydrators', function () {
     $shippingZone = ShippingZone::first();
     HydrateShippingZones::run($shippingZone);
     $this->artisan('hydrate:shipping_zones')->assertExitCode(0);
+});
+
+test('order is_shipping_tbc becomes true when shipping zone price type is TBC', function () {
+    // Create an order
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    // Create a shipping zone schema and a zone with nested orders.price.type
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    $zone = StoreShippingZone::make()->action($schema, array_merge(
+        ShippingZone::factory()->definition(),
+        [
+            'price' => [
+                'type' => 'TBC',
+            ],
+        ]
+    ));
+
+    // Attach zone to order
+    $order->update(['shipping_zone_id' => $zone->id]);
+
+    // Run action
+    UpdateOrderIsShippingTBC::run($order);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeTrue();
+});
+
+test('order is_shipping_tbc becomes false when shipping zone price type is not TBC', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $zone   = StoreShippingZone::make()->action($schema, array_merge(
+        ShippingZone::factory()->definition(),
+        [
+            'price' => [
+                'orders' => [
+                    'price' => [
+                        'type' => 'FIXED',
+                    ],
+                ],
+            ],
+        ]
+    ));
+
+    $order->update(['shipping_zone_id' => $zone->id, 'is_shipping_tbc' => true]);
+
+    UpdateOrderIsShippingTBC::run($order);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeFalse();
+});
+
+test('command updates is_shipping_tbc to true for TBC zone', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'Schema A',
+    ]);
+    $zone = StoreShippingZone::make()->action($schema, [
+        'code'        => 'TBC-ZONE',
+        'name'        => 'TBC Zone',
+        'status'      => true,
+        'price'       => ['type' => 'TBC'],
+        'territories' => [],
+        'position'    => 1,
+    ]);
+
+    $order->update([
+        'shipping_zone_id' => $zone->id,
+        'shipping_engine'  => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'is_shipping_tbc'  => false,
+    ]);
+
+    \Artisan::call('order:is-shipping-tbc', ['--slug' => $order->slug]);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeTrue();
+});
+
+test('command updates is_shipping_tbc to false for non-TBC zone', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'Schema B',
+    ]);
+    $zone = StoreShippingZone::make()->action($schema, [
+        'code'        => 'FLAT-ZONE',
+        'name'        => 'Flat Zone',
+        'status'      => true,
+        'price'       => ['type' => 'Flat'],
+        'territories' => [],
+        'position'    => 1,
+    ]);
+
+    $order->update([
+        'shipping_zone_id' => $zone->id,
+        'shipping_engine'  => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'is_shipping_tbc'  => true,
+    ]);
+
+    \Artisan::call('order:is-shipping-tbc', ['--slug' => $order->slug]);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeFalse();
+});
+
+test('order is_shipping_tbc false when no shipping zone present', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    // Ensure no shipping zone is linked
+    $order->update(['shipping_zone_id' => null, 'is_shipping_tbc' => true]);
+
+    UpdateOrderIsShippingTBC::run($order);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeFalse();
 });

@@ -17,6 +17,8 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRevenue;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRfm;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\Fulfilment\FulfilmentCustomer\HydrateFulfilmentCustomer;
@@ -37,19 +39,20 @@ class HydrateCustomers
 
     public function handle(Customer $customer): void
     {
-        CustomerHydrateInvoices::run($customer);
-        CustomerHydrateWebUsers::run($customer);
-        CustomerHydrateClients::run($customer);
-        CustomerHydrateOrders::run($customer);
-        CustomerHydrateInvoices::run($customer);
+        CustomerHydrateInvoices::run($customer->id);
+        CustomerHydrateWebUsers::run($customer->id);
+        CustomerHydrateClients::run($customer->id);
+        CustomerHydrateOrders::run($customer->id);
         CustomerHydrateDeliveryNotes::run($customer->id, DeliveryNoteTypeEnum::ORDER);
         CustomerHydrateDeliveryNotes::run($customer->id, DeliveryNoteTypeEnum::REPLACEMENT);
-        CustomerHydrateTopUps::run($customer);
-        CustomerHydrateCreditTransactions::run($customer);
-        CustomerHydrateBasket::run($customer);
-        CustomerHydrateExclusiveProducts::run($customer);
+        CustomerHydrateTopUps::run($customer->id);
+        CustomerHydrateCreditTransactions::run($customer->id);
+        CustomerHydrateBasket::run($customer->id);
+        CustomerHydrateExclusiveProducts::run($customer->id);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
         CustomerHydrateClv::run($customer->id);
+        CustomerHydrateRevenue::run($customer->id);
+        CustomerHydrateRfm::run($customer->id);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);

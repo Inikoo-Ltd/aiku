@@ -270,7 +270,7 @@ class IndexFamilies extends OrgAction
                                     'type'    => 'button',
                                     'style'   => 'create',
                                     'tooltip' => __('New shop'),
-                                    'label'   => __('shop'),
+                                    'label'   => __('Shop'),
                                     'route'   => [
                                         'name'       => 'grp.org.shops.show.catalogue.families.create',
                                         'parameters' => [$parent->slug]
@@ -285,6 +285,7 @@ class IndexFamilies extends OrgAction
                         default => null
                     }
                 )
+                ->withLabelRecord([__('family'),__('families')])
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);

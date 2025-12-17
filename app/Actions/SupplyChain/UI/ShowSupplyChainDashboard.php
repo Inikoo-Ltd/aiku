@@ -41,7 +41,7 @@ class ShowSupplyChainDashboard extends GrpAction
             'SupplyChain/SupplyChainDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs(),
-                'title'        => __('supply chain'),
+                'title'        => __('Supply chain'),
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-box-usd'],
@@ -54,7 +54,7 @@ class ShowSupplyChainDashboard extends GrpAction
                     [
 
                         [
-                            'name'  => __('agents'),
+                            'name'  => __('Agents'),
                             'icon'  => ['fal', 'fa-people-arrows'],
                             'route'  => [
                                 'name' => 'grp.supply-chain.agents.index'
@@ -64,7 +64,7 @@ class ShowSupplyChainDashboard extends GrpAction
                             ],
                         ],
                         [
-                            'name'  => __('suppliers'),
+                            'name'  => __('Suppliers'),
                             'icon'  => ['fal', 'fa-person-dolly'],
                             'route'  => ['name' => 'grp.supply-chain.suppliers.index'],
                             'index' => [
@@ -91,13 +91,11 @@ class ShowSupplyChainDashboard extends GrpAction
                         'components'    => [
                             [
                                 'type'      => 'flat_tree_map',  // 'basic'
-                                // 'col_span'  => '2',
-                                // 'row_span'  => '2',
                                 'visual'    => [],
                                 'data'      => [
                                     'nodes'     => [
                                         [
-                                            'name'  => __('agents'),
+                                            'name'  => __('Agents'),
                                             'icon'  => ['fal', 'fa-people-arrows'],
                                             'route'  => [
                                                 'name' => 'grp.supply-chain.agents.index'
@@ -107,7 +105,7 @@ class ShowSupplyChainDashboard extends GrpAction
                                             ],
                                         ],
                                         [
-                                            'name'  => __('suppliers'),
+                                            'name'  => __('Suppliers'),
                                             'icon'  => ['fal', 'fa-person-dolly'],
                                             'route'  => ['name' => 'grp.supply-chain.suppliers.index'],
                                             'index' => [
@@ -117,7 +115,7 @@ class ShowSupplyChainDashboard extends GrpAction
                                         ],
                                         [
                                             'name'      => __('Supplier products'),
-                                            'shortName' => __('products'),
+                                            'shortName' => __('Products'),
                                             'icon'      => ['fal', 'fa-box-usd'],
                                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],
                                             'index'     => [

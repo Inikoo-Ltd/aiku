@@ -112,7 +112,7 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             ]
         );
 
-        CustomerHydrateTopUps::dispatch($topUpPaymentApiPoint->customer);
+        CustomerHydrateTopUps::dispatch($topUpPaymentApiPoint->customer_id);
 
         return $creditTransaction;
     }

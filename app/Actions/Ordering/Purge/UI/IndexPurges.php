@@ -107,15 +107,15 @@ class IndexPurges extends OrgAction
 
 
             $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'scheduled_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'scheduled_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
+                $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
             $table->column(key: 'estimated_number_orders', label: __('orders'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'estimated_number_transactions', label: __('transactions'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'estimated_net_amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'estimated_net_amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

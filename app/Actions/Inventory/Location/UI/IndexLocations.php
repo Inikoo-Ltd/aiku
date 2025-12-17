@@ -143,6 +143,7 @@ class IndexLocations extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('location'),__('locations')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     match (class_basename($parent)) {

@@ -80,6 +80,7 @@ class UpdateOrgStock extends OrgAction
         ];
         if (!$this->strict) {
             $rules['discontinued_in_organisation_at'] = ['sometimes', 'nullable', 'date'];
+            $rules['code']                            = ['sometimes', 'string'];
             $rules                                    = $this->noStrictUpdateRules($rules);
         }
 

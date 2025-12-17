@@ -148,6 +148,7 @@ class IndexDepartments extends OrgAction
 
             $table
                 ->defaultSort('code')
+                ->withLabelRecord([__('department'),__('departments')])
                 ->withGlobalSearch()
                 ->withEmptyState(
                     match (class_basename($parent)) {
@@ -178,7 +179,7 @@ class IndexDepartments extends OrgAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if (class_basename($parent) == 'MasterProductCategory') {
-                    $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 $table
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')

@@ -126,9 +126,9 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                 ->withEmptyState($emptyStateData);
 
             $table->column(key: 'state', label: __('Status'), sortable: true, type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
             $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: "right");
         };

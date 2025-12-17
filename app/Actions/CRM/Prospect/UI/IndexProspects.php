@@ -255,6 +255,7 @@ class IndexProspects extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
+                ->withLabelRecord([__('prospect'),__('prospects')])
                 ->withGlobalSearch();
 
             if (!($parent instanceof Group)) {

@@ -116,7 +116,6 @@ class IndexEmployees extends OrgAction
 
         return $queryBuilder
             ->defaultSort('slug')
-            // ->withBetweenDates(['employment_start_at', 'created_at', 'updated_at'])
             ->allowedSorts(['slug', 'state', 'contact_name', 'job_title', 'worker_number'])
             ->allowedFilters([$globalSearch, 'slug', 'contact_name', 'state'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -166,7 +165,7 @@ class IndexEmployees extends OrgAction
                     ]
                 );
             }
-            $table->withLabelRecord([__('Employee'),__('Employees')]);
+            $table->withLabelRecord([__('employee'),__('employees')]);
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)

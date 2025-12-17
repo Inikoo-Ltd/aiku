@@ -31,7 +31,7 @@ class UpdateBackInStockReminder extends OrgAction
         $changes = Arr::except($backInStockReminder->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (count($changes) > 0) {
-            CustomerHydrateBackInStockReminders::dispatch($backInStockReminder->customer)->delay($this->hydratorsDelay);
+            CustomerHydrateBackInStockReminders::dispatch($backInStockReminder->customer_id)->delay($this->hydratorsDelay);
             ProductHydrateCustomersWhoReminded::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
             ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
         }

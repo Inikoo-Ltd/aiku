@@ -8,21 +8,21 @@ export default {
 			replaceForm: [
 				{
 					name: "Icon",
-					key: ["icon", "text"],
+					key: ["icon"],
 					replaceForm: [
 						{
-							key: ["color"],
+							key: [ "text","color"],
 							label: "Color",
 							type: "color",
 						},
-						/* {
-							key: ["fontSize"],
-							label: "fontSize",
-							type: "number",
+						{
+							key: ["use_icon"],
+							label: "Use Icon",
+							type: "switch",
 							props_data: {
-								suffix: "px",
-							},
-						}, */
+								defaultValue: true,
+							}
+						},
 					],
 				},
 				{
@@ -67,8 +67,22 @@ export default {
 			replaceForm: [
 				{
 					name: "Icon",
-					key: ["icon", "text"],
-					type: "textProperty",
+					key: ["icon"],
+					replaceForm: [
+						{
+							key: [ "text","color"],
+							label: "Color",
+							type: "color",
+						},
+						{
+							key: ["use_icon"],
+							label: "Use Icon",
+							type: "switch",
+							props_data: {
+								defaultValue: true,
+							}
+						},
+					],
 				},
 				{
 					name: "Text",
@@ -112,8 +126,27 @@ export default {
 			replaceForm: [
 				{
 					name: "Icon",
-					key: ["icon", "text"],
-					type: "textProperty",
+					key: ["icon"],
+					replaceForm: [
+						{
+							key: [ "text","color"],
+							label: "Color",
+							type: "color",
+						},
+						{
+							key: ["use_icon"],
+							label: "Use Icon",
+							type: "switch",
+							props_data: {
+								defaultValue: true,
+							}
+						},
+					],
+				},
+				{
+					key: ["use_icon"],
+					label: "Use Icon",
+					type: "switch",
 				},
 				{
 					name: "Text",

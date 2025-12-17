@@ -590,16 +590,21 @@ trait WithWooCommerceApiRequest
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
 
-    public function checkConnection(): array|null
+    public function checkConnection(): bool
     {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
                 $this->initWooCommerceApi();
             }
 
-            return $this->makeWooCommerceRequest('GET', 'system_status');
+            $result = $this->makeWooCommerceRequest('GET', 'settings');
+
+            return count($result) > 0;
+
         } catch (\Exception $e) {
-            return [$e->getMessage()];
+            \Sentry::captureMessage($e->getMessage());
+
+            return false;
         }
     }
 

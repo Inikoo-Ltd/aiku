@@ -101,6 +101,11 @@ class MasterVariant extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
+    public function masterFamily(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
+    }
+
     public function stats(): HasOne
     {
         return $this->hasOne(MasterVariantStats::class);

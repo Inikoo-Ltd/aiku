@@ -23,13 +23,13 @@ class DownloadOrderTransactionsTemplate
     use AsAction;
     use WithAttributes;
 
-    public function handle(): BinaryFileResponse
+    public function handle(Order $order): BinaryFileResponse
     {
-        return Excel::download(new OrderTransactionTemplateExport(), 'order_transaction_templates.xlsx');
+        return Excel::download(new OrderTransactionTemplateExport($order), 'order_transaction_templates.xlsx');
     }
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, Order $order): BinaryFileResponse
     {
-        return $this->handle();
+        return $this->handle($order);
     }
 }

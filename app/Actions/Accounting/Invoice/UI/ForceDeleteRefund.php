@@ -34,7 +34,7 @@ class ForceDeleteRefund extends OrgAction
             $refund->forceDelete();
         });
         if ($refund->customer_id) {
-            CustomerHydrateInvoices::dispatch($refund->customer);
+            CustomerHydrateInvoices::dispatch($refund->customer_id);
         }
 
         return $refund;

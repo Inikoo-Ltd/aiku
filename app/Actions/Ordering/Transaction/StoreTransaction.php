@@ -34,8 +34,6 @@ class StoreTransaction extends OrgAction
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
-
-
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
 

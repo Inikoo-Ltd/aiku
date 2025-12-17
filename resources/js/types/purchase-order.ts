@@ -5,7 +5,7 @@
  */
 
 export interface PurchaseOrder {
-    slug:string,
+    slug: string,
     provider_id: string,
     provider_type: string,
     number: string
@@ -13,7 +13,9 @@ export interface PurchaseOrder {
     status: string
     created_at: string
     updated_at: string
-
-
-
+    parent_type: string
+    parent_name: string
+    parent_slug: string
+    agent_slug: string | null
+    supplier_slug: string | null
 }

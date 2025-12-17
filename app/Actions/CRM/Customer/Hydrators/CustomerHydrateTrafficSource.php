@@ -20,13 +20,22 @@ class CustomerHydrateTrafficSource implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customer->id;
+        return $customerId ?? 'empty';
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
 
         $trafficSource = $customer->trafficSource;
 

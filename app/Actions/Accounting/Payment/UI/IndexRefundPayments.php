@@ -104,12 +104,12 @@ class IndexRefundPayments extends OrgAction
                 ])
                 ->defaultSort('-date')
                 ->column(key: 'status', label: __('status'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
-                ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'payment_account_name', label: __('Payment Account'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type:'number');
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type:'number');
+            $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type:'number');
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type:'number');
         };
     }
 

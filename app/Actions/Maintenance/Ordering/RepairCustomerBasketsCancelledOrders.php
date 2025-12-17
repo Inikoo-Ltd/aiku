@@ -24,7 +24,7 @@ class RepairCustomerBasketsCancelledOrders
 
     public function handle(Order $order): void
     {
-        CustomerHydrateBasket::run($order->customer);
+        CustomerHydrateBasket::run($order->customer_id);
     }
 
 

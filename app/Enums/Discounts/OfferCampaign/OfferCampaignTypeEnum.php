@@ -19,7 +19,7 @@ enum OfferCampaignTypeEnum: string
     case FIRST_ORDER = 'first-order';
     case CUSTOMER_OFFERS = 'customer-offers';
     case SHOP_OFFERS = 'shop-offers';
-    case COLLECTION_OFFERS = 'collection-offers';
+    case CATEGORY_OFFERS = 'category-offers';
     case PRODUCT_OFFERS = 'product-offers';
     case DISCRETIONARY = 'discretionary';
 
@@ -27,28 +27,28 @@ enum OfferCampaignTypeEnum: string
     public function labels(): array
     {
         return [
-            'order-recursion'   => __('Order recursion'),
-            'volume-discount'   => __('Volume discount'),
-            'first-order'       => __('First order'),
-            'customer-offers'   => __('Customer offers'),
-            'shop-offers'       => __('Shop offers'),
-            'collection-offers' => __('Collection offers'),
-            'product-offers'    => __('Product offers'),
-            'discretionary'     => __('Discretionary discounts')
+            'order-recursion' => __('Order recursion'),
+            'volume-discount' => __('Volume discount'),
+            'first-order'     => __('First order'),
+            'customer-offers' => __('Customer offers'),
+            'shop-offers'     => __('Shop offers'),
+            'category-offers' => __('Category offers'),
+            'product-offers'  => __('Product offers'),
+            'discretionary'   => __('Discretionary discounts')
         ];
     }
 
     public function codes(): array
     {
         return [
-            'order-recursion'   => 'OR',
-            'volume-discount'   => 'VL',
-            'first-order'       => 'FO',
-            'customer-offers'   => 'CU',
-            'shop-offers'       => 'SO',
-            'collection-offers' => 'CO',
-            'product-offers'    => 'PO',
-            'discretionary'     => 'DI'
+            'order-recursion' => 'OR',
+            'volume-discount' => 'VL',
+            'first-order'     => 'FO',
+            'customer-offers' => 'CU',
+            'shop-offers'     => 'SO',
+            'category-offers' => 'CO',
+            'product-offers'  => 'PO',
+            'discretionary'   => 'DI'
         ];
     }
 

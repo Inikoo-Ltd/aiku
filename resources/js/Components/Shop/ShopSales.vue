@@ -12,7 +12,11 @@ const locale = inject("locale", aikuLocaleStructure)
 
 const refundRatio = computed(() => {
     const revenue = Number(props.data.sales_org_currency?.[props.interval].raw_value)
-    const refunds = Number(props.data.lost_revenue_other_amount?.[props.interval].raw_value)
+    let refunds = Number(props.data.lost_revenue_other_amount?.[props.interval].raw_value)
+
+    if (refunds < 0) {
+        refunds = Math.abs(refunds)
+    }
 
     return revenue > 0 ? (refunds / revenue) * 100 : 0
 })

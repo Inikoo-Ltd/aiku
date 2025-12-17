@@ -29,6 +29,10 @@ trait WithCustomRangeDashboard
             return $customRangeService->getOrganisationCustomRangeData($parent, $startDate, $endDate);
         }
 
+        if ($parent instanceof Shop) {
+            return $customRangeService->getShopCustomRangeData($parent, $startDate, $endDate);
+        }
+
         return [];
     }
 
