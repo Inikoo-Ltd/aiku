@@ -23,9 +23,9 @@ class CustomerHydrateRfm implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:customer-rfm {customer}';
 
-    public function getJobUniqueId(int $customerId): string
+    public function getJobUniqueId(int $customerId): int
     {
-        return (string) $customerId;
+        return $customerId;
     }
 
     public function asCommand(Command $command): void

@@ -22,7 +22,7 @@ class CustomerHydrateRevenue implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:customer-revenue {customer}';
 
-    public function getJobUniqueId(int $customerId): string
+    public function getJobUniqueId(int $customerId): int
     {
         return $customerId;
     }

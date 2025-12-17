@@ -19,18 +19,18 @@ class CustomerHydrateCustomerSalesChannels implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(int $customerID): string
+    public function getJobUniqueId(int $customerId): int
     {
-        return $customerID;
+        return $customerId;
     }
 
-    public function handle(int|null $customerID): void
+    public function handle(int|null $customerId): void
     {
-        if ($customerID === null) {
+        if ($customerId === null) {
             return;
         }
 
-        $customer = Customer::find($customerID);
+        $customer = Customer::find($customerId);
         if (!$customer) {
             return;
         }

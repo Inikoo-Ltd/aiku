@@ -21,9 +21,9 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
     use WithActionUpdate;
 
 
-    public function getJobUniqueId(int $customerId): string
+    public function getJobUniqueId(int $customerId): int
     {
-        return (string) $customerId;
+        return $customerId;
     }
 
     public function handle(int|null $customerId): void

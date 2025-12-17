@@ -23,7 +23,7 @@ class CustomerHydrateDeliveryNotes implements ShouldBeUnique
 
     public function getJobUniqueId(int $customerId, DeliveryNoteTypeEnum $type): string
     {
-        return $customerId.'-'.$type->value;
+        return $customerId . '-' . $type->value;
     }
 
     public function handle(int|null $customerId, DeliveryNoteTypeEnum $type): void

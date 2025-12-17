@@ -16,9 +16,9 @@ class CustomerHydrateExclusiveProducts implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(int $customerId): string
+    public function getJobUniqueId(int $customerId): int
     {
-        return (string) $customerId;
+        return $customerId;
     }
 
     public function handle(int|null $customerId): void
