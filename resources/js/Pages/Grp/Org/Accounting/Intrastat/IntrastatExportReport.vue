@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
+import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -19,16 +19,6 @@ const props = defineProps<{
     data: object
     title: string
     pageHead: object
-    intervals: {
-        options: Array<{
-            label: string
-            labelShort: string
-            value: string
-            route_interval_args: string
-        }>
-        value: string
-        range_interval: string
-    }
     filters: {
         countries: Array<{
             id: number
@@ -37,31 +27,21 @@ const props = defineProps<{
         }>
     }
 }>()
-
-// Export function
-const exportXml = () => {
-    router.post(
-        route('grp.org.reports.intrastat.export', route().params),
-        {},
-        {
-            preserveState: true,
-            preserveScroll: true,
-        }
-    )
-}
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button>
-            <a :href="route('grp.org.reports.intrastat.export', route().params)" download target="_blank">
-                <Button
-                    :style="'secondary'"
-                    icon="fal fa-file-export"
-                    label="Export XML"
-                />
-            </a>
+            <div class="flex gap-2">
+                <a :href="route('grp.org.reports.intrastat.exports.export', route().params)" download target="_blank">
+                    <Button
+                        :style="'secondary'"
+                        icon="fal fa-file-export"
+                        label="Export XML"
+                    />
+                </a>
+            </div>
         </template>
     </PageHeading>
 
@@ -90,10 +70,33 @@ const exportXml = () => {
             </div>
         </template>
 
+        <template #cell(delivery_type)="{ item }">
+            <span class="text-xs px-2 py-1 rounded-full" :class="{
+                'bg-blue-100 text-blue-800': item.delivery_note_type === 'order',
+                'bg-orange-100 text-orange-800': item.delivery_note_type === 'replacement'
+            }">
+                {{ item.delivery_note_type === 'order' ? 'Order' : 'Replacement' }}
+            </span>
+        </template>
+
         <template #cell(tax_category)="{ item }">
             <span class="text-sm text-gray-700">
                 {{ item.tax_category.name }}
             </span>
+        </template>
+
+        <template #cell(invoices)="{ item }">
+            <div class="flex flex-col items-end">
+                <span class="text-sm text-gray-900">
+                    {{ item.invoices_count }}
+                </span>
+                <div v-if="item.partner_tax_numbers && item.partner_tax_numbers.length > 0" class="flex gap-1 text-xs">
+                    <span class="text-green-600">✓ {{ item.valid_tax_numbers_count }}</span>
+                    <span v-if="item.invalid_tax_numbers_count > 0" class="text-red-600">
+                        ✗ {{ item.invalid_tax_numbers_count }}
+                    </span>
+                </div>
+            </div>
         </template>
 
         <template #cell(quantity)="{ item }">
@@ -102,9 +105,9 @@ const exportXml = () => {
             </span>
         </template>
 
-        <template #cell(value)="{ item }">
+        <template #cell(value_org_currency)="{ item }">
             <span class="text-sm text-right font-medium text-gray-900">
-                {{ item.value }}
+                {{ item.value_org_currency }} {{ item.currency_code }}
             </span>
         </template>
 
