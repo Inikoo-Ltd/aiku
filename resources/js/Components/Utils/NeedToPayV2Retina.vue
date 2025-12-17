@@ -30,19 +30,7 @@ const props = defineProps<{
     order: {
         id: number
     }
-    payments: {
-        id: number
-        amount: number
-        created_at: string
-        payment_account: {
-            type: string
-            code: string
-            name: string
-        } | null
-    }[]
 }>()
-
-console.log('[apayments', props.payments)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -95,23 +83,7 @@ const onPayWithBalance = () => {
         <!-- Section: background green/red -->
         <div class="px-2.5 pt-1 pb-2" :class="[
             isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : 'bg-red-100',
-        ]">
-    
-            <!-- Section: Progress bar -->
-            <!-- <div v-if="payments?.length" class="my-3">
-                <div class="h-3 w-full bg-black/20 rounded-full relative overflow-hidden flex">
-                    <div v-for="(payment, idx) in payments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))"
-                        v-tooltip="trans('(:paymentName) Paid :paymentAmount at :datePayment', { paymentName: payment.payment_account?.name || 'Unknown', paymentAmount: locale.currencyFormat(currencyCode, Number(payment.amount)), datePayment: useFormatTime(payment.created_at, { formatTime: 'hm'}) })"
-                        class="h-full opacity-50 hover:opacity-100"
-                        :class="idx != payments.length - 1 ? 'border-r border-black/70' : ''"
-                        :style="{
-                            width: (Number(payment.amount)/Number(totalAmount))*100 + '%',
-                            backgroundColor: useStringToHex(payment.payment_account?.code || 'gray')
-                        }"
-                    />
-                </div>
-            </div> -->
-    
+        ]">    
             <!-- Section: if 0 paid -->
             <div v-if="Number(paidAmount) === 0">
     

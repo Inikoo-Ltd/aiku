@@ -68,7 +68,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 const allItems = computed(() => [
   ...(props.modelValue?.families || []),
-  ...(props.modelValue?.collections || [])
+ /*  ...(props.modelValue?.collections || []) */
 ])
 
 const responsiveGridClass = computed(() => {

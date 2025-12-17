@@ -81,7 +81,6 @@ const mergedItems = computed(() => {
 })
 
 const idxSlideLoading = ref<number | null>(null)
-
 </script>
 
 <template>

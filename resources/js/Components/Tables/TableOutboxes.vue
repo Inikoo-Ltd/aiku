@@ -22,6 +22,7 @@ import {
   faProjectDiagram,
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { trans } from 'laravel-vue-i18n'
 
 library.add(
   faBell,
@@ -73,7 +74,16 @@ function outboxRoute(outbox: Outbox) {
     }
 }
 
+function getOutboxNameDisplay(outbox: Outbox) {
+    const isReorderReminder = outbox.sub_type === 'reorder_reminder' && outbox.days_after !== null;
 
+    return {
+        name: outbox.name,
+        showSchedule: isReorderReminder,
+        scheduleText: isReorderReminder ? `${outbox.days_after} days` : '',
+        scheduleTooltip: trans(`Sent after ${outbox.days_after} days from last invoice`)
+    };
+}
 
 </script>
 
