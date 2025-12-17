@@ -41,6 +41,13 @@ const props = defineProps<{
                         label="Export XML"
                     />
                 </a>
+                <a :href="route('grp.org.reports.intrastat.exports.export-slovakia', route().params)" download target="_blank">
+                    <Button
+                        :style="'tertiary'"
+                        icon="fal fa-file-export"
+                        label="Export Slovakia XML"
+                    />
+                </a>
             </div>
         </template>
     </PageHeading>
