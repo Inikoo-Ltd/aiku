@@ -91,15 +91,7 @@ function getOutboxNameDisplay(outbox: Outbox) {
     <Table :resource="data" :name="tab">
         <template #cell(name)="{ item: outbox }">
             <Link v-if="outboxRoute(outbox)" :href="outboxRoute(outbox)" class="primaryLink">
-                 {{ getOutboxNameDisplay(outbox).name }}
-                <span
-                    v-if="getOutboxNameDisplay(outbox).showSchedule"
-                    class="text-gray-500 text-sm font-normal"
-                    v-tooltip="getOutboxNameDisplay(outbox).scheduleTooltip"
-                >
-                    {{ getOutboxNameDisplay(outbox).scheduleText }}
-                </span>
-                <!-- {{ outbox["name"] }} <span v-if="outbox['sub_type'] === 'reorder_reminder' && outbox['days_after'] !== null" class="text-gray-500 text-sm font-normal" v-tooltip="trans('Sent after ')"> run every {{ outbox['days_after'] }} days</span> -->
+                {{ outbox["name"] }}
             </Link>
         </template>
         <template #cell(type)="{ item: outbox }">

@@ -36,7 +36,7 @@ class CustomersHydrateReorderRemainderEmails implements ShouldQueue
     {
 
         $queryOutbox = QueryBuilder::for(Outbox::class);
-        $queryOutbox->whereIn('code', [OutboxCodeEnum::REORDER_REMINDER,OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD]);
+        $queryOutbox->whereIn('code', [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
         $queryOutbox->whereNotNull('days_after');
