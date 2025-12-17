@@ -71,4 +71,8 @@ return [
     'jsd' => [
         'widget_key' => env('JSD_WIDGET_KEY'),
     ],
+    'faire' => [
+        'app_id' => env('FAIRE_APP_ID'),
+        'app_key' => env('FAIRE_APP_KEY')
+    ],
 ];

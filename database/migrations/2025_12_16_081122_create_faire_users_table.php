@@ -16,6 +16,8 @@ return new class extends Migration
             $table = $this->groupOrgRelationship($table);
             $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers');
+            $table->unsignedBigInteger('customer_sales_channel_id')->nullable()->index();
+            $table->foreign('customer_sales_channel_id')->references('id')->on('customer_sales_channels')->nullOnDelete();
             $table->string('slug')->unique()->collation('und_ns');
             $table->boolean('status')->default(true)->index();
             $table->string('name')->index();
