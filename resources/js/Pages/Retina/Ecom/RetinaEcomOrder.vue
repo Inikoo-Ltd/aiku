@@ -19,18 +19,13 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
-// import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
-// import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
 import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderTransactions.vue"
-import { Address, AddressManagement } from "@/types/PureComponent/Address"
+import { AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
-// import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt, faEllipsisH } from '@fas'
 import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
-// import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
-// import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import { Message } from 'primevue'
@@ -41,7 +36,6 @@ import { debounce } from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-// import { Checkbox, Popover as PopoverPrimevue } from 'primevue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 

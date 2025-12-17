@@ -16,6 +16,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import payments from "@/Pages/Grp/Overview/Accounting/Payments.vue"
 
 const props = defineProps<{
     summary: {
@@ -39,7 +40,7 @@ const props = defineProps<{
         delivery_notes: {
 
         }
-        payments: {
+        payments_data: {
 
         }
         invoices: {
@@ -233,7 +234,7 @@ const updateCollection = (value: boolean) => {
                             :paidAmount="summary.products.payment.paid_amount"
                             :payAmount="summary.products.payment.pay_amount"
                             :balance="balance || 0"
-                            :payments="summary?.payments"
+                            :payments="order?.payments_data"
                             :currencyCode="layout.iris?.currency?.code"
                             :toBePaidBy="order?.to_be_paid_by"
                             :order="order"

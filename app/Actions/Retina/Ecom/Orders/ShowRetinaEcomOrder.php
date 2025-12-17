@@ -70,6 +70,21 @@ class ShowRetinaEcomOrder extends RetinaAction
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
+        $paymentsData = [];
+        foreach ($order->payments as $payment) {
+            $paymentsData[] = [
+                'id'              => $payment->id,
+                'amount'          => $payment->amount,
+                'created_at'      => $payment->created_at,
+                'payment_account' => [
+                    'type' => $payment->paymentAccount?->type,
+                    'code' => $payment->paymentAccount?->code,
+                    'name' => $payment->paymentAccount?->name,
+                ]
+            ];
+        }
+
+
         return Inertia::render(
             'Ecom/RetinaEcomOrder',
             [
@@ -89,7 +104,7 @@ class ShowRetinaEcomOrder extends RetinaAction
                     'navigation' => RetinaOrderTabsEnum::navigation()
                 ],
 
-                'routes'             => [
+                'routes'        => [
                     'update_route'        => [
                         'name'       => 'retina.models.order.update',
                         'parameters' => [
@@ -113,7 +128,10 @@ class ShowRetinaEcomOrder extends RetinaAction
 
 
                 ],
-                'summary'            => $this->getOrderBoxStats($order),
+                'summary'       => $this->getOrderBoxStats($order),
+                'payments_data' => $paymentsData,
+
+
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
                 'timelines'          => $finalTimeline,
                 'balance'            => $this->customer->balance,
@@ -213,7 +231,6 @@ class ShowRetinaEcomOrder extends RetinaAction
         }
 
 
-
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
             ->whereNotIn('state', [
                 OrderStateEnum::CANCELLED->value,
@@ -241,9 +258,9 @@ class ShowRetinaEcomOrder extends RetinaAction
             ),
             'invoices'         => $invoicesData,
             'order_properties' => [
-                'weight'                 => NaturalLanguage::make()->weight($order->estimated_weight),
-                'customer_order_number'  => $numberOrders,
-                'customer_order_ordinal' => ordinal($numberOrders)." ".__('order'),
+                'weight'                         => NaturalLanguage::make()->weight($order->estimated_weight),
+                'customer_order_number'          => $numberOrders,
+                'customer_order_ordinal'         => ordinal($numberOrders)." ".__('order'),
                 'customer_order_ordinal_tooltip' => __('This is the nth order this customer has placed with this shop.')
             ],
             'delivery_notes'   => $deliveryNotesData,
