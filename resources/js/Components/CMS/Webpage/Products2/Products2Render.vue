@@ -40,6 +40,7 @@ const props = withDefaults(
         isLoadingFavourite?: boolean
         isLoadingRemindBackInStock?: boolean
         button: any
+        screenType:string
     }>(),
     {
         isLoadingFavourite: false,
@@ -84,7 +85,7 @@ const toggleBackInStock = () =>
             <!-- TOP AREA (GROWS) -->
             <div class="flex-grow">
 
-                <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
+                <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"  :screen-type="screenType"/>
 
                 <!-- IMAGE -->
                 <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"

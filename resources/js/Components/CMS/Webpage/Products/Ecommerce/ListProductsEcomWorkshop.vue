@@ -159,7 +159,8 @@ watch(
               :bestSeller="modelValue.bestseller" 
               :buttonStyleHover="getStyles(modelValue?.buttonHover?.properties, screenType)"
               :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
-              :button="modelValue?.button"
+              :button="modelValue?.button" 
+              :screenType
              />
           </div>
         </div>
