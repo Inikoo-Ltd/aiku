@@ -27,6 +27,7 @@ import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import axios from "axios";
 import ProductSales from "@/Components/Product/ProductSales.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(
     faChartLine, faCheckCircle, faFolderTree, faFolder, faCube,
@@ -126,13 +127,30 @@ const submitForm = async (redirect = true) => {
     ).catch((error) => {
         loading.value = false;
         console.error(error);
+        if(error.response.data.errors){
+            const errorBag = [...new Set(Object.values(error.response.data.errors).flat())];
+            const message = errorBag.join('<br>');
+            console.log(message);
+            notify({
+                title: trans('Something went wrong.'),
+                data: {html: message},
+                type: 'error'
+            });    
+        }
+        refreshModalData();
     })
-        .then((response) => {
-            loading.value = false;
-            router.reload();
-            showDialog.value = false;
-            refreshModalData();
-        });
+    .then((response) => {
+        console.log(response);
+        loading.value = false;
+        router.reload();
+        showDialog.value = false;
+        refreshModalData();
+        notify({
+            title: trans('Created Successfully'),
+            text: trans('Added products to Selected Stores'),
+            type: 'success'
+        });   
+    });
 
 }
 
