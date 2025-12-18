@@ -33,8 +33,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group $group
  * @property-read Organisation $organisation
+ * @property-read \App\Models\Dropshipping\Platform $platform
  * @property-read Shop $shop
- * @property-read Platform $platform
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformShopSalesMetrics newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformShopSalesMetrics newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformShopSalesMetrics query()

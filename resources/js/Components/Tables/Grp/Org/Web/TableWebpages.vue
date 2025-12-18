@@ -212,6 +212,11 @@ function productsRoute(webpage: Webpage) {
             </Link>
         </template>
 
+        <!-- Column: State -->
+        <template #cell(state)="{ item: webpage }">
+            <Icon :data="webpage.state_icon" class="px-1 mx-auto block" />
+        </template>
+
         <template #cell(number_current_sub_departments)="{ item: webpage }">
             <Link :href="subDepartmentsRoute(webpage)" class="primaryLink">
                 {{ webpage['number_current_sub_departments'] }}

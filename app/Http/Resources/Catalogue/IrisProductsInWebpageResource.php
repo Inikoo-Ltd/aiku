@@ -84,6 +84,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'top_seller'      => $this->top_seller,
             'web_images'      => $this->web_images,
             'transaction_id'  => $this->transaction_id,
+            'is_on_demand'    => $this->is_on_demand
         ];
     }
 

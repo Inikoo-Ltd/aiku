@@ -133,8 +133,8 @@ class OrganisationHydrateIntrastatExportMetrics implements ShouldBeUnique
                     continue;
                 }
 
-                $key = $tariffCode . '|' . 
-                       $item->country_id . '|' . 
+                $key = $tariffCode . '|' .
+                       $item->country_id . '|' .
                        ($item->tax_category_id ?? 'null') . '|' .
                        ($item->delivery_note_type ?? 'null');
 

@@ -520,9 +520,8 @@ const updateCollection = async (e: Event) => {
                         </div>
                     </div>
 
-                    <!--  -->
+                    <!-- Field: row parcels -->
                     <div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
-                        <!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
                         <TransitionGroup v-if="parcelsCopy?.length" name="list">
                             <div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
                                 class="grid grid-cols-12 items-center gap-x-6">
@@ -532,18 +531,51 @@ const updateCollection = async (e: Event) => {
                                         aria-hidden="true" />
                                 </div>
                                 <div class="col-span-2 flex items-center space-x-2">
-                                    <InputNumber :min="0.001" v-model="parcel.weight" class="w-16" size="small"
-                                        placeholder="0" fluid />
+                                    <InputNumber
+                                        v-model="parcel.weight"
+                                        :min="0.001"
+                                        inputClass="!w-16 !text-sm !py-2 !px-1.5 !text-center"
+                                        size="small"
+                                        placeholder="0"
+                                        fluid
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="3"
+                                    />
                                 </div>
+                                
                                 <div class="col-span-9 flex items-center gap-x-1 font-light">
-                                    <InputNumber :min="0.001" v-model="parcel.dimensions[0]" class="w-16" size="small"
-                                        placeholder="0" fluid />
+                                    <InputNumber
+                                        :min="0.001"
+                                        v-model="parcel.dimensions[0]"
+                                        class="w-16"
+                                        size="small"
+                                        placeholder="0"
+                                        fluid
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="1"
+                                    />
                                     <div class="text-gray-400">x</div>
-                                    <InputNumber :min="0.001" v-model="parcel.dimensions[1]" class="w-16" size="small"
-                                        placeholder="0" fluid />
+                                    <InputNumber
+                                        :min="0.001"
+                                        v-model="parcel.dimensions[1]"
+                                        class="w-16"
+                                        size="small"
+                                        placeholder="0"
+                                        fluid
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="1"
+                                    />
                                     <div class="text-gray-400">x</div>
-                                    <InputNumber :min="0.001" v-model="parcel.dimensions[2]" class="w-16" size="small"
-                                        placeholder="0" fluid />
+                                    <InputNumber
+                                        :min="0.001"
+                                        v-model="parcel.dimensions[2]"
+                                        class="w-16"
+                                        size="small"
+                                        placeholder="0"
+                                        fluid
+                                        :locale="locale.locale_iso"
+                                        :max-fraction-digits="1"
+                                    />
                                     <!-- <button class="text-gray-600">≡</button> -->
 
                                     <!-- <Popover>
