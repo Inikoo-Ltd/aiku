@@ -109,6 +109,7 @@ class AppServiceProvider extends ServiceProvider
                 'Picking'                       => 'App\Models\Dispatching\Picking',
                 'Shipment'                      => 'App\Models\Dispatching\Shipment',
                 'Shipper'                       => 'App\Models\Dispatching\Shipper',
+                'WaitingItem'                   => 'App\Models\Dispatching\WaitingItem',
 
                 // Dropshipping
                 'CustomerClient'                => 'App\Models\Dropshipping\CustomerClient',

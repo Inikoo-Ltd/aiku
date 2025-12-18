@@ -27,12 +27,12 @@ use Illuminate\Support\Carbon;
  * @property int $supplier_deliveries_count
  * @property int $parts_count
  * @property int $invoices_count
- * @property array|null $supplier_tax_numbers Array of unique supplier tax numbers with validation status
+ * @property array<array-key, mixed>|null $supplier_tax_numbers Array of unique supplier tax numbers with validation status
  * @property int $valid_tax_numbers_count
  * @property int $invalid_tax_numbers_count
- * @property IntrastatTransportModeEnum|null $mode_of_transport
- * @property IntrastatDeliveryTermsEnum|null $delivery_terms
- * @property IntrastatNatureOfTransactionEnum|null $nature_of_transaction
+ * @property IntrastatTransportModeEnum|null $mode_of_transport 1=SEA, 2=RAIL, 3=ROAD, 4=AIR, 5=POST, 7=PIPELINE, 8=INLAND_WATERWAY, 9=SELF_PROPULSION
+ * @property IntrastatDeliveryTermsEnum|null $delivery_terms EXW, FOB, CIF, DAP, DDP, etc.
+ * @property IntrastatNatureOfTransactionEnum|null $nature_of_transaction 11=Outright purchase/sale, 21=Return/replacement, etc.
  * @property array<array-key, mixed>|null $data Warnings, metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at

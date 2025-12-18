@@ -222,7 +222,6 @@ const isModalProductForSale = ref(false)
 				:trade_units="data.trade_units"
 				:routeFunction="tradeUnitRoute"
 			/>
-			dsfsfd
 			<span v-if="data.availability_status"
 				v-on:click="isModalProductForSale = true"
 				v-tooltip="getTooltips()"

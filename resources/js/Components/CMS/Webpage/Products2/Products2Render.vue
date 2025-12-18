@@ -211,7 +211,7 @@ const toggleBackInStock = () =>
                 </div>
 
                 <!-- BUTTON -->
-                <div class="absolute right-2 bottom-2 flex items-center justify-end">
+                <div class="absolute right-2 bottom-1 flex items-center justify-end">
                     <template v-if="layout?.iris?.is_logged_in">
                         <!-- In stock -->
                         <NewAddToCartButton
