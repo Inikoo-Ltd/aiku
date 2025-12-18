@@ -17,9 +17,9 @@ class HitIrisUrl
 {
     use AsAction;
 
-    public string $commandSignature = 'iris:hit-url {url} {--inertia=none : true|false|none}';
+    public string $commandSignature = 'iris:hit-url {url} {--inertia=none : true|false|none} {--xmlhttp=false : true|false}';
 
-    public function handle(string $url, string $inertia = 'none'): array
+    public function handle(string $url, string $inertia = 'none', bool $xmlHttp = false): array
     {
         $startTime = microtime(true);
 
@@ -29,9 +29,14 @@ class HitIrisUrl
             default => [],
         };
 
+        if ($xmlHttp) {
+            $headers['X-Requested-With'] = 'XMLHttpRequest';
+        }
+
         Log::info('HitIrisUrl command triggered', [
             'url' => $url,
             'x_inertia' => $inertia,
+            'x_requested_with' => $xmlHttp,
         ]);
 
         $response = Http::withHeaders($headers)->withoutVerifying()->get($url);
@@ -86,13 +91,14 @@ class HitIrisUrl
         }
 
         return [
-            'url'          => $url,
-            'x_inertia'    => $inertia,
-            'status'       => $statusCode,
-            'content_type' => $contentType,
-            'is_valid'     => $isValid,
-            'duration_ms'  => $durationMs,
-            'body_preview' => substr($response->body(), 0, 1000),
+            'url'              => $url,
+            'x_inertia'        => $inertia,
+            'x_requested_with' => $xmlHttp,
+            'status'           => $statusCode,
+            'content_type'     => $contentType,
+            'is_valid'         => $isValid,
+            'duration_ms'      => $durationMs,
+            'body_preview'     => substr($response->body(), 0, 1000),
         ];
     }
 
@@ -100,15 +106,17 @@ class HitIrisUrl
     {
         $result = $this->handle(
             $command->argument('url'),
-            $command->option('inertia')
+            $command->option('inertia'),
+            filter_var($command->option('xmlhttp'), FILTER_VALIDATE_BOOLEAN)
         );
 
-        $command->info("URL         : {$result['url']}");
-        $command->info("X-Inertia   : {$result['x_inertia']}");
-        $command->info("Status      : {$result['status']}");
-        $command->info("Content-Type: {$result['content_type']}");
-        $command->info("Is Valid    : " . ($result['is_valid'] ? 'Yes' : 'No'));
-        $command->info("Duration    : {$result['duration_ms']} ms");
+        $command->info("URL              : {$result['url']}");
+        $command->info("X-Inertia        : {$result['x_inertia']}");
+        $command->info("X-Requested-With : " . ($result['x_requested_with'] ? 'XMLHttpRequest' : 'not set'));
+        $command->info("Status           : {$result['status']}");
+        $command->info("Content-Type     : {$result['content_type']}");
+        $command->info("Is Valid         : " . ($result['is_valid'] ? 'Yes' : 'No'));
+        $command->info("Duration         : {$result['duration_ms']} ms");
 
         if (!$result['is_valid']) {
             $command->warn('Response validation failed - logged to database');
