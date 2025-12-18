@@ -165,7 +165,7 @@ class OrderReturn extends Model implements Auditable
 
     public function orders(): BelongsToMany
     {
-        return $this->belongsToMany(Order::class, 'return_order', 'return_id', 'order_id')->withTimestamps();
+        return $this->belongsToMany(Order::class, 'order_has_returns', 'return_id', 'order_id')->withTimestamps();
     }
 
     public function returnItems(): HasMany
