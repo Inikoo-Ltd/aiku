@@ -85,10 +85,20 @@ class StoreReturn extends OrgAction
                 'return_id' => $orderReturn->id,
             ]);
 
+            // If no items provided, automatically copy from order's delivery notes
+            if (empty($items)) {
+                $items = $this->getItemsFromOrder($order);
+            }
+
             // Create return items
+            $itemCount = 0;
             foreach ($items as $itemData) {
                 StoreReturnItem::make()->action($orderReturn, $itemData);
+                $itemCount++;
             }
+
+            // Update item count
+            $orderReturn->updateQuietly(['number_items' => $itemCount]);
 
             return $orderReturn;
         });
@@ -96,6 +106,38 @@ class StoreReturn extends OrgAction
         $orderReturn->refresh();
 
         return $orderReturn;
+    }
+
+    /**
+     * Get items from order's dispatched delivery notes
+     */
+    protected function getItemsFromOrder(Order $order): array
+    {
+        $items = [];
+
+        // Get items from dispatched delivery notes
+        foreach ($order->deliveryNotes as $deliveryNote) {
+            foreach ($deliveryNote->deliveryNoteItems as $dnItem) {
+                $items[] = [
+                    'delivery_note_item_id' => $dnItem->id,
+                    'org_stock_id'          => $dnItem->org_stock_id,
+                    'quantity_expected'     => $dnItem->quantity_dispatched ?? $dnItem->quantity_required ?? 1,
+                ];
+            }
+        }
+
+        // Fallback: if no delivery note items, get from order transactions
+        if (empty($items)) {
+            foreach ($order->transactions as $transaction) {
+                $items[] = [
+                    'transaction_id'    => $transaction->id,
+                    'org_stock_id'      => $transaction->org_stock_id ?? null,
+                    'quantity_expected' => $transaction->quantity_ordered ?? 1,
+                ];
+            }
+        }
+
+        return $items;
     }
 
     public function htmlResponse(OrderReturn $orderReturn): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
@@ -128,6 +170,7 @@ class StoreReturn extends OrgAction
         $this->asAction = true;
         $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
+        $this->order = $order;
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $this->validatedData);

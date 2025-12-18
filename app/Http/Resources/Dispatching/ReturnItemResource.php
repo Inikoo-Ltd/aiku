@@ -15,16 +15,22 @@ class ReturnItemResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $stateValue = $this->state instanceof \App\Enums\Dispatching\Return\ReturnItemStateEnum
+            ? $this->state->value
+            : $this->state;
+
         return [
             'id'                    => $this->id,
-            'state'                 => $this->state,
-            'state_icon'            => ReturnItemStateEnum::stateIcon()[$this->state->value] ?? null,
-            'state_label'           => $this->state->labels()[$this->state->value] ?? null,
-            'quantity_expected'     => $this->quantity_expected,
-            'quantity_received'     => $this->quantity_received,
-            'quantity_accepted'     => $this->quantity_accepted,
-            'quantity_rejected'     => $this->quantity_rejected,
-            'quantity_restocked'    => $this->quantity_restocked,
+            'state'                 => $stateValue,
+            'state_icon'            => ReturnItemStateEnum::stateIcon()[$stateValue] ?? null,
+            'state_label'           => ReturnItemStateEnum::labels()[$stateValue] ?? null,
+            'org_stock_code'        => $this->orgStock?->code ?? '-',
+            'org_stock_name'        => $this->orgStock?->name ?? 'Unknown Product',
+            'quantity_expected'     => $this->quantity_expected ?? 0,
+            'quantity_received'     => $this->quantity_received ?? 0,
+            'quantity_accepted'     => $this->quantity_accepted ?? 0,
+            'quantity_rejected'     => $this->quantity_rejected ?? 0,
+            'quantity_restocked'    => $this->quantity_restocked ?? 0,
             'notes'                 => $this->notes,
             'condition'             => $this->condition,
             'rejection_reason'      => $this->rejection_reason,

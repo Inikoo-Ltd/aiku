@@ -43,7 +43,7 @@ class IndexReturns extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OrderReturn::class);
 
-        $queryBuilder->where('warehouse_id', $parent->id);
+        $queryBuilder->where('returns.warehouse_id', $parent->id);
 
         $queryBuilder->defaultSort('-returns.date')
             ->select([

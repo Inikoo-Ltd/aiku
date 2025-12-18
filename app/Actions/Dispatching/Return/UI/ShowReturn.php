@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\Return\UI;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Return\ReturnStateEnum;
 use App\Http\Resources\Dispatching\OrderReturnResource;
+use App\Http\Resources\Dispatching\ReturnItemResource;
 use App\Models\Dispatching\OrderReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -59,8 +60,29 @@ class ShowReturn extends OrgAction
                 ],
                 'return'      => OrderReturnResource::make($return)->toArray(request()),
                 'box_stats'   => $this->getBoxStats($return),
+                'data'        => ReturnItemResource::collection($return->returnItems),
             ]
-        );
+        )->table($this->tableStructure($return));
+    }
+
+    public function tableStructure(OrderReturn $return): \Closure
+    {
+        return function (\App\InertiaTable\InertiaTable $table) {
+            $table
+                ->withGlobalSearch()
+                ->withEmptyState([
+                    'title' => __('No items in this return'),
+                    'count' => 0,
+                ]);
+
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true);
+            $table->column(key: 'org_stock_name', label: __('Product'), canBeHidden: false, sortable: true);
+            $table->column(key: 'quantity_expected', label: __('Expected'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'quantity_received', label: __('Received'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'quantity_accepted', label: __('Accepted'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'quantity_rejected', label: __('Rejected'), canBeHidden: false, sortable: true, align: 'right');
+        };
     }
 
     protected function getActions(OrderReturn $return): array

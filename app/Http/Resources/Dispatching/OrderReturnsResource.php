@@ -29,8 +29,12 @@ class OrderReturnsResource extends JsonResource
             'id'            => $this->id,
             'slug'          => $this->slug,
             'reference'     => $this->reference,
-            'state'         => $this->state,
-            'state_icon'    => ReturnStateEnum::stateIcon()[$this->state->value] ?? null,
+            'state'         => $this->state instanceof \App\Enums\Dispatching\Return\ReturnStateEnum
+                ? $this->state->value
+                : $this->state,
+            'state_icon'    => $this->state instanceof \App\Enums\Dispatching\Return\ReturnStateEnum
+                ? (ReturnStateEnum::stateIcon()[$this->state->value] ?? null)
+                : (ReturnStateEnum::stateIcon()[$this->state] ?? null),
             'date'          => $this->date,
             'number_items'  => $this->number_items,
             'customer_name' => $this->customer_name ?? null,
