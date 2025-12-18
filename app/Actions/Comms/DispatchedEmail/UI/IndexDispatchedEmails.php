@@ -72,7 +72,13 @@ class IndexDispatchedEmails extends OrgAction
                 * if outbox code are in delivery_confirmation,order_confirmation,reorder_reminder,
                 * reorder_reminder_2nd, reorder_reminder_3rd
                 */
-                if (in_array($parent->code, [OutboxCodeEnum::DELIVERY_CONFIRMATION, OutboxCodeEnum::ORDER_CONFIRMATION, OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
+                if (in_array($parent->code, [
+                    OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                    OutboxCodeEnum::ORDER_CONFIRMATION,
+                    OutboxCodeEnum::REORDER_REMINDER,
+                    OutboxCodeEnum::REORDER_REMINDER_2ND,
+                    OutboxCodeEnum::REORDER_REMINDER_3RD
+                ])) {
                     $queryBuilder->leftJoin('model_has_dispatched_emails', function ($join) {
                         $join->on('model_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')
                             ->where('model_has_dispatched_emails.model_type', '=', class_basename(Order::class));
@@ -123,9 +129,25 @@ class IndexDispatchedEmails extends OrgAction
                 $selectColumns,
                 [
                     'customers.id as customer_id',
+                    'customers.slug as customer_slug',
                     'customers.name as customer_name'
                 ]
             );
+            if (in_array($parent->code, [
+                OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                OutboxCodeEnum::ORDER_CONFIRMATION,
+                OutboxCodeEnum::REORDER_REMINDER,
+                OutboxCodeEnum::REORDER_REMINDER_2ND,
+                OutboxCodeEnum::REORDER_REMINDER_3RD
+            ])) {
+                $selectColumns = array_merge(
+                    $selectColumns,
+                    [
+                        'orders.id as order_id',
+                        'orders.slug as order_slug'
+                    ]
+                );
+            }
         }
 
         return $queryBuilder
@@ -157,7 +179,16 @@ class IndexDispatchedEmails extends OrgAction
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             if ($parent instanceof Outbox) {
-                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: false, searchable: false);
+                if (in_array($parent->code, [
+                    OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                    OutboxCodeEnum::ORDER_CONFIRMATION,
+                    OutboxCodeEnum::REORDER_REMINDER,
+                    OutboxCodeEnum::REORDER_REMINDER_2ND,
+                    OutboxCodeEnum::REORDER_REMINDER_3RD
+                ])) {
+                    $table->column(key: 'order_slug', label: __('Order'), canBeHidden: false, sortable: false, searchable: false);
+                }
             }
             $table->column(key: 'number_email_tracking_events', label: __('events'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_reads', label: __('reads'), canBeHidden: false, sortable: true)
