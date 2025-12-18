@@ -365,17 +365,40 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=true')->everyMinute()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'Hit https://www.aw-dropship.es/ X-Inertia: true',
-        );
+        $urlsToHit = [
+            [
+                'url' => 'https://www.aw-dropship.es/',
+                'inertia' => 'true',
+                'xmlhttp' => true,
+                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true with X-Requested-With',
+            ],
+            [
+                'url' => 'https://www.aw-dropship.es/',
+                'inertia' => 'false',
+                'xmlhttp' => false,
+                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: false',
+            ],
+            [
+                'url' => 'https://www.aw-dropship.es/',
+                'inertia' => 'none',
+                'xmlhttp' => false,
+                'slug' => 'Hit https://www.aw-dropship.es/',
+            ],
+        ];
 
-        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=false')->everyMinute()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'Hit https://www.aw-dropship.es/ X-Inertia: false',
-        );
+        foreach ($urlsToHit as $config) {
+            $command = sprintf(
+                'iris:hit-url %s --inertia=%s --xmlhttp=%s',
+                $config['url'],
+                $config['inertia'],
+                $config['xmlhttp'] ? 'true' : 'false'
+            );
 
-        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=none')->everyMinute()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'Hit https://www.aw-dropship.es/',
-        );
+            $schedule->command($command)
+                ->everyMinute()
+                ->timezone('UTC')
+                ->sentryMonitor(monitorSlug: $config['slug']);
+        }
     }
 
     protected function commands(): void

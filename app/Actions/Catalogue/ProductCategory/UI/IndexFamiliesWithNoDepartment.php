@@ -96,7 +96,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
-            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_products'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'number_current_products', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

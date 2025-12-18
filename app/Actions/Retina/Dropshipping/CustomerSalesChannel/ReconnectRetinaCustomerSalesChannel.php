@@ -9,12 +9,14 @@
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
+use App\Actions\Dropshipping\Ebay\ReAuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -26,7 +28,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, ?ActionRequest $request): ?string
     {
-        /** @var MagentoUser|ShopifyUser|WooCommerceUser $platformUser */
+        /** @var MagentoUser|ShopifyUser|WooCommerceUser|EbayUser $platformUser */
         $platformUser = $customerSalesChannel->user;
 
         return match ($customerSalesChannel->platform->type) {
@@ -35,7 +37,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
             ]),
             PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser),
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),
-            PlatformTypeEnum::EBAY => CheckEbayChannel::run($platformUser),
+            PlatformTypeEnum::EBAY => ReAuthorizeRetinaEbayUser::make()->action($platformUser, $request),
             default => null
         };
     }
