@@ -364,6 +364,18 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
+
+        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=true')->everyMinute()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'Hit https://www.aw-dropship.es/ X-Inertia: true',
+        );
+
+        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=false')->everyMinute()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'Hit https://www.aw-dropship.es/ X-Inertia: false',
+        );
+
+        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=none')->everyMinute()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'Hit https://www.aw-dropship.es/',
+        );
     }
 
     protected function commands(): void

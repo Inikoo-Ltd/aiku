@@ -30,6 +30,7 @@ use App\Http\Middleware\LogUserRequestMiddleware;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\HandleIrisInertiaRequests;
+use App\Http\Middleware\IrisHealthCheck;
 use App\Http\Middleware\ResetUserPasswordMiddleware;
 use App\Http\Middleware\ResetWebUserPasswordMiddleware;
 use App\Http\Middleware\RetinaAuthenticate;
@@ -179,6 +180,7 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             SetWebUserLocale::class,
             HandleIrisInertiaRequests::class,
+            IrisHealthCheck::class,
             AddLinkHeadersForPreloadedAssets::class,
             //LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
@@ -276,5 +278,6 @@ class Kernel extends HttpKernel
         'ability'                => CheckForAnyAbility::class,
         'verify.shopify.webhook' => VerifyShopifyWebhook::class,
         'treblle'                => TreblleMiddleware::class,
+        'iris.health' => IrisHealthCheck::class,
     ];
 }
