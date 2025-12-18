@@ -281,7 +281,7 @@ const handleViewAllSubDepartment = (url: string) => {
                             :internalHref
                             :activeSubIndex
                              :closeSidebar="()=>closeSidebar()"
-                            :isWithArrowRight="true"
+                            :isWithArrowRight="false"
                         />
                     </div>
 
