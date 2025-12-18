@@ -61,6 +61,10 @@ class IndexDispatchedEmails extends OrgAction
                 $queryBuilder->where('dispatched_emails.post_room_id', $parent->id);
                 break;
             case 'Outbox':
+                $queryBuilder->leftJoin('customers', function ($join) {
+                    $join->on('dispatched_emails.recipient_id', '=', 'customers.id')
+                        ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
+                });
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':
@@ -85,20 +89,32 @@ class IndexDispatchedEmails extends OrgAction
         }
 
 
+        $selectColumns = [
+            'dispatched_emails.id',
+            'dispatched_emails.state',
+            'dispatched_emails.mask_as_spam',
+            'dispatched_emails.number_email_tracking_events',
+            'email_addresses.email as email_address',
+            'dispatched_emails.sent_at as sent_at',
+            'shops.code as shop_code',
+            'shops.slug as shop_slug',
+            'dispatched_emails.number_reads',
+            'dispatched_emails.number_clicks',
+        ];
+
+        if ($parent instanceof Outbox) {
+            $selectColumns = array_merge(
+                $selectColumns,
+                [
+                    'customers.id as customer_id',
+                    'customers.name as customer_name'
+                ]
+            );
+        }
+
         return $queryBuilder
             ->defaultSort('-sent_at')
-            ->select([
-                'dispatched_emails.id',
-                'dispatched_emails.state',
-                'dispatched_emails.mask_as_spam',
-                'dispatched_emails.number_email_tracking_events',
-                'email_addresses.email as email_address',
-                'dispatched_emails.sent_at as sent_at',
-                'shops.code as shop_code',
-                'shops.slug as shop_slug',
-                'dispatched_emails.number_reads',
-                'dispatched_emails.number_clicks',
-            ])
+            ->select($selectColumns)
             ->allowedSorts(['email_address', 'number_email_tracking_events', 'sent_at', 'number_reads', 'mask_as_spam', 'number_clicks'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -123,6 +139,9 @@ class IndexDispatchedEmails extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+            }
+            if ($parent instanceof Outbox) {
+                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'number_email_tracking_events', label: __('events'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_reads', label: __('reads'), canBeHidden: false, sortable: true)

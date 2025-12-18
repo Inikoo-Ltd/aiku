@@ -54,6 +54,7 @@ class DispatchedEmailsResource extends JsonResource
             'shop_slug'                    => $this->shop_slug,
             'organisation_name'            => $this->organisation_name,
             'organisation_slug'            => $this->organisation_slug,
+            'customer_name'                => $this->customer_name,
         );
     }
 }
