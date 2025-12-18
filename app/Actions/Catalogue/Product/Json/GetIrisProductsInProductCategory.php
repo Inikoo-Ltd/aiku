@@ -13,6 +13,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisProductsInProductCategory extends IrisAction
@@ -22,7 +23,18 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
-        $queryBuilder->select($this->getSelect());
+        $queryBuilder->select(array_merge(
+            $this->getSelect(),
+            [
+                DB::raw('exists (
+                        select os.is_on_demand
+                        from org_stocks os
+                        join product_has_org_stocks phos on phos.org_stock_id = os.id
+                        where phos.product_id = products.id
+                        and os.is_on_demand = true
+                    ) as is_on_demand')
+            ]
+        ));
         $perPage = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('department_id', $productCategory->id);

@@ -36,7 +36,6 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 [
                     "label"  => __("Pricing"),
                     'icon'    => 'fa-light fa-user',
-                    'title'  => __('pricing'),
                     'fields' => [
                         'is_vat_adjustment' => [
                             'type'  => 'toggle',
@@ -63,7 +62,6 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 [
                     "label"  => __("Shipping"),
                     'icon'    => 'fa-light fa-truck',
-                    'title'  => __('shipping'),
                     'fields' => [
                         'shipping_service' => [
                             'type'  => 'select',
@@ -86,7 +84,6 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 [
                     "label"  => __("Returns"),
                     'icon'    => 'fa-light fa-arrow-left',
-                    'title'  => __('returns'),
                     'fields' => [
                         'return_accepted' => [
                             'type'  => 'toggle',
@@ -158,7 +155,6 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                             [
                                 "label"  => __("Properties"),
                                 'icon'    => 'fa-light fa-fingerprint',
-                                'title'  => __('properties'),
                                 'fields' => [
                                     'name' => [
                                         'type'  => 'input',
@@ -170,7 +166,6 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                             [
                                 "label"  => __("Manage Stock"),
                                 'icon'    => 'fa-light fa-box',
-                                'title'  => __('manage stock'),
                                 'fields' => [
                                     'max_quantity_advertise' => [
                                         'type'  => 'input',
