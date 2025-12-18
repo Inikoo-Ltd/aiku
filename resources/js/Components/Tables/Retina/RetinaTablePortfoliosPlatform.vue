@@ -356,7 +356,10 @@ const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
 
 const openEditModal = (item) => {
     isOpenModalEditProduct.value = true
-    selectedEditProduct.value = item;
+	selectedEditProduct.value = {
+		...item,
+		basePrice: item?.customer_price
+	};
 }
 
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
@@ -960,7 +963,7 @@ const calculateVat = (price: number) => {
                     <Button
                         v-for="percent in [20, 40, 60, 80, 100]"
                         :key="'p'+percent"
-                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.customer_price || 0, percent, 'percent'))"
+                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.basePrice || 0, percent, 'percent'))"
                         :label="`+${percent}%`"
                         size="xs"
                         type="tertiary"
@@ -968,7 +971,7 @@ const calculateVat = (price: number) => {
                     <Button
                         v-for="amount in [2, 4, 6, 8, 10]"
                         :key="'a'+amount"
-                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.customer_price || 0, amount, 'fixed'))"
+                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.basePrice || 0, amount, 'fixed'))"
                         :label="`+${amount}`"
                         size="xs"
                         type="tertiary"
