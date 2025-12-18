@@ -68,6 +68,13 @@ class IndexDispatchedEmails extends OrgAction
                         ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
                 });
 
+                // for fulfilment customer
+                if ($parent->fulfilment_id) {
+                    $queryBuilder->leftJoin('fulfilment_customers', function ($join) {
+                        $join->on('fulfilment_customers.customer_id', '=', 'customers.id');
+                    });
+                }
+
                 /*
                 * if outbox code are in delivery_confirmation,order_confirmation,reorder_reminder,
                 * reorder_reminder_2nd, reorder_reminder_3rd
@@ -133,6 +140,15 @@ class IndexDispatchedEmails extends OrgAction
                     'customers.name as customer_name'
                 ]
             );
+            if ($parent->fulfilment_id) {
+                $selectColumns = array_merge(
+                    $selectColumns,
+                    [
+                       'fulfilment_customers.id as fulfilment_customer_id',
+                       'fulfilment_customers.slug as fulfilment_customer_slug'
+                    ]
+                );
+            }
             if (in_array($parent->code, [
                 OutboxCodeEnum::DELIVERY_CONFIRMATION,
                 OutboxCodeEnum::ORDER_CONFIRMATION,

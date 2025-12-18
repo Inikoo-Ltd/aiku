@@ -76,6 +76,37 @@ function dispatchedEmailRoute(dispatchedEmail: DispatchedEmailResource) {
     }
 }
 
+
+function dispatchedEmailCustomerRoute(dispatchedEmail: DispatchedEmailResource) {
+
+    switch (route().current()) {
+        case "grp.org.fulfilments.show.operations.comms.outboxes.show":
+            const fulfilmentParams = (route().params as RouteParams);
+            if (!fulfilmentParams.organisation || !fulfilmentParams.fulfilment || !dispatchedEmail.fulfilment_customer_slug) {
+                return null;
+            }
+            return route(
+                "grp.org.fulfilments.show.crm.customers.show",
+                [
+                    fulfilmentParams.organisation,
+                    fulfilmentParams.fulfilment,
+                    dispatchedEmail.fulfilment_customer_slug ?? "Test"]);
+        case "grp.org.shops.show.dashboard.comms.outboxes.show":
+            const shopParams = (route().params as RouteParams);
+            if (!shopParams.organisation || !dispatchedEmail.shop_slug || !dispatchedEmail.customer_slug) {
+                return null;
+            }
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [
+                    shopParams.organisation,
+                    dispatchedEmail.shop_slug,
+                    dispatchedEmail.customer_slug]);
+        default:
+            return null;
+    }
+}
+
 const locale = inject("locale", aikuLocaleStructure);
 
 
@@ -95,6 +126,15 @@ const locale = inject("locale", aikuLocaleStructure);
                 {{ dispatchedEmail["email_address"] }}
             </span>
             <Icon :data="dispatchedEmail.mask_as_spam" class="pl-1" />
+        </template>
+
+         <template #cell(customer_name)="{ item: dispatchedEmail }">
+            <Link v-if="dispatchedEmailCustomerRoute(dispatchedEmail)" :href="dispatchedEmailCustomerRoute(dispatchedEmail) as string" class="primaryLink">
+                {{ dispatchedEmail["customer_name"] }}
+            </Link>
+            <span v-else>
+                {{ dispatchedEmail["customer_name"] }}
+            </span>
         </template>
         <template #cell(sent_at)="{ item: dispatchedEmail }">
             {{ useFormatTime(dispatchedEmail.sent_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}
