@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, type Ref, inject, onMounted, watch, computed } from "vue"
+import { ref, type Ref, inject, onMounted, watch, computed, nextTick } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { Link } from "@inertiajs/vue3"
 import axios from "axios"
@@ -7,6 +7,7 @@ import MessageHistory from "@/Components/Chat/MessageHistory.vue"
 import Button from "../Elements/Buttons/Button.vue"
 import type { SessionAPI } from "@/types/Chat/chat"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import SelectQuery from "@/Components/SelectQuery.vue"
 import {
 	faUser,
 	faClose,
@@ -41,6 +42,7 @@ const selectedHistory = ref<{
 const emit = defineEmits<{
 	(e: "close"): void
 	(e: "sync-success"): void
+	(e: "transfer-agent-success"): void
 }>()
 
 const layout: any = inject("layout", {})
@@ -51,13 +53,22 @@ const syncEmail = ref(props.session?.guest_profile?.email || "")
 const syncEmailAlert = ref<AlertType | null>(null)
 const priorityAlert = ref<AlertType | null>(null)
 
-const showAlert = (target: Ref<AlertType | null>, data: AlertType, timeout = 3000) => {
+const showAlert = (
+	target: Ref<AlertType | null>,
+	data: AlertType | null,
+	timeout = 3000
+): Promise<void> => {
 	target.value = data
-	if (timeout > 0) {
+	return new Promise<void>((resolve) => {
+		if (data === null || timeout <= 0) {
+			resolve()
+			return
+		}
 		setTimeout(() => {
 			target.value = null
+			resolve()
 		}, timeout)
-	}
+	})
 }
 
 const isSyncing = ref(false)
@@ -67,6 +78,10 @@ const isLoadingHistory = ref(false)
 const historyError = ref<string | null>(null)
 const userSessions = ref<SessionAPI[]>([])
 const isEditingPriority = ref(false)
+const agentAlert = ref<AlertType | null>(null)
+const isEditingAgent = ref(false)
+const isAssigningAgent = ref(false)
+
 const loadUserSessions = async () => {
 	if (!props.session?.web_user?.id) return
 	try {
@@ -140,6 +155,111 @@ const statusIcon = (p?: string) => {
 			return faUser
 	}
 }
+const getInitials = (name: string | undefined): string => {
+	if (!name) return "?"
+
+	const trimmedName = name.trim()
+	if (!trimmedName) return "?"
+
+	const nameParts = trimmedName.split(/\s+/)
+
+	if (nameParts.length === 1) {
+		return nameParts[0].charAt(0).toUpperCase()
+	}
+
+	return (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase()
+}
+
+const getRandomColor = (name: string | undefined): string => {
+	if (!name) return "#6B7280"
+
+	let hash = 0
+	for (let i = 0; i < name.length; i++) {
+		hash = name.charCodeAt(i) + ((hash << 5) - hash)
+	}
+
+	const colors = [
+		"#EF4444", // red-500
+		"#F97316", // orange-500
+		"#EAB308", // yellow-500
+		"#22C55E", // green-500
+		"#3B82F6", // blue-500
+		"#8B5CF6", // violet-500
+		"#EC4899", // pink-500
+		"#6366F1", // indigo-500
+		"#10B981", // emerald-500
+		"#F59E0B", // amber-500
+		"#06B6D4", // cyan-500
+		"#8B5CF6", // purple-500
+	] as const
+
+	const index = Math.abs(hash) % colors.length
+	return colors[index]
+}
+
+const avatarAgent = computed(() => {
+	return (name: string | undefined) => {
+		return {
+			initials: getInitials(name),
+			color: getRandomColor(name),
+		}
+	}
+})
+
+const assignAgent = async (opt: any) => {
+	if (!props.session?.ulid || !opt?.agent_id) return
+	if (isAssigningAgent.value) return
+	if (String(props.session?.assigned_agent?.id ?? "") === String(opt.agent_id)) return
+
+	try {
+		isAssigningAgent.value = true
+		const organisation = route().params?.organisation ?? "aw"
+		const parameters = [organisation, props.session.ulid]
+		const body = {
+			agent_id: opt.agent_id,
+		}
+
+		const response = await axios.patch(route("grp.org.crm.agents.assign", parameters), body, {
+			withCredentials: true,
+		})
+
+		await showAlert(
+			agentAlert,
+			{
+				status: "success",
+				title: "Success",
+				description: response.data?.message || "Agent updated",
+			},
+			2000
+		)
+
+		if (!props.session.assigned_agent) {
+			props.session.assigned_agent = {
+				id: opt.agent_id,
+				name: opt.label || opt.name || "",
+			}
+		} else {
+			props.session.assigned_agent.id = opt.agent_id
+			props.session.assigned_agent.name = opt.label || opt.name || ""
+		}
+
+		isEditingAgent.value = false
+		emit("transfer-agent-success")
+	} catch (e: any) {
+		await showAlert(
+			agentAlert,
+			{
+				status: "danger",
+				title: "Error",
+				description: e.response?.data?.message || e.message,
+			},
+			2000
+		)
+	} finally {
+		isAssigningAgent.value = false
+	}
+}
+
 const priorityOptions = ["urgent", "high", "normal", "low"]
 const displayName = computed(() => {
 	return props.session?.contact_name || props.session?.guest_identifier || ""
@@ -158,25 +278,23 @@ const onSyncByEmail = async () => {
 				email: syncEmail.value,
 			}
 		)
-		showAlert(syncEmailAlert, {
+		await showAlert(syncEmailAlert, {
 			status: "success",
 			title: "Success",
 			description: response.data?.message || "Email synced",
 		})
 
-		setTimeout(() => {
-			showAlert(syncEmailAlert, null)
-			emit("sync-success")
-		}, 3000)
+		emit("sync-success")
 	} catch (e: any) {
-		showAlert(syncEmailAlert, {
-			status: "danger",
-			title: "Error",
-			description: e.response?.data?.message || e.message,
-		})
-		setTimeout(() => {
-			showAlert(syncEmailAlert, null)
-		}, 3000)
+		await showAlert(
+			syncEmailAlert,
+			{
+				status: "danger",
+				title: "Error",
+				description: e.response?.data?.message || e.message,
+			},
+			3000
+		)
 	} finally {
 		isSyncing.value = false
 	}
@@ -190,25 +308,28 @@ const updatePriority = async (val: string) => {
 			{ priority: val }
 		)
 		currentPriority.value = val
-		showAlert(priorityAlert, {
-			status: "success",
-			title: "Success",
-			description: response.data?.message || "Priority updated",
-		})
-		setTimeout(() => {
-			showAlert(priorityAlert, null)
-		}, 2000)
 		isEditingPriority.value = false
+		await showAlert(
+			priorityAlert,
+			{
+				status: "success",
+				title: "Success",
+				description: response.data?.message || "Priority updated",
+			},
+			2000
+		)
+
 		emit("sync-success")
 	} catch (e: any) {
-		showAlert(priorityAlert, {
-			status: "danger",
-			title: "Error",
-			description: e.response?.data?.message || e.message,
-		})
-		setTimeout(() => {
-			showAlert(priorityAlert, null)
-		}, 3000)
+		await showAlert(
+			priorityAlert,
+			{
+				status: "danger",
+				title: "Error",
+				description: e.response?.data?.message || e.message,
+			},
+			3000
+		)
 	} finally {
 		isUpdatingPriority.value = false
 	}
@@ -458,10 +579,59 @@ onMounted(async () => {
 				</div>
 				<div class="grid grid-cols-3 gap-2 items-center">
 					<div class="text-gray-500 text-sm">{{ trans("Agent") }}</div>
-					<div class="col-span-2 font-medium text-sm">
+
+					<div
+						v-if="!isEditingAgent"
+						class="col-span-2 font-medium text-sm cursor-pointer"
+						@click="isEditingAgent = true">
 						{{ props.session?.assigned_agent?.name || "-" }}
 					</div>
+
+					<div v-else class="col-span-2">
+						<SelectQuery
+							:urlRoute="`${baseUrl}/app/api/chats/agents`"
+							:label="'label'"
+							:valueProp="'agent_id'"
+							:object="true"
+							:searchable="true"
+							:closeOnSelect="true"
+							:canClear="true"
+							:onChange="assignAgent">
+							<template #option="{ option, isSelected, isPointed }">
+								<div
+									class="flex items-center px-2 py-1.5"
+									:class="[isPointed(option) ? 'bg-gray-100' : '']">
+									<div
+										class="w-7 h-7 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white"
+										:style="{
+											backgroundColor: avatarAgent(
+												option?.name || option?.label
+											).color,
+										}">
+										{{ avatarAgent(option?.name || option?.label).initials }}
+									</div>
+									<div class="flex-1">
+										<div
+											class="text-sm"
+											:class="[isSelected(option) ? 'font-medium' : '']">
+											{{ option?.label || option?.name }}
+										</div>
+									</div>
+								</div>
+							</template>
+						</SelectQuery>
+
+						<div class="flex items-center gap-2 mt-2">
+							<button
+								class="px-2 py-1 text-xs border rounded"
+								:disabled="isAssigningAgent"
+								@click="isEditingAgent = false">
+								{{ trans("Cancel") }}
+							</button>
+						</div>
+					</div>
 				</div>
+				<AlertMessage v-if="agentAlert" :alert="agentAlert" />
 				<AlertMessage v-if="priorityAlert" :alert="priorityAlert" />
 			</div>
 		</div>

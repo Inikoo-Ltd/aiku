@@ -49,6 +49,8 @@ const reloadContacts = async () => {
 		if (["active", "closed"].includes(activeTab.value)) {
 			params.assigned_to_me = layout?.user?.id
 		}
+		// just a moment code hours
+		const PLUS_8_HOURS = 8 * 60 * 60 * 1000
 
 		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
 		console.log("✅ Contacts:", res)
@@ -60,9 +62,8 @@ const reloadContacts = async () => {
 				avatar: `https://i.pravatar.cc/100?u=${s.ulid}`,
 				lastMessage: s.last_message?.message ?? "",
 				lastMessageTime: s.last_message?.created_at
-					? formatTime(s.last_message.created_at)
+					? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
 					: undefined,
-				lastMessageTimestamp: s.last_message?.created_at_timestamp,
 				unread: s.unread_count,
 				status: s.status,
 				webUser: s.web_user,
@@ -233,6 +234,12 @@ const onSyncSuccess = async () => {
 	}
 }
 
+const onTransferAgentSuccess = async () => {
+	sidePanelVisible.value = false
+	selectedSession.value = null
+	await reloadContacts()
+}
+
 const formatLastMessage = (msg: string) => {
 	if (!msg) return ""
 	return msg.length > 10 ? msg.substring(0, 10) + "..." : msg
@@ -343,7 +350,8 @@ const formatLastMessage = (msg: string) => {
 						:session="selectedSession"
 						:initialTab="sidePanelInitialTab"
 						@close="closeSidePanel"
-						@sync-success="onSyncSuccess" />
+						@sync-success="onSyncSuccess"
+						@transfer-agent-success="onTransferAgentSuccess" />
 				</div>
 
 				<div class="h-full">

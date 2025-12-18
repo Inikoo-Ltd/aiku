@@ -28,6 +28,8 @@ class StoreChatEvent
                 'actor_type' => $actorType->value,
                 'actor_id' => $actorId,
                 'payload' => $payload,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         } catch (Exception $e) {
             Log::error('Failed to create chat event', [

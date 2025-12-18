@@ -4,6 +4,7 @@ namespace App\Http\Resources\CRM\Livechat;
 
 use App\Models\CRM\Livechat\ChatMessage;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
 class ChatSessionListResource extends JsonResource
 {
@@ -13,8 +14,13 @@ class ChatSessionListResource extends JsonResource
      * @param  \Illuminate\Http\Request  $request
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
+        $statuses = $request->input('statuses', []);
+        $statusParam = $request->input('status');
+        $isClosed = is_array($statuses) ? in_array('closed', $statuses) : ($statusParam === 'closed');
+        $assignmentStatus = $isClosed ? ChatAssignmentStatusEnum::RESOLVED->value : ChatAssignmentStatusEnum::ACTIVE->value;
+
         $lastMessage = null;
         if ($this->relationLoaded('messages') && $this->messages->isNotEmpty()) {
             $lastMessage = $this->messages->first();
@@ -22,7 +28,9 @@ class ChatSessionListResource extends JsonResource
 
         $activeAssignment = null;
         if ($this->relationLoaded('assignments')) {
-            $activeAssignment = $this->assignments->first();
+            $activeAssignment = $this->assignments
+                ->where('status', $assignmentStatus)
+                ->first();
         }
 
         $guestProfile = null;
@@ -44,21 +52,18 @@ class ChatSessionListResource extends JsonResource
             'ulid' => $this->ulid,
             'status' => $this->status,
             'guest_identifier' => $this->guest_identifier,
-            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'created_at_timestamp' => $this->created_at->copy()->setTimezone('UTC')->timestamp,
+            'created_at' => $this->created_at,
             'priority' => $this->priority,
             'contact_name' => $webUser?->customer?->contact_name,
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
-                'created_at' => $this->created_at->format('Y-m-d H:i'),
-                'created_at_timestamp' => $lastMessage->created_at->timestamp,
+                'created_at' => $lastMessage->created_at,
                 'is_read' => $lastMessage->is_read,
             ] : [
                 'message' => 'No messages yet',
                 'sender_type' => null,
                 'created_at' => null,
-                'created_at_timestamp' => null,
                 'is_read' => true,
             ],
 

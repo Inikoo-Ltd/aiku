@@ -4,13 +4,13 @@
 use App\Events\BroadcastRealtimeChat;
 use Illuminate\Support\Facades\Route;
 use App\Models\CRM\Livechat\ChatMessage;
+use App\Actions\CRM\ChatSession\GetChatAgents;
 use App\Actions\CRM\ChatSession\StoreChatAgent;
 use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
 use App\Actions\CRM\ChatSession\SendChatMessage;
 use App\Actions\CRM\ChatSession\UpdateChatAgent;
 use App\Actions\CRM\ChatSession\StoreChatSession;
-use App\Actions\CRM\ChatSession\AssignChatToAgent;
 use App\Actions\CRM\ChatSession\StoreGuestProfile;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
 use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
@@ -27,10 +27,6 @@ Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
 
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
 
-Route::post('/sessions/{chatSession:ulid}/assign', AssignChatToAgent::class)
-    ->name('sessions.assign');
-
-
 Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)
     ->name('sessions.guest_profile');
 
@@ -38,14 +34,15 @@ Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::cla
 Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)
     ->name('sessions.sync_by_email');
 
-Route::middleware('web')->post('/sessions/{chatSession:ulid}/assign-to-self', [AssignChatToAgent::class, 'assignToSelf'])
-    ->name('sessions.assign.self');
+
+Route::get('agents', GetChatAgents::class)->name('agents.index');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');
 
 Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.update')
     ->name('agents.update');
+
 
 
 Route::get('/test-broadcast', function () {

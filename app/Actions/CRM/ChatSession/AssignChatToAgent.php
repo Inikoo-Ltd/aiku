@@ -25,58 +25,82 @@ class AssignChatToAgent
     public function handle(ChatSession $chatSession, int $agentId, int $assignedByAgentId, ?string $transferReason = null): ChatAssignment
     {
         $agent = ChatAgent::findOrFail($agentId);
-
         $isSelfAssign = $agentId === $assignedByAgentId;
 
-        $previousAssignment = ChatAssignment::where('chat_session_id', $chatSession->id)
+
+        $previousAssignment = $this->getActiveAssignment($chatSession->id);
+
+        if ($isSelfAssign) {
+            return $previousAssignment;
+        }
+
+        $this->validateAgentAvailability($agent, $previousAssignment);
+
+        $this->updateChatSessionStatus($chatSession);
+
+        $this->handleAgentChatCount($agent, $previousAssignment);
+
+        $chatAssignment = $this->updateOrCreateAssignment($chatSession->id, $agentId);
+
+        $this->logAssignmentEvent($chatSession, $assignedByAgentId, $agentId, $previousAssignment, $isSelfAssign, $transferReason);
+        return $chatAssignment;
+    }
+
+
+    private function getActiveAssignment(int $sessionId): ?ChatAssignment
+    {
+        return ChatAssignment::where('chat_session_id', $sessionId)
             ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
             ->first();
+    }
 
-        $isTransfer = $previousAssignment && $previousAssignment->chat_agent_id !== $agentId;
+    private function validateAgentAvailability(ChatAgent $agent, ?ChatAssignment $previousAssignment): void
+    {
 
-        if (
-            !$isSelfAssign &&
-            (!$previousAssignment || $previousAssignment->chat_agent_id !== $agentId) &&
-            !$agent->isAvailableForChat()
-        ) {
+        $isNewAssignment = !$previousAssignment || $previousAssignment->chat_agent_id !== $agent->id;
+
+        if ($isNewAssignment && !$agent->isAvailableForChat()) {
             throw new Exception('Agent is not available for new chats.');
         }
+    }
 
-        $previousStatus = $chatSession->status?->value;
-        $chatSession->update([
-            'status' => ChatSessionStatusEnum::ACTIVE->value
-        ]);
+    private function updateChatSessionStatus(ChatSession $chatSession): void
+    {
+        $chatSession->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+    }
 
-        ChatAssignment::where('chat_session_id', $chatSession->id)
+    private function updateOrCreateAssignment(int $sessionId, int $agentId): ChatAssignment
+    {
+        ChatAssignment::where('chat_session_id', $sessionId)
             ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-            ->update([
-                'status' => ChatAssignmentStatusEnum::RESOLVED->value,
-                'resolved_at' => now()
-            ]);
+            ->update(['chat_agent_id' => $agentId, 'updated_at' => now()]);
 
-        $chatAssignment = ChatAssignment::create([
-            'chat_session_id' => $chatSession->id,
-            'chat_agent_id' => $agentId,
-            'status' => ChatAssignmentStatusEnum::ACTIVE->value,
-            'assigned_by' => ChatAssignmentAssignedByEnum::AGENT->value,
-            'note' => $transferReason,
-            'assigned_at' => now(),
-        ]);
+        return $this->getActiveAssignment($sessionId)
+            ?? throw new Exception('Failed to create assignment');
+    }
 
-        if (!$isSelfAssign) {
-            $agent->incrementChatCount();
-
-            if ($previousAssignment && $previousAssignment->chat_agent_id !== $agentId) {
-                $previousAgent = ChatAgent::find($previousAssignment->chat_agent_id);
-                if ($previousAgent) {
-                    $previousAgent->decrementChatCount();
-                }
-            }
+    private function handleAgentChatCount(ChatAgent $agent, ?ChatAssignment $previousAssignment): void
+    {
+        $agent->incrementChatCount();
+        if ($previousAssignment?->chat_agent_id !== $agent->id) {
+            $previousAssignment?->chatAgent?->decrementChatCount();
         }
+    }
 
-        $this->logChatEvent($chatSession, $assignedByAgentId, $agentId, $previousStatus, $isTransfer, $isSelfAssign, $transferReason);
 
-        return $chatAssignment;
+    private function logAssignmentEvent(ChatSession $chatSession, int $assignedByAgentId, int $agentId, ?ChatAssignment $previousAssignment, bool $isSelfAssign, ?string $transferReason): void
+    {
+        $isTransfer = $previousAssignment && $previousAssignment->chat_agent_id !== $agentId;
+
+        $this->logChatEvent(
+            $chatSession,
+            $assignedByAgentId,
+            $agentId,
+            $chatSession->status?->value,
+            $isTransfer,
+            $isSelfAssign,
+            $transferReason
+        );
     }
 
     public function rules(): array
@@ -88,6 +112,7 @@ class AssignChatToAgent
                 'exists:chat_agents,id'
             ],
             'note' => [
+                'sometimes',
                 'nullable',
                 'string',
                 'max:100'
@@ -106,7 +131,7 @@ class AssignChatToAgent
         ];
     }
 
-    public function asController(ChatSession $chatSession, Request $request): JsonResponse
+    public function asController(string $organisation, ChatSession $chatSession, Request $request): JsonResponse
     {
         $this->validateUlid($chatSession->ulid);
 
@@ -128,9 +153,8 @@ class AssignChatToAgent
                 $assignedByAgent->id,
                 $validated['note'] ?? null
             );
-
             $actionType = $this->getActionType($assignedByAgent->id, $validated['agent_id'], $chatSession);
-
+            BroadcastChatListEvent::dispatch();
             return response()->json([
                 'success' => true,
                 'message' => $this->getSuccessMessage($actionType),
@@ -176,7 +200,6 @@ class AssignChatToAgent
     protected function getCurrentAgent(): ?ChatAgent
     {
         $user = Auth::user();
-
         if ($user) {
             if (!$user->chatAgent) {
                 return null;

@@ -11,7 +11,6 @@ import {
 	faTimesCircle,
 	faHistory,
 	faAddressCard,
-	faExchange,
 	faMessage,
 } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
@@ -146,7 +145,13 @@ const getMessages = async (loadMore = false) => {
 
 		const response = await axios.get(url)
 		const messages = response.data?.data?.messages ?? response.data?.messages ?? []
-		const fetched = messages.map((msg: ChatMessage) => ({ ...msg }))
+
+		const PLUS_8_HOURS = 8 * 60 * 60 * 1000
+
+		const fetched = messages.map((msg: ChatMessage) => ({
+			...msg,
+			created_at: new Date(msg.created_at).getTime() + PLUS_8_HOURS,
+		}))
 
 		if (!loadMore) {
 			messagesLocal.value = fetched
@@ -166,9 +171,10 @@ const getMessages = async (loadMore = false) => {
 }
 
 const formatTime = (timestamp: string) => {
-	if (!timestamp) return ""
-	const date = new Date(timestamp)
-	return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+	return new Intl.DateTimeFormat("id-ID", {
+		hour: "2-digit",
+		minute: "2-digit",
+	}).format(new Date(timestamp))
 }
 
 const formatDate = (timestamp: string) => {

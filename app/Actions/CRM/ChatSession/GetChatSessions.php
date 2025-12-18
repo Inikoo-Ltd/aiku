@@ -66,6 +66,7 @@ class GetChatSessions
         if (isset($filters['statuses'])) {
             $query->whereIn('status', $filters['statuses']);
         }
+
         if (!empty($filters['assigned_to_me'])) {
 
             $userId = (int) $filters['assigned_to_me'];
@@ -73,7 +74,7 @@ class GetChatSessions
             $currentAgent = $this->getCurrentAgent($userId);
 
             if ($currentAgent) {
-                $query->whereHas('assignments', function ($q) use ($currentAgent) {
+                $query->whereHas('assignments', function ($q) use ($currentAgent, $filters) {
                     $q->where('chat_agent_id', $currentAgent->id);
                 });
             }

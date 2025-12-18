@@ -21,6 +21,8 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::delete('/delete/{agent:id}', DeleteAgent::class)->name('delete')->withoutScopedBindings();
     Route::post('/{ulid}/assign-to-self', [AssignChatToAgent::class, 'assignToSelf'])
         ->name('assign.self');
+    Route::patch('{chatSession:ulid}/assign', AssignChatToAgent::class)
+        ->name('assign');
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
     Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
 });

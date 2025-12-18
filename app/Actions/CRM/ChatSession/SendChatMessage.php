@@ -179,6 +179,7 @@ class SendChatMessage
             if ($webUser) {
                 $chatSession->update([
                     'web_user_id' => $webUser->id,
+                    'updated_at'  => now(),
                 ]);
                 return [
                     'sender_type' => ChatSenderTypeEnum::USER->value,

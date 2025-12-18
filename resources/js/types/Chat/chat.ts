@@ -19,7 +19,6 @@ export interface SessionAPI {
 	guest_identifier: string | null
 	contact_name: string | null
 	created_at: string
-	created_at_timestamp: number
 	priority: string
 	customer: boolean
 	last_message?: LastMessage
@@ -82,7 +81,6 @@ export interface Contact {
 	lastMessage: string
 	priority: string
 	lastMessageTime?: string
-	lastMessageTimestamp?: number
 	unread: number
 	status: "waiting" | "active" | "closed" | string
 	messages?: ChatMessage[]
@@ -115,6 +113,5 @@ export interface ChatMessage {
 	message_text: string
 	sender_type: "guest" | "user" | "agent" | "system"
 	created_at: string
-	created_at_timestamp: number
 	is_read: boolean
 }

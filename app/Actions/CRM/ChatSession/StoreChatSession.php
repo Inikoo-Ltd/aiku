@@ -59,6 +59,8 @@ class StoreChatSession
                 'language_id'     => $modelData['language_id'],
                 'priority'        => $modelData['priority'],
                 'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
+                'created_at'       => now(),
+                'updated_at'       => now(),
             ];
 
             $chatSession = ChatSession::create($chatSessionData);
