@@ -190,6 +190,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_waiting_items_type_customer_status_to_do
  * @property int $number_waiting_items_type_customer_status_in_progress
  * @property int $number_waiting_items_type_customer_status_done
+ * @property int $number_returns Total order returns
+ * @property int $number_returns_state_waiting_to_receive
+ * @property int $number_returns_state_received
+ * @property int $number_returns_state_inspected
+ * @property int $number_returns_state_restocked
+ * @property int $number_returns_state_cancelled
+ * @property int $number_return_items
+ * @property int $number_return_items_state_waiting_to_receive
+ * @property int $number_return_items_state_received
+ * @property int $number_return_items_state_inspected
+ * @property int $number_return_items_state_restocked
+ * @property int $number_return_items_state_cancelled
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

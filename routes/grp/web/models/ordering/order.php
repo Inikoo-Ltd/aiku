@@ -12,6 +12,7 @@ use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\Return\StoreReturn;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
@@ -45,7 +46,6 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
     Route::patch('', UpdateTransaction::class)->name('update');
 });
 
-
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
 
@@ -55,6 +55,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::post('delivery-note/replacement', StoreReplacementDeliveryNote::class)->name('replacement_delivery_note.store')->withoutScopedBindings();
+    Route::post('return', StoreReturn::class)->name('return.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
 
