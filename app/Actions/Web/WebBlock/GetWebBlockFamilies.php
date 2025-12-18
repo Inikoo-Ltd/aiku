@@ -43,7 +43,7 @@ class GetWebBlockFamilies
 
                 ->whereNull('product_categories.deleted_at')
                 ->get();
-            }
+        }
         // } elseif ($webpage->model instanceof Collection) {
         //     $families = DB::table('product_categories')
         //         ->leftJoin('collection_has_models', function ($join) {
@@ -62,7 +62,7 @@ class GetWebBlockFamilies
         //         ->where('show_in_website', true)
         //         ->whereNull('product_categories.deleted_at')
         //         ->get();
-        // } 
+        // }
         else {
             return $webBlock;
         }
@@ -88,7 +88,7 @@ class GetWebBlockFamilies
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
-       /*  data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request())); */
+        /*  data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request())); */
 
         return $webBlock;
     }

@@ -43,7 +43,7 @@ class ImportTransactionInOrder extends OrgAction
             $file,
             new TransactionImport($order, $upload)
         );
-            $upload->refresh();
+        $upload->refresh();
         // } else {
         //     ImportUpload::dispatch(
         //         $this->tmpPath.$upload->filename,
