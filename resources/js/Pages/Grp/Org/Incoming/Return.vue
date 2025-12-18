@@ -13,6 +13,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faUndoAlt, faClock, faInboxIn, faSearch, faCheckDouble, faTimes, faUser, faBox, faCalendar } from '@fal'
 import { computed } from 'vue'
 import { routeType } from '@/types/route'
+import Table from '@/Components/Table/Table.vue'
 
 library.add(faUndoAlt, faClock, faInboxIn, faSearch, faCheckDouble, faTimes, faUser, faBox, faCalendar)
 
@@ -51,6 +52,9 @@ const props = defineProps<{
     pageHead: {}
     return: {}
     box_stats: BoxStats
+    data: {
+        data: {}[]
+    }
 }>()
 
 const stateColorClass = computed(() => {
@@ -128,14 +132,12 @@ const stateColorClass = computed(() => {
             </div>
         </div>
 
-        <!-- Return Items Table Placeholder -->
+        <!-- Return Items Table -->
         <div class="bg-white rounded-lg shadow">
             <div class="px-4 py-5 border-b border-gray-200">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">Return Items</h3>
             </div>
-            <div class="px-4 py-5 text-center text-gray-500">
-                Return items will be displayed here
-            </div>
+            <Table :resource="data" />
         </div>
     </div>
 </template>
