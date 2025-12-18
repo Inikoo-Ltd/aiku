@@ -59,7 +59,7 @@ class ProductCategoryWebpagesResource extends JsonResource
             "created_at"        => $this->created_at,
             "updated_at"        => $this->updated_at,
             "state"             => $this->state,
-            "state_icon"        => $this->state->stateIcon()[$this->state->value],
+            "state_icon"        => $this->state?->stateIcon()[$this->state?->value],
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
