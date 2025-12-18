@@ -126,7 +126,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
-                        v-if="product.stock > 0 && basketButton" 
+                        v-if="product.stock > 0 && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
                         :product="product"
                         :key="product" 
@@ -171,7 +171,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
                         <div v-else
-                            class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
+                            class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[10rem] break-words leading-snug"
                             :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
 
 

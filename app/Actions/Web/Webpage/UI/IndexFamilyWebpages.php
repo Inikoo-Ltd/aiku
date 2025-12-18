@@ -137,6 +137,7 @@ class IndexFamilyWebpages extends OrgAction
                 'webpages.title',
                 'webpages.type',
                 'webpages.slug',
+                'webpages.state',
                 'webpages.level',
                 'webpages.sub_type',
                 'webpages.url',
@@ -185,6 +186,7 @@ class IndexFamilyWebpages extends OrgAction
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
+            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: false, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'title', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
@@ -216,7 +218,8 @@ class IndexFamilyWebpages extends OrgAction
                 ),
                 'title'       => __('Webpages'),
                 'pageHead'    => [
-                    'title'         => __('family webpages'),
+                    'model'         => __('Webpage'),
+                    'title'         => __('Families'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')

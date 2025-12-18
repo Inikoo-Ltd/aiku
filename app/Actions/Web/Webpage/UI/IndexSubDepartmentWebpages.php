@@ -125,6 +125,7 @@ class IndexSubDepartmentWebpages extends OrgAction
                 'webpages.type',
                 'webpages.slug',
                 'webpages.level',
+                'webpages.state',
                 'webpages.sub_type',
                 'webpages.url',
                 'organisations.slug as organisation_slug',
@@ -173,6 +174,7 @@ class IndexSubDepartmentWebpages extends OrgAction
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
+            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: false, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_families', label: __('Families'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);

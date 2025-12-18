@@ -67,11 +67,11 @@ class ShopIntervalsResource extends JsonResource
             if ($type === 'sales' && (str_starts_with($key, 'baskets_created_') || str_starts_with($key, 'sales_') || str_starts_with($key, 'revenue_'))) {
                 $intervalsData[$key] = $value;
             } elseif ($type === 'ordering' && (
-                str_starts_with($key, 'refunds_') || 
-                str_starts_with($key, 'invoices_') || 
-                str_starts_with($key, 'visitors_') || 
-                str_starts_with($key, 'orders_') || 
-                str_starts_with($key, 'registrations_') || 
+                str_starts_with($key, 'refunds_') ||
+                str_starts_with($key, 'invoices_') ||
+                str_starts_with($key, 'visitors_') ||
+                str_starts_with($key, 'orders_') ||
+                str_starts_with($key, 'registrations_') ||
                 str_starts_with($key, 'lost_revenue_')
             )) {
                 $intervalsData[$key] = $value;

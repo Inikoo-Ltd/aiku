@@ -240,7 +240,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                      <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right" />
                     <div v-else
-                        class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
+                        class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[10rem] break-words leading-snug"
                         :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                         <span class="text-xs">
                             <FontAwesomeIcon :icon="faCircle" class="text-[6px] mt-[6px]" />
@@ -261,6 +261,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
         </div>
 
         <ButtonAddPortfolio
+            v-if="!product.is_coming_soon"
             :product="product"
             :productHasPortfolio="productHasPortfolio"
             :buttonStyle="buttonStyle"

@@ -711,3 +711,60 @@ if (!function_exists('replaceUrlSubdomain')) {
         return $rebuilt;
     }
 }
+
+if (!function_exists('getIsoLocale')) {
+    function getIsoLocale(string $languageCode): string
+    {
+        $normalized = strtolower($languageCode);
+        $normalized = str_replace(['-', '_'], '', $normalized);
+        $lang       = substr($normalized, 0, 2);
+
+        $map = [
+            'bg' => 'bg-BG',
+            'en' => 'en-GB',
+            'es' => 'es-ES',
+            'fr' => 'fr-FR',
+            'de' => 'de-DE',
+            'it' => 'it-IT',
+            'nl' => 'nl-NL',
+            'pt' => 'pt-PT',
+            'pl' => 'pl-PL',
+            'cs' => 'cs-CZ',
+            'sk' => 'sk-SK',
+            'ro' => 'ro-RO',
+            'sv' => 'sv-SE',
+            'da' => 'da-DK',
+            'fi' => 'fi-FI',
+            'nb' => 'nb-NO',
+            'nn' => 'nn-NO',
+            'no' => 'nb-NO',
+            'el' => 'el-GR',
+            'hu' => 'hu-HU',
+            'hr' => 'hr-HR',
+            'sl' => 'sl-SI',
+            'et' => 'et-EE',
+            'lv' => 'lv-LV',
+            'lt' => 'lt-LT',
+            'tr' => 'tr-TR',
+            'ru' => 'ru-RU',
+            'uk' => 'uk-UA',
+            'sr' => 'sr-RS',
+            'sq' => 'sq-AL',
+            'bs' => 'bs-BA',
+            'mk' => 'mk-MK',
+            'zh' => 'zh-CN',
+            'ja' => 'ja-JP',
+            'ko' => 'ko-KR',
+            'ar' => 'ar-SA',
+            'he' => 'he-IL',
+            'hi' => 'hi-IN',
+            'id' => 'id-ID',
+            'ms' => 'ms-MY',
+            'vi' => 'vi-VN',
+            'th' => 'th-TH',
+        ];
+
+        return $map[$lang] ?? $languageCode;
+
+    }
+}
