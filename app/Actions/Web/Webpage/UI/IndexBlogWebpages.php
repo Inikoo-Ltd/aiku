@@ -138,6 +138,7 @@ class IndexBlogWebpages extends OrgAction
                 'webpages.type',
                 'webpages.slug',
                 'webpages.level',
+                'webpages.state',
                 'webpages.sub_type',
                 'webpages.url',
                 'organisations.slug as organisation_slug',
@@ -195,6 +196,7 @@ class IndexBlogWebpages extends OrgAction
             if ($bucket == 'all') {
                 $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
             }
+            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: false, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
