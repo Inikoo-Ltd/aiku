@@ -171,7 +171,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
                         <div v-else
-                            class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
+                            class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[10rem] break-words leading-snug"
                             :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
 
 
