@@ -13,6 +13,7 @@ import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vu
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import BestsellerBadge from "@/Components/CMS/Webpage/Products/BestsellerBadge.vue"
 import Prices from "@/Components/CMS/Webpage/Products1/Prices.vue"
+import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 
 const layout = inject("layout", retinaLayoutStructure)
 
@@ -201,6 +202,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 </script>
 
 <template>
+
     <div class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
@@ -235,16 +237,18 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 </div>
 
                 <!-- Stock Info -->
-                <div v-if="layout?.iris?.is_logged_in && !product.is_coming_soon" class="flex items-center md:justify-end justify-start">
-                    <div
+                <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
+                     <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right" />
+                    <div v-else
                         class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
                         :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                         <span class="text-xs">
                             <FontAwesomeIcon :icon="faCircle" class="text-[6px] mt-[6px]" />
-                            {{ product.stock > 10000
-                                ? trans("Unlimited quantity available")
-                                : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' + trans('available'))
-                            }}
+                                {{ product.is_on_demand
+                                    ? trans("Unlimited quantity available")
+                                    : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +
+                                        trans('available'))
+                                }}
                         </span>
                     </div>
                 </div>
@@ -257,6 +261,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
         </div>
 
         <ButtonAddPortfolio
+            v-if="!product.is_coming_soon"
             :product="product"
             :productHasPortfolio="productHasPortfolio"
             :buttonStyle="buttonStyle"

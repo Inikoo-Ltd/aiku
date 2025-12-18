@@ -87,7 +87,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
 </script>
 
-<template>
+<template>           
     <div  class="text-gray-800 isolate h-full flex flex-col"  comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
@@ -126,7 +126,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
-                        v-if="product.stock > 0 && basketButton" 
+                        v-if="product.stock > 0 && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
                         :product="product"
                         :key="product" 
@@ -175,10 +175,9 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                             :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
 
 
-
                             <span class="text-xs">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[6px] " />
-                                {{ product.stock > 10000
+                                {{ product.is_on_demand
                                     ? trans("Unlimited quantity available")
                                     : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +
                                         trans('available'))
