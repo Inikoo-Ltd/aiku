@@ -85,13 +85,11 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         // LLMs.txt for AI crawlers
         Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');
 
-        Route::middleware('iris.health')->group(function () {
-            Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
-            Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
-            Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');
-            Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{path}', [ShowIrisWebpage::class, 'deep3'])->name('iris_webpage.deep3');
-            Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{parentPath4}/{path}', [ShowIrisWebpage::class, 'deep4'])->name('iris_webpage.deep4');
-        });
+        Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
+        Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
+        Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');
+        Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{path}', [ShowIrisWebpage::class, 'deep3'])->name('iris_webpage.deep3');
+        Route::get('/{parentPath1}/{parentPath2}/{parentPath3}/{parentPath4}/{path}', [ShowIrisWebpage::class, 'deep4'])->name('iris_webpage.deep4');
     });
     // do not put any route below here, put it above {parentPath1}/... routes
 
