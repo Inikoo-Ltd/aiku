@@ -144,11 +144,6 @@ export default {
 					],
 				},
 				{
-					key: ["use_icon"],
-					label: "Use Icon",
-					type: "switch",
-				},
-				{
 					name: "Text",
 					key: ["text"],
 					replaceForm: [

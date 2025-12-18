@@ -30,7 +30,7 @@ const LBInitSearchResult = async () => {
             },
             TopItems: ['category:4', 'department:4', 'sub_department:4', 'collection:4', 'brand:4', 'tag:4'],
             Theme: "boo",
-            Size: 12,
+            Size: 15,
             Facets: [
                 'category',
                 'color',
@@ -165,9 +165,6 @@ const LBInitSearchResult = async () => {
                         }
                     },
                 }
-            },
-            DefaultFilters: {
-                type: 'item'
             },
             UrlParamName: {
                 QUERY: "q",

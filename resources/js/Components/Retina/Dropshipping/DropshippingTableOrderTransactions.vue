@@ -378,7 +378,7 @@ defineExpose({
           </Link>
 
           <!-- Edit / Cancel -->
-          <div v-if="state !== 'creating'" class="flex gap-2 items-center">
+          <!-- <div v-if="state !== 'creating'" class="flex gap-2 items-center">
             <button v-if="!editingIds.has(item.id) && layout?.app?.environment === 'local'"
               class="h-9 align-bottom text-center" @click="startEdit(item)" aria-label="Edit Product Order"
               v-tooltip="'Edit Product Order'">
@@ -390,7 +390,7 @@ defineExpose({
 
             <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative" v-tooltip="'delete'"
               :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)" size="sm" />
-          </div>
+          </div> -->
         </div>
       </template>
 

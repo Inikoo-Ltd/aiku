@@ -193,7 +193,6 @@ const handleViewAllSubDepartment = (url: string) => {
                                     </template>
                                 </LinkIris>
                             </div>
-
                             <SidebarMobileNavigation
                                 v-for="(sub, sIndex) in sortedFamilies" :key="sIndex"
                                 :nav="sub"
@@ -202,17 +201,16 @@ const handleViewAllSubDepartment = (url: string) => {
                                         ? `navActive`
                                         : 'navInactive'
                                 ]"
-                                aclick="changeActiveCustomTopSubIndex(sIndex)"
                                 :internalHref
                                 :activeSubIndex
-                                :closeSidebar
+                                :closeSidebar="()=>closeSidebar()"
                             />
 
                             <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
                                 <SidebarMobileNavigation
                                     :nav="sub"
                                     :activeSubIndex
-                                    :closeSidebar
+                                    :closeSidebar="()=>closeSidebar()"
                                     :internalHref
                                 />
                             </template>
@@ -278,11 +276,12 @@ const handleViewAllSubDepartment = (url: string) => {
                                     ? `navActive`
                                     : 'navInactive'
                             ]"
-                            @click="changeActiveCustomTopSubIndex(sIndex)"
+                            @xclick="changeActiveCustomTopSubIndex(sIndex)"
+                            @arrow-click="changeActiveCustomTopSubIndex(sIndex)"
                             :internalHref
                             :activeSubIndex
-                            :closeSidebar
-                            isWithArrowRight
+                             :closeSidebar="()=>closeSidebar()"
+                            :isWithArrowRight="true"
                         />
                     </div>
 
@@ -314,10 +313,11 @@ const handleViewAllSubDepartment = (url: string) => {
                                             ? 'navInactive'
                                             : ''
                                 ]"
-                                @click="sub?.families?.length ? changeActiveSubIndex(sIndex) : false"
+                                @xclick="sub?.families?.length ? changeActiveSubIndex(sIndex) : false"
+                                @arrow-click="sub?.families?.length ? changeActiveSubIndex(sIndex) : false"
                                 :internalHref
                                 :activeSubIndex
-                                :closeSidebar
+                                 :closeSidebar="()=>closeSidebar()"
                                 :isWithArrowRight="!!sub?.families?.length"
                             />
                         </template>
@@ -333,7 +333,7 @@ const handleViewAllSubDepartment = (url: string) => {
                                 ]"
                                 :internalHref
                                 :activeSubIndex
-                                :closeSidebar
+                                :closeSidebar="()=>closeSidebar()"
                             />
                         </template>
                     </div>
@@ -348,11 +348,12 @@ const handleViewAllSubDepartment = (url: string) => {
                                     ? `navActive`
                                     : 'navInactive'
                             ]"
-                            @click="changeActiveCustomSubIndex(sIndex)"
+                            @xclick="changeActiveCustomSubIndex(sIndex)"
+                            @arrow-click="changeActiveCustomSubIndex(sIndex)"
                             :internalHref
                             :activeSubIndex
-                            :closeSidebar
-                            isWithArrowRight
+                            :closeSidebar="()=>closeSidebar()"
+                            :isWithArrowRight="true"
                         />
                     </div>
 
@@ -381,7 +382,7 @@ const handleViewAllSubDepartment = (url: string) => {
                     <!-- Section: Custom Top -->
                     <div v-if="customMenusTop?.length > 0">
                         <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex" class="flex justify-between items-center w-full text-left font-semibold borderBottomColorSameAsText">
-                            <LinkIris v-if="customTopItem?.url !== null && customTopItem.sub_departments?.length == 0"
+                            <LinkIris v-if="customTopItem?.url !== null"
                                 :href="customTopItem.type === 'internal' ? internalHref(customTopItem) : customTopItem.url"
                                 :target="getTarget(customTopItem)"
                                 @success="() => closeSidebar()"
@@ -404,9 +405,9 @@ const handleViewAllSubDepartment = (url: string) => {
                         v-for="(category, index) in sortedProductCategories"
                         :key="'product_categories' + index"
                         class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText"
-                        @click="setActiveCategory(index)"
+                        
                     >
-                        <!-- <LinkIris v-if="category?.url !== null"
+                        <LinkIris v-if="category?.url !== null"
                             :href="internalHref(category)"
                             :target="getTarget(category)"
                             @success="() => closeSidebar()"
@@ -414,22 +415,19 @@ const handleViewAllSubDepartment = (url: string) => {
                             {{ category.name }}
                         </LinkIris>
                         <span v-else
-                            class="font-bold">
-                            {{ category.name }}
-                        </span> -->
-                        <span class="font-bold">
+                            class="font-bold"  @click="setActiveCategory(index)">
                             {{ category.name }}
                         </span>
 
                         <div v-if="!!category.sub_departments?.length" class="text-sm">
-                            <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
+                            <FontAwesomeIcon :icon="faChevronRight" fixed-width  @click="setActiveCategory(index)"/>
                         </div>
                     </div>
 
                     
                     <!-- Section: Custom Bottom -->
                     <div v-for="(customBot, customIdxBot) in customMenusBottom" :key="'custom-bot' + customIdxBot" class="flex justify-between items-center w-full text-left font-semibold borderBottomColorSameAsText">
-                        <LinkIris v-if="customBot?.url !== null && customBot.sub_departments?.length == 0"
+                        <LinkIris v-if="customBot?.url !== null"
                             :href="customBot.type === 'internal' ? internalHref(customBot) : customBot.url"
                             :target="getTarget(customBot)"
                             @success="() => closeSidebar()"
