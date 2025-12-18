@@ -22,22 +22,30 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $shop_name
+ * @property mixed $reference
+ * @property mixed $currency_code
+ * @property mixed $number_credit_transactions
+ * @property mixed $shop_code
  */
 class CustomerBalancesResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'                => $this->id,
-            'slug'              => $this->slug,
-            'name'              => $this->name,
-            'balance'           => $this->balance,
-            'shop_slug'         => $this->shop_slug,
-            'shop_type'         => $this->shop_type,
-            'fulfilment_slug'   => $this->fulfilment_slug,
-            'organisation_name' => $this->organisation_name,
-            'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
+            'id'                         => $this->id,
+            'slug'                       => $this->slug,
+            'name'                       => $this->name,
+            'reference'                  => $this->reference,
+            'balance'                    => $this->balance,
+            'shop_slug'                  => $this->shop_slug,
+            'shop_type'                  => $this->shop_type,
+            'shop_code'                  => $this->shop_code,
+            'fulfilment_slug'            => $this->fulfilment_slug,
+            'organisation_name'          => $this->organisation_name,
+            'organisation_slug'          => $this->organisation_slug,
+            'shop_name'                  => $this->shop_name,
+            'currency_code'              => $this->currency_code,
+            'number_credit_transactions' => $this->number_credit_transactions
         ];
     }
 }
