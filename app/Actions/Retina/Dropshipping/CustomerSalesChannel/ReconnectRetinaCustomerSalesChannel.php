@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\ReAuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;

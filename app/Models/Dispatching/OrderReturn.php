@@ -43,65 +43,27 @@ use Spatie\Sluggable\SlugOptions;
 /**
  * App\Models\Dispatching\OrderReturn
  *
- * @property int $id
- * @property int $group_id
- * @property int $organisation_id
- * @property string $slug
- * @property int $warehouse_id
- * @property int $shop_id
- * @property int $customer_id
- * @property int|null $customer_client_id
- * @property string $reference
  * @property ReturnStateEnum $state
- * @property string|null $email
- * @property string|null $phone
- * @property int|null $address_id
- * @property int|null $return_country_id
- * @property int|null $weight actual weight, grams
- * @property int $number_items current number of items
- * @property int|null $receiver_id Employee who received the return
- * @property int|null $inspector_id Employee who inspected the return
- * @property \Illuminate\Support\Carbon $date
- * @property \Illuminate\Support\Carbon|null $received_at
- * @property \Illuminate\Support\Carbon|null $inspecting_at
- * @property \Illuminate\Support\Carbon|null $processed_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
- * @property string|null $customer_notes
- * @property string|null $internal_notes
- * @property string|null $return_reason
- * @property int|null $platform_id
- * @property int|null $customer_sales_channel_id
- * @property int|null $receiver_user_id
- * @property int|null $inspector_user_id
- * @property int $estimated_weight grams
- * @property int $effective_weight grams
- * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string|null $source_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Employee|null $inspector
  * @property-read User|null $inspectorUser
  * @property-read Collection<int, Order> $orders
- * @property-read Organisation $organisation
+ * @property-read Organisation|null $organisation
  * @property-read Platform|null $platform
  * @property-read Employee|null $receiver
  * @property-read User|null $receiverUser
  * @property-read Address|null $returnAddress
  * @property-read Collection<int, \App\Models\Dispatching\ReturnItem> $returnItems
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\Dispatching\ReturnStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
- * @property-read Warehouse $warehouse
+ * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|OrderReturn newModelQuery()
  * @method static Builder<static>|OrderReturn newQuery()
  * @method static Builder<static>|OrderReturn onlyTrashed()

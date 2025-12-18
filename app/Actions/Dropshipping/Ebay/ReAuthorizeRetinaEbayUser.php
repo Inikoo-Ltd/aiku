@@ -12,9 +12,7 @@ namespace App\Actions\Dropshipping\Ebay;
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Actions\RetinaAction;
 use App\Enums\Dropshipping\EbayUserStepEnum;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
-use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 
 class ReAuthorizeRetinaEbayUser extends RetinaAction

@@ -52,7 +52,7 @@ class CloneMasterAssetToOtherShop extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if($this->has('masterProduct')){
+        if ($this->has('masterProduct')) {
             $this->masterAsset = MasterAsset::where('slug', $this->masterProduct)->first();
             $this->set('masterAsset', $this->masterAsset->replicate()->toArray());
         }

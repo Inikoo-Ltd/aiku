@@ -118,7 +118,7 @@ class CreateReturn extends OrgAction
             ],
             'customer'    => CustomerResource::make($order->customer)->getArray(),
             'address'     => [
-                'delivery' => AddressResource::make($order->deliveryAddress ?? new Address),
+                'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
                 'options'  => [
                     'countriesAddressData' => GetAddressData::run(),
                 ],
