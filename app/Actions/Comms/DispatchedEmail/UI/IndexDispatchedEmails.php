@@ -30,6 +30,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Ordering\Order;
 
 class IndexDispatchedEmails extends OrgAction
 {
@@ -65,6 +67,20 @@ class IndexDispatchedEmails extends OrgAction
                     $join->on('dispatched_emails.recipient_id', '=', 'customers.id')
                         ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
                 });
+
+                /*
+                * if outbox code are in delivery_confirmation,order_confirmation,reorder_reminder,
+                * reorder_reminder_2nd, reorder_reminder_3rd
+                */
+                if (in_array($parent->code, [OutboxCodeEnum::DELIVERY_CONFIRMATION, OutboxCodeEnum::ORDER_CONFIRMATION, OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
+                    $queryBuilder->leftJoin('model_has_dispatched_emails', function ($join) {
+                        $join->on('model_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')
+                            ->where('model_has_dispatched_emails.model_type', '=', class_basename(Order::class));
+                    });
+                    $queryBuilder->leftJoin('orders', function ($join) {
+                        $join->on('orders.id', '=', 'model_has_dispatched_emails.model_id');
+                    });
+                }
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':
@@ -127,7 +143,7 @@ class IndexDispatchedEmails extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
