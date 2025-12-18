@@ -98,7 +98,8 @@ class OrganisationHydrateIntrastatImportMetrics implements ShouldBeUnique
             return;
         }
 
-        $rawMetrics = DB::table('stock_delivery_items as sdi')
+        // Query for OrgSupplier deliveries
+        $supplierMetrics = DB::table('stock_delivery_items as sdi')
             ->join('stock_deliveries as sd', 'sd.id', '=', 'sdi.stock_delivery_id')
             ->joinSub(
                 DB::table('product_has_org_stocks as phos')
@@ -106,7 +107,8 @@ class OrganisationHydrateIntrastatImportMetrics implements ShouldBeUnique
                     ->select(
                         'phos.org_stock_id',
                         DB::raw('MIN(p.id) as product_id'),
-                        DB::raw('MIN(p.tariff_code) as tariff_code')
+                        DB::raw('MIN(p.tariff_code) as tariff_code'),
+                        DB::raw('MIN(COALESCE(p.gross_weight, 0)) as product_weight')
                     )
                     ->whereNotNull('p.tariff_code')
                     ->where('p.tariff_code', '!=', '')
@@ -116,27 +118,69 @@ class OrganisationHydrateIntrastatImportMetrics implements ShouldBeUnique
                 '=',
                 'sdi.org_stock_id'
             )
-            ->join('org_suppliers as osup', function ($join) {
-                $join->on('osup.id', '=', DB::raw("CASE 
-                    WHEN sd.parent_type = 'OrgSupplier' THEN sd.parent_id 
-                    ELSE NULL 
-                END"));
-            })
-            ->leftJoin('suppliers as sup', 'sup.id', '=', 'osup.supplier_id')
+            ->join('org_suppliers as osup', 'osup.id', '=', 'sd.parent_id')
+            ->join('suppliers as sup', 'sup.id', '=', 'osup.supplier_id')
             ->leftJoin('addresses as addr', 'addr.id', '=', 'sup.address_id')
             ->where('sd.organisation_id', $organisation->id)
             ->where('sd.state', StockDeliveryStateEnum::CHECKED)
+            ->where('sd.parent_type', 'OrgSupplier')
             ->whereIn('addr.country_id', $euCountryIds)
+            ->whereNotNull('sd.checked_at')
             ->whereBetween('sd.checked_at', [$dayStart, $dayEnd])
+            ->where('sdi.unit_quantity', '>', 0)
             ->select(
                 'sd.id as stock_delivery_id',
+                'sd.checked_at',
                 'stock_products.tariff_code',
                 'addr.country_id',
                 'sdi.unit_quantity',
                 'sdi.org_net_amount',
-                'stock_products.product_id'
+                'stock_products.product_id',
+                'stock_products.product_weight'
+            );
+
+        // Query for OrgPartner deliveries (from partner organisations)
+        $partnerMetrics = DB::table('stock_delivery_items as sdi')
+            ->join('stock_deliveries as sd', 'sd.id', '=', 'sdi.stock_delivery_id')
+            ->joinSub(
+                DB::table('product_has_org_stocks as phos')
+                    ->join('products as p', 'p.id', '=', 'phos.product_id')
+                    ->select(
+                        'phos.org_stock_id',
+                        DB::raw('MIN(p.id) as product_id'),
+                        DB::raw('MIN(p.tariff_code) as tariff_code'),
+                        DB::raw('MIN(COALESCE(p.gross_weight, 0)) as product_weight')
+                    )
+                    ->whereNotNull('p.tariff_code')
+                    ->where('p.tariff_code', '!=', '')
+                    ->groupBy('phos.org_stock_id'),
+                'stock_products',
+                'stock_products.org_stock_id',
+                '=',
+                'sdi.org_stock_id'
             )
-            ->get();
+            ->join('org_partners as opar', 'opar.id', '=', 'sd.parent_id')
+            ->join('organisations as partner_org', 'partner_org.id', '=', 'opar.partner_id')
+            ->where('sd.organisation_id', $organisation->id)
+            ->where('sd.state', StockDeliveryStateEnum::CHECKED)
+            ->where('sd.parent_type', 'OrgPartner')
+            ->whereIn('partner_org.country_id', $euCountryIds)
+            ->whereNotNull('sd.checked_at')
+            ->whereBetween('sd.checked_at', [$dayStart, $dayEnd])
+            ->where('sdi.unit_quantity', '>', 0)
+            ->select(
+                'sd.id as stock_delivery_id',
+                'sd.checked_at',
+                'stock_products.tariff_code',
+                'partner_org.country_id as country_id',
+                'sdi.unit_quantity',
+                'sdi.org_net_amount',
+                'stock_products.product_id',
+                'stock_products.product_weight'
+            );
+
+        // Combine both queries
+        $rawMetrics = $supplierMetrics->union($partnerMetrics)->get();
 
         $aggregated = [];
 
@@ -173,6 +217,7 @@ class OrganisationHydrateIntrastatImportMetrics implements ShouldBeUnique
 
                 $aggregated[$key]['quantity'] += $item->unit_quantity ?? 0;
                 $aggregated[$key]['value'] += $item->org_net_amount ?? 0;
+                $aggregated[$key]['weight'] += ($item->unit_quantity ?? 0) * ($item->product_weight ?? 0);
                 $aggregated[$key]['stock_deliveries'][$item->stock_delivery_id] = true;
                 $aggregated[$key]['parts'][$item->product_id] = true;
             }
