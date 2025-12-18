@@ -193,12 +193,13 @@ sub vcl_hash {
 
     # Categorize requests into two hash buckets based on X-Inertia header
     # If X-Inertia exists and equals "true" (case-insensitive) → bucket "Inertia"
-    # otherwise → bucket "Direct"
-    if (req.http.X-Inertia) {
+    # X-Requested-With must be equal to XMLHttpRequest
+    if (req.http.X-Inertia && std.tolower(req.http.X-Inertia) == "true" && req.http.X-Requested-With == "XMLHttpRequest") {
         hash_data("Inertia");
     } else {
         hash_data("Direct");
     }
+
 
     # Inertia-specific headers to prevent mixing JSON partials/versioned payloads
     if (req.http.X-Inertia-Version) { hash_data(req.http.X-Inertia-Version); }
@@ -223,9 +224,9 @@ sub vcl_backend_response {
     # Inertia.js responses: cache JSON and vary on Inertia headers
     if (bereq.http.X-Inertia || beresp.http.X-Inertia) {
         if (beresp.http.Vary) {
-            set beresp.http.Vary = beresp.http.Vary + ", X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component";
+            set beresp.http.Vary = beresp.http.Vary + ", X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
         } else {
-            set beresp.http.Vary = "X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component";
+            set beresp.http.Vary = "X-Inertia, X-Inertia-Version, X-Inertia-Partial-Component, X-Requested-With";
         }
         # Ensure Content-Type is JSON for Inertia payloads
         if (beresp.http.Content-Type !~ "application/json") {

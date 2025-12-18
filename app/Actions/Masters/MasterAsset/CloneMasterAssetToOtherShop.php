@@ -26,16 +26,15 @@ class CloneMasterAssetToOtherShop extends OrgAction
      * @var \App\Models\Masters\MasterProductCategory
      */
     private MasterProductCategory $masterFamily;
-
+    private MasterAsset $masterAsset;
     /**
      * @throws \Throwable
      */
     public function handle(MasterProductCategory $masterFamily, array $modelData): MasterProductCategory
     {
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
-        $masterAsset = MasterAsset::where('slug', $modelData['masterProduct'])->first();
 
-        StoreProductFromMasterProduct::make()->action($masterAsset, [
+        StoreProductFromMasterProduct::make()->action($this->masterAsset, [
             'shop_products' => $shopProducts
         ]);
 
@@ -51,11 +50,21 @@ class CloneMasterAssetToOtherShop extends OrgAction
         return $this->handle($this->masterFamily, $this->validatedData);
     }
 
+    public function prepareForValidation(): void
+    {
+        if($this->has('masterProduct')){
+            $this->masterAsset = MasterAsset::where('slug', $this->masterProduct)->first();
+            $this->set('masterAsset', $this->masterAsset->replicate()->toArray());
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
             'masterFamily'                      => ['required', 'int'],
-            'masterProduct'                     => ['required', 'string'],
+            'masterAsset'                       => ['required', 'array'],
+            'masterAsset.unit'                  => ['required', 'string'],
+            'masterAsset.units'                 => ['required', 'numeric'],
             'shop_products'                     => ['sometimes', 'array'],
             'shop_products.*.create_in_shop'    => ['sometimes', 'string'],
             'shop_products.*.price'             => ['required', 'min:0'],
@@ -63,5 +72,15 @@ class CloneMasterAssetToOtherShop extends OrgAction
         ];
 
         return $rules;
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'masterAsset.unit.required'  => 'Master product have missing Unit. Please edit master product first',
+            'masterAsset.units.required' => 'Master product have missing Units. Please contact administrator to fix this issue',
+            'shop_products.*.price'      => 'Required to input Price on selected shop',
+            'shop_products.*.rrp'        => 'Required to input RRP on selected shop',
+        ];
     }
 }
