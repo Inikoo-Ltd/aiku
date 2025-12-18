@@ -154,6 +154,42 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_pallets_state_request_return_confirmed
  * @property int $number_customers_status_pre_registration
  * @property int $number_org_stock_movements_type_audit
+ * @property int $number_waiting_items current number of waiting items
+ * @property int $number_waiting_items_type_production
+ * @property int $number_waiting_items_type_restock
+ * @property int $number_waiting_items_type_customer
+ * @property int $number_waiting_items_state_to_do
+ * @property int $number_waiting_items_state_escalated
+ * @property int $number_waiting_items_state_in_progress
+ * @property int $number_waiting_items_state_done
+ * @property int $number_waiting_items_state_cancelled
+ * @property int $number_waiting_items_status_to_do
+ * @property int $number_waiting_items_status_in_progress
+ * @property int $number_waiting_items_status_done
+ * @property int $number_waiting_items_type_production_state_to_do
+ * @property int $number_waiting_items_type_production_state_escalated
+ * @property int $number_waiting_items_type_production_state_in_progress
+ * @property int $number_waiting_items_type_production_state_done
+ * @property int $number_waiting_items_type_production_state_cancelled
+ * @property int $number_waiting_items_type_production_status_to_do
+ * @property int $number_waiting_items_type_production_status_in_progress
+ * @property int $number_waiting_items_type_production_status_done
+ * @property int $number_waiting_items_type_restock_state_to_do
+ * @property int $number_waiting_items_type_restock_state_escalated
+ * @property int $number_waiting_items_type_restock_state_in_progress
+ * @property int $number_waiting_items_type_restock_state_done
+ * @property int $number_waiting_items_type_restock_state_cancelled
+ * @property int $number_waiting_items_type_restock_status_to_do
+ * @property int $number_waiting_items_type_restock_status_in_progress
+ * @property int $number_waiting_items_type_restock_status_done
+ * @property int $number_waiting_items_type_customer_state_to_do
+ * @property int $number_waiting_items_type_customer_state_escalated
+ * @property int $number_waiting_items_type_customer_state_in_progress
+ * @property int $number_waiting_items_type_customer_state_done
+ * @property int $number_waiting_items_type_customer_state_cancelled
+ * @property int $number_waiting_items_type_customer_status_to_do
+ * @property int $number_waiting_items_type_customer_status_in_progress
+ * @property int $number_waiting_items_type_customer_status_done
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

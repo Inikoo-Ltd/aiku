@@ -14,6 +14,8 @@ export interface Outbox {
     type: string
     name: number
     state: string
+    sub_type: string
+    days_after: number | null
 
 
 

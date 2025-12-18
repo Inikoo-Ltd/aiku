@@ -176,7 +176,7 @@ class IndexPupilPlatformCustomerClients extends RetinaAction
                 'title'              => __('customer clients'),
                 'pageHead'           => [
                     'title'   => $title,
-                    'model'   => $this->platformUser->name ?? 'Web/API',
+                    'model'   => $this->platformUser->name ?? 'Manual/API',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user-friends'],
                         'title' => __('Customer client')

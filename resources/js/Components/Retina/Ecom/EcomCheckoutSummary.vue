@@ -16,6 +16,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import payments from "@/Pages/Grp/Overview/Accounting/Payments.vue"
 
 const props = defineProps<{
     summary: {
@@ -37,9 +38,6 @@ const props = defineProps<{
 
         }
         delivery_notes: {
-
-        }
-        payments: {
 
         }
         invoices: {
@@ -125,29 +123,36 @@ const updateCollection = (value: boolean) => {
                 </div>
             </div>
             
-            <!-- Section: Delivery Address -->
-            <div>
+            <div class="">
                 <!-- Field: Collection (toggle) -->
-                <dl class="mt-1 mb-2 flex items-center w-full flex-none gap-x-1.5">
-                    <dt v-tooltip="trans('Collection')" class="flex-none">
-                        <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
-                    </dt>
-                    <dd class="text-gray-500 flex items-center gap-x-2" xv-tooltip="trans('Estimated weight of all products')">
-                        <Toggle
-                            :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
-                            @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
-                            :loading="isLoadingCollection"
-                            :disabled="!props.isInBasket"
-                        />
-                        <span class="text-sm"
-                            :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
-                        >
-                            {{ trans("Collection") }}
-                            <InformationIcon :information="trans('Select this if you want to come to our premisses to collect the order')" class="align-middle" />
-                        </span>
-                    </dd>
-                </dl>
-
+                <template v-if="isInBasket">
+                    <dl class="mt-1 mb-2 flex items-center w-full flex-none gap-x-1.5">
+                        <dt v-tooltip="trans('Collection')" class="flex-none">
+                            <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
+                        </dt>
+                        <dd class="text-gray-500 flex items-center gap-x-2" xv-tooltip="trans('Estimated weight of all products')">
+                            <Toggle
+                                :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
+                                @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
+                                :loading="isLoadingCollection"
+                                :disabled="!props.isInBasket"
+                            />
+                            <span class="text-sm"
+                                :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
+                            >
+                                {{ trans("Collection") }}
+                                <InformationIcon :information="trans('Select this if you want to come to our premisses to collect the order')" class="align-middle" />
+                            </span>
+                        </dd>
+                    </dl>
+                </template>
+                
+                <div v-else-if="get(props.order, ['is_collection'], false)" class="bg-gray-50 w-full text-center py-2 border border-gray-300 rounded">
+                    <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
+                    {{ trans("This order is for collection only") }}.
+                </div>
+                    
+                <!-- Section: Delivery Address -->
                 <div v-if="!get(props.order, ['is_collection'], false)" class="">
                     <div class="font-semibold">
                         <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
@@ -158,7 +163,7 @@ const updateCollection = (value: boolean) => {
                     <div v-else class="text-gray-400 italic pl-6 pr-3">
                         {{ trans("No delivery address") }}
                     </div>
-                    <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
+                    <div v-if="props.isInBasket && address_management?.address_update_route" @click="isModalShippingAddress = true"
                         class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
                         {{ trans("Edit") }}
                         <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
@@ -233,7 +238,6 @@ const updateCollection = (value: boolean) => {
                             :paidAmount="summary.products.payment.paid_amount"
                             :payAmount="summary.products.payment.pay_amount"
                             :balance="balance || 0"
-                            :payments="summary?.payments"
                             :currencyCode="layout.iris?.currency?.code"
                             :toBePaidBy="order?.to_be_paid_by"
                             :order="order"

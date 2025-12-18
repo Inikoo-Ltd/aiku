@@ -29,6 +29,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $exist_in_platform
  * @property mixed $platform_status
  * @property mixed $number_portfolio_broken
+ * @property mixed $is_down
  */
 class RetinaCustomerSalesChannelsResource extends JsonResource
 {
@@ -63,6 +64,7 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'can_connect_to_platform' => $this->can_connect_to_platform,
             'exist_in_platform'       => $this->exist_in_platform,
             'platform_status'         => $this->platform_status,
+            'is_down'                 => $this->is_down,
 
             'delete_msg' => $deleteMsg,
 

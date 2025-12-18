@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<{
     updateBasketQuantityRoute?:routeType
     isLoadingFavourite:boolean
     isLoadingRemindBackInStock:boolean
+    screenType:string
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -86,12 +87,12 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
 </script>
 
-<template>
+<template>           
     <div  class="text-gray-800 isolate h-full flex flex-col"  comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType="screenType"/>
 
             <!-- Product Image -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
@@ -125,7 +126,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
-                        v-if="product.stock > 0 && basketButton" 
+                        v-if="product.stock > 0 && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
                         :product="product"
                         :key="product" 
@@ -170,18 +171,20 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
                         <div v-else
-                            class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[300px] break-words leading-snug"
+                            class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[12rem] break-words leading-snug"
                             :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
 
 
-
-                            <span class="text-xs">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[6px] " />
-                                {{ product.stock > 10000
-                                    ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +
-                                        trans('available'))
-                                }}
+                            <span class="inline-flex items-center gap-1 text-xs leading-snug">
+                                <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" />
+                                <span>
+                                    {{ product.is_on_demand
+                                        ? trans("Unlimited quantity available")
+                                        : (product.stock > 0
+                                            ? product.stock + ' ' + trans('available')
+                                    : '0 ' + trans('available'))
+                                    }}
+                                </span>
                             </span>
                         </div>
                     </div>

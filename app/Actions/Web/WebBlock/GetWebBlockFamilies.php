@@ -43,25 +43,27 @@ class GetWebBlockFamilies
 
                 ->whereNull('product_categories.deleted_at')
                 ->get();
-        } elseif ($webpage->model instanceof Collection) {
-            $families = DB::table('product_categories')
-                ->leftJoin('collection_has_models', function ($join) {
-                    $join->on('collection_has_models.model_id', '=', 'product_categories.id')
-                        ->where('collection_has_models.model_type', '=', 'ProductCategory');
-                })
-                ->leftJoin('webpages', function ($join) {
-                    $join->on('product_categories.id', '=', 'webpages.model_id')
-                        ->where('webpages.model_type', '=', 'ProductCategory');
-                })
-                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
-                ->selectRaw('\''.request()->path().'\' as parent_url')
-                ->where('collection_has_models.collection_id', $webpage->model_id)
-                ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
-                ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
-                ->where('show_in_website', true)
-                ->whereNull('product_categories.deleted_at')
-                ->get();
-        } else {
+        }
+        // } elseif ($webpage->model instanceof Collection) {
+        //     $families = DB::table('product_categories')
+        //         ->leftJoin('collection_has_models', function ($join) {
+        //             $join->on('collection_has_models.model_id', '=', 'product_categories.id')
+        //                 ->where('collection_has_models.model_type', '=', 'ProductCategory');
+        //         })
+        //         ->leftJoin('webpages', function ($join) {
+        //             $join->on('product_categories.id', '=', 'webpages.model_id')
+        //                 ->where('webpages.model_type', '=', 'ProductCategory');
+        //         })
+        //         ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
+        //         ->selectRaw('\''.request()->path().'\' as parent_url')
+        //         ->where('collection_has_models.collection_id', $webpage->model_id)
+        //         ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+        //         ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
+        //         ->where('show_in_website', true)
+        //         ->whereNull('product_categories.deleted_at')
+        //         ->get();
+        // }
+        else {
             return $webBlock;
         }
 
@@ -86,7 +88,7 @@ class GetWebBlockFamilies
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
-        data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
+        /*  data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request())); */
 
         return $webBlock;
     }

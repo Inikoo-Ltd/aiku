@@ -240,6 +240,8 @@ const props = defineProps<{
         route_download_pdf: routeType
     }
     dispatched_emails?: {}
+    payments_accounts: Array<{id: number, name: string}>
+    payments_data: Array<{id: number, name: string}>
 }>()
 
 
@@ -1120,7 +1122,7 @@ const setShippingToAuto = () => {
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
                                     :balance="box_stats?.customer?.balance"
-                                    :payments="box_stats?.payments"
+                                    :payments="payments_data"
                                     :currencyCode="currency.code"
                                     :toBePaidBy="data?.data?.to_be_paid_by"
                                     :order="data?.data"
@@ -1541,7 +1543,7 @@ const setShippingToAuto = () => {
                     <div class="mt-1">
                         <Select
                             v-model="paymentData.payment_method"
-                            :options="box_stats?.payments_accounts"
+                            :options="payments_accounts"
                             optionLabel="name"
                             optionValue="id"
                             fluid

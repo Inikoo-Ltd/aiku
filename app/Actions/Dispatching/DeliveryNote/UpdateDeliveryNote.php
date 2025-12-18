@@ -15,7 +15,7 @@ use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatMetrics;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatExportMetrics;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -71,7 +71,7 @@ class UpdateDeliveryNote extends OrgAction
                     if ($deliveryCountry &&
                         Country::isInEU($deliveryCountry->code) &&
                         $deliveryCountry->code !== $deliveryNote->organisation->country_code) {
-                        OrganisationHydrateIntrastatMetrics::dispatch(
+                        OrganisationHydrateIntrastatExportMetrics::dispatch(
                             $deliveryNote->organisation,
                             $deliveryNote->dispatched_at ?? now()
                         )->delay($this->hydratorsDelay);

@@ -116,17 +116,17 @@ class IndexAgents extends GrpAction
 
             $table
                 ->withGlobalSearch()
-                ->withLabelRecord([__('agent'),__('agents')])
+                ->withLabelRecord([__('Agent'),__('Agents')])
                 ->withEmptyState(
                     [
-                        'title'       => __('no agents'),
+                        'title'       => __('No Agents'),
                         'description' => $this->canEdit ? __('Get started by creating a new agent.') : null,
                         'count'       => $parent->supplyChainStats->number_agents,
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('New agent'),
-                            'label'   => __('agent'),
+                            'tooltip' => __('New Agent'),
+                            'label'   => __('Agent'),
                             'route'   => [
                                 'name'       => 'grp.supply-chain.agents.create',
                             ]

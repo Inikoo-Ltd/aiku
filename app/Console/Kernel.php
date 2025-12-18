@@ -357,12 +357,24 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->hourly()->timezone('UTC')->sentryMonitor(
+            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'CustomersHydrateReorderRemainderEmails',
             ),
             name: 'CustomersHydrateReorderRemainderEmails',
             type: 'job',
             scheduledAt: now()->format('H:i')
+        );
+
+        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=true')->everyMinute()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'Hit https://www.aw-dropship.es/ X-Inertia: true',
+        );
+
+        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=false')->everyMinute()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'Hit https://www.aw-dropship.es/ X-Inertia: false',
+        );
+
+        $schedule->command('iris:hit-url https://www.aw-dropship.es/ --inertia=none')->everyMinute()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'Hit https://www.aw-dropship.es/',
         );
     }
 

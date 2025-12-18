@@ -11,6 +11,7 @@ import { ref } from "vue"
 
 // Pinia Store
 export const useLocaleStore = defineStore("locale", () => {
+	const locale_iso = ref<string | null>(null)   // 'en-GB'
 	const language = ref<Language>({
 		id: 68,
 		code: "en",
@@ -21,7 +22,7 @@ export const useLocaleStore = defineStore("locale", () => {
 	const currencyInertia = ref({})
 
 	const number = (number: number) => {
-		return new Intl.NumberFormat(language.value.code).format(number)
+		return new Intl.NumberFormat(locale_iso.value || language.value.code).format(number)
 	}
 
 	const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
@@ -70,5 +71,5 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	}
 
-	return { language, languageOptions, number, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
+	return { language, locale_iso, languageOptions, number, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

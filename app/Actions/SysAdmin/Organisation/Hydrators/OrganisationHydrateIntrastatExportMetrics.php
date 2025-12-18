@@ -8,8 +8,12 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
+use App\Enums\Accounting\Intrastat\IntrastatDeliveryTermsEnum;
+use App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum;
+use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Models\Accounting\IntrastatMetrics;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Models\Accounting\IntrastatExportMetrics;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
@@ -18,11 +22,11 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydrateIntrastatMetrics implements ShouldBeUnique
+class OrganisationHydrateIntrastatExportMetrics implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $commandSignature = 'hydrate:intrastat-metrics {organisation?} {--date=}';
+    public string $commandSignature = 'hydrate:intrastat-export-metrics {organisation?} {--date=}';
 
     public function getJobUniqueId(Organisation $organisation, Carbon $date): string
     {
@@ -42,14 +46,13 @@ class OrganisationHydrateIntrastatMetrics implements ShouldBeUnique
 
             $date = $command->option('date') ? Carbon::parse($command->option('date')) : Carbon::today();
             $this->handle($organisation, $date);
-            $command->info("Hydrated Intrastat metrics for $organisation->slug on {$date->toDateString()}");
+            $command->info("Hydrated Intrastat export metrics for $organisation->slug on {$date->toDateString()}");
         } else {
-            // Hydrate all organisations
             Organisation::chunk(10, function ($organisations) use ($command) {
                 foreach ($organisations as $org) {
                     $date = $command->option('date') ? Carbon::parse($command->option('date')) : Carbon::today();
                     $this->handle($org, $date);
-                    $command->info("Hydrated Intrastat metrics for $org->slug");
+                    $command->info("Hydrated Intrastat export metrics for $org->slug");
                 }
             });
         }
@@ -60,12 +63,10 @@ class OrganisationHydrateIntrastatMetrics implements ShouldBeUnique
         $dayStart = $date->copy()->startOfDay();
         $dayEnd   = $date->copy()->endOfDay();
 
-        // Delete existing records for this date to avoid duplicates when splitting tariff codes
-        IntrastatMetrics::where('organisation_id', $organisation->id)
+        IntrastatExportMetrics::where('organisation_id', $organisation->id)
             ->where('date', $dayStart)
             ->delete();
 
-        // Get EU country IDs (excluding own country)
         $euCountryCodes = Country::getCountryCodesInEU();
         $euCountryIds = Country::whereIn('code', $euCountryCodes)
             ->where('id', '!=', $organisation->country_id)
@@ -76,9 +77,7 @@ class OrganisationHydrateIntrastatMetrics implements ShouldBeUnique
             return;
         }
 
-        // Get all delivery note items dispatched to EU countries on this date
-        // Use subquery to get first product per org_stock to avoid duplicates from many-to-many
-        $metrics = DB::table('delivery_note_items as dni')
+        $rawMetrics = DB::table('delivery_note_items as dni')
             ->join('delivery_notes as dn', 'dn.id', '=', 'dni.delivery_note_id')
             ->joinSub(
                 DB::table('product_has_org_stocks as phos')
@@ -97,80 +96,123 @@ class OrganisationHydrateIntrastatMetrics implements ShouldBeUnique
                 'dni.org_stock_id'
             )
             ->leftJoin('transactions as t', 't.id', '=', 'dni.transaction_id')
+            ->leftJoin('invoices as inv', 'inv.id', '=', 't.invoice_id')
             ->where('dn.organisation_id', $organisation->id)
             ->where('dn.state', DeliveryNoteStateEnum::DISPATCHED)
             ->whereIn('dn.delivery_country_id', $euCountryIds)
             ->whereBetween('dn.dispatched_at', [$dayStart, $dayEnd])
             ->select(
+                'dn.id as delivery_note_id',
+                'dn.type as delivery_note_type',
                 'stock_products.tariff_code',
                 'dn.delivery_country_id as country_id',
                 't.tax_category_id',
-                DB::raw('SUM(dni.quantity_dispatched) as total_quantity'),
-                DB::raw('SUM(dni.org_revenue_amount) as total_value'),
-                DB::raw('SUM(COALESCE(dni.estimated_picked_weight, 0)) as total_weight'),
-                DB::raw('COUNT(DISTINCT dn.id) as delivery_notes_count'),
-                DB::raw('COUNT(DISTINCT stock_products.product_id) as products_count')
+                'inv.id as invoice_id',
+                'inv.tax_number',
+                'inv.tax_number_valid',
+                'dni.quantity_dispatched',
+                'dni.org_revenue_amount',
+                DB::raw('COALESCE(dni.estimated_picked_weight, 0) as item_weight'),
+                'stock_products.product_id'
             )
-            ->groupBy('stock_products.tariff_code', 'dn.delivery_country_id', 't.tax_category_id')
             ->get();
 
-        // Split comma-separated tariff codes and aggregate by individual code
         $aggregated = [];
 
-        foreach ($metrics as $metric) {
-            // Split comma-separated tariff codes
-            $tariffCodes = array_map('trim', explode(',', $metric->tariff_code));
+        foreach ($rawMetrics as $item) {
+            $tariffCodes = array_map('trim', explode(',', $item->tariff_code));
 
             foreach ($tariffCodes as $tariffCode) {
                 if (empty($tariffCode)) {
                     continue;
                 }
 
-                // Normalize tariff code: remove all spaces
                 $tariffCode = str_replace(' ', '', $tariffCode);
 
                 if (empty($tariffCode)) {
                     continue;
                 }
 
-                // Create unique key for aggregation
-                $key = $tariffCode . '|' . $metric->country_id . '|' . ($metric->tax_category_id ?? 'null');
+                $key = $tariffCode . '|' .
+                       $item->country_id . '|' .
+                       ($item->tax_category_id ?? 'null') . '|' .
+                       ($item->delivery_note_type ?? 'null');
 
                 if (!isset($aggregated[$key])) {
                     $aggregated[$key] = [
                         'tariff_code' => $tariffCode,
-                        'country_id' => $metric->country_id,
-                        'tax_category_id' => $metric->tax_category_id,
+                        'country_id' => $item->country_id,
+                        'tax_category_id' => $item->tax_category_id,
+                        'delivery_note_type' => $item->delivery_note_type,
                         'quantity' => 0,
                         'value' => 0,
                         'weight' => 0,
-                        'delivery_notes' => 0,
-                        'products' => 0,
+                        'delivery_notes' => [],
+                        'products' => [],
+                        'invoices' => [],
+                        'tax_numbers' => [],
                     ];
                 }
 
-                // Aggregate metrics
-                $aggregated[$key]['quantity'] += $metric->total_quantity ?? 0;
-                $aggregated[$key]['value'] += $metric->total_value ?? 0;
-                $aggregated[$key]['weight'] += $metric->total_weight ?? 0;
-                $aggregated[$key]['delivery_notes'] += $metric->delivery_notes_count ?? 0;
-                $aggregated[$key]['products'] += $metric->products_count ?? 0;
+                $aggregated[$key]['quantity'] += $item->quantity_dispatched ?? 0;
+                $aggregated[$key]['value'] += $item->org_revenue_amount ?? 0;
+                $aggregated[$key]['weight'] += $item->item_weight ?? 0;
+                $aggregated[$key]['delivery_notes'][$item->delivery_note_id] = true;
+                $aggregated[$key]['products'][$item->product_id] = true;
+
+                if ($item->invoice_id) {
+                    $aggregated[$key]['invoices'][$item->invoice_id] = true;
+
+                    if ($item->tax_number) {
+                        $taxNumberKey = $item->tax_number . '_' . ($item->tax_number_valid ? 'valid' : 'invalid');
+                        if (!isset($aggregated[$key]['tax_numbers'][$taxNumberKey])) {
+                            $aggregated[$key]['tax_numbers'][$taxNumberKey] = [
+                                'number' => $item->tax_number,
+                                'valid' => (bool) $item->tax_number_valid,
+                            ];
+                        }
+                    }
+                }
             }
         }
 
-        // Create records from aggregated data
         foreach ($aggregated as $data) {
-            IntrastatMetrics::create([
+            $partnerTaxNumbers = array_values($data['tax_numbers']);
+            $validCount = 0;
+            $invalidCount = 0;
+
+            foreach ($partnerTaxNumbers as $taxNumber) {
+                if ($taxNumber['valid']) {
+                    $validCount++;
+                } else {
+                    $invalidCount++;
+                }
+            }
+
+            $natureOfTransaction = match($data['delivery_note_type']) {
+                DeliveryNoteTypeEnum::REPLACEMENT->value => IntrastatNatureOfTransactionEnum::RETURN_REPLACEMENT,
+                default => IntrastatNatureOfTransactionEnum::OUTRIGHT_PURCHASE,
+            };
+
+            IntrastatExportMetrics::create([
                 'organisation_id' => $organisation->id,
                 'date' => $dayStart,
                 'tariff_code' => $data['tariff_code'],
                 'country_id' => $data['country_id'],
                 'tax_category_id' => $data['tax_category_id'],
+                'delivery_note_type' => $data['delivery_note_type'],
                 'quantity' => $data['quantity'],
                 'value_org_currency' => $data['value'],
                 'weight' => $data['weight'],
-                'delivery_notes_count' => $data['delivery_notes'],
-                'products_count' => $data['products'],
+                'delivery_notes_count' => count($data['delivery_notes']),
+                'products_count' => count($data['products']),
+                'invoices_count' => count($data['invoices']),
+                'partner_tax_numbers' => empty($partnerTaxNumbers) ? null : $partnerTaxNumbers,
+                'valid_tax_numbers_count' => $validCount,
+                'invalid_tax_numbers_count' => $invalidCount,
+                'mode_of_transport' => IntrastatTransportModeEnum::ROAD,
+                'delivery_terms' => IntrastatDeliveryTermsEnum::DAP,
+                'nature_of_transaction' => $natureOfTransaction,
             ]);
         }
     }

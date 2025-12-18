@@ -39,18 +39,17 @@ class ImportTransactionInOrder extends OrgAction
             ]
         );
 
-        if ($this->isSync) {
-            ImportUpload::run(
-                $file,
-                new TransactionImport($order, $upload)
-            );
-            $upload->refresh();
-        } else {
-            ImportUpload::dispatch(
-                $this->tmpPath.$upload->filename,
-                new TransactionImport($order, $upload)
-            );
-        }
+        ImportUpload::run(
+            $file,
+            new TransactionImport($order, $upload)
+        );
+        $upload->refresh();
+        // } else {
+        //     ImportUpload::dispatch(
+        //         $this->tmpPath.$upload->filename,
+        //         new TransactionImport($order, $upload)
+        //     );
+        // }
 
         return $upload;
     }

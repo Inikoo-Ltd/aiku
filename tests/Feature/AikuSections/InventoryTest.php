@@ -28,6 +28,7 @@ use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\RemoveLostAndFoundStock;
 use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Actions\Inventory\OrgStock\DeleteOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\HydrateOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\Search\ReindexOrgStockFamilySearch;
@@ -60,6 +61,7 @@ use App\Models\Inventory\WarehouseArea;
 use Config;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -961,6 +963,73 @@ test('UI get section route org warehouses index', function () {
         ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_WAREHOUSE->value)
         ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
 });
+
+
+test('delete org stock succeeds when unused', function () {
+    $stock = StoreStock::make()->action(
+        $this->group,
+        array_merge(Stock::factory()->definition(), [
+            'state' => StockStateEnum::ACTIVE
+        ])
+    );
+
+    $orgStock = StoreOrgStock::make()->action(
+        $this->organisation,
+        $stock
+    );
+
+    $id = $orgStock->id;
+
+    DeleteOrgStock::make()->action($orgStock);
+
+    expect(OrgStock::query()->whereKey($id)->exists())->toBeFalse();
+});
+
+test('delete org stock is blocked when linked to a location', function () {
+    $stock = StoreStock::make()->action(
+        $this->group,
+        array_merge(Stock::factory()->definition(), [
+            'state' => StockStateEnum::ACTIVE
+        ])
+    );
+
+    $orgStock = StoreOrgStock::make()->action(
+        $this->organisation,
+        $stock
+    );
+
+    // Create a warehouse and a location, then attach the org stock to that location
+    $warehouse = StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WH-DEL',
+        'name' => 'Warehouse for delete test',
+    ]);
+
+    $area = StoreWarehouseArea::make()->action($warehouse, [
+        'code' => 'A1',
+        'name' => 'Area 1',
+    ]);
+
+    $location = StoreLocation::make()->action(
+        $area,
+        [
+            'code' => 'L1',
+            'name' => 'Loc 1',
+        ] + Location::factory()->definition()
+    );
+
+    StoreLocationOrgStock::make()->action(
+        $orgStock,
+        $location,
+        [
+            'quantity' => 0,
+        ]
+    );
+
+    expect(function () use ($orgStock) {
+        DeleteOrgStock::make()->action($orgStock);
+    })->toThrow(HttpException::class);
+});
+
 
 test('warehouse search', function () {
     $this->artisan('search:warehouses')->assertExitCode(0);

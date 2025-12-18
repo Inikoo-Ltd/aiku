@@ -3,7 +3,8 @@
 namespace App\Actions\Reports;
 
 use App\Actions\OrgAction;
-use App\Actions\Accounting\Intrastat\UI\IndexIntrastatReport;
+use App\Actions\Accounting\Intrastat\UI\IndexIntrastatExportReport;
+use App\Actions\Accounting\Intrastat\UI\IndexIntrastatImportReport;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -43,10 +44,16 @@ class GetReports extends OrgAction
     {
         return [
             [
-                'name'  => __('Intrastat'),
+                'name'  => __('Intrastat Exports'),
                 'icon'  => 'fal fa-file-export',
-                'route' => route('grp.org.reports.intrastat', $organisation),
-                'count' => IndexIntrastatReport::make()->inReports($organisation),
+                'route' => route('grp.org.reports.intrastat.exports', $organisation),
+                'count' => IndexIntrastatExportReport::make()->inReports($organisation),
+            ],
+            [
+                'name'  => __('Intrastat Imports'),
+                'icon'  => 'fal fa-file-import',
+                'route' => route('grp.org.reports.intrastat.imports', $organisation),
+                'count' => IndexIntrastatImportReport::make()->inReports($organisation),
             ],
             [
                 'name'  => __('Sage Invoices'),

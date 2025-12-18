@@ -201,18 +201,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                     return [];
                 }
 
-                return [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'create',
-                        'tooltip' => __('New collection'),
-                        'label'   => __('collection'),
-                        'route'   => [
-                            'name'       => $routes[$currentRoute],
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ]
-                ];
+                return [];
             })(),
 
 

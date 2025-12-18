@@ -14,7 +14,7 @@ use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateSalesMetrics;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformShopHydrateSalesMetrics;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesMetrics;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesMetrics;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatMetrics;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatExportMetrics;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesMetrics;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
@@ -54,7 +54,7 @@ class HydrateSalesMetrics
 
         foreach ($organisations as $organisation) {
             OrganisationHydrateSalesMetrics::dispatch($organisation, $today);
-            OrganisationHydrateIntrastatMetrics::dispatch($organisation, $today);
+            OrganisationHydrateIntrastatExportMetrics::dispatch($organisation, $today);
         }
 
         foreach ($shops as $shop) {
