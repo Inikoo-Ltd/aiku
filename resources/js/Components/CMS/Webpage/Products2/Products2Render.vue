@@ -2,7 +2,7 @@
 import { inject, ref } from 'vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope, faHeart as farHeart } from '@far'
-import { faHeart as fasHeart, faStarHalfAlt } from '@fas'
+import { faHeart as fasHeart, faStarHalfAlt, faCircle } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faQuestionCircle } from "@fal"
 
@@ -20,6 +20,7 @@ import { trans } from 'laravel-vue-i18n'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
+import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -173,7 +174,25 @@ const toggleBackInStock = () =>
                         </span>
                     </div>
                 </div>
+            </div>
 
+             <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-start px-1">
+                <LabelComingSoon v-if="true" :product class="w-fit text-center w-fit text-xs" />
+                <div v-else
+                    class="flex items-start gap-1 px-2 py-1 rounded-xl font-semibold max-w-[300px] break-words leading-snug"
+                    :class="product.stock > 0 ? 'text-green-700' : 'text-red-600'">
+
+                    <span class="flex items-center gap-1 text-xs md:w-full " :class="!product.is_on_demand ? 'w-full' : 'w-[90%]'">
+                       <!--  <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" /> -->
+                        <span>
+                           {{ product.is_on_demand
+                                    ? trans("Unlimited quantity available")
+                                    : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +
+                                        trans('available'))
+                                }}
+                        </span>
+                    </span>
+                </div>
             </div>
 
             <!-- PRICE + BUTTON (FIXED AT BOTTOM) -->
