@@ -368,19 +368,13 @@ class Kernel extends ConsoleKernel
         $urlsToHit = [
             [
                 'url' => 'https://www.aw-dropship.es/',
-                'inertia' => 'true',
+                'inertia' => true,
                 'xmlhttp' => true,
-                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true with X-Requested-With',
+                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true',
             ],
             [
                 'url' => 'https://www.aw-dropship.es/',
-                'inertia' => 'false',
-                'xmlhttp' => false,
-                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: false',
-            ],
-            [
-                'url' => 'https://www.aw-dropship.es/',
-                'inertia' => 'none',
+                'inertia' => false,
                 'xmlhttp' => false,
                 'slug' => 'Hit https://www.aw-dropship.es/',
             ],
@@ -390,7 +384,7 @@ class Kernel extends ConsoleKernel
             $command = sprintf(
                 'iris:hit-url %s --inertia=%s --xmlhttp=%s',
                 $config['url'],
-                $config['inertia'],
+                $config['inertia'] ? 'true' : 'false',
                 $config['xmlhttp'] ? 'true' : 'false'
             );
 
