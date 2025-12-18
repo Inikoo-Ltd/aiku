@@ -3,7 +3,7 @@
 namespace App\Actions\Accounting\Intrastat;
 
 use App\Actions\OrgAction;
-use App\Models\Accounting\IntrastatMetrics;
+use App\Models\Accounting\IntrastatExportMetrics;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
@@ -22,7 +22,7 @@ class ExportIntrastatXml extends OrgAction
 
     public function handle(Organisation $organisation, array $filters): string
     {
-        $query = IntrastatMetrics::where('organisation_id', $organisation->id)
+        $query = IntrastatExportMetrics::where('organisation_id', $organisation->id)
             ->with(['country', 'taxCategory']);
 
         if (!empty($filters['between']['date'])) {

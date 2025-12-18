@@ -7,7 +7,8 @@
  */
 
 use App\Actions\Accounting\Intrastat\ExportIntrastatXml;
-use App\Actions\Accounting\Intrastat\UI\IndexIntrastatReport;
+use App\Actions\Accounting\Intrastat\ExportIntrastatXmlSlovakia;
+use App\Actions\Accounting\Intrastat\UI\IndexIntrastatExportReport;
 use App\Actions\Accounting\SageInvoices\ExportSageInvoices;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Reports\PostRoomRoutes;
@@ -20,8 +21,9 @@ Route::get('/', IndexReports::class)->name('index');
 
 Route::get('/sales', ShowOrganisationSalesReport::class)->name('sales');
 
-Route::get('/intrastat', IndexIntrastatReport::class)->name('intrastat');
-Route::get('/intrastat/export', ExportIntrastatXml::class)->name('intrastat.export');
+Route::get('/intrastat/exports', IndexIntrastatExportReport::class)->name('intrastat.exports');
+Route::get('/intrastat/exports/export-xml', ExportIntrastatXml::class)->name('intrastat.exports.export');
+Route::get('/intrastat/exports/export-slovakia', ExportIntrastatXmlSlovakia::class)->name('intrastat.exports.export-slovakia');
 
 Route::get('/sage-invoices', IndexSageInvoicesReport::class)->name('sage-invoices');
 Route::get('/sage-invoices/export', ExportSageInvoices::class)->name('sage-invoices.export');

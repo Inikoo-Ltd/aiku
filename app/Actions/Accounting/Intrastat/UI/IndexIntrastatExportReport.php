@@ -10,9 +10,10 @@ namespace App\Actions\Accounting\Intrastat\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Reports\IndexReports;
-use App\Http\Resources\Accounting\IntrastatMetricsResource;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Http\Resources\Accounting\IntrastatExportMetricsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Accounting\IntrastatMetrics;
+use App\Models\Accounting\IntrastatExportMetrics;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -25,7 +26,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexIntrastatReport extends OrgAction
+class IndexIntrastatExportReport extends OrgAction
 {
     private int $records;
     private string $bucket = 'all';
@@ -37,17 +38,21 @@ class IndexIntrastatReport extends OrgAction
 
     protected function getElementGroups(Organisation $organisation, ?array $dateFilter = null): array
     {
-        $withVatQuery = IntrastatMetrics::where('organisation_id', $organisation->id)
+        $ordersQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
+            ->where('delivery_note_type', DeliveryNoteTypeEnum::ORDER->value)
+            ->where('invoices_count', '>', 0);
+
+        $replacementsQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
+            ->where('delivery_note_type', DeliveryNoteTypeEnum::REPLACEMENT->value);
+
+        $withVatQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
             ->whereHas('taxCategory', function ($query) {
-                $query->where('rate', '>', 0.0);
+                $query->whereIn('type', ['standard', 'special']);
             });
 
-        $withoutVatQuery = IntrastatMetrics::where('organisation_id', $organisation->id)
-            ->where(function ($query) {
-                $query->whereHas('taxCategory', function ($q) {
-                    $q->where('rate', '=', 0.0);
-                })
-                ->orWhereNull('tax_category_id');
+        $withoutVatQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
+            ->whereHas('taxCategory', function ($query) {
+                $query->where('type', 'eu_vtc');
             });
 
         if ($dateFilter && !empty($dateFilter['date'])) {
@@ -56,11 +61,35 @@ class IndexIntrastatReport extends OrgAction
             $start = \Carbon\Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
             $end   = \Carbon\Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');
 
+            $ordersQuery->whereBetween('date', [$start, $end]);
+            $replacementsQuery->whereBetween('date', [$start, $end]);
             $withVatQuery->whereBetween('date', [$start, $end]);
             $withoutVatQuery->whereBetween('date', [$start, $end]);
         }
 
         return [
+            'delivery_type' => [
+                'label'    => __('Delivery Type'),
+                'elements' => [
+                    'orders'       => [
+                        __('Orders with Invoice'),
+                        $ordersQuery->count()
+                    ],
+                    'replacements' => [
+                        __('Replacements/Samples'),
+                        $replacementsQuery->count(),
+                        __('Replacements')
+                    ],
+                ],
+                'engine' => function ($query, $elements) {
+                    if (in_array('orders', $elements) && !in_array('replacements', $elements)) {
+                        $query->where('delivery_note_type', DeliveryNoteTypeEnum::ORDER->value)
+                              ->where('invoices_count', '>', 0);
+                    } elseif (in_array('replacements', $elements) && !in_array('orders', $elements)) {
+                        $query->where('delivery_note_type', DeliveryNoteTypeEnum::REPLACEMENT->value);
+                    }
+                }
+            ],
             'vat_status' => [
                 'label'    => __('VAT Status'),
                 'elements' => [
@@ -75,17 +104,13 @@ class IndexIntrastatReport extends OrgAction
                     ],
                 ],
                 'engine' => function ($query, $elements) {
-                    if (in_array('with_vat', $elements)) {
+                    if (in_array('with_vat', $elements) && !in_array('without_vat', $elements)) {
                         $query->whereHas('taxCategory', function ($q) {
-                            $q->where('rate', '>', 0.0);
+                            $q->whereIn('type', ['standard', 'special']);
                         });
-                    }
-                    if (in_array('without_vat', $elements)) {
-                        $query->where(function ($q) {
-                            $q->whereHas('taxCategory', function ($subQuery) {
-                                $subQuery->where('rate', '=', 0.0);
-                            })
-                            ->orWhereNull('tax_category_id');
+                    } elseif (in_array('without_vat', $elements) && !in_array('with_vat', $elements)) {
+                        $query->whereHas('taxCategory', function ($q) {
+                            $q->where('type', 'eu_vtc');
                         });
                     }
                 }
@@ -101,7 +126,7 @@ class IndexIntrastatReport extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('intrastat_metrics.tariff_code', $value);
+                $query->whereWith('intrastat_export_metrics.tariff_code', $value);
             });
         });
 
@@ -109,13 +134,18 @@ class IndexIntrastatReport extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(IntrastatMetrics::class);
-        $queryBuilder->where('intrastat_metrics.organisation_id', $organisation->id);
+        $queryBuilder = QueryBuilder::for(IntrastatExportMetrics::class);
+        $queryBuilder->where('intrastat_export_metrics.organisation_id', $organisation->id);
 
-        $queryBuilder->leftJoin('countries', 'intrastat_metrics.country_id', '=', 'countries.id');
-        $queryBuilder->leftJoin('tax_categories', 'intrastat_metrics.tax_category_id', '=', 'tax_categories.id');
+        $queryBuilder->leftJoin('countries', 'intrastat_export_metrics.country_id', '=', 'countries.id');
+        $queryBuilder->leftJoin('tax_categories', 'intrastat_export_metrics.tax_category_id', '=', 'tax_categories.id');
 
-        if ($this->bucket == 'with_vat') {
+        if ($this->bucket == 'orders') {
+            $queryBuilder->where('delivery_note_type', DeliveryNoteTypeEnum::ORDER->value)
+                         ->where('invoices_count', '>', 0);
+        } elseif ($this->bucket == 'replacements') {
+            $queryBuilder->where('delivery_note_type', DeliveryNoteTypeEnum::REPLACEMENT->value);
+        } elseif ($this->bucket == 'with_vat') {
             $queryBuilder->whereHas('taxCategory', function ($query) {
                 $query->where('rate', '>', 0.0);
             });
@@ -137,7 +167,7 @@ class IndexIntrastatReport extends OrgAction
             }
         }
 
-        $this->records = $queryBuilder->count('intrastat_metrics.id');
+        $this->records = $queryBuilder->count('intrastat_export_metrics.id');
 
         $queryBuilder
             ->defaultSort('-date')
@@ -149,16 +179,24 @@ class IndexIntrastatReport extends OrgAction
 
         return $queryBuilder
             ->select([
-                'intrastat_metrics.id',
-                'intrastat_metrics.date',
-                'intrastat_metrics.tariff_code',
-                'intrastat_metrics.country_id',
-                'intrastat_metrics.tax_category_id',
-                'intrastat_metrics.quantity',
-                'intrastat_metrics.value_org_currency',
-                'intrastat_metrics.weight',
-                'intrastat_metrics.delivery_notes_count',
-                'intrastat_metrics.products_count',
+                'intrastat_export_metrics.id',
+                'intrastat_export_metrics.date',
+                'intrastat_export_metrics.tariff_code',
+                'intrastat_export_metrics.country_id',
+                'intrastat_export_metrics.tax_category_id',
+                'intrastat_export_metrics.delivery_note_type',
+                'intrastat_export_metrics.quantity',
+                'intrastat_export_metrics.value_org_currency',
+                'intrastat_export_metrics.weight',
+                'intrastat_export_metrics.delivery_notes_count',
+                'intrastat_export_metrics.products_count',
+                'intrastat_export_metrics.invoices_count',
+                'intrastat_export_metrics.partner_tax_numbers',
+                'intrastat_export_metrics.valid_tax_numbers_count',
+                'intrastat_export_metrics.invalid_tax_numbers_count',
+                'intrastat_export_metrics.mode_of_transport',
+                'intrastat_export_metrics.delivery_terms',
+                'intrastat_export_metrics.nature_of_transaction',
                 'countries.name as country_name',
                 'countries.code as country_code',
                 'tax_categories.name as tax_category_name',
@@ -178,7 +216,7 @@ class IndexIntrastatReport extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'       => __('No Intrastat data'),
+                        'title'       => __('No Intrastat export data'),
                         'description' => __('No EU delivery data available for the selected period'),
                         'count'       => $this->records,
                     ]
@@ -199,7 +237,9 @@ class IndexIntrastatReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'tariff_code', label: __('Tariff Code'), sortable: true, searchable: true)
                 ->column(key: 'country', label: __('Destination'))
+                ->column(key: 'delivery_type', label: __('Type'))
                 ->column(key: 'tax_category', label: __('VAT Category'))
+                ->column(key: 'invoices', label: __('Invoices'), type: 'number')
                 ->column(key: 'quantity', label: __('Quantity'), sortable: true, type: 'number')
                 ->column(key: 'value_org_currency', label: __('Value'), sortable: true, type: 'currency')
                 ->column(key: 'weight', label: __('Weight (kg)'), sortable: true, type: 'number')
@@ -235,18 +275,18 @@ class IndexIntrastatReport extends OrgAction
         $dateFilter = $request->input('between', []);
 
         return Inertia::render(
-            'Org/Accounting/Intrastat/IntrastatReport',
+            'Org/Accounting/Intrastat/IntrastatExportReport',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Intrastat Report'),
+                'title'       => __('Intrastat Export Report'),
                 'pageHead'    => [
                     'title' => __('Intrastat Export Report'),
                     'icon'  => [
-                        'title' => __('Intrastat'),
+                        'title' => __('Intrastat Exports'),
                         'icon'  => 'fal fa-file-export'
                     ],
                 ],
-                'data'        => IntrastatMetricsResource::collection($metrics),
+                'data'        => IntrastatExportMetricsResource::collection($metrics),
                 'filters'     => [
                     'countries' => $euCountries,
                 ],
@@ -256,7 +296,7 @@ class IndexIntrastatReport extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $metrics): AnonymousResourceCollection
     {
-        return IntrastatMetricsResource::collection($metrics);
+        return IntrastatExportMetricsResource::collection($metrics);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -268,9 +308,9 @@ class IndexIntrastatReport extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'icon'  => 'fal fa-file-export',
-                        'label' => __('Intrastat'),
+                        'label' => __('Intrastat Exports'),
                         'route' => [
-                            'name'       => 'grp.org.reports.intrastat',
+                            'name'       => 'grp.org.reports.intrastat.exports',
                             'parameters' => $routeParameters
                         ]
                     ]
