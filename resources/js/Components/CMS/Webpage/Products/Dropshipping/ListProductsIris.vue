@@ -505,7 +505,7 @@ console.log('sdasd',props)
                              <component :is="getProductsRenderDropshippingComponent(code)" :product="product" :key="index" :bestSeller="fieldValue.bestseller"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :productHasPortfolio="productHasPortfolio.list[product.id]"
-                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" :screenType/>
                         </div>
                     </template>
 

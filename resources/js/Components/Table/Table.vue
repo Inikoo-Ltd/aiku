@@ -477,7 +477,7 @@ const visit = (url?: string) => {
         {
             replace: true,
             preserveState: true,
-            preserveScroll: props.preserveScroll !== false,
+            preserveScroll: true,
             onBefore() {
                 isVisiting.value = true;
             },

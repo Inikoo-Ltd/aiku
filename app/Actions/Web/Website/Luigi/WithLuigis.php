@@ -93,7 +93,7 @@ trait WithLuigis
             ->retry(3, 100)
             ->withBody($body, $content_type)
             ->{strtolower($method)}(
-                'https://live.luigisbox.com/'.$endPoint
+                'https://live.luigisbox.tech/'.$endPoint
             );
 
 

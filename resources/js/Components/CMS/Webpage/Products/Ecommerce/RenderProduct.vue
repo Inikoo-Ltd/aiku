@@ -36,6 +36,7 @@ const props = withDefaults(defineProps<{
     buttonStyleLogin?: object | undefined
     code : string
     button?: any
+    screenType:string
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -231,6 +232,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
         :isLoadingFavourite
         :isLoadingRemindBackInStock
         :button
+        :bestSeller="bestSeller"
+        :screenType
     />
 </template>
 
