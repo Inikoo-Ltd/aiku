@@ -386,7 +386,13 @@ const selectedProducts = ref<number[]>([])
 const loadingAction = ref([])
 const modalAddproductBluk = ref(false)
 const modalMatchproductBluk = ref(false)
+const modalBulkEditPrice = ref(false)
+const selectedEditProduct = ref([])
 
+const openEditModal = (item) => {
+	modalBulkEditPrice.value = true
+	selectedEditProduct.value = item;
+}
 
 const progessbar = ref({
     data: {
@@ -774,11 +780,22 @@ const layout = inject('layout', layoutStructure)
 
                 <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
 
+					<Button
+						v-if="selectedProducts.length > 0"
+						v-tooltip="trans('Edit Product :platform', { platform: props.platform_data?.name })"
+						:type="'tertiary'"
+						:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
+						:loading="loadingAction.includes('bulk-edit')"
+						@click="modalBulkEditPrice(selectedProducts)"
+						:icon="['fal', 'fa-pencil']"
+						size="xs"
+					/>
+
                     <Button
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Unlink & Delete Product :platform', { platform: props.platform_data?.name })"
                         :type="'delete'"
-                        :label="trans('Unlink & Delete Product (:_count)', { _count: selectedProducts?.length })"
+                        :label="trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-unlink')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-unlink',
@@ -793,7 +810,7 @@ const layout = inject('layout', layoutStructure)
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Upload as new product to the :platform', { platform: props.platform_data?.name })"
                         :type="'create'"
-                        :label="trans('Create New Product (:_count)', { _count: selectedProducts?.length })"
+                        :label="trans('Create New (:_count)', { _count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-create',

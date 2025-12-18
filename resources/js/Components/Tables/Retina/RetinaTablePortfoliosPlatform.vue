@@ -471,7 +471,7 @@ const calculateVat = (price: number) => {
             </li>
         </ul>
     </Message>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="false"
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true"
            @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
            checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)"
