@@ -10,6 +10,8 @@ namespace App\Actions\UI\Incoming;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Dispatching\Return\ReturnStateEnum;
+use App\Models\Dispatching\OrderReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -41,6 +43,10 @@ class ShowIncomingHub extends OrgAction
     {
         $palletDeliveries = $warehouse->stats->number_pallet_deliveries_state_confirmed + $warehouse->stats->number_pallet_deliveries_state_received + $warehouse->stats->number_pallet_deliveries_state_booking_in;
 
+        // Count returns waiting to receive
+        $returnsWaitingToReceive = OrderReturn::where('warehouse_id', $warehouse->id)
+            ->where('state', ReturnStateEnum::WAITING_TO_RECEIVE)
+            ->count();
 
         return Inertia::render(
             'Org/Incoming/IncomingHub',
@@ -79,6 +85,18 @@ class ShowIncomingHub extends OrgAction
                         'icon'  => [
                             'icon'    => 'fal fa-truck-couch',
                             'tooltip' => __('Fulfilment Deliveries')
+                        ]
+                    ],
+                    [
+                        'name'  => __('Returns'),
+                        'value' => $returnsWaitingToReceive,
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.incoming.returns.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'icon'  => [
+                            'icon'    => 'fal fa-undo-alt',
+                            'tooltip' => __('Customer Returns')
                         ]
                     ],
                 ],
