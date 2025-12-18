@@ -2,7 +2,7 @@
 
 /*
  * Author: Oggie Sutrisna
- * Created: Wed, 18 Dec 2025 13:50:00 Makassar Time
+ * Created: Thu, 18 Dec 2025 13:50:00 Makassar Time
  * Description: Return state enum with waiting_to_receive as initial state
  */
 
@@ -16,8 +16,8 @@ enum ReturnStateEnum: string
 
     case WAITING_TO_RECEIVE = 'waiting_to_receive';  // Initial state
     case RECEIVED = 'received';
-    case INSPECTING = 'inspecting';
-    case PROCESSED = 'processed';
+    case INSPECTED = 'inspected';
+    case RESTOKED = 'restocked';
     case CANCELLED = 'cancelled';
 
     public static function labels(): array
@@ -25,8 +25,8 @@ enum ReturnStateEnum: string
         return [
             'waiting_to_receive' => __('Waiting to Receive'),
             'received'           => __('Received'),
-            'inspecting'         => __('Inspecting'),
-            'processed'          => __('Processed'),
+            'inspected'          => __('Inspected'),
+            'restocked'          => __('Restocked'),
             'cancelled'          => __('Cancelled'),
         ];
     }
@@ -44,7 +44,7 @@ enum ReturnStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'received' => [
+            'received'           => [
                 'tooltip' => __('Received'),
                 'icon'    => 'fal fa-inbox-in',
                 'class'   => 'text-blue-500',
@@ -54,8 +54,8 @@ enum ReturnStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'inspecting' => [
-                'tooltip' => __('Inspecting'),
+            'inspected'          => [
+                'tooltip' => __('Inspected'),
                 'icon'    => 'fal fa-search',
                 'class'   => 'text-yellow-500',
                 'color'   => 'yellow',
@@ -64,8 +64,8 @@ enum ReturnStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'processed' => [
-                'tooltip' => __('Processed'),
+            'restocked'          => [
+                'tooltip' => __('Restocked'),
                 'icon'    => 'fal fa-check-double',
                 'class'   => 'text-green-500',
                 'color'   => 'green',
@@ -74,7 +74,7 @@ enum ReturnStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'cancelled' => [
+            'cancelled'          => [
                 'tooltip' => __('Cancelled'),
                 'icon'    => 'fal fa-times',
                 'class'   => 'text-red-500',

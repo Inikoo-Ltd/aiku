@@ -2,7 +2,7 @@
 
 /*
  * Author: Oggie Sutrisna
- * Created: Wed, 18 Dec 2025 13:50:00 Makassar Time
+ * Created: Thu, 18 Dec 2025 13:50:00 Makassar Time
  * Description: Return item state enum
  */
 
@@ -14,29 +14,27 @@ enum ReturnItemStateEnum: string
 {
     use EnumHelperTrait;
 
-    case PENDING = 'pending';
+    case WAITING_TO_RECEIVE = 'waiting_to_receive';  // Initial state
     case RECEIVED = 'received';
-    case INSPECTING = 'inspecting';
-    case ACCEPTED = 'accepted';
-    case REJECTED = 'rejected';
-    case RESTOCKED = 'restocked';
+    case INSPECTED = 'inspected';
+    case RESTOKED = 'restocked';
+    case CANCELLED = 'cancelled';
 
     public static function labels(): array
     {
         return [
-            'pending'    => __('Pending'),
-            'received'   => __('Received'),
-            'inspecting' => __('Inspecting'),
-            'accepted'   => __('Accepted'),
-            'rejected'   => __('Rejected'),
-            'restocked'  => __('Restocked'),
+            'waiting_to_receive' => __('Pending'),
+            'received'           => __('Received'),
+            'inspected'          => __('Inspected'),
+            'restocked'          => __('Restocked'),
+            'cancelled'          => __('Cancelled'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'pending' => [
+            'waiting_to_receive'    => [
                 'tooltip' => __('Pending'),
                 'icon'    => 'fal fa-clock',
                 'class'   => 'text-gray-500',
@@ -46,7 +44,7 @@ enum ReturnItemStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'received' => [
+            'received'   => [
                 'tooltip' => __('Received'),
                 'icon'    => 'fal fa-inbox-in',
                 'class'   => 'text-blue-500',
@@ -56,8 +54,8 @@ enum ReturnItemStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'inspecting' => [
-                'tooltip' => __('Inspecting'),
+            'inspected' => [
+                'tooltip' => __('Inspected'),
                 'icon'    => 'fal fa-search',
                 'class'   => 'text-yellow-500',
                 'color'   => 'yellow',
@@ -66,33 +64,23 @@ enum ReturnItemStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'accepted' => [
-                'tooltip' => __('Accepted'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-green-500',
-                'color'   => 'green',
-                'app'     => [
-                    'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
-            ],
-            'rejected' => [
-                'tooltip' => __('Rejected'),
-                'icon'    => 'fal fa-times',
-                'class'   => 'text-red-500',
-                'color'   => 'red',
-                'app'     => [
-                    'name' => 'times',
-                    'type' => 'font-awesome-5'
-                ]
-            ],
-            'restocked' => [
+            'restocked'  => [
                 'tooltip' => __('Restocked'),
                 'icon'    => 'fal fa-box-check',
                 'class'   => 'text-indigo-500',
                 'color'   => 'indigo',
                 'app'     => [
                     'name' => 'box-check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'cancelled'  => [
+                'tooltip' => __('Cancelled'),
+                'icon'    => 'fal fa-times',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+                'app'     => [
+                    'name' => 'times',
                     'type' => 'font-awesome-5'
                 ]
             ],

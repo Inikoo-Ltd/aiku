@@ -2,7 +2,7 @@
 
 /*
  * Author: Oggie Sutrisna
- * Created: Wed, 18 Dec 2025 13:50:00 Makassar Time
+ * Created: Thu, 18 Dec 2025 13:50:00 Makassar Time
  * Description: ReturnStats model for return statistics
  */
 
@@ -16,7 +16,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * App\Models\Dispatching\ReturnStats
  *
- * @property-read \App\Models\Dispatching\OrderReturn|null $return
+ * @property int $id
+ * @property int $return_id
+ * @property int $number_items current number of items
+ * @property int $number_items_state_waiting_to_receive
+ * @property int $number_items_state_received
+ * @property int $number_items_state_inspected
+ * @property int $number_items_state_restocked
+ * @property int $number_items_state_cancelled
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Dispatching\OrderReturn $return
  * @method static Builder<static>|ReturnStats newModelQuery()
  * @method static Builder<static>|ReturnStats newQuery()
  * @method static Builder<static>|ReturnStats query()

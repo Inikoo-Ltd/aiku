@@ -2,7 +2,7 @@
 
 /*
  * Author: Oggie Sutrisna
- * Created: Wed, 18 Dec 2025 13:50:00 Makassar Time
+ * Created: Thu, 18 Dec 2025 13:50:00 Makassar Time
  * Description: Create return_items table for individual items within a return
  */
 
@@ -40,11 +40,11 @@ return new class () extends Migration {
             $table->unsignedBigInteger('transaction_id')->index()->nullable();
             $table->foreign('transaction_id')->references('id')->on('transactions')->nullOnDelete();
 
-            $table->unsignedBigInteger('invoice_transaction_id')->index()->nullable();
-            $table->foreign('invoice_transaction_id')->references('id')->on('invoice_transactions')->nullOnDelete();
+            $table->unsignedBigInteger('delivery_note_item_id')->index()->nullable();
+            $table->foreign('delivery_note_item_id')->references('id')->on('delivery_note_items')->nullOnDelete();
 
             $table->string('notes')->nullable();
-            $table->string('state')->default(ReturnItemStateEnum::PENDING->value)->index();
+            $table->string('state')->default(ReturnItemStateEnum::WAITING_TO_RECEIVE->value)->index();
 
             $table->decimal('weight', 16, 3)->nullable();
             $table->decimal('quantity_expected', 16, 3)->default(0)->comment('Expected quantity to be returned');

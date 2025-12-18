@@ -2,7 +2,7 @@
 
 /*
  * Author: Oggie Sutrisna
- * Created: Wed, 18 Dec 2025 13:50:00 Makassar Time
+ * Created: Thu, 18 Dec 2025 13:50:00 Makassar Time
  * Description: Return model for customer order returns in warehouse management
  */
 
@@ -43,27 +43,53 @@ use Spatie\Sluggable\SlugOptions;
 /**
  * App\Models\Dispatching\OrderReturn
  *
+ * @property int $id
+ * @property int $group_id
+ * @property int $organisation_id
+ * @property string $slug
+ * @property int $warehouse_id
+ * @property int $shop_id
+ * @property int $customer_id
+ * @property int|null $customer_client_id
+ * @property string $reference
  * @property ReturnStateEnum $state
+ * @property string|null $weight actual weight, grams
+ * @property int $number_items current number of items
+ * @property int|null $inspector_id Employee who inspected the return
+ * @property int|null $processed_id Employee who processed the return
+ * @property \Illuminate\Support\Carbon $date
+ * @property string|null $waiting_to_receive_at
+ * @property \Illuminate\Support\Carbon|null $received_at
+ * @property string|null $inspected_at
+ * @property string|null $restocked_at
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property string|null $customer_notes
+ * @property string|null $internal_notes
+ * @property string|null $return_reason
+ * @property array<array-key, mixed> $data
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
- * @property-read Group|null $group
+ * @property-read Group $group
  * @property-read Employee|null $inspector
  * @property-read User|null $inspectorUser
  * @property-read Collection<int, Order> $orders
- * @property-read Organisation|null $organisation
+ * @property-read Organisation $organisation
  * @property-read Platform|null $platform
  * @property-read Employee|null $receiver
  * @property-read User|null $receiverUser
  * @property-read Address|null $returnAddress
  * @property-read Collection<int, \App\Models\Dispatching\ReturnItem> $returnItems
- * @property-read Shop|null $shop
+ * @property-read Shop $shop
  * @property-read \App\Models\Dispatching\ReturnStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
- * @property-read Warehouse|null $warehouse
+ * @property-read Warehouse $warehouse
  * @method static Builder<static>|OrderReturn newModelQuery()
  * @method static Builder<static>|OrderReturn newQuery()
  * @method static Builder<static>|OrderReturn onlyTrashed()

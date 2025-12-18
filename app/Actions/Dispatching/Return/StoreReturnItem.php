@@ -2,7 +2,7 @@
 
 /*
  * Author: Oggie Sutrisna
- * Created: Wed, 18 Dec 2025 13:50:00 Makassar Time
+ * Created: Thu, 18 Dec 2025 13:50:00 Makassar Time
  * Description: Action to store a new ReturnItem within a Return
  */
 
@@ -40,7 +40,7 @@ class StoreReturnItem extends OrgAction
                 data_set($modelData, 'invoice_id', $deliveryNoteItem->invoice_id);
                 data_set($modelData, 'estimated_weight', $deliveryNoteItem->estimated_required_weight ?? 0);
 
-                // Use dispatched quantity as expected return quantity if not provided
+                // Use dispatched quantity as the expected return quantity if not provided
                 if (! Arr::has($modelData, 'quantity_expected')) {
                     data_set($modelData, 'quantity_expected', $deliveryNoteItem->quantity_dispatched ?? 0);
                 }
@@ -51,10 +51,9 @@ class StoreReturnItem extends OrgAction
         data_set($modelData, 'group_id', $return->group_id);
         data_set($modelData, 'organisation_id', $return->organisation_id);
         data_set($modelData, 'shop_id', $return->shop_id);
-        data_set($modelData, 'state', ReturnItemStateEnum::PENDING);
+        data_set($modelData, 'state', ReturnItemStateEnum::WAITING_TO_RECEIVE);
         data_set($modelData, 'date', now());
 
-        /** @var ReturnItem $returnItem */
         $returnItem = ReturnItem::create($modelData);
 
         // Update return stats
@@ -66,13 +65,11 @@ class StoreReturnItem extends OrgAction
     protected function updateReturnStats(OrderReturn $return): void
     {
         $stats = $return->stats;
-        if ($stats) {
-            $stats->update([
-                'number_items' => $return->returnItems()->count(),
-                'number_items_state_pending' => $return->returnItems()->where('state', ReturnItemStateEnum::PENDING)->count(),
-                'total_quantity_expected' => $return->returnItems()->sum('quantity_expected'),
-            ]);
-        }
+        $stats?->update([
+            'number_items'               => $return->returnItems()->count(),
+            'number_items_state_pending' => $return->returnItems()->where('state', ReturnItemStateEnum::WAITING_TO_RECEIVE)->count(),
+            'total_quantity_expected'    => $return->returnItems()->sum('quantity_expected'),
+        ]);
 
         $return->updateQuietly([
             'number_items' => $stats->number_items ?? 0,
