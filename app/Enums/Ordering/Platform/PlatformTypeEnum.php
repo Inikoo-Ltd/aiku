@@ -31,7 +31,7 @@ enum PlatformTypeEnum: string
             'woocommerce' => 'Woo',
             'ebay'        => 'Ebay',
             'amazon'      => 'Amazon',
-            'manual'      => 'Web/API',
+            'manual'      => 'Manual/API',
             'magento'     => 'Magento',
             'wix'         => 'Wix',
         ];

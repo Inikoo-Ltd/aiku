@@ -10,7 +10,9 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
 use App\Models\Catalogue\Collection;
+
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisProductsInCollection extends IrisAction
@@ -26,7 +28,17 @@ class GetIrisProductsInCollection extends IrisAction
                 ->where('collection_has_models.model_type', '=', 'Product')
                 ->where('collection_has_models.collection_id', '=', $collection->id);
         });
-        $queryBuilder->select($this->getSelect());
+        $queryBuilder->select(array_merge(
+                $this->getSelect(),
+                [
+                    DB::raw('(
+                            select max(os.is_on_demand)
+                            from org_stocks os
+                            join product_has_org_stocks phos on phos.org_stock_id = os.id
+                            where phos.product_id = products.id
+                        ) as is_on_demand')
+                ]
+            ));
         $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
 
         if ($collection->stats->number_products > 0) {
