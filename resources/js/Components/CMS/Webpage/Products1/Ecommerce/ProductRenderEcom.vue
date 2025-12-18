@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<{
     updateBasketQuantityRoute?:routeType
     isLoadingFavourite:boolean
     isLoadingRemindBackInStock:boolean
+    screenType:string
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -91,7 +92,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType="screenType"/>
 
             <!-- Product Image -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"

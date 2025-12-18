@@ -55,6 +55,7 @@ const props = defineProps<{
         name: string
     }
     buttonStyleLogin?: object | undefined
+    screenType:string
 }>()
 
 
@@ -203,7 +204,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
     <div class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType/>
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
