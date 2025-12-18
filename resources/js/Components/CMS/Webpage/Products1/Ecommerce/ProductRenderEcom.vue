@@ -126,7 +126,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
-                        v-if="product.stock > 0 && basketButton" 
+                        v-if="product.stock > 0 && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
                         :product="product"
                         :key="product" 

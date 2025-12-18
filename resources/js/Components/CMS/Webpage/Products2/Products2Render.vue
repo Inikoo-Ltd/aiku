@@ -177,7 +177,7 @@ const toggleBackInStock = () =>
             </div>
 
              <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-start px-1">
-                <LabelComingSoon v-if="true" :product class="w-fit text-center w-fit text-xs" />
+                <LabelComingSoon v-if="product.is_coming_soon" :product class="w-fit text-center w-fit text-xs" />
                 <div v-else
                     class="flex items-start gap-1 px-2 py-1 rounded-xl font-semibold max-w-[300px] break-words leading-snug"
                     :class="product.stock > 0 ? 'text-green-700' : 'text-red-600'">
@@ -215,7 +215,7 @@ const toggleBackInStock = () =>
                     <template v-if="layout?.iris?.is_logged_in">
                         <!-- In stock -->
                         <NewAddToCartButton
-                            v-if="product.stock > 0 && basketButton"
+                            v-if="product.stock > 0 && basketButton && !product.is_coming_soon"
                             :hasInBasket="hasInBasket"
                             :product="product"
                             :addToBasketRoute="addToBasketRoute"

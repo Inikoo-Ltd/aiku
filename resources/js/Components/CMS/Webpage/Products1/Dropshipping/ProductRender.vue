@@ -261,6 +261,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
         </div>
 
         <ButtonAddPortfolio
+            v-if="!product.is_coming_soon"
             :product="product"
             :productHasPortfolio="productHasPortfolio"
             :buttonStyle="buttonStyle"
