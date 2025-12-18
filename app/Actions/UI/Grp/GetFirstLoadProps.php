@@ -41,13 +41,12 @@ class GetFirstLoadProps
 
         return
             [
-                'localeData' =>
-                    [
-                        'iso'                => getIsoLocale(App::getLocale()),
-                        'language'              => LanguageResource::make($language)->getArray(),
-                        'languageOptions'       => GetLanguagesOptions::make()->getExtraGroupLanguages($availableLanguages),
-                        'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
-                    ],
+                'localeData' => [
+                    'locale_iso'            => getIsoLocale(App::getLocale()),
+                    'language'              => LanguageResource::make($language)->getArray(),
+                    'languageOptions'       => GetLanguagesOptions::make()->getExtraGroupLanguages($availableLanguages),
+                    'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
+                ],
 
                 'layout'           => GetLayout::run($user),
                 'environment'      => app()->environment(),

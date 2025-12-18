@@ -30,13 +30,14 @@ class GetIrisProductsInCollection extends IrisAction
         $queryBuilder->select(array_merge(
             $this->getSelect(),
             [
-                    DB::raw('(
-                            select max(os.is_on_demand)
-                            from org_stocks os
-                            join product_has_org_stocks phos on phos.org_stock_id = os.id
-                            where phos.product_id = products.id
-                        ) as is_on_demand')
-                ]
+                DB::raw('exists (
+                        select os.is_on_demand
+                        from org_stocks os
+                        join product_has_org_stocks phos on phos.org_stock_id = os.id
+                        where phos.product_id = products.id
+                        and os.is_on_demand = true
+                    ) as is_on_demand')
+            ]
         ));
         $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
 

@@ -181,6 +181,7 @@ export const initialiseApp = () => {
 
         // Set data of Locale (Language)
         if (usePage().props.localeData) {
+            locale.locale_iso = usePage().props.localeData.locale_iso
             locale.language = usePage().props.localeData.language
             locale.languageOptions = usePage().props.localeData.languageOptions
         }

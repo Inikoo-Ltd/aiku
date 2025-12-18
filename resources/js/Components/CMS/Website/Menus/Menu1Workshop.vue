@@ -398,7 +398,7 @@ watch(loadingItem, (newVal) => {
                         <template v-if="subnav?.collections?.length">
                             <div v-for="(linkData, idxCollection) in subnav?.collections"
                                 :key="subnav.title"
-                                class="navigation"
+                                class="relative font-semibold text-gray-700 transition flex items-center gap-x-3"
                                 :style="{
                                     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
                                     margin: 0,
@@ -429,7 +429,7 @@ watch(loadingItem, (newVal) => {
 
                     <!-- Section: Department - Collection -->
                     <div v-if="hoveredNavigation?.collections?.length" class="">
-                        <div
+                        <!-- <div
                             :style="{
                                 ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
                                 margin: 0,
@@ -444,23 +444,11 @@ watch(loadingItem, (newVal) => {
                                 {{ trans('Collection') }}
                                 <FontAwesomeIcon v-tooltip="trans('Collection on :department', { department: hoveredNavigation.label })" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
                             </span>
-                        </div>
+                        </div> -->
 
                         <!-- Section: Collections in Department -->
-                        <div v-for="(linkData, idxCollection) in hoveredNavigation.collections"
-                            :key="linkData.id"
-                            zclass="navigation"
-                            :style="{
-                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                                margin: 0,
-                                background: 'transparent',
-                                padding: 0,
-                                fontWeight: 600,
-                                ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
-                            }"
-                        >
-                            <LinkIris
-                                class=""
+                        <div v-for="(linkData, idxCollection) in hoveredNavigation.collections" :key="linkData.id">
+                            <!-- LinkIris
                                 :id="linkData.id"
                                 :href="internalHref(linkData.url)"
                                 type="internal"
@@ -475,7 +463,29 @@ watch(loadingItem, (newVal) => {
                                         {{ linkData.name }}
                                     </div>
                                 </template>
-                            </LinkIris>
+                            </LinkIris> -->
+                                <component :is="linkData?.url ? LinkIris : 'div'"
+                                    :href="internalHref(linkData?.url)"
+                                     @start="() => loadingItem = `depcol_${idxCollection}`"
+                                     @finish="() => loadingItem = null"
+                                    :id="linkData?.id" :style="{
+                                        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                        margin: 0,
+                                        background: 'transparent',
+                                        padding: 0,
+                                        fontWeight: 600,
+                                        ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
+                                    }" class="relative font-semibold text-gray-700 transition flex items-center gap-x-3"
+                                    >
+                                    <div class="relative">
+                                        {{ linkData.name  }}
+                                        <div class="top-1/2 -translate-y-1/2 absolute -left-6">
+                                              <LoadingIcon v-if="loadingItem == `depcol_${idxCollection}`" />
+                                            <FontAwesomeIcon v-else-if="linkData.icon" :icon="linkData.icon" fixed-width
+                                                class="text-[10px] text-gray-400" />
+                                        </div>
+                                    </div>
+                                </component>
                         </div>
                     </div>
                 </div>

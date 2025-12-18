@@ -10,6 +10,7 @@ import { Language } from '@/types/Locale'
 
 // Fallback if Pinia Store didn't provided
 export const aikuLocaleStructure = {
+    locale_iso: 'en-GB',
     language: {
         id: 68,
         code: 'en',
