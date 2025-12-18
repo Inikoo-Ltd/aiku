@@ -23,7 +23,7 @@ import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, uniqueId } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import axios from "axios";
 import ProductSales from "@/Components/Product/ProductSales.vue"
@@ -57,12 +57,15 @@ const props = defineProps<{
     is_single_trade_unit?: boolean
     trade_unit_slug?: string
 }>()
-console.log('sdsjkh',props.trade_units)
+console.log('sdsjkh',props)
+
+
 const layout = inject('layout', {});
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 const showDialog = ref(false)
-const tableData = ref(cloneDeep(props.shopsData));
+const tableData = ref(cloneDeep(props.shopsData))
+const key = ref(crypto.randomUUID())
 const disableClone = ref(true)
 const loading = ref(false)
 const currency = props.masterCurrency ?? layout.group.currency;
@@ -86,80 +89,82 @@ const component = computed(() => {
 })
 
 function openModal() {
+    refreshModalData()
     showDialog.value = true;
 }
 
-const submitForm = async (redirect = true) => {
-    loading.value = true;
-    form.processing = true
-    form.errors = {}
+const submitForm = async () => {
+    loading.value = true
+    form.clearErrors()
 
-    const finalDataTable: Record<number, { price: number | string }> = {}
-    for (const tableDataItem of tableData.value.data) {
-        let create_in_shop = tableDataItem.product.create_in_shop
-        let price = tableDataItem.product.price
-        let rrp = tableDataItem.product.rrp
+    try {
+        const finalDataTable: Record<number, any> = {}
 
-        if (!create_in_shop) {
-            rrp = 1;
-            price = 1;
+        for (const item of tableData.value.data) {
+            const create = item.product.create_in_shop
+
+            finalDataTable[item.id] = {
+                price: create ? item.product.price : 1,
+                rrp: create ? item.product.rrp : 1,
+                create_in_shop: create ? 'Yes' : 'No'
+            }
         }
 
-        finalDataTable[tableDataItem.id] = {
-            price: price,
-            create_in_shop: create_in_shop ? 'Yes' : 'No',
-            rrp: rrp
+        const params = {
+            ...route().params,
+            masterFamily: String(props.masterAsset.master_family.id)
         }
-    }
-    let params = route().params;
-    params['masterFamily'] = String(props.masterAsset.master_family.id);
 
-    // Build payload manual
-    const payload: any = {
-        ...form.data(),
-        shop_products: finalDataTable,
-    }
+       const response = await axios.post(
+            route('grp.models.master_family.clone_to_other_store', params),
+            {
+                ...form.data(),
+                shop_products: finalDataTable
+            },
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
 
-    await axios.post(
-        route('grp.models.master_family.clone_to_other_store', params),
-        payload,
-        { headers: { "Content-Type": "multipart/form-data" } }
-    ).catch((error) => {
-        loading.value = false;
-        console.error(error);
-        if(error.response.data.errors){
-            const errorBag = [...new Set(Object.values(error.response.data.errors).flat())];
-            const message = errorBag.join('<br>');
-            console.log(message);
-            notify({
-                title: trans('Something went wrong.'),
-                data: {html: message},
-                type: 'error'
-            });    
-        }
-        refreshModalData();
-    })
-    .then((response) => {
-        console.log(response);
-        loading.value = false;
-        router.reload();
-        showDialog.value = false;
-        refreshModalData();
         notify({
             title: trans('Created Successfully'),
             text: trans('Added products to Selected Stores'),
             type: 'success'
-        });   
-    });
+        })
 
+        router.reload({ only : 'products'})
+        showDialog.value = false
+        key.value = crypto.randomUUID()
+        refreshModalData()
+        router.reload({ only: ['products'] })
+
+    } catch (error: any) {
+        if (error.response?.data?.errors) {
+            notify({
+                title: trans('Something went wrong'),
+                data: {
+                    html: Object.values(error.response.data.errors).flat().join('<br>')
+                },
+                type: 'error'
+            })
+        }
+    } finally {
+        loading.value = false
+    }
 }
 
+
 function refreshModalData() {
-    let productCodes = new Set(props.products?.data?.map(p => p.shop_code));
-    tableData.value.data = tableData.value.data.filter(item => !productCodes.has(item.code));
-    if (tableData.value.data.length > 0) {
-        disableClone.value = false;
+    const productCodes = new Set(
+        props.products?.data?.map(p => p.shop_code)
+    )
+
+    tableData.value = {
+        ...tableData.value,
+        data: tableData.value.data.filter(
+            item => !productCodes.has(item.code)
+        )
     }
+
+    disableClone.value = tableData.value.data.length === 0
 }
 
 watch(() => currentTab.value, (value) => {
@@ -228,7 +233,7 @@ onMounted(() => {
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog v-model:visible="showDialog" modal header="Add Item to Other Shop" :style="{ width: '60vw' }">
-        <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form"
+        <TableSetPriceProduct :key="key" v-model="tableData" :currency="currency.code" :form="form"
             :disable-exist="true" />
         <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
             {{ form.errors.shop_products.join(", ") }}
