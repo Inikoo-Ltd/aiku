@@ -79,22 +79,12 @@ const debounceUpdateQuantity = debounce(
     <Table :resource="data" :name="tab">
         <!-- Column: Image -->
         <template #cell(image)="{ item }">
-            <div class="flex relative w-16 aspect-square overflow-hidden">
+            <div class="flex relative w-20 aspect-square overflow-hidden">
                 <Image
-                    :src="item.image?.thumbnail"
+                    :src="item.image?.source"
                     class="w-full h-full object-contain"
                 />
             </div>
-        </template>
-
-        <!-- Column: Code -->
-        <template #cell(asset_code)="{ item }">
-            <a v-if="item.webpage_url" :href="item.webpage_url" class="primaryLink" >
-                {{ item.asset_code }}
-            </a>
-            <span v-else>
-                  {{ item.asset_code }}
-            </span>
         </template>
 
         <!-- Column: Net Amount -->
@@ -110,11 +100,17 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Name -->
         <template #cell(asset_name)="{ item }">
             <div>
-                <div><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units) }}x</span>{{ item.asset_name }}</div>
+                <a v-if="item.webpage_url" :href="item.webpage_url" class="primaryLink -ml-1 italic text-xs" >
+                    {{ item.asset_code }}
+                </a>
+                <span v-else>
+                    {{ item.asset_code }}
+                </span>
+                <div class="text-base"><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units) }}x</span>{{ item.asset_name }}</div>
                 <div v-if="!item.available_quantity">
                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                 </div>
-                <div v-else class="text-gray-500 italic text-xs">
+                <div v-else class="text-gray-400 italic text-xs">
                     {{ trans('Stock :xquantityx available', { xquantityx: locale.number(item.available_quantity || 0) }) }}
                 </div>
                 

@@ -2,7 +2,7 @@
 import { faMedal } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { getStyles } from "@/Composables/styles"
-import { ref, watch } from "vue"
+import { ref, watch, computed } from "vue"
 import { get } from "lodash-es"
 
 const props = defineProps<{
@@ -40,6 +40,26 @@ watch(
     },
     { deep: true }
 )
+const isMobile = computed(() => props.screenType == "mobile")
+
+const showText = computed(() => {
+    if (!isMobile.value) return true
+
+    if (props.topSeller == 1) {
+        return !get(props.data, ['bestseller1', 'icon', 'use_icon'], true)
+    }
+
+    if (props.topSeller == 2) {
+        return !get(props.data, ['bestseller2', 'icon', 'use_icon'], true)
+    }
+
+    if (props.topSeller == 3) {
+        return !get(props.data, ['bestseller3', 'icon', 'use_icon'], true)
+    }
+
+    return true
+})
+
 </script>
 <template>
     <div class="absolute top-2 left-2 border border-black text-xs font-bold px-2 py-0.5 rounded z-10" :class="{
@@ -58,7 +78,8 @@ watch(
         <!-- Best Seller 3 Icon -->
         <FontAwesomeIcon v-if="props.topSeller === 3 && get(props.data, ['bestseller3', 'icon', 'use_icon'], true)" :icon="faMedal"
             class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-3-icon': props.topSeller === 3 }" />
-        <span v-if="props.screenType !== 'mobile'" class="hidden md:inline" :class="{
+
+        <span v-if="showText" :class="{
             'best-seller-1-text': props.topSeller === 1,
             'best-seller-2-text': props.topSeller === 2,
             'best-seller-3-text': props.topSeller === 3

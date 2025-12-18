@@ -185,9 +185,18 @@ const layout = inject('layout', layoutStructure)
                     </ModalConfirmationDelete>
                 </div>
 
+				<div v-if="layout?.app?.environment === 'local' && platform_status && customer_sales_channel?.type === 'ebay'">
+					<ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"
+									type="tertiary"
+									:icon="['fal', 'fa-spinner']"
+									:label="trans('Re-Authenticate')">
+					</ButtonWithLink>
+				</div>
+
                 <div v-if="route().params?.['customerSalesChannel'] && platform_status">
                     <ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"
-									type="edit"
+									type="tertiary"
+									:icon="['fal', 'fa-pencil']"
 									:label="trans('Manage Sales Channel')">
                     </ButtonWithLink>
                 </div>

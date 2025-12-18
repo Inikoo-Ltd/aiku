@@ -533,6 +533,7 @@ watch(
                                 :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"
+                                :screenType
                             />
                         </div>
                     </template>
