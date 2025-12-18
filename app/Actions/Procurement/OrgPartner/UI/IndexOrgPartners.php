@@ -74,9 +74,10 @@ class IndexOrgPartners extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
+                ->withLabelRecord([__('Partner'), __('Partners')])
                 ->withEmptyState(
                     [
-                        'title' => __('No partners found'),
+                        'title' => __('No Partners Found'),
                     ]
                 )
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)

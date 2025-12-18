@@ -175,19 +175,13 @@ const onPayWithBalance = () => {
             </dl>
 
             <!-- Field: Collection Toggle -->
-            <div class="mt-2 flex items-center w-full flex-none gap-x-2">
-                <FontAwesomeIcon icon='fal fa-map-pin' class='text-gray-400' fixed-width aria-hidden='true'/>
-                <Toggle
-                    :modelValue="get(props.order?.data, ['new_is_collection'], get(props.order?.data, ['is_collection'], false))"
-                    disabled
-                />
-                <span class="text-sm text-gray-500">
-                    {{ trans("Collection") }}
-                </span>
+            <div v-if="get(props.order.data, ['is_collection'], false)" class="bg-gray-50 w-full text-center px-2 py-1 border border-gray-300 rounded text-sm mt-2">
+                <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
+                {{ trans("This order is for collection only") }}.
             </div>
 
             <!-- Collection Options -->
-            <div v-if="!get(props.order?.data, ['is_collection'], false)" class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
+            <div v-else class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
                 <div class="w-full text-xs text-gray-500">
                     <dd
                         class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">

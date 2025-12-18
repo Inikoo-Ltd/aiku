@@ -25,8 +25,8 @@ class GetShopPaymentAccounts extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('payment_accounts.code', $value)
-                    ->orWhereAnyWordStartWith('payment_accounts.name', 'ILIKE', $value);
+                $query->whereAnyWordStartWith('payment_accounts.name', $value)
+                    ->orWhereStartWith('payment_accounts.code', $value);
             });
         });
 

@@ -158,19 +158,13 @@ const isModalShippingAddress = ref(false)
             </dl>
 
             <!-- Field: Collection Toggle -->
-            <div class="mt-2 flex items-center w-full flex-none gap-x-2">
-                <FontAwesomeIcon icon='fal fa-map-pin' class='text-gray-400' fixed-width aria-hidden='true'/>
-                <Toggle
-                    :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
-                    disabled
-                />
-                <span class="text-sm text-gray-500">
-                    {{ trans("Collection") }}
-                </span>
+            <div v-if="get(props.order, ['is_collection'], false)" class="mt-2 bg-gray-50 w-full text-center py-2 border border-gray-300 rounded text-sm">
+                <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
+                {{ trans("This order is for collection only") }}.
             </div>
 
             <!-- Collection Options -->
-            <div v-if="!get(props.order, ['is_collection'], false)" class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
+            <div v-else class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
                 <div class="w-full text-xs text-gray-500"
                     :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
                     <dd

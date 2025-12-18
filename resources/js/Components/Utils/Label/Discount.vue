@@ -2,6 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { computed } from "vue";
 library.add(faBadgePercent)
 
 
@@ -18,11 +19,20 @@ const props = defineProps<{
         }
     }
 }>()
+
+const formattedPercentage = computed(() => {
+    const value = props.offers_data?.o?.p
+    if (!value) return ''
+
+    // hapus ".0%" → "%"
+    return value.replace(/\.0%$/, '%')
+})
+
 </script>
 
 <template>
-    <div class="bg-pink-500/20 px-1 py-0.5 text-xs border flex items-center border-pink-500/50 rounded-sm w-fit text-pink-700" >
-        <FontAwesomeIcon icon="fas fa-badge-percent" class="text-pink-500 text-sm align-middle" fixed-width aria-hidden="true" />
-        <span class="ml-0.5 font-bold mr-1">{{ offers_data?.o?.p }}</span> {{ offers_data?.o?.l }}
+    <div class="bg-green-500/20 px-1 py-0.5 text-xs border flex items-center border-green-500/50 rounded-sm w-fit text-green-700" >
+        <FontAwesomeIcon icon="fas fa-badge-percent" class="text-green-500 text-sm align-middle" fixed-width aria-hidden="true" />
+        <span class="ml-0.5 font-bold mr-1">{{ formattedPercentage  }}</span> {{ offers_data?.o?.l }}
     </div>
 </template>

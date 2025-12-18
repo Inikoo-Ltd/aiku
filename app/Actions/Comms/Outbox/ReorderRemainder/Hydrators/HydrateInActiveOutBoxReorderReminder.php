@@ -23,7 +23,6 @@ class HydrateInActiveOutBoxReorderReminder
     {
         Outbox::query()->where('sub_type', OutboxSubTypeEnum::REORDER_REMINDER)
                ->whereNull('days_after')
-               ->whereNull('send_time')
                ->update([
                    'state' => OutboxStateEnum::IN_PROCESS,
                ]);

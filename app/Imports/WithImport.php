@@ -120,9 +120,18 @@ trait WithImport
         $this->upload->refresh();
 
         if ($this->upload->user) {
-            UploadExcelProgressEvent::dispatch($this->upload, $this->upload->user);
+            try {
+                UploadExcelProgressEvent::dispatch($this->upload, $this->upload->user);
+            } catch (\Exception $e) {
+                \Log::debug('Broadcast failed, continuing import', ['error' => $e->getMessage()]);
+            }
         } elseif ($this->upload->webUser) {
-            UploadRetinaExcelProgressEvent::dispatch($this->upload, $this->upload->webUser);
+            try {
+                UploadRetinaExcelProgressEvent::dispatch($this->upload, $this->upload->webUser);
+            } catch (\Exception $e) {
+                // Ignore broadcast errors
+                \Log::debug('Broadcast failed, continuing import', ['error' => $e->getMessage()]);
+            }
         }
     }
 

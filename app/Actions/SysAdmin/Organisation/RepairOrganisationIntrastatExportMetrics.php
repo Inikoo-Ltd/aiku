@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Organisation;
 
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatMetrics;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatExportMetrics;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Country;
@@ -18,11 +18,11 @@ use Carbon\CarbonPeriod;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RepairOrganisationIntrastatMetrics
+class RepairOrganisationIntrastatExportMetrics
 {
     use AsAction;
 
-    public string $commandSignature = 'repair:organisation-intrastat-metrics {organisation?} {--queue : Dispatch jobs to queue instead of running synchronously}';
+    public string $commandSignature = 'repair:organisation-intrastat-export-metrics {organisation?} {--queue : Dispatch jobs to queue instead of running synchronously}';
 
     public function asCommand(Command $command): int
     {
@@ -95,7 +95,7 @@ class RepairOrganisationIntrastatMetrics
         }
 
         $command->info("");
-        $command->info("Repairing Organisation Intrastat Metrics...");
+        $command->info("Repairing Organisation Intrastat Export Metrics...");
         $command->info("Total organisations: " . count($organisationPeriods));
         $command->info("Total days to process: $totalDays");
 
@@ -109,7 +109,7 @@ class RepairOrganisationIntrastatMetrics
             $jobsDispatched = 0;
             foreach ($organisationPeriods as $orgPeriod) {
                 foreach ($orgPeriod['period'] as $date) {
-                    OrganisationHydrateIntrastatMetrics::dispatch($orgPeriod['organisation'], $date);
+                    OrganisationHydrateIntrastatExportMetrics::dispatch($orgPeriod['organisation'], $date);
                     $jobsDispatched++;
                 }
             }
@@ -127,7 +127,7 @@ class RepairOrganisationIntrastatMetrics
 
             foreach ($organisationPeriods as $orgPeriod) {
                 foreach ($orgPeriod['period'] as $date) {
-                    OrganisationHydrateIntrastatMetrics::run($orgPeriod['organisation'], $date);
+                    OrganisationHydrateIntrastatExportMetrics::run($orgPeriod['organisation'], $date);
                     $bar->advance();
                 }
             }

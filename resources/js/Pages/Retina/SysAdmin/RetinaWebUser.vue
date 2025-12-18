@@ -38,7 +38,7 @@
       {
           label: trans('Email'),
           key: 'email',
-          value: props.data.customer?.email
+          value: props.data.email
       },
       {
           label: trans('Last login'),

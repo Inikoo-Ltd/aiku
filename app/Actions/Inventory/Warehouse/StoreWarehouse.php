@@ -94,7 +94,7 @@ class StoreWarehouse extends OrgAction
         $rules = [
             'code'    => [
                 'required',
-                'between:2,4',
+                'between:2,8',
                 'alpha_dash',
                 new IUnique(
                     table: 'warehouses',

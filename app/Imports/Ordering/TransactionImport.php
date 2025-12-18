@@ -9,6 +9,7 @@
 namespace App\Imports\Ordering;
 
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Imports\WithImport;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Upload;
@@ -54,6 +55,14 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
 
         /** @var Product $product */
         $product = Product::where('shop_id', $this->scope->shop_id)->where('code', $validatedData['code'])->first();
+
+        if (!$product) {
+            $this->setRecordAsFailed($uploadRecord, [
+                'Product with code ' . $validatedData['code'] . ' not found.'
+            ]);
+            return;
+        }
+
         $historicAsset = $product->historicAsset;
 
         if ($modelData['quantity_ordered'] < 1) {
@@ -63,7 +72,7 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
             return;
         }
 
-        if (!in_array($product->id, $this->scope->customerSalesChannel->portfolios->pluck('item_id')->toArray())) {
+        if ($this->scope->customerSalesChannel && !in_array($product->id, $this->scope->customerSalesChannel->portfolios->pluck('item_id')->toArray())) {
             $this->setRecordAsFailed($uploadRecord, [
                 'Product with code ' . $validatedData['code'] . ' is not available for this customer.'
             ]);
@@ -71,11 +80,22 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         }
 
         try {
-            StoreTransaction::make()->action(
-                $this->scope,
-                $historicAsset,
-                $modelData
-            );
+            $existingTransaction = $this->scope->transactions()
+                ->where('historic_asset_id', $historicAsset->id)
+                ->first();
+
+            if ($existingTransaction) {
+                UpdateTransaction::make()->action(
+                    $existingTransaction,
+                    $modelData
+                );
+            } else {
+                StoreTransaction::make()->action(
+                    $this->scope,
+                    $historicAsset,
+                    $modelData
+                );
+            }
 
             $this->setRecordAsCompleted($uploadRecord);
         } catch (Exception $e) {
