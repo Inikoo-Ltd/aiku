@@ -16,7 +16,6 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\UniversalSearch;
-
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -77,13 +76,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Group $group
- * @property-read Employee|null $inspector
- * @property-read User|null $inspectorUser
+ * @property-read User|null $inspector
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Platform|null $platform
- * @property-read Employee|null $receiver
- * @property-read User|null $receiverUser
+ * @property-read User|null $receiver
  * @property-read Address|null $returnAddress
  * @property-read Collection<int, \App\Models\Dispatching\ReturnItem> $returnItems
  * @property-read Shop $shop

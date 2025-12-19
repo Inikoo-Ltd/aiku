@@ -86,6 +86,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Sowing> $sowings
  * @property-read Transaction|null $transaction
  * @method static Builder<static>|DeliveryNoteItem newModelQuery()
  * @method static Builder<static>|DeliveryNoteItem newQuery()
