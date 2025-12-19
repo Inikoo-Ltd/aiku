@@ -544,13 +544,13 @@ trait WithResetIntervals
                 productCategoryId: $productCategory->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(5))->onQueue('sales');
+            );
 
             ProductCategoryHydrateInvoiceIntervals::dispatch(
                 productCategoryId: $productCategory->id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(5))->onQueue('sales');
+            );
         }
 
         foreach (

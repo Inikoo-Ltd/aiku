@@ -29,10 +29,11 @@ use Illuminate\Support\Arr;
  * @property mixed $department_name
  * @property int $number_current_products
  * @property-read \App\Models\Helpers\Media|null $image
- * @property mixed $sales_ytd
- * @property mixed $invoices_ytd_ly
- * @property mixed $sales_ytd_ly
- * @property mixed $invoices_ytd
+ * @property mixed $sales
+ * @property mixed $sales_ly
+ * @property mixed $invoices
+ * @property mixed $invoices_ly
+ * @property mixed $current_interval
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $master_product_category_id
@@ -47,6 +48,7 @@ use Illuminate\Support\Arr;
  * @property mixed $id
  * @property mixed $web_images
  * @property mixed $image_id
+ * @property mixed $currency_code
  */
 class FamiliesResource extends JsonResource
 {
@@ -88,12 +90,14 @@ class FamiliesResource extends JsonResource
             'updated_at'                    => $this->updated_at,
             'number_current_products'       => $this->number_current_products,
             'collections'                   => $collections,
-            'sales_ytd'                     => $this->sales_ytd,
-            'sales_ytd_ly'                  => $this->sales_ytd_ly,
-            'sales_ytd_delta'               => $this->calculateDelta($this->sales_ytd, $this->sales_ytd_ly),
-            'invoices_ytd'                  => $this->invoices_ytd,
-            'invoices_ytd_ly'               => $this->invoices_ytd_ly,
-            'invoices_ytd_delta'            => $this->calculateDelta($this->invoices_ytd, $this->invoices_ytd_ly),
+            'sales'                         => $this->sales ?? 0,
+            'sales_ly'                      => $this->sales_ly ?? 0,
+            'sales_delta'                   => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'currency_code'                 => $this->currency_code,
+            'invoices'                      => $this->invoices ?? 0,
+            'invoices_ly'                   => $this->invoices_ly ?? 0,
+            'invoices_delta'                => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'current_interval'              => $this->current_interval ?? 'ytd',
             'organisation_name'             => $this->organisation_name,
             'organisation_slug'             => $this->organisation_slug,
             'master_product_category_id'    => $this->master_product_category_id,

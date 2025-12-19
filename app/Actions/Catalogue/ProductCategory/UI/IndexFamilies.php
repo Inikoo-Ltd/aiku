@@ -130,6 +130,7 @@ class IndexFamilies extends OrgAction
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
+        $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
         if ($parent instanceof Group) {
             $queryBuilder->where('product_categories.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Shop') {
@@ -147,6 +148,16 @@ class IndexFamilies extends OrgAction
         } elseif (class_basename($parent) == 'MasterProductCategory') {
             $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
         }
+
+        $interval = request()->input('interval', 'all');
+
+        $salesLyColumn = $interval === 'all'
+            ? 'NULL'
+            : "product_category_sales_intervals.sales_grp_currency_{$interval}_ly";
+
+        $invoicesLyColumn = $interval === 'all'
+            ? 'NULL'
+            : "product_category_ordering_intervals.invoices_{$interval}_ly";
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -171,12 +182,14 @@ class IndexFamilies extends OrgAction
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
+                'currencies.code as currency_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'product_category_sales_intervals.sales_grp_currency_ytd as sales_ytd',
-                'product_category_sales_intervals.sales_grp_currency_ytd_ly as sales_ytd_ly',
-                'product_category_ordering_intervals.invoices_ytd as invoices_ytd',
-                'product_category_ordering_intervals.invoices_ytd_ly as invoices_ytd_ly',
+                DB::raw("product_category_sales_intervals.sales_grp_currency_{$interval} as sales"),
+                DB::raw("{$salesLyColumn} as sales_ly"),
+                DB::raw("product_category_ordering_intervals.invoices_{$interval} as invoices"),
+                DB::raw("{$invoicesLyColumn} as invoices_ly"),
+                DB::raw("'{$interval}' as current_interval"),
                 'product_categories.master_product_category_id',
                 DB::raw(
                     "(
@@ -206,8 +219,34 @@ class IndexFamilies extends OrgAction
                 'number_current_products',
                 'sub_department_name',
                 'department_name',
-                'sales_ytd',
-                'invoices_ytd',
+                AllowedSort::custom(
+                    'sales',
+                    new class ($interval) implements Sort {
+                        public function __construct(private string $interval)
+                        {
+                        }
+
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy("product_category_sales_intervals.sales_grp_currency_{$this->interval}", $direction);
+                        }
+                    }
+                ),
+                AllowedSort::custom(
+                    'invoices',
+                    new class ($interval) implements Sort {
+                        public function __construct(private string $interval)
+                        {
+                        }
+
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy("product_category_ordering_intervals.invoices_{$this->interval}", $direction);
+                        }
+                    }
+                ),
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -254,6 +293,10 @@ class IndexFamilies extends OrgAction
                 }
             }
 
+            if ($sales) {
+                $table->withInterval();
+            }
+
             $table
                 ->defaultSort('code')
                 ->withEmptyState(
@@ -292,10 +335,10 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales_ytd', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_ytd_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_ytd', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_ytd_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
