@@ -35,6 +35,11 @@ export const initialiseApp = () => {
             
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
+                if (window.component.vue !== '') {
+                    if (window.component.vue !== usePage().component) {
+                        window.component.php = ''
+                    }                    
+                }
                 window.component.vue = usePage().component
             }
 
