@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -29,12 +28,8 @@ class OrderReturnsResource extends JsonResource
             'id'            => $this->id,
             'slug'          => $this->slug,
             'reference'     => $this->reference,
-            'state'         => $this->state instanceof \App\Enums\GoodsIn\Return\ReturnStateEnum
-                ? $this->state->value
-                : $this->state,
-            'state_icon'    => $this->state instanceof \App\Enums\GoodsIn\Return\ReturnStateEnum
-                ? (ReturnStateEnum::stateIcon()[$this->state->value] ?? null)
-                : (ReturnStateEnum::stateIcon()[$this->state] ?? null),
+            'state'         => $this->state,
+            'state_icon'    => $this->state->stateIcon()[$this->state->value],
             'date'          => $this->date,
             'number_items'  => $this->number_items,
             'customer_name' => $this->customer_name ?? null,

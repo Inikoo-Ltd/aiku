@@ -22,7 +22,6 @@ use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class DetachAttachmentFromModel extends OrgAction
@@ -58,10 +57,6 @@ class DetachAttachmentFromModel extends OrgAction
         return $this->handle($model, $attachment);
     }
 
-    public function authorize(ActionRequest $request)
-    {
-        return true;
-    }
 
     public function inProduct(Product $product, Media $attachment)
     {
