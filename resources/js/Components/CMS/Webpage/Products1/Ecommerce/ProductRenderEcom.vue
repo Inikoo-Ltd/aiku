@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -84,6 +84,12 @@ const onUnselectBackInStock = (product: ProductResource) => {
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
+const canOrder = computed(() => {
+    if (props.product.is_on_demand) return true
+    else if (props.product.stock > 0) return true
+    return false
+})
+
 
 </script>
 
@@ -123,10 +129,9 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </div>
                 </template>
 
-                <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
-                        v-if="product.stock > 0  && basketButton && !product.is_coming_soon" 
+                        v-if="canOrder && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
                         :product="product"
                         :key="product" 
@@ -135,7 +140,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" 
                         :buttonStyle="buttonStyle" 
                     />
-                    <button v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
+                    <button v-else-if="layout?.app?.environment === 'local' && !canOrder"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
