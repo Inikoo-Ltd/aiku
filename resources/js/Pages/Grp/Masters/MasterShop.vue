@@ -33,6 +33,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ShopShowcase from "@/Components/Showcases/Grp/ShopShowcase.vue";
 import CatalogueDashboard from "@/Components/Dropshipping/CatalogueDashboard.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
+import TableShopInMaster from "@/Components/Tables/Grp/Masters/TableShopInMaster.vue";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
   faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload
@@ -48,7 +49,7 @@ const props = defineProps<{
   dashboard?: {}
   showcase?: {}
   history?: {}
-
+  shops?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -59,10 +60,10 @@ const component = computed(() => {
   const components = {
     showcase: ShopShowcase,
     dashboard: CatalogueDashboard,
-    history: TableHistories
+    history: TableHistories,
+    shops: TableShopInMaster,
   };
   return components[currentTab.value];
-
 });
 
 </script>

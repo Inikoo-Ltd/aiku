@@ -27,7 +27,7 @@ class CheckProductMasters
      */
     public function handle(Product $product, Command $command): void
     {
-        MatchAssetsToMaster::run($product->asset, $product->shop->masterShop);
+        MatchAssetsToMaster::run($product->asset);
         if ($product->is_main  && !$product->master_product_id && in_array($product->state, [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])) {
             $command->error($product->code.'  ('.$product->state->value.')  has no master product');
             $product->refresh();

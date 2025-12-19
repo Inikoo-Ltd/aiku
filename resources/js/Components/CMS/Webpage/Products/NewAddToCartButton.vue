@@ -298,6 +298,12 @@ const showChartButton = computed(() => {
     return !quantityOrdered && currentQuantity.value === 0
 })
 
+const canOrder = computed(() => {
+    if (props.product.is_on_demand) return true
+    else if (props.product.stock > 0) return true
+    return false
+})
+
 const hoveredButton = ref<string | null>(null)
 
 </script>
@@ -306,7 +312,7 @@ const hoveredButton = ref<string | null>(null)
     <div class="group relative">
         <!-- State awal: qty 0, tampilkan icon + -->
         <button v-if="showChartButton" @click.stop.prevent="instantAddToBasket" :style="buttonStyle"
-            :disabled="isLoadingSubmitQuantityProduct || props.product.stock === 0"
+            :disabled="isLoadingSubmitQuantityProduct || !canOrder"
             class="rounded-full button-cart hover:bg-green-700 bg-gray-800 text-gray-300  h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />

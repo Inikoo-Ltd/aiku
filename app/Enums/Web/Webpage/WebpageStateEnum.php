@@ -42,10 +42,10 @@ enum WebpageStateEnum: string
 
 
         return [
-            'in_process' => $webStats->number_webpages_state_in_process,
-            'ready'      => $webStats->number_webpages_state_ready,
-            'live'       => $webStats->number_webpages_state_live,
-            'closed'     => $webStats->number_webpages_state_closed,
+            'in_process' => $webStats?->number_webpages_state_in_process ?? 0,
+            'ready'      => $webStats?->number_webpages_state_ready ?? 0,
+            'live'       => $webStats?->number_webpages_state_live ?? 0,
+            'closed'     => $webStats?->number_webpages_state_closed ?? 0,
         ];
     }
 
