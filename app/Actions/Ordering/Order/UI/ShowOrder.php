@@ -289,7 +289,7 @@ class ShowOrder extends OrgAction
                 ]
             ];
         }
-
+        // dd($request->route()->originalParameters());
         return Inertia::render(
             'Org/Ordering/Order',
             [
@@ -297,7 +297,7 @@ class ShowOrder extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $order,
                     $request->route()->getName(),
-                    $request->route()->originalParameters(),
+                    $request->route()->originalParameters()
                 ),
                 'navigation'  => [
                     'previous' => $this->getPrevious($order, $request),
@@ -752,7 +752,6 @@ class ShowOrder extends OrgAction
             return null;
         }
 
-
         return match ($routeName) {
             'grp.org.shops.show.ordering.orders.show' => [
                 'label' => $order->reference,
@@ -787,7 +786,7 @@ class ShowOrder extends OrgAction
                         'organisation' => $this->organisation->slug,
                         'shop'         => $order->shop->slug,
                         'customer'     => $this->parent->customer->slug,
-                        'platform'     => $this->parent->platform->slug,
+                        'customerSalesChannel'  => $this->parent->platform->slug,
                         'order'        => $order->slug
                     ]
 

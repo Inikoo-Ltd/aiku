@@ -17,6 +17,8 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Maintenance\Masters\AddMissingFamiliesToMaster;
+use App\Actions\Maintenance\Masters\AddMissingMasterAssetsFromSeederShops;
 use App\Actions\Maintenance\Masters\AddMissingProductsFromMaster;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
@@ -49,7 +51,6 @@ class CloneCatalogueStructure
      */
     public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false): void
     {
-
         $this->cloneDepartments($fromShop, $shop);
         $this->cloneSubDepartments($fromShop, $shop);
         $this->cloneFamilies($fromShop, $shop);
@@ -170,15 +171,12 @@ class CloneCatalogueStructure
                 }
             }
         } else {
-            foreach ($fromShop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get() as $family) {
-                if ($family->state == ProductCategoryStateEnum::ACTIVE) {
-                    if ($shop instanceof Shop) {
-                        dd('todo B');
-                    } else {
-                        dd('todo C');
-                    }
-                }
+            if ($shop instanceof Shop) {
+                dd('todo B');
+            } else {
+                AddMissingMasterAssetsFromSeederShops::run($shop, $fromShop);
             }
+
         }
     }
 
@@ -202,9 +200,9 @@ class CloneCatalogueStructure
             foreach ($fromShop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get() as $family) {
                 if ($family->state == ProductCategoryStateEnum::ACTIVE) {
                     if ($shop instanceof Shop) {
-                        dd('todo B');
+                        dd('todo clone from Shop to Shop');
                     } else {
-                        dd('todo C');
+                        AddMissingFamiliesToMaster::make()->upsertMasterFamily($shop, $family);
                     }
                 }
             }
@@ -224,7 +222,6 @@ class CloneCatalogueStructure
             ->where('shop_id', $shop->id)
             ->where('type', ProductCategoryTypeEnum::FAMILY->value)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
-
 
 
         if (!$foundFamilyData) {
@@ -250,7 +247,6 @@ class CloneCatalogueStructure
             } catch (\Throwable $e) {
                 print $e->getMessage()."\n";
             }
-
         } else {
             $foundFamily = ProductCategory::find($foundFamilyData->id);
 
