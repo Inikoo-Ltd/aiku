@@ -75,6 +75,7 @@ class DepartmentsResource extends JsonResource
             'invoices'                       => $this->invoices ?? 0,
             'invoices_ly'                    => $this->invoices_ly ?? 0,
             'invoices_delta'                 => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'current_interval'               => $this->current_interval ?? 'ytd',
             'organisation_name'              => $this->organisation_name,
             'organisation_code'              => $this->organisation_code,
             'organisation_slug'              => $this->organisation_slug,
