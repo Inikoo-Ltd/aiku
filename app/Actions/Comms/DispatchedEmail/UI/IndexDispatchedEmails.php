@@ -63,26 +63,11 @@ class IndexDispatchedEmails extends OrgAction
                 $queryBuilder->where('dispatched_emails.post_room_id', $parent->id);
                 break;
             case 'Outbox':
-                $queryBuilder->leftJoin('customers', function ($join) {
-                    $join->on('dispatched_emails.recipient_id', '=', 'customers.id')
-                        ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
-                });
-
-                // for fulfilment customer
-                if ($parent->fulfilment_id) {
-                    $queryBuilder->leftJoin('fulfilment_customers', function ($join) {
-                        $join->on('fulfilment_customers.customer_id', '=', 'customers.id');
-                    });
-                }
-
                 /*
                 * Check the outbox code in the following list of codes
                 */
                 if (in_array($parent->code, [
                     OutboxCodeEnum::BASKET_LOW_STOCK,
-                    OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
-                    OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
-                    OutboxCodeEnum::INVOICE_DELETED,
                     OutboxCodeEnum::DELIVERY_CONFIRMATION,
                     OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
                     OutboxCodeEnum::REORDER_REMINDER,
@@ -90,6 +75,17 @@ class IndexDispatchedEmails extends OrgAction
                     OutboxCodeEnum::REORDER_REMINDER_3RD,
                     OutboxCodeEnum::ORDER_CONFIRMATION
                 ])) {
+                    $queryBuilder->leftJoin('customers', function ($join) {
+                        $join->on('dispatched_emails.recipient_id', '=', 'customers.id')
+                            ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
+                    });
+
+                    // for fulfilment customer
+                    if ($parent->fulfilment_id) {
+                        $queryBuilder->leftJoin('fulfilment_customers', function ($join) {
+                            $join->on('fulfilment_customers.customer_id', '=', 'customers.id');
+                        });
+                    }
                     $queryBuilder->leftJoin('model_has_dispatched_emails', function ($join) {
                         $join->on('model_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')
                             ->where('model_has_dispatched_emails.model_type', '=', class_basename(Order::class));
@@ -136,42 +132,34 @@ class IndexDispatchedEmails extends OrgAction
         ];
 
         if ($parent instanceof Outbox) {
-            $selectColumns = array_merge(
-                $selectColumns,
-                [
-                    'customers.id as customer_id',
-                    'customers.slug as customer_slug',
-                    'customers.name as customer_name'
-                ]
-            );
-            if ($parent->fulfilment_id) {
-                $selectColumns = array_merge(
-                    $selectColumns,
-                    [
-                        'fulfilment_customers.id as fulfilment_customer_id',
-                        'fulfilment_customers.slug as fulfilment_customer_slug'
-                    ]
-                );
-            }
             if (in_array($parent->code, [
-                OutboxCodeEnum::BASKET_LOW_STOCK,
-                OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
-                OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
-                OutboxCodeEnum::INVOICE_DELETED,
-                OutboxCodeEnum::DELIVERY_CONFIRMATION,
-                OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-                OutboxCodeEnum::REORDER_REMINDER,
-                OutboxCodeEnum::REORDER_REMINDER_2ND,
-                OutboxCodeEnum::REORDER_REMINDER_3RD,
-                OutboxCodeEnum::ORDER_CONFIRMATION
+                    OutboxCodeEnum::BASKET_LOW_STOCK,
+                    OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                    OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                    OutboxCodeEnum::REORDER_REMINDER,
+                    OutboxCodeEnum::REORDER_REMINDER_2ND,
+                    OutboxCodeEnum::REORDER_REMINDER_3RD,
+                    OutboxCodeEnum::ORDER_CONFIRMATION
             ])) {
                 $selectColumns = array_merge(
                     $selectColumns,
                     [
+                        'customers.id as customer_id',
+                        'customers.slug as customer_slug',
+                        'customers.name as customer_name',
                         'orders.id as order_id',
                         'orders.slug as order_slug'
                     ]
                 );
+                if ($parent->fulfilment_id) {
+                    $selectColumns = array_merge(
+                        $selectColumns,
+                        [
+                            'fulfilment_customers.id as fulfilment_customer_id',
+                            'fulfilment_customers.slug as fulfilment_customer_slug'
+                        ]
+                    );
+                }
             }
         }
 
@@ -204,12 +192,8 @@ class IndexDispatchedEmails extends OrgAction
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             if ($parent instanceof Outbox) {
-                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: false, searchable: false);
                 if (in_array($parent->code, [
                     OutboxCodeEnum::BASKET_LOW_STOCK,
-                    OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
-                    OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
-                    OutboxCodeEnum::INVOICE_DELETED,
                     OutboxCodeEnum::DELIVERY_CONFIRMATION,
                     OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
                     OutboxCodeEnum::REORDER_REMINDER,
@@ -218,6 +202,7 @@ class IndexDispatchedEmails extends OrgAction
                     OutboxCodeEnum::ORDER_CONFIRMATION
 
                 ])) {
+                    $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: false, searchable: false);
                     $table->column(key: 'order_slug', label: __('Order'), canBeHidden: false, sortable: false, searchable: false);
                 }
             }
