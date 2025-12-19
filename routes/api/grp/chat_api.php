@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Actions\CRM\ChatSession\GetChatAgents;
 use App\Actions\CRM\ChatSession\StoreChatAgent;
+use App\Actions\CRM\ChatSession\GetChatActivity;
 use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
 use App\Actions\CRM\ChatSession\SendChatMessage;
@@ -25,6 +26,7 @@ Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
     ->name('sessions.update');
 
+Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity');
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
 
 Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)
@@ -33,7 +35,6 @@ Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::cla
 
 Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)
     ->name('sessions.sync_by_email');
-
 
 Route::get('agents', GetChatAgents::class)->name('agents.index');
 

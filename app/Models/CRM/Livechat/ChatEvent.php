@@ -52,7 +52,7 @@ class ChatEvent extends Model
 
     public function actor(): MorphTo
     {
-        return $this->morphTo('actor', 'actor_type', 'actor_id');
+        return $this->morphTo('actor_id');
     }
 
     public function isOpenEvent(): bool

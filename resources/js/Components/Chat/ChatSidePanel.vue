@@ -4,6 +4,7 @@ import { trans } from "laravel-vue-i18n"
 import { Link } from "@inertiajs/vue3"
 import axios from "axios"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
+import ChatActivityTimeline from "@/Components/Chat/ChatActivityTimeline.vue"
 import Button from "../Elements/Buttons/Button.vue"
 import type { SessionAPI } from "@/types/Chat/chat"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -633,6 +634,7 @@ onMounted(async () => {
 				</div>
 				<AlertMessage v-if="agentAlert" :alert="agentAlert" />
 				<AlertMessage v-if="priorityAlert" :alert="priorityAlert" />
+				<ChatActivityTimeline :sessionUlid="session.ulid" :baseUrl="baseUrl" />
 			</div>
 		</div>
 	</div>
