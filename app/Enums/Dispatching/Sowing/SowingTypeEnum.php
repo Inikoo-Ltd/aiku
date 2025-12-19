@@ -1,17 +1,16 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 23-05-2025-11h-52m
- * github: https://github.com/KirinZero0
+ * author Oggie Sutrisna
+ * created on 19-12-2025
  * copyright 2025
 */
 
-namespace App\Enums\Dispatching\Picking;
+namespace App\Enums\Dispatching\Sowing;
 
 use App\Enums\EnumHelperTrait;
 
-enum PickingTypeEnum: string
+enum SowingEngineEnum: string
 {
     use EnumHelperTrait;
 

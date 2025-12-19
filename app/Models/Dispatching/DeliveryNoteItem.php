@@ -137,6 +137,11 @@ class DeliveryNoteItem extends Model
         return $this->hasMany(Packing::class);
     }
 
+    public function sowings(): HasMany
+    {
+        return $this->hasMany(Sowing::class);
+    }
+
     public function deliveryNote(): BelongsTo
     {
         return $this->belongsTo(DeliveryNote::class);

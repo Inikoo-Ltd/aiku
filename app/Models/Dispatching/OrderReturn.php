@@ -16,7 +16,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\UniversalSearch;
-use App\Models\HumanResources\Employee;
+
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -183,22 +183,12 @@ class OrderReturn extends Model implements Auditable
 
     public function receiver(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'receiver_id');
-    }
-
-    public function receiverUser(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'receiver_user_id');
+        return $this->belongsTo(User::class, 'receiver_id');
     }
 
     public function inspector(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'inspector_id');
-    }
-
-    public function inspectorUser(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'inspector_user_id');
+        return $this->belongsTo(User::class, 'inspector_id');
     }
 
     public function customerClient(): BelongsTo

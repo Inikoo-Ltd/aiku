@@ -306,6 +306,11 @@ class DeliveryNote extends Model implements Auditable
         return $this->hasMany(Packing::class);
     }
 
+    public function sowings(): HasMany
+    {
+        return $this->hasMany(Sowing::class);
+    }
+
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
