@@ -23,7 +23,6 @@ use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Sowing\SowingEngineEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -137,7 +136,6 @@ test('create sowing record directly', function () {
         ->and($sowing->location_id)->toBe($location->id)
         ->and($sowing->org_stock_id)->toBe($orgStock->id)
         ->and($sowing->sower_user_id)->toBe($this->user->id)
-        ->and($sowing->engine)->toBe(SowingEngineEnum::AIKU)
         ->and($sowing->orgStockMovement)->not->toBeNull();
 
     return $sowing;
@@ -317,7 +315,7 @@ test('sowing with original picking reference', function () {
 
 test('picking type enum no longer has RETURN case', function () {
     $cases = \App\Enums\Dispatching\Picking\PickingTypeEnum::cases();
-    $caseNames = array_map(fn($case) => $case->name, $cases);
+    $caseNames = array_map(fn ($case) => $case->name, $cases);
 
     expect($caseNames)->toContain('PICK')
         ->and($caseNames)->toContain('NOT_PICK')

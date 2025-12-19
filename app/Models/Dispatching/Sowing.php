@@ -8,7 +8,7 @@
 
 namespace App\Models\Dispatching;
 
-use App\Enums\Dispatching\Sowing\SowingEngineEnum;
+use App\Enums\Dispatching\Sowing\SowingTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -32,7 +32,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $org_stock_movement_id
  * @property int $org_stock_id
  * @property int|null $sower_user_id
- * @property SowingEngineEnum $engine
  * @property int|null $location_id
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -57,8 +56,8 @@ class Sowing extends Model
     use InShop;
 
     protected $casts = [
-        'data'   => 'array',
-        'engine' => SowingEngineEnum::class,
+        'data' => 'array',
+        'type' => SowingTypeEnum::class,
     ];
 
     protected $guarded = [];

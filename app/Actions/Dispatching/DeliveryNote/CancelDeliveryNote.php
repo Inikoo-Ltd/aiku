@@ -21,7 +21,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
-
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Console\Command;
@@ -61,8 +61,8 @@ class CancelDeliveryNote extends OrgAction
             if (!$locationPickingStock) {
                 $locationPickingStock = LocationOrgStock::where('org_stock_id', $picking->org_stock_id)->first();
             }
-            // this needs to change if $locationPickingStock is null we need to throw the error to UI
-            if ($locationPickingStock && $picking->type->value == 'pick') {
+
+            if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK) {
                 StoreSowing::make()->action(
                     $deliveryNoteItem,
                     request()->user(),

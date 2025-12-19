@@ -6,7 +6,6 @@
  *  Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Enums\Dispatching\Sowing\SowingEngineEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -30,7 +29,7 @@ return new class () extends Migration {
             $table->unsignedBigInteger('delivery_note_item_id')->nullable()->index();
             $table->foreign('delivery_note_item_id')->references('id')->on('delivery_note_items')->nullOnDelete();
 
-            $table->decimal('quantity', 16, 3)->default(0);
+            $table->decimal('quantity', 16, 6)->default(0);
 
             $table->unsignedInteger('org_stock_movement_id')->nullable()->index();
             $table->foreign('org_stock_movement_id')->references('id')->on('org_stock_movements')->nullOnDelete();
@@ -53,22 +52,19 @@ return new class () extends Migration {
 
             $table->unsignedSmallInteger('sower_user_id')->nullable()->index();
             $table->foreign('sower_user_id')->references('id')->on('users');
-
-            $table->string('engine')->index()->default(SowingEngineEnum::AIKU->value);
-
             $table->unsignedSmallInteger('location_id')->nullable()->index();
             $table->foreign('location_id')->references('id')->on('locations');
+
+            $table->unsignedBigInteger('original_picking_id')->nullable()->index();
+            $table->foreign('original_picking_id')->references('id')->on('pickings')->nullOnDelete();
 
             $table->jsonb('data');
 
             $table->dateTimeTz('sowed_at')->nullable();
 
             $table->timestampsTz();
-
-            $table->unsignedBigInteger('original_picking_id')->nullable()->index();
-            $table->foreign('original_picking_id')->references('id')->on('pickings')->nullOnDelete();
         });
-    }1
+    }
 
     public function down(): void
     {

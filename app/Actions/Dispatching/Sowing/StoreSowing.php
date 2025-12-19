@@ -10,7 +10,6 @@ namespace App\Actions\Dispatching\Sowing;
 
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\Sowing\SowingEngineEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Sowing;
@@ -40,7 +39,6 @@ class StoreSowing extends OrgAction
         data_set($modelData, 'org_stock_id', $locationOrgStock->org_stock_id);
         data_set($modelData, 'location_id', $locationOrgStock->location_id);
 
-        data_set($modelData, 'engine', SowingEngineEnum::AIKU, false);
         data_set($modelData, 'sowed_at', now(), false);
 
         /** @var Sowing $sowing */
@@ -68,7 +66,6 @@ class StoreSowing extends OrgAction
     public function rules(): array
     {
         return [
-            'engine'              => ['sometimes', Rule::enum(SowingEngineEnum::class)],
             'location_org_stock_id' => [
                 'required',
                 Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
