@@ -20,7 +20,11 @@ use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexProducts extends OrgAction
 {
@@ -79,6 +83,19 @@ class IndexProducts extends OrgAction
             }
         }
 
+        $interval = request()->input('interval', 'all');
+
+        $customersInvoicedColumn = $interval === 'all'
+            ? 'NULL'
+            : "asset_ordering_intervals.customers_invoiced_{$interval}_ly";
+
+        $salesLyColumn = $interval === 'all'
+            ? 'NULL'
+            : "asset_sales_intervals.sales_grp_currency_{$interval}_ly";
+
+        $invoicesLyColumn = $interval === 'all'
+            ? 'NULL'
+            : "asset_ordering_intervals.invoices_{$interval}_ly";
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -91,20 +108,72 @@ class IndexProducts extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
-                'invoices_all',
-                'sales_all',
-                'customers_invoiced_all',
+                DB::raw("asset_ordering_intervals.customers_invoiced_{$interval} as customers_invoiced"),
+                DB::raw("{$customersInvoicedColumn} as customers_invoiced_ly"),
+                DB::raw("asset_sales_intervals.sales_grp_currency_{$interval} as sales"),
+                DB::raw("{$salesLyColumn} as sales_ly"),
+                DB::raw("asset_ordering_intervals.invoices_{$interval} as invoices"),
+                DB::raw("{$invoicesLyColumn} as invoices_ly"),
+                DB::raw("'{$interval}' as current_interval"),
             ]);
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug', 'customers_invoiced_all', 'invoices_all', 'sales_all'])
+        return $queryBuilder->allowedSorts([
+                'code',
+                'name',
+                'shop_slug',
+                'department_slug',
+                'family_slug',
+                AllowedSort::custom(
+                    'customers_invoiced',
+                    new class ($interval) implements Sort {
+                        public function __construct(private string $interval)
+                        {
+                        }
+
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy("asset_ordering_intervals.customers_invoiced_{$this->interval}", $direction);
+                        }
+                    }
+                ),
+                AllowedSort::custom(
+                    'sales',
+                    new class ($interval) implements Sort {
+                        public function __construct(private string $interval)
+                        {
+                        }
+
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy("asset_sales_intervals.sales_grp_currency_{$this->interval}", $direction);
+                        }
+                    }
+                ),
+                AllowedSort::custom(
+                    'invoices',
+                    new class ($interval) implements Sort {
+                        public function __construct(private string $interval)
+                        {
+                        }
+
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy("asset_ordering_intervals.invoices_{$this->interval}", $direction);
+                        }
+                    }
+                ),
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null, string $bucket = null): Closure
+    public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null, string $bucket = null, $sales = true): Closure
     {
-        return function (InertiaTable $table) use ($shop, $modelOperations, $prefix, $bucket) {
+        return function (InertiaTable $table) use ($shop, $modelOperations, $prefix, $bucket, $sales) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -119,6 +188,10 @@ class IndexProducts extends OrgAction
                         elements: $elementGroup['elements']
                     );
                 }
+            }
+
+            if ($sales) {
+                $table->withInterval();
             }
 
             $table
@@ -146,9 +219,12 @@ class IndexProducts extends OrgAction
 
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers_invoiced_all', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'invoices_all', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'sales_all', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'customers_invoiced', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'customers_invoiced_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: true, align: 'right')
+                ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
         };
     }
 

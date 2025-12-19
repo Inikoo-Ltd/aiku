@@ -222,7 +222,7 @@ const showWarning = () => {
 const incrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
 
-    if (current >= customer.value.stock) {
+    if (current >= customer.value.stock && !props.product.is_on_demand) {
         showWarning()
         return
     }
@@ -268,8 +268,7 @@ watch(() => props.customerData, (newVal) => {
         <div class="flex items-center gap-2 relative">
             <div class="flex items-center border rounded-lg overflow-hidden w-32">
                 <!-- Decrement -->
-                <button type="button" class="px-3 py-2 disabled:opacity-50" :disabled="isLoadingSubmitQuantityProduct"
-                    @click="decrementQty">
+                <button type="button" class="px-3 py-2 disabled:opacity-50" :disabled="isLoadingSubmitQuantityProduct" @click="decrementQty">
                     <FontAwesomeIcon icon="fas fa-minus" />
                 </button>
 
@@ -281,8 +280,7 @@ watch(() => props.customerData, (newVal) => {
                         " @input="onManualInput" />
 
                 <!-- Increment -->
-                <button type="button" class="px-3 py-2 disabled:opacity-50" :disabled="isLoadingSubmitQuantityProduct"
-                    @click="incrementQty">
+                <button type="button" class="px-3 py-2 disabled:opacity-50" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
                     <FontAwesomeIcon icon="fas fa-plus" />
                 </button>
             </div>
