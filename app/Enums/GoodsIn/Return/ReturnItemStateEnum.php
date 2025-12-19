@@ -6,7 +6,7 @@
  * Description: Return item state enum
  */
 
-namespace App\Enums\Dispatching\Return;
+namespace App\Enums\GoodsIn\Return;
 
 use App\Enums\EnumHelperTrait;
 

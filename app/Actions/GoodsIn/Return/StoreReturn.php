@@ -6,12 +6,12 @@
  * Description: Action to store a new Return for customer order returns
  */
 
-namespace App\Actions\Dispatching\Return;
+namespace App\Actions\GoodsIn\Return;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\Return\ReturnStateEnum;
-use App\Models\Dispatching\OrderReturn;
-use App\Models\Dispatching\ReturnStats;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
+use App\Models\GoodsIn\OrderReturn;
+use App\Models\GoodsIn\ReturnStats;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;

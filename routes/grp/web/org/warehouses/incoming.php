@@ -6,8 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Dispatching\Return\UI\IndexReturns;
-use App\Actions\Dispatching\Return\UI\ShowReturn;
+use App\Actions\GoodsIn\Return\UI\IndexReturns;
+use App\Actions\GoodsIn\Return\UI\ShowReturn;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletDeliveries;

@@ -6,13 +6,13 @@
  * Description: UI action to display the list of Returns in warehouse
  */
 
-namespace App\Actions\Dispatching\Return\UI;
+namespace App\Actions\GoodsIn\Return\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\Dispatching\OrderReturnsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Dispatching\OrderReturn;
+use App\Models\GoodsIn\OrderReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;

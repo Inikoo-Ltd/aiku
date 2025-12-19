@@ -6,13 +6,13 @@
  * Description: UI action to display a single Return
  */
 
-namespace App\Actions\Dispatching\Return\UI;
+namespace App\Actions\GoodsIn\Return\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\Return\ReturnStateEnum;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Http\Resources\Dispatching\OrderReturnResource;
 use App\Http\Resources\Dispatching\ReturnItemResource;
-use App\Models\Dispatching\OrderReturn;
+use App\Models\GoodsIn\OrderReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;

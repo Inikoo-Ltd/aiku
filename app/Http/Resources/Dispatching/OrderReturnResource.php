@@ -8,7 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Enums\Dispatching\Return\ReturnStateEnum;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use Illuminate\Http\Resources\Json\JsonResource;

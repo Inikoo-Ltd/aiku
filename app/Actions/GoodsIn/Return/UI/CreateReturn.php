@@ -6,7 +6,7 @@
  * Description: UI action to render the create Return page from an Order
  */
 
-namespace App\Actions\Dispatching\Return\UI;
+namespace App\Actions\GoodsIn\Return\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Helpers\Country\UI\GetAddressData;

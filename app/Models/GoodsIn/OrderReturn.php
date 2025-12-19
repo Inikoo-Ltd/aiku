@@ -6,9 +6,9 @@
  * Description: Return model for customer order returns in warehouse management
  */
 
-namespace App\Models\Dispatching;
+namespace App\Models\GoodsIn;
 
-use App\Enums\Dispatching\Return\ReturnStateEnum;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -40,7 +40,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- * App\Models\Dispatching\OrderReturn
+ * App\Models\GoodsIn\OrderReturn
  *
  * @property int $id
  * @property int $group_id
@@ -82,9 +82,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read User|null $receiver
  * @property-read Address|null $returnAddress
- * @property-read Collection<int, \App\Models\Dispatching\ReturnItem> $returnItems
+ * @property-read Collection<int, \App\Models\GoodsIn\ReturnItem> $returnItems
  * @property-read Shop $shop
- * @property-read \App\Models\Dispatching\ReturnStats|null $stats
+ * @property-read \App\Models\GoodsIn\ReturnStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|OrderReturn newModelQuery()

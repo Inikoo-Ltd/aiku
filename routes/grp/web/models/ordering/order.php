@@ -12,7 +12,7 @@ use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
-use App\Actions\Dispatching\Return\StoreReturn;
+use App\Actions\GoodsIn\Return\StoreReturn;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;

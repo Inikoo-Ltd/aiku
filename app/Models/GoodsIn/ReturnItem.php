@@ -6,9 +6,9 @@
  * Description: ReturnItem model for individual items within a customer return
  */
 
-namespace App\Models\Dispatching;
+namespace App\Models\GoodsIn;
 
-use App\Enums\Dispatching\Return\ReturnItemStateEnum;
+use App\Enums\GoodsIn\Return\ReturnItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\InShop;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * App\Models\Dispatching\ReturnItem
+ * App\Models\GoodsIn\ReturnItem
  *
  * @property int $id
  * @property int $group_id
@@ -66,7 +66,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Dispatching\OrderReturn $return
+ * @property-read \App\Models\GoodsIn\OrderReturn $return
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read Transaction|null $transaction
  * @method static Builder<static>|ReturnItem newModelQuery()

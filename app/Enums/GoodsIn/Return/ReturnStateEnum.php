@@ -6,7 +6,7 @@
  * Description: Return state enum with waiting_to_receive as initial state
  */
 
-namespace App\Enums\Dispatching\Return;
+namespace App\Enums\GoodsIn\Return;
 
 use App\Enums\EnumHelperTrait;
 

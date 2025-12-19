@@ -6,13 +6,13 @@
  * Description: Action to store a new ReturnItem within a Return
  */
 
-namespace App\Actions\Dispatching\Return;
+namespace App\Actions\GoodsIn\Return;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\Return\ReturnItemStateEnum;
+use App\Enums\GoodsIn\Return\ReturnItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Dispatching\OrderReturn;
-use App\Models\Dispatching\ReturnItem;
+use App\Models\GoodsIn\OrderReturn;
+use App\Models\GoodsIn\ReturnItem;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;

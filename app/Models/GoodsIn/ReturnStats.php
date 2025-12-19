@@ -6,7 +6,7 @@
  * Description: ReturnStats model for return statistics
  */
 
-namespace App\Models\Dispatching;
+namespace App\Models\GoodsIn;
 
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * App\Models\Dispatching\ReturnStats
+ * App\Models\GoodsIn\ReturnStats
  *
  * @property int $id
  * @property int $return_id
@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Dispatching\OrderReturn $return
+ * @property-read \App\Models\GoodsIn\OrderReturn $return
  * @method static Builder<static>|ReturnStats newModelQuery()
  * @method static Builder<static>|ReturnStats newQuery()
  * @method static Builder<static>|ReturnStats query()

@@ -6,7 +6,7 @@
  * Description: Create return_items table for individual items within a return
  */
 
-use App\Enums\Dispatching\Return\ReturnItemStateEnum;
+use App\Enums\GoodsIn\Return\ReturnItemStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

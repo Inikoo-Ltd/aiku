@@ -111,7 +111,7 @@ class AppServiceProvider extends ServiceProvider
                 'Shipper'                       => 'App\Models\Dispatching\Shipper',
                 'WaitingItem'                   => 'App\Models\Dispatching\WaitingItem',
                 'Return'                        => 'App\Models\Dispatching\Return',
-                'ReturnItem'                    => 'App\Models\Dispatching\ReturnItem',
+                'ReturnItem'                    => 'App\Models\GoodsIn\ReturnItem',
 
                 // Goods In
                 'Sowing'                        => 'App\Models\GoodsIn\Sowing',
