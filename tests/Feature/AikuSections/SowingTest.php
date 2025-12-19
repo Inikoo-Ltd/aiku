@@ -332,3 +332,177 @@ test('migrate picking returns action is idempotent', function () {
     expect($stats1['migrated'])->toBe($stats2['migrated'])
         ->and($stats1['errors'])->toBeArray();
 });
+
+test('update sowing', function () {
+    // Create delivery note
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'SOWING-UPDATE-TEST',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    // Create stock and org stock
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    /** @var HistoricAsset $historicAsset */
+    $historicAsset = HistoricAsset::first();
+    $transaction   = StoreTransaction::make()->action($this->order, $historicAsset, [
+        'quantity_ordered' => 10,
+        'net_amount'       => 100,
+    ]);
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10
+    ]);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $orgStock,
+        location: $location,
+        modelData: [
+            'quantity'   => 100,
+            'type'       => LocationStockTypeEnum::PICKING,
+            'fetched_at' => now(),
+        ],
+        strict: false
+    );
+
+    // Create sowing
+    $sowing = StoreSowing::run($deliveryNoteItem, $locationOrgStock, [
+        'quantity'      => 5,
+        'sower_user_id' => $this->user->id,
+    ]);
+
+    // Update sowing
+    $updatedSowing = \App\Actions\Dispatching\Sowing\UpdateSowing::make()->action($sowing, [
+        'quantity' => 10,
+    ]);
+
+    expect($updatedSowing)->toBeInstanceOf(Sowing::class)
+        ->and($updatedSowing->quantity)->toBe('10.000');
+});
+
+test('delete sowing', function () {
+    // Create delivery note
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'SOWING-DELETE-TEST',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    // Create stock and org stock
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    /** @var HistoricAsset $historicAsset */
+    $historicAsset = HistoricAsset::first();
+    $transaction   = StoreTransaction::make()->action($this->order, $historicAsset, [
+        'quantity_ordered' => 10,
+        'net_amount'       => 100,
+    ]);
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10
+    ]);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $orgStock,
+        location: $location,
+        modelData: [
+            'quantity'   => 100,
+            'type'       => LocationStockTypeEnum::PICKING,
+            'fetched_at' => now(),
+        ],
+        strict: false
+    );
+
+    // Create sowing
+    $sowing = StoreSowing::run($deliveryNoteItem, $locationOrgStock, [
+        'quantity'      => 5,
+        'sower_user_id' => $this->user->id,
+    ]);
+
+    $sowingId = $sowing->id;
+
+    // Delete sowing
+    $result = \App\Actions\Dispatching\Sowing\DeleteSowing::make()->action($sowing);
+
+    expect($result)->toBeTrue()
+        ->and(Sowing::find($sowingId))->toBeNull();
+});
+
+test('assign sower to sowing', function () {
+    // Create delivery note
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'SOWING-ASSIGN-TEST',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    // Create stock and org stock
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    /** @var HistoricAsset $historicAsset */
+    $historicAsset = HistoricAsset::first();
+    $transaction   = StoreTransaction::make()->action($this->order, $historicAsset, [
+        'quantity_ordered' => 10,
+        'net_amount'       => 100,
+    ]);
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10
+    ]);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $orgStock,
+        location: $location,
+        modelData: [
+            'quantity'   => 100,
+            'type'       => LocationStockTypeEnum::PICKING,
+            'fetched_at' => now(),
+        ],
+        strict: false
+    );
+
+    // Create sowing without sower
+    $sowing = StoreSowing::run($deliveryNoteItem, $locationOrgStock, [
+        'quantity'      => 5,
+        'sower_user_id' => null,
+    ]);
+
+    // Assign sower
+    $assignedSowing = \App\Actions\Dispatching\Sowing\AssignSowerToSowing::make()->action($sowing, [
+        'sower_user_id' => $this->user->id,
+    ]);
+
+    expect($assignedSowing)->toBeInstanceOf(Sowing::class)
+        ->and($assignedSowing->sower_user_id)->toBe($this->user->id);
+});

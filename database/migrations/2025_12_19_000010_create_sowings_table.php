@@ -21,19 +21,32 @@ return new class () extends Migration {
             $table->id();
             $table = $this->groupOrgRelationship($table);
 
-            $table->unsignedSmallInteger('shop_id')->index();
+            $table->unsignedSmallInteger('shop_id')->nullable()->index();
             $table->foreign('shop_id')->references('id')->on('shops');
 
-            $table->unsignedInteger('delivery_note_id')->index();
-            $table->foreign('delivery_note_id')->references('id')->on('delivery_notes')->cascadeOnDelete();
+            $table->unsignedInteger('delivery_note_id')->nullable()->index();
+            $table->foreign('delivery_note_id')->references('id')->on('delivery_notes')->nullOnDelete();
 
-            $table->unsignedBigInteger('delivery_note_item_id')->index();
-            $table->foreign('delivery_note_item_id')->references('id')->on('delivery_note_items')->cascadeOnDelete();
+            $table->unsignedBigInteger('delivery_note_item_id')->nullable()->index();
+            $table->foreign('delivery_note_item_id')->references('id')->on('delivery_note_items')->nullOnDelete();
 
             $table->decimal('quantity', 16, 3)->default(0);
 
             $table->unsignedInteger('org_stock_movement_id')->nullable()->index();
-            $table->foreign('org_stock_movement_id')->references('id')->on('org_stock_movements');
+            $table->foreign('org_stock_movement_id')->references('id')->on('org_stock_movements')->nullOnDelete();
+
+            $table->unsignedInteger('return_id')->nullable()->index();
+            $table->foreign('return_id')->references('id')->on('returns')->nullOnDelete();
+
+            $table->unsignedInteger('return_item_id')->nullable()->index();
+            $table->foreign('return_item_id')->references('id')->on('return_items')->nullOnDelete();
+
+            $table->unsignedInteger('stock_delivery_id')->nullable()->index();
+            $table->foreign('stock_delivery_id')->references('id')->on('stock_deliveries')->nullOnDelete();
+
+            $table->unsignedInteger('stock_delivery_item_id')->nullable()->index();
+            $table->foreign('stock_delivery_item_id')->references('id')->on('stock_delivery_items')->nullOnDelete();
+
 
             $table->unsignedInteger('org_stock_id')->index();
             $table->foreign('org_stock_id')->references('id')->on('org_stocks');
@@ -52,11 +65,10 @@ return new class () extends Migration {
 
             $table->timestampsTz();
 
-            // Index for finding sowings by original picking reference (if needed)
             $table->unsignedBigInteger('original_picking_id')->nullable()->index();
             $table->foreign('original_picking_id')->references('id')->on('pickings')->nullOnDelete();
         });
-    }
+    }1
 
     public function down(): void
     {

@@ -14,14 +14,14 @@ enum SowingTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case RETURN = 'return';
-    case RESTOCK = 'restock';
+    case SOW = 'sow';
+    case NOT_SOW = 'not-sow';
 
     public static function labels(): array
     {
         return [
-            'return'  => __('Return to location'),
-            'restock' => __('Restock'),
+            'sow'     => __('Received/Returned'),
+            'not-sow' => __('Not Received/Returned'),
         ];
     }
 }
