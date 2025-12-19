@@ -8,7 +8,7 @@
 
 namespace App\Models\GoodsIn;
 
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Helpers\Address;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;

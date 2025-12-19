@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Enums\Procurement\StockDeliveryItem;
+namespace App\Enums\GoodsIn\StockDeliveryItem;
 
 use App\Enums\EnumHelperTrait;
 

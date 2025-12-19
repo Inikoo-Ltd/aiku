@@ -8,8 +8,8 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\Hydrators;
 
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
-use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;

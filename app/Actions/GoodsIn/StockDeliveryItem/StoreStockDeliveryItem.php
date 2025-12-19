@@ -11,7 +11,7 @@ namespace App\Actions\GoodsIn\StockDeliveryItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreProcurementOrderItem;
-use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\OrgStock;

@@ -11,7 +11,7 @@ namespace App\Actions\GoodsIn\StockDeliveryItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Validation\Rule;

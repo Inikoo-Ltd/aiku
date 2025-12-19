@@ -10,7 +10,7 @@ namespace App\Actions\GoodsIn\StockDeliveryItem;
 
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

@@ -11,7 +11,7 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 use App\Enums\Accounting\Intrastat\IntrastatDeliveryTermsEnum;
 use App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum;
 use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Accounting\IntrastatImportMetrics;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;

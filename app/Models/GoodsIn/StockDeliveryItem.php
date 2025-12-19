@@ -8,7 +8,7 @@
 
 namespace App\Models\GoodsIn;
 
-use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
