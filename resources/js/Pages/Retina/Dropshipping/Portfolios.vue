@@ -422,7 +422,7 @@ const modalMatchproductBluk = ref(false)
 const modalBulkEditPrice = ref(false)
 const selectedEditProduct = ref([])
 
-const openBulkEditModal = (items) => {
+const openBulkEditModal = () => {
 	modalBulkEditPrice.value = true
 }
 
@@ -659,10 +659,28 @@ const calculateAdjustedPrice = (amount, type) => {
 	};
 }
 
-const submitBulkEditPrice = async (items) => {
+const submitBulkEditPrice = async (type) => {
 	loadingAction.value.push("bulk-edit")
 
-	//
+	try {
+		const url = route(`retina.models.portfolios.update_new_product_price.${type}`)
+		const data = { items: selectedProducts.value, ...bulkUpdatePriceData.value }
+
+		const response = await axios({
+			method: "post",
+			url,
+			data: data
+		})
+
+		debReloadPage()
+		onSuccessEditCheckmark("bulk-edit")
+		bulkUpdatePriceData.value = {}
+		modalBulkEditPrice.value = false
+	} catch (error: any) {
+		onFailedEditCheckmark(error)
+	} finally {
+		loadingAction.value = []
+	}
 
 	loadingAction.value = [];
 }
@@ -948,7 +966,7 @@ const layout = inject("layout", layoutStructure)
 						:type="'tertiary'"
 						:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
 						:loading="loadingAction.includes('bulk-edit')"
-						@click="openBulkEditModal(selectedProducts)"
+						@click="openBulkEditModal()"
 						:icon="['fal', 'fa-pencil']"
 						size="xs" />
 
@@ -1242,7 +1260,8 @@ const layout = inject("layout", layoutStructure)
 							)"
 					:label="`+${percent}%`"
 					size="xs"
-					type="tertiary" />
+					:disabled="bulkUpdatePriceData.type === 'percent' && bulkUpdatePriceData.amount === percent"
+					:type="'tertiary'" />
 				<Button
 					v-for="amount in [2, 4, 6, 8, 10]"
 					:key="'a' + amount"
@@ -1253,19 +1272,20 @@ const layout = inject("layout", layoutStructure)
 							)"
 					:label="`+${amount}`"
 					size="xs"
-					type="tertiary" />
+					:disabled="bulkUpdatePriceData.type === 'fixed' && bulkUpdatePriceData.amount === amount"
+					:type="'tertiary'" />
 			</div>
 		</div>
 
 		<div class="mt-3 flex gap-2">
 			<Button
 				type="tertiary"
-				@click="() => submitBulkEditPrice(selectedProducts, 'draft')"
+				@click="() => submitBulkEditPrice('draft')"
 				:label="trans('Save as Draft')"
 				full
 				:loading="loadingAction.includes('bulk-edit')" />
 			<Button
-				@click="() => submitBulkEditPrice(selectedProducts, 'publish')"
+				@click="() => submitBulkEditPrice('publish')"
 				:label="trans('Save & Upload')"
 				full
 				:loading="loadingAction.includes('bulk-edit')" />

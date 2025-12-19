@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Ebay;
+namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -18,7 +18,7 @@ use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
+class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 {
     use AsAction;
 
