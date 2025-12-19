@@ -21,6 +21,7 @@ use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage;
 use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetProductsBasedOnSavedCache;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentAndSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
@@ -178,6 +179,7 @@ Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsIn
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
 Route::get('/shops/{shop}/webpages/active', [GetWebpagesInCollection::class, 'inShopActive'])->name('active_webpages.index');
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
+Route::get('/product/cache_list/{cacheKey}', GetProductsBasedOnSavedCache::class)->name('cached.product_list');
 
 Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
 
