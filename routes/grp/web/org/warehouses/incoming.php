@@ -8,10 +8,10 @@
 
 use App\Actions\Dispatching\Return\UI\IndexReturns;
 use App\Actions\Dispatching\Return\UI\ShowReturn;
+use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletDeliveries;
 use App\Actions\Inventory\GoodsIn\UI\ShowWarehousePalletDelivery;
-use App\Actions\Procurement\StockDelivery\UI\IndexStockDeliveries;
-use App\Actions\Procurement\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\UI\Incoming\ShowIncomingHub;
 use Illuminate\Support\Facades\Route;
 

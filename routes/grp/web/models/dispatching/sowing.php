@@ -6,9 +6,9 @@
  * Copyright (c) 2024
  */
 
-use App\Actions\Dispatching\Sowing\AssignSowerToSowing;
-use App\Actions\Dispatching\Sowing\DeleteSowing;
-use App\Actions\Dispatching\Sowing\UpdateSowing;
+use App\Actions\GoodsIn\Sowing\AssignSowerToSowing;
+use App\Actions\GoodsIn\Sowing\DeleteSowing;
+use App\Actions\GoodsIn\Sowing\UpdateSowing;
 use Illuminate\Support\Facades\Route;
 
 Route::name('sowing.')->prefix('sowing/{sowing:id}')->group(function () {

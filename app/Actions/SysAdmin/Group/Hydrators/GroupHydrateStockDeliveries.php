@@ -12,7 +12,7 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
-use App\Models\Procurement\StockDelivery;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;

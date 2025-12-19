@@ -10,7 +10,7 @@ namespace App\Actions\SupplyChain\Agent\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
-use App\Models\Procurement\StockDelivery;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;

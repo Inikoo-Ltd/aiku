@@ -113,6 +113,11 @@ class AppServiceProvider extends ServiceProvider
                 'Return'                        => 'App\Models\Dispatching\Return',
                 'ReturnItem'                    => 'App\Models\Dispatching\ReturnItem',
 
+                // Goods In
+                'Sowing'                        => 'App\Models\GoodsIn\Sowing',
+                'StockDelivery'                 => 'App\Models\GoodsIn\StockDelivery',
+                'StockDeliveryItem'             => 'App\Models\GoodsIn\StockDeliveryItem',
+
                 // Dropshipping
                 'CustomerClient'                => 'App\Models\Dropshipping\CustomerClient',
                 'Portfolio'                     => 'App\Models\Dropshipping\Portfolio',
@@ -240,8 +245,6 @@ class AppServiceProvider extends ServiceProvider
                 'OrgSupplierProduct'            => 'App\Models\Procurement\OrgSupplierProduct',
                 'PurchaseOrder'                 => 'App\Models\Procurement\PurchaseOrder',
                 'PurchaseOrderTransaction'      => 'App\Models\Procurement\PurchaseOrderTransaction',
-                'StockDelivery'                 => 'App\Models\Procurement\StockDelivery',
-                'StockDeliveryItem'             => 'App\Models\Procurement\StockDeliveryItem',
                 'OrgPartner'                    => 'App\Models\Procurement\OrgPartner',
 
 

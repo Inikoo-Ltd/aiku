@@ -9,7 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
-use App\Models\Procurement\StockDelivery;
+use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraStockDeliveryItem extends FetchAurora

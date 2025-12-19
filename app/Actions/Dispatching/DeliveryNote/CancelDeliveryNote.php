@@ -12,7 +12,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
-use App\Actions\Dispatching\Sowing\StoreSowing;
+use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\Ordering\Order\UpdateState\RollbackOrderAfterDeliveryNoteCancellation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
