@@ -20,9 +20,11 @@ import {
   faPhoneVolume,
   faSortAlt,
   faProjectDiagram,
+  faInfoCircle
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from 'laravel-vue-i18n'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(
   faBell,
@@ -34,7 +36,8 @@ library.add(
   faVial,
   faPhoneVolume,
   faSortAlt,
-  faProjectDiagram
+  faProjectDiagram,
+  faInfoCircle
 );
 
 const props = defineProps<{
@@ -91,7 +94,12 @@ function getOutboxNameDisplay(outbox: Outbox) {
     <Table :resource="data" :name="tab">
         <template #cell(name)="{ item: outbox }">
             <Link v-if="outboxRoute(outbox)" :href="outboxRoute(outbox)" class="primaryLink">
-                {{ outbox["name"] }}
+                 {{ getOutboxNameDisplay(outbox).name }}
+                  <FontAwesomeIcon
+                    v-if="getOutboxNameDisplay(outbox).showSchedule"
+                    :icon="faInfoCircle"
+                    v-tooltip="getOutboxNameDisplay(outbox).scheduleTooltip"
+                />
             </Link>
         </template>
         <template #cell(type)="{ item: outbox }">

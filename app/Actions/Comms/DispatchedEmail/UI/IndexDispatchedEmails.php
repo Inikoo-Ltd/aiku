@@ -30,6 +30,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Ordering\Order;
 
 class IndexDispatchedEmails extends OrgAction
 {
@@ -61,6 +63,37 @@ class IndexDispatchedEmails extends OrgAction
                 $queryBuilder->where('dispatched_emails.post_room_id', $parent->id);
                 break;
             case 'Outbox':
+                /*
+                * Check the outbox code in the following list of codes
+                */
+                if (in_array($parent->code, [
+                    OutboxCodeEnum::BASKET_LOW_STOCK,
+                    OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                    OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                    OutboxCodeEnum::REORDER_REMINDER,
+                    OutboxCodeEnum::REORDER_REMINDER_2ND,
+                    OutboxCodeEnum::REORDER_REMINDER_3RD,
+                    OutboxCodeEnum::ORDER_CONFIRMATION
+                ])) {
+                    $queryBuilder->leftJoin('customers', function ($join) {
+                        $join->on('dispatched_emails.recipient_id', '=', 'customers.id')
+                            ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
+                    });
+
+                    // for fulfilment customer
+                    if ($parent->fulfilment_id) {
+                        $queryBuilder->leftJoin('fulfilment_customers', function ($join) {
+                            $join->on('fulfilment_customers.customer_id', '=', 'customers.id');
+                        });
+                    }
+                    $queryBuilder->leftJoin('model_has_dispatched_emails', function ($join) {
+                        $join->on('model_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')
+                            ->where('model_has_dispatched_emails.model_type', '=', class_basename(Order::class));
+                    });
+                    $queryBuilder->leftJoin('orders', function ($join) {
+                        $join->on('orders.id', '=', 'model_has_dispatched_emails.model_id');
+                    });
+                }
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':
@@ -85,20 +118,54 @@ class IndexDispatchedEmails extends OrgAction
         }
 
 
+        $selectColumns = [
+            'dispatched_emails.id',
+            'dispatched_emails.state',
+            'dispatched_emails.mask_as_spam',
+            'dispatched_emails.number_email_tracking_events',
+            'email_addresses.email as email_address',
+            'dispatched_emails.sent_at as sent_at',
+            'shops.code as shop_code',
+            'shops.slug as shop_slug',
+            'dispatched_emails.number_reads',
+            'dispatched_emails.number_clicks',
+        ];
+
+        if ($parent instanceof Outbox) {
+            if (in_array($parent->code, [
+                    OutboxCodeEnum::BASKET_LOW_STOCK,
+                    OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                    OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                    OutboxCodeEnum::REORDER_REMINDER,
+                    OutboxCodeEnum::REORDER_REMINDER_2ND,
+                    OutboxCodeEnum::REORDER_REMINDER_3RD,
+                    OutboxCodeEnum::ORDER_CONFIRMATION
+            ])) {
+                $selectColumns = array_merge(
+                    $selectColumns,
+                    [
+                        'customers.id as customer_id',
+                        'customers.slug as customer_slug',
+                        'customers.name as customer_name',
+                        'orders.id as order_id',
+                        'orders.slug as order_slug'
+                    ]
+                );
+                if ($parent->fulfilment_id) {
+                    $selectColumns = array_merge(
+                        $selectColumns,
+                        [
+                            'fulfilment_customers.id as fulfilment_customer_id',
+                            'fulfilment_customers.slug as fulfilment_customer_slug'
+                        ]
+                    );
+                }
+            }
+        }
+
         return $queryBuilder
             ->defaultSort('-sent_at')
-            ->select([
-                'dispatched_emails.id',
-                'dispatched_emails.state',
-                'dispatched_emails.mask_as_spam',
-                'dispatched_emails.number_email_tracking_events',
-                'email_addresses.email as email_address',
-                'dispatched_emails.sent_at as sent_at',
-                'shops.code as shop_code',
-                'shops.slug as shop_slug',
-                'dispatched_emails.number_reads',
-                'dispatched_emails.number_clicks',
-            ])
+            ->select($selectColumns)
             ->allowedSorts(['email_address', 'number_email_tracking_events', 'sent_at', 'number_reads', 'mask_as_spam', 'number_clicks'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -111,7 +178,7 @@ class IndexDispatchedEmails extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -123,6 +190,21 @@ class IndexDispatchedEmails extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+            }
+            if ($parent instanceof Outbox) {
+                if (in_array($parent->code, [
+                    OutboxCodeEnum::BASKET_LOW_STOCK,
+                    OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                    OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                    OutboxCodeEnum::REORDER_REMINDER,
+                    OutboxCodeEnum::REORDER_REMINDER_2ND,
+                    OutboxCodeEnum::REORDER_REMINDER_3RD,
+                    OutboxCodeEnum::ORDER_CONFIRMATION
+
+                ])) {
+                    $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: false, searchable: false);
+                    $table->column(key: 'order_slug', label: __('Order'), canBeHidden: false, sortable: false, searchable: false);
+                }
             }
             $table->column(key: 'number_email_tracking_events', label: __('events'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_reads', label: __('reads'), canBeHidden: false, sortable: true)
