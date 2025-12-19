@@ -52,7 +52,7 @@ return new class () extends Migration {
 
             $table->unsignedSmallInteger('sower_user_id')->nullable()->index();
             $table->foreign('sower_user_id')->references('id')->on('users');
-            $table->unsignedSmallInteger('location_id')->nullable()->index();
+            $table->unsignedInteger('location_id')->nullable()->index();
             $table->foreign('location_id')->references('id')->on('locations');
 
             $table->unsignedBigInteger('original_picking_id')->nullable()->index();

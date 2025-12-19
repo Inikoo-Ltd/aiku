@@ -6,8 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\GoodsIn\Sowing;
+namespace App\Actions\Maintenance\GoodsIn;
 
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\Picking;
 use App\Models\GoodsIn\Sowing;
 use Illuminate\Console\Command;
@@ -21,11 +22,7 @@ class MigratePickingReturnsToSowing
     public string $commandSignature = 'sowing:migrate-from-pickings {--dry-run : Run without making changes} {--limit= : Limit the number of records to process}';
     public string $commandDescription = 'Migrate Picking records with type="return" to the new Sowing model';
 
-    /**
-     * Handle the migration of picking returns to sowing records
-     *
-     * @return array{migrated: int, skipped: int, errors: array}
-     */
+
     public function handle(bool $dryRun = false, ?int $limit = null): array
     {
         $stats = [
@@ -34,7 +31,7 @@ class MigratePickingReturnsToSowing
             'errors'   => [],
         ];
 
-        $query = Picking::where('type', 'return');
+        $query = Picking::where('type', PickingTypeEnum::RETURN);
 
         if ($limit) {
             $query->limit($limit);
@@ -42,40 +39,29 @@ class MigratePickingReturnsToSowing
 
         $pickings = $query->get();
 
+        /** @var Picking $picking */
         foreach ($pickings as $picking) {
             try {
-                // Check if already migrated (using data field or original_picking_id on sowing)
-                $existingSowing = Sowing::where('original_picking_id', $picking->id)->first();
-                if ($existingSowing) {
-                    $stats['skipped']++;
-                    continue;
-                }
-
                 if (!$dryRun) {
                     DB::transaction(function () use ($picking) {
-                        // Create the Sowing record
                         Sowing::create([
                             'group_id'              => $picking->group_id,
                             'organisation_id'       => $picking->organisation_id,
                             'shop_id'               => $picking->shop_id,
                             'delivery_note_id'      => $picking->delivery_note_id,
                             'delivery_note_item_id' => $picking->delivery_note_item_id,
-                            'quantity'              => abs($picking->quantity), // Returns were stored as negative
+                            'quantity'              => abs($picking->quantity),
                             'org_stock_movement_id' => $picking->org_stock_movement_id,
                             'org_stock_id'          => $picking->org_stock_id,
                             'sower_user_id'         => $picking->picker_user_id,
-                            'engine'                => $picking->engine,
                             'location_id'           => $picking->location_id,
                             'data'                  => $picking->data,
                             'sowed_at'              => $picking->created_at,
-                            'original_picking_id'   => $picking->id,
                             'created_at'            => $picking->created_at,
                             'updated_at'            => $picking->updated_at,
                         ]);
 
-                        // Mark the original picking as migrated (optional: soft delete or flag)
-                        // Note: We keep the original record for data integrity during migration
-                        // The picking can be deleted after verification if needed
+                        $picking->forceDelete();
                     });
                 }
 
@@ -93,8 +79,8 @@ class MigratePickingReturnsToSowing
 
     public function asCommand(Command $command): int
     {
-        $dryRun = (bool) $command->option('dry-run');
-        $limit  = $command->option('limit') ? (int) $command->option('limit') : null;
+        $dryRun = (bool)$command->option('dry-run');
+        $limit  = $command->option('limit') ? (int)$command->option('limit') : null;
 
         if ($dryRun) {
             $command->info('Running in DRY-RUN mode - no changes will be made');
@@ -103,11 +89,12 @@ class MigratePickingReturnsToSowing
         $command->info('Migrating Picking records with type="return" to Sowing model...');
 
         // Count total records to migrate
-        $totalCount = Picking::where('type', 'return')->count();
-        $command->info("Found {$totalCount} picking records with type='return'");
+        $totalCount = Picking::where('type', PickingTypeEnum::RETURN)->count();
+        $command->info("Found $totalCount picking records with type='return'");
 
         if ($totalCount === 0) {
             $command->info('No records to migrate.');
+
             return 0;
         }
 
@@ -128,7 +115,7 @@ class MigratePickingReturnsToSowing
             $command->newLine();
             $command->error('Errors encountered:');
             foreach ($stats['errors'] as $error) {
-                $command->error("  Picking ID {$error['picking_id']}: {$error['error']}");
+                $command->line("  Picking ID {$error['picking_id']}: {$error['error']}");
             }
         }
 
