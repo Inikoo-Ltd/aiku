@@ -27,6 +27,7 @@ class InertiaTable
     private array $title = [];
     private array $betweenDates = [];
     private ?DateIntervalEnum $dateInterval;
+    private bool $withInterval = false;
 
     private Collection $emptyState;
     private Collection $modelOperations;
@@ -122,6 +123,13 @@ class InertiaTable
         return $this;
     }
 
+    public function withInterval(bool $withInterval = true): self
+    {
+        $this->withInterval = $withInterval;
+
+        return $this;
+    }
+
     /**
      * Set the date interval to be shown in table columns.
      *
@@ -208,6 +216,7 @@ class InertiaTable
             'footerRows'                      => $this->footerRows,
             'betweenDates'                    => $this->betweenDates,
             'dateInterval'                    => $this->dateInterval,
+            'withInterval'                    => $this->withInterval,
         ];
     }
 

@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\Return\UI\IndexReturns;
+use App\Actions\Dispatching\Return\UI\ShowReturn;
 use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletDeliveries;
 use App\Actions\Inventory\GoodsIn\UI\ShowWarehousePalletDelivery;
 use App\Actions\Procurement\StockDelivery\UI\IndexStockDeliveries;
@@ -21,3 +23,6 @@ Route::get('stock-deliveries/{palletDelivery}', [ShowStockDelivery::class, 'inWa
 
 Route::get('fulfilment-deliveries', IndexWarehousePalletDeliveries::class)->name('pallet_deliveries.index');
 Route::get('fulfilment-deliveries/{palletDelivery}', ShowWarehousePalletDelivery::class)->name('pallet_deliveries.show');
+
+Route::get('returns', IndexReturns::class)->name('returns.index');
+Route::get('returns/{return}', ShowReturn::class)->name('returns.show');

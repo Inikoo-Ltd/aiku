@@ -80,7 +80,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
 
         // For now only used by ebay
         $platformCompletion = false;
-        if($customerSalesChannels->platform->type == PlatformTypeEnum::EBAY){
+        if ($customerSalesChannels->platform->type == PlatformTypeEnum::EBAY) {
             /** @var \App\Models\Dropshipping\EbayUser $ebayUser */
             $ebayUser = $customerSalesChannels->user;
 

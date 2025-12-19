@@ -27,6 +27,7 @@ import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang} from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
+import TableIntervalFilter from '@/Components/Table/TableIntervalFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import Icon from '../Icon.vue'
@@ -750,6 +751,11 @@ const isLoading = ref<string | boolean>(false)
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
                                 :tableName="props.name" />
+                        </div>
+
+                        <!-- Filter: interval -->
+                        <div v-if="queryBuilderProps?.withInterval" class="w-fit flex gap-x-2">
+                            <TableIntervalFilter :tableName="props.name" />
                         </div>
 
                         <div v-if="queryBuilderProps.dateInterval" class="w-fit flex gap-x-2">

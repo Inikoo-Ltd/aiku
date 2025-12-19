@@ -10,34 +10,26 @@ namespace App\Actions\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class HitIrisUrl
 {
     use AsAction;
 
-    public string $commandSignature = 'iris:hit-url {url} {--inertia=none : true|false|none} {--xmlhttp=false : true|false}';
+    public string $commandSignature = 'iris:hit-url {url} {--inertia=false : true|false} {--xmlhttp=false : true|false}';
 
-    public function handle(string $url, string $inertia = 'none', bool $xmlHttp = false): array
+    public function handle(string $url, bool $inertia = false, bool $xmlHttp = false): array
     {
+        $headers = [];
         $startTime = microtime(true);
 
-        $headers = match ($inertia) {
-            'true'  => ['X-Inertia' => 'true'],
-            'false' => ['X-Inertia' => 'false'],
-            default => [],
-        };
+        if ($inertia) {
+            $headers['X-Inertia'] = 'true';
+        }
 
         if ($xmlHttp) {
             $headers['X-Requested-With'] = 'XMLHttpRequest';
         }
-
-        Log::info('HitIrisUrl command triggered', [
-            'url' => $url,
-            'x_inertia' => $inertia,
-            'x_requested_with' => $xmlHttp,
-        ]);
 
         $response = Http::withHeaders($headers)->withoutVerifying()->get($url);
 
@@ -46,29 +38,20 @@ class HitIrisUrl
 
         $isValid = true;
 
-        if ($inertia === 'true') {
+        if ($inertia) {
             $isValid = str_contains($contentType, 'application/json');
-        }
-
-        if ($inertia === 'none' || $inertia === 'false') {
+        } else {
             $isValid = str_contains($contentType, 'text/html');
         }
 
         $durationMs = round((microtime(true) - $startTime) * 1000);
-
-        Log::info('HitIrisUrl validation result', [
-            'url' => $url,
-            'is_valid' => $isValid,
-            'content_type' => $contentType,
-            'status_code' => $statusCode,
-        ]);
 
         if (!$isValid) {
             try {
                 DB::connection('aiku')->table('request_response_logs')->insert([
                     'url'           => $url,
                     'method'        => 'GET',
-                    'x_inertia'     => $inertia,
+                    'x_inertia'     => $inertia ? 'true' : '',
                     'headers'       => json_encode($headers),
                     'request_body'  => null,
                     'response_body' => substr($response->body(), 0, 5000),
@@ -78,15 +61,8 @@ class HitIrisUrl
                     'duration_ms'   => $durationMs,
                     'created_at'    => now(),
                 ]);
-
-                Log::info('HitIrisUrl log inserted to database', [
-                    'url' => $url,
-                ]);
             } catch (\Exception $e) {
-                Log::error('HitIrisUrl command failed to log request', [
-                    'error' => $e->getMessage(),
-                    'url' => $url,
-                ]);
+                //
             }
         }
 
@@ -106,7 +82,7 @@ class HitIrisUrl
     {
         $result = $this->handle(
             $command->argument('url'),
-            $command->option('inertia'),
+            filter_var($command->option('inertia'), FILTER_VALIDATE_BOOLEAN),
             filter_var($command->option('xmlhttp'), FILTER_VALIDATE_BOOLEAN)
         );
 

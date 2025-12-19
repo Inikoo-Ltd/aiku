@@ -29,6 +29,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_dynamic_queries is_static=false
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_returns Total order returns
+ * @property int $number_returns_state_waiting_to_receive
+ * @property int $number_returns_state_received
+ * @property int $number_returns_state_inspected
+ * @property int $number_returns_state_restocked
+ * @property int $number_returns_state_cancelled
+ * @property int $number_return_items
+ * @property int $number_return_items_state_waiting_to_receive
+ * @property int $number_return_items_state_received
+ * @property int $number_return_items_state_inspected
+ * @property int $number_return_items_state_restocked
+ * @property int $number_return_items_state_cancelled
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStats newQuery()

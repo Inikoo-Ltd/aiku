@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, watch } from 'vue'
-import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
+import { inject, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
@@ -11,7 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '../LinkIris.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { InputNumber, ToggleSwitch } from 'primevue'
+import {ToggleSwitch } from 'primevue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { ProductResource } from '@/types/Iris/Products'
@@ -22,12 +21,10 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Image from '@/Components/Image.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
-import { computed } from 'vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
-// import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 interface DataSideBasket {
     order_summary: any
@@ -154,7 +151,6 @@ const onRemoveFromBasket = (product) => {
         {
             preserveScroll: true,
             preserveState: true,
-            // only: ['zzzziris'],
             onStart: () => {
                 product.isLoadingRemove = true
                 // setStatus('loading')
@@ -237,7 +233,7 @@ const idxProductLoading = ref<number | null>(null)
 
 <template>
     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
-        <!-- Toggle: collapse-expand rightbasket -->
+        <!-- Toggle: collapse-expand right basket -->
         <div @click="handleToggleLeftBar"
             class="absolute z-10 top-2/4 -translate-y-full hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)] bg-[var(--theme-color-0)] w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full flex justify-center items-center cursor-pointer"
             :class="layout.rightbasket?.show ? 'left-0 -translate-x-1/2' : '-left-12'"
@@ -301,7 +297,7 @@ const idxProductLoading = ref<number | null>(null)
                     
                     <!-- Section: meter -->
                     <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
-                        ? trans(`:xcurrent of :xtarget products gross amount`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                        ? trans(`:xcurrent of :xtarget products amount`, { xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
                         : trans('Bonus secured')" class="w-full flex items-center">
                         <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
                             <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"

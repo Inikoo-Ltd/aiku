@@ -185,11 +185,12 @@ const toggleBackInStock = () =>
                     <span class="flex items-center gap-1 text-xs md:w-full " :class="!product.is_on_demand ? 'w-full' : 'w-[90%]'">
                        <!--  <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" /> -->
                         <span>
-                           {{ product.is_on_demand
+                        <!--    {{ product.is_on_demand
                                     ? trans("Unlimited quantity available")
                                     : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +
                                         trans('available'))
-                                }}
+                                }} -->
+                            {{(product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +  trans('available'))}}
                         </span>
                     </span>
                 </div>
