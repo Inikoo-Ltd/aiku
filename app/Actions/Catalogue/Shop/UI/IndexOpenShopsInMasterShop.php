@@ -23,9 +23,6 @@ class IndexOpenShopsInMasterShop extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-
-
-
     public function handle(MasterShop $masterShop, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -41,15 +38,14 @@ class IndexOpenShopsInMasterShop extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Shop::class);
 
-
         $queryBuilder->where('master_shop_id', $masterShop->id);
         $queryBuilder->where('shops.state', ShopStateEnum::OPEN->value);
         $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
-
+        $queryBuilder->leftJoin('organisations', 'organisations.id', '=', 'shops.organisation_id');
 
         return $queryBuilder
             ->defaultSort('shops.code')
-            ->select(['shops.code','shops.organisation_id', 'shops.id', 'shops.name', 'shops.slug', 'shops.type', 'shops.state','currencies.code as currency_code'])
+            ->select(['shops.code','shops.organisation_id', 'organisations.slug as org_slug', 'shops.id', 'shops.name', 'shops.slug', 'shops.type', 'shops.state','currencies.code as currency_code'])
             ->allowedSorts(['code', 'name', 'type', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -65,8 +61,6 @@ class IndexOpenShopsInMasterShop extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-
-
             $emptyState = [
                 'title'       => __('No shops found'),
                 'description' => '',
@@ -75,13 +69,11 @@ class IndexOpenShopsInMasterShop extends OrgAction
 
             ];
 
-
-
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
                 ->withEmptyState($emptyState)
-                ->column(key: 'state', label: '', canBeHidden: false, type: 'avatar')
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)

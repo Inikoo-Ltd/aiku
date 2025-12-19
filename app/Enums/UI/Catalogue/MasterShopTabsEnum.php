@@ -18,21 +18,26 @@ enum MasterShopTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SHOPS = 'shops';
     case SALES = 'sales';
     case HISTORY = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            MasterShopTabsEnum::SALES => [
-                'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
-            ],
             MasterShopTabsEnum::HISTORY => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+            MasterShopTabsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-money-bill-wave',
+            ],
+            MasterShopTabsEnum::SHOPS => [
+                'title' => __('Shops in Master Shop'),
+                'icon'  => 'fal fa-store-alt',
             ],
             MasterShopTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
