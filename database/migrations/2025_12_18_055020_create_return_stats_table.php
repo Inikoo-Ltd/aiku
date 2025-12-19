@@ -6,7 +6,7 @@
  * Description: Create return_stats table for return statistics
  */
 
-use App\Enums\Dispatching\Return\ReturnItemStateEnum;
+use App\Enums\GoodsIn\Return\ReturnItemStateEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

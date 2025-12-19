@@ -8,9 +8,9 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Procurement\StockDelivery\StoreStockDelivery;
-use App\Actions\Procurement\StockDelivery\UpdateStockDelivery;
-use App\Models\Procurement\StockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
+use App\Models\GoodsIn\StockDelivery;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\SourceOrganisationService;
 use Exception;

@@ -6,8 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Procurement\StockDelivery\UI\IndexStockDeliveries;
-use App\Actions\Procurement\StockDelivery\UI\ShowStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\UI\Incoming\ShowAgentIncomingHub;
 use Illuminate\Support\Facades\Route;
 

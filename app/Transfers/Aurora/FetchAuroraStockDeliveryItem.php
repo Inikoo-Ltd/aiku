@@ -8,8 +8,8 @@
 
 namespace App\Transfers\Aurora;
 
-use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
-use App\Models\Procurement\StockDelivery;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraStockDeliveryItem extends FetchAurora
@@ -33,7 +33,7 @@ class FetchAuroraStockDeliveryItem extends FetchAurora
         }
 
 
-        if (!$historicSupplierProduct and !$orgStock) {
+        if (!$historicSupplierProduct && !$orgStock) {
             print "SD  ".$this->auroraModelData->{'Supplier Delivery Key'}."  Transaction Item not found   ".$this->auroraModelData->{'Purchase Order Transaction Fact Key'}."  \n";
 
             return;

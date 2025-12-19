@@ -8,6 +8,7 @@
 
 namespace App\Models\Procurement;
 
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -40,7 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
  * @property-read \App\Models\Procurement\OrgAgentStats|null $stats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\StockDelivery> $stockDeliveries
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\StockDelivery> $stockDeliveries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent newQuery()

@@ -6,11 +6,11 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletDeliveries;
 use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletsInDelivery;
 use App\Actions\Inventory\GoodsIn\UI\ShowWarehousePalletDelivery;
-use App\Actions\Procurement\StockDelivery\UI\IndexStockDeliveries;
-use App\Actions\Procurement\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\UI\Incoming\ShowIncomingHub;
 use Illuminate\Support\Facades\Route;
 

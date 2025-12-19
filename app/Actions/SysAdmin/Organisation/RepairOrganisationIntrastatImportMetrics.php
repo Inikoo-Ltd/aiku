@@ -9,7 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation;
 
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatImportMetrics;
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;

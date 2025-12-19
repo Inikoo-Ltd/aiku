@@ -1093,6 +1093,7 @@ require __DIR__.'/models/inventory/location.php';
 require __DIR__.'/models/ordering/order.php';
 require __DIR__.'/models/dispatching/delivery_note.php';
 require __DIR__.'/models/dispatching/delivery_note_item.php';
+require __DIR__.'/models/dispatching/sowing.php';
 require __DIR__.'/models/stock/stock.php';
 require __DIR__.'/models/accounting/invoice.php';
 require __DIR__.'/models/accounting/refund.php';
