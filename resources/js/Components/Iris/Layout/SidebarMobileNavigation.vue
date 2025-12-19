@@ -35,9 +35,9 @@ const emit = defineEmits<{
         >
             {{ nav.name }}
         </LinkIris>
-        <div v-else @click="emit('arrow-click')">
+        <div v-else >
             {{ nav.name }}
         </div>
-        <FontAwesomeIcon v-if="isWithArrowRight" :icon="faChevronRight" fixed-width class="text-xs"   @click="emit('arrow-click')"/>
+        <FontAwesomeIcon v-if="isWithArrowRight" :icon="faChevronRight" fixed-width class="text-xs"  @click="emit('arrow-click')"/>
     </div>
 </template>

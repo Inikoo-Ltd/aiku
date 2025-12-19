@@ -134,6 +134,8 @@ onMounted(() => {
     onCheckAppVersion()
     setColorStyleRoot(layout?.app?.theme)
 })
+
+
 </script>
 
 <template>

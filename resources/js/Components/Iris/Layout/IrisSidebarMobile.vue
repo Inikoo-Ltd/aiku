@@ -280,8 +280,8 @@ const handleViewAllSubDepartment = (url: string) => {
                             @arrow-click="changeActiveCustomTopSubIndex(sIndex)"
                             :internalHref
                             :activeSubIndex
-                             :closeSidebar="()=>closeSidebar()"
-                            :isWithArrowRight="true"
+                            :closeSidebar="()=>closeSidebar()"
+                            :isWithArrowRight="false"
                         />
                     </div>
 
