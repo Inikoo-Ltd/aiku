@@ -10,18 +10,18 @@ namespace App\Enums\Dispatching\Sowing;
 
 use App\Enums\EnumHelperTrait;
 
-enum SowingTypeEnum: string
+enum SowingEngineEnum: string
 {
     use EnumHelperTrait;
 
-    case RETURN = 'return';
-    case RESTOCK = 'restock';
+    case AIKU = 'aiku';
+    case AURORA = 'aurora';
 
     public static function labels(): array
     {
         return [
-            'return'  => __('Return to location'),
-            'restock' => __('Restock'),
+            'aiku'   => __('Aiku'),
+            'aurora' => __('Aurora'),
         ];
     }
 }
