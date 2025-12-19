@@ -63,7 +63,9 @@ class IndexCustomerBalances extends OrgAction
         }
         $queryBuilder->leftjoin('organisations', 'customers.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftjoin('shops', 'customers.shop_id', 'shops.id');
+        $queryBuilder->leftjoin('currencies', 'shops.currency_id', 'currencies.id');
         $queryBuilder->leftjoin('fulfilments', 'fulfilments.shop_id', 'shops.id');
+        $queryBuilder->leftjoin('customer_stats', 'customers.id', '=', 'customer_stats.customer_id');
 
 
         return $queryBuilder
@@ -72,16 +74,20 @@ class IndexCustomerBalances extends OrgAction
                 'customers.id as id',
                 'customers.slug as slug',
                 'customers.name as name',
+                'customers.reference as reference',
                 'customers.balance as balance',
                 'shops.slug as shop_slug',
                 'shops.type as shop_type',
+                'shops.code as shop_code',
                 'fulfilments.slug as fulfilment_slug',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
+                'currencies.code as currency_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                'customer_stats.number_credit_transactions'
             ])
-            ->allowedSorts(['id', 'name', 'slug','balance'])
+            ->allowedSorts(['id', 'name', 'reference','shop_name', 'balance','number_credit_transactions'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -97,20 +103,27 @@ class IndexCustomerBalances extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('customer'),__('customers')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     []
-                )
-                ->column(key: 'name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'balance', label: __('balance'), canBeHidden: false, sortable: true, searchable: true);
+                );
+
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
-                $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: __('organisation'));
+                $table->column(key: 'shop_name', label: __('Shop'));
+            } elseif ($parent instanceof Organisation) {
+                $table->column(key: 'shop_code', label: __('Shop'));
             }
+
+            $table->column(key: 'reference', label: __('Customer No.'), sortable: true)
+                ->column(key: 'name', label: __('Name'), sortable: true)
+                ->column(key: 'number_credit_transactions', label: __('Credit transactions'), sortable: true, align: 'right')
+                ->column(key: 'balance', label: __('Balance'), sortable: true, align: 'right');
+
             $table->defaultSort('id');
         };
     }
-
 
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -135,6 +148,7 @@ class IndexCustomerBalances extends OrgAction
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
+
         return $this->handle($fulfilment);
     }
 
@@ -165,6 +179,7 @@ class IndexCustomerBalances extends OrgAction
         } elseif ($this->parent instanceof Shop) {
             $subNavigation = $this->getSubNavigationShop($this->parent);
         }
+
         return Inertia::render(
             'Org/Accounting/CustomerBalances',
             [
@@ -174,16 +189,16 @@ class IndexCustomerBalances extends OrgAction
                 ),
                 'title'       => $title,
 
-                'pageHead'    => [
-                    'icon'      => ['fal', 'fa-money-check-alt'],
-                    'title'     => $title,
-                    'actions'   => [
+                'pageHead' => [
+                    'icon'          => ['fal', 'fa-money-check-alt'],
+                    'title'         => $title,
+                    'actions'       => [
                     ],
                     'subNavigation' => $subNavigation,
 
 
                 ],
-                'data'             => CustomerBalancesResource::collection($paymentAccounts)
+                'data'     => CustomerBalancesResource::collection($paymentAccounts)
 
 
             ]
@@ -221,7 +236,7 @@ class IndexCustomerBalances extends OrgAction
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name' => $routeName,
+                        'name'       => $routeName,
                         'parameters' => $routeParameters
                     ]
                 )

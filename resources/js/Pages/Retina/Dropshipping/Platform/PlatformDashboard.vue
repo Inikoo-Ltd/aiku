@@ -18,6 +18,9 @@ import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/Platfor
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import { sub } from "date-fns"
 
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
@@ -54,6 +57,18 @@ const props = defineProps<{
     }
     portfolios_count: number
 }>()
+
+const onSubmitReconnect = async () => {
+	try {
+		const response = await axios.get(route('retina.dropshipping.customer_sales_channels.reconnect', route().params));
+		window.open(response.data)
+	} catch (err) {
+		notify({
+			title: trans("Something went wrong"),
+			type: "error"
+		});
+	}
+};
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', layoutStructure)
@@ -185,9 +200,8 @@ const layout = inject('layout', layoutStructure)
                     </ModalConfirmationDelete>
                 </div>
 
-				<div v-if="layout?.app?.environment === 'local' && platform_status && customer_sales_channel?.type === 'ebay'">
-					<ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"
-									type="tertiary"
+				<div v-if="!platform_status && customer_sales_channel?.type === 'ebay' && customer_sales_channel?.platform_completion">
+					<ButtonWithLink @click="onSubmitReconnect" type="tertiary"
 									:icon="['fal', 'fa-spinner']"
 									:label="trans('Re-Authenticate')">
 					</ButtonWithLink>

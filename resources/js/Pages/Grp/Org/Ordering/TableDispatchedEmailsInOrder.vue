@@ -87,7 +87,7 @@ const locale = inject("locale", aikuLocaleStructure);
         <template #cell(subject)="{ item: dispatchedEmail }">
             <div class="flex items-center gap-2">
                 <span>{{ dispatchedEmail["subject"] }}</span>
-                <span class="cursor-pointer" @click="() => { dispatchedEmailRoute(dispatchedEmail); }">
+                <span v-if="dispatchedEmail.body_preview" class="cursor-pointer" @click="() => { dispatchedEmailRoute(dispatchedEmail); }">
                     <FontAwesomeIcon :icon="faEyeEvil" />
                 </span>
             </div>

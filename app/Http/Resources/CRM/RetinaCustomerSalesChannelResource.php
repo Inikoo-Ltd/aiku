@@ -78,6 +78,17 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             }
         }
 
+        // For now only used by ebay
+        $platformCompletion = false;
+        if ($customerSalesChannels->platform->type == PlatformTypeEnum::EBAY) {
+            /** @var \App\Models\Dropshipping\EbayUser $ebayUser */
+            $ebayUser = $customerSalesChannels->user;
+
+            if($ebayUser) {
+                $platformCompletion = $ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key;
+            }
+        }
+
         $taxCategory = null;
         if (Arr::get($this->settings, 'tax_category.checked')) {
             $taxCategory = TaxCategory::find(Arr::get($this->settings, 'tax_category.id'));
@@ -103,6 +114,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'include_vat'            => Arr::get($this->settings, 'tax_category.checked'),
             'vat_rate'               => $taxCategory?->rate,
             'store_url' => $siteUrl,
+            'platform_completion' => $platformCompletion,
             'reconnect_route' => $reconnectRoute,
             'test_route'      => $testRoute,
             'delete_route'    => [

@@ -571,6 +571,36 @@ const onCreateReplacement = (action: any) => {
     )
 }
 
+const returnLoading = ref<boolean>(false)
+const onCreateReturn = (action: any) => {
+    router[action.route.method](
+        route(action.route.name, action.route.parameters),
+        {}, {
+        preserveScroll: true,
+        onStart: () => {
+            returnLoading.value = true
+        },
+        onFinish: () => {
+            returnLoading.value = false
+        },
+        onSuccess: () => {
+            notify({
+                title: trans("Success"),
+                text: trans("Return created successfully"),
+                type: "success",
+            })
+        },
+        onError: () => {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans("Failed to create return"),
+                type: "error",
+            })
+        },
+    }
+    )
+}
+
 
 const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
@@ -623,7 +653,7 @@ const labelToBePaid = (toBePaidValue: string) => {
 const isLoadingUpdateShippingTbcAmount = ref(false)
 const updateShippingTbcAmount = (value: number, oldValue: number|null) => {
     if (Number(value) === Number(oldValue)) {
-        return 
+        return
     }
     router.patch(
         route('grp.models.order.set_shipping_tbc_amount', {
@@ -635,7 +665,7 @@ const updateShippingTbcAmount = (value: number, oldValue: number|null) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingUpdateShippingTbcAmount.value = true
             },
             onSuccess: () => {
@@ -672,7 +702,7 @@ const setShippingManualAmount = (v: number) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingShippingManual.value = true
             },
             onSuccess: () => {
@@ -705,7 +735,7 @@ const setShippingToAuto = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingShippingManual.value = true
             },
             onSuccess: () => {
@@ -781,6 +811,12 @@ const setShippingToAuto = () => {
             <Button @click="() => onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
                 icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
                 v-tooltip="trans('Create replacement')" />
+        </template>
+
+        <template #button-return="{ action }">
+            <Button @click="() => onCreateReturn(action)" :label="trans('Return')" xsize="xs" type="secondary"
+                icon="fal fa-undo-alt" key="2" :disabled="returnLoading" :loading="returnLoading"
+                v-tooltip="trans('Create return')" />
         </template>
 
         <template #wrapped-add-note="{ action }">
@@ -1095,14 +1131,14 @@ const setShippingToAuto = () => {
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
-                    
+
                     <!-- Field: Billing -->
                     <dl class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
                         <!-- <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </dt> -->
-                        
+
                         <div v-if="data.data?.state === 'cancelled'" class="">
                             <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
@@ -1129,13 +1165,13 @@ const setShippingToAuto = () => {
                                     :handleTabUpdate="handleTabUpdate"
                                 >
                                     <template #default>
-                                        
-                                        
-                                        
+
+
+
                                     </template>
                                 </NeedToPayV2>
 
-                                
+
 
                                 <!-- <div v-if="
                                     box_stats.products.payment.pay_amount > 0
@@ -1162,7 +1198,7 @@ const setShippingToAuto = () => {
                                     <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
                                         type="secondary" size="xxs" />
                                 </div>
-                                
+
                                 <div v-if="Number(box_stats.products.payment.pay_amount) > 0" class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
                                     <div v-if="data?.data?.to_be_paid_by?.value" class="mx-auto w-fit flex items-center">
                                         <Button
@@ -1192,7 +1228,7 @@ const setShippingToAuto = () => {
                                         />
                                     </div>
                                 </div>
-    
+
                                 <!-- Pay: excesses balance -->
                                 <div v-if="box_stats.products.excesses_payment?.amount > 0"
                                     class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
@@ -1204,7 +1240,7 @@ const setShippingToAuto = () => {
                                         </span>
                                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
                                     </p>
-    
+
                                     <ButtonWithLink
                                         v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
@@ -1217,11 +1253,11 @@ const setShippingToAuto = () => {
                                 </div>
                             </div>
                         </div>
-                        
-                        
+
+
                     </dl>
 
-                    
+
                     <!-- Section: Delivery Notes -->
                     <div v-if="box_stats?.delivery_notes?.length"
                         class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
@@ -1282,7 +1318,7 @@ const setShippingToAuto = () => {
                         </div>
                     </div>
 
-                    
+
 
                     <!-- Field: number of order -->
                     <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
@@ -1326,7 +1362,7 @@ const setShippingToAuto = () => {
 
 
 
-                    
+
                 </div>
             </div>
         </BoxStatPallet>
@@ -1338,7 +1374,7 @@ const setShippingToAuto = () => {
                     {{ trans("Summary") }}
                 </div> -->
 
-                
+
                 <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-4 lg:mt-0">
                     <div class="border-b border-gray-300 mb-2 pb-2">
                         <!-- Field: weight -->
@@ -1376,7 +1412,7 @@ const setShippingToAuto = () => {
                                 </div>
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
 
-                                
+
                                 <!-- Popover: Select shipping price method -->
                                 <PopoverPrimevue ref="_shipping_price_method">
                                     <div class="relative flex flex-col gap-2">
@@ -1445,14 +1481,14 @@ const setShippingToAuto = () => {
                                 </PopoverPrimevue>
                             </dt>
                         </template>
-                        
+
                         <template #cell_shipping_3="{ fieldSummary }">
                             <div class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
                                 <Transition name="spin-to-right">
                                     <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc"
                                         class="-mr-2"
                                         :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''"
-                                        
+
                                     >
                                         <span v-if="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null" v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null">
                                             <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1 text-red-500" fixed-width aria-hidden="true" />

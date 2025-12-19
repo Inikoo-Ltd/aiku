@@ -406,7 +406,7 @@ trait WithLuigis
                 "slug"            => $this->getIdentity($webpage),
                 "title"           => $webpage->title,
                 "web_url"         => $webpage->getCanonicalUrl(),
-                "availability"    => intval($product->state == ProductStateEnum::ACTIVE && $product->available_quantity > 0 && $product->is_for_sale),
+                "availability"    => intval($product->state == ProductStateEnum::ACTIVE && $product->available_quantity > 0 && $product->is_main  && $product->is_for_sale),
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
                 "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,

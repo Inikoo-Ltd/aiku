@@ -26,13 +26,13 @@ class IndexDispatchedEmailsInOrder extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(DispatchedEmail::class);
-        $queryBuilder->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id')
-            ->join('model_has_dispatched_emails', function ($join) use ($parent) {
-                $join->on('dispatched_emails.id', '=', 'model_has_dispatched_emails.dispatched_email_id')
-                    ->where('model_has_dispatched_emails.model_type', '=', class_basename($parent))
-                    ->where('model_has_dispatched_emails.model_id', '=', $parent->id);
-            })
-            ->join('email_copies', 'dispatched_emails.id', '=', 'email_copies.dispatched_email_id');
+        $queryBuilder->join('model_has_dispatched_emails', function ($join) use ($parent) {
+            $join->on('dispatched_emails.id', '=', 'model_has_dispatched_emails.dispatched_email_id')
+                ->where('model_has_dispatched_emails.model_type', '=', class_basename($parent))
+                ->where('model_has_dispatched_emails.model_id', '=', $parent->id);
+        })
+            ->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id')
+            ->leftJoin('email_copies', 'dispatched_emails.id', '=', 'email_copies.dispatched_email_id');
 
         return $queryBuilder
             ->defaultSort('-sent_at')
@@ -52,7 +52,6 @@ class IndexDispatchedEmailsInOrder extends OrgAction
             ->allowedSorts(['number_email_tracking_events', 'sent_at', 'number_reads', 'mask_as_spam', 'number_clicks', 'email_addresses.email_address'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
-
     }
 
     public function tableStructure($prefix = null): Closure
@@ -61,7 +60,7 @@ class IndexDispatchedEmailsInOrder extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon');
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);

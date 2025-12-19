@@ -22,12 +22,16 @@ export interface DispatchedEmailResource {
         tooltip: string
         icon: string
     }[]
-    
+
     number_email_tracking_events: string
     shop_code: string
     shop_slug: string
     organisation_name: string
     organisation_slug: string
+    customer_name: string
+    customer_slug: string
+    order_slug: string
+    fulfilment_customer_slug: string
 
 
 }

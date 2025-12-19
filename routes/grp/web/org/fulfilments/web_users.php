@@ -6,8 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\CRM\WebUser\IndexWebUsersInFulfilmentCRM;
-use App\Actions\CRM\WebUser\ShowWebUser;
+use App\Actions\CRM\WebUser\UI\IndexWebUsersInFulfilmentCRM;
+use App\Actions\CRM\WebUser\UI\ShowWebUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndexWebUsersInFulfilmentCRM::class, 'inFulfilment'])->name('index');
