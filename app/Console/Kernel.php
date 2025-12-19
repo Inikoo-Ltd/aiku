@@ -364,6 +364,35 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
+
+        $urlsToHit = [
+            [
+                'url' => 'https://www.aw-dropship.es/',
+                'inertia' => true,
+                'xmlhttp' => true,
+                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true',
+            ],
+            [
+                'url' => 'https://www.aw-dropship.es/',
+                'inertia' => false,
+                'xmlhttp' => false,
+                'slug' => 'Hit https://www.aw-dropship.es/',
+            ],
+        ];
+
+        foreach ($urlsToHit as $config) {
+            $command = sprintf(
+                'iris:hit-url %s --inertia=%s --xmlhttp=%s',
+                $config['url'],
+                $config['inertia'] ? 'true' : 'false',
+                $config['xmlhttp'] ? 'true' : 'false'
+            );
+
+            $schedule->command($command)
+                ->everyMinute()
+                ->timezone('UTC')
+                ->sentryMonitor(monitorSlug: $config['slug']);
+        }
     }
 
     protected function commands(): void

@@ -1023,6 +1023,7 @@ onMounted(async () => {
     margin-inline-start: 0px;
     margin-inline-end: 0px;
     unicode-bidi: isolate;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.editor-class h1) {

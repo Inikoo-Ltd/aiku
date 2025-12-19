@@ -110,11 +110,11 @@ class ShowMasterFamily extends GrpAction
         $tabs = [
             MasterFamilyTabsEnum::SALES->value =>
             $this->tab === MasterFamilyTabsEnum::SALES->value
-                ? fn() => MasterFamiliesSalesResource::collection(
+                ? fn () => MasterFamiliesSalesResource::collection(
                     IndexMasterFamilySales::run($masterFamily)
                 )
                 : Inertia::lazy(
-                    fn() =>
+                    fn () =>
                     MasterFamiliesSalesResource::collection(
                         IndexMasterFamilySales::run($masterFamily)
                     )
@@ -122,19 +122,19 @@ class ShowMasterFamily extends GrpAction
 
             MasterFamilyTabsEnum::SHOWCASE->value =>
             $this->tab === MasterFamilyTabsEnum::SHOWCASE->value
-                ? fn() => GetMasterProductCategoryShowcase::run($masterFamily)
+                ? fn () => GetMasterProductCategoryShowcase::run($masterFamily)
                 : Inertia::lazy(
-                    fn() =>
+                    fn () =>
                     GetMasterProductCategoryShowcase::run($masterFamily)
                 ),
 
             MasterFamilyTabsEnum::FAMILIES->value =>
             $this->tab === MasterFamilyTabsEnum::FAMILIES->value
-                ? fn() => FamiliesResource::collection(
+                ? fn () => FamiliesResource::collection(
                     IndexFamilies::run($masterFamily)
                 )
                 : Inertia::lazy(
-                    fn() =>
+                    fn () =>
                     FamiliesResource::collection(
                         IndexFamilies::run($masterFamily)
                     )
@@ -142,9 +142,9 @@ class ShowMasterFamily extends GrpAction
 
             MasterFamilyTabsEnum::IMAGES->value =>
             $this->tab === MasterFamilyTabsEnum::IMAGES->value
-                ? fn() => GetMasterProductCategoryImages::run($masterFamily)
+                ? fn () => GetMasterProductCategoryImages::run($masterFamily)
                 : Inertia::lazy(
-                    fn() =>
+                    fn () =>
                     GetMasterProductCategoryImages::run($masterFamily)
                 ),
         ];
@@ -153,14 +153,14 @@ class ShowMasterFamily extends GrpAction
         if (app()->environment('local')) {
             $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
                 $this->tab === MasterFamilyTabsEnum::VARIANTS->value
-                ? fn() => MasterVariantsResource::collection(
+                ? fn () => MasterVariantsResource::collection(
                     IndexMasterVariant::run(
                         $masterFamily,
                         MasterFamilyTabsEnum::VARIANTS->value
                     )
                 )
                 : Inertia::lazy(
-                    fn() =>
+                    fn () =>
                     MasterVariantsResource::collection(
                         IndexMasterVariant::run(
                             $masterFamily,
@@ -171,7 +171,7 @@ class ShowMasterFamily extends GrpAction
         }
 
         if (app()->environment('production')) {
-           $navigation =  data_forget($navigation,MasterFamilyTabsEnum::VARIANTS->value);
+            $navigation =  data_forget($navigation, MasterFamilyTabsEnum::VARIANTS->value);
         }
 
 
@@ -324,7 +324,7 @@ class ShowMasterFamily extends GrpAction
             ->table(IndexMailshots::make()->tableStructure($masterFamily))
             ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
             ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value))
-            ->table(IndexMasterVariant::make()->tableStructure($masterFamily,prefix: MasterFamilyTabsEnum::VARIANTS->value));
+            ->table(IndexMasterVariant::make()->tableStructure($masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value));
     }
 
 

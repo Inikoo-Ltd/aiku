@@ -27,22 +27,22 @@ use Illuminate\Support\Carbon;
  * @property string $tariff_code Tariff code (HS code), may contain spaces
  * @property int $country_id
  * @property int|null $tax_category_id
- * @property string|null $delivery_note_type order or replacement
  * @property string $quantity
  * @property string $value_org_currency
  * @property int $weight Weight in grams
  * @property int $delivery_notes_count
  * @property int $products_count
- * @property int $invoices_count Number of invoices (0 = replacements/samples)
- * @property array|null $partner_tax_numbers Array of unique customer tax numbers with validation status
- * @property int $valid_tax_numbers_count
- * @property int $invalid_tax_numbers_count
- * @property IntrastatTransportModeEnum|null $mode_of_transport
- * @property IntrastatDeliveryTermsEnum|null $delivery_terms
- * @property IntrastatNatureOfTransactionEnum|null $nature_of_transaction
  * @property array<array-key, mixed>|null $data Warnings, metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property string|null $delivery_note_type order or replacement
+ * @property int $invoices_count Number of invoices (0 = replacements/samples)
+ * @property array<array-key, mixed>|null $partner_tax_numbers Array of unique customer tax numbers with validation status
+ * @property int $valid_tax_numbers_count
+ * @property int $invalid_tax_numbers_count
+ * @property IntrastatTransportModeEnum|null $mode_of_transport 1=SEA, 2=RAIL, 3=ROAD, 4=AIR, 5=POST, 7=PIPELINE, 8=INLAND_WATERWAY, 9=SELF_PROPULSION
+ * @property IntrastatDeliveryTermsEnum|null $delivery_terms EXW, FOB, CIF, DAP, DDP, etc.
+ * @property IntrastatNatureOfTransactionEnum|null $nature_of_transaction 11=Outright purchase/sale, 21=Return/replacement, etc.
  * @property-read Country $country
  * @property-read Organisation $organisation
  * @property-read TaxCategory|null $taxCategory

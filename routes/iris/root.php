@@ -85,12 +85,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         // LLMs.txt for AI crawlers
         Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');
 
-
-
-
-        // LLMs.txt for AI crawlers
-        Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');
-
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
         Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');

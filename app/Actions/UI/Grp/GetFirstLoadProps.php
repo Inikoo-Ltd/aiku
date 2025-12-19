@@ -41,18 +41,18 @@ class GetFirstLoadProps
 
         return
             [
-                'localeData' =>
-                    [
-                        'language'              => LanguageResource::make($language)->getArray(),
-                        'languageOptions'       => GetLanguagesOptions::make()->getExtraGroupLanguages($availableLanguages),
-                        'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
-                    ],
+                'localeData' => [
+                    'locale_iso'            => getIsoLocale(App::getLocale()),
+                    'language'              => LanguageResource::make($language)->getArray(),
+                    'languageOptions'       => GetLanguagesOptions::make()->getExtraGroupLanguages($availableLanguages),
+                    'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
+                ],
 
-                'layout'                 => GetLayout::run($user),
-                'environment'            => app()->environment(),
-                'help_portal_url'        => config('app.help_portal_url'),
-                'avatar_thumbnail'       => $image,
-                'notifications'          => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
+                'layout'           => GetLayout::run($user),
+                'environment'      => app()->environment(),
+                'help_portal_url'  => config('app.help_portal_url'),
+                'avatar_thumbnail' => $image,
+                'notifications'    => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
 
             ];
     }

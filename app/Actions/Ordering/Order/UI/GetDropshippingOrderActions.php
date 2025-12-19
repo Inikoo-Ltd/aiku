@@ -154,6 +154,21 @@ class GetDropshippingOrderActions
                             ]
                         ]
                     ],
+                    [
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'icon'    => 'fal fa-undo-alt',
+                        'tooltip' => __('Create a return'),
+                        'label'   => __('Return'),
+                        'key'     => 'return',
+                        'route'   => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.order.return.store',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ]
+                    ],
                 ],
 
                 default => []

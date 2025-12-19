@@ -212,7 +212,7 @@ const fetchRecommenders = async (recommendation_type: string) => {
     // try {
     //     isLoadingFetchLuigi.value = true
     //     const response = await axios.post(
-    //         `https://live.luigisbox.com/v1/recommend?tracker_id=${webpage_luigi_tracker_id}`,
+    //         `https://live.luigisbox.tech/v1/recommend?tracker_id=${webpage_luigi_tracker_id}`,
     //         [
     //             {
     //                 "blacklisted_item_ids":  [],

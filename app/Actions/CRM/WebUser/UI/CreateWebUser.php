@@ -6,16 +6,16 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\CRM\WebUser;
+namespace App\Actions\CRM\WebUser\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\OrgAction;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;

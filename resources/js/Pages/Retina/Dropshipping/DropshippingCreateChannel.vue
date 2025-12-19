@@ -379,7 +379,7 @@ provide("goNext", goNext)
 						class="h-9 sm:h-12" />
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
-							{{ trans("Web") }}/API
+							{{ trans("Manual") }}/API
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
 							{{ total_channels?.manual }} {{ trans("Channels") }}

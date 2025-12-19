@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\CRM\WebUser;
+namespace App\Actions\CRM\WebUser\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;

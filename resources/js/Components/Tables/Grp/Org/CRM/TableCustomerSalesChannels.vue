@@ -185,7 +185,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(platform_status)="{ item }">
             <template v-if="item.status==='open'">
                 <template v-if="item.platform_code=='manual'">
-                    <FontAwesomeIcon v-tooltip="trans('Web/Api channel active')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="trans('Manual/Api channel active')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                 </template>
                 <template v-else>
                     <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
