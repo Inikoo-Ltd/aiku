@@ -16,7 +16,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInOrganisation;
 use App\Actions\Catalogue\Shop\UI\IndexShopsInOrganisation;
 use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
-use App\Actions\CRM\WebUser\IndexWebUsersInOrganisation;
+use App\Actions\CRM\WebUser\UI\IndexWebUsersInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInBasketInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInOrganisation;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
