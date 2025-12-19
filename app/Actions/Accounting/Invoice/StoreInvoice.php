@@ -184,7 +184,7 @@ class StoreInvoice extends OrgAction
         $invoice->refresh();
         $invoice = CategoriseInvoice::run($invoice);
 
-        if($this->strict) {
+        if ($this->strict && $invoice->type == InvoiceTypeEnum::INVOICE) {
             $invoice->customer->update(
                 [
                     'last_invoiced_at' => $date
