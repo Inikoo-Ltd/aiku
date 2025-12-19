@@ -27,6 +27,22 @@ const getInitials = (name: string | undefined): string => {
 	return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
 }
 
+const priorityClass = (p?: string) => {
+	const key = String(p || "").toLowerCase()
+	switch (key) {
+		case "low":
+			return "bg-blue-50 border-blue-500 text-blue-500"
+		case "normal":
+			return "bg-gray-50 border-gray-400 text-gray-400"
+		case "high":
+			return "bg-yellow-50 border-yellow-500 text-yellow-500"
+		case "urgent":
+			return "bg-red-50 border-red-500 text-red-500"
+		default:
+			return "bg-gray-50 border-gray-300 text-gray-300"
+	}
+}
+
 const getRandomColor = (name: string | undefined): string => {
 	if (!name) return "#6B7280"
 	let hash = 0
@@ -157,6 +173,45 @@ watch(
 								v-if="activity?.details?.to_agent_name"
 								class="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-50">
 								{{ activity.details.to_agent_name }}
+							</div>
+						</div>
+
+						<div
+							v-if="
+								activity?.event_type === 'priority' &&
+								(activity?.details?.priority_previous ||
+									activity?.details?.priority_current)
+							"
+							class="mt-2 flex items-center gap-1">
+							<div
+								v-if="activity?.details?.priority_previous"
+								class="px-2 py-1 text-xs font-medium border rounded"
+								:class="'bg-gray-50 text-gray-700 border-gray-50'">
+								{{ activity.details.priority_previous }}
+							</div>
+
+							<div
+								v-if="
+									activity?.details?.priority_previous &&
+									activity?.details?.priority_current
+								"
+								class="px-2 py-1.5 text-gray-500">
+								→
+							</div>
+
+							<div
+								v-if="
+									activity?.details?.priority_current ||
+									activity?.details?.priority
+								"
+								class="px-2 py-1 text-xs font-medium border rounded"
+								:class="
+									priorityClass(
+										activity?.details?.priority_current ||
+											activity?.details?.priority
+									)
+								">
+								{{ activity.details.priority_current || activity.details.priority }}
 							</div>
 						</div>
 					</div>

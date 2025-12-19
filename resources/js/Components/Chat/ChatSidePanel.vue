@@ -302,11 +302,12 @@ const onSyncByEmail = async () => {
 }
 const updatePriority = async (val: string) => {
 	if (!props.session?.ulid) return
+	const user_id = layout.user?.id || null
 	try {
 		isUpdatingPriority.value = true
 		const response = await axios.put(
 			`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/update`,
-			{ priority: val }
+			{ priority: val, user_id }
 		)
 		currentPriority.value = val
 		isEditingPriority.value = false

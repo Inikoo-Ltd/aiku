@@ -177,6 +177,9 @@ class GetChatActivity
         return [
             'description' => 'Chat session priority was updated to ' . $priority,
             'priority' => $priority,
+            'priority_previous' => $payload['priority_previous'] ?? '',
+            'priority_current' => $payload['priority_current'] ?? '',
+
         ];
     }
 

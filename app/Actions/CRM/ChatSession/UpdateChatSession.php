@@ -2,10 +2,10 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -21,6 +21,7 @@ class UpdateChatSession
         return [
             'priority' => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'rating'   => ['sometimes', 'numeric', 'min:1', 'max:5'],
+            'user_id'  => ['sometimes', 'integer', 'exists:users,id'],
         ];
     }
 
@@ -28,10 +29,14 @@ class UpdateChatSession
     public function handle(ChatSession $chatSession, array $data): array
     {
         $updatedFields = [];
+        $originalPriority = $chatSession->priority->value;
 
+        $context = [];
         if (array_key_exists('priority', $data)) {
-            $chatSession->priority = $data['priority'];
+            $context['priority_previous'] = $originalPriority;
+            $context['priority_current']  = $data['priority'];
             $updatedFields['priority'] = $data['priority'];
+            $chatSession->priority = $data['priority'];
         }
 
         if (array_key_exists('rating', $data)) {
@@ -39,14 +44,30 @@ class UpdateChatSession
             $updatedFields['rating'] = $data['rating'];
         }
 
+        $actorTypeStr = 'system';
+        $actorId = null;
+
+        if (array_key_exists('user_id', $data) && !empty($data['user_id'])) {
+            $agent = ChatAgent::where('user_id', $data['user_id'])->first();
+            if ($agent) {
+                $actorTypeStr = 'agent';
+                $actorId = $agent->id;
+            } else {
+                $actorTypeStr = 'user';
+                $actorId = (int) $data['user_id'];
+            }
+        }
+
         if (!empty($updatedFields)) {
+
             $chatSession->save();
 
             $this->logUpdateChatSessionEvent(
                 $chatSession,
-                'system',
-                null,
-                $updatedFields
+                $actorTypeStr,
+                $actorId,
+                $updatedFields,
+                $context
             );
         }
 
@@ -68,7 +89,7 @@ class UpdateChatSession
         }
 
         $message = collect(array_keys($updatedFields))
-            ->map(fn($field) => match($field) {
+            ->map(fn ($field) => match ($field) {
                 'priority' => 'Priority updated successfully',
                 'rating' => 'Rating updated successfully',
                 default => ucfirst($field) . ' updated successfully'
@@ -89,7 +110,8 @@ class UpdateChatSession
         ChatSession $chatSession,
         string $actorType,
         ?int $actorId,
-        array $updatedFields
+        array $updatedFields,
+        array $context = []
     ): void {
 
         $actorType = match ($actorType) {
@@ -117,6 +139,10 @@ class UpdateChatSession
             'timestamp'        => now()->toISOString(),
         ];
 
+        if (!empty($context)) {
+            $payload = array_merge($payload, $context);
+        }
+
         StoreChatEvent::make()->customEvent(
             $chatSession,
             $eventType,
@@ -125,6 +151,4 @@ class UpdateChatSession
             $payload
         );
     }
-
-
 }
