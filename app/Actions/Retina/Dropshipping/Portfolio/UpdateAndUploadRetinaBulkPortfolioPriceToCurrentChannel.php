@@ -28,14 +28,17 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
         foreach (Arr::pull($modelData, 'items') as $itemId) {
             $portfolio = Portfolio::find($itemId);
 
-            if(Arr::pull($modelData, 'type') === 'fixed') {
+            if(Arr::get($modelData, 'type') === 'fixed') {
                 $newPrice = Arr::get($modelData, 'amount') + $portfolio->customer_price;
-            } else {
+            } else if(Arr::get($modelData, 'type') === 'fixed') {
                 $newPrice = $portfolio->customer_price * (1 + Arr::get($modelData, 'amount') / 100);
+            } else {
+                $newPrice = $portfolio->item->rrp;
             }
 
             data_set($modelData, 'customer_price', $newPrice);
             data_forget($modelData, 'amount');
+            data_forget($modelData, 'type');
 
             UpdateAndUploadRetinaPortfolioToCurrentChannel::dispatch($portfolio, $modelData, $isDraft);
         }
