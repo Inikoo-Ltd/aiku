@@ -84,7 +84,9 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             /** @var \App\Models\Dropshipping\EbayUser $ebayUser */
             $ebayUser = $customerSalesChannels->user;
 
-            $platformCompletion = $ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key;
+            if($ebayUser) {
+                $platformCompletion = $ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key;
+            }
         }
 
         $taxCategory = null;

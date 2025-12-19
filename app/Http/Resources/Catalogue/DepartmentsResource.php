@@ -69,8 +69,13 @@ class DepartmentsResource extends JsonResource
             'number_current_products'        => $this->number_current_products,
             'number_current_sub_departments' => $this->number_current_sub_departments,
             'number_current_collections'     => $this->number_current_collections,
-            'sales'                          => $this->sales_all,
-            'invoices'                       => $this->invoices_all,
+            'sales'                          => $this->sales ?? 0,
+            'sales_ly'                       => $this->sales_ly ?? 0,
+            'sales_delta'                    => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'invoices'                       => $this->invoices ?? 0,
+            'invoices_ly'                    => $this->invoices_ly ?? 0,
+            'invoices_delta'                 => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'current_interval'               => $this->current_interval ?? 'ytd',
             'organisation_name'              => $this->organisation_name,
             'organisation_code'              => $this->organisation_code,
             'organisation_slug'              => $this->organisation_slug,
@@ -80,6 +85,22 @@ class DepartmentsResource extends JsonResource
             'is_description_reviewed'        => $this->is_description_reviewed,
             'is_description_extra_reviewed'  => $this->is_description_extra_reviewed,
             'image_thumbnail'                => Arr::get($this->web_images, 'main.thumbnail'),
+        ];
+    }
+
+    private function calculateDelta($current, $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 }

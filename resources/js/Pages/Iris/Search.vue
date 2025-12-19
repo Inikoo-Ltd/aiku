@@ -180,7 +180,7 @@ const LBInitSearchResult = async () => {
 
 onBeforeMount(() => {
     const script = document.createElement('script');
-    script.src = "https://cdn.luigisbox.com/search.js";
+    script.src = "https://cdn.luigisbox.tech/search.js";
     script.async = true;
     script.onload = () => {
         console.log('Luigi Search script loaded');

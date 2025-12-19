@@ -10,6 +10,7 @@
 
 namespace App\Actions\Maintenance\Masters;
 
+use App\Actions\Catalogue\CloneCatalogueStructure;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\MatchAssetsToMaster;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -34,19 +35,22 @@ class AddMissingMasterAssetsFromSeederShops
     /**
      * @throws \Throwable
      */
-    public function handle(MasterShop $masterShop, Command $command): void
+    public function handle(MasterShop $masterShop, Shop $seederShop, Command $command = null): void
     {
-        $seederShop = $this->getSeederShop($masterShop);
-
         Product::where('shop_id', $seederShop->id)->orderBy('id')
-            //->where('code', 'like', 'ULFO-%')
             ->chunk(1000, function ($models) use ($command, $masterShop) {
                 foreach ($models as $product) {
-                    $asset   = MatchAssetsToMaster::run($product->asset, $masterShop);
+                    $asset   = MatchAssetsToMaster::run($product->asset, $command);
                     $product = $asset->product;
 
                     if ($product->is_main && !$product->master_product_id) {
-                        $command->info("Found main product with no master asset $product->slug");
+                        if ($command) {
+                            $command->info("Found main product with no master asset $product->slug");
+                        } else {
+                            print "Found main product with no master asset $product->slug \n";
+                        }
+
+
                         $this->upsertMasterProduct($masterShop, $product);
                     }
                 }
@@ -173,6 +177,21 @@ class AddMissingMasterAssetsFromSeederShops
                 ->upsertMasterFamily($masterShop, $product->family);
         }
 
+
+        if (!$masterFamily && !$product->family) {
+            $code = $product->code;
+            $codeData = preg_split('/-/', $code, -1, PREG_SPLIT_NO_EMPTY);
+            if (isset($codeData[0])) {
+
+                $masterFamily = MasterProductCategory::where('master_shop_id', $masterShop->id)->whereRaw("lower(code) = lower(?)", [$codeData[0]])->first();
+                if ($masterFamily) {
+                    CloneCatalogueStructure::make()->upsertFamily($product->shop, $masterFamily);
+                }
+
+            }
+
+        }
+
         return $masterFamily;
     }
 
@@ -202,7 +221,8 @@ class AddMissingMasterAssetsFromSeederShops
     {
         if ($command->argument('master')) {
             $masterShop = MasterShop::where('slug', $command->argument('master'))->firstOrFail();
-            $this->handle($masterShop, $command);
+            $seederShop = $this->getSeederShop($masterShop);
+            $this->handle($masterShop, $seederShop, $command);
 
             return 0;
         }
@@ -210,7 +230,8 @@ class AddMissingMasterAssetsFromSeederShops
         MasterShop::orderBy('id')
             ->chunk(1000, function ($models) use ($command) {
                 foreach ($models as $model) {
-                    $this->handle($model, $command);
+                    $seederShop = $this->getSeederShop($model);
+                    $this->handle($model, $seederShop, $command);
                 }
             });
 

@@ -9,10 +9,11 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Family } from "@/types/family"
 import Icon from "@/Components/Icon.vue"
-import { ref } from "vue"
+import { inject, ref } from "vue"
 import { routeType } from "@/types/route"
 import { remove as loRemove } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
 import { faTriangle, faEquals, faMinus } from "@fas"
@@ -34,6 +35,7 @@ const props = defineProps<{
     isCheckBox?: boolean
 }>()
 
+const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
@@ -334,15 +336,19 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
 
-        <template #cell(sales_ytd_delta)="{ item }">
-            <div v-if="item.sales_ytd_delta">
-                <span>{{ item.sales_ytd_delta.formatted }}</span>
+        <template #cell(sales)="{ item }">
+            {{ locale.currencyFormat(item.currency_code, item.sales) }}
+        </template>
+
+        <template #cell(sales_delta)="{ item }">
+            <div v-if="item.sales_delta">
+                <span>{{ item.sales_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_ytd_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_ytd_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_ytd_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"
@@ -370,15 +376,15 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
 
-        <template #cell(invoices_ytd_delta)="{ item }">
-            <div v-if="item.invoices_ytd_delta">
-                <span>{{ item.invoices_ytd_delta.formatted }}</span>
+        <template #cell(invoices_delta)="{ item }">
+            <div v-if="item.invoices_delta">
+                <span>{{ item.invoices_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.invoices_ytd_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.invoices_ytd_delta.is_positive).class,
-                        getIntervalStateColor(item.invoices_ytd_delta.is_positive),
+                        getIntervalChangesIcon(item.invoices_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"

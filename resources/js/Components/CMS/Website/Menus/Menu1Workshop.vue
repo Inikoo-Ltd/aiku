@@ -52,7 +52,7 @@ const props = withDefaults(
     }>(),
     {}
 );
-
+console.log(props)
 const layout = inject("layout", layoutStructure);
 const isCollapsedOpen = ref(false);
 const hoveredNavigation = ref<any>(null);
@@ -131,9 +131,9 @@ const computedSelectedSidebarData = computed(() => {
         return []
     }
 
-    const selectedProductCategories = compSelectedSidebar.value?.data?.fieldValue?.product_categories || compSelectedSidebar.value?.product_categories
+    const selectedProductCategories = !layout.iris?.sidebar ? compSelectedSidebar.value?.data?.fieldValue?.product_categories : compSelectedSidebar.value?.product_categories
     // const selectedProductCategories = compSelectedSidebar.value?.product_categories
-
+    console.log('sssss',compSelectedSidebar)
     const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
 
     return productCategoriesAuto
@@ -283,7 +283,6 @@ watch(loadingItem, (newVal) => {
                         :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
-                        xstyle="getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :id="navigation?.link?.id"
