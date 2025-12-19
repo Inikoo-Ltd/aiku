@@ -55,7 +55,12 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
             //change to back_in_stock_reminders
             $baseQuery = QueryBuilder::for(BackInStockReminder::class);
             $baseQuery->join('customers', 'back_in_stock_reminders.customer_id', '=', 'customers.id');
+            $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
+            $baseQuery->select('back_in_stock_reminders.id', 'back_in_stock_reminders.customer_id');
+            $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
 
+            $data = $baseQuery->get();
+            \Log::info("Test Data : " . $data);
 
 
 
