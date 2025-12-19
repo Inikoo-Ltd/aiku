@@ -33,6 +33,7 @@ class ProductResource extends JsonResource
                 'org_stock_code' => $orgStock->code,
                 'org_stock_name' => $orgStock->name,
                 'note'           => $orgStock->pivot->note,
+                'is_on_demand'   => $orgStock->is_on_demand,
                 'picking_factor' => riseDivisor(
                     divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)),
                     $orgStock->packed_in

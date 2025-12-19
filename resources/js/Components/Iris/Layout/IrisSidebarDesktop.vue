@@ -8,7 +8,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LinkIris from '../LinkIris.vue'
 import { router } from '@inertiajs/vue3'
-import { ProductCategoryMenu } from '@/Composables/Iris/useMenu'
+import { ProductCategoryMenu, ProductCategoryMenuSub } from '@/Composables/Iris/useMenu'
 import { getStyles } from '@/Composables/styles'
 import SidebarDesktopNavigation from './SidebarDesktopNavigation.vue'
 library.add(faChevronRight, faExternalLink)
@@ -36,7 +36,7 @@ const props = defineProps<{
             }[]
         }[]
     }[]
-    customTopSubDepartments: []
+    customTopSubDepartments: ProductCategoryMenuSub[]
     customMenusBottom: {}[]
     customSubDepartments: []
     activeIndex: {}
@@ -50,7 +50,7 @@ const props = defineProps<{
     customFamilies: {}[]
     customTopFamilies: {}[]
     sortedProductCategories: ProductCategoryMenu[]
-    sortedSubDepartments: {}[]
+    sortedSubDepartments: ProductCategoryMenuSub[]
     activeSubIndex: number
     activeCustomSubIndex: {}
     activeCustomTopSubIndex: {}
@@ -239,20 +239,21 @@ const borderWidth = computed(() => {
             <div class="overflow-y-auto">
                 <!-- Section: Subdepartments (Top) -->
                 <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
-                    <SidebarDesktopNavigation
-                        v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
-                        :nav="sub"
-                        :class="[
-                            activeCustomTopSubIndex === sIndex
-                                ? `navActive`
-                                : 'navInactive'
-                        ]"
-                        @click="changeActiveCustomTopSubIndex(sIndex)"
-                        :internalHref
-                        :activeSubIndex
-                        :closeSidebar
-                        isWithArrowRight
-                    />
+                    <template v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex">
+                        <SidebarDesktopNavigation
+                            :nav="sub"
+                            :class="[
+                                activeCustomTopSubIndex === sIndex
+                                    ? `navActive`
+                                    : 'navInactive'
+                            ]"
+                            @click="() => sub.families?.length ? changeActiveCustomTopSubIndex(sIndex) : false"
+                            :internalHref
+                            :activeSubIndex
+                            :closeSidebar
+                            :isWithArrowRight="!!sub.families?.length"
+                        />
+                    </template>
                 </div>
 
                 <!-- Section: SubDepartments (Auto Product Categories) -->

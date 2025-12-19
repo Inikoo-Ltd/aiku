@@ -256,17 +256,20 @@ const debAddAndUpdateProduct = debounce(() => {
 
 // Handle quantity change
 const updateQuantity = (newQuantity: number) => {
-    // Clamp quantity between 0 and stock
-    const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
 
-    // Set quantity_ordered_new - sama seperti di ButtonAddToBasketInFamily
+    const clampedQuantity = props.product.is_on_demand
+        ? Math.max(0, newQuantity)
+        : Math.max(0, Math.min(newQuantity, props.product.stock))
+
+    // set quantity_ordered_new
     set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
 
-    // Trigger debounced update jika ada perubahan
+    // trigger debounced update jika berubah
     if (compIsValueDirty.value) {
         debAddAndUpdateProduct()
     }
 }
+
 
 // Handle increment
 const increment = () => {
@@ -298,7 +301,14 @@ const showChartButton = computed(() => {
     return !quantityOrdered && currentQuantity.value === 0
 })
 
+const canOrder = computed(() => {
+    if (props.product.is_on_demand) return true
+    else if (props.product.stock > 0) return true
+    return false
+})
+
 const hoveredButton = ref<string | null>(null)
+
 
 </script>
 
@@ -306,7 +316,7 @@ const hoveredButton = ref<string | null>(null)
     <div class="group relative">
         <!-- State awal: qty 0, tampilkan icon + -->
         <button v-if="showChartButton" @click.stop.prevent="instantAddToBasket" :style="buttonStyle"
-            :disabled="isLoadingSubmitQuantityProduct || props.product.stock === 0"
+            :disabled="isLoadingSubmitQuantityProduct || !canOrder"
             class="rounded-full button-cart hover:bg-green-700 bg-gray-800 text-gray-300  h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
@@ -344,7 +354,7 @@ const hoveredButton = ref<string | null>(null)
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"  type="button"
-                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
+                :disabled="isLoadingSubmitQuantityProduct || (!props.product.is_on_demand && currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
                     color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color
