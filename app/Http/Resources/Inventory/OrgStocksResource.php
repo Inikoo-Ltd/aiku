@@ -62,7 +62,7 @@ class OrgStocksResource extends JsonResource
             'value_in_locations'              => $this->value_in_locations,
             'revenue'                         => $this->revenue,
             'dispatched'                      => $this->dispatched,
-
+            'is_on_demand'                    => $this->is_on_demand
         ];
     }
 }

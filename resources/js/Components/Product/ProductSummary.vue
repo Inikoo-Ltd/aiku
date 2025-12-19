@@ -97,7 +97,7 @@ const props = withDefaults(
 		data: ProductShowcase
 		video?: string
 		hide?: string[]
-		gpsr?:object
+		gpsr?: object
 		attachments: {
 
 		}
@@ -107,7 +107,7 @@ const props = withDefaults(
 			tariff_code?: string
 			duty_rate?: string
 		}
-	}>(),{}
+	}>(), {}
 )
 
 library.add(
@@ -190,24 +190,41 @@ library.add(
 						<dt class="text-gray-500">{{ trans("Picking") }}</dt>
 						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
 							<template v-if="data?.picking_factor?.length">
-								<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
+								<div v-for="pick in data.picking_factor" :key="pick.org_stock_id"
+									class="grid grid-cols-4 gap-2 py-1 text-sm">
+									<!-- Left -->
 									<div class="col-span-3">
-										<div class="w-fit">
+										<div class="flex items-center flex-wrap gap-1 leading-tight">
 											<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)"
-												class="primaryLink -ml-1">{{ pick.org_stock_code }}</Link>
-											<span class="italic opacity-60">({{ pick.org_stock_id }})</span>
+												class="primaryLink font-medium">
+												{{ pick.org_stock_code }}
+											</Link>
+
+											<span class="text-[11px] italic text-gray-400">
+												({{ pick.org_stock_id }})
+											</span>
+
+											<span v-if="pick?.is_on_demand"
+												class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700">
+												On Demand
+											</span>
 										</div>
-										<div v-tooltip="trans('Note')" class="text-gray-400 text-xs w-fit">
+
+										<div v-tooltip="trans('Note')"
+											class="text-[11px] text-gray-400 truncate max-w-[90%]">
 											{{ pick.note || '-' }}
 										</div>
 									</div>
 
-									<div class=" text-right">
-										<FractionDisplay v-tooltip="trans('Number of packed in')"
+									<!-- Right -->
+									<div class="flex items-center justify-end text-xs">
+										<FractionDisplay v-tooltip="trans('Number of picking')"
 											:fractionData="pick.picking_factor" />
 									</div>
 								</div>
 							</template>
+
+
 							<div v-else class="text-center text-gray-400 italic text-xs">
 								{{ trans("No data available") }}
 							</div>
@@ -220,5 +237,4 @@ library.add(
 	</div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
