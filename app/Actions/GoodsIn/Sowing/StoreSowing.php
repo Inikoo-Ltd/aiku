@@ -6,13 +6,14 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dispatching\Sowing;
+namespace App\Actions\GoodsIn\Sowing;
 
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
+use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
@@ -25,34 +26,39 @@ class StoreSowing extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    protected DeliveryNoteItem $deliveryNoteItem;
+    protected DeliveryNoteItem|StockDeliveryItem $parent;
     protected User $user;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Sowing
+    public function handle(DeliveryNoteItem|StockDeliveryItem $parent, LocationOrgStock $locationOrgStock, array $modelData): Sowing
     {
-        data_forget($modelData, 'location_org_stock_id');
+        if ($parent instanceof DeliveryNoteItem) {
+            data_set($modelData, 'shop_id', $parent->shop_id);
+            data_set($modelData, 'delivery_note_id', $parent->delivery_note_id);
+            $orgStockMovement = OrgStockMovementTypeEnum::RETURN_PICKED;
+        } else {
+            data_set($modelData, 'stock_delivery_id', $parent->stock_delivery_id);
+            $orgStockMovement = OrgStockMovementTypeEnum::PURCHASE;
+        }
 
-        data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
-        data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
-        data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
-        data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
+        data_forget($modelData, 'location_org_stock_id');
+        data_set($modelData, 'group_id', $parent->group_id);
+        data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'org_stock_id', $locationOrgStock->org_stock_id);
         data_set($modelData, 'location_id', $locationOrgStock->location_id);
 
         data_set($modelData, 'sowed_at', now(), false);
 
         /** @var Sowing $sowing */
-        $sowing = $deliveryNoteItem->sowings()->create($modelData);
+        $sowing = $parent->sowings()->create($modelData);
         $sowing->refresh();
 
-        // Create stock movement to return items to location
-        // Note: For sowing (return), the quantity should be positive to add back to stock
+
         $orgStockMovement = StoreOrgStockMovement::run(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
             [
-                'quantity' => abs($sowing->quantity), // Positive to add back to stock
-                'type'     => OrgStockMovementTypeEnum::RETURN_PICKED
+                'quantity' => $sowing->quantity,
+                'type'     => $orgStockMovement
             ]
         );
 
@@ -68,14 +74,14 @@ class StoreSowing extends OrgAction
         return [
             'location_org_stock_id' => [
                 'required',
-                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
+                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->parent->deliveryNote->warehouse_id)
             ],
-            'quantity'            => ['required', 'numeric'],
-            'sower_user_id'       => [
+            'quantity'              => ['required', 'numeric', 'gt:0'],
+            'sower_user_id'         => [
                 'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
             ],
-            'original_picking_id' => ['sometimes', 'nullable', 'exists:pickings,id'],
+            'original_picking_id'   => ['sometimes', 'nullable', 'exists:pickings,id'],
         ];
     }
 
@@ -88,8 +94,8 @@ class StoreSowing extends OrgAction
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
-        $this->user             = $request->user();
-        $this->deliveryNoteItem = $deliveryNoteItem;
+        $this->user = $request->user();
+        $this->parent = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
         $locationOrgStock = LocationOrgStock::find($this->validatedData['location_org_stock_id']);
 
@@ -98,9 +104,9 @@ class StoreSowing extends OrgAction
 
     public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Sowing
     {
-        $this->asAction         = true;
-        $this->user             = $user;
-        $this->deliveryNoteItem = $deliveryNoteItem;
+        $this->asAction = true;
+        $this->user     = $user;
+        $this->parent   = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
         $locationOrgStock = LocationOrgStock::find($this->validatedData['location_org_stock_id']);
 

@@ -6,7 +6,7 @@
  * Copyright (c) 2024
  */
 
-namespace App\Actions\Dispatching\Sowing;
+namespace App\Actions\GoodsIn\Sowing;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -31,9 +31,7 @@ class UpdateSowing extends OrgAction
             return DeleteSowing::make()->action($sowing);
         }
 
-        $sowing = $this->update($sowing, $modelData);
-
-        return $sowing;
+        return $this->update($sowing, $modelData);
     }
 
     public function rules(): array
@@ -44,7 +42,7 @@ class UpdateSowing extends OrgAction
         ];
     }
 
-    public function asController(Sowing $sowing, ActionRequest $request)
+    public function asController(Sowing $sowing, ActionRequest $request): void
     {
         $this->sowing = $sowing;
         $this->initialisationFromShop($sowing->shop, $request);
