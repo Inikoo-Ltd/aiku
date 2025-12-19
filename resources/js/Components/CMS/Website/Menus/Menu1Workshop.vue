@@ -191,7 +191,6 @@ watch(loadingItem, (newVal) => {
         debSetCollapsedTrue.cancel()
     }
 })
-console.log('selected menu', selectedMenu.value)
 </script>
 
 <template>

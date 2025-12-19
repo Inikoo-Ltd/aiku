@@ -5,6 +5,19 @@
  * Copyright: 2025
 */
 
+export interface ProductCategoryMenuSub {
+    name: string
+    url: string
+    collections: {
+        id: string
+        url: string
+        name: string
+    }[]
+    families: {
+        name: string
+        url: string
+    }[]
+}
 
 export interface ProductCategoryMenu {
     name: string
@@ -14,19 +27,7 @@ export interface ProductCategoryMenu {
         url: string
         name: string
     }[]
-    sub_departments: {
-        name: string
-        url: string
-        collections: {
-            id: string
-            url: string
-            name: string
-        }[]
-        families: {
-            name: string
-            url: string
-        }[]
-    }[]
+    sub_departments: ProductCategoryMenuSub[]
 }
 
 interface CustomMenu {
