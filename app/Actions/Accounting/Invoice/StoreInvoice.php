@@ -184,6 +184,14 @@ class StoreInvoice extends OrgAction
         $invoice->refresh();
         $invoice = CategoriseInvoice::run($invoice);
 
+        if($this->strict) {
+            $invoice->customer->update(
+                [
+                    'last_invoiced_at' => $date
+                ]
+            );
+        }
+
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
 
         if ($invoice->customer && $invoice->shop->is_aiku) {
