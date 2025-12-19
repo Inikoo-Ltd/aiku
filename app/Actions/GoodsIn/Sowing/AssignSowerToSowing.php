@@ -23,7 +23,6 @@ class AssignSowerToSowing extends OrgAction
 
     public function handle(Sowing $sowing, array $modelData): Sowing
     {
-        data_set($modelData, 'sower_assigned_at', now());
         return $this->update($sowing, $modelData);
     }
 

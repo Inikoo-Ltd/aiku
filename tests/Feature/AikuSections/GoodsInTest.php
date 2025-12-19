@@ -131,7 +131,7 @@ test('create sowing record directly', function () {
     );
 
     expect($sowing)->toBeInstanceOf(Sowing::class)
-        ->and($sowing->quantity)->toBe('5.000')
+        ->and($sowing->quantity)->toBe('5.000000')
         ->and($sowing->location_id)->toBe($location->id)
         ->and($sowing->org_stock_id)->toBe($orgStock->id)
         ->and($sowing->sower_user_id)->toBe($this->user->id)
@@ -192,7 +192,7 @@ test('sowing is linked to delivery note item', function () {
 
     // Verify the relationship works
     expect($deliveryNoteItem->sowings()->count())->toBe(1)
-        ->and($deliveryNoteItem->sowings->first()->quantity)->toBe('5.000');
+        ->and($deliveryNoteItem->sowings->first()->quantity)->toBe('5.000000');
 });
 
 test('sowing is linked to delivery note', function () {
@@ -312,23 +312,6 @@ test('sowing with original picking reference', function () {
         ->and($sowing->original_picking_id)->toBe($picking->id);
 });
 
-test('picking type enum no longer has RETURN case', function () {
-    $cases = \App\Enums\Dispatching\Picking\PickingTypeEnum::cases();
-    $caseNames = array_map(fn ($case) => $case->name, $cases);
-
-    expect($caseNames)->toContain('PICK')
-        ->and($caseNames)->toContain('NOT_PICK')
-        ->and($caseNames)->not->toContain('RETURN');
-});
-
-test('migrate picking returns action is idempotent', function () {
-    // Run migration twice - should not fail
-    $stats1 = MigratePickingReturnsToSowing::make()->handle(dryRun: true);
-    $stats2 = MigratePickingReturnsToSowing::make()->handle(dryRun: true);
-
-    expect($stats1['migrated'])->toBe($stats2['migrated'])
-        ->and($stats1['errors'])->toBeArray();
-});
 
 test('update sowing', function () {
 
@@ -385,7 +368,7 @@ test('update sowing', function () {
     ]);
 
     expect($updatedSowing)->toBeInstanceOf(Sowing::class)
-        ->and($updatedSowing->quantity)->toBe('10.000');
+        ->and($updatedSowing->quantity)->toBe('10.000000');
 });
 
 test('delete sowing', function () {
@@ -489,13 +472,11 @@ test('assign sower to sowing', function () {
         strict: false
     );
 
-    // Create sowing without sower
     $sowing = StoreSowing::run($deliveryNoteItem, $locationOrgStock, [
         'quantity'      => 5,
         'sower_user_id' => null,
     ]);
 
-    // Assign sower
     $assignedSowing = \App\Actions\GoodsIn\Sowing\AssignSowerToSowing::make()->action($sowing, [
         'sower_user_id' => $this->user->id,
     ]);

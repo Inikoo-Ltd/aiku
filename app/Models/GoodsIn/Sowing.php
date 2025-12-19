@@ -66,6 +66,8 @@ class Sowing extends Model
     protected $casts = [
         'data' => 'array',
         'type' => SowingTypeEnum::class,
+        'sowed_at' => 'datetime',
+        'quantity' => 'decimal:6',
     ];
 
     protected $guarded = [];
