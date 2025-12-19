@@ -256,17 +256,20 @@ const debAddAndUpdateProduct = debounce(() => {
 
 // Handle quantity change
 const updateQuantity = (newQuantity: number) => {
-    // Clamp quantity between 0 and stock
-    const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
 
-    // Set quantity_ordered_new - sama seperti di ButtonAddToBasketInFamily
+    const clampedQuantity = props.product.is_on_demand
+        ? Math.max(0, newQuantity)
+        : Math.max(0, Math.min(newQuantity, props.product.stock))
+
+    // set quantity_ordered_new
     set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
 
-    // Trigger debounced update jika ada perubahan
+    // trigger debounced update jika berubah
     if (compIsValueDirty.value) {
         debAddAndUpdateProduct()
     }
 }
+
 
 // Handle increment
 const increment = () => {
@@ -305,6 +308,7 @@ const canOrder = computed(() => {
 })
 
 const hoveredButton = ref<string | null>(null)
+
 
 </script>
 
@@ -350,7 +354,7 @@ const hoveredButton = ref<string | null>(null)
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"  type="button"
-                :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
+                :disabled="isLoadingSubmitQuantityProduct || (!props.product.is_on_demand && currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
                     color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color
