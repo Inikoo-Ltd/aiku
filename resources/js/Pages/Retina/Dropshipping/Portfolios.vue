@@ -676,6 +676,13 @@ const submitBulkEditPrice = async (type) => {
 		onSuccessEditCheckmark("bulk-edit")
 		bulkUpdatePriceData.value = {}
 		modalBulkEditPrice.value = false
+
+		notify({
+			title: trans('Your edits was successfully submitted and still processed in background.'),
+			text: trans('Please wait for a few minutes to update the product'),
+			type: 'success',
+		})
+
 	} catch (error: any) {
 		onFailedEditCheckmark(error)
 	} finally {
