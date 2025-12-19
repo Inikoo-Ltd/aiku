@@ -138,13 +138,12 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
                             <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" />
                             <div v-else class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                    :class="(product?.is_on_demand || product.stock > 0 )? 'text-green-600' : 'text-red-600'" />
                                 <span>
-                                    {{
-                                        customerData?.stock > 0
-                                        ? trans("In stock :productStock available", { productStock: customerData?.stock })
-                                        : product.status_label ?? trans("Out of stock")
-                                    }}
+                                    {{ product?.is_on_demand
+                                    ? trans("Unlimited quantity available")
+                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
+                                }}
                                 </span>
                             </div>
 
@@ -194,7 +193,7 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
 
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
-                    <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                    <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
                         <EcomAddToBasketv2
                             v-if="product.stock > 0"
                             :product="product"
@@ -340,7 +339,7 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
         <!-- ADD TO CART -->
         <div class="mt-6 flex flex-col gap-2">
             <EcomAddToBasketv2
-                v-if="layout?.iris?.is_logged_in && product.stock > 0"
+                v-if="layout?.iris?.is_logged_in && product.stock > 0 && product.status !== 'coming-soon'"
                 :product="product"
                 :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"

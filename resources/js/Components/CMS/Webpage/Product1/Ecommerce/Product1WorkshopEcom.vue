@@ -136,11 +136,12 @@ defineOptions({
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                     :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
-                                    {{
-                                        product.stock > 0
-                                            ? `${trans("In stock")} (${customerData?.stock} ${trans("available")})`
-                                            : trans("Out Of Stock")
-                                    }}
+                                   <span>
+                                    {{ product?.is_on_demand
+                                    ? trans("Unlimited quantity available")
+                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
+                                }}
+                                </span>
                                 </span>
                             </div>
 
