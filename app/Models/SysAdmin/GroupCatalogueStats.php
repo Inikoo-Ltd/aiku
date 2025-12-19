@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_shops_type_b2c
  * @property int $number_shops_type_fulfilment
  * @property int $number_shops_type_dropshipping
+ * @property int $number_shops_type_faire
+ * @property int $number_shops_type_wix
  * @property int $number_departments
  * @property int $number_current_departments
  * @property int $number_departments_state_in_process
@@ -153,6 +155,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_shops_type_b2c
  * @property int $number_current_shops_type_fulfilment
  * @property int $number_current_shops_type_dropshipping
+ * @property int $number_current_shops_type_faire
+ * @property int $number_current_shops_type_wix
  * @property int $number_families_no_department
  * @property int $number_products_no_family
  * @property int $number_current_collections state=active+discontinuing
