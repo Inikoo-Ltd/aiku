@@ -20,10 +20,10 @@ class GetProductsBasedOnSavedCache extends GrpAction
 {
     use WithMastersAuthorisation;
 
-    public function handle(String $cacheKey, Array $modelData): LengthAwarePaginator
+    public function handle(String $cacheKey, Array $modelData)
     {
         // Remove soon, just temporary since Cache is not used yet. Data will be taken from cache later
-        $products = Product::whereIn('id', $modelData)->get();
+        $products = Product::whereIn('id', $modelData['data'])->get();
 
         return $products;
     }
@@ -38,7 +38,7 @@ class GetProductsBasedOnSavedCache extends GrpAction
         return $rules;
     }
 
-    public function asController(Organisation $organisation, String $cacheKey, ActionRequest $request): LengthAwarePaginator
+    public function asController(String $cacheKey, ActionRequest $request)
     {
         $group        = group();
         $this->initialisation($group, $request);
