@@ -47,7 +47,7 @@ class FulfillOrderToEbay extends OrgAction
         $lineItems = [];
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
-            if((int) $transaction->quantity_dispatched > 0) {
+            if ((int) $transaction->quantity_dispatched > 0) {
                 $lineItems[] = [
                     'lineItemId' => $transaction->platform_transaction_id,
                     'quantity' => (int) $transaction->quantity_dispatched,
