@@ -59,7 +59,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\GoodsIn\StockDelivery $stockDelivery
  * @property-read SupplierProduct|null $supplierProduct
- * @method static \Database\Factories\Procurement\StockDeliveryItemFactory factory($count = null, $state = [])
+ * @method static \Database\Factories\GoodsIn\StockDeliveryItemFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDeliveryItem newModelQuery()
  * @method static Builder<static>|StockDeliveryItem newQuery()
  * @method static Builder<static>|StockDeliveryItem query()

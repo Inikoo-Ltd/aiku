@@ -94,7 +94,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
  * @property-read Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
- * @method static \Database\Factories\Procurement\StockDeliveryFactory factory($count = null, $state = [])
+ * @method static \Database\Factories\GoodsIn\StockDeliveryFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDelivery newModelQuery()
  * @method static Builder<static>|StockDelivery newQuery()
  * @method static Builder<static>|StockDelivery onlyTrashed()

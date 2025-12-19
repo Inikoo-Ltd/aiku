@@ -1,12 +1,12 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Wed, 10 May 2023 14:06:16 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 20 Dec 2025 00:37:11 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace Database\Factories\Procurement;
+namespace Database\Factories\GoodsIn;
 
 use App\Models\Helpers\Currency;
 use Illuminate\Database\Eloquent\Factories\Factory;
