@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 
-// import 'https://cdn.luigisbox.com/autocomplete.js'  // For autocomplete
+// import 'https://cdn.luigisbox.tech/autocomplete.js'  // For autocomplete
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSearch } from '@far'
@@ -123,7 +123,7 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss">
-/* @import 'https://cdn.luigisbox.com/autocomplete.css';  */
+/* @import 'https://cdn.luigisbox.tech/autocomplete.css';  */
 
 $luigiColor1: #4b5058;
 $luigiColor2: #957a65;

@@ -140,7 +140,7 @@ const LBInitAutocompleteNew = async () => {
 const importStyleCSS = () => {
     const link = document.createElement("link")
     link.rel = "stylesheet"
-    link.href = "https://cdn.luigisbox.com/autocomplete.css"
+    link.href = "https://cdn.luigisbox.tech/autocomplete.css"
     document.head.appendChild(link)
     document.documentElement.style.setProperty('--luigiColor1', layout.iris?.theme?.color?.[0]);
     document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[1]);
@@ -153,7 +153,7 @@ const importStyleCSS = () => {
 onMounted(() => {
     importStyleCSS()
     const script = document.createElement('script');
-    script.src = "https://cdn.luigisbox.com/autocomplete.js";
+    script.src = "https://cdn.luigisbox.tech/autocomplete.js";
     script.async = true;
     document.head.appendChild(script);
     script.onload = () => {
