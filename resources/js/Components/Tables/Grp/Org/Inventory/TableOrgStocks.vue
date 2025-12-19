@@ -113,6 +113,14 @@ function stockFamilyRoute(stock: Stock) {
                 {{ stock["code"] }}
             </Link>
         </template>
+        <template #cell(name)="{ item: stock }">
+            <div class="flex gap-3">
+                {{ stock["name"] }} <span v-if="stock?.is_on_demand"
+												class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700">
+												On Demand
+											</span>
+            </div>
+        </template>
         <template #cell(family_code)="{ item: stock }">
             <!--suppress TypeScriptUnresolvedReference -->
             <Link v-if="stock.family_slug" :href="stockFamilyRoute(stock)" class="secondaryLink">
