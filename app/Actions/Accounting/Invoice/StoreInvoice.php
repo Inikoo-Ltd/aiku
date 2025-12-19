@@ -8,12 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
-use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
-use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\MatchCustomerProspects;
-use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\OrgAction;
@@ -189,30 +184,7 @@ class StoreInvoice extends OrgAction
         $invoice->refresh();
         $invoice = CategoriseInvoice::run($invoice);
 
-
-        if ($invoice->customer_id) {
-            CustomerHydrateInvoices::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
-        }
-
-        if ($invoice->customer_client_id) {
-            CustomerClientHydrateInvoices::dispatch($invoice->customerClient)->delay($this->hydratorsDelay);
-        }
-
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
-
-
-        if ($invoice->shop->type == 'fulfilment') {
-            SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
-        }
-
-        if (!$invoice->in_process) {
-            if ($invoice->shipping_zone_id) {
-                ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
-            }
-            if ($invoice->shipping_zone_schema_id) {
-                ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
-            }
-        }
 
         if ($invoice->customer && $invoice->shop->is_aiku) {
             MatchCustomerProspects::dispatch($invoice->customer);

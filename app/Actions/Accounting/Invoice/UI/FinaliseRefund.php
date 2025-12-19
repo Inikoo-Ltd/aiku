@@ -53,11 +53,7 @@ class FinaliseRefund extends OrgAction
             ]
         );
 
-
         RunInvoiceHydrators::run($refund, $this->hydratorsDelay);
-        if ($refund->shop->type == 'fulfilment') {
-            SendInvoiceToFulfilmentCustomerEmail::dispatch($refund);
-        }
 
         return $refund;
     }

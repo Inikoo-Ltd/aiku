@@ -17,8 +17,11 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
+use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRevenue;
+use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsInvoices;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSales;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
@@ -45,10 +48,16 @@ class RunInvoiceHydrators
 
         $this->runImportantJobs($invoice, $hydratorsDelay, async: true);
         $this->runAnotherJobs($invoice, $hydratorsDelay);
+
     }
 
     public function runImportantJobs(Invoice $invoice, int $hydratorsDelay, bool $async = false): void
     {
+
+        if ($invoice->customer_id) {
+            CustomerHydrateInvoices::dispatch($invoice->customer_id);
+        }
+
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         // Helper internal
@@ -95,10 +104,19 @@ class RunInvoiceHydrators
             $queueOrRun(ShopHydratePlatformSalesIntervalsSalesOrgCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
             $queueOrRun(ShopHydratePlatformSalesIntervalsSalesGrpCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
         }
+
+        if ($invoice->shop->type == 'fulfilment') {
+            SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
+        }
     }
 
     public function runAnotherJobs(Invoice $invoice, int $hydratorsDelay): void
     {
+
+        if ($invoice->customer_client_id) {
+            CustomerClientHydrateInvoices::dispatch($invoice->customerClient);
+        }
+
         if ($invoice->shipping_zone_id) {
             ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($hydratorsDelay);
         }
