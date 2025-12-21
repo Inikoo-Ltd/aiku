@@ -37,6 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowCollection extends OrgAction
 {
     use WithCollectionSubNavigation;
+    use WithCollectionNavigation;
     use WithCatalogueAuthorisation;
 
     private Organisation|Shop|ProductCategory $parent;
@@ -95,7 +96,7 @@ class ShowCollection extends OrgAction
         $title      = $collection->code;
         $model      = __('Collection');
         $icon       = [
-            'icon'  => ['fal', 'fa-cube'],
+            'icon'  => ['fal', 'fa-album-collection'],
             'title' => __('Collection')
         ];
         $afterTitle = null;
@@ -144,7 +145,7 @@ class ShowCollection extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Collection',
             [
-                'title'       => __('collection'),
+                'title'       => __('Collection').' '.$collection->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,
                     $collection,
@@ -152,8 +153,8 @@ class ShowCollection extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($collection, $request),
-                    'next'     => $this->getNext($collection, $request),
+                    'previous' => $this->getPreviousModel($collection, $request),
+                    'next'     => $this->getNextModel($collection, $request),
                 ],
                 'pageHead'    => [
                     'title'      => $title,
@@ -519,50 +520,4 @@ class ShowCollection extends OrgAction
         };
     }
 
-    public function getPrevious(Collection $collection, ActionRequest $request): ?array
-    {
-        $previous = Collection::where('slug', '<', $collection->slug)->orderBy('slug', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(Collection $collection, ActionRequest $request): ?array
-    {
-        $next = Collection::where('slug', '>', $collection->slug)->orderBy('slug')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?Collection $collection, string $routeName): ?array
-    {
-        if (!$collection) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'shops.org.collections.show' => [
-                'label' => $collection->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'collection' => $collection->slug
-                    ]
-
-                ]
-            ],
-            'grp.org.shops.show.catalogue.collections.show' => [
-                'label' => $collection->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'shop'         => $collection->shop->slug,
-                        'collection'   => $collection->slug
-                    ]
-
-                ]
-            ],
-            default => null
-        };
-    }
 }

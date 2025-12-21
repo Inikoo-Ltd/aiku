@@ -93,18 +93,6 @@ const navigateTo = () => {
 	</div>
     <div class="pb-8 m-5">
         <div class="space-y-4">
-            <Message v-if="data.family?.data.url_master" severity="success" closable>
-                <template #icon>
-                    <FontAwesomeIcon :icon="faInfoCircle" />
-                </template>
-                <span class="ml-2">
-                    {{ trans("Right now you follow") }}
-                    <Link :href="route(data.family.data.url_master.name, data.family.data.url_master.parameters)"
-                        class="underline font-bold">
-                    {{ trans("the master data") }}
-                    </Link>
-                </span>
-            </Message>
             <Message
                 v-if="!data.family.data.description || !data.family.data.description_title || !data.family.data.description_extra && actions"
                 severity="error" closable>
@@ -139,6 +127,5 @@ const navigateTo = () => {
             </div>
         </div>
 
-        <!--    <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" /> -->
     </div>
 </template>

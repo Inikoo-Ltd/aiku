@@ -22,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditLocation extends OrgAction
 {
     use WithWarehouseEditAuthorisation;
+    use WithLocationNavigation;
 
     public function handle(Location $location): Location
     {
@@ -90,8 +91,8 @@ class EditLocation extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($location, $request),
-                    'next'     => $this->getNext($location, $request),
+                    'previous' => $this->getPreviousModel($location, $request),
+                    'next'     => $this->getNextModel($location, $request),
                 ],
                 'pageHead'    => [
                     'title'   => $location->code,
@@ -134,85 +135,4 @@ class EditLocation extends OrgAction
         );
     }
 
-    public function getPrevious(Location $location, ActionRequest $request): ?array
-    {
-        $previous = Location::where('slug', '<', $location->slug)->when(true, function ($query) use ($location, $request) {
-            if ($request->route()->getName() === 'grp.org.warehouses.show.infrastructure.locations.edit') {
-                $query->where('locations.warehouse_id', $location->warehouse_id);
-            } else {
-                $query->where('locations.warehouse_area_id', $location->warehouse_area_id);
-            }
-        })->orderBy('slug', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(Location $location, ActionRequest $request): ?array
-    {
-        $next = Location::where('slug', '>', $location->slug)->when(true, function ($query) use ($location, $request) {
-            if ($request->route()->getName() === 'grp.org.warehouses.show.infrastructure.locations.edit') {
-                $query->where('locations.warehouse_id', $location->warehouse_id);
-            } else {
-                $query->where('locations.warehouse_area_id', $location->warehouse_area_id);
-            }
-        })->orderBy('slug')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?Location $location, string $routeName): ?array
-    {
-        if (!$location) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.org.warehouses.show.inventory.locations.edit' => [
-                'label' => $location->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'location' => $location->slug
-                    ]
-
-                ]
-            ],
-            'grp.org.warehouses.show.inventory.warehouse-areas.show.locations.edit' => [
-                'label' => $location->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'warehouseArea' => $location->warehouseArea->slug,
-                        'location'      => $location->slug
-                    ]
-
-                ]
-            ],
-            'grp.org.warehouses.show.infrastructure.locations.edit' => [
-                'label' => $location->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $location->organisation->slug,
-                        'warehouse'    => $location->warehouse->slug,
-                        'location'     => $location->slug
-                    ]
-
-                ]
-            ],
-            'grp.org.warehouses.show.infrastructure.warehouse_areas.show.locations.edit' => [
-                'label' => $location->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'  => $location->organisation->slug,
-                        'warehouse'     => $location->warehouse->slug,
-                        'warehouseArea' => $location->warehouseArea->slug,
-                        'location'      => $location->slug
-                    ]
-
-                ]
-            ]
-        };
-    }
 }

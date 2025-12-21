@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Traits\Actions\WithNavigation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Dispatching\ShipmentsResource;
@@ -20,10 +21,14 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
 use Arr;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\ActionRequest;
 
 trait IsInvoiceUI
 {
+    use WithNavigation;
+
     public function getCustomerRoute(Invoice $invoice): array
     {
         if ($this->parent instanceof Fulfilment) {
@@ -116,22 +121,53 @@ trait IsInvoiceUI
         ];
     }
 
-    public function getPrevious(Invoice $invoice, ActionRequest $request): ?array
+    protected function getNavigationComparisonColumn(): string
     {
-        $previous = Invoice::where('reference', '<', $invoice->reference)
-            ->where('invoices.shop_id', $invoice->shop_id)
-            ->orderBy('reference', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return 'reference';
     }
 
-    public function getNext(Invoice $invoice, ActionRequest $request): ?array
+    protected function applyNavigationFilters(Builder $query, Model $model, ActionRequest $request): void
     {
-        $next = Invoice::where('reference', '>', $invoice->reference)
-            ->where('invoices.shop_id', $invoice->shop_id)
-            ->orderBy('reference')->first();
+        /** @var Invoice $model */
+        $query->where('invoices.shop_id', $model->shop_id);
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    protected function getNavigationLabel(Model $model): string
+    {
+        /** @var Invoice $model */
+        return $model->reference;
+    }
+
+    protected function getNavigationRouteParameters(Model $model, string $routeName): array
+    {
+        /** @var Invoice $model */
+        return match ($routeName) {
+            'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
+            'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
+            'grp.org.fulfilments.show.operations.invoices.show' => [
+                'organisation' => $model->organisation->slug,
+                'fulfilment'   => $this->parent->slug,
+                'invoice'      => $model->slug,
+            ],
+            'grp.org.fulfilments.show.crm.customers.show.invoices.show' => [
+                'organisation'       => $model->organisation->slug,
+                'fulfilment'         => $model->shop->fulfilment->slug,
+                'fulfilmentCustomer' => $this->parent->slug,
+                'invoice'            => $model->slug,
+            ],
+            'grp.org.accounting.invoices.show',
+            'grp.org.accounting.invoices.all_invoices.show',
+            'grp.org.accounting.invoices.unpaid_invoices.show' => [
+                'organisation' => $model->organisation->slug,
+                'invoice'      => $model->slug,
+            ],
+            'grp.org.shops.show.dashboard.invoices.show' => [
+                'organisation' => $model->organisation->slug,
+                'shop'         => $this->parent->slug,
+                'invoice'      => $model->slug,
+            ],
+            default => request()->route()->originalParameters(),
+        };
     }
 
     public function getInvoiceActions(Invoice $invoice, ActionRequest $request, array $payBoxData, bool $isWithSendInvoice = false): array
@@ -276,67 +312,8 @@ trait IsInvoiceUI
 
     protected function getNavigation(?Invoice $invoice, string $routeName): ?array
     {
-        if (!$invoice) {
-            return null;
-        }
-
-
-        return match ($routeName) {
-            'grp.org.fulfilments.show.operations.invoices.all_invoices.show',
-            'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.show',
-            'grp.org.fulfilments.show.operations.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'fulfilment'   => $this->parent->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-
-                ]
-            ],
-            'grp.org.fulfilments.show.crm.customers.show.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'       => $invoice->organisation->slug,
-                        'fulfilment'         => $invoice->shop->fulfilment->slug,
-                        'fulfilmentCustomer' => $this->parent->slug,
-                        'invoice'            => $invoice->slug
-                    ]
-                ]
-            ],
-
-            'grp.org.accounting.invoices.show', 'grp.org.accounting.invoices.all_invoices.show', 'grp.org.accounting.invoices.unpaid_invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-
-                ]
-            ],
-            'grp.org.shops.show.dashboard.invoices.show' => [
-                'label' => $invoice->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $invoice->organisation->slug,
-                        'shop'         => $this->parent->slug,
-                        'invoice'      => $invoice->slug
-                    ]
-
-                ]
-            ],
-
-            default => null
-        };
+        return $this->getNavigationTrait($invoice, $routeName);
     }
-
 
     public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
     {

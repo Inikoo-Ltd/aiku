@@ -34,6 +34,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowLocation extends OrgAction
 {
     use WithActionButtons;
+    use WithLocationNavigation;
     use WithWarehouseAuthorisation;
 
     private WarehouseArea|Warehouse|Organisation $parent;
@@ -86,8 +87,8 @@ class ShowLocation extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($location, $request),
-                    'next'     => $this->getNext($location, $request),
+                    'previous' => $this->getPreviousModel($location, $request),
+                    'next'     => $this->getNextModel($location, $request),
                 ],
                 'pageHead'    => [
                     'icon'    => [
@@ -198,64 +199,5 @@ class ShowLocation extends OrgAction
         };
     }
 
-    public function getPrevious(Location $location, ActionRequest $request): ?array
-    {
-        $previous = Location::where('slug', '<', $location->slug)->when(true, function ($query) use ($location) {
-            if ($this->parent instanceof Warehouse) {
-                $query->where('locations.warehouse_id', $location->warehouse_id);
-            } else {
-                $query->where('locations.warehouse_area_id', $location->warehouse_area_id);
-            }
-        })->orderBy('slug', 'desc')->first();
 
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(Location $location, ActionRequest $request): ?array
-    {
-        $next = Location::where('slug', '>', $location->slug)->when(true, function ($query) use ($location) {
-            if ($this->parent instanceof Warehouse) {
-                $query->where('locations.warehouse_id', $location->warehouse_id);
-            } else {
-                $query->where('locations.warehouse_area_id', $location->warehouse_area_id);
-            }
-        })->orderBy('slug')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?Location $location, string $routeName): ?array
-    {
-        if (!$location) {
-            return null;
-        }
-
-        if ($this->parent instanceof Warehouse) {
-            return [
-                'label' => $location->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $location->organisation->slug,
-                        'warehouse'    => $location->warehouse->slug,
-                        'location'     => $location->slug
-                    ]
-
-                ]
-            ];
-        } else {
-            return [
-                'label' => $location->slug,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'  => $location->organisation->slug,
-                        'warehouse'     => $location->warehouse->slug,
-                        'warehouseArea' => $location->warehouseArea->slug,
-                        'location'      => $location->slug
-                    ]
-                ]
-            ];
-        }
-    }
 }

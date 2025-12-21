@@ -12,6 +12,7 @@ use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Actions\WithNavigation;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
@@ -24,6 +25,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Arr;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,6 +34,7 @@ use Illuminate\Support\Str;
 
 class ShowPayment extends OrgAction
 {
+    use WithNavigation;
     use WithAccountingAuthorisation;
 
     public function handle(Payment $payment): Payment
@@ -96,8 +100,8 @@ class ShowPayment extends OrgAction
                 'title'       => $title,
                 'breadcrumbs' => $this->getBreadcrumbs($payment, $request->route()->getName(), $request->route()->originalParameters()),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($payment, $request),
-                    'next'     => $this->getNext($payment, $request),
+                    'previous' => $this->getPreviousModel($payment, $request),
+                    'next'     => $this->getNextModel($payment, $request),
                 ],
                 'pageHead'    => [
                     'model' => __('Payment'),
@@ -227,115 +231,64 @@ class ShowPayment extends OrgAction
         };
     }
 
-    public function getPrevious(Payment $payment, ActionRequest $request): ?array
+    protected function getNavigationComparisonColumn(): string
     {
-        $previous = Payment::where('id', '<', $payment->id)->when(true, function ($query) use ($payment, $request) {
-            switch ($request->route()->getName()) {
-                case 'grp.org.accounting.payment-accounts.show.payments.show':
-                    $query->where('payments.payment_account_id', $payment->payment_account_id);
-                    break;
-                case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.show':
-                case 'grp.org.accounting.org_payment_service_providers.show.payments.show':
-                    $query->where('payment_accounts.payment_account_id', $payment->paymentAccount->payment_service_provider_id);
-                    break;
-                case 'grp.org.shops.show.crm.customers.show.payments.show':
-                    $query->where('payments.customer_id', $payment->customer_id);
-                    break;
-                default:
-                    $query->where('payments.group_id', $payment->group_id);
-            }
-        })->orderBy('id', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return 'id';
     }
 
-    public function getNext(Payment $payment, ActionRequest $request): ?array
+    protected function applyNavigationFilters(Builder $query, Model $model, ActionRequest $request): void
     {
-        $next = Payment::where('id', '>', $payment->id)->when(true, function ($query) use ($payment, $request) {
-            switch ($request->route()->getName()) {
-                case 'grp.org.accounting.payment-accounts.show.payments.show':
-                    $query->where('payments.payment_account_id', $payment->paymentAccount->id);
-                    break;
-                case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.show':
-                case 'grp.org.accounting.org_payment_service_providers.show.payments.show':
-                    $query->where('payment_accounts.payment_account_id', $payment->paymentAccount->payment_service_provider_id);
-                    break;
-                case 'grp.org.shops.show.crm.customers.show.payments.show':
-                    $query->where('payments.customer_id', $payment->customer_id);
-                    break;
-                default:
-                    $query->where('payments.group_id', $payment->group_id);
-            }
-        })->orderBy('id')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?Payment $payment, string $routeName): ?array
-    {
-        if (!$payment) {
-            return null;
+        /** @var Payment $model */
+        switch ($request->route()->getName()) {
+            case 'grp.org.accounting.payment-accounts.show.payments.show':
+                $query->where('payments.payment_account_id', $model->payment_account_id);
+                break;
+            case 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.show':
+            case 'grp.org.accounting.org_payment_service_providers.show.payments.show':
+                $query->where('payment_accounts.payment_account_id', $model->paymentAccount->payment_service_provider_id);
+                break;
+            case 'grp.org.shops.show.crm.customers.show.payments.show':
+                $query->where('payments.customer_id', $model->customer_id);
+                break;
+            default:
+                $query->where('payments.group_id', $model->group_id);
         }
+    }
 
+    protected function getNavigationLabel(Model $model): string
+    {
+        /** @var Payment $model */
+        return (string) ($model->reference ?: $model->id);
+    }
+
+    protected function getNavigationRouteParameters(Model $model, string $routeName): array
+    {
+        /** @var Payment $model */
         return match ($routeName) {
             'grp.org.accounting.payments.show' => [
-                'label' => $payment->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $payment->organisation->slug,
-                        'payment'      => $payment->id
-                    ]
-
-                ]
+                'organisation' => $model->organisation->slug,
+                'payment'      => $model->id,
             ],
             'grp.org.accounting.payment-accounts.show.payments.show' => [
-                'label' => $payment->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'paymentAccount' => $payment->paymentAccount->slug,
-                        'payment'        => $payment->id
-                    ]
-
-                ]
+                'paymentAccount' => $model->paymentAccount->slug,
+                'payment'        => $model->id,
             ],
             'grp.org.accounting.org_payment_service_providers.show.payments.show' => [
-                'label' => $payment->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'paymentServiceProvider' => $payment->paymentAccount->paymentServiceProvider->slug,
-                        'payment'                => $payment->id
-                    ]
-
-                ]
+                'paymentServiceProvider' => $model->paymentAccount->paymentServiceProvider->slug,
+                'payment'                => $model->id,
             ],
             'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.show' => [
-                'label' => $payment->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'paymentServiceProvider' => $payment->paymentAccount->paymentServiceProvider->slug,
-                        'paymentAccount'         => $payment->paymentAccount->slug,
-                        'payment'                => $payment->id
-                    ]
-
-                ]
+                'paymentServiceProvider' => $model->paymentAccount->paymentServiceProvider->slug,
+                'paymentAccount'         => $model->paymentAccount->slug,
+                'payment'                => $model->id,
             ],
             'grp.org.shops.show.crm.customers.show.payments.show' => [
-                'label' => $payment->reference,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $payment->organisation->slug,
-                        'shop'         => $payment->shop->slug,
-                        'customer'     => $payment->customer->slug,
-                        'payment'      => $payment->id
-                    ]
-
-                ]
+                'organisation' => $model->organisation->slug,
+                'shop'         => $model->shop->slug,
+                'customer'     => $model->customer->slug,
+                'payment'      => $model->id,
             ],
+            default => [],
         };
     }
 }
