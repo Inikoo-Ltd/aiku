@@ -62,10 +62,7 @@ trait WithNavigation
         ];
     }
 
-    protected function getNavigationTrait(?Model $model, string $routeName): ?array
-    {
-        return $this->getNavigation($model, $routeName);
-    }
+
 
     protected function getNavigationLabel(Model $model): string
     {

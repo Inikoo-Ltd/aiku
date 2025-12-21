@@ -21,6 +21,8 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterFamily extends OrgAction
 {
+    use WithMasterFamilyNavigation;
+
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         $group        = group();
@@ -88,6 +90,10 @@ class EditMasterFamily extends OrgAction
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
+                'navigation'  => [
+                    'previous' => $this->getPreviousModel($masterProductCategory, $request),
+                    'next'     => $this->getNextModel($masterProductCategory, $request),
+                ],
                 'title'       => __('Edit Master Family'),
                 'pageHead'    => [
                     'title'   => __('Edit master family'),

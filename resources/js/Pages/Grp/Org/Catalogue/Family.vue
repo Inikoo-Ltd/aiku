@@ -59,7 +59,7 @@ const props = defineProps<{
     currency?: Object
     url_master?: routeType
     shopsData?: any
-    masterProductCategory?: number
+    masterProductCategoryId?: number
     images?: object
     sales: any
     content?: {}
@@ -144,7 +144,7 @@ const showDialog = ref(false)
         @update:show-dialog="(value) => showDialog = value"
         :master-currency="currency"
         :shopsData="shopsData"
-        :masterProductCategory="masterProductCategory"
+        :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
     />
 

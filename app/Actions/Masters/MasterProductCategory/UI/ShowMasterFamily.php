@@ -37,8 +37,8 @@ class ShowMasterFamily extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
+    use WithMasterFamilyNavigation;
     use WithMasterFamilySubNavigation;
-
     private MasterShop|Group|MasterProductCategory $parent;
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
@@ -185,8 +185,8 @@ class ShowMasterFamily extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'            => [
-                    'previous' => $this->getPrevious($masterFamily, $request),
-                    'next'     => $this->getNext($masterFamily, $request),
+                    'previous' => $this->getPreviousModel($masterFamily, $request),
+                    'next'     => $this->getNextModel($masterFamily, $request),
                 ],
                 'mini_breadcrumbs'      => array_filter(
                     [
@@ -287,7 +287,7 @@ class ShowMasterFamily extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
-                'masterProductCategory' => $masterFamily->id,
+                'masterProductCategoryId' => $masterFamily->id,
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
                  ...$tabs,
 
@@ -464,47 +464,4 @@ class ShowMasterFamily extends GrpAction
         };
     }
 
-    public function getPrevious(MasterProductCategory $masterFamily, ActionRequest $request): ?array
-    {
-        $previous = MasterProductCategory::where('code', '<', $masterFamily->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(MasterProductCategory $masterFamily, ActionRequest $request): ?array
-    {
-        $next = MasterProductCategory::where('code', '>', $masterFamily->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?MasterProductCategory $masterFamily, string $routeName): ?array
-    {
-        if (!$masterFamily) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.masters.master_families.show' => [
-                'label' => $masterFamily->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterFamily' => $masterFamily->slug
-                    ]
-                ]
-            ],
-            'grp.masters.master_shops.show.master_families.show' => [
-                'label' => $masterFamily->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterShop'   => $masterFamily->masterShop->slug,
-                        'masterFamily' => $masterFamily->slug
-                    ]
-                ]
-            ],
-            default => []
-        };
-    }
 }

@@ -10,6 +10,8 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentNavigation;
+use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilyNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -213,6 +215,7 @@ class IndexMasterProducts extends GrpAction
                 ->withEmptyState(
                     [
                         'title' => __("No master shops found"),
+                        'count' => $parent->stats->number_master_assets,
                     ],
                 );
 
@@ -250,6 +253,7 @@ class IndexMasterProducts extends GrpAction
         $subNavigation = null;
         $familyId      = null;
         $shopsData     = null;
+        $modelNavigation = [];
         if ($this->parent instanceof Group) {
             $model      = '';
             $icon       = [
@@ -282,8 +286,8 @@ class IndexMasterProducts extends GrpAction
             $masterShop = $this->parent->masterShop;
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
-            }
-            if ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+            } elseif ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $familyId      = $this->parent->id;
                 $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
                 $title         = $this->parent->name;
@@ -298,6 +302,7 @@ class IndexMasterProducts extends GrpAction
                 $iconRight     = [
                     'icon' => 'fal fa-cube',
                 ];
+                $modelNavigation = GetMasterFamilyNavigation::run($this->parent, $request);
             }
             $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         }
@@ -312,6 +317,7 @@ class IndexMasterProducts extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'            => $modelNavigation,
                 'title'                 => $title,
                 'familyId'              => $familyId,
                 'currency'              => $this->parent->group->currency->code,
@@ -338,7 +344,7 @@ class IndexMasterProducts extends GrpAction
                     ] : [],
                 ],
                 'data'                  => MasterProductsResource::collection($masterAssets),
-                'masterProductCategory' => $this->parent->id,
+                'masterProductCategoryId' => $this->parent->id,
                 'editable_table'        => false,
                 'shopsData'             => $shopsData,
 

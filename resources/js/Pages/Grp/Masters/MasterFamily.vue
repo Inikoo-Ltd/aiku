@@ -11,7 +11,6 @@ import {
     faTag,
     faUser,
     faBrowser,
-    faPlus, faMinus,
     faUpload,
 } from "@fal"
 import { faExclamationTriangle } from "@fas"
@@ -72,7 +71,7 @@ const props = defineProps<{
     currency?:Object
     url_master?:routeType
     shopsData? :any
-    masterProductCategory?:number
+    masterProductCategoryId?:number
     images?:object
     mini_breadcrumbs?: any[]
     variants?:object
@@ -173,7 +172,7 @@ const showDialog = ref(false);
         @update:show-dialog="(value) => showDialog = value"
         :master-currency="currency"
         :shopsData="shopsData"
-        :masterProductCategory="masterProductCategory"
+        :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
     />
 

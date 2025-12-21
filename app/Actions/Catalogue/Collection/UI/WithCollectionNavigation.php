@@ -55,6 +55,8 @@ trait WithCollectionNavigation
         /** @var Collection $collection */
         $collection = $model;
 
+        $routeParameters = request()->route()->parameters();
+
         return match ($routeName) {
             'shops.org.collections.show' => [
                 'collection' => $collection->slug
@@ -67,34 +69,34 @@ trait WithCollectionNavigation
             'grp.org.shops.show.catalogue.departments.show.collections.show' => [
                 'organisation' => $this->organisation->slug,
                 'shop'         => $collection->shop->slug,
-                'department'   => $this->parent->slug,
+                'department'   => $routeParameters['department']->slug,
                 'collection'   => $collection->slug
             ],
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show' => [
                 'organisation'  => $this->organisation->slug,
                 'shop'          => $collection->shop->slug,
-                'department'    => $this->parent->department->slug,
-                'subDepartment' => $this->parent->slug,
+                'department'    => $routeParameters['department']->slug,
+                'subDepartment' => $routeParameters['subDepartment']->slug,
                 'collection'    => $collection->slug
             ],
             'grp.org.shops.show.catalogue.sub_departments.show.collection.show' => [
                 'organisation'  => $this->organisation->slug,
                 'shop'          => $collection->shop->slug,
-                'subDepartment' => $this->parent->slug,
+                'subDepartment' => $routeParameters['subDepartment']->slug,
                 'collection'    => $collection->slug
             ],
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.collection.show' => [
                 'organisation'  => $this->organisation->slug,
                 'shop'          => $collection->shop->slug,
-                'department'    => $this->parent->department->slug,
-                'subDepartment' => $this->parent->parent->slug,
-                'family'        => $this->parent->slug,
+                'department'    => $routeParameters['department']->slug,
+                'subDepartment' => $routeParameters['subDepartment']->slug,
+                'family' => $routeParameters['family']->slug,
                 'collection'    => $collection->slug
             ],
             'grp.org.shops.show.catalogue.families.show.collection.show' => [
                 'organisation' => $this->organisation->slug,
                 'shop'         => $collection->shop->slug,
-                'family'       => $this->parent->slug,
+                'family' => $routeParameters['family']->slug,
                 'collection'   => $collection->slug
             ],
             default => request()->route()->originalParameters(),

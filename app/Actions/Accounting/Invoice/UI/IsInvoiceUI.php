@@ -310,10 +310,7 @@ trait IsInvoiceUI
         return $wrappedActions;
     }
 
-    protected function getNavigation(?Invoice $invoice, string $routeName): ?array
-    {
-        return $this->getNavigationTrait($invoice, $routeName);
-    }
+
 
     public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
     {

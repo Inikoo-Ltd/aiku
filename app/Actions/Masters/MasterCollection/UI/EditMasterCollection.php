@@ -18,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMasterCollection extends OrgAction
 {
+    use WithMasterCollectionNavigation;
+
     public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
@@ -34,6 +36,10 @@ class EditMasterCollection extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => [
+                    'previous' => $this->getPreviousModel($masterCollection, $request),
+                    'next'     => $this->getNextModel($masterCollection, $request),
+                ],
                 'title'       => __('Edit Master Collection'),
                 'pageHead'    => [
                     'title'   => __('Edit master collection'),

@@ -60,7 +60,7 @@ class CreateMasterProduct extends GrpAction
                                         'routeFetch'  => [
                                             'name'       => 'grp.json.master-product-category.recommended-trade-units',
                                             'parameters' => [
-                                                'masterProductCategory' => $parent->slug,
+                                                'masterProductCategory' => $parent->id,
                                             ]
                                         ],
                                         'value'        => []
