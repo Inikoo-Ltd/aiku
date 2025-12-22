@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInOrgStock;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInOrgStock;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
@@ -20,6 +21,7 @@ use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\Http\Resources\Inventory\OrgStockResource;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Models\Inventory\OrgStock;
@@ -137,17 +139,20 @@ class ShowOrgStock extends OrgAction
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))
                     : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
 
+                OrgStockTabsEnum::STOCK_HISTORY->value => $this->tab == OrgStockTabsEnum::STOCK_HISTORY->value ?
+                    fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockTabsEnum::STOCK_HISTORY->value))
+                    : Inertia::lazy(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockTabsEnum::STOCK_HISTORY->value))),
 
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStock))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStock)))
 
-
             ]
         )
             ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value))
             ->table(IndexProductsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::PRODUCTS->value))
-            ->table(IndexPurchaseOrders::make()->tableStructure($orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value));
+            ->table(IndexPurchaseOrders::make()->tableStructure($orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value))
+            ->table(IndexOrgStockMovements::make()->tableStructure($orgStock, prefix: OrgStockTabsEnum::STOCK_HISTORY->value));
     }
 
 

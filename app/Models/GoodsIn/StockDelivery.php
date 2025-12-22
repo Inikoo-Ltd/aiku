@@ -93,7 +93,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
- * @property-read Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
+ * @property-read Collection<int, PurchaseOrder> $purchaseOrders
  * @method static \Database\Factories\GoodsIn\StockDeliveryFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDelivery newModelQuery()
  * @method static Builder<static>|StockDelivery newQuery()

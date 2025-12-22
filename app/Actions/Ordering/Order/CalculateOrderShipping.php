@@ -42,7 +42,7 @@ class CalculateOrderShipping
             $order->update([
                 'shipping_engine' => OrderShippingEngineEnum::AUTO,
             ]);
-            CalculateOrderTotalAmounts::run($order, false);
+            CalculateOrderTotalAmounts::run(order: $order, calculateShipping: false, calculateDiscounts: false);
             OrderHydrateTransactions::dispatch($order);
 
             return $order;

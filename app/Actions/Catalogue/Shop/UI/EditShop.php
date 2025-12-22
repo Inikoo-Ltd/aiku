@@ -409,7 +409,7 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ] : [],
-                        $shop->type === ShopTypeEnum::FAIRE ? 
+                        $shop->type === ShopTypeEnum::FAIRE ?
                         [
                             'label' => __('Faire Keys'),
                             'icon'   => 'fa-light fa-key',
