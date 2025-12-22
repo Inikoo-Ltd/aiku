@@ -24,6 +24,7 @@ import { router } from "@inertiajs/vue3"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
+import SalesIntervalsCompact from '@/Components/Product/SalesIntervalsCompact.vue'
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -104,6 +105,7 @@ const props = defineProps<{
 		images: any
 		main_image: ImageTS
 	}
+	salesIntervals?: object
 	handleTabUpdate?: Function
 }>()
 
@@ -219,7 +221,7 @@ const getTooltips = () => {
 		</div>
 	</div>
 	
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
+	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Product Tags -->
@@ -253,15 +255,22 @@ const getTooltips = () => {
 			</div>
 		</div>
 
-		<!-- Product Summary -->
-		<ProductSummary 
-			:data="{...data.product.data, tags: data.tags, brands: data.brands}" 
-			:properties="data.properties" 
-			:parts="data.org_stocks"
-			:public-attachment="data.attachment_box.public" 
-			:gpsr="data.gpsr"
-			:attachments="data.attachment_box"
-		/>
+		<!-- Product Summary - spans 2 columns -->
+		<div class="lg:col-span-2">
+			<ProductSummary 
+				:data="{...data.product.data, tags: data.tags, brands: data.brands}" 
+				:properties="data.properties" 
+				:parts="data.org_stocks"
+				:public-attachment="data.attachment_box.public" 
+				:gpsr="data.gpsr"
+				:attachments="data.attachment_box"
+			/>
+		</div>
+
+		<!-- Sales Analytics - right sidebar -->
+		<div v-if="salesIntervals">
+			<SalesIntervalsCompact :intervalsData="salesIntervals" />
+		</div>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"

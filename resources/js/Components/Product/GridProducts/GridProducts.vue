@@ -448,62 +448,10 @@ watch(queryBuilderData, async () => {
 // PRODUCT ACTIONS
 // ============================================================================
 
-/**
- * Toggle favorite status for a product
- */
-const toggleFavorite = (product: Product): void => {
-    // Default to true if undefined (all products are favorited by default)
-    const originalState = product.is_favourite !== undefined ? product.is_favourite : true
 
-    // Optimistically update the UI
-    product.is_favourite = !originalState
 
-    // Section: Submit - Handle favorite/unfavorite API calls
-    if (originalState) {
-        // Product was favorited, now unfavorite it
-        router.delete(
-            route('retina.models.product.unfavourite', { product: product.id }),
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onStart: () => {
-                    isLoading.value = true
-                },
-                onSuccess: () => {
-                    notify({
-                        title: trans("Removed from favorites"),
-                        text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
-                        type: "info",
-                        duration: 3000
-                    })
-                },
-                onError: (errors) => {
-                    // Revert on error
-                    product.is_favourite = originalState
-                    notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to remove from favorites"),
-                        type: "error",
-                        duration: 3000
-                    })
-                    console.error('Failed to unfavorite:', errors)
-                },
-                onFinish: () => {
-                    isLoading.value = false
-                },
-            }
-        )
-    }
-}
 
-const getDataHasInBasket = (item: Product) => {
-        return {
-                id: item?.id,
-                quantity_ordered: item.quantity_ordered || 0,
-                quantity_ordered_new: item.quantity_ordered_new || 0,
-                asset_id: item?.asset_id
-            }
-    }
+
 
 </script>
 
@@ -544,11 +492,6 @@ const getDataHasInBasket = (item: Product) => {
                 <!-- Product Cards -->
                 <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
                     <slot name="card" :item="item">
-                        <!-- <ProductCard 
-                            :product="item" 
-                            :existing-transaction="getExistingTransaction(item)"
-                            @toggle-favorite="toggleFavorite" 
-                        /> -->
                         <ProductRenderEcom :product="item" :key="index" :hasInBasket="item"
                             :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
                             :attach-to-favourite-route="{ name: 'retina.models.product.favourite' }"

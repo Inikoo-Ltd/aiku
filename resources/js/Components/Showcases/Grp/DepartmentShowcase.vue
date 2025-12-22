@@ -12,6 +12,7 @@ import Message from "primevue/message";
 import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue";
 import ReviewContent from '@/Components/ReviewContent.vue';
+import SalesIntervalsCompact from '@/Components/Product/SalesIntervalsCompact.vue';
 import { faExternalLink } from '@far';
 import { routeType } from "@/types/route"
 
@@ -50,6 +51,7 @@ const props = withDefaults(defineProps<{
         storeFamilyRoute: any
         shopsData: any
     };
+    salesIntervals?: object;
     isMaster?: boolean
 }>(), {
     // Default values
@@ -125,11 +127,18 @@ const openFamilyModal = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.department" />
             </div>
-            <div class="md:col-start-7 md:col-end-9">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+                <!-- Spacing / Content area -->
+            </div>
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+                <!-- Sales Intervals -->
+                <SalesIntervalsCompact v-if="salesIntervals" :intervalsData="salesIntervals" />
+                
+                <!-- Master Navigation or Review Content -->
                 <MasterNavigation v-if="isMaster"
                     sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
                     :families-event="openFamilyModal" is-add-both />
-                 <ReviewContent v-else :data="data.department" />
+                <ReviewContent v-else :data="data.department" />
             </div>
         </div>
     </div>
