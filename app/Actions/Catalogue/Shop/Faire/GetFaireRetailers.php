@@ -7,8 +7,8 @@ use App\Models\Catalogue\Shop;
 
 class GetFaireRetailers extends OrgAction
 {
-    public function handle(Shop $shop): array
+    public function handle(Shop $shop, string $retailerId): array
     {
-        return $shop->getFaireOrders();
+        return $shop->getFaireRetailers($retailerId);
     }
 }
