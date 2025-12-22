@@ -601,6 +601,7 @@ trait WithResetIntervals
         $this->resetOrganisations();
         $this->resetMasterShops();
         $this->resetShops();
+        $this->resetProducts();
         $this->resetPlatforms();
         $this->resetInvoiceCategories();
         $this->resetProductCategories();

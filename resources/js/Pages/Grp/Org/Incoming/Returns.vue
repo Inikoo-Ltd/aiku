@@ -8,7 +8,7 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import Table from '@/Components/Table/Table.vue'
+import TableReturns from '@/Components/Tables/Grp/Org/GoodsIn/TableReturns.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faUndoAlt, faClock, faInboxIn, faSearch, faCheckDouble, faTimes } from '@fal'
 
@@ -28,6 +28,6 @@ const props = defineProps<{
     <PageHeading :data="pageHead" />
 
     <div class="px-4 sm:px-6 lg:px-8 py-4">
-        <Table :resource="data" />
+        <TableReturns :data="data" />
     </div>
 </template>

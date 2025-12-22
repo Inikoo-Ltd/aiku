@@ -42,6 +42,10 @@ use Illuminate\Support\Arr;
  * @property mixed $organisation_code
  * @property mixed $master_collection_id
  * @property mixed $web_images
+ * @property mixed $currency_code
+ * @property mixed $sales
+ * @property mixed $sales_ly
+ * @property mixed $current_interval
  */
 class CollectionsResource extends JsonResource
 {
@@ -111,9 +115,28 @@ class CollectionsResource extends JsonResource
                 'method'     => 'patch'
             ],
             'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
-            'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
+            'image_thumbnail'         => Arr::get($this->web_images, 'main.thumbnail'),
+            'currency_code'           => $this->currency_code ?? null,
+            'sales'                   => $this->sales ?? 0,
+            'sales_ly'                => $this->sales_ly ?? 0,
+            'sales_delta'             => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'current_interval'        => $this->current_interval ?? 'ytd',
+        ];
+    }
 
+    private function calculateDelta($current, $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
 
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 

@@ -6,6 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Shop\UI\CreateShopInGroup;
+use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
@@ -96,6 +98,12 @@ Route::name("master_shops")->prefix('master-shops')
 
         Route::prefix('/{masterShop}')->as('.show')->group(function () {
             Route::get('', ShowMasterShop::class)->name('');
+
+            Route::prefix('/shop')->as('.shop')->group(function () {
+                Route::get('/create', CreateShopInGroup::class)->name('.create');
+                Route::post('/store', [StoreShop::class, 'inMaster'])->name('.store');
+            });
+
 
             Route::prefix('master-departments')->as('.master_departments.')->group(function () {
                 Route::get('', IndexMasterDepartments::class)->name('index');

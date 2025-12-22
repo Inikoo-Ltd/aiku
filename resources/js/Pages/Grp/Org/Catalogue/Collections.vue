@@ -11,16 +11,37 @@ import TableCollections from "@/Components/Tables/Grp/Org/Catalogue/TableCollect
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
+import { computed, ref } from 'vue'
+import Tabs from '@/Components/Navigation/Tabs.vue'
+import { useTabChange } from '@/Composables/tab-change'
 
 
-defineProps<{
+const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
+    tabs: {
+        current: string
+        navigation: {}
+    }
     data: {}
+    index?: {}
+    sales?: {}
     formData: {}
-    website_domain : string
-    routes : Array<routeType>
+    website_domain: string
+    routes: Array<routeType>
 }>()
+
+const currentTab = ref<string>(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const component = computed(() => {
+    const components: any = {
+        index: TableCollections,
+        sales: TableCollections,
+    }
+
+    return components[currentTab.value]
+})
 
 </script>
 
@@ -28,6 +49,15 @@ defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
     </PageHeading>
-    <TableCollections :data="data" :website_domain="website_domain" :routes="routes"/>
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+    <component
+        :is="component"
+        :key="currentTab"
+        :tab="currentTab"
+        :data="props[currentTab]"
+        :website_domain="website_domain"
+        :routes="routes"
+    />
 
 </template>

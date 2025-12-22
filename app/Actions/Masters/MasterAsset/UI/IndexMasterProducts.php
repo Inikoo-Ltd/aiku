@@ -98,12 +98,40 @@ class IndexMasterProducts extends GrpAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(MasterAsset::class);
-        $queryBuilder->where('is_main', true);
-        $queryBuilder->leftJoin('master_asset_stats', 'master_assets.id', '=', 'master_asset_stats.master_asset_id');
-        $queryBuilder->leftJoin('groups', 'master_assets.group_id', 'groups.id');
-        $queryBuilder->leftJoin('currencies', 'groups.currency_id', 'currencies.id');
+        $queryBuilder = QueryBuilder::for(MasterAsset::class)
+            ->where('master_assets.is_main', true)
 
+            // stats
+            ->leftJoin(
+                'master_asset_stats',
+                'master_assets.id',
+                '=',
+                'master_asset_stats.master_asset_id'
+            )
+
+            // group & currency
+            ->leftJoin('groups', 'master_assets.group_id', '=', 'groups.id')
+            ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id')
+
+            // categories (ALWAYS JOIN)
+            ->leftJoin(
+                'master_product_categories as departments',
+                'departments.id',
+                '=',
+                'master_assets.master_department_id'
+            )
+            ->leftJoin(
+                'master_product_categories as sub_departments',
+                'sub_departments.id',
+                '=',
+                'master_assets.master_sub_department_id'
+            )
+            ->leftJoin(
+                'master_product_categories as families',
+                'families.id',
+                '=',
+                'master_assets.master_family_id'
+            );
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -114,72 +142,77 @@ class IndexMasterProducts extends GrpAction
             );
         }
 
+        $queryBuilder->select([
+            'master_assets.id',
+            'master_assets.code',
+            'master_assets.name',
+            'master_assets.slug',
+            'master_assets.status',
+            'master_assets.price',
+            'master_assets.unit',
+            'master_assets.units',
+            'master_assets.rrp',
+            'master_assets.web_images',
 
-        $queryBuilder->select(
-            [
-                'master_assets.id',
-                'master_assets.code',
-                'master_assets.name',
-                'master_assets.slug',
-                'master_assets.status',
-                'master_assets.price',
-                'master_assets.unit',
-                'master_assets.units',
-                'master_assets.rrp',
-                'master_assets.web_images',
-                'master_asset_stats.number_current_assets as used_in',
-                'currencies.code as currency_code',
-            ]
-        );
+            'master_asset_stats.number_current_assets as used_in',
+            'currencies.code as currency_code',
+
+            // department
+            'departments.slug as master_department_slug',
+            'departments.code as master_department_code',
+            'departments.name as master_department_name',
+
+            // sub department
+            'sub_departments.slug as master_sub_department_slug',
+            'sub_departments.code as master_sub_department_code',
+            'sub_departments.name as master_sub_department_name',
+
+            // family
+            'families.slug as master_family_slug',
+            'families.code as master_family_code',
+            'families.name as master_family_name',
+        ]);
+
+        // PARENT FILTER ONLY
         if ($parent instanceof Group) {
-            $queryBuilder->where('master_assets.group_id', $parent->id);
-            $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_assets.master_shop_id');
-            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
-            $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
-
-            $queryBuilder->addSelect([
-                'families.slug as master_family_slug',
-                'families.code as master_family_code',
-                'families.name as master_family_name',
-                'departments.slug as master_department_slug',
-                'departments.code as master_department_code',
-                'departments.name as master_department_name',
-                'master_shops.slug as master_shop_slug',
-                'master_shops.code as master_shop_code',
-                'master_shops.name as master_shop_name',
-            ]);
+            $queryBuilder
+                ->where('master_assets.group_id', $parent->id)
+                ->leftJoin(
+                    'master_shops',
+                    'master_shops.id',
+                    '=',
+                    'master_assets.master_shop_id'
+                )
+                ->addSelect([
+                    'master_shops.slug as master_shop_slug',
+                    'master_shops.code as master_shop_code',
+                    'master_shops.name as master_shop_name',
+                ]);
         } elseif ($parent instanceof MasterShop) {
-            $queryBuilder->where('master_assets.master_shop_id', $parent->id);
-            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
-            $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
-            $queryBuilder->addSelect([
-                'families.slug as master_family_slug',
-                'families.code as master_family_code',
-                'families.name as master_family_name',
-                'departments.slug as master_department_slug',
-                'departments.code as master_department_code',
-                'departments.name as master_department_name'
-            ]);
+            $queryBuilder->where(
+                'master_assets.master_shop_id',
+                $parent->id
+            );
         } elseif ($parent instanceof MasterProductCategory) {
-            if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                $queryBuilder->where('master_assets.master_family_id', $parent->id);
-            } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                $queryBuilder->where('master_assets.master_department_id', $parent->id);
-            } else {
-                $queryBuilder->where('master_assets.master_sub_department_id', $parent->id);
-            }
+            match ($parent->type) {
+                MasterProductCategoryTypeEnum::FAMILY =>
+                    $queryBuilder->where(
+                        'master_assets.master_family_id',
+                        $parent->id
+                    ),
 
+                MasterProductCategoryTypeEnum::DEPARTMENT =>
+                    $queryBuilder->where(
+                        'master_assets.master_department_id',
+                        $parent->id
+                    ),
 
-            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
-            $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
-            $queryBuilder->addSelect([
-                'families.slug as master_family_slug',
-                'families.code as master_family_code',
-                'families.name as master_family_name',
-                'departments.slug as master_department_slug',
-                'departments.code as master_department_code',
-                'departments.name as master_department_name'
-            ]);
+                default =>
+                    $queryBuilder->where(
+                        'master_assets.master_sub_department_id',
+                        $parent->id
+                    ),
+            };
         } else {
             abort(419);
         }
@@ -231,6 +264,9 @@ class IndexMasterProducts extends GrpAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'master_department_code', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'master_family_code', label: __('M. Family'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');

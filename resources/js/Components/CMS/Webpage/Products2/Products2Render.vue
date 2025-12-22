@@ -80,12 +80,6 @@ const toggleBackInStock = () =>
 
 
 
-const canOrder = computed(() => {
-    if (props.product.is_on_demand) return true
-    else if (props.product.stock > 0) return true
-    return false
-})
-
 </script>
 
 <template>
@@ -105,7 +99,7 @@ const canOrder = computed(() => {
                         <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery"
                             :alt="product.name" :style="{
                                 objectFit: 'contain',
-                                opacity: !canOrder ? 0.4 : 1
+                                opacity: product.stock > 0 ? 1 : 0.4
                             }" />
 
                         <FontAwesomeIcon v-else icon="fal fa-image"
@@ -113,7 +107,7 @@ const canOrder = computed(() => {
                             fixed-width />
 
                        <div
-                            v-if="!canOrder"
+                            v-if="!product.stock > 0"
                             class="absolute inset-0 z-10 flex items-center justify-center rounded-xl pointer-events-none"
                         >
                             <div
@@ -189,14 +183,14 @@ const canOrder = computed(() => {
                 <LabelComingSoon v-if="product.is_coming_soon" :product class="w-fit text-center w-fit text-xs" />
                 <div v-else
                     class="flex items-start gap-1 px-2 py-1 rounded-xl font-semibold max-w-[10rem] break-words leading-snug"
-                    :class="canOrder ? 'text-green-700' : 'text-red-600'">
+                    :class="product.stock ? 'text-green-700' : 'text-red-600'">
 
-                    <span class="flex items-center gap-1 text-xs md:w-full " :class="!product.is_on_demand ? 'w-full' : 'w-[90%]'">
+                    <span class="flex items-center gap-1 text-xs md:w-full " :class="!product?.stock >= 250 ? 'w-full' : 'w-[90%]'">
                        <!--  <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" /> -->
                         <span>
-                           {{ product?.is_on_demand
+                           {{ product?.stock >= 250
                                     ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
+                                    : (product.stock > 0 ?   ` ${product.stock} ` + trans("available") `` : trans("Out Of Stock"))
                                 }}
                         </span>
                     </span>
@@ -223,7 +217,7 @@ const canOrder = computed(() => {
                     <template v-if="layout?.iris?.is_logged_in">
                         <!-- In stock -->
                         <NewAddToCartButton
-                            v-if="canOrder && basketButton && !product.is_coming_soon"
+                            v-if="product.stock > 0 && basketButton && !product.is_coming_soon"
                             :hasInBasket="hasInBasket"
                             :product="product"
                             :addToBasketRoute="addToBasketRoute"

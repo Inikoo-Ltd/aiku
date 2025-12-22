@@ -106,10 +106,11 @@ const toggleExpanded = () => {
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
-                                {{
-                                product.stock > 0
-                                ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)`
-                                : trans("Out Of Stock")
+                                {{ product?.stock >= 250
+                                    ? trans("Unlimited quantity")
+                                    : (product.stock > 0
+                                        ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)`
+                                        : trans("Out Of Stock"))
                                 }}
                             </span>
                         </div>

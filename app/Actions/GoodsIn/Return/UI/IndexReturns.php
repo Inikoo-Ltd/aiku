@@ -56,7 +56,11 @@ class IndexReturns extends OrgAction
                 'returns.created_at',
             ])
             ->leftJoin('customers', 'returns.customer_id', 'customers.id')
-            ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
+            ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug')
+            ->leftJoin('organisations', 'returns.organisation_id', 'organisations.id')
+            ->addSelect('organisations.slug as organisation_slug')
+            ->leftJoin('warehouses', 'returns.warehouse_id', 'warehouses.id')
+            ->addSelect('warehouses.slug as warehouse_slug');
 
         return $queryBuilder
             ->allowedSorts(['reference', 'date', 'state', 'number_items', 'customer_name'])
