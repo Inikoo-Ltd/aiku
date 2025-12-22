@@ -13,8 +13,9 @@ namespace App\Actions\Inventory\OrgStockMovement\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
-use App\Http\Resources\Inventory\OrgStockFamiliesResource;
+use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -30,7 +31,7 @@ class IndexOrgStockMovements extends OrgAction
     use WithInventoryAuthorisation;
 
     private string $bucket;
-
+    private Organisation|OrgStock $parent;
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -47,7 +48,6 @@ class IndexOrgStockMovements extends OrgAction
 
         return $this->handle($organisation);
     }
-
 
     protected function getElementGroups(Organisation $organisation): array
     {
@@ -66,10 +66,18 @@ class IndexOrgStockMovements extends OrgAction
         ];
     }
 
-    public function handle(Organisation $organisation, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Organisation|OrgStock $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
+        $this->parent = $parent;
+
         if ($bucket) {
             $this->bucket = $bucket;
+        }
+
+        if ($parent instanceof OrgStock) {
+            $organisation = $parent->organisation;
+        } else {
+            $organisation = $parent;
         }
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -91,18 +99,25 @@ class IndexOrgStockMovements extends OrgAction
             );
         }
 
-        $queryBuilder->where('org_stock_movements.organisation_id', $organisation->id);
-
+        if ($parent instanceof OrgStock) {
+            $queryBuilder->where('org_stock_movements.org_stock_id', $parent->id);
+        } else {
+            $queryBuilder->where('org_stock_movements.organisation_id', $organisation->id);
+        }
 
         return $queryBuilder
-            ->defaultSort('org_stock_movements.flow')
+            ->defaultSort('-org_stock_movements.date')
             ->select([
+                'org_stock_movements.id',
+                'org_stock_movements.date',
                 'org_stock_movements.flow',
                 'org_stock_movements.type',
                 'org_stock_movements.class',
                 'org_stock_movements.quantity',
                 'org_stock_movements.org_amount',
                 'org_stock_movements.grp_amount',
+                'org_stock_movements.operation_type',
+                'org_stock_movements.operation_id',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'warehouses.slug as warehouse_slug',
@@ -116,15 +131,21 @@ class IndexOrgStockMovements extends OrgAction
             ->leftJoin('warehouses', 'warehouses.id', 'org_stock_movements.warehouse_id')
             ->leftJoin('locations', 'locations.id', 'org_stock_movements.location_id')
             ->leftJoin('org_stocks', 'org_stocks.id', 'org_stock_movements.org_stock_id')
-            ->allowedSorts(['flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name'])
+            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation $organisation, $prefix = null): Closure
+    public function tableStructure(Organisation|OrgStock $parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($organisation, $prefix) {
+        if ($parent instanceof OrgStock) {
+            $organisation = $parent->organisation;
+        } else {
+            $organisation = $parent;
+        }
+
+        return function (InertiaTable $table) use ($parent, $organisation, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -141,19 +162,23 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'org_stock_name', label: 'stock', canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'flow', label: 'flow', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: 'type', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'class', label: 'class', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_amount', label: 'amount', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity', label: 'quantity', canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true);
+
+            if (!($parent instanceof OrgStock)) {
+                $table->column(key: 'org_stock_name', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            $table->column(key: 'flow', label: __('Flow'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'class', label: __('Class'), canBeHidden: true, sortable: true, searchable: true)
+                ->column(key: 'location_code', label: __('Location'), canBeHidden: true, sortable: false)
+                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true)
+                ->column(key: 'org_amount', label: __('Amount'), canBeHidden: true, sortable: true);
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $stocks): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $orgStockMovements): AnonymousResourceCollection
     {
-        return OrgStockFamiliesResource::collection($stocks);
+        return OrgStockMovementsResource::collection($orgStockMovements);
     }
-
-
 }
