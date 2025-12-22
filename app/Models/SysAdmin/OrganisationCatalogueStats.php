@@ -167,6 +167,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_products_status_discontinuing
  * @property int $number_collections_products_status_discontinued
  * @property int $number_products_status_coming_soon
+ * @property int $number_shops_type_faire
+ * @property int $number_shops_type_wix
+ * @property int $number_current_shops_type_faire
+ * @property int $number_current_shops_type_wix
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCatalogueStats newModelQuery()
  * @method static Builder<static>|OrganisationCatalogueStats newQuery()

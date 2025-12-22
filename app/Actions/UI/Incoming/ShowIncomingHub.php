@@ -10,8 +10,8 @@ namespace App\Actions\UI\Incoming;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Enums\Dispatching\Return\ReturnStateEnum;
-use App\Models\Dispatching\OrderReturn;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
+use App\Models\GoodsIn\OrderReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;

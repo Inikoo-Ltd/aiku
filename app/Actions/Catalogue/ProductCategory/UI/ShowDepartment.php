@@ -14,6 +14,7 @@ use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -30,11 +31,16 @@ class ShowDepartment extends OrgAction
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
     use WithWebpageActions;
+    use WithDepartmentNavigation;
 
     private Organisation|Shop $parent;
 
     public function handle(ProductCategory $department): ProductCategory
     {
+        if ($department->type != ProductCategoryTypeEnum::DEPARTMENT) {
+            abort(404);
+        }
+
         return $department;
     }
 
@@ -76,8 +82,8 @@ class ShowDepartment extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($department, $request),
-                    'next'     => $this->getNext($department, $request),
+                    'previous' => $this->getPreviousModel($department, $request),
+                    'next'     => $this->getNextModel($department, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
@@ -228,39 +234,5 @@ class ShowDepartment extends OrgAction
         };
     }
 
-    public function getPrevious(ProductCategory $department, ActionRequest $request): ?array
-    {
-        $previous = ProductCategory::where('code', '<', $department->code)->where('shop_id', $this->shop->id)->orderBy('code', 'desc')->first();
 
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(ProductCategory $department, ActionRequest $request): ?array
-    {
-        $next = ProductCategory::where('code', '>', $department->code)->where('shop_id', $this->shop->id)->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?ProductCategory $department, string $routeName): ?array
-    {
-        if (!$department) {
-            return null;
-        }
-
-        return match ($routeName) {
-
-            'grp.org.shops.show.catalogue.departments.show' => [
-                'label' => $department->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $department->organisation->slug,
-                        'shop'         => $department->shop->slug,
-                        'department'   => $department->slug
-                    ]
-                ]
-            ],
-        };
-    }
 }

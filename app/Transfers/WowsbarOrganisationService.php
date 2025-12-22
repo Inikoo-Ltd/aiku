@@ -10,9 +10,9 @@ namespace App\Transfers;
 
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
-use App\Models\Procurement\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Transfers\Fetch;
 use App\Transfers\Aurora\FetchAuroraCustomer;

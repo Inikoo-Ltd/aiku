@@ -119,10 +119,10 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], sortable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
-                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, align: 'left')
-                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'left');
+                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'weight', label: __('Weight'), canBeHidden: false, align: 'right')
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

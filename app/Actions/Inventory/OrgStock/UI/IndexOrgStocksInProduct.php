@@ -50,7 +50,8 @@ class IndexOrgStocksInProduct extends OrgAction
                 'org_stocks.discontinued_in_organisation_at',
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
-                'product_has_org_stocks.trade_units_per_org_stock as packed_in'
+                'product_has_org_stocks.trade_units_per_org_stock as packed_in',
+                'org_stocks.is_on_demand'
             ])
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts(['code', 'name', 'quantity'])

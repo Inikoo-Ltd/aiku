@@ -201,6 +201,7 @@ class IndexSubDepartments extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $subDepartment, ActionRequest $request): Response
     {
+        $modelNavigation = [];
         $subNavigation = null;
         if ($this->parent instanceof ProductCategory && $this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $subNavigation = $this->getDepartmentSubNavigation($this->parent);
@@ -230,6 +231,7 @@ class IndexSubDepartments extends OrgAction
 
                 'label' => __('Sub-departments')
             ];
+            $modelNavigation = GetDepartmentNavigation::run($this->parent, $request);
         }
 
         return Inertia::render(
@@ -239,6 +241,7 @@ class IndexSubDepartments extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => $modelNavigation,
                 'title'       => __('sub-departments'),
                 'pageHead'    => [
                     'title'         => $title,

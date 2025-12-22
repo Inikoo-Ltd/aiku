@@ -271,8 +271,8 @@ class ShowInvoice extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($invoice, $request),
-                    'next'     => $this->getNext($invoice, $request),
+                    'previous' => $this->getPreviousModel($invoice, $request),
+                    'next'     => $this->getNextModel($invoice, $request),
                 ],
                 'pageHead'    => [
                     'subNavigation'   => $subNavigation,

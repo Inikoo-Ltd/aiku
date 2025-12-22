@@ -32,6 +32,7 @@ class ShowMasterSubDepartment extends GrpAction
 {
     use WithMasterSubDepartmentSubNavigation;
     use WithMastersAuthorisation;
+    use WithMasterSubDepartmentNavigation;
 
 
     private MasterShop|MasterProductCategory $parent;
@@ -75,8 +76,8 @@ class ShowMasterSubDepartment extends GrpAction
                      $request->route()->originalParameters()
                  ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($masterSubDepartment, $request),
-                    'next'     => $this->getNext($masterSubDepartment, $request),
+                    'previous' => $this->getPreviousModel($masterSubDepartment, $request),
+                    'next'     => $this->getNextModel($masterSubDepartment, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
@@ -313,38 +314,4 @@ class ShowMasterSubDepartment extends GrpAction
         };
     }
 
-    public function getPrevious(MasterProductCategory $masterSubDepartment, ActionRequest $request): ?array
-    {
-        $previous = MasterProductCategory::where('code', '<', $masterSubDepartment->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(MasterProductCategory $masterSubDepartment, ActionRequest $request): ?array
-    {
-        $next = MasterProductCategory::where('code', '>', $masterSubDepartment->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?MasterProductCategory $masterSubDepartment, string $routeName): ?array
-    {
-        if (!$masterSubDepartment) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.masters.master_shops.show.master_sub_departments.show' => [
-                'label' => $masterSubDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterShop'          => $masterSubDepartment->masterShop->slug,
-                        'masterSubDepartment' => $masterSubDepartment->slug
-                    ]
-                ]
-            ],
-            default => [] // Add a default case to handle unmatched route names
-        };
-    }
 }

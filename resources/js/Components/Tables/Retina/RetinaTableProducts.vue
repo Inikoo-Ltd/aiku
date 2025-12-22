@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref, onMounted } from "vue"
+import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Image from "@/Components/Image.vue"
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle } from "@fal"
@@ -16,12 +16,11 @@ import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
 import Icon from "@/Components/Icon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3"
 library.add(fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle)
 
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 
@@ -46,8 +45,8 @@ console.log("RetinaTableProducts.vue", layout)
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: product }">
-            <div class="overflow-hidden w-10 h-10">
-                <Image :src="product?.images[0]?.thumbnail" :alt="product.name" />
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
 

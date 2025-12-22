@@ -8,7 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\Hydrators;
 
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;

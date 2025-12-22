@@ -9,8 +9,9 @@
 namespace App\Models\Dispatching;
 
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Models\GoodsIn\Sowing;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\InShop;
@@ -86,6 +87,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\Sowing> $sowings
  * @property-read Transaction|null $transaction
  * @method static Builder<static>|DeliveryNoteItem newModelQuery()
  * @method static Builder<static>|DeliveryNoteItem newQuery()
@@ -135,6 +137,11 @@ class DeliveryNoteItem extends Model
     public function packings(): HasMany
     {
         return $this->hasMany(Packing::class);
+    }
+
+    public function sowings(): HasMany
+    {
+        return $this->hasMany(Sowing::class);
     }
 
     public function deliveryNote(): BelongsTo

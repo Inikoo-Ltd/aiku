@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\GetDepartmentNavigation;
+use App\Actions\Catalogue\ProductCategory\UI\GetSubDepartmentNavigation;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
@@ -39,7 +41,6 @@ class IndexCollectionsInProductCategory extends OrgAction
     use WithDepartmentSubNavigation;
     use WithSubDepartmentSubNavigation;
     use WithFamilySubNavigation;
-
 
 
     private ProductCategory $parent;
@@ -99,7 +100,6 @@ class IndexCollectionsInProductCategory extends OrgAction
             ]);
 
 
-
         return $queryBuilder
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name', 'number_families', 'number_products'])
@@ -127,14 +127,13 @@ class IndexCollectionsInProductCategory extends OrgAction
 
             $table
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
-            ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
 
             $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
             $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
             $table->column(key: 'actions', label: '', searchable: true);
-
         };
     }
 
@@ -146,66 +145,45 @@ class IndexCollectionsInProductCategory extends OrgAction
     public function htmlResponse(LengthAwarePaginator $collections, ActionRequest $request): Response
     {
         $productCategory = $this->parent;
-        $container = null;
+        $container       = null;
 
 
         $subNavigation = null;
 
 
-        $icon       = [
+        $icon = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('Collections')
         ];
 
 
-        $title      = $productCategory->name;
+        $title = $productCategory->name;
 
-        $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
+        $iconRight = $productCategory->state->stateIcon()[$productCategory->state->value];
 
         $afterTitle = [
             'label' => __('Collections')
         ];
         $model      = '';
+        $modelNavigation = [];
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $icon          = [
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('Department')
             ];
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
+            $modelNavigation = GetDepartmentNavigation::run($productCategory, $request);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $icon          = [
                 'icon'  => ['fal', 'fa-dot-circle'],
                 'title' => __('Sub department')
             ];
             $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
+            $modelNavigation = GetSubDepartmentNavigation::run($productCategory, $request);
         }
 
 
-
-
-        $actions = array_values(array_filter([
-            ... (function () use ($request) {
-                if (!$this->canEdit) {
-                    return [];
-                }
-
-                $routes = [
-                    'grp.org.shops.show.catalogue.departments.show.collection.index'                                  => 'grp.org.shops.show.catalogue.departments.show.collection.create',
-                    'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'             => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
-                    'grp.org.shops.show.catalogue.sub_departments.show.collection.index'                              => 'grp.org.shops.show.catalogue.sub_departments.show.collection.create',
-                ];
-
-                $currentRoute = $request->route()->getName();
-
-                if (!isset($routes[$currentRoute])) {
-                    return [];
-                }
-
-                return [];
-            })(),
-
-
-        ]));
+        $actions = [];
 
 
         return Inertia::render(
@@ -216,6 +194,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => $modelNavigation,
                 'title'       => __('Collections'),
                 'pageHead'    => [
                     'title'         => $title,
@@ -233,7 +212,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                     'fullLayout' => true,
                     'blueprint'  => [
                         [
-                            'title'  => __('New Collection'),
+                            'title'  => __('New collection'),
                             'fields' => [
                                 'code'        => [
                                     'type'     => 'input',
@@ -316,10 +295,11 @@ class IndexCollectionsInProductCategory extends OrgAction
         };
 
         return match ($routeName) {
-
-
             'grp.org.shops.show.catalogue.departments.show.collection.index' => array_merge(
-                ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                ShowDepartment::make()->getBreadcrumbs(
+                    preg_replace('/\.collection\.index$/', '', $routeName),
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
@@ -334,7 +314,11 @@ class IndexCollectionsInProductCategory extends OrgAction
             ),
 
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs(
+                    $parent,
+                    preg_replace('/\.collection\.index$/', '', $routeName),
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
@@ -350,7 +334,11 @@ class IndexCollectionsInProductCategory extends OrgAction
             ),
 
             'grp.org.shops.show.catalogue.sub_departments.show.collection.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs(
+                    $parent,
+                    preg_replace('/\.collection\.index$/', '', $routeName),
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
@@ -363,7 +351,6 @@ class IndexCollectionsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-
 
 
             default => []

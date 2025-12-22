@@ -32,6 +32,7 @@ class ShowFamily extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithFamilySubNavigation;
+    use WithFamilyNavigation;
     use WithWebpageActions;
 
     private Organisation|ProductCategory|Shop $parent;
@@ -166,8 +167,8 @@ class ShowFamily extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'       => [
-                    'previous' => $this->getPrevious($family, $request),
-                    'next'     => $this->getNext($family, $request),
+                    'previous' => $this->getPreviousModel($family, $request),
+                    'next'     => $this->getNextModel($family, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
@@ -377,47 +378,4 @@ class ShowFamily extends OrgAction
         };
     }
 
-    public function getPrevious(ProductCategory $family, ActionRequest $request): ?array
-    {
-        $previous = ProductCategory::where('code', '<', $family->code)->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(ProductCategory $family, ActionRequest $request): ?array
-    {
-        $next = ProductCategory::where('code', '>', $family->code)->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?ProductCategory $family, string $routeName): ?array
-    {
-        if (!$family) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'shops.families.show' => [
-                'label' => $family->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'department' => $family->slug
-                    ]
-                ]
-            ],
-            'shops.show.families.show' => [
-                'label' => $family->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'shop'       => $family->shop->slug,
-                        'department' => $family->slug
-                    ]
-                ]
-            ],
-            default => [] // Add a default case to handle unmatched route names
-        };
-    }
 }

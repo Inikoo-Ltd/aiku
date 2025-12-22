@@ -35,6 +35,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowMasterCollection extends GrpAction
 {
     use WithMastersAuthorisation;
+    use WithMasterCollectionNavigation;
 
     private MasterShop|MasterProductCategory|Group $parent;
 
@@ -97,8 +98,8 @@ class ShowMasterCollection extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($masterCollection, $request),
-                    'next'     => $this->getNext($masterCollection, $request),
+                    'previous' => $this->getPreviousModel($masterCollection, $request),
+                    'next'     => $this->getNextModel($masterCollection, $request),
                 ],
                 'pageHead'    => [
                     'title'   => $masterCollection->name,
@@ -317,38 +318,4 @@ class ShowMasterCollection extends GrpAction
         };
     }
 
-    public function getPrevious(MasterCollection $masterCollection, ActionRequest $request): ?array
-    {
-        $previous = MasterCollection::where('code', '<', $masterCollection->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(MasterCollection $masterCollection, ActionRequest $request): ?array
-    {
-        $next = MasterCollection::where('code', '>', $masterCollection->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?MasterCollection $masterCollection, string $routeName): ?array
-    {
-        if (!$masterCollection) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.masters.master_shops.show.master_collections.show' => [
-                'label' => $masterCollection->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterShop'       => $masterCollection->masterShop->slug,
-                        'masterCollection' => $masterCollection->slug
-                    ]
-                ]
-            ],
-            default => []
-        };
-    }
 }

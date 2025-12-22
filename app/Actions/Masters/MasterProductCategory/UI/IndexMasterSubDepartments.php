@@ -94,22 +94,23 @@ class IndexMasterSubDepartments extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(MasterShop|MasterProductCategory $parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
+            class_basename($parent);
             $table
                 ->defaultSort('code')
                 ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
                         'title' => __("No sub departments found"),
-                    ],
+                        'count' => $parent->stats->number_master_product_categories_type_sub_department,
+                    ]
                 );
 
             $table
@@ -130,10 +131,13 @@ class IndexMasterSubDepartments extends GrpAction
     public function htmlResponse(LengthAwarePaginator $masterSubDepartments, ActionRequest $request): Response
     {
         $subNavigation = null;
+        $modelNavigation = [];
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
         } elseif ($this->parent instanceof MasterProductCategory) {
             $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
+            $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+
         }
         $title      = $this->parent->name;
         $model      = '';
@@ -156,6 +160,7 @@ class IndexMasterSubDepartments extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => $modelNavigation,
                 'title'       => __('Master Sub Departments'),
                 'pageHead'    => [
                     'title'         => $title,
@@ -167,7 +172,7 @@ class IndexMasterSubDepartments extends GrpAction
                         [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('New master Sub-department'),
+                            'tooltip' => __('New master sub-department'),
                             'label'   => __('Sub-department'),
                             'route'   => match ($this->parent::class) {
                                 MasterProductCategory::class => [
@@ -185,7 +190,7 @@ class IndexMasterSubDepartments extends GrpAction
                 ],
                 'data'        => MasterSubDepartmentsResource::collection($masterSubDepartments),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure(parent:$this->parent));
     }
 
     public function getBreadcrumbs(MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array

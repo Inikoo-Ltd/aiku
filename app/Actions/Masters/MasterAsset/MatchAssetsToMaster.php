@@ -23,7 +23,7 @@ class MatchAssetsToMaster extends OrgAction
     use AsAction;
 
 
-    public function handle(Asset $asset, Command $command): Asset
+    public function handle(Asset $asset, Command $command = null): Asset
     {
         $masterShop = $asset->shop->masterShop;
 
@@ -47,10 +47,13 @@ class MatchAssetsToMaster extends OrgAction
         );
 
         if ($asset->type == AssetTypeEnum::PRODUCT) {
-            $command->info("Updating product {$asset->product->code} to master asset");
-            UpdateProduct::make()->action($asset->product, [
-                'master_product_id' => $masterAsset->id,
-            ]);
+            if ($asset->product->master_product_id != $masterAsset->id) {
+                $command?->info("Match {$asset->product->code} to master asset");
+
+                UpdateProduct::make()->action($asset->product, [
+                    'master_product_id' => $masterAsset->id,
+                ]);
+            }
         }
 
 

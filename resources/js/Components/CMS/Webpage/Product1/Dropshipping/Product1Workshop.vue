@@ -147,13 +147,14 @@ defineOptions({
                         <div v-if="layout?.iris?.is_logged_in"
                             class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                :class="(product?.is_on_demand || product.stock > 0 ) ? 'text-green-600' : 'text-red-600'" />
                             <span>
-                                {{
-                                product.stock > 0
-                                ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)`
-                                : trans("Out Of Stock")
+                               <span>
+                                    {{ product?.is_on_demand
+                                    ? trans("Unlimited quantity available")
+                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
                                 }}
+                                </span>
                             </span>
                         </div>
                     </div>

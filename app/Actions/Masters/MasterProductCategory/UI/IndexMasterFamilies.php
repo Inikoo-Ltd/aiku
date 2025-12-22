@@ -205,7 +205,7 @@ class IndexMasterFamilies extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->allowedSorts(['code', 'name','used_in','products'])
+            ->allowedSorts(['code', 'name', 'used_in', 'products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -235,6 +235,7 @@ class IndexMasterFamilies extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => __("No master families found"),
+                        'count' => $parent->stats->number_current_master_product_categories_type_family
                     ],
                 );
 
@@ -250,7 +251,7 @@ class IndexMasterFamilies extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'products', label: __('Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -261,23 +262,24 @@ class IndexMasterFamilies extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterFamilies, ActionRequest $request): Response
     {
-        $masterShop = null;
-        $subNavigation = null;
-        $title         = $this->parent->name;
-        $model         = '';
-        $icon          = [
+        $masterShop      = null;
+        $subNavigation   = null;
+        $modelNavigation = [];
+        $title           = $this->parent->name;
+        $model           = '';
+        $icon            = [
             'icon'  => ['fal', 'fa-store-alt'],
             'title' => __('Master shop')
         ];
-        $afterTitle    = [
+        $afterTitle      = [
             'label' => __('Master Families')
         ];
-        $iconRight     = [
+        $iconRight       = [
             'icon' => 'fal fa-folder-tree',
         ];
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
-            $masterShop = $this->parent;
+            $masterShop    = $this->parent;
         } elseif ($this->parent instanceof Group) {
             $title      = __('Master families');
             $icon       = [
@@ -292,17 +294,19 @@ class IndexMasterFamilies extends OrgAction
             ];
         } elseif ($this->parent instanceof MasterProductCategory) {
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                $icon          = [
+                $icon            = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('Master department')
                 ];
-                $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
+                $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
+                $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
             } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $icon          = [
+                $icon            = [
                     'icon'  => ['fal', 'fa-folder'],
                     'title' => __('Master sub-department')
                 ];
-                $subNavigation = $this->getMasterSubDepartmentSubNavigation($this->parent);
+                $subNavigation   = $this->getMasterSubDepartmentSubNavigation($this->parent);
+                $modelNavigation = GetMasterSubDepartmentNavigation::run($this->parent, $request);
             }
             $masterShop = $this->parent->masterShop;
         }
@@ -315,6 +319,7 @@ class IndexMasterFamilies extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => $modelNavigation,
                 'title'       => __('Master Families'),
                 'pageHead'    => [
                     'title'         => $title,
@@ -325,29 +330,29 @@ class IndexMasterFamilies extends OrgAction
                     'actions'       => $this->getActions(),
                     'subNavigation' => $subNavigation,
                 ],
-                'storeRoute' =>  match ($this->parent::class) {
+                'storeRoute'  => match ($this->parent::class) {
                     MasterShop::class => [
-                        'name' => 'grp.models.master_shops.master_family.store',
+                        'name'       => 'grp.models.master_shops.master_family.store',
                         'parameters' => [
                             'masterShop' => $this->parent->id
                         ]
                     ],
                     MasterProductCategory::class => $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT
                         ? [
-                            'name' => 'grp.models.master_family.store',
+                            'name'       => 'grp.models.master_family.store',
                             'parameters' => [
                                 'masterDepartment' => $this->parent->id
                             ]
                         ]
                         : [
-                            'name' => 'grp.models.master-sub-department.master_family.store',
+                            'name'       => 'grp.models.master-sub-department.master_family.store',
                             'parameters' => [
                                 'masterSubDepartment' => $this->parent->id
                             ]
                         ],
                     default => null
                 },
-                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
+                'shopsData'   => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
         )->table($this->tableStructure($this->parent));
