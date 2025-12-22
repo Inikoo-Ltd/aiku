@@ -19,6 +19,7 @@ use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\UI\Catalogue\CollectionsTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -27,12 +28,16 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexCollections extends OrgAction
 {
@@ -80,6 +85,7 @@ class IndexCollections extends OrgAction
         $queryBuilder = QueryBuilder::for(Collection::class);
         $queryBuilder->where('collections.shop_id', $shop->id);
         $queryBuilder->leftjoin('collection_stats', 'collection_stats.collection_id', 'collections.id');
+        $queryBuilder->leftJoin('collection_sales_intervals', 'collection_sales_intervals.collection_id', 'collections.id');
 
 
         $queryBuilder
@@ -109,7 +115,15 @@ class IndexCollections extends OrgAction
         $queryBuilder
             ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
             ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id')
-            ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id');
+            ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id')
+            ->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
+
+        $interval = request()->input('interval', 'all');
+
+        $salesLyColumn = $interval === 'all'
+            ? 'NULL'
+            : "collection_sales_intervals.sales_grp_currency_{$interval}_ly";
+
         $queryBuilder
             ->defaultSort('collections.code')
             ->select([
@@ -137,13 +151,17 @@ class IndexCollections extends OrgAction
                 'webpages.url as webpage_url',
                 'webpages.slug as webpage_slug',
                 'websites.slug as website_slug',
+                'currencies.code as currency_code',
+                DB::raw("collection_sales_intervals.sales_grp_currency_{$interval} as sales"),
+                DB::raw("{$salesLyColumn} as sales_ly"),
+                DB::raw("'{$interval}' as current_interval"),
             ])
             ->selectRaw(
                 '(
         SELECT concat(string_agg(product_categories.slug,\',\'),\'|\',string_agg(product_categories.type,\',\'),\'|\',string_agg(product_categories.code,\',\'),\'|\',string_agg(product_categories.name,\',\')) FROM model_has_collections
         left join product_categories on model_has_collections.model_id = product_categories.id
         WHERE model_has_collections.collection_id = collections.id
-   
+
         AND model_has_collections.model_type = ?
     ) as parents_data',
                 ['ProductCategory',]
@@ -152,7 +170,27 @@ class IndexCollections extends OrgAction
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['code', 'name', 'number_parents', 'number_families', 'number_products'])
+            ->allowedSorts([
+                'code',
+                'name',
+                'number_parents',
+                'number_families',
+                'number_products',
+                AllowedSort::custom(
+                    'sales',
+                    new class ($interval) implements Sort {
+                        public function __construct(private string $interval)
+                        {
+                        }
+
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy("collection_sales_intervals.sales_grp_currency_{$this->interval}", $direction);
+                        }
+                    }
+                ),
+            ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -160,8 +198,9 @@ class IndexCollections extends OrgAction
     public function tableStructure(
         Shop $shop,
         $prefix = null,
+        $sales = true,
     ): Closure {
-        return function (InertiaTable $table) use ($shop, $prefix) {
+        return function (InertiaTable $table) use ($shop, $prefix, $sales) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -172,6 +211,10 @@ class IndexCollections extends OrgAction
                     label: $elementGroup['label'],
                     elements: $elementGroup['elements']
                 );
+            }
+
+            if ($sales) {
+                $table->withInterval();
             }
 
             $table
@@ -185,16 +228,22 @@ class IndexCollections extends OrgAction
                     ]
                 );
 
-            $table
-                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
-            $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
-            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
-            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
-            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
-            $table->column(key: 'actions', label: '', searchable: true);
+            $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
+
+            if ($sales) {
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            } else {
+                $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
+                $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
+                $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
+                $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
+                $table->column(key: 'actions', label: '', searchable: true);
+            }
         };
     }
 
@@ -208,6 +257,7 @@ class IndexCollections extends OrgAction
         $container = null;
 
         $subNavigation = $this->getCollectionsSubNavigation($this->shop);
+        $navigation = CollectionsTabsEnum::navigation();
 
         $title     = __('Collections');
         $icon      = [
@@ -249,6 +299,10 @@ class IndexCollections extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'         => $routes,
+                'tabs'           => [
+                    'current'    => $this->tab,
+                    'navigation' => $navigation,
+                ],
                 'data'           => CollectionsResource::collection($collections),
                 'formData'       => [
                     'fullLayout' => true,
@@ -289,17 +343,26 @@ class IndexCollections extends OrgAction
                     ]
                 ],
                 'website_domain' => $websiteDomain,
+
+                CollectionsTabsEnum::INDEX->value => $this->tab == CollectionsTabsEnum::INDEX->value ?
+                    fn () => CollectionsResource::collection($collections)
+                    : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
+
+                CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
+                    fn () => CollectionsResource::collection($collections)
+                    : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
             ]
-        )->table($this->tableStructure($this->shop));
+        )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::SALES->value));
     }
 
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionsTabsEnum::values());
 
-        return $this->handle(shop: $shop);
+        return $this->handle(shop: $shop, prefix: CollectionsTabsEnum::INDEX->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
