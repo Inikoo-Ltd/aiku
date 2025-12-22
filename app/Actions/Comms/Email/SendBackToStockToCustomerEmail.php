@@ -23,8 +23,8 @@ class SendBackToStockToCustomerEmail implements ShouldQueue
 
     public string $jobQueue = 'low-priority';
 
-    public function handle(Customer $customer, OutboxCodeEnum $outboxCodeEnum, EmailBulkRun $emailBulkRun): DispatchedEmail
+    public function handle(Customer $customer, OutboxCodeEnum $outboxCodeEnum, array $additionalData = [], EmailBulkRun $emailBulkRun): DispatchedEmail
     {
-        return $this->sendCustomerOutboxEmail($customer, $outboxCodeEnum, [], '', null, null, $emailBulkRun);
+        return $this->sendCustomerOutboxEmail($customer, $outboxCodeEnum, $additionalData, '', null, null, $emailBulkRun);
     }
 }

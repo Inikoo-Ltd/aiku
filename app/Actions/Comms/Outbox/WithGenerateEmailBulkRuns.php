@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Eka Yudinata
  */
 
-namespace App\Actions\Comms\Outbox\ReorderRemainder;
+namespace App\Actions\Comms\Outbox;
 
 use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRun;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
@@ -18,7 +18,7 @@ use App\Models\Comms\EmailBulkRun;
 trait WithGenerateEmailBulkRuns
 {
     /**
-     * Trait to generate EmailBulkRuns related to ReorderRemainder
+     * Trait to generate EmailBulkRuns for outboxes
      */
     protected function generateEmailBulkRuns(
         Customer $customer,

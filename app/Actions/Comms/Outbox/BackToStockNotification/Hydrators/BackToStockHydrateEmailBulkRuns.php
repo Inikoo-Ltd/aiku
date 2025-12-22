@@ -8,20 +8,21 @@
 
 namespace App\Actions\Comms\Outbox\BackToStockNotification\Hydrators;
 
+use App\Actions\Comms\Email\SendBackToStockToCustomerEmail;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Customer;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
-use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
+use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\CRM\Customer\CustomerStateEnum;
-use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Comms\Outbox;
-use App\Models\CRM\BackInStockReminder;
+use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BackToStockHydrateEmailBulkRuns implements ShouldQueue
 {
@@ -31,7 +32,12 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
     public string $commandSignature = 'hydrate:out-of-stock-notification';
     public string $jobQueue = 'low-priority';
 
-
+    /*
+     * NOTE: make sure how to generate the caronical product link
+     * make sure how to delete back_in_stock_reminders after sending
+     * make sure Running EmailBulkRunHydrateDispatchedEmails
+     * make sure update $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
+     */
     public function handle(): void
     {
 
@@ -39,8 +45,7 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
         $queryOutbox->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
-        // $queryOutbox->whereNotNull('send_time');
-        // $queryOutbox->whereIn('id', [863,862,843]); //test for bulgaria
+        // $queryOutbox->whereIn('id', [826]); //test for bulgaria
         $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at');
         $outboxes = $queryOutbox->get();
 
@@ -48,69 +53,89 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
 
         foreach ($outboxes as $outbox) {
             $lastOutBoxSent = $outbox->last_sent_at;
-
-            $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
-
-
-            //change to back_in_stock_reminders
-            $baseQuery = QueryBuilder::for(BackInStockReminder::class);
-            $baseQuery->join('customers', 'back_in_stock_reminders.customer_id', '=', 'customers.id');
+            // make customers as main table
+            $baseQuery = QueryBuilder::for(Customer::class);
+            $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
             $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
-            $baseQuery->select('back_in_stock_reminders.id', 'back_in_stock_reminders.customer_id');
+            // select options
+            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'products.name as product_name');
+
+            // where conditions
             $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
+            $baseQuery->where('products.available_quantity', '>', 0);
+            $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
+            if ($lastOutBoxSent) {
+                Log::info('Last outbox sent: ' . $lastOutBoxSent);
+                $baseQuery->where('back_in_stock_reminders.created_at', '>', $lastOutBoxSent);
+                $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
+            }
+            // check another customers conditions
+            $baseQuery->whereNull('customers.deleted_at');
+            // check another product conditions
+            $baseQuery->whereNull('products.deleted_at');
+            // order by customer id
+            $baseQuery->orderBy('customers.id');
 
-            $data = $baseQuery->get();
-            \Log::info("Test Data : " . $data);
+            $LastBulkRun = null;
+            $updateLastOutBoxSent = null;
+
+            // Get count before iterating
+            $totalCustomers = (clone $baseQuery)->count() ?? 0;
+
+            $processedCount = 0;
+            $productData = [];
+            $lastCustomerId = null;
+            foreach ($baseQuery->cursor() as $customer) {
+                $processedCount++;
+
+                if ($lastCustomerId === null) {
+                    $lastCustomerId = $customer->id;
+                }
 
 
+                // running code for sending email
+                if ($lastCustomerId !== $customer->id) {
+                    $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
+                    $additionalData = [
+                        'products' => implode(', ', array_column($productData, 'product_name')),
+                    ];
+                    SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
 
+                    $LastBulkRun = $bulkRun;
 
+                    $lastCustomerId = $customer->id;
+                    $productData = []; // Reset for new customer
 
-            // $queryCustomer = QueryBuilder::for(Customer::class);
-            // $queryCustomer->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
-            // $queryCustomer->where('customer_comms.is_subscribed_to_reorder_reminder', true); // check if customer subscribed to reorder reminder
-            // $queryCustomer->where('customers.shop_id', $outbox->shop_id);
-            // $queryCustomer->where('customers.state', CustomerStateEnum::ACTIVE->value);
-            // $queryCustomer->where('customers.status', CustomerStatusEnum::APPROVED->value);
-            // // $queryCustomer->where('customers.shop_id', 42); // test for bulgaria
+                }
+                // NOTE: make sure how to generate the caronical product link
+                $productData[] = [
+                    'product_id' => $customer->product_id,
+                    'product_name' => $customer->product_name,
+                ];
 
-            // $queryCustomer->where('customers.last_invoiced_at', '<=', $compareDate);
-            // if ($lastOutBoxSent) {
-            //     $queryCustomer->where('customers.last_invoiced_at', '>', $lastOutBoxSent);
-            // }
-            // $queryCustomer->whereNotNull('customers.email');
-            // $queryCustomer->where('customers.email', '!=', '');
-            // $queryCustomer->select('customers.id', 'customers.shop_id');
-            // $queryCustomer->orderBy('customers.shop_id');
-            // $queryCustomer->orderBy('customers.id');
+                // $updateLastOutBoxSent = $currentDateTime;
+                if ($processedCount === $totalCustomers) {
 
-            // $LastBulkRun = null;
-            // $updateLastOutBoxSent = null;
-            // foreach ($queryCustomer->cursor() as $customer) {
+                    // Process the last batch
+                    $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
+                    $additionalData = [
+                        'products' => implode(', ', array_column($productData, 'product_name')),
+                    ];
+                    SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
+                    // reset product data
+                    $productData = [];
+                    $LastBulkRun = $bulkRun;
+                }
+            }
 
-            //     $bulkRun = $this->generateEmailBulkRuns(
-            //         $customer,
-            //         $outbox->code,
-            //         $currentDateTime->copy()->toDateString()
-            //     );
+            if ($LastBulkRun) {
+                EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun);
+            }
 
-            //     $LastBulkRun = $bulkRun;
-
-            //     // Dispatch SendReOrderRemainderToCustomerEmail immediately
-            //     SendReOrderRemainderToCustomerEmail::dispatch($customer, $outbox->code, $bulkRun);
-
-            //     $updateLastOutBoxSent = $currentDateTime;
-            // }
-
-            // if ($LastBulkRun) {
-            //     // No delay needed since we're dispatching immediately
-            //     EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun);
-            // }
-
-            // if ($updateLastOutBoxSent) {
-            //     // update last_sent_at for this outbox
-            //     $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
-            // }
+            if ($updateLastOutBoxSent) {
+                // update last_sent_at for this outbox
+                $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
+            }
         }
     }
 
