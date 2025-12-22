@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope, faHeart as farHeart } from '@far'
 import { faHeart as fasHeart, faStarHalfAlt, faCircle } from '@fas'
@@ -77,6 +77,9 @@ const toggleBackInStock = () =>
     props.product.is_back_in_stock
         ? emit('unsetBackInStock', props.product)
         : emit('setBackInStock', props.product)
+
+
+
 </script>
 
 <template>
@@ -96,7 +99,7 @@ const toggleBackInStock = () =>
                         <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery"
                             :alt="product.name" :style="{
                                 objectFit: 'contain',
-                                opacity: product.stock <= 0 ? 0.4 : 1
+                                opacity: product.stock > 0 ? 1 : 0.4
                             }" />
 
                         <FontAwesomeIcon v-else icon="fal fa-image"
@@ -104,7 +107,7 @@ const toggleBackInStock = () =>
                             fixed-width />
 
                        <div
-                            v-if="product.stock <= 0"
+                            v-if="!product.stock > 0"
                             class="absolute inset-0 z-10 flex items-center justify-center rounded-xl pointer-events-none"
                         >
                             <div
@@ -180,17 +183,15 @@ const toggleBackInStock = () =>
                 <LabelComingSoon v-if="product.is_coming_soon" :product class="w-fit text-center w-fit text-xs" />
                 <div v-else
                     class="flex items-start gap-1 px-2 py-1 rounded-xl font-semibold max-w-[10rem] break-words leading-snug"
-                    :class="product.stock > 0 ? 'text-green-700' : 'text-red-600'">
+                    :class="product.stock ? 'text-green-700' : 'text-red-600'">
 
-                    <span class="flex items-center gap-1 text-xs md:w-full " :class="!product.is_on_demand ? 'w-full' : 'w-[90%]'">
+                    <span class="flex items-center gap-1 text-xs md:w-full " :class="!product?.stock >= 250 ? 'w-full' : 'w-[90%]'">
                        <!--  <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" /> -->
                         <span>
-                        <!--    {{ product.is_on_demand
+                           {{ product?.stock >= 250
                                     ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +
-                                        trans('available'))
-                                }} -->
-                            {{(product.stock > 0 ? product.stock + ' ' + trans('available') : '0 ' +  trans('available'))}}
+                                    : (product.stock > 0 ?   ` ${product.stock} ` + trans("available") `` : trans("Out Of Stock"))
+                                }}
                         </span>
                     </span>
                 </div>

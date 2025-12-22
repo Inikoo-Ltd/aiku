@@ -10,6 +10,16 @@
 
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStateToCheckedStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStateToDispatchStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStateToSettledStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
+use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Actions\Procurement\OrgAgent\Search\ReindexOrgAgentSearch;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\Search\ReindexOrgPartnerSearch;
@@ -26,21 +36,11 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToNotReceived;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSettled;
-use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrder\UpdateStateToCreatingPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
-use App\Actions\Procurement\StockDelivery\StoreStockDelivery;
-use App\Actions\Procurement\StockDelivery\UpdateStateToCheckedStockDelivery;
-use App\Actions\Procurement\StockDelivery\UpdateStateToDispatchStockDelivery;
-use App\Actions\Procurement\StockDelivery\UpdateStateToSettledStockDelivery;
-use App\Actions\Procurement\StockDelivery\UpdateStockDelivery;
-use App\Actions\Procurement\StockDelivery\UpdateStockDeliveryStateToReceived;
-use App\Actions\Procurement\StockDeliveryItem\StoreStockDeliveryItem;
-use App\Actions\Procurement\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
-use App\Actions\Procurement\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
-use App\Actions\Procurement\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Actions\SupplyChain\Agent\HydrateAgents;
 use App\Actions\SupplyChain\Agent\Search\ReindexAgentSearch;
 use App\Actions\SupplyChain\Agent\StoreAgent;
@@ -50,18 +50,18 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\Search\ReindexSupplierProductsSearch;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
+use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
-use App\Models\Procurement\StockDelivery;
-use App\Models\Procurement\StockDeliveryItem;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
@@ -77,14 +77,14 @@ beforeAll(function () {
 
 
 beforeEach(function () {
-    $this->organisation = createOrganisation();
+    $this->organisation      = createOrganisation();
     $this->otherOrganisation = createOrganisation();
-    $this->group        = group();
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    $this->group             = group();
+    $this->adminGuest        = createAdminGuest($this->organisation->group);
 
 
-    $this->stocks             = createStocks($this->group);
-    $this->orgStocks          = createOrgStocks($this->organisation, $this->stocks);
+    $this->stocks    = createStocks($this->group);
+    $this->orgStocks = createOrgStocks($this->organisation, $this->stocks);
 
     $agent = Agent::first();
     if (!$agent) {
@@ -98,7 +98,7 @@ beforeEach(function () {
 
     $orgAgent = OrgAgent::first();
     if (!$orgAgent) {
-        $orgAgent     = StoreOrgAgent::make()->action(
+        $orgAgent = StoreOrgAgent::make()->action(
             $this->organisation,
             $this->agent,
             []
@@ -122,7 +122,7 @@ beforeEach(function () {
     $stock = Stock::first();
     if (!$stock) {
         $storeData = Stock::factory()->definition();
-        $stock  = StoreStock::make()->action(
+        $stock     = StoreStock::make()->action(
             $this->organisation->group,
             $storeData
         );
@@ -134,7 +134,7 @@ beforeEach(function () {
     if (!$supplierProduct) {
         $storeData = SupplierProduct::factory()->definition();
         data_set($storeData, 'stock_id', $this->stock->id);
-        $supplierProduct  = StoreSupplierProduct::make()->action(
+        $supplierProduct = StoreSupplierProduct::make()->action(
             $this->supplier,
             $storeData
         );
@@ -174,7 +174,7 @@ beforeEach(function () {
 
     $stockDelivery = StockDelivery::first();
     if (!$stockDelivery) {
-        $stockDelivery  = StoreStockDelivery::make()->action(
+        $stockDelivery = StoreStockDelivery::make()->action(
             $this->orgSupplier,
             [
                 'reference' => 12345,
@@ -187,7 +187,7 @@ beforeEach(function () {
 
     $purchaseOrder = PurchaseOrder::first();
     if (!$purchaseOrder) {
-        $purchaseOrder  = StorePurchaseOrder::make()->action(
+        $purchaseOrder = StorePurchaseOrder::make()->action(
             $this->orgSupplier,
             PurchaseOrder::factory()->definition()
         );
@@ -200,12 +200,10 @@ beforeEach(function () {
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());
-
 });
 
 
 test('create independent supplier', function () {
-
     $supplier = StoreSupplier::make()->action(
         parent: $this->group,
         modelData: Supplier::factory()->definition()
@@ -236,13 +234,12 @@ test('create purchase order while no available products', function ($orgSupplier
 
 
 test('create supplier product', function ($supplier) {
-
     $arrayData = [
-        'code'    => 'ABC',
-        'name'    => 'ABC Asset',
-        'cost'    => 200,
-        'stock_id' => $this->stocks[0]->id,
-        'units_per_pack' => 10,
+        'code'             => 'ABC',
+        'name'             => 'ABC Asset',
+        'cost'             => 200,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
         'units_per_carton' => 100
 
     ];
@@ -260,7 +257,6 @@ test('create supplier product', function ($supplier) {
 })->depends('create independent supplier');
 
 test('attach supplier product to organisation', function (SupplierProduct $supplierProduct, OrgSupplier $orgSupplier) {
-
     $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
 
     $orgSupplierProduct->refresh();
@@ -290,7 +286,7 @@ test('create purchase order independent supplier', function (OrgSupplierProduct 
 })->depends('attach supplier product to organisation');
 
 test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct) {
-    $orgStock = $this->orgStocks[0];
+    $orgStock                     = $this->orgStocks[0];
     $purchaseOrderTransactionData = PurchaseOrderTransaction::factory()->definition();
 
     $purchaseOrderTransaction = StorePurchaseOrderTransaction::make()->action(
@@ -310,17 +306,15 @@ test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSu
 
 
 test('add more items to purchase order', function (PurchaseOrder $purchaseOrder) {
-
-
     /** @var OrgSupplier $orgSupplier */
     $orgSupplier = $purchaseOrder->parent;
 
-    $supplierProduct = StoreSupplierProduct::make()->action($orgSupplier->supplier, [
-        'code'    => 'product-2',
-        'name'    => 'Product 2',
-        'cost'    => 100,
-        'stock_id' => $this->stocks[1]->id,
-        'units_per_pack' => 50,
+    $supplierProduct    = StoreSupplierProduct::make()->action($orgSupplier->supplier, [
+        'code'             => 'product-2',
+        'name'             => 'Product 2',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[1]->id,
+        'units_per_pack'   => 50,
         'units_per_carton' => 200
     ]);
     $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
@@ -328,15 +322,15 @@ test('add more items to purchase order', function (PurchaseOrder $purchaseOrder)
 
     $purchaseOrderTransaction2 = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[1], PurchaseOrderTransaction::factory()->definition());
 
-    $supplierProduct = StoreSupplierProduct::make()->action($orgSupplier->supplier, [
-        'code'    => 'product-3',
-        'name'    => 'Product 3',
-        'cost'    => 150,
-        'stock_id' => $this->stocks[2]->id,
-        'units_per_pack' => 5,
+    $supplierProduct           = StoreSupplierProduct::make()->action($orgSupplier->supplier, [
+        'code'             => 'product-3',
+        'name'             => 'Product 3',
+        'cost'             => 150,
+        'stock_id'         => $this->stocks[2]->id,
+        'units_per_pack'   => 5,
         'units_per_carton' => 50
     ]);
-    $orgSupplierProduct2 = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $orgSupplierProduct2       = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
     $purchaseOrderTransaction3 = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct2->supplierProduct->historicSupplierProduct, $this->orgStocks[2], PurchaseOrderTransaction::factory()->definition());
 
     $purchaseOrderTransaction3 = UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction3, [
@@ -353,21 +347,21 @@ test('add more items to purchase order', function (PurchaseOrder $purchaseOrder)
 
 
 test('delete purchase order', function () {
-    $supplier        = StoreSupplier::make()->action(
+    $supplier    = StoreSupplier::make()->action(
         parent: $this->group,
         modelData: Supplier::factory()->definition()
     );
-    $orgSupplier     = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $orgSupplier = StoreOrgSupplier::make()->action($this->organisation, $supplier);
 
     $supplierProductData = [
-        'code'    => 'ABC',
-        'name'    => 'ABC Asset',
-        'cost'    => 200,
-        'stock_id' => $this->stocks[0]->id,
-        'units_per_pack' => 10,
+        'code'             => 'ABC',
+        'name'             => 'ABC Asset',
+        'cost'             => 200,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
         'units_per_carton' => 100
     ];
-    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+    $supplierProduct     = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
     StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
 
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
@@ -487,7 +481,6 @@ test('change purchase order state to cancelled', function ($purchaseOrder) {
 })->depends('change purchase order state to not received');
 
 
-
 test('create supplier delivery', function (OrgSupplier $orgSupplier) {
     $arrayData = [
         'reference' => 123457,
@@ -522,31 +515,33 @@ test('update supplier delivery', function (StockDelivery $stockDelivery) {
 
 
 test('create supplier delivery items', function (StockDelivery $stockDelivery) {
-    $supplier        = StoreSupplier::make()->action(
+    $supplier            = StoreSupplier::make()->action(
         parent: $this->group,
         modelData: Supplier::factory()->definition()
     );
-    $orgSupplier     = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $orgSupplier         = StoreOrgSupplier::make()->action($this->organisation, $supplier);
     $supplierProductData = [
-        'code'    => 'ABC',
-        'name'    => 'ABC Asset',
-        'cost'    => 200,
-        'stock_id' => $this->stocks[0]->id,
-        'units_per_pack' => 10,
+        'code'             => 'ABC',
+        'name'             => 'ABC Asset',
+        'cost'             => 200,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
         'units_per_carton' => 100
     ];
-    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
-    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
-    $orgStock = $this->orgStocks[0];
+    $supplierProduct     = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+    $orgSupplierProduct  = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $orgStock            = $this->orgStocks[0];
     // dd($orgStock);
     $stockDeliveryItem = StoreStockDeliveryItem::make()->action($stockDelivery, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $orgStock, StockDeliveryItem::factory()->definition());
 
     expect($stockDeliveryItem->stock_delivery_id)->toBe($stockDelivery->id);
     $stockDelivery->refresh();
+
     return $stockDelivery;
 })->depends('create supplier delivery');
 
 test('update supplier delivery items', function (StockDelivery $stockDelivery) {
+    /** @var StockDeliveryItem $stockDeliveryItem */
     $stockDeliveryItem = $stockDelivery->items()->first();
     $stockDeliveryItem = UpdateStockDeliveryItem::make()->action($stockDeliveryItem, [
         'unit_quantity' => 100
@@ -554,25 +549,26 @@ test('update supplier delivery items', function (StockDelivery $stockDelivery) {
 
     expect(intval($stockDeliveryItem->unit_quantity))->toBe(100);
     $stockDeliveryItem->refresh();
+
     return $stockDeliveryItem;
 })->depends('create supplier delivery');
 
 test('update org supplier product', function () {
-    $supplier        = StoreSupplier::make()->action(
+    $supplier            = StoreSupplier::make()->action(
         parent: $this->group,
         modelData: Supplier::factory()->definition()
     );
-    $orgSupplier     = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $orgSupplier         = StoreOrgSupplier::make()->action($this->organisation, $supplier);
     $supplierProductData = [
-        'code'    => 'ABC',
-        'name'    => 'ABC Asset',
-        'cost'    => 200,
-        'stock_id' => $this->stocks[0]->id,
-        'units_per_pack' => 10,
+        'code'             => 'ABC',
+        'name'             => 'ABC Asset',
+        'cost'             => 200,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
         'units_per_carton' => 100
     ];
-    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
-    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $supplierProduct     = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+    $orgSupplierProduct  = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
 
     $orgSupplierProduct = UpdateOrgSupplierProduct::make()->action($orgSupplierProduct, [
         'is_available' => false
@@ -621,6 +617,7 @@ test('change state to received from checked supplier delivery', function ($stock
 })->depends('create supplier delivery');
 
 test('check supplier delivery items not correct', function (StockDelivery $stockDelivery) {
+    /** @var StockDeliveryItem $stockDeliveryItem */
     $stockDeliveryItem = $stockDelivery->items()->first();
     $stockDeliveryItem = UpdateStateToCheckedStockDeliveryItem::make()->action($stockDeliveryItem, [
         'unit_quantity_checked' => 2
@@ -651,7 +648,7 @@ test('org agents notes search', function () {
 
     $orgAgent = OrgAgent::first();
     if (!$orgAgent) {
-        $orgAgent     = StoreOrgAgent::make()->action(
+        $orgAgent = StoreOrgAgent::make()->action(
             $this->organisation,
             $this->agent,
             []
@@ -726,17 +723,15 @@ test('UI show procurement dashboard', function () {
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'Procurement')
                     ->etc()
             )
             ->has('flatTreeMaps');
-
     });
 });
 
 test('UI Index org suppliers', function () {
-
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.procurement.org_suppliers.index', [$this->organisation->slug]));
 
@@ -759,12 +754,11 @@ test('UI show org supplier', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $this->orgSupplier->supplier->name)
                     ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -788,12 +782,11 @@ test('UI show org agents', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $this->orgAgent->agent->organisation->name)
                     ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -806,11 +799,10 @@ test('UI index org supplier products', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'Supplier Products')
                     ->etc()
             );
-
     });
 });
 
@@ -824,12 +816,11 @@ test('UI show org supplier product', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $this->orgSupplierProduct->supplierProduct->name)
                     ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -854,7 +845,7 @@ test('UI show purchase order', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $this->purchaseOrder->reference)
                     ->etc()
             )
@@ -886,12 +877,11 @@ test('UI show org partners', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $this->orgPartner->partner->name)
                     ->etc()
             )
             ->has('tabs');
-
     });
 });
 
@@ -916,7 +906,7 @@ test('UI Index stock deliveries', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'Stock Deliveries')
                     ->etc()
             )
@@ -947,12 +937,11 @@ test('UI show stock delivery', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $this->stockDelivery->reference)
                     ->etc()
             )
             ->has('tabs');
-
     });
 });
 

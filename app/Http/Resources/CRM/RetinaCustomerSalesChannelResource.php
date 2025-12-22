@@ -84,7 +84,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             /** @var \App\Models\Dropshipping\EbayUser $ebayUser */
             $ebayUser = $customerSalesChannels->user;
 
-            if($ebayUser) {
+            if ($ebayUser) {
                 $platformCompletion = $ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key;
             }
         }

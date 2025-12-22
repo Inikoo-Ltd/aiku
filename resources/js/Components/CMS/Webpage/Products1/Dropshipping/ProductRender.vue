@@ -238,14 +238,13 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
                 <!-- Stock Info -->
                 <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
-                     <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right" />
-                    <div v-else
+                    <div v-if="!product.is_coming_soon"
                         class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[12rem] break-words leading-snug"
-                        :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+                        :class="(product?.stock > 0 ) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                         <span class="inline-flex items-center gap-1 text-xs leading-snug">
                             <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" />
                             <span>
-                                {{ product.is_on_demand
+                                {{ product?.stock >= 250
                                     ? trans("Unlimited quantity available")
                                     : (product.stock > 0
                                         ? product.stock + ' ' + trans('available')
@@ -264,7 +263,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
         </div>
 
         <ButtonAddPortfolio
-            v-if="!product.is_coming_soon"
             :product="product"
             :productHasPortfolio="productHasPortfolio"
             :buttonStyle="buttonStyle"

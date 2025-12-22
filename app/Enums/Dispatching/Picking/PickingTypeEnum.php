@@ -17,14 +17,12 @@ enum PickingTypeEnum: string
 
     case PICK = 'pick';
     case NOT_PICK = 'not-pick';
-    case RETURN = 'return';
 
     public static function labels(): array
     {
         return [
             'pick'     => __('Pick'),
             'not-pick' => __('Not Pick'),
-            'return'   => __('Return to location'),
         ];
     }
 

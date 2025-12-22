@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -85,6 +85,8 @@ const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
 
+
+
 </script>
 
 <template>           
@@ -123,10 +125,9 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </div>
                 </template>
 
-                <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
-                        v-if="product.stock > 0 && basketButton && !product.is_coming_soon" 
+                        v-if="product.stock && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
                         :product="product"
                         :key="product" 
@@ -135,7 +136,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" 
                         :buttonStyle="buttonStyle" 
                     />
-                    <button v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
+                    <button v-else-if="layout?.app?.environment === 'local' && !product.stock"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
@@ -172,13 +173,12 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
                         <div v-else
                             class="flex items-end gap-1 px-2 py-1 rounded-xl font-medium w-fit break-words leading-snug"
-                            :class="product.stock > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
-
+                            :class="(product.stock > 0 ) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
 
                             <span class="inline-flex items-center gap-1 text-xs leading-snug w-fit">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" />
                                 <span>
-                                    {{ product.is_on_demand
+                                    {{ product?.stock >= 250
                                         ? trans("Unlimited quantity")
                                         : (product.stock > 0
                                             ? product.stock + ' ' + trans('available')

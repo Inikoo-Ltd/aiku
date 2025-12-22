@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject } from "vue"
+import { ref, inject, computed } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
@@ -78,6 +78,8 @@ const onAddFavourite = (p: ProductResource) => emits("setFavorite", p)
 const onUnselectFavourite = (p: ProductResource) => emits("unsetFavorite", p)
 const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
 const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", p)
+
+
 </script>
 
 
@@ -138,18 +140,17 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
                             <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" />
                             <div v-else class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                    :class="product.stock ? 'text-green-600' : 'text-red-600'" />
                                 <span>
-                                    {{
-                                        customerData?.stock > 0
-                                        ? trans("In stock :productStock available", { productStock: customerData?.stock })
-                                        : product.status_label ?? trans("Out of stock")
-                                    }}
+                                    {{ product?.stock >= 250
+                                    ? trans("Unlimited quantity available")
+                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
+                                }}
                                 </span>
                             </div>
 
                             <!-- REMIND ME -->
-                            <button v-if="product.stock <= 0 && layout?.app?.environment === 'local'"
+                            <button v-if="!product.stock && layout?.app?.environment === 'local'"
                                 v-tooltip="product.is_back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
                                 @click="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                                 class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
@@ -194,9 +195,9 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
 
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
-                    <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                    <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
                         <EcomAddToBasketv2
-                            v-if="product.stock > 0"
+                            v-if="product.stock"
                             :product="product"
                             :customerData="customerData"
                             :key="keyCustomer"
@@ -291,12 +292,12 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
             <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" class="w-full text-center" />
             <div v-else class="flex items-center gap-2 text-sm">
                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                    :class="product?.stock ? 'text-green-600' : 'text-red-600'" />
                 <span>
-                    {{
-                        customerData?.stock > 0
-                        ? trans("In stock :productStock available", { productStock: customerData?.stock })
-                        : product.status_label ?? trans("Out of stock")
+                    {{ product?.stock
+                        ? trans("Unlimited quantity available")
+                        : (product.stock > 0 ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)` :
+                            trans("Out Of Stock"))
                     }}
                 </span>
             </div>
@@ -340,7 +341,7 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
         <!-- ADD TO CART -->
         <div class="mt-6 flex flex-col gap-2">
             <EcomAddToBasketv2
-                v-if="layout?.iris?.is_logged_in && product.stock > 0"
+                v-if="layout?.iris?.is_logged_in && product.stock  && product.status !== 'coming-soon'"
                 :product="product"
                 :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"

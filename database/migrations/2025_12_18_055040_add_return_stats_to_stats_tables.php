@@ -6,8 +6,8 @@
  * Description: Add order return stats to warehouse, shop, and organisation stats tables
  */
 
-use App\Enums\Dispatching\Return\ReturnItemStateEnum;
-use App\Enums\Dispatching\Return\ReturnStateEnum;
+use App\Enums\GoodsIn\Return\ReturnItemStateEnum;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

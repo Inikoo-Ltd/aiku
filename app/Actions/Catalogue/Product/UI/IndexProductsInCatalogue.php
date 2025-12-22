@@ -195,7 +195,7 @@ class IndexProductsInCatalogue extends OrgAction
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($bucket != 'discontinued') {
-                $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
         };
     }
@@ -293,7 +293,6 @@ class IndexProductsInCatalogue extends OrgAction
         $afterTitle = null;
         $iconRight  = null;
         $model      = null;
-
 
         return Inertia::render(
             'Org/Catalogue/Products',

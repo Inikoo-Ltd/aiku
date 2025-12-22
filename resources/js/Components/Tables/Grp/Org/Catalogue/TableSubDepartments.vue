@@ -79,7 +79,7 @@ function productsRoute(SubDepartment: SubDepartmentx) {
     const currentRoute = route().current();
     if (currentRoute === "grp.org.shops.show.catalogue.departments.show.sub_departments.index") {
         return route(
-            "grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index",
+            "grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.index",
             [
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,

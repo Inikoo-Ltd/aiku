@@ -8,6 +8,7 @@
 
 namespace App\Models\Procurement;
 
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read Organisation $partner
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
  * @property-read \App\Models\Procurement\OrgPartnerStats|null $stats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\StockDelivery> $stockDeliveries
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\StockDelivery> $stockDeliveries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner newQuery()

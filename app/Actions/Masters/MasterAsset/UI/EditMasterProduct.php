@@ -22,6 +22,8 @@ use App\Models\Masters\MasterShop;
 
 class EditMasterProduct extends GrpAction
 {
+    use WithMasterProductNavigation;
+
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
         return $masterAsset;
@@ -85,6 +87,10 @@ class EditMasterProduct extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => [
+                    'previous' => $this->getPreviousModel($masterAsset, $request),
+                    'next'     => $this->getNextModel($masterAsset, $request),
+                ],
                 'pageHead'    => [
                     'model'   => __('Editing master product'),
                     'title'   => $masterAsset->code,
@@ -265,7 +271,7 @@ class EditMasterProduct extends GrpAction
                         'type'       => 'select_infinite',
                         'label'      => __('Master Family'),
                         'options'    => [
-                            MasterFamiliesResource::make($masterProduct->masterFamily)->toArray(request())
+                            $masterProduct->masterFamily ? MasterFamiliesResource::make($masterProduct->masterFamily)->toArray(request()) : null
                         ],
                         'fetchRoute' => [
                             'name'       => 'grp.json.master-family.all-master-family',
@@ -300,7 +306,7 @@ class EditMasterProduct extends GrpAction
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.recommended-trade-units',
                                     'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                        'masterProductCategory' => $masterProduct->masterFamily->id,
                                     ],
                                 ],
                             ],
@@ -309,7 +315,7 @@ class EditMasterProduct extends GrpAction
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.taken-trade-units',
                                     'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                        'masterProductCategory' => $masterProduct->masterFamily->id,
                                     ],
                                 ],
                             ],
@@ -319,7 +325,7 @@ class EditMasterProduct extends GrpAction
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.all-trade-units',
                                     'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                        'masterProductCategory' => $masterProduct->masterFamily->id,
                                     ],
                                 ],
                             ],

@@ -87,10 +87,6 @@ beforeEach(function () {
     $this->group        = $this->organisation->group;
     $this->adminGuest   = createAdminGuest($this->organisation->group);
 
-    //    $stocks          = createStocks($this->group);
-    //    $orgStocks       = createOrgStocks($this->organisation, $stocks);
-    //    $this->orgStock1 = $orgStocks[0];
-    //    $this->orgStock2 = $orgStocks[1];
 
     $tradeUnits       = createTradeUnits($this->group);
     $this->tradeUnit1 = $tradeUnits[0];

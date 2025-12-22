@@ -10,6 +10,8 @@ namespace App\Actions\Helpers\Intervals;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateInvoiceIntervals;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
@@ -59,6 +61,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
@@ -391,6 +394,25 @@ trait WithResetIntervals
         }
     }
 
+    protected function resetProducts(): void
+    {
+        foreach (
+            Product::whereNot('state', ProductCategoryStateEnum::DISCONTINUED)->get() as $product
+        ) {
+            AssetHydrateSalesIntervals::dispatch(
+                assetID: $product->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            AssetHydrateOrderIntervals::dispatch(
+                assetID: $product->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+    }
+
     protected function resetStocks(): void
     {
         foreach (
@@ -579,6 +601,7 @@ trait WithResetIntervals
         $this->resetOrganisations();
         $this->resetMasterShops();
         $this->resetShops();
+        $this->resetProducts();
         $this->resetPlatforms();
         $this->resetInvoiceCategories();
         $this->resetProductCategories();

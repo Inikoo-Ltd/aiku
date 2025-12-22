@@ -8,7 +8,7 @@
 
 namespace App\Exports\Procurement;
 
-use App\Models\Procurement\StockDelivery;
+use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;

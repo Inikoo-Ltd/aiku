@@ -48,7 +48,7 @@ enum CollectionTabsEnum: string
             ],
             CollectionTabsEnum::COLLECTIONS => [
                 'title' => __('Collections')." ({$parent->stats->number_collections})",
-                'icon'  => 'fal fa-cube',
+                'icon'  => 'fal fa-album-collection',
             ],
         };
     }

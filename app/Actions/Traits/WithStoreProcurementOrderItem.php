@@ -8,9 +8,9 @@
 
 namespace App\Actions\Traits;
 
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PurchaseOrder;
-use App\Models\Procurement\StockDelivery;
 use App\Models\SupplyChain\HistoricSupplierProduct;
 use Illuminate\Support\Arr;
 

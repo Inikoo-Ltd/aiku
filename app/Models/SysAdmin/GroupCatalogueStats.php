@@ -167,6 +167,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_master_families_no_master_department
  * @property int $number_master_products_no_master_family
  * @property int $number_products_status_coming_soon
+ * @property int $number_shops_type_faire
+ * @property int $number_shops_type_wix
+ * @property int $number_current_shops_type_faire
+ * @property int $number_current_shops_type_wix
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newQuery()

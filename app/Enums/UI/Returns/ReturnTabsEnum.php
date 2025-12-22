@@ -9,7 +9,7 @@
 namespace App\Enums\UI\Returns;
 
 use App\Enums\EnumHelperTrait;
-use App\Models\Dispatching\OrderReturn;
+use App\Models\GoodsIn\OrderReturn;
 
 enum ReturnTabsEnum: string
 {

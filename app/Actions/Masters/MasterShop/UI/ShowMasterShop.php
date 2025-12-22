@@ -13,6 +13,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
 use App\Http\Resources\Masters\MasterShopResource;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -83,8 +84,12 @@ class ShowMasterShop extends GrpAction
                     ?
                     fn () => MasterShopResource::make($masterShop)->resolve()
                     : Inertia::lazy(fn () => MasterShopResource::make($masterShop)->resolve()),
+                MasterShopTabsEnum::SHOPS->value => $this->tab == MasterShopTabsEnum::SHOPS->value
+                    ?
+                    fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)
+                    : Inertia::lazy(fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)),
             ]
-        );
+        )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value));
     }
 
 

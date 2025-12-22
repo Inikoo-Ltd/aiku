@@ -215,9 +215,9 @@ Route::get('webpage/{webpage:id}/web-block/{webBlock:id}/web-block-histories', [
 Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlockType'])->name('web-block-type.web_block_histories.index')->withoutScopedBindings();
 
 
-Route::get('master-product-category/{masterProductCategory}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
-Route::get('master-product-category/{masterProductCategory}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
-Route::get('master-product-category/{masterProductCategory}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory:id}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();
 
 Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::class)->name('master-family.all-master-family')->withoutScopedBindings();
 

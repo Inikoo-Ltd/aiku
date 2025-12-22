@@ -8,11 +8,11 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Procurement\StockDeliveryItem\StoreStockDeliveryItem;
-use App\Actions\Procurement\StockDeliveryItem\UpdateStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Enums\Transfers\FetchRecord\FetchRecordTypeEnum;
-use App\Models\Procurement\StockDelivery;
-use App\Models\Procurement\StockDeliveryItem;
+use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryItem;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Support\Arr;

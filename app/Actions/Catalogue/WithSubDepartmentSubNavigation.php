@@ -25,7 +25,7 @@ trait WithSubDepartmentSubNavigation
             'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
         ];
         $productsRoute = [
-             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index',
+             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.index',
             'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
         ];
         $collectionsRoute = [

@@ -24,9 +24,9 @@ use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\CheckTemporaryWooUserApiKeys;
-use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Product\CreateNewBulkPortfolioToWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
@@ -77,6 +77,8 @@ use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToMultiChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ebay\CreateRetinaNewAllPortfoliosToEbay;
@@ -84,7 +86,6 @@ use App\Actions\Retina\Ebay\CreateRetinaNewBulkPortfoliosToEbay;
 use App\Actions\Retina\Ebay\MatchRetinaBulkNewProductToCurrentEbay;
 use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
-use App\Actions\Retina\Ebay\UpdateAndUploadRetinaPortfolioToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual\StoreRetinaFulfilmentManualPlatform;
@@ -384,8 +385,11 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProd
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
-Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentEbay::class)->name('portfolio.update_new_product.publish');
-Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentEbay::class, 'asDraft'])->name('portfolio.update_new_product.draft');
+Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentChannel::class)->name('portfolio.update_new_product.publish');
+Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft');
+
+Route::post('portfolios/update-new-product-price/publish', UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class)->name('portfolios.update_new_product_price.publish');
+Route::post('portfolios/update-new-product-price/draft', [UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class, 'asDraft'])->name('portfolios.update_new_product_price.draft');
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');

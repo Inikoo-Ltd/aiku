@@ -130,7 +130,7 @@ test('JSON Get All Trade Units in Master Product Category', function () {
     $masterProductCategory = ensureMasterProductCategory();
 
     $response = getJson(route('grp.json.master-product-category.all-trade-units', [
-        'masterProductCategory' => $masterProductCategory->slug,
+        'masterProductCategory' => $masterProductCategory->id,
     ]));
 
     $response->assertSuccessful();
@@ -145,7 +145,7 @@ test('JSON Get Recommended Trade Units in Master Product Category', function () 
     $masterProductCategory = ensureMasterProductCategory();
 
     $response = getJson(route('grp.json.master-product-category.recommended-trade-units', [
-        'masterProductCategory' => $masterProductCategory->slug,
+        'masterProductCategory' => $masterProductCategory->id,
     ]));
 
     $response->assertSuccessful();
@@ -160,7 +160,7 @@ test('JSON Get Taken Trade Units in Master Product Category', function () {
     $masterProductCategory = ensureMasterProductCategory();
 
     $response = getJson(route('grp.json.master-product-category.taken-trade-units', [
-        'masterProductCategory' => $masterProductCategory->slug,
+        'masterProductCategory' => $masterProductCategory->id,
     ]));
 
     $response->assertSuccessful();
@@ -1175,7 +1175,7 @@ test('create master product page loads for family in master shop', function () {
                                     $field->where('type', 'list-selector')
                                         ->where('label', __(key: 'Trade units'))
                                         ->where('routeFetch.name', 'grp.json.master-product-category.recommended-trade-units')
-                                        ->where('routeFetch.parameters.masterProductCategory', $masterFamily->slug)
+                                        ->where('routeFetch.parameters.masterProductCategory', $masterFamily->id)
                                         ->etc();
                                 })
                                 ->has('fields.code', function (AssertableInertia $field) {

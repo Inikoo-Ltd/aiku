@@ -21,6 +21,8 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterDepartment extends OrgAction
 {
+    use WithMasterDepartmentNavigation;
+
     private MasterShop|Group $parent;
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
@@ -49,6 +51,10 @@ class EditMasterDepartment extends OrgAction
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
+                'navigation'  => [
+                    'previous' => $this->getPreviousModel($masterProductCategory, $request),
+                    'next'     => $this->getNextModel($masterProductCategory, $request),
+                ],
                 'title'       => __('Edit Master Department'),
                 'pageHead'    => [
                     'title'   => __('Edit master department'),
@@ -56,7 +62,7 @@ class EditMasterDepartment extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('Cancel'),
+                            'label' => __('Exit Edit'),
                             'route' => [
                                 'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

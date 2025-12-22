@@ -49,12 +49,14 @@ class CloneCatalogueStructure
     /**
      * @throws \Throwable
      */
-    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false): void
+    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false): void
     {
         $this->cloneDepartments($fromShop, $shop);
         $this->cloneSubDepartments($fromShop, $shop);
         $this->cloneFamilies($fromShop, $shop);
-        $this->cloneProducts($fromShop, $shop);
+        if (!$skipProducts) {
+            $this->cloneProducts($fromShop, $shop);
+        }
 
         if ($deleteMissing) {
             $this->deleteDepartmentsNotFoundInFromShop($fromShop, $shop);
@@ -176,7 +178,6 @@ class CloneCatalogueStructure
             } else {
                 AddMissingMasterAssetsFromSeederShops::run($shop, $fromShop);
             }
-
         }
     }
 
@@ -762,7 +763,7 @@ class CloneCatalogueStructure
 
     public function getCommandSignature(): string
     {
-        return 'catalogue:clone {from_type} {from} {to_type} {to} {--delete-missing : Delete categories not found in source shop}';
+        return 'catalogue:clone {from_type} {from} {to_type} {to} {--delete-missing : Delete categories not found in source shop} {--skip-products : Skip cloning products}';
     }
 
     /**
@@ -784,7 +785,9 @@ class CloneCatalogueStructure
         }
 
         $deleteMissing = $command->option('delete-missing');
-        $this->handle($fromShop, $toShop, $deleteMissing);
+
+        $skipProducts = $command->option('skip-products');
+        $this->handle($fromShop, $toShop, $deleteMissing, $skipProducts);
 
         return 0;
     }

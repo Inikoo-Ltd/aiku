@@ -41,6 +41,7 @@ class ShowMasterProduct extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
+    use WithMasterProductNavigation;
 
     private MasterShop|Group|MasterAsset|MasterProductCategory $parent;
 
@@ -108,8 +109,8 @@ class ShowMasterProduct extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'       => [
-                    'previous' => $this->getPrevious($masterAsset, $request),
-                    'next'     => $this->getNext($masterAsset, $request),
+                    'previous' => $this->getPreviousModel($masterAsset, $request),
+                    'next'     => $this->getNextModel($masterAsset, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
@@ -390,47 +391,4 @@ class ShowMasterProduct extends GrpAction
         };
     }
 
-    public function getPrevious(MasterAsset $masterAsset, ActionRequest $request): ?array
-    {
-        $previous = MasterAsset::where('code', '<', $masterAsset->code)->orderBy('code', 'desc')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(MasterAsset $masterAsset, ActionRequest $request): ?array
-    {
-        $next = MasterAsset::where('code', '>', $masterAsset->code)->orderBy('code')->where('master_shop_id', $this->parent->id)->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?MasterAsset $masterAsset, string $routeName): ?array
-    {
-        if (!$masterAsset) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.masters.master_assets.show' => [
-                'label' => $masterAsset->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterProduct' => $masterAsset->slug
-                    ]
-                ]
-            ],
-            'grp.masters.master_shops.show.master_products.show' => [
-                'label' => $masterAsset->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterShop'    => $masterAsset->masterShop->slug,
-                        'masterProduct' => $masterAsset->slug
-                    ]
-                ]
-            ],
-            default => []
-        };
-    }
 }
