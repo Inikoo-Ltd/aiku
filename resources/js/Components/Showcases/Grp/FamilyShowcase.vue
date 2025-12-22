@@ -8,6 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAlbumCollection } from "@fal";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
+import SalesIntervalsCompact from '@/Components/Product/SalesIntervalsCompact.vue';
 import { trans } from 'laravel-vue-i18n';
 import { faExternalLink } from '@far';
 
@@ -29,6 +30,7 @@ const props = withDefaults(defineProps<{
             detach_family: routeType
         }
     }
+    salesIntervals?: object
     actions?: any
     isMaster?: boolean
 }>(), {
@@ -121,8 +123,14 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.family.data"  />
             </div>
-            <div class="col-span-1 md:col-span-1 lg:col-span-4"></div>
-            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+                <!-- Spacing / Content area -->
+            </div>
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+                <!-- Sales Intervals -->
+                <SalesIntervalsCompact v-if="salesIntervals" :intervalsData="salesIntervals" />
+                
+                <!-- Review Content -->
                 <ReviewContent v-if="!isMaster" :data="data.family.data"  />
             </div>
         </div>
