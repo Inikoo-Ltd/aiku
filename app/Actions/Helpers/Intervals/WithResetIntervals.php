@@ -417,6 +417,95 @@ trait WithResetIntervals
         }
     }
 
+    protected function resetPlatforms(): void
+    {
+        foreach (
+            Platform::all() as $platform
+        ) {
+            PlatformHydrateSalesIntervals::dispatch(
+                platform: $platform,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+    }
+
+    protected function resetProductCategories(): void
+    {
+        foreach (
+            ProductCategory::whereIn('state', [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])->get() as $productCategory
+        ) {
+            ProductCategoryHydrateSalesIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            ProductCategoryHydrateInvoiceIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+
+        foreach (
+            ProductCategory::whereNotIn('state', [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])->get() as $productCategory
+        ) {
+            ProductCategoryHydrateSalesIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(60))->onQueue('low-priority');
+
+            ProductCategoryHydrateInvoiceIntervals::dispatch(
+                productCategoryId: $productCategory->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(60))->onQueue('low-priority');
+        }
+    }
+
+    protected function resetCollections(): void
+    {
+        foreach (
+            Collection::where('state', CollectionStateEnum::ACTIVE)->get() as $collection
+        ) {
+            CollectionHydrateSalesIntervals::dispatch(
+                collectionId: $collection->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            CollectionHydrateOrderingIntervals::dispatch(
+                collectionId: $collection->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+
+        foreach (
+            Collection::where('state', '!=', CollectionStateEnum::ACTIVE)->get() as $collection
+        ) {
+            CollectionHydrateSalesIntervals::dispatch(
+                collectionId: $collection->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(60))->onQueue('low-priority');
+
+            CollectionHydrateOrderingIntervals::dispatch(
+                collectionId: $collection->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinutes(60))->onQueue('low-priority');
+        }
+    }
+
     protected function resetStocks(): void
     {
         foreach (
@@ -542,95 +631,6 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             )->delay(now()->addMinutes(45))->onQueue('low-priority');
-        }
-    }
-
-    protected function resetPlatforms(): void
-    {
-        foreach (
-            Platform::all() as $platform
-        ) {
-            PlatformHydrateSalesIntervals::dispatch(
-                platform: $platform,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-        }
-    }
-
-    protected function resetProductCategories(): void
-    {
-        foreach (
-            ProductCategory::whereIn('state', [
-                ProductCategoryStateEnum::ACTIVE,
-                ProductCategoryStateEnum::DISCONTINUING
-            ])->get() as $productCategory
-        ) {
-            ProductCategoryHydrateSalesIntervals::dispatch(
-                productCategoryId: $productCategory->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-
-            ProductCategoryHydrateInvoiceIntervals::dispatch(
-                productCategoryId: $productCategory->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-        }
-
-        foreach (
-            ProductCategory::whereNotIn('state', [
-                ProductCategoryStateEnum::ACTIVE,
-                ProductCategoryStateEnum::DISCONTINUING
-            ])->get() as $productCategory
-        ) {
-            ProductCategoryHydrateSalesIntervals::dispatch(
-                productCategoryId: $productCategory->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(60))->onQueue('low-priority');
-
-            ProductCategoryHydrateInvoiceIntervals::dispatch(
-                productCategoryId: $productCategory->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(60))->onQueue('low-priority');
-        }
-    }
-
-    protected function resetCollections(): void
-    {
-        foreach (
-            Collection::where('state', CollectionStateEnum::ACTIVE)->get() as $collection
-        ) {
-            CollectionHydrateSalesIntervals::dispatch(
-                collectionId: $collection->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-
-            CollectionHydrateOrderingIntervals::dispatch(
-                collectionId: $collection->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-        }
-
-        foreach (
-            Collection::where('state', '!=', CollectionStateEnum::ACTIVE)->get() as $collection
-        ) {
-            CollectionHydrateSalesIntervals::dispatch(
-                collectionId: $collection->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(60))->onQueue('low-priority');
-
-            CollectionHydrateOrderingIntervals::dispatch(
-                collectionId: $collection->id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinutes(60))->onQueue('low-priority');
         }
     }
 
