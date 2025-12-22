@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterCollections extends OrgAction
@@ -249,6 +251,11 @@ class IndexMasterCollections extends OrgAction
                         ],
                     ],
                 ],
+                'shopsData' => $this->parent instanceof MasterShop
+                    ? OpenShopsInMasterShopResource::collection(
+                        IndexOpenShopsInMasterShop::run($this->parent, 'shops')
+                    )
+                    : [],
                 'data'        => MasterCollectionsResource::collection($masterCollections),
 
             ]

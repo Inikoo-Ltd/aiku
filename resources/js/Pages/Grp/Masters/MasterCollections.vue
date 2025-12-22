@@ -12,11 +12,14 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
     data: {}
+    shopsData : {}
 }>()
+
+console.log('ddddd',props)
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableMasterCollections :data="data" />
+    <TableMasterCollections :data="data" :shopsData="shopsData"/>
 </template>
