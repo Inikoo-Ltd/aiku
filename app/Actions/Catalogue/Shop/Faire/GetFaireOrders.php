@@ -23,8 +23,12 @@ class GetFaireOrders extends OrgAction
     {
         DB::transaction(function () use ($shop) {
             $orders = $shop->getFaireOrders([
-                //'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
+                'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
             ]);
+
+            $shops = $shop->masterShop->shops()
+                ->whereNot('type', ShopTypeEnum::FAIRE)
+                ->pluck('id');
 
             foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
                 $retailerId = Arr::get($faireOrder, 'retailer_id');
@@ -50,9 +54,10 @@ class GetFaireOrders extends OrgAction
                     $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
 
                     foreach (Arr::get($faireOrder, 'items', []) as $item) {
-                        $product = Product::where('shop_id', $shop->id)
-                            ->where('sku', $item['sku'])
+                        $product = Product::whereIn('shop_id', $shops)
+                            ->where('code', 'ILIKE', "%{$item['sku']}%")
                             ->first();
+
                         $historicAsset = $product->asset?->historicAsset;
 
                         if (! $historicAsset) {
