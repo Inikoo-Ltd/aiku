@@ -8,14 +8,14 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Enums\Dispatching\Return\ReturnItemStateEnum;
+use App\Enums\GoodsIn\Return\ReturnItemStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReturnItemResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $stateValue = $this->state instanceof \App\Enums\Dispatching\Return\ReturnItemStateEnum
+        $stateValue = $this->state instanceof \App\Enums\GoodsIn\Return\ReturnItemStateEnum
             ? $this->state->value
             : $this->state;
 

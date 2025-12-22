@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Helpers\ImageResource;
 use Illuminate\Support\Arr;
 
 /**
@@ -96,7 +95,6 @@ class ProductsResource extends JsonResource
             'current_interval'          => $this->current_interval ?? 'ytd',
             'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
-            'images'                    => ImageResource::collection($this->images),
             'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
             'master_product_id'         => $this->master_product_id
         ];

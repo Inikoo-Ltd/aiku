@@ -84,11 +84,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
-const canOrder = computed(() => {
-    if (props.product.is_on_demand) return true
-    else if (props.product.stock > 0) return true
-    return false
-})
+
 
 
 </script>
@@ -131,7 +127,7 @@ const canOrder = computed(() => {
 
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
-                        v-if="canOrder && basketButton && !product.is_coming_soon" 
+                        v-if="product.stock && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
                         :product="product"
                         :key="product" 
@@ -140,7 +136,7 @@ const canOrder = computed(() => {
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" 
                         :buttonStyle="buttonStyle" 
                     />
-                    <button v-else-if="layout?.app?.environment === 'local' && !canOrder"
+                    <button v-else-if="layout?.app?.environment === 'local' && !product.stock"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
@@ -177,12 +173,12 @@ const canOrder = computed(() => {
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center md:w-fit md:text-right"/>
                         <div v-else
                             class="flex items-end gap-1 px-2 py-1 rounded-xl font-medium w-fit break-words leading-snug"
-                            :class="(product?.is_on_demand || product.stock > 0 ) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+                            :class="(product.stock > 0 ) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
 
                             <span class="inline-flex items-center gap-1 text-xs leading-snug w-fit">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" />
                                 <span>
-                                    {{ product?.is_on_demand
+                                    {{ product?.stock >= 250
                                         ? trans("Unlimited quantity")
                                         : (product.stock > 0
                                             ? product.stock + ' ' + trans('available')

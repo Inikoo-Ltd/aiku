@@ -41,7 +41,7 @@ const props = defineProps<{
   familyId: number;
   storeProductRoute: routeType
   shopsData?: any
-  masterProductCategory?: number
+  masterProductCategoryId?: number
   editable_table?: boolean
   currency?: any
   is_orphan_products?: any
@@ -182,9 +182,12 @@ const onSubmitToFamily = () => {
     @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId" />
 
   <!-- Dialog Create Product -->
-    <FormCreateMasterProduct :showDialog="showDialog" :storeProductRoute="storeProductRoute"
-    @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData"
-    :masterProductCategory="masterProductCategory" :is_dropship="route().params['masterShop'] == 'ds'"/>
+    <FormCreateMasterProduct
+        :showDialog="showDialog"
+        :storeProductRoute="storeProductRoute"
+        @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData"
+        :masterProductCategoryId="masterProductCategoryId"
+        :is_dropship="route().params['masterShop'] == 'ds'"/>
 
 
     <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"

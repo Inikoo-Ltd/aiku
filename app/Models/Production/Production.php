@@ -10,7 +10,7 @@ namespace App\Models\Production;
 
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Models\Analytics\AikuSection;
-use App\Models\Procurement\StockDelivery;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Role;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;

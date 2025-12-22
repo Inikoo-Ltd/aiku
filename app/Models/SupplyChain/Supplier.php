@@ -8,11 +8,11 @@
 
 namespace App\Models\SupplyChain;
 
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
-use App\Models\Procurement\StockDelivery;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;

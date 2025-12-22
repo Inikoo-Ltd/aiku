@@ -14,7 +14,6 @@ use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -32,6 +31,7 @@ class ShowSubDepartment extends OrgAction
     use WithCatalogueAuthorisation;
     use WithSubDepartmentSubNavigation;
     use WithWebpageActions;
+    use WithSubDepartmentNavigation;
 
 
     private Organisation|Shop|ProductCategory $parent;
@@ -61,24 +61,23 @@ class ShowSubDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $subDepartment, ActionRequest $request): Response
     {
-
         $parentTag = [
-                    [
-                        'label' => $subDepartment->department->name,
-                        'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show',
-                            'parameters' => [
-                                'organisation' => $subDepartment->organisation->slug,
-                                'shop'  => $subDepartment->shop->slug,
-                                'department' => $subDepartment->department->slug
-                            ]
-                        ],
-                        'icon'  => 'fal fa-folder-tree'
+            [
+                'label' => $subDepartment->department->name,
+                'route' => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                    'parameters' => [
+                        'organisation' => $subDepartment->organisation->slug,
+                        'shop'         => $subDepartment->shop->slug,
+                        'department'   => $subDepartment->department->slug
                     ]
-                ];
+                ],
+                'icon'  => 'fal fa-folder-tree'
+            ]
+        ];
 
+        $urlMaster = null;
 
-        $urlMaster                              = null;
         if ($subDepartment->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',
@@ -91,21 +90,21 @@ class ShowSubDepartment extends OrgAction
         return Inertia::render(
             'Org/Catalogue/SubDepartment',
             [
-                'title'       => __('Sub-department'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'            => __('Sub-department'),
+                'breadcrumbs'      => $this->getBreadcrumbs(
                     $subDepartment,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
-                    'previous' => $this->getPrevious($subDepartment, $request),
-                    'next'     => $this->getNext($subDepartment, $request),
+                'navigation'       => [
+                    'previous' => $this->getPreviousModel($subDepartment, $request),
+                    'next'     => $this->getNextModel($subDepartment, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => $subDepartment->department->name,
-                            'to'    => [
+                            'label'   => $subDepartment->department->name,
+                            'to'      => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show',
                                 'parameters' => [
                                     'organisation' => $this->organisation->slug,
@@ -114,25 +113,25 @@ class ShowSubDepartment extends OrgAction
                                 ]
                             ],
                             'tooltip' => 'Department',
-                            'icon' => ['fal', 'folder-tree']
+                            'icon'    => ['fal', 'folder-tree']
                         ],
                         [
-                            'label' => $subDepartment->name,
-                            'to'    => [
+                            'label'   => $subDepartment->name,
+                            'to'      => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                                 'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'department'   => $subDepartment->department->slug,
+                                    'organisation'  => $this->organisation->slug,
+                                    'shop'          => $this->shop->slug,
+                                    'department'    => $subDepartment->department->slug,
                                     'subDepartment' => $subDepartment->slug
                                 ]
                             ],
                             'tooltip' => __('Sub-Department'),
-                            'icon' => ['fal', 'fa-folder-download']
+                            'icon'    => ['fal', 'fa-folder-download']
                         ],
                     ],
                 ),
-                'pageHead'    => [
+                'pageHead'         => [
                     'title'         => $subDepartment->name,
                     'model'         => __('Sub-department'),
                     'icon'          => [
@@ -158,19 +157,19 @@ class ShowSubDepartment extends OrgAction
                                 'parameters' => [
                                     'productCategory' => $subDepartment->id,
                                 ],
-                                'method' => 'delete',
+                                'method'     => 'delete',
                             ]
                         ] : false,
                     ],
-                    'parentTag' => $parentTag,
+                    'parentTag'     => $parentTag,
                     'subNavigation' => $this->getSubDepartmentSubNavigation($subDepartment)
                 ],
-                'tabs'        => [
+                'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => DepartmentTabsEnum::navigation()
                 ],
 
-                'routes'    => [
+                'routes' => [
                     'attach_families' => [
                         'name'       => 'grp.models.sub-department.families.attach',
                         'parameters' => [
@@ -178,30 +177,30 @@ class ShowSubDepartment extends OrgAction
                         ],
                         'method'     => 'post'
                     ],
-                    'fetch_families' => [
+                    'fetch_families'  => [
                         'name'       => 'grp.json.shop.catalogue.departments.families',
                         'parameters' => [
-                            'shop'  => $subDepartment->shop->slug,
-                            'productCategory'   => $this->parent->slug
+                            'shop'            => $subDepartment->shop->slug,
+                            'productCategory' => $this->parent->slug
                         ]
                     ],
                 ],
 
-                'collections_route' => [
+                'collections_route'        => [
                     'name'       => 'grp.json.shop.catalogue.collections',
                     'parameters' => [
-                        'shop'         => $subDepartment->shop->slug,
-                        'scope'   => $subDepartment->shop->slug
+                        'shop'  => $subDepartment->shop->slug,
+                        'scope' => $subDepartment->shop->slug
                     ],
-                    'method' => 'get'
+                    'method'     => 'get'
                 ],
-                'url_master'       => $urlMaster,
+                'url_master'               => $urlMaster,
                 'attach_collections_route' => $subDepartment->webpage ? [
                     'name'       => 'grp.models.webpage.attach_collection',
                     'parameters' => [
-                        'webpage'  => $subDepartment->webpage->id,
+                        'webpage' => $subDepartment->webpage->id,
                     ],
-                    'method' => 'post'
+                    'method'     => 'post'
                 ] : [],
 
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
@@ -229,7 +228,7 @@ class ShowSubDepartment extends OrgAction
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($subDepartment))),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
-                    fn () =>  GetProductCategoryImages::run($subDepartment)
+                    fn () => GetProductCategoryImages::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryImages::run($subDepartment)),
 
             ]
@@ -251,7 +250,6 @@ class ShowSubDepartment extends OrgAction
 
     public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-
         $headCrumb = function (ProductCategory $subDepartment, array $routeParameters, $suffix) {
             return [
 
@@ -264,7 +262,7 @@ class ShowSubDepartment extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $subDepartment->code,
+                            'label' => $subDepartment->code
                         ],
                     ],
                     'suffix'         => $suffix,
@@ -278,19 +276,20 @@ class ShowSubDepartment extends OrgAction
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show' =>
             array_merge(
                 ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', Arr::only($routeParameters, ['organisation', 'shop', 'department'])),
-                [
+                $headCrumb(
+                    $subDepartment,
                     [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route'  => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
-                                'parameters' => $routeParameters
-                            ],
-                            'label'  => $subDepartment->name,
-                            'suffix' => $suffix,
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                            'parameters' => $routeParameters
                         ]
-                    ]
-                ]
+                    ],
+                    $suffix
+                )
             ),
             'grp.org.shops.show.catalogue.sub_departments.show',
             'grp.org.shops.show.catalogue.sub_departments.show.families.index',
@@ -319,45 +318,6 @@ class ShowSubDepartment extends OrgAction
             ),
             default => []
         };
-
     }
 
-    public function getPrevious(ProductCategory $subDepartment, ActionRequest $request): ?array
-    {
-        $previous = ProductCategory::where('code', '<', $subDepartment->code)->where('shop_id', $subDepartment->shop->id)
-            ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(ProductCategory $subDepartment, ActionRequest $request): ?array
-    {
-        $next = ProductCategory::where('code', '>', $subDepartment->code)->where('shop_id', $subDepartment->shop->id)
-            ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?ProductCategory $subDepartment, string $routeName): ?array
-    {
-        if (!$subDepartment) {
-            return null;
-        }
-
-
-        return [
-            'label' => $subDepartment->name,
-            'route' => [
-                'name'       => $routeName,
-                'parameters' => [
-                    'organisation'  => $subDepartment->organisation->slug,
-                    'shop'          => $subDepartment->shop->slug,
-                    'department'    => $subDepartment->parent->slug,
-                    'subDepartment' => $subDepartment->slug
-                ]
-            ]
-        ];
-    }
 }

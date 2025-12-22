@@ -8,13 +8,13 @@
 
 namespace App\Stubs\Migrations;
 
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
-use App\Enums\Procurement\StockDeliveryItem\StockDeliveryItemStateEnum;
 use Illuminate\Database\Schema\Blueprint;
 
 trait HasProcurementStats

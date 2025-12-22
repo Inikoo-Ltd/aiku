@@ -16,6 +16,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\GoodsIn\Sowing;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
@@ -161,6 +162,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
+ * @property-read Collection<int, \App\Models\GoodsIn\Sowing> $sowings
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -304,6 +306,11 @@ class DeliveryNote extends Model implements Auditable
     public function packings(): HasMany
     {
         return $this->hasMany(Packing::class);
+    }
+
+    public function sowings(): HasMany
+    {
+        return $this->hasMany(Sowing::class);
     }
 
     public function customerClient(): BelongsTo

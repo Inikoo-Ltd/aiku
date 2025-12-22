@@ -21,6 +21,8 @@ use App\Http\Resources\Helpers\LanguageResource;
 
 class EditFamily extends OrgAction
 {
+    use WithFamilyNavigation;
+
     public function handle(ProductCategory $family): ProductCategory
     {
         return $family;
@@ -119,8 +121,8 @@ class EditFamily extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'                            => [
-                    'previous' => $this->getPrevious($family, $request),
-                    'next'     => $this->getNext($family, $request),
+                    'previous' => $this->getPreviousModel($family, $request),
+                    'next'     => $this->getNextModel($family, $request),
                 ],
                 'pageHead'    => [
                     'title'    => $family->code,
@@ -346,44 +348,4 @@ class EditFamily extends OrgAction
         );
     }
 
-    public function getPrevious(ProductCategory $family, ActionRequest $request): ?array
-    {
-        $previous = ProductCategory::where('code', '<', $family->code)->orderBy('code', 'desc')->first();
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(ProductCategory $family, ActionRequest $request): ?array
-    {
-        $next = ProductCategory::where('code', '>', $family->code)->orderBy('code')->first();
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?ProductCategory $family, string $routeName): ?array
-    {
-        if (!$family) {
-            return null;
-        }
-        return match ($routeName) {
-            'shops.families.edit' => [
-                'label' => $family->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'department' => $family->slug
-                    ]
-                ]
-            ],
-            'shops.show.families.edit' => [
-                'label' => $family->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'shop'       => $family->shop->slug,
-                        'department' => $family->slug
-                    ]
-                ]
-            ],
-            default => []
-        };
-    }
 }

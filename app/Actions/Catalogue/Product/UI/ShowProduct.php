@@ -44,6 +44,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
+    use WithProductNavigation;
 
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -345,8 +346,8 @@ class ShowProduct extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'       => [
-                    'previous' => $this->getPrevious($product, $request),
-                    'next'     => $this->getNext($product, $request),
+                    'previous' => $this->getPreviousModel($product, $request),
+                    'next'     => $this->getNextModel($product, $request),
                 ],
                 'mini_breadcrumbs' => $miniBreadcrumbs,
 
@@ -711,59 +712,4 @@ class ShowProduct extends OrgAction
         };
     }
 
-    public function getPrevious(Product $product, ActionRequest $request): ?array
-    {
-        $previous = Product::where('slug', '<', $product->slug)->orderBy('slug', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(Product $product, ActionRequest $request): ?array
-    {
-        $next = Product::where('slug', '>', $product->slug)->orderBy('slug')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?Product $product, string $routeName): ?array
-    {
-        if (!$product) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'shops.products.show' => [
-                'label' => $product->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'product' => $product->slug,
-                    ],
-                ],
-            ],
-            'grp.org.shops.show.catalogue.products.all_products.show' => [
-                'label' => $product->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $this->parent->slug,
-                        'shop'         => $product->shop->slug,
-                        'product'      => $product->slug,
-                    ],
-                ],
-            ],
-            'grp.org.fulfilments.show.products.show' => [
-                'label' => $product->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $this->parent->slug,
-                        'fulfilment'   => $product->shop->fulfilment->slug,
-                        'product'      => $product->slug,
-                    ],
-                ],
-            ],
-            default => null,
-        };
-    }
 }

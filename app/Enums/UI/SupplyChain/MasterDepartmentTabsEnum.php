@@ -17,7 +17,7 @@ enum MasterDepartmentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
-    /*     case CONTENT = 'content'; */
+    case CONTENT = 'content';
     case DEPARTMENTS = 'departments';
     case SALES = 'sales';
     case HISTORY = 'history';
@@ -27,7 +27,6 @@ enum MasterDepartmentTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-
             MasterDepartmentTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
@@ -53,10 +52,10 @@ enum MasterDepartmentTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
-            /*   MasterDepartmentTabsEnum::CONTENT => [
-                  'title' => __('Content'),
-                  'icon'  => 'fal fa-quote-left',
-              ], */
+            MasterDepartmentTabsEnum::CONTENT => [
+                'title' => __('Content'),
+                'icon'  => 'fal fa-quote-left',
+            ],
         };
     }
 }

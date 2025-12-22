@@ -12,7 +12,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
-use App\Actions\Dispatching\Picking\StorePicking;
+use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\Ordering\Order\UpdateState\RollbackOrderAfterDeliveryNoteCancellation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -34,6 +34,9 @@ class CancelDeliveryNote extends OrgAction
     use HasDeliveryNoteHydrators;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
         $oldState     = $deliveryNote->state;
@@ -49,59 +52,62 @@ class CancelDeliveryNote extends OrgAction
         data_set($modelData, 'cancelled_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::CANCELLED);
 
-        $deliveryNote = $this->update($deliveryNote, $modelData);
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $modifyOrder) {
+            $deliveryNote = $this->update($deliveryNote, $modelData);
 
-        foreach ($deliveryNote->pickings as $picking) {
-            $deliveryNoteItem = $picking->deliveryNoteItem;
+            foreach ($deliveryNote->pickings as $picking) {
+                $deliveryNoteItem = $picking->deliveryNoteItem;
 
-            $toPick = $deliveryNoteItem->quantity_required - $deliveryNoteItem->picked_quantity;
+                $toPick = $deliveryNoteItem->quantity_required - $deliveryNoteItem->picked_quantity;
 
-            $locationPickingStock = LocationOrgStock::where('location_id', $picking->location_id)
-                ->where('org_stock_id', $picking->org_stock_id)->first();
-            if (!$locationPickingStock) {
-                $locationPickingStock = LocationOrgStock::where('org_stock_id', $picking->org_stock_id)->first();
+                $locationPickingStock = LocationOrgStock::where('location_id', $picking->location_id)
+                    ->where('org_stock_id', $picking->org_stock_id)->first();
+                if (!$locationPickingStock) {
+                    $locationPickingStock = LocationOrgStock::where('org_stock_id', $picking->org_stock_id)->first();
+                }
+
+                if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK) {
+                    StoreSowing::make()->action(
+                        $deliveryNoteItem,
+                        request()->user(),
+                        [
+                            'location_org_stock_id' => $locationPickingStock->id,
+                            'quantity'              => $picking->quantity,
+                            'sower_user_id'         => $picking->picker_user_id,
+                            'original_picking_id'   => $picking->id,
+                        ],
+                    );
+                }
+
+                if ($toPick > 0) {
+                    StoreNotPickPicking::make()->action(
+                        $deliveryNoteItem,
+                        request()->user(),
+                        [
+                            'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
+                            'not_picked_note'   => "Delivery Note $deliveryNote->reference cancelled.",
+                            'quantity'          => $toPick,
+                        ],
+                    );
+                }
             }
-            // this needs to change if $locationPickingStock is null we need to throw the error to UI
-            if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK) {
-                StorePicking::run(
-                    $deliveryNoteItem,
-                    $locationPickingStock,
-                    [
-                        'not_picked_reason' => PickingNotPickedReasonEnum::NA,
-                        'type'              => PickingTypeEnum::RETURN,
-                        'quantity'          => -$picking->quantity,
-                        'picker_user_id'    => $picking->picker_user_id,
 
-                    ],
-                );
+
+            foreach ($deliveryNote->deliveryNoteItems as $item) {
+                UpdateDeliveryNoteItem::make()->action($item, [
+                    'state'        => DeliveryNoteItemStateEnum::CANCELLED,
+                    'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED,
+                ]);
             }
 
-            if ($toPick > 0) {
-                StoreNotPickPicking::make()->action(
-                    $deliveryNoteItem,
-                    request()->user(),
-                    [
-                        'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
-                        'not_picked_note'   => "Delivery Note $deliveryNote->reference cancelled.",
-                        'quantity'          => $toPick,
-                    ],
-                );
+
+            if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && $modifyOrder) {
+                $order = $deliveryNote->orders->first();
+                RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
             }
-        }
 
-
-        foreach ($deliveryNote->deliveryNoteItems as $item) {
-            UpdateDeliveryNoteItem::make()->action($item, [
-                'state'        => DeliveryNoteItemStateEnum::CANCELLED,
-                'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED,
-            ]);
-        }
-
-
-        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && $modifyOrder) {
-            $order = $deliveryNote->orders->first();
-            RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
-        }
+            return $deliveryNote;
+        });
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::CANCELLED);
@@ -110,6 +116,9 @@ class CancelDeliveryNote extends OrgAction
         return $deliveryNote;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
@@ -117,6 +126,9 @@ class CancelDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
@@ -129,6 +141,9 @@ class CancelDeliveryNote extends OrgAction
         return 'delivery_note:cancel {delivery_note : ID, slug or reference of the delivery note} {--modifyOrder : Rollback the order}';
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asCommand(Command $command): int
     {
         $identifier = (string)$command->argument('delivery_note');
@@ -152,8 +167,6 @@ class CancelDeliveryNote extends OrgAction
 
         $modifyOrder = (bool)$command->option('modifyOrder');
 
-
-        // Run the action
         $this->initialisationFromShop($deliveryNote->shop, []);
         $this->handle($deliveryNote, $modifyOrder);
 

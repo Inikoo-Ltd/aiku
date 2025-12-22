@@ -184,7 +184,6 @@ class GetProductCategoryShowcase
 
 
         $data['has_webpage'] = (bool)$productCategory->webpage;
-
         return $data;
     }
 }

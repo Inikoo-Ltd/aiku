@@ -25,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOfferCampaign extends OrgAction
 {
+    use WithOfferCampaignNavigation;
+
     public function handle(OfferCampaign $offerCampaign): OfferCampaign
     {
         return $offerCampaign;
@@ -52,8 +54,8 @@ class ShowOfferCampaign extends OrgAction
                 'title'                                              => __('Offer Campaign'),
                 'breadcrumbs'                                        => $this->getBreadcrumbs($offerCampaign, $request->route()->getName(), $request->route()->originalParameters()),
                 'navigation'                                         => [
-                    'previous' => $this->getPrevious($offerCampaign, $request),
-                    'next'     => $this->getNext($offerCampaign, $request),
+                    'previous' => $this->getPreviousModel($offerCampaign, $request),
+                    'next'     => $this->getNextModel($offerCampaign, $request),
                 ],
                 'pageHead'                                           => [
                     'icon'  =>
@@ -133,38 +135,5 @@ class ShowOfferCampaign extends OrgAction
         };
     }
 
-    public function getPrevious(OfferCampaign $offerCampaign, ActionRequest $request): ?array
-    {
-        $previous = OfferCampaign::where('slug', '<', $offerCampaign->slug)->where('shop_id', $offerCampaign->shop_id)->orderBy('slug', 'desc')->first();
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
 
-    public function getNext(OfferCampaign $offerCampaign, ActionRequest $request): ?array
-    {
-        $next = OfferCampaign::where('slug', '>', $offerCampaign->slug)->where('shop_id', $offerCampaign->shop_id)->orderBy('slug')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?OfferCampaign $offerCampaign, string $routeName): ?array
-    {
-        if (!$offerCampaign) {
-            return null;
-        }
-
-
-        return match ($routeName) {
-            'grp.org.shops.show.discounts.campaigns.show' => [
-                'label' => $offerCampaign->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'        => $offerCampaign->organisation->slug,
-                        'shop'                => $offerCampaign->shop->slug,
-                        'offerCampaign'       => $offerCampaign->slug
-                    ]
-                ]
-            ],
-        };
-    }
 }
