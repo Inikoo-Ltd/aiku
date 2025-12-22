@@ -66,7 +66,7 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
             $baseQuery->where('products.available_quantity', '>', 0);
             $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
             if ($lastOutBoxSent) {
-                Log::info('Last outbox sent: ' . $lastOutBoxSent);
+                // Log::info('Last outbox sent: ' . $lastOutBoxSent);
                 $baseQuery->where('back_in_stock_reminders.created_at', '>', $lastOutBoxSent);
                 $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
             }
@@ -99,7 +99,10 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
                 if ($lastCustomerId !== $customer->id) {
                     $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
-                        'products' => implode(', ', array_column($productData, 'product_name')),
+                        'products' => sprintf(
+                            "<a ses:no-track href=\"https://www.google.com\">%s</a>",
+                            implode(', ', array_column($productData, 'product_name'))
+                        ),
                     ];
                     SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
 
@@ -117,13 +120,25 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
                     'product_name' => $customer->product_name,
                 ];
 
+                $product = Product::find($customer->product_id);
+                $webPage = null;
+                if ($product) {
+                    $webPage = $product->webpage ?? null;
+                    if ($webPage) {
+                        \Log::info('Web page URL: ' . $webPage->getCanonicalUrl());
+                    }
+                }
+
                 // $updateLastOutBoxSent = $currentDateTime;
                 if ($processedCount === $totalCustomers) {
 
                     // Process the last batch
                     $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
-                        'products' => implode(', ', array_column($productData, 'product_name')),
+                        'products' => sprintf(
+                            "<a ses:no-track href=\"https://www.google.com\">%s</a>",
+                            implode(', ', array_column($productData, 'product_name'))
+                        ),
                     ];
                     SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
                     // reset product data
