@@ -6,6 +6,7 @@ import axios from 'axios'
 import PureTextarea from '../Pure/PureTextarea.vue'
 import PureCheckbox from '../Pure/PureCheckbox.vue'
 import Image from '@/Components/Image.vue'
+import { useForm } from '@inertiajs/vue3'
 // import { useToast } from 'primevue/usetoast'
 // import { ProductService } from '@/service/ProductService'
 
@@ -15,47 +16,18 @@ import Image from '@/Components/Image.vue'
 
 // const toast = useToast()
 const dt = ref()
-const productsList = ref([])
-const productDialog = ref(false)
-const deleteProductDialog = ref(false)
-const deleteProductsDialog = ref(false)
-const product = ref({})
 const selectedProducts = ref()
 const filters = ref({
     'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
 })
 const submitted = ref(false)
-const openNew = () => {
-    product.value = {}
-    submitted.value = false
-    productDialog.value = true
-}
-const findIndexById = (id) => {
-    let index = -1
-    for (let i = 0; i < productsList.value.length; i++) {
-        if (productsList.value[i].id === id) {
-            index = i
-            break
-        }
-    }
-
-    return index
-}
-const createId = () => {
-    let id = ''
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    for (var i = 0; i < 5; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return id
-}
 const exportCSV = () => {
     dt.value.exportCSV()
 }
-const confirmDeleteSelected = () => {
-    deleteProductsDialog.value = true
-}
 
+const xxxx = ref(null)
+const productsList = ref([])
+const productsToCompare = ref([])
 onMounted(async () => {
     try {
         const response = await axios.post(
@@ -65,18 +37,22 @@ onMounted(async () => {
                     cacheKey: 'zzz'
                 }
             ),
-            { data: [
-                5445,
-                50550
-            ] }
+            { 
+                data: [
+                    5445,
+                    50550
+                ]
+            }
         )
 
         if (response.status !== 200) {
             
         }
 
+        // xxxx.value = useForm()
         console.log('grp.json.cached.product_list', response.data)
         productsList.value = response.data
+        productsToCompare.value = response.data
     } catch (error: any) {
         
         console.log('zzzzzzzzzzzzzzz', error)
@@ -112,6 +88,18 @@ const fetchFamilies = async (shop_id: number, family_data?: {}) => {
         console.log('fetchFamilies', error)
     }
 }
+
+
+const rowClass = (xxx: any) => {
+    // const isCompared = productsToCompare.value.some((p: any) => p.id === xxx.id)
+    // const theProduct = productsToCompare.value.find(prod => prod.id === xxx.id)
+    
+    // if (theProduct === xxx) {
+    //     return ['!bg-yellow-200']
+    // } else {
+        return []
+    // }
+}
 </script>
 
 
@@ -120,9 +108,8 @@ const fetchFamilies = async (shop_id: number, family_data?: {}) => {
         <div class="card">
             <Toolbar class="mb-6">
                 <template #start>
-                    <Button label="New" icon="pi pi-plus" class="mr-2" @click="openNew" />
                     <Button label="Delete" icon="pi pi-trash" severity="danger" variant="outlined"
-                        @click="confirmDeleteSelected" :disabled="!selectedProducts || !selectedProducts.length" />
+                        :disabled="!selectedProducts || !selectedProducts.length" />
                 </template>
 
                 <template #end>
@@ -139,6 +126,7 @@ const fetchFamilies = async (shop_id: number, family_data?: {}) => {
                 dataKey="id"
                 :paginator="true"
                 :rows="10"
+                :rowClass="rowClass"
                 :filters="filters"
                 scrollable 
                 paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
