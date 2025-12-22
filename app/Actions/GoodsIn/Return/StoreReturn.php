@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Models\GoodsIn\OrderReturn;
 use App\Models\GoodsIn\ReturnStats;
-use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -34,8 +33,6 @@ class StoreReturn extends OrgAction
      */
     public function handle(Order $order, array $modelData): OrderReturn
     {
-        $returnAddress = Arr::pull($modelData, 'return_address', $order->deliveryAddress);
-
         data_set($modelData, 'date', now());
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
@@ -47,38 +44,14 @@ class StoreReturn extends OrgAction
         data_set($modelData, 'organisation_id', $order->organisation_id);
         data_set($modelData, 'state', ReturnStateEnum::WAITING_TO_RECEIVE);
 
-        data_set($modelData, 'email', $order->customer->email ?? null);
-        data_set($modelData, 'phone', $order->customer->phone ?? null);
-
         $items = Arr::pull($modelData, 'return_items', []);
 
-        $orderReturn = DB::transaction(function () use ($order, $modelData, $returnAddress, $items) {
+        $orderReturn = DB::transaction(function () use ($order, $modelData, $items) {
             /** @var OrderReturn $orderReturn */
             $orderReturn = OrderReturn::create($modelData);
 
             // Attach the order
             $orderReturn->orders()->attach($order->id);
-
-            // Create address from return address if provided
-            if ($returnAddress instanceof Address) {
-                $addressData = $returnAddress->only([
-                    'address_line_1',
-                    'address_line_2',
-                    'sorting_code',
-                    'postal_code',
-                    'dependent_locality',
-                    'locality',
-                    'administrative_area',
-                    'country_code',
-                    'country_id',
-                ]);
-                $addressData['group_id'] = $orderReturn->group_id;
-                $newAddress = Address::create($addressData);
-                $orderReturn->updateQuietly([
-                    'address_id' => $newAddress->id,
-                    'return_country_id' => $newAddress->country_id ?? null,
-                ]);
-            }
 
             // Create stats
             ReturnStats::create([
