@@ -13,7 +13,6 @@ use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\Traits\HasPriceMetrics;
-use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property mixed $id

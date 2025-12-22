@@ -30,6 +30,7 @@ use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -82,6 +83,10 @@ class StoreShop extends OrgAction
             $addressData = $organisation->address;
         }
 
+
+        if (!Arr::has($modelData, 'engine')) {
+            $modelData['engine'] = ShopEngineEnum::AIKU->value;
+        }
 
         data_set($modelData, 'group_id', $organisation->group_id);
         data_set($modelData, 'colour', GetRandomColour::run());
@@ -143,7 +148,6 @@ class StoreShop extends OrgAction
                 foreach (Platform::all() as $platform) {
                     $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
                 }
-
             }
 
             $shop->serialReferences()->create(
@@ -162,7 +166,7 @@ class StoreShop extends OrgAction
                 [
                     'model'           => SerialReferenceModelEnum::TOP_UP,
                     'organisation_id' => $organisation->id,
-                    'format'          => $shop->slug . '-%04d'
+                    'format'          => $shop->slug.'-%04d'
                 ]
             );
 
@@ -170,7 +174,7 @@ class StoreShop extends OrgAction
                 [
                     'model'           => SerialReferenceModelEnum::PURGE,
                     'organisation_id' => $organisation->id,
-                    'format'          => 'purge-' . $shop->slug . '-%04d'
+                    'format'          => 'purge-'.$shop->slug.'-%04d'
                 ]
             );
 
@@ -178,7 +182,7 @@ class StoreShop extends OrgAction
                 [
                     'model'           => SerialReferenceModelEnum::INVOICE,
                     'organisation_id' => $organisation->id,
-                    'format'          => 'inv-' . $shop->slug . '-%04d'
+                    'format'          => 'inv-'.$shop->slug.'-%04d'
                 ]
             );
 
@@ -186,7 +190,7 @@ class StoreShop extends OrgAction
                 [
                     'model'           => SerialReferenceModelEnum::REFUND,
                     'organisation_id' => $organisation->id,
-                    'format'          => 'ref-' . $shop->slug . '-%04d'
+                    'format'          => 'ref-'.$shop->slug.'-%04d'
                 ]
             );
 
@@ -221,13 +225,13 @@ class StoreShop extends OrgAction
             $paymentAccount       = StorePaymentAccount::make()->action(
                 $organisation->getAccountsServiceProvider(),
                 [
-                    'code'        => 'accounts-' . $shop->slug,
-                    'name'        => 'Accounts ' . $shop->code,
+                    'code'        => 'accounts-'.$shop->slug,
+                    'name'        => 'Accounts '.$shop->code,
                     'type'        => PaymentAccountTypeEnum::ACCOUNT->value,
                     'is_accounts' => true
                 ]
             );
-            $paymentAccount->slug = 'accounts-' . $shop->slug;
+            $paymentAccount->slug = 'accounts-'.$shop->slug;
             $paymentAccount->save();
 
             StorePaymentAccountShop::make()->action(
@@ -304,9 +308,11 @@ class StoreShop extends OrgAction
         return $this->handle($organisation, $this->validatedData);
     }
 
-    public function inMaster(MasterShop $masterShop, ActionRequest $request): Shop
+    /**
+     * @throws \Throwable
+     */
+    public function inMaster(MasterShop $masterShop, Organisation $organisation, ActionRequest $request): Shop
     {
-        $organisation = Organisation::find($request->organisation);
         $this->initialisation($organisation, $request);
 
         $modelData = $this->validatedData;

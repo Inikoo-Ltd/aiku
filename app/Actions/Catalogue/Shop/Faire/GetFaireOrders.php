@@ -11,7 +11,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +55,7 @@ class GetFaireOrders extends OrgAction
                             ->first();
                         $historicAsset = $product->asset?->historicAsset;
 
-                        if(! $historicAsset) {
+                        if (! $historicAsset) {
                             continue;
                         }
 

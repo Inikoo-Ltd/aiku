@@ -10,7 +10,6 @@
 namespace App\Http\Resources\CRM;
 
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
