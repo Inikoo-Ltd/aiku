@@ -84,8 +84,8 @@ class ShowMasterShop extends GrpAction
                     ?
                     fn () => MasterShopResource::make($masterShop)->resolve()
                     : Inertia::lazy(fn () => MasterShopResource::make($masterShop)->resolve()),
-                MasterShopTabsEnum::SHOPS->value => $this->tab == MasterShopTabsEnum::SHOPS->value 
-                    ? 
+                MasterShopTabsEnum::SHOPS->value => $this->tab == MasterShopTabsEnum::SHOPS->value
+                    ?
                     fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)
                     : Inertia::lazy(fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)),
             ]

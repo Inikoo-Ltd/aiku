@@ -6,7 +6,7 @@
  * Description: Create returns table for customer order returns
  */
 
-use App\Enums\Dispatching\Return\ReturnStateEnum;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use App\Stubs\Migrations\HasSalesTransactionParents;
 use Illuminate\Database\Migrations\Migration;

@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Stubs\Migrations\HasProcurementStats;
 use App\Stubs\Migrations\IsProcurementOrder;
 use Illuminate\Database\Migrations\Migration;

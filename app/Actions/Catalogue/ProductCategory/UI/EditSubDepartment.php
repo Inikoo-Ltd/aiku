@@ -22,6 +22,7 @@ use App\Http\Resources\Helpers\LanguageResource;
 class EditSubDepartment extends OrgAction
 {
     use WithCatalogueEditAuthorisation;
+    use WithSubDepartmentNavigation;
 
     public function handle(ProductCategory $subDepartment): ProductCategory
     {
@@ -80,8 +81,8 @@ class EditSubDepartment extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => ShowSubDepartment::make()->getPrevious($subDepartment, $request),
-                    'next'     => ShowSubDepartment::make()->getNext($subDepartment, $request),
+                    'previous' => $this->getPreviousModel($subDepartment, $request),
+                    'next'     => $this->getNextModel($subDepartment, $request),
                 ],
                 'pageHead'    => [
                     'title'   => $subDepartment->code,

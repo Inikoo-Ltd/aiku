@@ -48,7 +48,7 @@ class IndexFamilies extends OrgAction
 
     private bool $sales = true;
 
-    private Group|Shop|ProductCategory|Organisation $parent;
+    private Group|Shop|ProductCategory|Collection|Organisation $parent;
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
@@ -77,6 +77,7 @@ class IndexFamilies extends OrgAction
         return $this->handle(parent: $department, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $subDepartment;
@@ -85,6 +86,7 @@ class IndexFamilies extends OrgAction
         return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $subDepartment;
@@ -185,11 +187,11 @@ class IndexFamilies extends OrgAction
                 'currencies.code as currency_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                DB::raw("product_category_sales_intervals.sales_grp_currency_{$interval} as sales"),
-                DB::raw("{$salesLyColumn} as sales_ly"),
-                DB::raw("product_category_ordering_intervals.invoices_{$interval} as invoices"),
-                DB::raw("{$invoicesLyColumn} as invoices_ly"),
-                DB::raw("'{$interval}' as current_interval"),
+                DB::raw("product_category_sales_intervals.sales_grp_currency_$interval as sales"),
+                DB::raw("$salesLyColumn as sales_ly"),
+                DB::raw("product_category_ordering_intervals.invoices_$interval as invoices"),
+                DB::raw("$invoicesLyColumn as invoices_ly"),
+                DB::raw("'$interval' as current_interval"),
                 'product_categories.master_product_category_id',
                 DB::raw(
                     "(
@@ -229,7 +231,7 @@ class IndexFamilies extends OrgAction
                         public function __invoke(Builder $query, bool $descending, string $property)
                         {
                             $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("product_category_sales_intervals.sales_grp_currency_{$this->interval}", $direction);
+                            $query->orderBy("product_category_sales_intervals.sales_grp_currency_$this->interval", $direction);
                         }
                     }
                 ),
@@ -243,7 +245,7 @@ class IndexFamilies extends OrgAction
                         public function __invoke(Builder $query, bool $descending, string $property)
                         {
                             $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("product_category_ordering_intervals.invoices_{$this->interval}", $direction);
+                            $query->orderBy("product_category_ordering_intervals.invoices_$this->interval", $direction);
                         }
                     }
                 ),
@@ -281,7 +283,7 @@ class IndexFamilies extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
             if (class_basename($parent) != 'MasterProductCategory') {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -328,7 +330,7 @@ class IndexFamilies extends OrgAction
                         default => null
                     }
                 )
-                ->withLabelRecord([__('family'),__('families')])
+                ->withLabelRecord([__('family'), __('families')])
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
@@ -336,9 +338,9 @@ class IndexFamilies extends OrgAction
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
@@ -426,6 +428,7 @@ class IndexFamilies extends OrgAction
             $subNavigation = $this->getCollectionSubNavigation($this->parent);
         }
 
+        $modelNavigation = [];
 
         $title      = __('Families');
         $model      = '';
@@ -448,6 +451,8 @@ class IndexFamilies extends OrgAction
 
                     'label' => __('Families')
                 ];
+                $modelNavigation = GetDepartmentNavigation::run($this->parent, $request);
+
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $title      = $this->parent->name;
                 $icon       = [
@@ -459,6 +464,8 @@ class IndexFamilies extends OrgAction
 
                     'label' => __('Families')
                 ];
+
+                $modelNavigation = GetSubDepartmentNavigation::run($this->parent, $request);
             }
         }
 
@@ -496,7 +503,8 @@ class IndexFamilies extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                               => __('families'),
+                'navigation'                          => $modelNavigation,
+                'title'                               => __('Families'),
                 'pageHead'                            => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -572,7 +580,7 @@ class IndexFamilies extends OrgAction
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
             'grp.org.shops.show.catalogue.sub_departments.show.families.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, preg_replace('/\.family\.index$/', '', $routeName), $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -583,7 +591,7 @@ class IndexFamilies extends OrgAction
             ),
             'grp.overview.catalogue.families.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

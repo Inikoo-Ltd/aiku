@@ -22,6 +22,8 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterSubDepartment extends OrgAction
 {
+    use WithMasterSubDepartmentNavigation;
+
     /**
      * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
      */
@@ -61,6 +63,10 @@ class EditMasterSubDepartment extends OrgAction
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
+                'navigation'  => [
+                    'previous' => $this->getPreviousModel($masterProductCategory, $request),
+                    'next'     => $this->getNextModel($masterProductCategory, $request),
+                ],
                 'title'       => __('Edit Master Sub-department'),
                 'pageHead'    => [
                     'title'   => __('Edit master Sub-department'),

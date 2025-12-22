@@ -6,6 +6,11 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\UI\CreateStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UI\EditStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Procurement\OrgAgent\ExportOrgAgents;
 use App\Actions\Procurement\OrgAgent\UI\EditOrgAgent;
@@ -24,11 +29,6 @@ use App\Actions\Procurement\PurchaseOrder\UI\CreatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
-use App\Actions\Procurement\StockDelivery\ExportStockDeliveries;
-use App\Actions\Procurement\StockDelivery\UI\CreateStockDelivery;
-use App\Actions\Procurement\StockDelivery\UI\EditStockDelivery;
-use App\Actions\Procurement\StockDelivery\UI\IndexStockDeliveries;
-use App\Actions\Procurement\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use Illuminate\Support\Facades\Route;
 

@@ -8,6 +8,9 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\GetDepartmentNavigation;
+use App\Actions\Catalogue\ProductCategory\UI\GetFamilyNavigation;
+use App\Actions\Catalogue\ProductCategory\UI\GetSubDepartmentNavigation;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
@@ -181,7 +184,6 @@ class IndexProductsInProductCategory extends OrgAction
         return ProductsResource::collection($products);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
         $productCategory = $this->parent;
@@ -198,14 +200,14 @@ class IndexProductsInProductCategory extends OrgAction
         }
 
 
-        $title      = __('products');
-        $icon       = [
+        $title           = __('Products');
+        $icon            = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('Product')
         ];
-        $afterTitle = null;
-        $iconRight  = null;
-        $model      = null;
+        $afterTitle      = null;
+        $model           = null;
+        $modelNavigation = [];
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $title      = $productCategory->name;
@@ -218,6 +220,8 @@ class IndexProductsInProductCategory extends OrgAction
             $afterTitle = [
                 'label' => __('Products')
             ];
+            $modelNavigation = GetDepartmentNavigation::run($this->parent, $request);
+
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             $title      = $productCategory->name;
             $model      = '';
@@ -229,6 +233,8 @@ class IndexProductsInProductCategory extends OrgAction
             $afterTitle = [
                 'label' => __('Products')
             ];
+
+            $modelNavigation = GetFamilyNavigation::run($productCategory, $request);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $title      = $productCategory->name;
             $model      = '';
@@ -240,6 +246,7 @@ class IndexProductsInProductCategory extends OrgAction
             $afterTitle = [
                 'label' => __('Products')
             ];
+            $modelNavigation = GetSubDepartmentNavigation::run($productCategory, $request);
         } else {
             $iconRight = $productCategory->state->stateIcon()[$productCategory->state->value];
         }
@@ -252,6 +259,7 @@ class IndexProductsInProductCategory extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'                   => $modelNavigation,
                 'title'                        => __('Products'),
                 'pageHead'                     => [
                     'title'         => $title,
@@ -382,7 +390,6 @@ class IndexProductsInProductCategory extends OrgAction
             ];
         };
 
-
         return match ($routeName) {
             'grp.org.shops.show.catalogue.products.current_products.index', =>
             array_merge(
@@ -473,12 +480,12 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index',
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.index',
             'grp.org.shops.show.catalogue.sub_departments.show.products.index' =>
             array_merge(
                 ShowSubDepartment::make()->getBreadcrumbs(
                     $productCategory,
-                    $routeName,
+                    preg_replace('/\.products\.index$/', '', $routeName),
                     $routeParameters
                 ),
                 $headCrumb(

@@ -18,7 +18,6 @@ import SideEditorInputHTML from "./CMS/Fields/SideEditorInputHTML.vue";
 import PureInputDimension from "./Pure/PureInputDimension.vue";
 import Dialog from 'primevue/dialog';
 import EditTradeUnit from "@/Components/EditTradeUnit.vue";
-// FontAwesome
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faShapes,
@@ -67,7 +66,7 @@ const props = defineProps<{
     showDialog: boolean,
     masterCurrency?: string
     shopsData?: any
-    masterProductCategory: string | number
+    masterProductCategoryId: number
     is_dropship: boolean
 }>();
 
@@ -315,7 +314,7 @@ const selectorTab = [
         search:true,
         routeFetch: {
             name: "grp.json.master-product-category.recommended-trade-units",
-            parameters: { masterProductCategory: route().params["masterFamily"] },
+            parameters: { masterProductCategory: props.masterProductCategoryId},
         },
     },
     {
@@ -323,7 +322,7 @@ const selectorTab = [
         search:true,
         routeFetch: {
             name: "grp.json.master-product-category.taken-trade-units",
-            parameters: { masterProductCategory: route().params["masterFamily"] },
+            parameters: { masterProductCategory: props.masterProductCategoryId },
         },
     },
     {
@@ -331,7 +330,7 @@ const selectorTab = [
         search: true,
         routeFetch: {
             name: "grp.json.master-product-category.all-trade-units",
-            parameters: { masterProductCategory: route().params["masterFamily"] },
+            parameters: { masterProductCategory: props.masterProductCategoryId },
         },
     },
 ];

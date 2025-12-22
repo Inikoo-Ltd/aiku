@@ -101,12 +101,7 @@ const confirmFollowMaster = (item) => {
     <PageHeading :data="pageHead" />
 
     <div class="px-4 pb-8 m-5">
-        <Message v-if="productCategory.data.follow_master" severity="success" closable>
-            <template #icon>
-                <FontAwesomeIcon :icon="faInfoCircle" />
-            </template>
-            <span class="ml-2">Right now you follow the master data</span>
-        </Message>
+
 
         <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4">
             <div>

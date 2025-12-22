@@ -115,18 +115,7 @@ const openFamilyModal = () => {
     <div class="px-4 pb-8 m-5">
         <!-- Master Message -->
         <div class="space-y-4">
-            <Message v-if="data.subDepartment?.url_master" severity="success" closable>
-                <template #icon>
-                    <FontAwesomeIcon :icon="faInfoCircle" />
-                </template>
-                <span class="ml-2">
-                    {{ trans("Right now you follow") }}
-                    <Link :href="route(data.subDepartment.url_master.name, data.subDepartment.url_master.parameters)"
-                        class="underline font-bold">
-                    {{ trans("the master data") }}
-                    </Link>
-                </span>
-            </Message>
+
             <Message
                 v-if="!data.subDepartment.description || !data.subDepartment.description_title || !data.subDepartment.description_extra"
                 severity="error" closable>

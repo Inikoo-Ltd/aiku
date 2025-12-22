@@ -1281,6 +1281,17 @@ const layout = inject("layout", layoutStructure)
 					size="xs"
 					:disabled="bulkUpdatePriceData.type === 'fixed' && bulkUpdatePriceData.amount === amount"
 					:type="'tertiary'" />
+				<Button
+					@click="
+						calculateAdjustedPrice(
+								0,
+								'reset'
+							)"
+					:label="trans('Reset')"
+					:tooltip="trans('Reset to the original selling price')"
+					size="xs"
+					:disabled="bulkUpdatePriceData.type === 'reset'"
+					:type="'tertiary'" />
 			</div>
 		</div>
 

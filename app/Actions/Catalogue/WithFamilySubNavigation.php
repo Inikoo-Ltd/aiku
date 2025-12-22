@@ -85,13 +85,16 @@ trait WithFamilySubNavigation
 
             }
         } elseif ($parent instanceof Shop) {
+            $familyRoute  = [
+                'name'       => 'grp.org.shops.show.catalogue.families.show',
+                'parameters' => $routeParameters
+            ];
             $productRoute = [
                 'name'       => 'grp.org.shops.show.catalogue.families.show.products.index',
                 'parameters' => $routeParameters
             ];
 
         }
-
 
         return [
             [

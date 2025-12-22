@@ -9,7 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
-use App\Enums\Procurement\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Facades\DB;
 

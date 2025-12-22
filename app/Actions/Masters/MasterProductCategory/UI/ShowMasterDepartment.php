@@ -32,7 +32,7 @@ class ShowMasterDepartment extends GrpAction
 {
     use WithMasterDepartmentSubNavigation;
     use WithMastersAuthorisation;
-
+    use WithMasterDepartmentNavigation;
 
     private MasterShop|Group $parent;
 
@@ -80,8 +80,8 @@ class ShowMasterDepartment extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($masterDepartment, $request),
-                    'next'     => $this->getNext($masterDepartment, $request),
+                    'previous' => $this->getPreviousModel($masterDepartment, $request),
+                    'next'     => $this->getNextModel($masterDepartment, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
@@ -146,9 +146,9 @@ class ShowMasterDepartment extends GrpAction
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
 
-              /*   MasterDepartmentTabsEnum::CONTENT->value => $this->tab == MasterDepartmentTabsEnum::CONTENT->value ?
+                 MasterDepartmentTabsEnum::CONTENT->value => $this->tab == MasterDepartmentTabsEnum::CONTENT->value ?
                     fn () => GetMasterProductCategoryContent::run($masterDepartment)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)), */
+                    : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
@@ -201,28 +201,7 @@ class ShowMasterDepartment extends GrpAction
 
 
         return match ($routeName) {
-            'grp.masters.master_departments.show' =>
-            array_merge(
-                ShowMastersDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    $masterDepartment,
-                    [
-                        'index' => [
-                            'name'       => 'grp.masters.master_departments.index',
-                            'parameters' => []
-                        ],
-                        'model' => [
-                            'name'       => 'grp.masters.master_departments.show',
-                            'parameters' => $routeParameters
-
-
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.masters.master_departments.show.master_sub_departments.index',
-            'grp.masters.master_departments.show.master_families.index' =>
+            'grp.masters.master_departments.show', 'grp.masters.master_departments.show.master_sub_departments.index', 'grp.masters.master_departments.show.master_families.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
@@ -299,47 +278,4 @@ class ShowMasterDepartment extends GrpAction
         };
     }
 
-    public function getPrevious(MasterProductCategory $masterDepartment, ActionRequest $request): ?array
-    {
-        $previous = MasterProductCategory::where('code', '<', $masterDepartment->code)->where('master_shop_id', $this->parent->id)->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(MasterProductCategory $masterDepartment, ActionRequest $request): ?array
-    {
-        $next = MasterProductCategory::where('code', '>', $masterDepartment->code)->where('master_shop_id', $this->parent->id)->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?MasterProductCategory $masterDepartment, string $routeName): ?array
-    {
-        if (!$masterDepartment) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.masters.master_departments.show' => [
-                'label' => $masterDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterDepartment' => $masterDepartment->slug
-                    ]
-                ]
-            ],
-            'grp.masters.master_shops.show.master_departments.show' => [
-                'label' => $masterDepartment->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterShop'       => $masterDepartment->masterShop->slug,
-                        'masterDepartment' => $masterDepartment->slug
-                    ]
-                ]
-            ],
-            default => []
-        };
-    }
 }

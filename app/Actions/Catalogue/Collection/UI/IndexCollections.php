@@ -274,7 +274,6 @@ class IndexCollections extends OrgAction
             ],
         ];
 
-
         $websiteDomain = null;
         if ($this->shop->website) {
             $websiteDomain = 'https://'.$this->shop->website->domain;
