@@ -307,6 +307,7 @@ class StoreOrder extends OrgAction
 
 
             'customer_reference'        => ['sometimes', 'string', 'max:255'],
+            'external_id'               => ['sometimes', 'string'],
             'state'                     => ['sometimes', Rule::enum(OrderStateEnum::class)],
             'status'                    => ['sometimes', Rule::enum(OrderStatusEnum::class)],
             'handing_type'              => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],

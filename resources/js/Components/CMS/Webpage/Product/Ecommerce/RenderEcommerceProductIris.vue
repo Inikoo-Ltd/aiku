@@ -98,7 +98,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 set(customerData.value, "is_favourite", false)
-
+                layout.reload_handle()
             },
             onError: errors => {
                 notify({
@@ -131,6 +131,7 @@ const onAddBackInStock = (productData: ProductResource) => {
             },
             onSuccess: () => {
                 set(product.value, "is_back_in_stock", true)
+                layout.reload_handle()
             },
             onError: errors => {
                 notify({
@@ -160,6 +161,7 @@ const onUnselectBackInStock = (productData: ProductResource) => {
             },
             onSuccess: () => {
                 set(product.value, "is_back_in_stock", false)
+                layout.reload_handle()
             },
             onError: errors => {
                 notify({

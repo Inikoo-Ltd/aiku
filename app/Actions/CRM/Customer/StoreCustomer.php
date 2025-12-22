@@ -230,6 +230,12 @@ class StoreCustomer extends OrgAction
             'status'                   => ['sometimes', Rule::enum(CustomerStatusEnum::class)],
             'contact_name'             => ['nullable', 'string', 'max:255'],
             'company_name'             => ['nullable', 'string', 'max:255'],
+            'external_id'              => ['nullable', 'string', new IUnique(
+                table: 'customers',
+                extraConditions: [
+                    ['column' => 'shop_id', 'value' => $this->shop->id],
+                ]
+            )],
             'email'                    => [
                 'nullable',
                 $this->strict ? 'email' : 'string:500',

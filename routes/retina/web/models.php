@@ -177,6 +177,9 @@ Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('
 Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
 Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
 
+Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
+Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
+
 
 Route::post('pallet-return', StoreRetinaPalletReturn::class)->name('pallet-return.store');
 Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'withStoredItems'])->name('pallet-return-stored-items.store');

@@ -31,6 +31,7 @@ import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations
 import StockShowcase from "@/Components/Showcases/Grp/StockShowcase.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
+import TableOrgStockMovements from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockMovements.vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { routeType } from "@/types/route"
@@ -66,6 +67,7 @@ const props = defineProps<{
     purchase_orders?: {}
     products?: {}
     trade_units?: {}
+    stock_history?: {}
     master: {}
     masterRoute: routeType | null
 }>()
@@ -81,6 +83,7 @@ const component = computed(() => {
         supplier_products: TableSupplierProducts,
         products: TableProducts,
         trade_units: TableTradeUnits,
+        stock_history: TableOrgStockMovements,
         details: ModelDetails,
         history: ModelChangelog,
         purchase_orders: TablePurchaseOrders

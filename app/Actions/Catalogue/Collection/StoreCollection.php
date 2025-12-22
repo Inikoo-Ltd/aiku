@@ -55,6 +55,7 @@ class StoreCollection extends OrgAction
 
         $collection->stats()->create();
         $collection->salesIntervals()->create();
+        $collection->orderingIntervals()->create();
         $collection->orderingStats()->create();
 
         if ($imageData['image']) {

@@ -29,12 +29,12 @@ class StoreReturnItem extends OrgAction
         if ($deliveryNoteItemId) {
             $deliveryNoteItem = DeliveryNoteItem::find($deliveryNoteItemId);
             if ($deliveryNoteItem) {
+                data_set($modelData, 'delivery_note_item_id', $deliveryNoteItemId);
                 data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
                 data_set($modelData, 'stock_id', $deliveryNoteItem->stock_id);
                 data_set($modelData, 'org_stock_family_id', $deliveryNoteItem->org_stock_family_id);
                 data_set($modelData, 'stock_family_id', $deliveryNoteItem->stock_family_id);
                 data_set($modelData, 'transaction_id', $deliveryNoteItem->transaction_id);
-                data_set($modelData, 'invoice_transaction_id', $deliveryNoteItem->invoice_transaction_id);
                 data_set($modelData, 'customer_id', $deliveryNoteItem->customer_id);
                 data_set($modelData, 'order_id', $deliveryNoteItem->order_id);
                 data_set($modelData, 'invoice_id', $deliveryNoteItem->invoice_id);
@@ -65,15 +65,17 @@ class StoreReturnItem extends OrgAction
     protected function updateReturnStats(OrderReturn $return): void
     {
         $stats = $return->stats;
-        $stats?->update([
-            'number_items'               => $return->returnItems()->count(),
-            'number_items_state_pending' => $return->returnItems()->where('state', ReturnItemStateEnum::WAITING_TO_RECEIVE)->count(),
-            'total_quantity_expected'    => $return->returnItems()->sum('quantity_expected'),
-        ]);
+        if ($stats) {
+            $itemCount = $return->returnItems()->count();
+            $stats->update([
+                'number_items'                          => $itemCount,
+                'number_items_state_waiting_to_receive' => $return->returnItems()->where('state', ReturnItemStateEnum::WAITING_TO_RECEIVE)->count(),
+            ]);
 
-        $return->updateQuietly([
-            'number_items' => $stats->number_items ?? 0,
-        ]);
+            $return->updateQuietly([
+                'number_items' => $itemCount,
+            ]);
+        }
     }
 
     public function rules(): array

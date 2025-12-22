@@ -32,7 +32,7 @@ use Illuminate\Support\Arr;
  * @property mixed $status
  * @property mixed $has_active_webpage
  * @property mixed $web_images
- * 
+ *
  */
 class MasterCollectionsResource extends JsonResource
 {

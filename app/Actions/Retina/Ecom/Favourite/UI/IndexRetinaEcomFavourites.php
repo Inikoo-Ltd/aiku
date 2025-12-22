@@ -95,7 +95,26 @@ class IndexRetinaEcomFavourites extends RetinaAction
                 ],
                 'data'     => CustomerFavouritesResource::collection($productFavorites),
                 'basketTransactions' => $basketTransactions,
-
+                'attachToFavouriteRoute' => [
+                    'name' => 'retina.models.product.favourite'
+                ],
+                'dettachToFavouriteRoute' => [
+                    'name' => 'retina.models.product.unfavourite'
+                ],
+                'attachBackInStockRoute' => [
+                    'name' => 'retina.models.remind_back_in_stock.store'
+                ],
+                'detachBackInStockRoute' => [
+                    'name' => 'retina.models.remind_back_in_stock.delete'
+                ],
+                'addToBasketRoute' => [
+                    'name' => 'retina.models.product.add-to-basket',
+                    'method' => 'post'
+                ],
+                'updateBasketQuantityRoute' => [
+                    'name' => 'retina.models.transaction.update',
+                    'method' => 'patch'
+                ]
             ]
         )->table($this->tableStructure($this->customer));
     }

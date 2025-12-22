@@ -115,7 +115,8 @@ class IndexProducts extends OrgAction
                 DB::raw("asset_ordering_intervals.invoices_{$interval} as invoices"),
                 DB::raw("{$invoicesLyColumn} as invoices_ly"),
                 DB::raw("'{$interval}' as current_interval"),
-            ]);
+            ])
+            ->selectRaw("'{$shop->currency->code}' as currency_code");
 
         return $queryBuilder->allowedSorts([
                 'code',
