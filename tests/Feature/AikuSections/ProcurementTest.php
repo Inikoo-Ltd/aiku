@@ -723,7 +723,7 @@ test('UI show procurement dashboard', function () {
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Procurement')
                     ->etc()
             )
@@ -754,7 +754,7 @@ test('UI show org supplier', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->orgSupplier->supplier->name)
                     ->etc()
             )
@@ -782,7 +782,7 @@ test('UI show org agents', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->orgAgent->agent->organisation->name)
                     ->etc()
             )
@@ -799,7 +799,7 @@ test('UI index org supplier products', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Supplier Products')
                     ->etc()
             );
@@ -816,7 +816,7 @@ test('UI show org supplier product', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->orgSupplierProduct->supplierProduct->name)
                     ->etc()
             )
@@ -845,7 +845,7 @@ test('UI show purchase order', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->purchaseOrder->reference)
                     ->etc()
             )
@@ -877,7 +877,7 @@ test('UI show org partners', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->orgPartner->partner->name)
                     ->etc()
             )
@@ -906,7 +906,7 @@ test('UI Index stock deliveries', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Stock Deliveries')
                     ->etc()
             )
@@ -937,7 +937,7 @@ test('UI show stock delivery', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $this->stockDelivery->reference)
                     ->etc()
             )

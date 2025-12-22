@@ -25,7 +25,7 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 
 class CreateShopInGroup extends GrpAction
 {
-    // TODO master authorisation to create shop (?) 
+    // TODO master authorisation to create shop (?)
     private MasterShop $masterShop;
 
     public function asController(MasterShop $masterShop, ActionRequest $request): ActionRequest
@@ -98,7 +98,7 @@ class CreateShopInGroup extends GrpAction
                                     'required'    => true,
                                     'mode'        => 'single',
                                     'searchable'  => true
-                                ],  
+                                ],
                             ]
                         ],
                         [
