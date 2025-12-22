@@ -24,7 +24,7 @@ class GetFaireOrders extends OrgAction
     {
         DB::transaction(function () use ($shop) {
             $orders = $shop->getFaireOrders([
-                'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT'
+                'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
             ]);
 
             $shops = $shop->masterShop->shops()
