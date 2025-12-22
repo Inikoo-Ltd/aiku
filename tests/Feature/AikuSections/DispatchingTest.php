@@ -11,6 +11,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Analytics\GetSectionRoute;
+use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
@@ -22,8 +23,13 @@ use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
+use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
+use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
+use App\Actions\Dispatching\PickingSession\StorePickingSession;
+use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
 use App\Actions\Goods\Stock\StoreStock;
@@ -33,10 +39,12 @@ use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -52,6 +60,7 @@ use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Transaction;
 use Config;
 use Illuminate\Support\Str;
@@ -71,7 +80,7 @@ beforeEach(function () {
         $this->shop
     ) = createShop();
 
-    $this->group = $this->organisation->group;
+    $this->group      = $this->organisation->group;
     $this->adminGuest = createAdminGuest($this->group);
 
     $this->warehouse = createWarehouse();
@@ -89,7 +98,7 @@ beforeEach(function () {
     }
 
     if (!isset($this->employee)) {
-        $employeeData = Employee::factory()->definition();
+        $employeeData                  = Employee::factory()->definition();
         $employeeData['worker_number'] .= Str::random(6);
 
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
@@ -97,13 +106,12 @@ beforeEach(function () {
 
     Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
     actingAs($this->adminGuest->getUser());
-
 });
 
 test('create shipper', function () {
     $arrayData = [
-        'code' => 'ABC',
-        'name' => 'ABC Shipping',
+        'code'     => 'ABC',
+        'name'     => 'ABC Shipping',
         'trade_as' => 'abc'
     ];
 
@@ -466,10 +474,7 @@ test("UI Index dispatching delivery-notes", function () {
     });
 });
 
-test("UI Index dispatching show delivery-notes", function () {
-
-    $deliveryNote = DeliveryNote::first();
-
+test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliveryNote) {
     $this->withoutExceptionHandling();
     $response = get(
         route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
@@ -497,15 +502,14 @@ test("UI Index dispatching show delivery-notes", function () {
             ->has(DeliveryNoteTabsEnum::ITEMS->value)
             ->has("tabs");
     });
-});
+})->depends('create second delivery note');
 
 test('UI get section route dispatching show', function () {
-
     $deliveryNote = DeliveryNote::first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.warehouses.show.dispatching.delivery_notes.show', [
         'organisation' => $deliveryNote->organisation->slug,
-        'warehouse' =>  $deliveryNote->warehouse->slug,
+        'warehouse'    => $deliveryNote->warehouse->slug,
         'deliveryNote' => $deliveryNote->slug
     ]);
 
@@ -519,14 +523,16 @@ test('UI Create Replacement Delivery Note', function () {
     $deliveryNote = $this->order->deliveryNotes()->first();
 
 
-    $response = get(route(
-        'grp.org.shops.show.ordering.orders.show.replacement.create',
-        [
-            'organisation' => $this->organisation->slug,
-            'shop' => $this->shop->slug,
-            'order' => $this->order->slug,
-        ]
-    ));
+    $response = get(
+        route(
+            'grp.org.shops.show.ordering.orders.show.replacement.create',
+            [
+                'organisation' => $this->organisation->slug,
+                'shop'         => $this->shop->slug,
+                'order'        => $this->order->slug,
+            ]
+        )
+    );
 
     $response->assertInertia(function (AssertableInertia $page) use ($deliveryNote) {
         $page
@@ -556,3 +562,165 @@ test('UI Create Replacement Delivery Note', function () {
             ->has('notes');
     });
 });
+
+test('store picking session', function () {
+    $deliveryNote = $this->order->deliveryNotes()->first();
+    if (!$deliveryNote) {
+        $deliveryNote = SendOrderToWarehouse::make()->action($this->order, ['warehouse_id' => $this->warehouse->id]);
+    }
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $modelData = [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id
+    ];
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, $modelData);
+
+    expect($pickingSession)->toBeInstanceOf(PickingSession::class)
+        ->and($pickingSession->warehouse_id)->toBe($this->warehouse->id)
+        ->and($pickingSession->deliveryNotes->pluck('id'))->toContain($deliveryNote->id);
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::QUEUED);
+
+    foreach ($deliveryNote->deliveryNoteItems as $item) {
+        expect($item->picking_session_id)->toBe($pickingSession->id);
+    }
+
+    return $pickingSession;
+});
+
+test('update picking session', function () {
+    $pickingSession = PickingSession::first();
+
+    $updateData = [
+        'state' => PickingSessionStateEnum::HANDLING
+    ];
+
+    $updatedPickingSession = UpdatePickingSession::make()->action($pickingSession, $updateData);
+
+    expect($updatedPickingSession->state)->toBe(PickingSessionStateEnum::HANDLING);
+
+    $updateData = [
+        'state' => PickingSessionStateEnum::IN_PROCESS
+    ];
+
+    UpdatePickingSession::make()->action($pickingSession, $updateData);
+    expect($updatedPickingSession->state)->toBe(PickingSessionStateEnum::IN_PROCESS);
+});
+
+test('start picking a picking session', function () {
+    $pickingSession = PickingSession::first();
+
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    expect($pickingSession->state)->toBe(PickingSessionStateEnum::HANDLING);
+});
+
+test('picking session calculate picks', function (PickingSession $pickingSession) {
+    $deliveryNote = $pickingSession->deliveryNotes()->first();
+    if (!$deliveryNote->deliveryNoteItems()->exists()) {
+        $historicAsset = HistoricAsset::find(1);
+        $stock         = StoreStock::make()->action($this->group, Stock::factory()->definition());
+        $stock         = UpdateStock::make()->action($stock, [
+            'state' => StockStateEnum::ACTIVE,
+        ]);
+        $orgStock      = StoreOrgStock::make()->action($this->organisation, $stock);
+        $transaction   = StoreTransaction::make()->action($this->order, $historicAsset, Transaction::factory()->definition());
+
+        $deliveryNoteData = [
+            'delivery_note_id'  => $deliveryNote->id,
+            'org_stock_id'      => $orgStock->id,
+            'transaction_id'    => $transaction->id,
+            'quantity_required' => 10,
+        ];
+
+        StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteData);
+    }
+    CalculateDeliveryNotePercentage::make()->action($deliveryNote);
+
+    $pickingSession->deliveryNotesItems()->update([
+        'quantity_required' => 0,
+        'quantity_picked'   => 0,
+        'quantity_packed'   => 0,
+    ]);
+
+    $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->first();
+    $deliveryNoteItem->update([
+        'picking_session_id' => $pickingSession->id,
+        'quantity_required'  => 10,
+        'quantity_picked'    => 5,
+        'quantity_packed'    => 2,
+    ]);
+
+    $pickingSession = CalculatePickingSessionPicks::make()->action($pickingSession);
+
+    expect(floatval($pickingSession->quantity_picked))->toBe(5.0)
+        ->and(floatval($pickingSession->quantity_packed))->toBe(2.0)
+        ->and(floatval($pickingSession->picking_percentage))->toBe(50.0)
+        ->and(floatval($pickingSession->packing_percentage))->toBe(40.0);
+})->depends('store picking session');
+
+test('auto finish packing picking session', function (PickingSession $pickingSession) {
+    $deliveryNote = $pickingSession->deliveryNotes()->first();
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::PACKED]);
+
+    $pickingSession->update(['number_delivery_notes' => 1]);
+
+    $pickingSession = AutoFinishPackingPickingSession::run($pickingSession->fresh());
+
+    expect($pickingSession->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED)
+        ->and($pickingSession->end_at)->not->toBeNull();
+})->depends('store picking session');
+
+test("UI Index dispatching picking sessions", function () {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.picking_sessions.index", [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Inventory/PickingSessions")
+            ->where("title", 'Picking Sessions')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", "Picking sessions")
+                    ->etc()
+            )
+            ->has("data");
+    });
+});
+
+test("UI Index dispatching show picking session", function (PickingSession $pickingSession) {
+    $this->withoutExceptionHandling();
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.picking_sessions.show", [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+            $pickingSession->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($pickingSession) {
+        $page
+            ->component("Org/Inventory/PickingSession")
+            ->where("title", 'Picking Session')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", $pickingSession->reference)
+                    ->where("model", 'Picking Session')
+                    ->etc()
+            )
+            ->has('data')
+            ->has("timelines")
+            ->has("tabs");
+    });
+})->depends('store picking session');
