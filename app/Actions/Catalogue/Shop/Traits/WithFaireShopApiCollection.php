@@ -21,7 +21,7 @@ trait WithFaireShopApiCollection
         $this->defaultHeaders = [
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
-            'X-FAIRE-ACCESS-TOKEN' => Arr::get($this->settings, 'faire.access_token',)
+            'X-FAIRE-ACCESS-TOKEN' => Arr::get($this->settings, 'faire.access_token')
         ];
     }
 
