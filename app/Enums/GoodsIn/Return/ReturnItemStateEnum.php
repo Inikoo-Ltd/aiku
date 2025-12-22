@@ -14,10 +14,10 @@ enum ReturnItemStateEnum: string
 {
     use EnumHelperTrait;
 
-    case WAITING_TO_RECEIVE = 'waiting_to_receive';  // Initial state
+    case WAITING_TO_RECEIVE = 'pending';
     case RECEIVED = 'received';
     case INSPECTED = 'inspected';
-    case RESTOKED = 'restocked';
+    case RESTOCKED = 'restocked';
     case CANCELLED = 'cancelled';
 
     public static function labels(): array
@@ -34,7 +34,17 @@ enum ReturnItemStateEnum: string
     public static function stateIcon(): array
     {
         return [
-            'waiting_to_receive'    => [
+            'pending'    => [
+                'tooltip' => __('Waiting to Receive'),
+                'icon'    => 'fal fa-clock',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'clock',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'pending'    => [
                 'tooltip' => __('Pending'),
                 'icon'    => 'fal fa-clock',
                 'class'   => 'text-gray-500',

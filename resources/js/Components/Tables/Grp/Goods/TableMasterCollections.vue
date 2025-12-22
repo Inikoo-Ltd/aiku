@@ -22,7 +22,7 @@ import Image from "@/Components/Image.vue"
 
 library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit)
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
     routes: {
@@ -88,6 +88,30 @@ function editRoute(collection: {}) {
 }
 
 const isLoadingDetach = ref<string[]>([])
+
+
+function masterDepartmentRoute(master) {
+    return route(
+        "grp.masters.master_shops.show.master_departments.show",
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterDepartment: master.slug
+        });
+}
+
+
+
+function masterSubDepartmentRoute(master) {
+    return route(
+        "grp.masters.master_shops.show.master_sub_departments.show",
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterSubDepartment: master.slug
+        }
+    );
+}
+
+console.log('ssss',props)
 </script>
 
 <template>
@@ -123,7 +147,9 @@ const isLoadingDetach = ref<string[]>([])
             </div>
         </template>
 
-        <template #cell(parents)="{ item: collection }">
+        
+
+       <!--  <template #cell(parents)="{ item: collection }">
             <template v-for="(parent, index) in collection.parents_data" :key="index">
                 <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
                 <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" />
@@ -131,6 +157,32 @@ const isLoadingDetach = ref<string[]>([])
                     {{ parent.code && parent.code.length > 16 ? parent.code.substring(0, 16) + "..." : parent.code }}
                 </Link>&nbsp;
             </template>
+        </template> -->
+
+        <template #cell(master_department)="{ item: department }">
+            <span class="inline-flex max-w-full overflow-hidden whitespace-nowrap">
+                <template v-for="(item, index) in department.departments_data" :key="item.id ?? index">
+                    <Link v-if="item.slug" v-tooltip="item.name" :href="masterDepartmentRoute(item) as string"
+                        class="secondaryLink truncate max-w-[90px] inline-block">
+                        {{ item.code }}
+                    </Link>
+                    <span v-if="index < department.departments_data.length - 1">, </span>
+                </template>
+            </span>
+        </template>
+
+
+
+         <template #cell(master_sub_department)="{ item: subdepartment }">
+             <span class="inline-flex max-w-full overflow-hidden whitespace-nowrap">
+                <template v-for="(item, index) in subdepartment.sub_departments_data" :key="item.id ?? index">
+                    <Link v-if="item.slug" v-tooltip="item.name" :href="masterSubDepartmentRoute(item) as string"
+                        class="secondaryLink truncate max-w-[90px] inline-block">
+                        {{ item.code }}
+                    </Link>
+                    <span v-if="index < subdepartment.sub_departments_data.length - 1">, </span>
+                </template>
+            </span>
         </template>
 
          <template #cell(actions)="{ item }">

@@ -9,11 +9,11 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import { remove as loRemove } from "lodash-es"
-import { ref } from "vue"
+import { ref, inject } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
 import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faFolderDownload, faFolderTree } from "@fal"
-import { faPlay } from "@fas"
+import { faPlay, faTriangle, faEquals, faMinus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Dialog from "primevue/dialog"
 import ConfirmPopup from "primevue/confirmpopup"
@@ -25,9 +25,12 @@ import { Collection } from "@/types/collection"
 import { trans } from "laravel-vue-i18n"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import Image from "@/Components/Image.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolderDownload, faFolderTree)
+library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolderDownload, faFolderTree, faTriangle, faEquals, faMinus)
+
+const locale = inject("locale", aikuLocaleStructure)
 
 defineProps<{
     data: {}
@@ -312,6 +315,27 @@ function handleUrlChange(e: string | null) {
     reroute.value.url = raw ? raw : "/" // always updates url, never overwrites reroute
 }
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return {
+            icon: faTriangle
+        }
+    } else if (!isPositive) {
+        return {
+            icon: faTriangle,
+            class: 'rotate-180'
+        }
+    }
+}
+
+const getIntervalStateColor = (isPositive: boolean) => {
+    if (isPositive) {
+        return 'text-green-500'
+    } else if (!isPositive) {
+        return 'text-red-500'
+    }
+}
+
 </script>
 
 <template>
@@ -371,6 +395,82 @@ function handleUrlChange(e: string | null) {
             <Link :href="departmentRoute(collection) as string" class="secondaryLink">
                 {{ collection["department_code"] }}
             </Link>
+        </template>
+
+        <template #cell(sales)="{ item: collection }">
+            <span class="tabular-nums">{{ locale.currencyFormat(collection.currency_code, collection.sales) }}</span>
+        </template>
+
+        <template #cell(sales_delta)="{ item }">
+            <div v-if="item.sales_delta">
+                <span>{{ item.sales_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #cell(invoices_delta)="{ item }">
+            <div v-if="item.invoices_delta">
+                <span>{{ item.invoices_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.invoices_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
         </template>
 
         <template #cell(parents)="{ item: collection }">

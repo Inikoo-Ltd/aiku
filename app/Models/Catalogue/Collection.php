@@ -137,6 +137,11 @@ class Collection extends Model implements Auditable, HasMedia
         return $this->hasOne(CollectionSalesIntervals::class);
     }
 
+    public function orderingIntervals(): HasOne
+    {
+        return $this->hasOne(CollectionOrderingIntervals::class);
+    }
+
     public function orderingStats(): HasOne
     {
         return $this->hasOne(CollectionsOrderingStats::class);

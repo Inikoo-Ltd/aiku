@@ -25,7 +25,7 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
 
             if (Arr::get($modelData, 'type') === 'fixed') {
                 $newPrice = Arr::get($modelData, 'amount') + $portfolio->customer_price;
-            } elseif (Arr::get($modelData, 'type') === 'fixed') {
+            } elseif (Arr::get($modelData, 'type') === 'percent') {
                 $newPrice = $portfolio->customer_price * (1 + Arr::get($modelData, 'amount') / 100);
             } else {
                 $newPrice = $portfolio->item->rrp;

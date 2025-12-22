@@ -453,6 +453,12 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </span>
         </template>
 
+        <template #cell(customers_invoiced)="{ item }">
+            <Link :href="productRoute(item) + '?tab=customers'" class="secondaryLink">
+                {{ item.customers_invoiced }}
+            </Link>
+        </template>
+
         <template #cell(customers_invoiced_delta)="{ item }">
             <div v-if="item.customers_invoiced_delta">
                 <span>{{ item.customers_invoiced_delta.formatted }}</span>

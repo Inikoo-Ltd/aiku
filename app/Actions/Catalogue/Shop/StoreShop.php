@@ -41,6 +41,7 @@ use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use Exception;
@@ -301,6 +302,17 @@ class StoreShop extends OrgAction
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function inMaster(MasterShop $masterShop, ActionRequest $request): Shop
+    {
+        $organisation = Organisation::find($request->organisation);
+        $this->initialisation($organisation, $request);
+
+        $modelData = $this->validatedData;
+        data_set($modelData, 'master_shop_id', $masterShop->id);
+
+        return $this->handle($organisation, $modelData);
     }
 
 

@@ -409,6 +409,18 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ] : [],
+                        $shop->type === ShopTypeEnum::FAIRE ? 
+                        [
+                            'label' => __('Faire Keys'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => [
+                                'faire_access_token' => [
+                                    'type'  => 'input',
+                                    'label' => __('Faire Access Token'),
+                                    'value' => Arr::get($shop->settings, 'faire.access_token', ''),
+                                ]
+                            ],
+                        ] : [],
                         [
                             'label'  => __('HELP Portal'),
                             'icon'   => 'fal fa-life-ring',
