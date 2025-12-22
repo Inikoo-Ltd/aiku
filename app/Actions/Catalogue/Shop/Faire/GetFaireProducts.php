@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Shop\Faire;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
@@ -20,16 +21,17 @@ class GetFaireProducts extends OrgAction
         ]);
 
         $variantSkus = [];
-        $products = [];
+        $products    = [];
 
         foreach (Arr::get($products, 'products', []) as $product) {
             foreach ($product['variants'] as $variant) {
                 $variantSkus[] = $variant['sku'];
 
                 $awProduct = Product::where('shop_id', 41)
-                    ->where('code', 'ILIKE', "%{$variant['sku']}%")->first();
+                    ->where('code', 'ILIKE', "%{$variant['sku']}%")
+                    ->first();
 
-                if($awProduct->code) {
+                if ($awProduct->code) {
                     $products[] = $awProduct->code;
                 }
             }
@@ -41,7 +43,7 @@ class GetFaireProducts extends OrgAction
 
     public function asCommand(): void
     {
-        $shop = Shop::where('type', ShopTypeEnum::FAIRE)
+        $shop = Shop::where('type', ShopTypeEnum::EXTERNAL)->where('engine', ShopEngineEnum::FAIRE)
             ->where('state', ShopStateEnum::OPEN)
             ->first();
 

@@ -13,6 +13,7 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -82,7 +83,7 @@ class EditShop extends OrgAction
             ]
         ];
 
-        // Disable Widget_Key input if shop doesn't have any related website
+        // Disable Widget_Key input if the shop doesn't have any related website
         if ($shop->website) {
             $helpPortalFields['widget_key'] = [
                 'type'          => 'input',
@@ -207,13 +208,6 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        // [
-                        //     'label'  => __('contact/details'),
-                        //     'icon'   => 'fa-light fa-user',
-                        //     'fields' => [
-
-                        //     ]
-                        // ],
                         [
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
@@ -260,7 +254,7 @@ class EditShop extends OrgAction
                                 'marketing_opt_in_label' => [
                                     'type'  => 'input',
                                     'label' => __('Marketing opt-in label'),
-                                    'placeholder'   => 'Opt in to our newsletter for updates and offers.',
+                                    'placeholder'   => __('Opt in to our newsletter for updates and offers.'),
                                     'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_label', ''),
                                 ],
                                 'marketing_opt_in_default' => [
@@ -409,7 +403,7 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ] : [],
-                        $shop->type === ShopTypeEnum::FAIRE ?
+                        $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE ?
                         [
                             'label' => __('Faire Keys'),
                             'icon'   => 'fa-light fa-key',

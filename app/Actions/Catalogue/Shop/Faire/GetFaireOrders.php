@@ -6,6 +6,7 @@ use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
@@ -27,7 +28,8 @@ class GetFaireOrders extends OrgAction
             ]);
 
             $shops = $shop->masterShop->shops()
-                ->whereNot('type', ShopTypeEnum::FAIRE)
+                ->whereNot('type', ShopTypeEnum::EXTERNAL)
+                ->whereNot('engine', ShopEngineEnum::FAIRE)
                 ->pluck('id');
 
             foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
@@ -96,7 +98,7 @@ class GetFaireOrders extends OrgAction
 
     public function asCommand(): void
     {
-        $shop = Shop::where('type', ShopTypeEnum::FAIRE)
+        $shop = Shop::where('type', ShopTypeEnum::EXTERNAL)->where('engine', ShopEngineEnum::FAIRE)
             ->where('state', ShopStateEnum::OPEN)
             ->first();
 

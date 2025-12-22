@@ -125,7 +125,9 @@ class IndexPlatformSalesTable extends OrgAction
                 $customRangeService->injectCustomRangeData($platforms->getCollection(), $customRangeData, 'ds_platforms')
             );
         }
-
+        if ($platforms->count() == 0) {
+            return [];
+        }
         return json_decode(DashboardTotalPlatformSalesResource::make($platforms)->toJson(), true);
     }
 }
