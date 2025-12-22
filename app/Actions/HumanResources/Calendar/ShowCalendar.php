@@ -42,10 +42,7 @@ class ShowCalendar extends OrgAction
             [
                 'title'       => __('Calendar'),
                 'breadcrumbs' => $this->getBreadcrumbs($employee, $request->route()->originalParameters()),
-                'navigation'  => [
-                    'previous' => $this->getPrevious($employee, $request),
-                    'next'     => $this->getNext($employee, $request),
-                ],
+
                 'pageHead'    => [
                     'title' => $employee->worker_number,
                     'meta'  => [
@@ -116,37 +113,5 @@ class ShowCalendar extends OrgAction
         );
     }
 
-    public function getPrevious(Employee $employee, ActionRequest $request): ?array
-    {
-        $previous = Employee::where('slug', '<', $employee->slug)->orderBy('slug', 'desc')->first();
 
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(Employee $employee, ActionRequest $request): ?array
-    {
-        $next = Employee::where('slug', '>', $employee->slug)->orderBy('slug')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?Employee $employee, string $routeName): ?array
-    {
-        if (!$employee) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.org.hr.employees.show' => [
-                'label' => $employee->contact_name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'employee' => $employee->slug
-                    ]
-
-                ]
-            ]
-        };
-    }
 }
