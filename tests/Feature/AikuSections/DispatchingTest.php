@@ -499,36 +499,6 @@ test("UI Index dispatching show delivery-notes", function () {
     });
 });
 
-test("UI Index dispatching show delivery-notes (tab picking)", function () {
-    $response = get(
-        route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
-            $this->organisation->slug,
-            $this->warehouse->slug,
-            $this->deliveryNote->slug
-        ])
-    );
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component("Org/Dispatching/DeliveryNote")
-            ->where("title", 'delivery note')
-            ->has("breadcrumbs", 3)
-            ->has(
-                "pageHead",
-                fn (AssertableInertia $page) => $page
-                    ->where("title", $this->deliveryNote->reference)
-                    ->where("model", 'Delivery Note')
-                    ->etc()
-            )
-            ->has('delivery_note')
-            ->has("alert")
-            ->has("notes")
-            ->has("timelines")
-            ->has("box_stats")
-            ->has("routes")
-            ->has("tabs");
-    });
-})->todo();
-
 test('UI get section route dispatching show', function () {
 
     $deliveryNote = DeliveryNote::first();
