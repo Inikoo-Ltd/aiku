@@ -23,6 +23,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\CRM\BackInStockReminder;
 
 class BackToStockHydrateEmailBulkRuns implements ShouldQueue
 {
@@ -58,7 +59,7 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
             $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
             $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
             // select options
-            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'products.name as product_name');
+            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'products.name as product_name', 'back_in_stock_reminders.id as reminder_id');
 
             // where conditions
             $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
@@ -85,6 +86,7 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
             $processedCount = 0;
             $productData = [];
             $lastCustomerId = null;
+            $deleteBackInStockReminderIds = [];
             foreach ($baseQuery->cursor() as $customer) {
                 $processedCount++;
 
@@ -106,6 +108,8 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
                     $lastCustomerId = $customer->id;
                     $productData = []; // Reset for new customer
 
+                    // Update last sent time for this outbox
+                    $updateLastOutBoxSent = $currentDateTime;
                 }
                 // NOTE: make sure how to generate the caronical product link
                 $productData[] = [
@@ -125,9 +129,17 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
                     // reset product data
                     $productData = [];
                     $LastBulkRun = $bulkRun;
+
+                    // Update last sent time for this outbox
+                    $updateLastOutBoxSent = $currentDateTime;
                 }
+
+                // Track reminder IDs to delete
+                $deleteBackInStockReminderIds[] = $customer->reminder_id;
             }
 
+            // Note: Make sure this runs only once at the end
+            // check Job Chaining Bus::chain
             if ($LastBulkRun) {
                 EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun);
             }
@@ -135,6 +147,14 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
             if ($updateLastOutBoxSent) {
                 // update last_sent_at for this outbox
                 $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
+            }
+
+            // Delete processed back_in_stock_reminders
+            if (!empty($deleteBackInStockReminderIds)) {
+                BackInStockReminder::whereIn('id', $deleteBackInStockReminderIds)->delete();
+                // Log::info('Deleted ' . count($deleteBackInStockReminderIds) . ' back_in_stock_reminders');
+                // reset array to avoid re-deleting the same IDs
+                $deleteBackInStockReminderIds = [];
             }
         }
     }
