@@ -19,21 +19,33 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_items
  * @property string|null $customer_name
  * @property string|null $customer_slug
+ * @property string|null $organisation_slug
+ * @property string|null $warehouse_slug
  */
 class OrderReturnsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'            => $this->id,
-            'slug'          => $this->slug,
-            'reference'     => $this->reference,
-            'state'         => $this->state,
-            'state_icon'    => $this->state->stateIcon()[$this->state->value],
-            'date'          => $this->date,
-            'number_items'  => $this->number_items,
-            'customer_name' => $this->customer_name ?? null,
-            'customer_slug' => $this->customer_slug ?? null,
+            'id'               => $this->id,
+            'slug'             => $this->slug,
+            'reference'        => $this->reference,
+            'state'            => $this->state,
+            'state_icon'       => $this->state->stateIcon()[$this->state->value],
+            'date'             => $this->date,
+            'number_items'     => $this->number_items,
+            'customer_name'    => $this->customer_name ?? null,
+            'customer_slug'    => $this->customer_slug ?? null,
+            'organisation_slug' => $this->organisation_slug ?? null,
+            'warehouse_slug'   => $this->warehouse_slug ?? null,
+            'route'            => [
+                'name'       => 'grp.org.warehouses.show.incoming.returns.show',
+                'parameters' => [
+                    'organisation' => $this->organisation_slug,
+                    'warehouse'    => $this->warehouse_slug,
+                    'return'       => $this->slug,
+                ],
+            ],
         ];
     }
 }
