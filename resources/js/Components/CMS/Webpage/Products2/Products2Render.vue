@@ -190,7 +190,7 @@ const toggleBackInStock = () =>
                         <span>
                            {{ product?.stock >= 250
                                     ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ?   ` ${product.stock} ` + trans("available") `` : trans("Out Of Stock"))
+                                    : (product.stock > 0 ?   ` ${product.stock} ${trans("available")}` : trans("Out Of Stock"))
                                 }}
                         </span>
                     </span>
