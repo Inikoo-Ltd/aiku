@@ -8,6 +8,7 @@
 
 namespace App\Console;
 
+use App\Actions\Comms\Outbox\BackToStockNotification\Hydrators\BackToStockHydrateEmailBulkRuns;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -393,6 +394,16 @@ class Kernel extends ConsoleKernel
                 ->timezone('UTC')
                 ->sentryMonitor(monitorSlug: $config['slug']);
         }
+
+        // Temporarily disable BackToStock notification scheduling
+        // $this->logSchedule(
+        //     $schedule->job(BackToStockHydrateEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+        //         monitorSlug: 'BackToStockHydrateEmailBulkRuns',
+        //     ),
+        //     name: 'BackToStockHydrateEmailBulkRuns',
+        //     type: 'job',
+        //     scheduledAt: now()->format('H:i')
+        // );
     }
 
     protected function commands(): void
