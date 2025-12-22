@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Http\Resources\Masters\MasterBulkEditProductsResource;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetProductsBasedOnSavedCache extends GrpAction
@@ -24,8 +25,8 @@ class GetProductsBasedOnSavedCache extends GrpAction
     {
         // Remove soon, just temporary since Cache is not used yet. Data will be taken from cache later
         $products = Product::whereIn('id', $modelData['data'])->get();
-
-        return $products;
+        return MasterBulkEditProductsResource::collection($products)->toArray(request());
+        // return $products;
     }
 
     // Remove soon, just temporary since Cache is not used yet
