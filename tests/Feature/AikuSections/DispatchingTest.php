@@ -56,6 +56,7 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
+use App\Models\Dispatching\Shipper;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
@@ -65,6 +66,7 @@ use App\Models\Ordering\Transaction;
 use Config;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
+use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -103,6 +105,7 @@ beforeEach(function () {
 
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
     }
+
 
     Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
     actingAs($this->adminGuest->getUser());
@@ -724,3 +727,103 @@ test("UI Index dispatching show picking session", function (PickingSession $pick
             ->has("tabs");
     });
 })->depends('store picking session');
+
+it('can render the shippers index page', function () {
+    get(route('grp.org.warehouses.show.dispatching.shippers.current.index', [
+        'organisation' => $this->organisation->slug,
+        'warehouse'    => $this->warehouse->slug,
+    ]))
+        ->assertOk()
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->component('Org/Dispatching/Shippers')
+                ->has('data.data', 1)
+        );
+});
+
+it('can render the inactive shippers index page', function () {
+    $inactiveShipper = StoreShipper::make()->action(
+        $this->organisation,
+        [
+            'code'     => fake()->lexify(),
+            'name'     => fake()->name,
+            'email'    => fake()->email,
+            'trade_as' => fake()->company,
+        ]
+    );
+
+    $inactiveShipper = UpdateShipper::make()->action($inactiveShipper, [
+        'status' => false
+    ]);
+
+    expect($inactiveShipper)->toBeInstanceOf(Shipper::class)->and($inactiveShipper->status)->toBeFalse();
+
+    get(route('grp.org.warehouses.show.dispatching.shippers.inactive.index', [
+        'organisation' => $this->organisation->slug,
+        'warehouse'    => $this->warehouse->slug,
+    ]))
+        ->assertOk()
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->component('Org/Dispatching/Shippers')
+                ->has('data.data', 1)
+                ->where('data.data.0.name', $inactiveShipper->name)
+        );
+});
+
+it('can render the create shipper page', function () {
+    get(route('grp.org.warehouses.show.dispatching.shippers.create', [
+        'organisation' => $this->organisation->slug,
+        'warehouse'    => $this->warehouse->slug,
+    ]))
+        ->assertOk()
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->component('CreateModel')
+                ->has('formData.blueprint')
+        );
+});
+
+it('can render the show shipper page', function () {
+
+
+    $shipper = Shipper::first();
+
+    get(route('grp.org.warehouses.show.dispatching.shippers.show', [
+        'organisation' => $shipper->organisation->slug,
+        'warehouse'    => $this->warehouse->slug,
+        'shipper'      => $shipper->slug,
+    ]))
+        ->assertOk()
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->component('Org/Dispatching/Shipper')
+                ->where('pageHead.title', $shipper->name)
+        );
+});
+
+it('can render the edit shipper page', function () {
+
+    $shipper = Shipper::first();
+    get(route('grp.org.warehouses.show.dispatching.shippers.edit', [
+        'organisation' => $shipper->organisation->slug,
+        'warehouse'    => $this->warehouse->slug,
+        'shipper'      => $shipper->slug,
+    ]))
+        ->assertOk()
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->component('EditModel')
+                ->where('formData.blueprint.0.fields.name.value', $shipper->name)
+        );
+});
+
+it('can get shipper showcase data', function () {
+
+    $shipper = Shipper::first();
+    $showcase = \App\Actions\Dispatching\Shipper\UI\GetShipperShowcase::run($shipper);
+
+    expect($showcase)->toBeArray()
+        ->toHaveKey('shipper')
+        ->and($showcase['shipper']['name'])->toBe($shipper->name);
+});

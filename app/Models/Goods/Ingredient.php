@@ -12,6 +12,7 @@ namespace App\Models\Goods;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -46,6 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Ingredient extends Model implements Auditable
 {
+    use HasFactory;
     use HasSlug;
     use HasHistory;
     use InGroup;
