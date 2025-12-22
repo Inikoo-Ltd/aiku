@@ -18,7 +18,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import axios from "axios";
 import Image from "@/Components/Image.vue"
 
-defineProps<{
+const props = defineProps<{
     data: object,
     tab?: string
 }>();
@@ -74,6 +74,19 @@ function masterDepartmentRoute(masterFamily: MasterFamily) {
             });
     }
 }
+
+
+function masterSubDepartmentRoute(masterFamily: MasterFamily) {
+    return route(
+        "grp.masters.master_shops.show.master_sub_departments.show",
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterSubDepartment: masterFamily.master_sub_department_slug
+        }
+    );
+}
+
+
 
 function masterShopRoute(masterFamily: MasterFamily) {
     return route("grp.masters.master_shops.show",
@@ -190,9 +203,13 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
                 :href="masterDepartmentRoute(department) as string" class="secondaryLink">
             {{ department["master_department_code"] }}
             </Link>
-            <span v-else class="opacity-70  text-red-500">
-                {{ trans("No department") }}
-            </span>
+        </template>
+
+         <template #cell(master_sub_department_code)="{ item: subdepartment }">
+            <Link v-if="subdepartment.master_sub_department_slug" v-tooltip="subdepartment.master_sub_department_name"
+                :href="masterSubDepartmentRoute(subdepartment) as string" class="secondaryLink">
+                {{ subdepartment["master_sub_department_code"] }}
+            </Link>
         </template>
 
         <template #cell(code)="{ item: family }">
