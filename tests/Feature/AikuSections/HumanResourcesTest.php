@@ -123,7 +123,8 @@ test('create employee successful', function () {
         'worker_number'       => '1234567890',
         'work_email'          => null,
         'email'               => null,
-        'username'            => null,
+        'username'            => 'the_username',
+        'password'            => 'secret',
         'type'                => EmployeeTypeEnum::EMPLOYEE,
     ];
     $employee  = StoreEmployee::make()->action($this->organisation, $arrayData);
@@ -269,11 +270,9 @@ test('can show employee', function () {
         $page
             ->component('Org/HumanResources/Employee')
             ->has('breadcrumbs', 3)
-            ->where('pageHead.meta.1.route.name', 'grp.org.sysadmin.users.show')
-            ->where('pageHead.meta.1.route.parameters', $employee->alias)
-            ->has('tabs.navigation', 7);
+            ->has('tabs.navigation', 3);
     });
-})->todo();
+});
 
 test('new timesheet for employee', function (Employee $employee) {
     $timesheet = StoreTimesheet::make()->action($employee, [
@@ -345,7 +344,7 @@ test('second clocking ', function (Timesheet $timesheet, Workplace $workplace) {
 test('hydrate clocking machine', function (ClockingMachine $clockingMachine) {
     HydrateClockingMachine::run($clockingMachine);
     $this->artisan('hydrate:clocking-machine '.$this->organisation->slug)->assertExitCode(0);
-})->depends('create clocking machines')->todo();
+})->depends('create clocking machines');
 
 
 test('employees notes search', function () {

@@ -40,7 +40,7 @@ class ShowCalendar extends OrgAction
         return Inertia::render(
             'Org/HumanResources/Calendar',
             [
-                'title'       => __('calendar'),
+                'title'       => __('Calendar'),
                 'breadcrumbs' => $this->getBreadcrumbs($employee, $request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($employee, $request),
