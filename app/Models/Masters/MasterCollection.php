@@ -152,6 +152,11 @@ class MasterCollection extends Model implements Auditable, HasMedia
         return $this->hasOne(MasterCollectionSalesIntervals::class);
     }
 
+    public function orderingIntervals(): HasOne
+    {
+        return $this->hasOne(MasterCollectionOrderingIntervals::class);
+    }
+
     public function orderingStats(): HasOne
     {
         return $this->hasOne(MasterCollectionOrderingStats::class);
