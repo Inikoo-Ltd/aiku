@@ -73,6 +73,7 @@ enum RolesEnum: string
     case MARKETING_CLERK = 'marketing-clerk';
     case MARKETING_SUPERVISOR = 'marketing-supervisor';
 
+    case SHOP_PPC = 'shop-ppc';
 
     case CUSTOMER_SERVICE_CLERK = 'customer-service-clerk';
     case CUSTOMER_SERVICE_SUPERVISOR = 'customer-service-supervisor';
@@ -163,6 +164,7 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER => __('Production product developer'),
             RolesEnum::GOODS_IN_SUPERVISOR => __('Goods in supervisor'),
             RolesEnum::GOODS_IN_CLERK => __('Goods in clerk'),
+            RolesEnum::SHOP_PPC => __('Shop PPC'),
         };
     }
 
@@ -452,6 +454,17 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_OPERATOR => [
                 ProductionPermissionsEnum::PRODUCTION_OPERATIONS_VIEW,
             ],
+            RolesEnum::SHOP_PPC => [
+                ShopPermissionsEnum::PRODUCTS_VIEW,
+                ShopPermissionsEnum::CRM_VIEW,
+                ShopPermissionsEnum::CRM_PROSPECTS_VIEW,
+                ShopPermissionsEnum::WEB_VIEW,
+                ShopPermissionsEnum::ORDERS_VIEW,
+                ShopPermissionsEnum::DISCOUNTS_VIEW,
+                ShopPermissionsEnum::MARKETING_VIEW,
+                ShopPermissionsEnum::WEB_EDIT_LANDING_PAGES,
+
+            ]
         };
     }
 
@@ -484,6 +497,8 @@ enum RolesEnum: string
 
             RolesEnum::MARKETING_CLERK,
             RolesEnum::MARKETING_SUPERVISOR,
+
+            RolesEnum::SHOP_PPC
 
             => 'Shop',
             RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR,
@@ -522,6 +537,7 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_LINE_MANAGER,
             RolesEnum::MANUFACTURING_OPERATOR,
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER,
+            RolesEnum::SHOP_PPC
             => [OrganisationTypeEnum::SHOP],
 
             RolesEnum::SEO_SUPERVISOR,

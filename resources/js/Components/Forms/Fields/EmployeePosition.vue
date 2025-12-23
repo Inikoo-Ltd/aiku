@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { inject, onMounted, reactive, ref, watch } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBullhorn, faCashRegister, faChessQueen, faCube, faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from "@fal";
-import { faBoxUsd, faHelmetBattle, faExclamationCircle, faCheckCircle as fasCheckCircle, faCrown as fasCrown } from "@fas";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { get, set } from "lodash-es";
-import { layoutStructure } from "@/Composables/useLayoutStructure";
-import { trans } from "laravel-vue-i18n";
-import { useForm } from "@inertiajs/vue3";
-import { routeType } from "@/types/route";
-import { notify } from "@kyvg/vue3-notification";
+import { onMounted, reactive, ref, watch } from "vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faAd, faBullhorn, faCashRegister, faChessQueen, faCube, faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from "@fal"
+import { faBoxUsd, faHelmetBattle, faExclamationCircle, faCheckCircle as fasCheckCircle, faCrown as fasCrown } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { get, set } from "lodash-es"
+import { trans } from "laravel-vue-i18n"
+import { useForm } from "@inertiajs/vue3"
+import { routeType } from "@/types/route"
+import { notify } from "@kyvg/vue3-notification"
 
 
-library.add(faBoxUsd, faHelmetBattle, faChessQueen, faCube, faStore, faCashRegister, faBullhorn, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle, fasCrown);
+library.add(faAd, faBoxUsd, faHelmetBattle, faChessQueen, faCube, faStore, faCashRegister, faBullhorn, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle, fasCrown)
 
 interface TypeShop {
     id: number;
@@ -63,8 +62,6 @@ interface optionsJob {
         value?: any
     };
 }
-
-const layout = inject("layout", layoutStructure);
 
 const props = defineProps<{
     form: {
@@ -119,18 +116,18 @@ const props = defineProps<{
     saveButton?: boolean
     organisationId?: number
     isGroupAdminSelected?: boolean
-}>();
+}>()
 
 
-const abcdef = {
+const employeePositionForm = {
     [props.fieldName]: props.form?.organisations?.[props.fieldName] || props.form?.[props.fieldName] || "fffff"
-};
-const newForm = props.saveButton ? useForm(abcdef || {}) : reactive(props.form);
+}
+const newForm = props.saveButton ? useForm(employeePositionForm || {}) : reactive(props.form)
 const onSubmitNewForm = () => {
 
     if (props.fieldData.current_organisation?.slug == props.fieldName) {
-        console.log(".");
-        // If user is employeed in this organisation
+        console.log(".")
+        // If a user is employed in this organization
         newForm
             .transform((data) => ({
                 permissions: data[props.fieldName]
@@ -154,9 +151,9 @@ const onSubmitNewForm = () => {
                         type: "error"
                     })
                 }
-            );
+            )
     } else {
-        console.log(",");
+        console.log(",")
         newForm
             .transform((data) => ({
                 permissions: data[props.fieldName]
@@ -177,9 +174,9 @@ const onSubmitNewForm = () => {
                         type: "error"
                     })
                 }
-            );
+            )
     }
-};
+}
 
 
 const optionsList = {
@@ -188,12 +185,12 @@ const optionsList = {
     warehouses: props.options.warehouses?.data || [],
     positions: props.options.positions?.data || [],
     productions: props.options.productions?.data || []
-};
+}
 
-const shopsLength = optionsList.shops?.length;
-const fulfilmentsLength = optionsList.fulfilments?.length;
-const warehousesLength = optionsList.warehouses?.length;
-const productionsLength = optionsList.productions?.length;
+const shopsLength = optionsList.shops?.length
+const fulfilmentsLength = optionsList.fulfilments?.length
+const warehousesLength = optionsList.warehouses?.length
+const productionsLength = optionsList.productions?.length
 
 const optionsJob = reactive<optionsJob>({
     org_admin: {
@@ -322,11 +319,28 @@ const optionsJob = reactive<optionsJob>({
         isHide: shopsLength < 1
         // value: null
     },
+    shop_ppc: {
+        key: "ppc",
+        department: trans("PPC"),
+        icon: "fal fa-ad",
+        scope: "shop",
+        subDepartment: [
+            {
+                slug: "ppc-shop",
+                grade: "clerk",
+                label: trans("PPC"),
+                optionsType: ["shops"],
+                number_employees: props.options.positions.data.find(position => position.slug == "shop-ppc")?.number_employees || 0
+            }
+
+        ]
+    },
 
     cus: {
         key: "cus",
         department: trans("Customer Service"),
         departmentRightIcons: ["fal fa-user", "fal fa-route"],
+        icon: "fal fa-user",
         scope: "shop",
         subDepartment: [
             {
@@ -360,6 +374,7 @@ const optionsJob = reactive<optionsJob>({
     buy: {
         key: "buy",
         department: trans("Buyer"),
+        icon: "fal fa-box-usd",
         subDepartment: [
             {
                 slug: "buy",
@@ -374,6 +389,7 @@ const optionsJob = reactive<optionsJob>({
     wah: {
         key: "wah",
         department: trans("Warehouse"),
+        icon: "fal fa-inventory",
         subDepartment: [
             {
                 slug: "wah-m",
@@ -396,7 +412,8 @@ const optionsJob = reactive<optionsJob>({
 
     dist: {
         key: "dist",
-        department: trans("Dispatching"),
+        department: trans("Goods out"),
+        icon: "fal fa-arrow-from-left",
         subDepartment: [
             {
                 slug: "dist-m",
@@ -448,6 +465,7 @@ const optionsJob = reactive<optionsJob>({
     ful: {
         key: "ful",
         department: trans("Fulfilment"),
+        icon: "fal fa-hand-holding-box",
         subDepartment: [
             {
                 slug: "ful-m",
@@ -478,12 +496,12 @@ const optionsJob = reactive<optionsJob>({
         isHide: (warehousesLength < 1 || fulfilmentsLength < 1)
         // value: null
     }
-});
+})
 
 
 // console.log('options Job', props.options.warehouses.data)
 // Temporary data
-const openFinetune = ref("");
+const openFineTune = ref("")
 
 // When the radio is clicked
 const handleClickSubDepartment = (department: string, subDepartmentSlug: any, optionType: string[]) => {
@@ -491,7 +509,7 @@ const handleClickSubDepartment = (department: string, subDepartmentSlug: any, op
 
     // If click on the active subDepartment, then unselect it
     if (newForm?.[props.fieldName]?.[subDepartmentSlug]) {
-        delete newForm[props.fieldName][subDepartmentSlug];
+        delete newForm[props.fieldName][subDepartmentSlug]
     } else {
         for (const key in newForm[props.fieldName]) {
             // key == wah-m || mrk-c || hr-c
@@ -500,7 +518,7 @@ const handleClickSubDepartment = (department: string, subDepartmentSlug: any, op
                 // If the selected radio is not same group ('manager' group or 'clerk' group)
                 if (optionsJob[department].subDepartment.find(sub => sub.slug == key)?.grade != optionsJob[department].subDepartment.find(sub => sub.slug == subDepartmentSlug)?.grade) {
                     // Delete mrk-c
-                    delete newForm[props.fieldName][key];
+                    delete newForm[props.fieldName][key]
                 }
             }
         }
@@ -508,41 +526,41 @@ const handleClickSubDepartment = (department: string, subDepartmentSlug: any, op
         // If department have 'options' (i.e. web, wah, cus)
         if (optionType?.some(option => optionsList[option])) {
             // newForm[props.fieldName][subDepartmentSlug] = {}  // declare empty object so able to put new key
-            set(newForm, [props.fieldName, subDepartmentSlug], {});
+            set(newForm, [props.fieldName, subDepartmentSlug], {})
             for (const type in optionType) {
                 // type == 'fulfilment' | 'warehouse' | 'shop'
-                newForm[props.fieldName][subDepartmentSlug][optionType[type]] = optionsList[optionType[type]].map(xxx => xxx.slug);
+                newForm[props.fieldName][subDepartmentSlug][optionType[type]] = optionsList[optionType[type]].map(xxx => xxx.slug)
             }
         } else {
             // If department is simple department (have no shops/warehouses)
-            set(newForm, [props.fieldName, subDepartmentSlug], []);
+            set(newForm, [props.fieldName, subDepartmentSlug], [])
         }
     }
 
     if (newForm?.errors?.[props.fieldName]) {
-        newForm.errors[props.fieldName] = "";
+        newForm.errors[props.fieldName] = ""
     }
-};
+}
 
 // Method: on clicked radio inside 'Advanced selection'
-const onClickJobFinetune = (departmentName: string, shopSlug: string, subDepartmentSlug: any, optionType: string) => {
+const onClickJobFineTune = (departmentName: string, shopSlug: string, subDepartmentSlug: any, optionType: string) => {
     // ('mrk', 'mrk-c', ['shops', 'fulfilment'])
 
     // If 'uk' is exist in mrk-m then delete it
     if (get(newForm[props.fieldName], [subDepartmentSlug, optionType], []).includes(shopSlug)) {
         if (newForm[props.fieldName][subDepartmentSlug][optionType].length === 1) {
             // if mrk-m.shops: ['uk'] (only 1 length), then delete mrk-m
-            delete newForm[props.fieldName][subDepartmentSlug][optionType];
+            delete newForm[props.fieldName][subDepartmentSlug][optionType]
 
             if (!Object.keys(newForm[props.fieldName][subDepartmentSlug] || {}).length) {
                 // if mrk-o: {}, then delete mrk-o
-                delete newForm[props.fieldName][subDepartmentSlug];
+                delete newForm[props.fieldName][subDepartmentSlug]
             }
         } else {
             // if mrk-m.shops: ['uk', 'ed'] (more than 1 length), then delete
-            const indexShopName = get(newForm[props.fieldName], [subDepartmentSlug, optionType], []).indexOf(shopSlug);
+            const indexShopName = get(newForm[props.fieldName], [subDepartmentSlug, optionType], []).indexOf(shopSlug)
             if (indexShopName !== -1) {
-                newForm[props.fieldName][subDepartmentSlug][optionType].splice(indexShopName, 1);
+                newForm[props.fieldName][subDepartmentSlug][optionType].splice(indexShopName, 1)
             }
         }
     } else {
@@ -555,24 +573,23 @@ const onClickJobFinetune = (departmentName: string, shopSlug: string, subDepartm
                 if (optionsJob[departmentName].subDepartment.find(sub => sub.slug == key)?.grade != optionsJob[departmentName].subDepartment.find(sub => sub.slug == subDepartmentSlug)?.grade) {
 
                     // Check if wah-c include 'uk'
-                    const indexShopName = get(newForm[props.fieldName], [key, optionType], []).indexOf(shopSlug);
+                    const indexShopName = get(newForm[props.fieldName], [key, optionType], []).indexOf(shopSlug)
                     if (indexShopName !== -1) {
                         // if wah-c: ['uk'] then delete 'uk'
-                        newForm[props.fieldName][key][optionType].splice(indexShopName, 1);
+                        newForm[props.fieldName][key][optionType].splice(indexShopName, 1)
 
                         // if wah-c: [] then delete wah-c
                         if (!newForm[props.fieldName][key][optionType].length) {
-                            delete newForm[props.fieldName][key];
+                            delete newForm[props.fieldName][key]
                         }
                     }
-                } else {
                 }
             }
         }
 
         // if mrk-m already exist, then push 'ed'
         if (get(newForm[props.fieldName], [subDepartmentSlug, optionType], false)) {
-            newForm[props.fieldName][subDepartmentSlug][optionType].push(shopSlug);
+            newForm[props.fieldName][subDepartmentSlug][optionType].push(shopSlug)
         }
 
         // if mrk-m not exist then create array ['uk']
@@ -580,42 +597,42 @@ const onClickJobFinetune = (departmentName: string, shopSlug: string, subDepartm
             newForm[props.fieldName][subDepartmentSlug] = {
                 ...newForm[props.fieldName][subDepartmentSlug],
                 [optionType]: [shopSlug]
-            };
+            }
         }
     }
 
     if (newForm?.errors?.[props.fieldName]) {
-        newForm.errors[props.fieldName] = "";
+        newForm.errors[props.fieldName] = ""
     }
-};
+}
 
 const isLevelGroupAdmin = (jobGroupLevel?: string) => {
     if (!jobGroupLevel) {
-        return false;
+        return false
     }
-    return ["group_admin", "group_sysadmin", "group_procurement"].includes(jobGroupLevel);
-};
+    return ["group_admin", "group_sysadmin", "group_procurement"].includes(jobGroupLevel)
+}
 
 const isRadioChecked = (subDepartmentSlug: string) => {
-    return Object.keys(newForm[props.fieldName] || {}).includes(subDepartmentSlug);
-};
+    return Object.keys(newForm[props.fieldName] || {}).includes(subDepartmentSlug)
+}
 
-const isMounted = ref(false);
+const isMounted = ref(false)
 
 onMounted(() => {
     setTimeout(() => {
-        isMounted.value = true;
-    }, 300);
-});
+        isMounted.value = true
+    }, 300)
+})
 
 const emits = defineEmits<{
     (e: "countPosition", value: number): void
-}>();
+}>()
 watch(() => newForm, () => {
-    const xxx = Object.keys(newForm[props.fieldName]).length;
+    const xxx = Object.keys(newForm[props.fieldName]).length
     // console.log('newForm', xxx)
-    emits("countPosition", xxx);
-}, { deep: true, immediate: true });
+    emits("countPosition", xxx)
+}, { deep: true, immediate: true })
 
 
 </script>
@@ -642,7 +659,7 @@ watch(() => newForm, () => {
                                         <!-- Button: Radio position -->
                                         <div class="pl-2 flex items-center gap-x-4">
                                             <template v-for="subDepartment, idxSubDepartment in jobGroup.subDepartment">
-                                                <!-- If subDepartment is have atleast 1 Fulfilment, or have atleast 1 Shop, or have atleast 1 Warehouse, or have atleast 1 Production, or is a simple sub department (i.e buyer, administrator, etc) -->
+                                                <!-- If subDepartment is have at least 1 Fulfilment, or have at least 1 Shop, or have at least 1 Warehouse, or have at least 1 Production, or is a simple sub department (i.e buyer, administrator, etc) -->
                                                 <button
                                                     v-if="!subDepartment.isHide"
                                                     @click.prevent="handleClickSubDepartment(departmentName, subDepartment.slug, subDepartment.optionsType)"
@@ -656,7 +673,6 @@ watch(() => newForm, () => {
                                                         ? true
                                                         : false"
                                                 >
-                                                    <!-- {{ (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') }} -->
 
                                                     <div class="relative text-left">
                                                         <div class="absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2">
@@ -689,7 +705,7 @@ watch(() => newForm, () => {
                                         </div>
                                         <!-- Button: Advanced selection -->
                                         <div v-if="jobGroup.subDepartment.some(subDep => subDep.optionsType?.some(option => optionsList[option]?.length > 1))" class="flex gap-x-2 px-3">
-                                            <button @click.prevent="() => openFinetune = openFinetune === jobGroup.key ? '' : jobGroup.key"
+                                            <button @click.prevent="() => openFineTune = openFineTune === jobGroup.key ? '' : jobGroup.key"
                                                     class="underline disabled:no-underline whitespace-nowrap cursor-pointer disabled:cursor-auto disabled:text-gray-400"
                                             >
                                                 {{ trans("Shops Fine tuning") }}
@@ -698,7 +714,7 @@ watch(() => newForm, () => {
                                     </div>
                                     <!-- Section: Advanced selection -->
                                     <Transition mode="in-out">
-                                        <div v-if="openFinetune === jobGroup.key" class="relative bg-slate-400/10 border border-gray-300 rounded-md py-2 px-2 mb-3">
+                                        <div v-if="openFineTune === jobGroup.key" class="relative bg-slate-400/10 border border-gray-300 rounded-md py-2 px-2 mb-3">
                                             <div class="flex gap-x-8 mb-3">
                                                 <div class="flex flex-col gap-y-4 pt-4">
                                                     <template v-for="optionData, optionKey, optionIdx in optionsList" :key="optionKey + optionIdx">
@@ -724,7 +740,7 @@ watch(() => newForm, () => {
                                                                         <template v-for="subDep in jobGroup.subDepartment.filter(sub => sub.grade == gradeName)">
                                                                             <button
                                                                                 v-if="subDep.optionsType?.includes(optionKey)"
-                                                                                @click.prevent="onClickJobFinetune(departmentName, shop.slug, subDep.slug, optionKey)"
+                                                                                @click.prevent="onClickJobFineTune(departmentName, shop.slug, subDep.slug, optionKey)"
                                                                                 class="group h-full cursor-pointer flex items-center justify-center rounded-md px-3 font-medium disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
                                                                                 :disabled="isGroupAdminSelected || isRadioChecked('org-admin') || isRadioChecked('group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDep.slug !== 'shop-admin')"
                                                                                 v-tooltip="subDep.label"
@@ -755,12 +771,6 @@ watch(() => newForm, () => {
                                                         </div>
                                                     </template>
                                                 </div>
-                                                <!-- <div v-for="subDepartment, idxSubDepartment in jobGroup.subDepartment" class="flex flex-col pl-3 first:pl-0">
-                                                    <div class="text-center font-bold">{{ subDepartment.label }}</div>
-                                                    <div v-for="option in subDepartment.optionsType" class="py-[2px] pl-2 rounded">
-            
-                                                    </div>
-                                                </div> -->
                                             </div>
                                             <div v-if="jobGroup.optionsClosed?.length" class="px-2 bg-gray-400/20 py-2 rounded">
                                                 <div class="flex items-center gap-x-1">
@@ -772,7 +782,7 @@ watch(() => newForm, () => {
                                                     {{ option.name }}
                                                 </div>
                                             </div>
-                                            <div @click="openFinetune = ''" class="absolute top-1 right-2 w-fit px-1 text-slate-400 hover:text-slate-500 cursor-pointer hover:">
+                                            <div @click="openFineTune = ''" class="absolute top-1 right-2 w-fit px-1 text-slate-400 hover:text-slate-500 cursor-pointer hover:">
                                                 <FontAwesomeIcon icon="fal fa-times" class="" aria-hidden="true" />
                                             </div>
                                         </div>
