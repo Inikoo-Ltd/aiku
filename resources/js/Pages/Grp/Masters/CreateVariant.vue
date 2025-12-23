@@ -185,7 +185,6 @@ const save = () => {
 
 
 <template>
-
     <Head :title="capitalize(props.title)" />
     <PageHeading :data="props.pageHead" />
 

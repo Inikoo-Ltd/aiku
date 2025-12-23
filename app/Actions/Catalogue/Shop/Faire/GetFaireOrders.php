@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -34,8 +35,15 @@ class GetFaireOrders extends OrgAction
                 ->pluck('id');
 
             foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
+                $externalId = Arr::get($faireOrder, 'id');
                 $retailerId = Arr::get($faireOrder, 'retailer_id');
                 $retailer = GetFaireRetailers::run($shop, $retailerId);
+
+                $orderExists = Order::where('external_id', $externalId)->exists();
+
+                if($orderExists) {
+                    continue;
+                }
 
                 if ($retailer) {
                     data_set($retailer, 'contact_name', Arr::get($retailer, 'name'));
@@ -53,11 +61,12 @@ class GetFaireOrders extends OrgAction
                         $customer = StoreCustomer::make()->action($shop, $retailer);
                     }
 
-                    data_set($faireOrder, 'external_id', Arr::get($faireOrder, 'id'));
+                    data_set($faireOrder, 'external_id', $externalId);
                     $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
 
                     foreach (Arr::get($faireOrder, 'items', []) as $item) {
                         $product = Product::whereIn('shop_id', $shops)
+                            ->where('organisation_id', $awOrder->organisation_id)
                             ->where('code', 'ILIKE', "%{$item['sku']}%")
                             ->first();
 
