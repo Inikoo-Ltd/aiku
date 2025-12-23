@@ -141,19 +141,56 @@ class IndexMasterFamilies extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('master_product_categories.name', $value)
-                    ->orWhereStartWith('master_product_categories.slug', $value);
+                $query
+                    ->whereAnyWordStartWith('master_product_categories.name', $value)
+                    ->orWhereStartWith('master_product_categories.slug', $value)
+                    ->orWhereStartWith('departments.name', $value)
+                    ->orWhereStartWith('sub_departments.name', $value);
             });
         });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
-        $queryBuilder->where('master_product_categories.type', ProductCategoryTypeEnum::FAMILY);
-        $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', '=', 'master_product_category_stats.master_product_category_id');
 
+        $queryBuilder
+            ->where('master_product_categories.type', ProductCategoryTypeEnum::FAMILY)
 
+            // Stats
+            ->leftJoin(
+                'master_product_category_stats',
+                'master_product_categories.id',
+                '=',
+                'master_product_category_stats.master_product_category_id'
+            )
+
+            // Department
+            ->leftJoin(
+                'master_product_categories as departments',
+                'departments.id',
+                '=',
+                'master_product_categories.master_department_id'
+            )
+
+            // Sub Department
+            ->leftJoin(
+                'master_product_categories as sub_departments',
+                'sub_departments.id',
+                '=',
+                'master_product_categories.master_sub_department_id'
+            )
+
+            // Shop
+            ->leftJoin(
+                'master_shops',
+                'master_shops.id',
+                '=',
+                'master_product_categories.master_shop_id'
+            );
+
+        // Element Groups (Filters)
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
@@ -163,7 +200,23 @@ class IndexMasterFamilies extends OrgAction
             );
         }
 
+        // Parent Filter (ONLY affects data scope)
+        match (true) {
+            $parent instanceof MasterShop =>
+            $queryBuilder->where('master_product_categories.master_shop_id', $parent->id),
+
+            $parent instanceof MasterProductCategory && $parentType === 'department' =>
+            $queryBuilder->where('master_product_categories.master_department_id', $parent->id),
+
+            $parent instanceof MasterProductCategory =>
+            $queryBuilder->where('master_product_categories.master_sub_department_id', $parent->id),
+
+            default =>
+            $queryBuilder->where('master_product_categories.group_id', $parent->id),
+        };
+
         $queryBuilder->select([
+            // family
             'master_product_categories.id',
             'master_product_categories.slug',
             'master_product_categories.code',
@@ -173,39 +226,30 @@ class IndexMasterFamilies extends OrgAction
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
             'master_product_categories.web_images',
+
+            // Stats
             'master_product_category_stats.number_current_families as used_in',
             'master_product_category_stats.number_current_master_assets_type_product as products',
 
+            // Shop
+            'master_shops.slug as master_shop_slug',
+            'master_shops.code as master_shop_code',
+            'master_shops.name as master_shop_name',
+
+            // Department
+            'departments.slug as master_department_slug',
+            'departments.code as master_department_code',
+            'departments.name as master_department_name',
+
+            // Sub Department
+            'sub_departments.slug as master_sub_department_slug',
+            'sub_departments.code as master_sub_department_code',
+            'sub_departments.name as master_sub_department_name',
         ]);
-
-
-        if ($parent instanceof MasterShop) {
-            $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
-        } elseif ($parent instanceof MasterProductCategory) {
-            if ($parentType == 'department') {
-                $queryBuilder->where('master_product_categories.master_department_id', $parent->id);
-            } elseif ($parentType == 'sub_department') {
-                $queryBuilder->where('master_product_categories.master_sub_department_id', $parent->id);
-            } else {
-                $queryBuilder->where('master_product_categories.master_sub_department_id', $parent->id);
-            }
-        } else {
-            $queryBuilder->where('master_product_categories.group_id', $parent->id);
-            $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_product_categories.master_shop_id');
-            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_product_categories.master_department_id');
-            $queryBuilder->addSelect([
-                'departments.slug as master_department_slug',
-                'departments.code as master_department_code',
-                'departments.name as master_department_name',
-                'master_shops.slug as master_shop_slug',
-                'master_shops.code as master_shop_code',
-                'master_shops.name as master_shop_name',
-            ]);
-        }
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->allowedSorts(['code', 'name', 'used_in', 'products'])
+            ->allowedSorts(['code','name','used_in','products','master_department_code','master_sub_department_code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -250,6 +294,8 @@ class IndexMasterFamilies extends OrgAction
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'master_department_code', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'products', label: __('Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
         };

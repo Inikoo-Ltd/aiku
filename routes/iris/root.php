@@ -10,12 +10,13 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
+use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
+use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
-use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
@@ -70,6 +71,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::prefix("")->group(function () {
         Route::group([], __DIR__ . '/system.php');
+        Route::get('/robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/sitemaps/{sitemapType}.xml', ShowIrisSubSitemap::class)
             ->where('sitemapType', 'products|departments|sub_departments|families|contents|blogs|pages|collections')

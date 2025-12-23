@@ -8,6 +8,7 @@
 
 namespace Database\Factories\Catalogue;
 
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,7 +24,8 @@ class ShopFactory extends Factory
             'email'                    => fake()->email,
             'identity_document_number' => fake('en_GB')->vat(),
             'identity_document_type'   => 'passport',
-            'type'                     => ShopTypeEnum::B2B->value,
+            'type'                     => ShopTypeEnum::B2B,
+            'engine'                   => ShopEngineEnum::AIKU,
             'country_id'               => 1,
             'currency_id'              => 1,
             'language_id'              => 1,

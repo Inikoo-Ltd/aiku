@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits\Rules;
 
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Rules\IUnique;
@@ -57,6 +58,7 @@ trait WithStoreShopRules
             'warehouses'               => ['sometimes', 'array'],
             'warehouses.*'             => [Rule::Exists('warehouses', 'id')->where('organisation_id', $this->organisation->id)],
             'address'                  => ['sometimes', 'required', new ValidAddress()],
+            'engine'                   => ['sometimes', Rule::enum(ShopEngineEnum::class)]
 
         ];
 

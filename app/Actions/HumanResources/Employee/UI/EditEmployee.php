@@ -62,19 +62,19 @@ class EditEmployee extends OrgAction
             'fields' => [
                 'worker_number' => [
                     'type'     => 'input',
-                    'label'    => __('worker number'),
+                    'label'    => __('Worker number'),
                     'required' => true,
                     'value'    => $employee->worker_number
                 ],
                 'alias'         => [
                     'type'     => 'input',
-                    'label'    => __('alias'),
+                    'label'    => __('Alias'),
                     'required' => true,
                     'value'    => $employee->alias
                 ],
                 'work_email'    => [
                     'type'  => 'input',
-                    'label' => __('work email'),
+                    'label' => __('Work email'),
                     'value' => $employee->work_email ?? ''
                 ],
                 'cluster'       => [
@@ -112,7 +112,7 @@ class EditEmployee extends OrgAction
                 ],
                 'job_title'     => [
                     'type'        => 'input',
-                    'label'       => __('job title'),
+                    'label'       => __('Job title'),
                     'placeholder' => __('Job title'),
                     'searchable'  => true,
                     'value'       => $employee->job_title,
@@ -167,7 +167,6 @@ class EditEmployee extends OrgAction
                                 $employee->organisation->slug => $jobPositionsOrganisationData,
                             ],
                         ],
-                        // 'value' => $jobPositionsOrganisationData,
                         'full'                          => true
                     ],
 
@@ -179,13 +178,13 @@ class EditEmployee extends OrgAction
                 'fields' => [
                     'username' => [
                         'type'  => 'input',
-                        'label' => __('username'),
+                        'label' => __('Username'),
                         'value' => $user->username
 
                     ],
                     'password' => [
                         'type'  => 'password',
-                        'label' => __('password'),
+                        'label' => __('Password'),
 
                     ],
                 ]

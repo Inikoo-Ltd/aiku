@@ -12,6 +12,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import CollectionSelector from '@/Components/DepartmentAndFamily/CollectionSelector.vue'
 import { routeType } from '@/types/route'
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue'
+import SalesIntervalsCompact from '@/Components/Product/SalesIntervalsCompact.vue'
 
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
 
@@ -41,6 +42,7 @@ const props = defineProps<{
       detach_parent : routeType
     }
   }
+  salesIntervals?: object
 }>()
 console.log(props)
 
@@ -112,7 +114,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
 
 <template>
   <div class="p-4 space-y-6">
-    <div class="grid lg:grid-cols-[30%_40%] gap-4 max-w-6xl">
+    <div class="grid lg:grid-cols-[30%_40%_30%] gap-4 max-w-6xl">
       <!-- Info Card -->
       <ProductCategoryCard :data="data" />
 
@@ -171,6 +173,11 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             {{trans('No parent sub-department assigned.')}}
           </div>
         </div>
+      </div>
+
+      <!-- Sales Analytics - right sidebar -->
+      <div v-if="salesIntervals">
+        <SalesIntervalsCompact :intervalsData="salesIntervals" />
       </div>
     </div>
   </div>

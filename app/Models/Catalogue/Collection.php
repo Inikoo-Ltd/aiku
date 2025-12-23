@@ -62,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \App\Models\Catalogue\CollectionOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
@@ -135,6 +136,11 @@ class Collection extends Model implements Auditable, HasMedia
     public function salesIntervals(): HasOne
     {
         return $this->hasOne(CollectionSalesIntervals::class);
+    }
+
+    public function orderingIntervals(): HasOne
+    {
+        return $this->hasOne(CollectionOrderingIntervals::class);
     }
 
     public function orderingStats(): HasOne

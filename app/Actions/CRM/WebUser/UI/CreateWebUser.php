@@ -99,13 +99,13 @@ class CreateWebUser extends OrgAction
                                     ],
                                     'username' => [
                                         'type'  => 'input',
-                                        'placeholder' => __('username'),
-                                        'label' => __('username'),
+                                        'placeholder' => __('Username'),
+                                        'label' => __('Username'),
                                         'value' => ''
                                     ],
                                     'password' => [
                                         'type'  => 'password',
-                                        'label' => __('password'),
+                                        'label' => __('Password'),
                                         'value' => ''
                                     ],
                                     'is_root' => [

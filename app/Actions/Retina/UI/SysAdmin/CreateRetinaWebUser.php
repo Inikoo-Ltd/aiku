@@ -66,13 +66,13 @@ class CreateRetinaWebUser extends RetinaAction
                                     'username' => [
                                         'required' => true,
                                         'type'  => 'input',
-                                        'label' => __('username'),
+                                        'label' => __('Username'),
                                         'value' => ''
                                     ],
                                     'password' => [
                                         'required' => true,
                                         'type'  => 'password',
-                                        'label' => __('password'),
+                                        'label' => __('Password'),
                                         'value' => ''
                                     ],
 

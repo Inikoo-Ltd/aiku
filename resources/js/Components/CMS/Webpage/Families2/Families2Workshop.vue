@@ -42,6 +42,8 @@ const props = defineProps<{
   indexBlock?: number
 }>()
 
+console.log('ssssddd',props)
+
 const layout: any = inject('layout', {})
 
 const prevEl = ref<HTMLElement | null>(null)
@@ -66,7 +68,7 @@ const refreshCarousel = async (delay = 100) => {
 
 const allItems = computed(() => [
   ...(props.modelValue?.families || []),
- /*  ...(props.modelValue?.collections || []) */
+/*   ...(props.modelValue?.collections || []) */
 ])
 
 const spaceBetween = computed(() => (props.screenType === 'mobile' ? 8 : 24))

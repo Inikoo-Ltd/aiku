@@ -292,16 +292,6 @@ test('remove delivery address from customer', function (Customer $customer) {
     return $customer;
 })->depends('add delivery address to customer');
 
-test('can show list of prospects lists', function () {
-    $shop     = $this->shop;
-    $response = get(route('grp.org.shops.show.crm.prospects.lists.index', [$shop->slug]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('CRM/Prospects/Queries')
-            ->has('title');
-    });
-})->todo();
-
 test('add favourite to customer', function (Customer $customer) {
     $favourite = StoreFavourite::make()->action(
         $customer,

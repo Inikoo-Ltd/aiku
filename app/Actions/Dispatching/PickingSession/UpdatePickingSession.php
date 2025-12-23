@@ -22,22 +22,27 @@ class UpdatePickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession, array $modelData): PickingSession
     {
-        $pickingSession = $this->update($pickingSession, $modelData);
+        return $this->update($pickingSession, $modelData);
 
-        return $pickingSession;
     }
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'state'  => ['sometimes', Rule::enum(PickingSessionStateEnum::class)],
             'user_id' => ['sometimes', 'exists:users,id'],
         ];
 
-        return $rules;
     }
 
-    public function asController(PickingSession $pickingSession, ActionRequest $request)
+    public function action(PickingSession $pickingSession, array $modelData): PickingSession
+    {
+        $this->initialisationFromWarehouse($pickingSession->warehouse, $modelData);
+        return $this->handle($pickingSession, $this->validatedData);
+
+    }
+
+    public function asController(PickingSession $pickingSession, ActionRequest $request): PickingSession
     {
         $this->initialisationFromWarehouse($pickingSession->warehouse, $request);
 

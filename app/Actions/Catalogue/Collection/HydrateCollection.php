@@ -17,6 +17,8 @@ use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateState;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateImages;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateOrderingIntervals;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateSalesIntervals;
 use App\Models\Catalogue\Collection;
 
 class HydrateCollection
@@ -39,5 +41,7 @@ class HydrateCollection
         SyncIndirectProductsToCollection::run($collection);
         CollectionHydrateState::run($collection);
         CollectionHydrateProductsStatus::run($collection);
+        CollectionHydrateSalesIntervals::run($collection->id);
+        CollectionHydrateOrderingIntervals::run($collection->id);
     }
 }

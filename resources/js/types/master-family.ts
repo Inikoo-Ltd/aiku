@@ -16,4 +16,7 @@ export interface MasterFamily {
     master_department_slug: string
     master_department_code: string
     master_department_name: string
+    master_sub_department_slug : string
+    master_sub_department_code: string
+    master_sub_department_name: string
 }

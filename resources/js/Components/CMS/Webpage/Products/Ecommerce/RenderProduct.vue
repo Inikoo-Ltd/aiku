@@ -162,6 +162,7 @@ const onAddBackInStock = (product: ProductResource) => {
             },
             onSuccess: () => {
                 product.is_back_in_stock = true
+                layout.reload_handle()
             },
             onError: errors => {
                 notify({
@@ -197,6 +198,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 //     type: "success"
                 // })
                 product.is_back_in_stock = false
+                layout.reload_handle()
             },
             onError: errors => {
                 notify({

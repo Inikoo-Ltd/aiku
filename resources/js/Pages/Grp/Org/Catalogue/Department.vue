@@ -72,6 +72,7 @@ const props = defineProps<{
     showcase?: object
     url_master?:routeType
     images?:object
+    salesIntervals?: object
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -147,7 +148,7 @@ const component = computed(() => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesIntervals="salesIntervals"></component>
 </template>
 
 <style scoped>
