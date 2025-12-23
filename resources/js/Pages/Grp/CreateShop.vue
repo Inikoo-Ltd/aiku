@@ -263,7 +263,6 @@ watch(form, () => {
                                         <div class="mt-1 flex text-sm text-gray-700 sm:mt-0">
                                             <div class="relative flex-grow">
                                                 <!-- Dynamic component -->
-                                                 {{ form.engine }}
                                                 <component :is="getComponent(fieldData['type'])" :form="form"
                                                     :fieldName="fieldName" :options="fieldData['options']"
                                                     :fieldData="fieldData" :key="index"
