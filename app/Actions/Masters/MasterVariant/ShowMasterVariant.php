@@ -10,18 +10,43 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterVariant;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
+use Inertia\Response;
 
 class ShowMasterVariant extends OrgAction
 {
+    use WithMastersAuthorisation;
+    
     private MasterProductCategory $parent;
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
+    {
+        $this->parent = $masterFamily;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+          return $this->handle($masterVariant);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
+    {
+        $this->parent = $masterFamily;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+         return $this->handle($masterVariant);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
     {
         $this->parent = $masterFamily;
         $group        = group();
@@ -31,40 +56,19 @@ class ShowMasterVariant extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
     {
         $this->parent = $masterFamily;
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
-        return $this->handle($masterVariant);
+       return $this->handle($masterVariant);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
+    public function inMasterFamily(MasterShop $masterShop,MasterProductCategory $masterFamily,MasterVariant $masterVariant,ActionRequest $request): Response
     {
         $this->parent = $masterFamily;
-        $group        = group();
-        $this->initialisationFromGroup($group, $request);
-
-        return $this->handle($masterVariant);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
-    {
-        $this->parent = $masterFamily;
-        $group        = group();
-        $this->initialisationFromGroup($group, $request);
-
-        return $this->handle($masterVariant);
-    }
-
-    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
-    {
-        $this->parent = $masterFamily;
-        $group        = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterVariant);
     }
@@ -72,19 +76,36 @@ class ShowMasterVariant extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterVariant $masterVariant)
+    public function handle(MasterVariant $masterVariant): Response
     {
-        $masterProductInVariant = MasterAsset::whereIn('id', data_get($masterVariant->data, 'products.*.product.id'))->get();
-        dd($masterVariant, $masterProductInVariant);
+        $masterVariant->leaderProduct;
+        $masterProductInVariant = MasterAsset::query()
+            ->whereIn(
+                'id',
+                data_get($masterVariant->data, 'products.*.product.id', [])
+            )
+            ->get();
+        
+        return Inertia::render(
+            'Masters/Variant',
+            [
+                'breadcrumbs'     => [],
+                'title'           => __('Show Variant'),
+                'pageHead'        => [
+                    'title' => $masterVariant->code,
+                ],
+                'data'            => $masterVariant,
+                'master_products' => $masterProductInVariant,
+            ]
+        );
     }
+    
 
     /**
      * @throws \Throwable
      */
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterVariant
-    {
-        $this->initialisationFromGroup($masterProductCategory->group, $request);
-
-        return $this->handle($masterProductCategory, $this->validatedData);
+    public function asController( MasterVariant $masterVariant, ActionRequest $request ): Response {
+        $this->initialisationFromGroup($masterVariant->group, $request);
+        return $this->handle($masterVariant);
     }
 }

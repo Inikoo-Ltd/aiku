@@ -80,7 +80,8 @@ class IndexOrders extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('orders.reference', $value);
+                $query->whereWith('orders.reference', $value)
+                ->orWhereWith('orders.tracking_number', $value);
             });
         });
 
