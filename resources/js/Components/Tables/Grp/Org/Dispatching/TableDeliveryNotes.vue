@@ -193,8 +193,15 @@ const generateRouteDeliveryNote = (id: string) => {
         </template>
 
         <template #cell(delivery)="{ item: deliveryNote }">
-            <div v-if="deliveryNote.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
-                {{ trans("Collection") }}
+            <div v-if="deliveryNote.state === 'cancelled'">
+                
+            </div>
+            <div v-else-if="deliveryNote.shipping_data?.is_collection && deliveryNote.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
+                {{ trans("Collected") }}
+                <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
+            </div>
+            <div v-else-if="deliveryNote.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
+                {{ trans("For Collection") }}
             </div>
             
             <div v-else-if="deliveryNote.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 group px-2 py-1.5">
@@ -216,6 +223,9 @@ const generateRouteDeliveryNote = (id: string) => {
                         </span>
                     </template>
                 </div>
+            </div>
+            <div v-else>
+
             </div>
         </template>
     </Table>
