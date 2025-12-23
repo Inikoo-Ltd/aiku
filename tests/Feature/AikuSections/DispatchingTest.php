@@ -888,7 +888,7 @@ it('hydrates delivery note tracking number from shipments', function () {
 
     $deliveryNote->refresh();
 
-    expect($deliveryNote->tracking_number)->toBe('TRK123, TRK456')->and($deliveryNote->shipping_data)->toBeArray();
+    expect($deliveryNote->tracking_number)->toBe('TRK123, TRK456')->and($deliveryNote->shipping_data)->toBeArray()->toHaveCount(2);
 });
 
 it('nullifies delivery note tracking number when no shipments exist', function () {
