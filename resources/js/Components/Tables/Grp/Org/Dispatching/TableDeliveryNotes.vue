@@ -158,6 +158,10 @@ const generateRouteDeliveryNote = (id: string) => {
             </Link> -->
         </template>
 
+        <template #cell(state)="{ item: deliveryNote }">
+            <Icon :data="deliveryNote.state_icon" />
+        </template>
+
         <template #cell(reference)="{ item: deliveryNote }">
             <div class="flex gap-2 flex-wrap items-center">
                 <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
