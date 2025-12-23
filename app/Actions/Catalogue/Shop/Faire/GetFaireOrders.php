@@ -66,6 +66,7 @@ class GetFaireOrders extends OrgAction
 
                     foreach (Arr::get($faireOrder, 'items', []) as $item) {
                         $product = Product::whereIn('shop_id', $shops)
+                            ->where('organisation_id', $awOrder->organisation_id)
                             ->where('code', 'ILIKE', "%{$item['sku']}%")
                             ->first();
 
