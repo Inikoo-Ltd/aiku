@@ -14,6 +14,7 @@ class UpdateShippingFaireOrder extends OrgAction
         foreach ($order->deliveryNotes as $deliveryNote) {
             foreach ($deliveryNote->shipments as $shipment) {
                 $shipments[] = [
+                    'shipping_type' => 'SHIP_ON_YOUR_OWN',
                     'order_id' => $order->external_id,
                     'carrier'  => $shipment->shipper?->name,
                     'tracking_code' => $shipment->tracking
