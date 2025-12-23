@@ -38,11 +38,10 @@ class CustomerHydrateBackInStockReminders implements ShouldBeUnique
         }
 
         $stats = [
-            'number_reminders' => BackInStockReminderSnapshot::where('customer_id', $customerId)->whereNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
-            'number_reminders_cancelled' => BackInStockReminderSnapshot::where('customer_id', $customerId)->whereNotNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
+            'number_reminders' => BackInStockReminderSnapshot::where('customer_id', $customerId)->whereNotNull('back_in_stock_reminder_id')->whereNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
+            'number_reminders_cancelled' => BackInStockReminderSnapshot::where('customer_id', $customerId)->whereNull('back_in_stock_reminder_id')->whereNotNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
         ];
 
         $customer->stats()->update($stats);
     }
-
 }

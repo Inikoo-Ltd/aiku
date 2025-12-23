@@ -18,16 +18,17 @@ class BackInStockReminderSnapshot extends Model
     use InShop;
 
     protected $fillable = [
-          'group_id',
-          'organisation_id',
-          'shop_id',
-          'customer_id',
-          'product_id',
-          'department_id',
-          'sub_department_id',
-          'family_id',
-          'reminder_cancelled_at',
-          'reminder_sent_at'
+        'back_in_stock_reminder_id',
+        'group_id',
+        'organisation_id',
+        'shop_id',
+        'customer_id',
+        'product_id',
+        'department_id',
+        'sub_department_id',
+        'family_id',
+        'reminder_cancelled_at',
+        'reminder_sent_at'
       ];
 
     protected $guarded = [];

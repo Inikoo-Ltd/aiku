@@ -9,9 +9,6 @@
 
 namespace App\Actions\CRM\BackInStockReminder;
 
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\BackInStockReminder;
@@ -25,11 +22,12 @@ class DeleteBackInStockReminder extends OrgAction
 
     public function handle(BackInStockReminder $backInStockReminder): BackInStockReminder
     {
-        $backInStockReminder->delete();
+        $snapshotModelData = [
+            'reminder_cancelled_at' => now()
+        ];
+        UpdateBackInStockReminderSnapshot::run($this->backInStockReminder, $snapshotModelData);
 
-        CustomerHydrateBackInStockReminders::dispatch($this->backInStockReminder->customer_id);
-        ProductHydrateCustomersWhoReminded::dispatch($this->backInStockReminder->product);
-        ProductHydrateCustomersWhoRemindedInCategories::dispatch($this->backInStockReminder->product);
+        $backInStockReminder->delete();
 
         return $backInStockReminder;
     }
@@ -52,6 +50,4 @@ class DeleteBackInStockReminder extends OrgAction
 
         return $this->handle($backInStockReminder);
     }
-
-
 }

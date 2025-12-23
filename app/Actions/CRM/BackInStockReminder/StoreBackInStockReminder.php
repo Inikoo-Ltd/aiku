@@ -33,11 +33,9 @@ class StoreBackInStockReminder extends OrgAction
 
         $snapshotModelData = $modelData;
         data_set($snapshotModelData, 'customer_id', $customer->id);
+        data_set($snapshotModelData, 'back_in_stock_reminder_id', $reminder->id);
         // create back in stock reminder snapshot
         StoreBackInStockReminderSnapshot::run($snapshotModelData);
-        // CustomerHydrateBackInStockReminders::dispatch($customer->id)->delay($this->hydratorsDelay);
-        // ProductHydrateCustomersWhoReminded::dispatch($product)->delay($this->hydratorsDelay);
-        // ProductHydrateCustomersWhoRemindedInCategories::dispatch($product)->delay($this->hydratorsDelay);
 
         return $reminder;
     }

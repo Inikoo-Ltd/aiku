@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Eka Yudinata
  */
 
-namespace App\Actions\Comms\Outbox\BackToStockNotification;
+namespace App\Actions\Comms\Outbox\BackInStockNotification;
 
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Catalogue\Product;

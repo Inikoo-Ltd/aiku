@@ -6,8 +6,9 @@
  * Copyright (c) 2025, Eka Yudinata
  */
 
-namespace App\Actions\Comms\Outbox\BackToStockNotification;
+namespace App\Actions\Comms\Outbox\BackInStockNotification;
 
+use App\Actions\CRM\BackInStockReminder\UpdateBackInStockReminderSnapshot;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\BackInStockReminder;
 use Illuminate\Console\Command;
@@ -21,6 +22,7 @@ class BulkDeleteBackInStockReminder
     public function handle(array $backInStockReminderIds): void
     {
         BackInStockReminder::whereIn('id', $backInStockReminderIds)->delete();
+        // UpdateBackInStockReminderSnapshot::run();
     }
 
     public function asCommand(Command $command): void

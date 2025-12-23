@@ -15,7 +15,6 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Models\CRM\BackInStockReminderSnapshot;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
 
 // NOTE: add validator
@@ -26,10 +25,9 @@ class StoreBackInStockReminderSnapshot
     public function handle(array $modelData): BackInStockReminderSnapshot
     {
         $reminderSnapshot = BackInStockReminderSnapshot::create($modelData);
-        Log::info("Back in Stock insert");
-        Log::info($reminderSnapshot);
 
         CustomerHydrateBackInStockReminders::dispatch(Arr::get($modelData, 'customer_id'))->delay($this->hydratorsDelay);
+        // Note need to update this hydrator
         // ProductHydrateCustomersWhoReminded::dispatch(Arr::get($modelData, 'product_id'))->delay($this->hydratorsDelay);
         // ProductHydrateCustomersWhoRemindedInCategories::dispatch(Arr::get($modelData, 'product_id'))->delay($this->hydratorsDelay);
 

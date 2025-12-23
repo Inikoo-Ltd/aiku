@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Eka Yudinata
  */
 
-namespace App\Actions\Comms\Outbox\BackToStockNotification\Hydrators;
+namespace App\Actions\Comms\Outbox\BackInStockNotification\Hydrators;
 
 use App\Actions\Comms\Email\SendBackToStockToCustomerEmail;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -24,7 +24,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class BackToStockHydrateEmailBulkRuns implements ShouldQueue
+class BackInStockHydrateEmailBulkRuns implements ShouldQueue
 {
     use AsAction;
     use WithGenerateEmailBulkRuns;

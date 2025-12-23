@@ -13,6 +13,8 @@ return new class () extends Migration {
         Schema::create('back_in_stock_reminder_snapshots', function (Blueprint $table) {
             $table->id();
             $table = $this->groupOrgRelationship($table);
+            $table->unsignedBigInteger('back_in_stock_reminder_id')->nullable()->index();
+            $table->foreign('back_in_stock_reminder_id')->references('id')->on('back_in_stock_reminders')->onDelete('set null');
             $table->unsignedSmallInteger('shop_id')->index();
             $table->foreign('shop_id')->references('id')->on('shops');
 
