@@ -11,6 +11,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faColumns } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '../Elements/Buttons/Button.vue'
+import { notify } from '@kyvg/vue3-notification'
+import { trans } from 'laravel-vue-i18n'
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
 // import { ProductService } from '@/service/ProductService'
@@ -153,13 +155,37 @@ const groupedColumnList = ref([
         ]
     }
 ]);
+
+const onSave = async () => {
+    console.log('productsList.value', productsList.value)
+    // try {
+    //     const response = await axios.post(
+    //         route(
+    //             props.imagesUploadRoute.name,
+    //             props.imagesUploadRoute.parameters
+    //         ),
+    //         { data: productsList.value }
+    //     )
+    //     if (response.status !== 200) {
+            
+    //     }
+    //     console.log('Response axios:', response.data)
+    // } catch (error: any) {
+    //     console.log('error axios', error)
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: error.message || trans("Please try again or contact administrator"),
+    //         type: 'error'
+    //     })
+    // }
+}
 </script>
 
 
 <template>
     <div>
         <div class="card">
-            <Toolbar class="mb-6">
+            <Toolbar class="">
                 <template #start>
                     <ButtonPrime label="Delete" icon="pi pi-trash" severity="danger" variant="outlined"
                         :disabled="!selectedProducts || !selectedProducts.length" />
@@ -189,41 +215,54 @@ const groupedColumnList = ref([
             >
                 <template #header>
                     <div class="flex flex-wrap gap-2 items-center justify-between">
-                        <IconField>
-                            <InputIcon>
-                                <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
-                            </InputIcon>
-                            <InputText v-model="filters['global'].value" placeholder="Search..." />
-                        </IconField>
+                        <div class="py-2">
+                            <IconField>
+                                <InputIcon>
+                                    <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
+                                </InputIcon>
+                                <InputText v-model="filters['global'].value" placeholder="Search..." />
+                            </IconField>
+                        </div>
 
-                        <div class="w-fit">
-                            <FloatLabel class="w-full md:w-52" variant="on">
-                                <MultiSelect
-                                    v-model="selectedColumns"
-                                    :options="groupedColumnList"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    optionDisabled="disabled"
-                                    filter
-                                    optionGroupLabel="label"
-                                    optionGroupChildren="items"
-                                    display="comma"
-                                    :maxSelectedLabels="2"
-                                    placeholder="Select Columns"
-                                >
-                                    <template #optiongroup="slotProps">
-                                        <div class="flex items-center">
-                                            <div>{{ slotProps.option.label }}</div>
-                                        </div>
-                                    </template>
-                                </MultiSelect>
-                                <label for="on_label">Selected columns</label>
-                            </FloatLabel>
+                        <div class="w-fit flex">
+                            <div class="flex items-center">
+                                <FloatLabel class="w-full md:w-52" variant="on">
+                                    <MultiSelect
+                                        v-model="selectedColumns"
+                                        :options="groupedColumnList"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        optionDisabled="disabled"
+                                        filter
+                                        optionGroupLabel="label"
+                                        optionGroupChildren="items"
+                                        display="comma"
+                                        :maxSelectedLabels="2"
+                                        placeholder="Select Columns"
+                                    >
+                                        <template #optiongroup="slotProps">
+                                            <div class="flex items-center">
+                                                <div>{{ slotProps.option.label }}</div>
+                                            </div>
+                                        </template>
+                                    </MultiSelect>
+                                    <label for="on_label">Selected columns</label>
+                                </FloatLabel>
+                            </div>
+
+                            <div class="border-l border-gray-300 py-3 ml-3.5 pl-6 ">
+                                <Button
+                                    @click="() => onSave()"
+                                    label="Save"
+                                    icon="fas fa-save"
+                                    size="lg"
+                                />
+                            </div>
                         </div>
                     </div>
                 </template>
 
-                <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+                <!-- <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column> -->
 
                 <!-- Column: Name -->
                 <Column v-if="selectedColumns.includes('name')" field="name" header="Name" frozen sortable style="min-width: 16rem" >
@@ -411,3 +450,9 @@ const groupedColumnList = ref([
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+:deep(.p-datatable-header) {
+    @apply py-0
+}
+</style>
