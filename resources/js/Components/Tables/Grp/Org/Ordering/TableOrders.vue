@@ -205,38 +205,36 @@ const generateRouteDeliveryNote = (id: string) => {
                 {{ trans("Collection") }}
             </div>
             
-            <div v-else-if="order.shipping_data?.[0]" class="flex flex-col gap-1 text-xs">
-                <div v-if="order.shipping_data?.[0].shipper_slug">
-                    <span class="font-semibold">{{ trans('Shipper') }}: </span>
-                    <span>{{ order.shipping_data?.[0].shipper_slug }}</span>
-                </div>
-
-                <div v-if="order.shipping_data?.[0].trackings?.[0]" class="group w-fit">
-                    <span class="font-semibold">{{ trans('Tracking number') }}: </span>
-                    <a v-if="order.shipping_data?.[0].tracking_urls.length"
-                        :href="order.shipping_data?.[0].tracking_urls[0]"
-                        class="underline text-blue-600 hover:text-blue-800"
-                        target="_blank"
-                        rel="noopener"
-                    >
-                        {{ order.shipping_data?.[0].trackings?.[0] }}
-                        <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                    </a>
+            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 text-xs group px-2 py-1.5">
+                <div class="group w-fit whitespace-nowrap max-w-60 truncate group-hover:max-w-max">
+                    <!-- Delivery Note -->
+                    <template v-if="order.shipping_data?.[0].delivery_note_reference">
+                        <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
+                        <Link
+                            :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
+                            class="secondaryLink"
+                            v-tooltip="trans('Delivery Note')"
+                        >
+                            {{ order.shipping_data?.[0].delivery_note_reference }}
+                        </Link>
+                    </template>
                     
-                    <span v-else>
-                        {{ order.shipping_data?.[0].trackings?.[0] }}
-                    </span>
-                </div>
-
-                <div v-if="order.shipping_data?.[0].delivery_note_reference">
-                    <span class="font-semibold">{{ trans('Delivery note') }}: </span>
-
-                    <Link
-                        :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
-                        class="secondaryLink"
-                    >
-                        {{ order.shipping_data?.[0].delivery_note_reference }}
-                    </Link>
+                    <template v-if="order.shipping_data?.[0].trackings?.[0]">
+                        <span class="opacity-70">|</span> {{ order.shipping_data?.[0].shipper_slug }}:
+                        <a v-if="order.shipping_data?.[0].tracking_urls.length"
+                            :href="order.shipping_data?.[0].tracking_urls[0]"
+                            class="underline text-blue-600 hover:text-blue-800"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                            <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                        </a>
+                        
+                        <span v-else>
+                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                        </span>
+                    </template>
                 </div>
             </div>
         </template>
