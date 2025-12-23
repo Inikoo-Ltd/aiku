@@ -5,9 +5,9 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Maintenance;
+namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Catalogue\ProductCategory\TimeSeries\EnsureProductCategoryTimeSeries;
+use App\Actions\Catalogue\ProductCategory\EnsureProductCategoryTimeSeries;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
 
