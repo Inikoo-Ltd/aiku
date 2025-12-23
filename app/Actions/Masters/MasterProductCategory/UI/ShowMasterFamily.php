@@ -275,7 +275,7 @@ class ShowMasterFamily extends GrpAction
                             'tooltip' => __('Create a variants group for this family'),
                             'label'   => __('Variants'),
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'create.variant', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'master_variants.create', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
