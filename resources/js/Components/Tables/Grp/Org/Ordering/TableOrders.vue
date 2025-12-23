@@ -206,16 +206,15 @@ const generateRouteDeliveryNote = (id: string) => {
             </div>
             
             <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 text-xs group px-2 py-1.5">
-                <div class="group w-fit whitespace-nowrap max-w-60 truncate group-hover:max-w-max">
+                <div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
                     <!-- Delivery Note -->
                     <template v-if="order.shipping_data?.[0].delivery_note_reference">
-                        <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
                         <Link
                             :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
                             class="secondaryLink"
-                            v-tooltip="trans('Delivery Note')"
+                            v-tooltip="trans('Delivery Note') + ': ' + order.shipping_data?.[0].delivery_note_reference"
                         >
-                            {{ order.shipping_data?.[0].delivery_note_reference }}
+                            <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
                         </Link>
                     </template>
                     
@@ -223,7 +222,7 @@ const generateRouteDeliveryNote = (id: string) => {
                         <span class="opacity-70">|</span> {{ order.shipping_data?.[0].shipper_slug }}:
                         <a v-if="order.shipping_data?.[0].tracking_urls.length"
                             :href="order.shipping_data?.[0].tracking_urls[0]"
-                            class="underline text-blue-600 hover:text-blue-800"
+                            class="underline"
                             target="_blank"
                             rel="noopener"
                         >
