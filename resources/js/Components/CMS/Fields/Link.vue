@@ -66,6 +66,18 @@ function getRoute() {
 		})
 	}
 }
+
+const cleanCanonicalPath = (url) => {
+  if (!url) return ''
+
+  try {
+    const parsed = new URL(url)
+    return parsed.pathname.replace(/\/$/, '')
+  } catch {
+    // fallback jika bukan URL lengkap
+    return url.replace(/^https?:\/\/[^/]+/, '').replace(/\/$/, '')
+  }
+}
 </script>
 
 <template>
@@ -154,11 +166,27 @@ function getRoute() {
 				:urlRoute="getRoute()" 
 				v-bind="props_selectquery"
 			>
-			<template #singlelabel="{ value }">
-				<div class="flex items-center justify-start w-full px-2 text-gray-800  truncate">
-					{{ value?.path || value?.canonical_url || value?.href }}
-				</div>
-			</template>
+				<template #singlelabel="{ value }">
+					<div class="flex items-center justify-start w-full px-2 text-gray-800 truncate">
+						{{ value?.path || value?.href }}
+						<span v-if="value?.canonical_url && value?.path" class="ml-1 text-gray-500 text-xs">
+							– {{ cleanCanonicalPath(value.canonical_url) }}
+						</span>
+					</div>
+				</template>
+
+
+				<template #option="{ option, isSelected, isPointed, search }">
+					<div class="flex items-center justify-start w-full px-2 text-gray-800 truncate">
+						{{ option?.path || option?.href }}
+
+						<span v-if="option?.canonical_url && option?.path" class="ml-1 text-gray-500 text-xs">
+							– {{ cleanCanonicalPath(option.canonical_url) }}
+						</span>
+					</div>
+				</template>
+
+
 		</SelectQuery>
 		</div>
 	</div>
