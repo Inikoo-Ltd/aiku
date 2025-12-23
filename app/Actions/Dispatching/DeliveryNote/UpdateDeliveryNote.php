@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
@@ -61,6 +62,10 @@ class UpdateDeliveryNote extends OrgAction
                 CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
             }
 
+            if (Arr::has($changes, 'collection_address_id')) {
+                DeliveryNoteHydrateShipments::run($deliveryNote->id);
+            }
+
             if (Arr::has($changes, 'state')) {
                 $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
                 $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
@@ -68,9 +73,9 @@ class UpdateDeliveryNote extends OrgAction
                 // Trigger Intrastat metrics hydration for EU deliveries
                 if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->delivery_country_id) {
                     $deliveryCountry = Country::find($deliveryNote->delivery_country_id);
-                    if ($deliveryCountry &&
-                        Country::isInEU($deliveryCountry->code) &&
-                        $deliveryCountry->code !== $deliveryNote->organisation->country_code) {
+                    if ($deliveryCountry
+                        && Country::isInEU($deliveryCountry->code)
+                        && $deliveryCountry->code !== $deliveryNote->organisation->country_code) {
                         OrganisationHydrateIntrastatExportMetrics::dispatch(
                             $deliveryNote->organisation,
                             $deliveryNote->dispatched_at ?? now()
