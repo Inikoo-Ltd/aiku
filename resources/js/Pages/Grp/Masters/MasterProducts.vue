@@ -55,6 +55,16 @@ const compSelectedProductsId = computed(() =>
 )
 console.log(compSelectedProductsId.value)
 
+
+const onVisit = () => {
+    const aaa = Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key] === true)
+    
+    console.log('onVisit', aaa)
+    router.visit(route('grp.masters.master_shops.show.bulk-edit', {
+        masterShop: route().params['masterShop'],
+        id: aaa }
+    ))
+}
 </script>
 
 <template>
@@ -70,19 +80,27 @@ console.log(compSelectedProductsId.value)
                 :style="action.style"
             />
         </template>
+
+        <template #other>
+            <Button
+                @click="() => onVisit()"
+                label="visit"
+
+            />
+        </template>
     </PageHeading>
 
-    <TableMasterProductsEdit
+    <!-- <TableMasterProductsEdit
         
-        />
+        /> -->
 
     <!-- Products Table -->
-    <!-- <TableMasterProducts
+    <TableMasterProducts
         :data="data"
         :editable_table
         :key="key"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
-    /> -->
+    />
 
     <!-- Dialog Create Product -->
     <FormCreateMasterProduct

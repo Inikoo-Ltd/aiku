@@ -34,15 +34,15 @@ class MasterBulkEditProductsResource extends JsonResource
 
 
         return [
-            'id'                        => $masterProduct->id,
-            'shop_id'                          => $masterProduct->shop_id,
-            'slug'                          => $masterProduct->slug,
-            'code'                          => $masterProduct->code,
-            'name'                          => $masterProduct->name,
-            'price'                         => $masterProduct->price,
-            'rrp'                         => $masterProduct->rrp,
-            'is_for_sale'                         => $masterProduct->is_for_sale,
-            'currency'                      => $masterProduct->group->currency->code,
+            'id'                         => $masterProduct->id,
+            'shop_id'                    => $masterProduct->shop_id,
+            'slug'                       => $masterProduct->slug,
+            'code'                       => $masterProduct->code,
+            'name'                       => $masterProduct->name,
+            'price'                      => $masterProduct->price,
+            'rrp'                        => $masterProduct->rrp ?? 0,
+            'is_for_sale'                => $masterProduct->is_for_sale,
+            'currency'                   => $masterProduct->group->currency->code,
             'family_id'            => $masterProduct->family_id,
             'family_data'           => $masterProduct->family ? [
                 'id'    => $masterProduct->family->id,
@@ -65,7 +65,7 @@ class MasterBulkEditProductsResource extends JsonResource
             'marketing_dimensions'          => NaturalLanguage::make()->dimensions($masterProduct->marketing_dimensions),
             'marketing_ingredients'         => $masterProduct->marketing_ingredients,
             'marketing_weight'              => NaturalLanguage::make()->weight($masterProduct->marketing_weight),
-            'gross_weight'                  => $masterProduct->gross_weight,
+            'gross_weight'                  => $masterProduct->gross_weight ?? 0,
             'gross_weight_human'                  => NaturalLanguage::make()->weight($masterProduct->gross_weight),
             'cpnp_number'                   => $masterProduct->cpnp_number,
             'ufi_number'                    => $masterProduct->ufi_number,

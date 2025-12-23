@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import { FilterMatchMode } from '@primevue/core/api'
 import { Button, Column, DataTable, Dialog, FileUpload, IconField, InputIcon, InputNumber, InputText, RadioButton, Rating, Select, Tag, Textarea, Toolbar } from 'primevue'
 import axios from 'axios'
 import PureTextarea from '../Pure/PureTextarea.vue'
 import PureCheckbox from '../Pure/PureCheckbox.vue'
 import Image from '@/Components/Image.vue'
-import { useForm } from '@inertiajs/vue3'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 // import { useToast } from 'primevue/usetoast'
 // import { ProductService } from '@/service/ProductService'
 
@@ -20,16 +20,24 @@ const selectedProducts = ref()
 const filters = ref({
     'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
 })
-const submitted = ref(false)
 const exportCSV = () => {
     dt.value.exportCSV()
 }
 
-const xxxx = ref(null)
 const productsList = ref([])
 const productsToCompare = ref([])
+const isLoadingFetch = ref(false)
 onMounted(async () => {
+
+    const parsedQueryIdToArray = Array.isArray(route().params.id)
+        ? route().params.id.map(Number)
+        : route().params.id
+            ? Object.values(route().params.id)
+            : []
+
+
     try {
+        isLoadingFetch.value = true
         const response = await axios.post(
             route(
                 'grp.json.cached.product_list',
@@ -38,24 +46,22 @@ onMounted(async () => {
                 }
             ),
             { 
-                data: [
-                    5445,
-                    50550
-                ]
+                data: parsedQueryIdToArray
             }
         )
 
         if (response.status !== 200) {
             
         }
-
-        // xxxx.value = useForm()
+        
         console.log('grp.json.cached.product_list', response.data)
         productsList.value = response.data
         productsToCompare.value = response.data
     } catch (error: any) {
         
         console.log('zzzzzzzzzzzzzzz', error)
+    } finally {
+        isLoadingFetch.value = false
     }
 })
 
@@ -125,6 +131,7 @@ const rowClass = (xxx: any) => {
                 :value="productsList"
                 dataKey="id"
                 :paginator="true"
+                :loading="isLoadingFetch"
                 :rows="10"
                 :rowClass="rowClass"
                 :filters="filters"
@@ -162,11 +169,12 @@ const rowClass = (xxx: any) => {
                 <!-- Column: Image -->
                 <Column header="Image">
                     <template #body="slotProps">
-                        <Image
-                            :src="slotProps.data.web_images.main.thumbnail"
-                            width="50"
-                            height="50"
-                        />
+                        <div class=" h-12 aspect-square overflow-hidden">
+                            <Image
+                                :src="slotProps.data.web_images.main.thumbnail"
+                                
+                            />
+                        </div>
                     </template>
                 </Column>
                 <!-- Column: Description -->
@@ -295,6 +303,7 @@ const rowClass = (xxx: any) => {
                 <!-- Column: Family -->
                 <Column field="family_id" header="Family" sortable style="min-width: 10rem">
                     <template #body="{ data }">
+                        <!-- TODO: Need fix -->
                         <Select
                             v-model="data.family_id"
                             :options="familiesList?.length ? familiesList : [data.family_data]"
@@ -319,7 +328,7 @@ const rowClass = (xxx: any) => {
                             
                             <template #option="slotProps">
                                 <div class="flex items-center">
-                                    <div>{{ (familiesList?.length ? familiesList : [data.family_data]).find(family => family.id === slotProps.option.id)?.name }}</div>
+                                    <div>{{ (familiesList?.length ? familiesList : [data.family_data]).find(family => family?.id === slotProps?.option?.id)?.name }}</div>
                                 </div>
                             </template>
                         </Select>

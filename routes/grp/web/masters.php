@@ -9,6 +9,7 @@
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\ShowCreateVariant;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoFamily;
@@ -199,6 +200,7 @@ Route::name("master_shops")->prefix('master-shops')
                 });
             });
 
+            Route::get('/master-products-bulk-edit', IndexMasterProductsBulkEdit::class)->name('.bulk-edit');
             Route::prefix('master-products')->as('.master_products.')->group(function () {
                 Route::get('', [IndexMasterProducts::class, 'inMasterShop'])->name('index');
                 Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
