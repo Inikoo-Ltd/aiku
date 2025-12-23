@@ -8,9 +8,10 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
-use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\User;
+use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 class GetShopNavigation
 {
@@ -63,7 +64,6 @@ class GetShopNavigation
                     ],
                 ],
             ]
-
         ];
         if ($user->hasPermissionTo("products.$shop->id.view")) {
             $navigation["catalogue"] = [
@@ -371,18 +371,20 @@ class GetShopNavigation
                     ],
                 ];
             } else {
-                $navigation["web"] = [
-                    "scope" => "websites",
-                    "icon"  => ["fal", "fa-globe"],
-                    "label" => __("Website"),
-                    "root"  => "grp.org.shops.show.web.",
-                    "route" => [
-                        "name"       => "grp.org.shops.show.web.websites.index",
-                        "parameters" => [$shop->organisation->slug, $shop->slug],
-                    ],
+                if ($shop->engine !== ShopEngineEnum::FAIRE) {
+                    $navigation["web"] = [
+                        "scope" => "websites",
+                        "icon"  => ["fal", "fa-globe"],
+                        "label" => __("Website"),
+                        "root"  => "grp.org.shops.show.web.",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.web.websites.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
 
-                    "topMenu" => []
-                ];
+                        "topMenu" => []
+                    ];
+                }
             }
         }
 

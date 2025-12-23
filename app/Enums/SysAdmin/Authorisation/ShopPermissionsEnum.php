@@ -9,6 +9,7 @@
 namespace App\Enums\SysAdmin\Authorisation;
 
 use App\Models\Catalogue\Shop;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 enum ShopPermissionsEnum: string
 {
@@ -52,7 +53,10 @@ enum ShopPermissionsEnum: string
 
     public static function getAllValues(Shop $shop): array
     {
-        $rawPermissionsNames = array_column(ShopPermissionsEnum::cases(), 'value');
+        $rawPermissionsNames = array_column(
+            self::allowedForShop($shop),
+            'value'
+        );
 
         $permissionsNames = [];
         foreach ($rawPermissionsNames as $rawPermissionsName) {
@@ -70,4 +74,24 @@ enum ShopPermissionsEnum: string
         return join('.', $permissionComponents);
     }
 
+    private static function allowedForShop(Shop $shop): array
+    {
+        return match ($shop->engine->value) {
+            ShopEngineEnum::FAIRE->value => self::permissionsForFaireShop(),
+            default => self::cases(),
+        };
+    }
+
+    private static function permissionsForFaireShop(): array
+    {
+        return [
+            self::SHOP_ADMIN,
+
+            self::ORDERS_VIEW,
+            self::CRM_VIEW,
+            self::CRM_PROSPECTS_VIEW,
+
+            self::SUPERVISOR_PRODUCTS,
+        ];
+    }
 }
