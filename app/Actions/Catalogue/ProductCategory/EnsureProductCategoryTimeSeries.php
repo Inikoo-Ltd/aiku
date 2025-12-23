@@ -5,7 +5,7 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\ProductCategory\TimeSeries;
+namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
