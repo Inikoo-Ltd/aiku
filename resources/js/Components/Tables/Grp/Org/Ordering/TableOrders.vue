@@ -201,7 +201,11 @@ const generateRouteDeliveryNote = (id: string) => {
         </template>
 
         <template #cell(delivery)="{ item: order }">
-            <div class="flex flex-col gap-1 text-xs">
+            <div v-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
+                {{ trans("Collection") }}
+            </div>
+            
+            <div v-else-if="order.shipping_data?.[0]" class="flex flex-col gap-1 text-xs">
                 <div v-if="order.shipping_data?.[0].shipper_slug">
                     <span class="font-semibold">{{ trans('Shipper') }}: </span>
                     <span>{{ order.shipping_data?.[0].shipper_slug }}</span>
