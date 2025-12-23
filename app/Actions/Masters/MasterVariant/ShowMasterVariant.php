@@ -10,6 +10,7 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -20,6 +21,8 @@ use Inertia\Response;
 
 class ShowMasterVariant extends OrgAction
 {
+    use WithMastersAuthorisation;
+    
     private MasterProductCategory $parent;
 
     /** @noinspection PhpUnusedParameterInspection */
