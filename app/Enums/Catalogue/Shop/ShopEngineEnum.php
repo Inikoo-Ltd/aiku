@@ -19,5 +19,13 @@ enum ShopEngineEnum: string
     case FAIRE = 'faire';
     case WIX = 'wix';
 
-
+    public function label(): String
+    {
+         return match ($this) {
+            ShopEngineEnum::AIKU    =>  'AIKU',
+            ShopEngineEnum::SHOPIFY =>  'Shopify',
+            ShopEngineEnum::FAIRE   =>  'Faire',
+            ShopEngineEnum::WIX     =>  'WIX',
+         };
+    }
 }

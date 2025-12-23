@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Catalogue\Shop\Faire\AcceptFaireOrder;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
@@ -111,6 +112,10 @@ class SendOrderToWarehouse extends OrgAction
 
                     StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
                 }
+            }
+
+            if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id) {
+                AcceptFaireOrder::run($order->shop, $order);
             }
 
             return $deliveryNote;
