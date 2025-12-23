@@ -110,10 +110,14 @@ const baseEngineOpts = props.formData.blueprint[0].fields.engine.options;
 watch(form, () => {
     if (form.type.toLowerCase() === 'external') {
         props.formData.blueprint[0].fields.engine.options = baseEngineOpts.filter(option => option.label !== 'AIKU');
-        form.engine = baseEngineOpts.filter(option => option.label !== 'AIKU')[0].value;
+        if(form.engine == 'aiku'){
+            form.engine = baseEngineOpts.filter(option => option.label !== 'AIKU')[0].value;
+        }
     } else {
         props.formData.blueprint[0].fields.engine.options = baseEngineOpts.filter(option => option.label == 'AIKU');
-        form.engine = baseEngineOpts.filter(option => option.label == 'AIKU')[0].value;
+        if(form.engine != 'aiku'){
+            form.engine = baseEngineOpts.filter(option => option.label == 'AIKU')[0].value;
+        }
     }
 });
 
@@ -259,6 +263,7 @@ watch(form, () => {
                                         <div class="mt-1 flex text-sm text-gray-700 sm:mt-0">
                                             <div class="relative flex-grow">
                                                 <!-- Dynamic component -->
+                                                 {{ form.engine }}
                                                 <component :is="getComponent(fieldData['type'])" :form="form"
                                                     :fieldName="fieldName" :options="fieldData['options']"
                                                     :fieldData="fieldData" :key="index"
