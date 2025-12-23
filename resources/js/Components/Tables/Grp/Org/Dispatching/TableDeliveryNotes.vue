@@ -208,7 +208,7 @@ const generateRouteDeliveryNote = (id: string) => {
                 {{ trans("For Collection") }}
             </div>
             
-            <div v-else-if="deliveryNote.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 group px-2 py-1.5">
+            <div v-else-if="deliveryNote.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 group pr-2 py-1.5">
                 <div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
                     <template v-if="deliveryNote.shipping_data?.[0].trackings?.[0]">
                         {{ deliveryNote.shipping_data?.[0].shipper_slug }}:
