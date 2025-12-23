@@ -22,7 +22,6 @@ use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Models\CRM\BackInStockReminder;
 
 class BackToStockHydrateEmailBulkRuns implements ShouldQueue
@@ -30,15 +29,10 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
     use AsAction;
     use WithGenerateEmailBulkRuns;
     use WithActionUpdate;
-    public string $commandSignature = 'hydrate:out-of-stock-notification';
+    public string $commandSignature = 'hydrate:back-to-stock-notification';
     public string $jobQueue = 'low-priority';
 
-    /*
-     * NOTE: make sure how to generate the caronical product link
-     * make sure how to delete back_in_stock_reminders after sending
-     * make sure Running EmailBulkRunHydrateDispatchedEmails
-     * make sure update $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
-     */
+
     public function handle(): void
     {
 
@@ -99,10 +93,7 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
                 if ($lastCustomerId !== $customer->id) {
                     $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
-                        'products' => sprintf(
-                            "<a ses:no-track href=\"https://www.google.com\">%s</a>",
-                            implode(', ', array_column($productData, 'product_name'))
-                        ),
+                        'products' => $this->generateProductLinks($productData),
                     ];
                     SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
 
@@ -114,20 +105,22 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
                     // Update last sent time for this outbox
                     $updateLastOutBoxSent = $currentDateTime;
                 }
-                // NOTE: make sure how to generate the caronical product link
-                $productData[] = [
-                    'product_id' => $customer->product_id,
-                    'product_name' => $customer->product_name,
-                ];
 
+                // get the product canonical url
                 $product = Product::find($customer->product_id);
-                $webPage = null;
+                $canonicalUrl = null;
                 if ($product) {
                     $webPage = $product->webpage ?? null;
                     if ($webPage) {
-                        \Log::info('Web page URL: ' . $webPage->getCanonicalUrl());
+                        $canonicalUrl = $webPage->getCanonicalUrl();
                     }
                 }
+
+                $productData[] = [
+                    'product_id' => $customer->product_id,
+                    'product_name' => $customer->product_name,
+                    'canonical_url' => $canonicalUrl,
+                ];
 
                 // $updateLastOutBoxSent = $currentDateTime;
                 if ($processedCount === $totalCustomers) {
@@ -135,10 +128,7 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
                     // Process the last batch
                     $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
-                        'products' => sprintf(
-                            "<a ses:no-track href=\"https://www.google.com\">%s</a>",
-                            implode(', ', array_column($productData, 'product_name'))
-                        ),
+                        'products' => $this->generateProductLinks($productData),
                     ];
                     SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
                     // reset product data
@@ -167,7 +157,6 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
             // Delete processed back_in_stock_reminders
             if (!empty($deleteBackInStockReminderIds)) {
                 BackInStockReminder::whereIn('id', $deleteBackInStockReminderIds)->delete();
-                // Log::info('Deleted ' . count($deleteBackInStockReminderIds) . ' back_in_stock_reminders');
                 // reset array to avoid re-deleting the same IDs
                 $deleteBackInStockReminderIds = [];
             }
@@ -177,5 +166,19 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
     public function asCommand(): void
     {
         $this->run();
+    }
+
+    public function generateProductLinks(array $productData): string
+    {
+        $links = [];
+
+        foreach ($productData as $product) {
+            $url = $product['canonical_url'];
+            $name = $product['product_name'];
+
+            $links[] = "<a ses:no-track href=\"{$url}\">{$name}</a>";
+        }
+
+        return implode(', ', $links);
     }
 }
