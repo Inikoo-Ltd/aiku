@@ -48,7 +48,7 @@ class GetWebBlockFamilies
                                     });
                             });
                     }else{
-                        $query->where('product_categories.sub_department_id', $webpage->model_id)
+                        $query->where('product_categories.sub_department_id', $webpage->model_id);
                     }
                 })
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
@@ -88,7 +88,7 @@ class GetWebBlockFamilies
             'iris'     => [
                 'name'       => 'iris.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
-            ],1
+            ],
         ];
 
         $permissions = [];
@@ -101,7 +101,7 @@ class GetWebBlockFamilies
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
-        data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
+    /*     data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request())); */
 
         return $webBlock;
     }
