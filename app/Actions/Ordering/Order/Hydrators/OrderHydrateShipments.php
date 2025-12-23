@@ -21,14 +21,24 @@ class OrderHydrateShipments implements ShouldBeUnique
         return $orderID ?? 'empty';
     }
 
-    public function handle(int|null $orderID): void
+    public function handle(int|null $orderID): Order|null
     {
         if (!$orderID) {
-            return;
+            return null;
         }
         $order = Order::find($orderID);
         if (!$order) {
-            return;
+            return null;
+        }
+
+        if($order->collection_address_id){
+            $order->update([
+                'tracking_number' => null,
+                'shipping_data'   => [
+                    'is_collection'=>true
+                ]
+            ]);
+            return $order;
         }
 
         $shipments = $order->deliveryNotes()
@@ -68,6 +78,8 @@ class OrderHydrateShipments implements ShouldBeUnique
             'tracking_number' => $trackingNumbers ?: null,
             'shipping_data'   => $shippingData ?: [],
         ]);
+
+        return $order;
     }
 
     public function getCommandSignature(): string
