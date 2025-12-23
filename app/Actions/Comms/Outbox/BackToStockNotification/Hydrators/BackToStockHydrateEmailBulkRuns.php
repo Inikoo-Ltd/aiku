@@ -15,6 +15,7 @@ use App\Models\CRM\Customer;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
+use App\Actions\Comms\Outbox\BackToStockNotification\BulkDeleteBackInStockReminder;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Comms\Outbox;
@@ -22,14 +23,13 @@ use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use App\Models\CRM\BackInStockReminder;
 
 class BackToStockHydrateEmailBulkRuns implements ShouldQueue
 {
     use AsAction;
     use WithGenerateEmailBulkRuns;
     use WithActionUpdate;
-    public string $commandSignature = 'hydrate:back-to-stock-notification';
+    public string $commandSignature = 'hydrate:back-in-stock-reminder';
     public string $jobQueue = 'low-priority';
 
 
@@ -60,7 +60,6 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
             $baseQuery->where('products.available_quantity', '>', 0);
             $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
             if ($lastOutBoxSent) {
-                // Log::info('Last outbox sent: ' . $lastOutBoxSent);
                 $baseQuery->where('back_in_stock_reminders.created_at', '>', $lastOutBoxSent);
                 $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
             }
@@ -156,7 +155,7 @@ class BackToStockHydrateEmailBulkRuns implements ShouldQueue
 
             // Delete processed back_in_stock_reminders
             if (!empty($deleteBackInStockReminderIds)) {
-                BackInStockReminder::whereIn('id', $deleteBackInStockReminderIds)->delete();
+                BulkDeleteBackInStockReminder::run($deleteBackInStockReminderIds);
                 // reset array to avoid re-deleting the same IDs
                 $deleteBackInStockReminderIds = [];
             }

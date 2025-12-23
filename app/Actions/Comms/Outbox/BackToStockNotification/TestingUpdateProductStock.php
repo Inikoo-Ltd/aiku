@@ -8,14 +8,14 @@
 
 namespace App\Actions\Comms\Outbox\BackToStockNotification;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use App\Models\CRM\BackInStockReminder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
-class TestingUpdateProductStock implements ShouldQueue
+class TestingUpdateProductStock
 {
     use AsAction;
     /*
@@ -30,7 +30,7 @@ class TestingUpdateProductStock implements ShouldQueue
         $queryOutbox = QueryBuilder::for(BackInStockReminder::class);
         $queryOutbox->select('back_in_stock_reminders.product_id');
         $productIds = $queryOutbox->pluck('product_id');
-        \Log::info("Product Ids that stock updated: ".$productIds);
+        Log::info("Product Ids that stock updated: ".$productIds);
         // update product Stock
         Product::whereIn('id', $productIds)
             ->update([
