@@ -21,7 +21,7 @@ class GetFaireProducts extends OrgAction
         ]);
 
         $variantSkus = [];
-        $products    = [];
+        $awProducts    = [];
 
         foreach (Arr::get($products, 'products', []) as $product) {
             foreach ($product['variants'] as $variant) {
@@ -32,13 +32,13 @@ class GetFaireProducts extends OrgAction
                     ->first();
 
                 if ($awProduct->code) {
-                    $products[] = $awProduct->code;
+                    $awProducts[] = $awProduct->code;
                 }
             }
         }
 
 
-        dd(array_diff($variantSkus, $products));
+        dd(array_diff($variantSkus, $awProducts));
     }
 
     public function asCommand(): void
