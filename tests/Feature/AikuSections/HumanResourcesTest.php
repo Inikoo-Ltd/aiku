@@ -425,7 +425,7 @@ test('UI Index calendar', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Employees')
                     ->etc()
             )
@@ -449,7 +449,7 @@ test('UI show calendar', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->etc()
             )
             ->has('tabs');
@@ -471,7 +471,7 @@ test('UI Index clockings', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Clockings')
                     ->etc()
             )
@@ -491,7 +491,7 @@ test('UI Index clocking machines', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Clocking machines')
                     ->etc()
             )
@@ -515,7 +515,7 @@ test('UI show clocking machine', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $clockingMachine->name)
                     ->etc()
             )
@@ -548,7 +548,7 @@ test('UI edit clocking machine', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.clocking_machine..update')
                     ->where('parameters', $clockingMachine->id)
             )
@@ -568,7 +568,7 @@ test('UI Index employees', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Employees')
                     ->etc()
             )
@@ -601,7 +601,7 @@ test('UI show employee', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $employee->contact_name)
                     ->etc()
             )
@@ -625,7 +625,7 @@ test('UI edit employee', function () {
             ->has('formData')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.employee.update')
                     ->where('parameters', [$employee->id])
             )
@@ -648,7 +648,7 @@ test('UI show job position', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $jobPosition->name)
                     ->etc()
             )
@@ -668,7 +668,7 @@ test('UI Index job positions', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Responsibilities')
                     ->etc()
             )
@@ -695,7 +695,7 @@ test('UI edit workplace', function () {
             ->has('formData')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.workplace.update')
                     ->where('parameters', $this->workplace->id)
             )
@@ -715,7 +715,7 @@ test('UI Index timesheets', function () {
             ->has('pageHead')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Timesheets')
                     ->etc()
             )
@@ -740,7 +740,7 @@ test('UI show timesheet', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $timesheet->date->format('l, j F Y'))
                     ->etc()
             )

@@ -50,13 +50,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $tracking
  * @property mixed $tracking_urls
  * @property mixed $combined_label_url
+ * @property mixed $shipping_data
  *
  */
 class OrdersResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $payDetailedStatus = '';
+        $payDetailedStatus        = '';
         $payDetailedStatusTooltip = '';
 
         if ($this->pay_detailed_status == OrderPayDetailedStatusEnum::UNPAID && $this->to_be_paid_by) {
@@ -105,9 +106,7 @@ class OrdersResource extends JsonResource
             'internal_notes'              => $this->internal_notes,
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
-            'tracking'                    => $this->tracking,
-            'tracking_urls'               => $this->tracking_urls,
-            'combined_label_url'          => $this->combined_label_url
+            'shipping_data'               => $this->shipping_data,
         ];
     }
 }
