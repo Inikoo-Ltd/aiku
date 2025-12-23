@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\Shop\Faire;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -75,6 +76,8 @@ class GetFaireOrders extends OrgAction
                             ]
                         );
                     }
+
+                    SubmitOrder::run($awOrder);
                 }
             }
         });
