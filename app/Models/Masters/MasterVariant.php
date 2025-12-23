@@ -20,6 +20,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Masters\MasterAsset;
 
 /**
  * @property int $id
@@ -130,6 +131,11 @@ class MasterVariant extends Model implements Auditable, HasMedia
     {
         return $this->hasMany(MasterVariantTimeSeries::class);
     }
+
+   public function leaderProduct(): HasOne
+   {
+       return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
+   }
 
 
 }

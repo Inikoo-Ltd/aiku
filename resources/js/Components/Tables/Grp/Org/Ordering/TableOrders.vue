@@ -113,6 +113,13 @@ function customerRoute(order: Order) {
     }
 }
 
+const generateRouteDeliveryNote = (id: string) => {
+    if (!id) return ''
+
+    return route('grp.helpers.redirect_delivery_notes', {
+        deliveryNote: id
+    })
+}
 
 </script>
 
@@ -194,7 +201,41 @@ function customerRoute(order: Order) {
         </template>
 
         <template #cell(delivery)="{ item: order }">
-            {{ order.shipping_data }}
+            <div v-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
+                {{ trans("Collection") }}
+            </div>
+            
+            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 text-xs group px-2 py-1.5">
+                <div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
+                    <!-- Delivery Note -->
+                    <template v-if="order.shipping_data?.[0].delivery_note_reference">
+                        <Link
+                            :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
+                            class="secondaryLink"
+                            v-tooltip="trans('Delivery Note') + ': ' + order.shipping_data?.[0].delivery_note_reference"
+                        >
+                            <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
+                        </Link>
+                    </template>
+                    
+                    <template v-if="order.shipping_data?.[0].trackings?.[0]">
+                        <span class="opacity-70">|</span> {{ order.shipping_data?.[0].shipper_slug }}:
+                        <a v-if="order.shipping_data?.[0].tracking_urls.length"
+                            :href="order.shipping_data?.[0].tracking_urls[0]"
+                            class="underline"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                            <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                        </a>
+                        
+                        <span v-else>
+                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                        </span>
+                    </template>
+                </div>
+            </div>
         </template>
 
     </Table>

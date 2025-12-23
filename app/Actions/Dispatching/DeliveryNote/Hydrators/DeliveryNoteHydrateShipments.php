@@ -31,6 +31,18 @@ class DeliveryNoteHydrateShipments implements ShouldBeUnique
             return;
         }
 
+        if($deliveryNote->collection_address_id){
+            $deliveryNote->update([
+                'tracking_number' => null,
+                'shipping_data'   => [
+                    'is_collection'=>true
+                ]
+            ]);
+            return;
+        }
+
+
+
         $shipments = $deliveryNote->shipments()
             ->with('shipper')
             ->get()
