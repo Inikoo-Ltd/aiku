@@ -126,7 +126,8 @@ const getValueColumn4Transleted = (value: string) => {
 
             <div v-if="modelValue?.email"
                 class="relative group flex-1 flex justify-center md:justify-start items-center">
-                <a :href="`mailto:${modelValue.email}`" style="font-size: 17px">{{ modelValue?.email }}</a>
+               <!--  <a :href="`mailto:${modelValue.email}`" style="font-size: 17px">{{ modelValue?.email }}</a> -->
+                <span style="font-size: 17px">{{ modelValue?.email }}</span>
             </div>
 
             <div v-if="modelValue?.whatsapp?.number"
