@@ -47,6 +47,14 @@ class ShowCreateMasterVariant extends OrgAction
         return $this->handle($masterFamily);
     }
 
+    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterFamily);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
