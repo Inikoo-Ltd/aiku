@@ -22,6 +22,7 @@ class MasterVariantsResource extends JsonResource
         return [
             'id'                     => $this->id,
             'code'                   => $this->code,
+            'slug'                   => $this->slug,
         ];
     }
 }

@@ -31,6 +31,7 @@ use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
+use App\Actions\Masters\MasterVariant\ShowMasterVariant;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
@@ -174,7 +175,8 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('', IndexMasterFamilies::class)->name('index');
                 Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
                 Route::get('{masterFamily}/edit', EditMasterFamily::class)->name('edit');
-                Route::get('{masterFamily}/create-variant', ShowCreateMasterVariant::class)->name('create.variant');
+                Route::get('{masterFamily}/create-variant', [ShowCreateMasterVariant::class, 'inMasterFamily'])->name('create.variant');
+                Route::get('{masterFamily}/{masterVariant}', [ShowMasterVariant::class,'inMasterFamily'])->name('show.variant');
 
 
                 Route::prefix('{masterFamily}/master-products')->as('master_products.')->group(function () {
