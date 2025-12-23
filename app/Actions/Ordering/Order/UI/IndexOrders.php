@@ -200,9 +200,8 @@ class IndexOrders extends OrgAction
                 'orders.public_notes',
                 'orders.shipping_notes',
                 'orders.to_be_paid_by',
-                //                'shipments.tracking_urls as tracking_urls',
-                //                'shipments.tracking as tracking',
-                //                'shipments.combined_label_url as combined_label_url',
+                'orders.tracking_number',
+                'orders.shipping_data',
                 $shipmentsSelect,
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
@@ -279,6 +278,7 @@ class IndexOrders extends OrgAction
                 $table->column(key: 'organisation_name', label: __('Organisation'), sortable: true);
             }
             $table->column(key: 'pay_detailed_status', label: __('Payment'), sortable: true);
+            $table->column(key: 'delivery', label: __('Delivery'));
             $table->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency');
         };
     }

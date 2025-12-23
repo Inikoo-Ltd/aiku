@@ -5,8 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
+import { Link } from '@inertiajs/vue3'
 import { Shop } from "@/types/shop"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle, faDoNotEnter } from '@fas'
@@ -24,6 +24,16 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 
+console.log(route().params);
+const getMasterVariantRoute = (item: any) => {
+  if(route().current() == 'grp.masters.master_shops.show.master_families.show'){
+    return route('grp.masters.master_shops.show.master_families.master_variants.show', {
+      masterShop: route().params.masterShop,
+      masterFamily: route().params.masterFamily,
+      masterVariant: item.slug,
+    });
+  }
+}
 
 console.log('props_ssss',props)
 
@@ -31,7 +41,11 @@ console.log('props_ssss',props)
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-      
+      <template #cell(code)="{ item }">
+        <Link :href="getMasterVariantRoute(item)" class="primaryLink">
+          {{ item.code }}
+        </Link>
+      </template>
     </Table>
 </template>
 

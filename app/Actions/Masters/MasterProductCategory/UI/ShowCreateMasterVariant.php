@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Masters\MasterAsset\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
@@ -17,9 +17,8 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 
-class ShowCreateVariant extends OrgAction
+class ShowCreateMasterVariant extends OrgAction
 {
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
@@ -39,7 +38,7 @@ class ShowCreateVariant extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->initialisationFromGroup($group, $request);
@@ -56,12 +55,27 @@ class ShowCreateVariant extends OrgAction
         return $this->handle($masterFamily);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterFamily);
+    }
+
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
         return $masterFamily;
     }
-
-
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {

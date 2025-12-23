@@ -14,7 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { isArray } from 'lodash-es'
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -60,38 +60,17 @@ const form = useForm(
 
 const isLoading = ref(false)
 const handleFormSubmit = async () => {
-    if (!props.formData.submitButton) {
-        if (props.formData?.route?.body) {
-            form
-            .transform((data) => ({
-                ...data,
-                ...props.formData.route.body
-            }))
-            .post(route(
-                props.formData.route.name,
-                props.formData.route.parameters
-            ), {
-                onStart: () => isLoading.value = true,
-                onError: () => isLoading.value = false
-            })
-        } else {
-            form.post(route(
-                props.formData.route.name,
-                props.formData.route.parameters
-            ), {
-                onStart: () => isLoading.value = true,
-                onError: () => isLoading.value = false
-            })
+    form.post(route(
+        props.formData.route.name,
+        {
+            ...props.formData.route.parameters,
+            organisation: form.organisation
         }
-    } else {
-        form.post(route(
-            ButtonActive.value.name,
-            ButtonActive.value.parameters
-        ), {
-            onStart: () => isLoading.value = true,
-            onError: () => isLoading.value = false
-        })
-    }
+    ), {
+        onStart: () => isLoading.value = true,
+        onError: () => isLoading.value = false
+    })
+    return;
 }
 
 const buttonRefs = ref([])
@@ -125,6 +104,22 @@ const onSelectSubmitChange = (value) => {
     form[props.formData.submitField] = value.key
     ButtonActive.value = value
 }
+
+const baseEngineOpts = props.formData.blueprint[0].fields.engine.options;
+
+watch(form, () => {
+    if (form.type.toLowerCase() === 'external') {
+        props.formData.blueprint[0].fields.engine.options = baseEngineOpts.filter(option => option.label !== 'AIKU');
+        if(form.engine == 'aiku'){
+            form.engine = baseEngineOpts.filter(option => option.label !== 'AIKU')[0].value;
+        }
+    } else {
+        props.formData.blueprint[0].fields.engine.options = baseEngineOpts.filter(option => option.label == 'AIKU');
+        if(form.engine != 'aiku'){
+            form.engine = baseEngineOpts.filter(option => option.label == 'AIKU')[0].value;
+        }
+    }
+});
 
 </script>
 
@@ -270,7 +265,8 @@ const onSelectSubmitChange = (value) => {
                                                 <!-- Dynamic component -->
                                                 <component :is="getComponent(fieldData['type'])" :form="form"
                                                     :fieldName="fieldName" :options="fieldData['options']"
-                                                    :fieldData="fieldData" :key="index">
+                                                    :fieldData="fieldData" :key="index"
+                                                    >
                                                 </component>
                                             </div>
                                         </div>

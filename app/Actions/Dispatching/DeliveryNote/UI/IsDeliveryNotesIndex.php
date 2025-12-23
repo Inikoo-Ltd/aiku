@@ -142,6 +142,7 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.internal_notes',
                 'delivery_notes.public_notes',
                 'delivery_notes.shipping_notes',
+                'delivery_notes.shipping_data',
             ])
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
@@ -235,9 +236,15 @@ trait IsDeliveryNotesIndex
             }
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
+            if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
+                $table->column(key: 'delivery', label: __('Shipping'));
+            }
+
             if ($bucket == 'unassigned' && $pickerEmployee) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }
+
+
         };
     }
 

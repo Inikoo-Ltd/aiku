@@ -85,11 +85,18 @@ const customMenusTop = computed(() => {
 // });
 
 const sortedSubDepartments = computed(() => {
-    if (activeIndex.value === null || !sortedProductCategories.value[activeIndex.value]?.sub_departments) return [];
-    return [...sortedProductCategories.value[activeIndex.value].sub_departments].sort((a, b) =>
-        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
-    );
+  const category = sortedProductCategories.value?.[activeIndex.value];
+  if (!category) return [];
+
+  return [
+    ...(category.sub_departments ?? []),
+    ...(category.collections ?? []),
+  ]
+    .filter(item => item?.name)
+    .sort((a, b) => a.name.localeCompare(b.name));
 });
+
+
 
 // Custom sub departments without sorting
 const customSubDepartments = computed(() => {

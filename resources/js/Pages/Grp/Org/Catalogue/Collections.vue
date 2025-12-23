@@ -31,7 +31,7 @@ const props = defineProps<{
     routes: Array<routeType>
 }>()
 
-const currentTab = ref<string>(props.tabs.current)
+const currentTab = ref<string>(props?.tabs?.current ?? 0)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
@@ -47,9 +47,8 @@ const component = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
-    </PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <PageHeading :data="pageHead"></PageHeading>
+    <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <component
         :is="component"

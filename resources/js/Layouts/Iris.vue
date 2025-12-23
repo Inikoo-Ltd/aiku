@@ -38,7 +38,6 @@ const isOpenMenuMobile = ref(false)
 provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
-
 const propsAnnouncementsTopbar = ref([])
 const propsAnnouncementsBottomMenu =  ref([])
 const propsAnnouncementsTopFooter =  ref([])

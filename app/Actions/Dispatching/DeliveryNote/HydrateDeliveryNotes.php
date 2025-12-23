@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Dispatching\DeliveryNote;
 
@@ -29,7 +30,6 @@ class HydrateDeliveryNotes
     {
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
         DeliveryNoteHydrateItems::run($deliveryNote);
-
+        DeliveryNoteHydrateShipments::run($deliveryNote->id);
     }
-
 }
