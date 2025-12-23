@@ -101,7 +101,7 @@ Route::name("master_shops")->prefix('master-shops')
 
             Route::prefix('/shop')->as('.shop')->group(function () {
                 Route::get('/create', CreateShopInGroup::class)->name('.create');
-                Route::post('/store', [StoreShop::class, 'inMaster'])->name('.store');
+                Route::post('/store/{organisation}', [StoreShop::class, 'inMaster'])->name('.store');
             });
 
 

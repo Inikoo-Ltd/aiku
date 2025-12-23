@@ -77,7 +77,8 @@ class CreateShopInGroup extends GrpAction
                                     'options'     => GetOrganisationOptions::run(),
                                     'required'    => true,
                                     'mode'        => 'single',
-                                    'searchable'  => true
+                                    'searchable'  => true,
+                                    'key'         => 'organisation_select'
                                 ],
                                 'code' => [
                                     'type'     => 'input',

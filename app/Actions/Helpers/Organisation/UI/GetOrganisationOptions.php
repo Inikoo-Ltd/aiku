@@ -23,7 +23,7 @@ class GetOrganisationOptions
         /** @var Organisation $org */
         foreach (Organisation::where('type', 'shop')->get() as $org) {
 
-            $selectOptions[$org->id] =
+            $selectOptions[$org->slug] =
                 [
                     'label'   => $org->code.' | '.$org->name,
                 ];

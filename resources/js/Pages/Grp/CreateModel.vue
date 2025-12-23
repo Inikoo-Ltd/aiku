@@ -60,6 +60,19 @@ const form = useForm(
 
 const isLoading = ref(false)
 const handleFormSubmit = async () => {
+    if(props.formData.route.name == 'grp.masters.master_shops.show.shop.store'){
+        form.post(route(
+            props.formData.route.name,
+            {
+                ...props.formData.route.parameters,
+                organisation: form.organisation
+            }
+        ), {
+            onStart: () => isLoading.value = true,
+            onError: () => isLoading.value = false
+        })
+        return;
+    }
     if (!props.formData.submitButton) {
         if (props.formData?.route?.body) {
             form
