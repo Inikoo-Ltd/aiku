@@ -418,7 +418,7 @@ watch(loadingItem, (newVal) => {
                                     <template #default>
                                         <div class="py-1 relative">
                                             {{ linkData.name }}
-                                            <FontAwesomeIcon v-tooltip="trans('Collection')" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
+                                            <!-- <FontAwesomeIcon v-tooltip="trans('Collection')" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" /> -->
                                         </div>
                                     </template>
                                 </LinkIris>
