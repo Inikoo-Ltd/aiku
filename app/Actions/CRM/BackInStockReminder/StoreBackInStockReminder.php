@@ -9,9 +9,6 @@
 
 namespace App\Actions\CRM\BackInStockReminder;
 
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\BackInStockReminder;
@@ -34,9 +31,13 @@ class StoreBackInStockReminder extends OrgAction
         /** @var BackInStockReminder $reminder */
         $reminder = $customer->backInStockReminder()->create($modelData);
 
-        CustomerHydrateBackInStockReminders::dispatch($customer->id)->delay($this->hydratorsDelay);
-        ProductHydrateCustomersWhoReminded::dispatch($product)->delay($this->hydratorsDelay);
-        ProductHydrateCustomersWhoRemindedInCategories::dispatch($product)->delay($this->hydratorsDelay);
+        $snapshotModelData = $modelData;
+        data_set($snapshotModelData, 'customer_id', $customer->id);
+        // create back in stock reminder snapshot
+        StoreBackInStockReminderSnapshot::run($snapshotModelData);
+        // CustomerHydrateBackInStockReminders::dispatch($customer->id)->delay($this->hydratorsDelay);
+        // ProductHydrateCustomersWhoReminded::dispatch($product)->delay($this->hydratorsDelay);
+        // ProductHydrateCustomersWhoRemindedInCategories::dispatch($product)->delay($this->hydratorsDelay);
 
         return $reminder;
     }
