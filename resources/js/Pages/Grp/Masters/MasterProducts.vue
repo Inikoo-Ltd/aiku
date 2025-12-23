@@ -97,7 +97,7 @@ const onVisit = () => {
     <!-- Products Table -->
     <TableMasterProducts
         :data="data"
-        :editable_table
+        editable_table
         :key="key"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
     />

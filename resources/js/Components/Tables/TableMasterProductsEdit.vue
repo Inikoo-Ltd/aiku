@@ -1,18 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted, inject } from 'vue'
+import { ref, onMounted, inject, watch } from 'vue'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabel, IconField, InputIcon, InputNumber, InputText, MultiSelect, RadioButton, Rating, Select, Tag, Textarea, Toolbar } from 'primevue'
+import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabel, IconField, InputIcon, InputNumber, InputText, MultiSelect, Popover, RadioButton, Rating, Select, Tag, Textarea, Toolbar } from 'primevue'
 import axios from 'axios'
-import PureTextarea from '../Pure/PureTextarea.vue'
+
 import PureCheckbox from '../Pure/PureCheckbox.vue'
 import Image from '@/Components/Image.vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faColumns } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '../Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
+
+import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
+import { EditorContent } from '@tiptap/vue-3'
+import { set, get } from 'lodash-es'
+
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
 // import { ProductService } from '@/service/ProductService'
@@ -116,7 +120,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'price', 'rrp', 'unit_price', 'unit_price', 'units', 'unit', 'gross_weight', 'family_id', ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'price', 'units', 'unit', 'gross_weight', 'family_id', ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -131,13 +135,11 @@ const groupedColumnList = ref([
         label: 'Pricing',
         items: [
             { label: 'Price', value: 'price' },
-            { label: 'RRP', value: 'rrp' },
         ]
     },
     {
         label: 'Uniting',
         items: [
-            { label: 'Unit Price', value: 'unit_price' },
             { label: 'Units', value: 'units' },
             { label: 'Unit', value: 'unit' }
         ]
@@ -154,11 +156,21 @@ const groupedColumnList = ref([
             { label: 'Family', value: 'family_id' },
         ]
     }
-]);
+])
+watch(selectedColumns, (e) => {  // To avoid 'name' to be unselected
+    if (e.includes('name')) {
 
+    } else {
+        selectedColumns.value.push('name')
+    }
+})
+
+// Section: Submit data
+const isLoadingSave = ref(false)
 const onSave = async () => {
     console.log('productsList.value', productsList.value)
     try {
+        isLoadingSave.value = true
         const response = await axios.post(
             route(
                 'grp.masters.master_shops.show.bulk-edit.update',
@@ -179,7 +191,17 @@ const onSave = async () => {
             text: error.message || trans("Please try again or contact administrator"),
             type: 'error'
         })
+    } finally {
+        isLoadingSave.value = false
     }
+}
+
+
+// Section: Description edit
+const selectedRowToEdit = ref(null)
+const _popoverDescription = ref(null)
+const toggleDescription = (event) => {
+    _popoverDescription.value?.toggle(event);
 }
 </script>
 
@@ -227,7 +249,7 @@ const onSave = async () => {
                         </div>
 
                         <div class="w-fit flex">
-                            <div class="flex items-center">
+                            <div class="flex items-center justify-end">
                                 <FloatLabel class="w-full md:w-52" variant="on">
                                     <MultiSelect
                                         v-model="selectedColumns"
@@ -236,6 +258,7 @@ const onSave = async () => {
                                         optionValue="value"
                                         optionDisabled="disabled"
                                         filter
+                                        class="w-full"
                                         optionGroupLabel="label"
                                         optionGroupChildren="items"
                                         display="comma"
@@ -258,6 +281,7 @@ const onSave = async () => {
                                     label="Save"
                                     icon="fas fa-save"
                                     size="lg"
+                                    :loading="isLoadingSave"
                                 />
                             </div>
                         </div>
@@ -289,14 +313,15 @@ const onSave = async () => {
                         </div>
                     </template>
                 </Column>
+
                 <!-- Column: Description -->
                 <Column v-if="selectedColumns.includes('description')" field="description" header="Description" style="min-width: 20rem">
                     <template #body="slotProps">
-                        <PureTextarea
-                            v-model="slotProps.data.description"
-                            inputId="currency-us"
-                            fluid
-                        />
+                        <div @click="(e) => (toggleDescription(e), selectedRowToEdit = slotProps.data)" class="h-16 overflow-hidden rounded border border-gray-300 px-2 py-1 text-gray-600">
+                            <span v-if="slotProps.data.description" v-html="slotProps.data.description"></span>
+                            <span v-else class="text-gray-400 italic">No description</span>
+                        </div>
+                        
                     </template>
                 </Column>
 
@@ -331,7 +356,7 @@ const onSave = async () => {
                 </Column>
                 
                 <!-- Column: RPP -->
-                <Column v-if="selectedColumns.includes('rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
+                <!-- <Column v-if="selectedColumns.includes('rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.rrp"
@@ -346,10 +371,10 @@ const onSave = async () => {
                             fluid
                         />
                     </template>
-                </Column>
+                </Column> -->
                 
                 <!-- Column: Unit price -->
-                <Column v-if="selectedColumns.includes('unit_price')" field="unit_price" header="Unit price" sortable style="min-width: 8rem">
+                <!-- <Column v-if="selectedColumns.includes('unit_price')" field="unit_price" header="Unit price" sortable style="min-width: 8rem">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.unit_price"
@@ -364,7 +389,7 @@ const onSave = async () => {
                             fluid
                         />
                     </template>
-                </Column>
+                </Column> -->
 
                 <!-- Column: Gross Weight -->
                 <Column v-if="selectedColumns.includes('gross_weight')" field="gross_weight" header="Gross Weight" sortable style="white-space: nowrap">
@@ -447,8 +472,31 @@ const onSave = async () => {
                     </template>
                 </Column>
             </DataTable>
-            <pre>{{ productsList }}</pre>
+            <!-- <pre>{{ productsList }}</pre> -->
 
+            <Popover ref="_popoverDescription">
+                <div class="flex flex-col w-[40rem]">
+                    <div class="mb-4 font-bold text-xl text-center text-balance">
+                        {{ selectedRowToEdit?.name }}
+                    </div>
+
+                    <div class="text-sm italic text-gray-500">
+                        {{ trans("Description") }}: 
+                    </div>
+                    
+                    <Editor :modelValue="get(selectedRowToEdit, ['description'], '')" @update:modelValue="(e) => set(selectedRowToEdit, ['description'], e)" xuploadImageRoute="props.uploadRoutes">
+                        <template #editor-content="{ editor }">
+                            <div
+                            class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm transition-all duration-200 focus-within:border-blue-400"
+                            :style="{ minHeight: `70px` }"
+                            >
+                                <EditorContent :editor="editor" class="editor-content" />
+                            </div>
+                        </template>
+                    </Editor>
+                </div>
+            </Popover>
+            
         </div>
     </div>
 </template>
