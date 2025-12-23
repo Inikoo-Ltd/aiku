@@ -417,14 +417,25 @@ class EditShop extends OrgAction
             ],
         ];
 
-        if ($isExternalFaire) {
-            $formData['blueprint'] = array_values(array_filter(
-                $formData['blueprint'],
-                static fn ($section) =>
-                is_array($section)
+         if ($isExternalFaire) {
+            if (!isset($formData['blueprint']) || !is_array($formData['blueprint'])) {
+                $formData['blueprint'] = [];
+            }
+
+            $filteredBlueprint = [];
+
+            foreach ($formData['blueprint'] as $section) {
+                if (
+                    is_array($section)
                     && isset($section['label'])
+                    && is_string($section['label'])
                     && in_array($section['label'], $allowedBlueprintLabels, true)
-            ));
+                ) {
+                    $filteredBlueprint[] = $section;
+                }
+            }
+
+            $formData['blueprint'] = array_values($filteredBlueprint);
         }
 
         return Inertia::render(
