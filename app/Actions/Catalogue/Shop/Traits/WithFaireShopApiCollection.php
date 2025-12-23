@@ -123,4 +123,26 @@ trait WithFaireShopApiCollection
     {
         return $this->buildRequest('GET', "orders/{$orderId}");
     }
+
+    /**
+     * Update a specific order by ID
+     *
+     * @param string $orderId
+     * @return array
+     */
+    public function acceptFaireOrder(string $orderId, array $attributes = []): array
+    {
+        return $this->buildRequest('PUT', "orders/{$orderId}/processing", $attributes);
+    }
+
+    /**
+     * Update shipping to a specific order by ID
+     *
+     * @param string $orderId
+     * @return array
+     */
+    public function updateShippingFaireOrder(string $orderId, array $attributes): array
+    {
+        return $this->buildRequest('PUT', "orders/{$orderId}/shipments", $attributes);
+    }
 }
