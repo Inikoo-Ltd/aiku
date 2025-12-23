@@ -17,7 +17,6 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 
 class ShowCreateMasterVariant extends OrgAction
 {
@@ -39,15 +38,7 @@ class ShowCreateMasterVariant extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
-    {
-        $group        = group();
-        $this->initialisationFromGroup($group, $request);
-
-        return $this->handle($masterFamily);
-    }
-
-    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->initialisationFromGroup($group, $request);
@@ -57,6 +48,23 @@ class ShowCreateMasterVariant extends OrgAction
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterFamily);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->initialisationFromGroup($group, $request);
