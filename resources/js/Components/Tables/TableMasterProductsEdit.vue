@@ -77,9 +77,9 @@ const fetchFamilies = async (shop_id: number, family_data?: {}) => {
     try {
         const response = await axios.get(
             route(
-                'grp.json.shop.families',
+                'grp.json.master-family.all-master-family',
                 {
-                    shop: shop_id
+                    masterShop: route().params.masterShop
                 }
             )
         )
@@ -417,20 +417,20 @@ const onSave = async () => {
                     <template #body="{ data }">
                         <!-- TODO: Need fix -->
                         <Select
-                            v-model="data.family_id"
-                            :options="familiesList?.length ? familiesList : [data.family_data]"
+                            v-model="data.master_family_id"
+                            :options="familiesList?.length ? familiesList : [data.master_family_data]"
                             filter
                             optionLabel="name"
                             optionValue="id"
                             placeholder="Select a Family"
                             class="w-full md:w-56"
-                            @show="() => fetchFamilies(data.shop_id, data.family_data)"
+                            @show="() => fetchFamilies(data.shop_id, data.master_family_data)"
                             @hide="() => familiesList = null"
                         >
                             <template #value="slotProps">
                                 <div v-if="slotProps.value" class="flex items-center">
                                     <!-- <img :alt="slotProps.value.label" src="https://primefaces.org/cdn/primevue/images/flag/flag_placeholder.png" :class="`mr-2 flag flag-${slotProps.value?.code?.toLowerCase()}`" style="width: 18px" /> -->
-                                    <div>{{ (familiesList?.length ? familiesList : [data.family_data]).find(family => family.id === slotProps.value)?.name }}</div>
+                                    <div>{{ (familiesList?.length ? familiesList : [data.master_family_data]).find(family => family.id === slotProps.value)?.name }}</div>
                                 </div>
 
                                 <span v-else>
@@ -440,7 +440,7 @@ const onSave = async () => {
                             
                             <template #option="slotProps">
                                 <div class="flex items-center">
-                                    <div>{{ (familiesList?.length ? familiesList : [data.family_data]).find(family => family?.id === slotProps?.option?.id)?.name }}</div>
+                                    <div>{{ (familiesList?.length ? familiesList : [data.master_family_data]).find(family => family?.id === slotProps?.option?.id)?.name }}</div>
                                 </div>
                             </template>
                         </Select>

@@ -32,7 +32,6 @@ class MasterBulkEditProductsResource extends JsonResource
             return $tradeUnit->ingredients->pluck('name');
         })->unique()->values()->all();
 
-
         return [
             'id'                         => $masterProduct->id,
             'shop_id'                    => $masterProduct->shop_id,
@@ -43,10 +42,10 @@ class MasterBulkEditProductsResource extends JsonResource
             'rrp'                        => $masterProduct->rrp ?? 0,
             'is_for_sale'                => $masterProduct->is_for_sale,
             'currency'                   => $masterProduct->group->currency->code,
-            'family_id'            => $masterProduct->family_id,
-            'family_data'           => $masterProduct->family ? [
-                'id'    => $masterProduct->family->id,
-                'name'  => $masterProduct->family->name,
+            'master_family_id'           => $masterProduct->master_family_id,
+            'master_family_data'         => $masterProduct->masterFamily ? [
+                'id'    => $masterProduct->masterFamily->id,
+                'name'  => $masterProduct->masterFamily->name,
             ] : null,
             'web_images'                   => $masterProduct->web_images,
             'description'                   => $masterProduct->description,
