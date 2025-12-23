@@ -30,17 +30,32 @@ class GetWebBlockFamilies
             $families = DB::table('product_categories')
                 ->leftJoin('webpages', function ($join) {
                     $join->on('product_categories.id', '=', 'webpages.model_id')
-                        ->where('webpages.model_type', '=', 'ProductCategory');
+                        ->where('webpages.model_type', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.web_images', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->select([ 'product_categories.code', 'product_categories.web_images', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
-                ->where($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT ? 'product_categories.department_id' : 'product_categories.sub_department_id', $webpage->model_id)
+                ->where(function ($query) use ($webpage) {
+                    if($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT){
+                        $query->where('product_categories.department_id', $webpage->model_id)
+                            ->orWhereIn('product_categories.id', function ($sub) use ($webpage) {
+                                $sub->select('chm.model_id')
+                                    ->from('collection_has_models as chm')
+                                    ->where('chm.model_type', 'ProductCategory')
+                                    ->whereIn('chm.collection_id', function ($sub2) use ($webpage) {
+                                        $sub2->select('mhc.collection_id')
+                                            ->from('model_has_collections as mhc')
+                                            ->where('mhc.model_id', $webpage->model_id);
+                                    });
+                            });
+                    }else{
+                        $query->where('product_categories.sub_department_id', $webpage->model_id)
+                    }
+                })
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
                 ->whereNotNull('webpages.id')
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
-
                 ->whereNull('product_categories.deleted_at')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
