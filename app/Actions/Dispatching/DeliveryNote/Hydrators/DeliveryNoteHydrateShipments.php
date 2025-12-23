@@ -47,7 +47,7 @@ class DeliveryNoteHydrateShipments implements ShouldBeUnique
             ->with('shipper')
             ->get()
             ->filter(
-                fn($shipment) => $shipment->tracking
+                fn ($shipment) => $shipment->tracking
                     && strtolower($shipment->tracking) !== 'na'
                     && $shipment->tracking !== '.'
             );
@@ -58,7 +58,7 @@ class DeliveryNoteHydrateShipments implements ShouldBeUnique
             ->sort()
             ->implode(', ');
 
-        $shippingData = $shipments->map(fn($shipment) => [
+        $shippingData = $shipments->map(fn ($shipment) => [
             'shipping_id'     => $shipment->id,
             'shipper_slug'    => $shipment->shipper?->slug,
             'shipper_label'   => $shipment->trade_as ?: $shipment->shipper?->code,
