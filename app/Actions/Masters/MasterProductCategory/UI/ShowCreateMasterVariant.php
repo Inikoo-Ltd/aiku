@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Masters\MasterAsset\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
@@ -19,7 +19,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 
-class ShowCreateVariant extends OrgAction
+class ShowCreateMasterVariant extends OrgAction
 {
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
@@ -60,8 +60,6 @@ class ShowCreateVariant extends OrgAction
     {
         return $masterFamily;
     }
-
-
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
