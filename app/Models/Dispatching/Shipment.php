@@ -113,5 +113,10 @@ class Shipment extends Model
         return $this->morphedByMany(PalletReturn::class, 'model', 'model_has_shipments');
     }
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\Dispatch\ShipmentFactory::new();
+    }
+
 
 }

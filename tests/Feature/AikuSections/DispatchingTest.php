@@ -13,6 +13,7 @@ namespace Tests\Feature;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
@@ -64,6 +65,7 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Transaction;
 use Config;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -785,8 +787,6 @@ it('can render the create shipper page', function () {
 });
 
 it('can render the show shipper page', function () {
-
-
     $shipper = Shipper::first();
 
     get(route('grp.org.warehouses.show.dispatching.shippers.show', [
@@ -803,7 +803,6 @@ it('can render the show shipper page', function () {
 });
 
 it('can render the edit shipper page', function () {
-
     $shipper = Shipper::first();
     get(route('grp.org.warehouses.show.dispatching.shippers.edit', [
         'organisation' => $shipper->organisation->slug,
@@ -819,11 +818,109 @@ it('can render the edit shipper page', function () {
 });
 
 it('can get shipper showcase data', function () {
-
-    $shipper = Shipper::first();
+    $shipper  = Shipper::first();
     $showcase = \App\Actions\Dispatching\Shipper\UI\GetShipperShowcase::run($shipper);
 
     expect($showcase)->toBeArray()
         ->toHaveKey('shipper')
         ->and($showcase['shipper']['name'])->toBe($shipper->name);
+});
+
+it('hydrates delivery note tracking number from shipments', function () {
+    loadDB();
+    Artisan::call('migrate');
+    $createShopResult = createShop();
+    $organisation     = $createShopResult[0];
+    $shop             = $createShopResult[2];
+    $warehouse        = createWarehouse();
+    $customer         = createCustomer($shop);
+    $product          = createProduct($shop)[1];
+    $order            = createOrder($customer, $product);
+
+    $arrayData = [
+        'reference'        => 'A123456',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $warehouse->id
+    ];
+
+    $deliveryNote = StoreDeliveryNote::make()->action($order, $arrayData);
+
+    $shipper = Shipper::create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+        'code'            => 'SHP1',
+        'name'            => 'Shipper 1',
+    ]);
+
+    $shipment1 = Shipment::create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+        'shop_id'         => $shop->id,
+        'shipper_id'      => $shipper->id,
+        'tracking'        => 'TRK123',
+    ]);
+
+    $shipment2 = Shipment::create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+        'shop_id'         => $shop->id,
+        'shipper_id'      => $shipper->id,
+        'tracking'        => 'TRK456',
+    ]);
+
+    $deliveryNote->shipments()->attach($shipment1, ['model_type' => $deliveryNote->getMorphClass()]);
+    $deliveryNote->shipments()->attach($shipment2, ['model_type' => $deliveryNote->getMorphClass()]);
+
+    // Create a shipment with 'na' tracking (should be ignored)
+    $shipmentNA = Shipment::create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+        'shop_id'         => $shop->id,
+        'tracking'        => 'na',
+    ]);
+    $deliveryNote->shipments()->attach($shipmentNA, ['model_type' => $deliveryNote->getMorphClass()]);
+
+    DeliveryNoteHydrateShipments::run($deliveryNote->id);
+
+    $deliveryNote->refresh();
+
+    expect($deliveryNote->tracking_number)->toBe('TRK123, TRK456')
+        ->and($deliveryNote->shipping_data)->toEqual([
+            ['shipping_id' => $shipment1->id, 'shipper_slug' => $shipper->slug, 'tracking_number' => 'TRK123'],
+            ['shipping_id' => $shipment2->id, 'shipper_slug' => $shipper->slug, 'tracking_number' => 'TRK456'],
+        ]);
+});
+
+it('nullifies delivery note tracking number when no shipments exist', function () {
+    loadDB();
+    Artisan::call('migrate');
+    $createShopResult = createShop();
+    $shop             = $createShopResult[2];
+    $warehouse        = createWarehouse();
+    $customer         = createCustomer($shop);
+    $product          = createProduct($shop)[1];
+    $order            = createOrder($customer, $product);
+
+    $arrayData = [
+        'reference'        => 'A123457',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $warehouse->id
+    ];
+
+    $deliveryNote = StoreDeliveryNote::make()->action($order, $arrayData);
+    $deliveryNote->update(['tracking_number' => 'OLD_TRK']);
+
+    DeliveryNoteHydrateShipments::run($deliveryNote->id);
+
+    $deliveryNote->refresh();
+
+    expect($deliveryNote->tracking_number)->toBeNull();
 });
