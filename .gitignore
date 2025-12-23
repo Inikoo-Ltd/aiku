@@ -107,7 +107,7 @@ isdoc-pdf
 rgb.icc
 /storage/app/sitemaps/
 /storage/app/data-feeds/**
-
+/storage/app/robots/*
 /slim_restore.sh
 /get_slim.sh
 /devops/haproxy/haproxy.cfg
