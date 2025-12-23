@@ -179,6 +179,10 @@ const onClickPick = () => {
         <template #cell(action)="{ item: deliveryNote }">
             <Button @click="() => isModalPick = deliveryNote" type="secondary" :label="trans('Pick')" size="xs" />
         </template>
+
+        <template #cell(delivery)="{ item: deliveryNote }">
+            {{ deliveryNote.shipping_data }}
+        </template>
     </Table>
 
     <Modal :isOpen="!!isModalPick" @close="isModalPick = null, isErrorPicker = null" width="w-full max-w-lg">
