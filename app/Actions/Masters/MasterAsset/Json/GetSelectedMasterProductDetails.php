@@ -7,26 +7,26 @@
  * copyright 2025
 */
 
-namespace App\Actions\Catalogue\Product\Json;
+namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
-use App\Models\Catalogue\Product;
+use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterBulkEditProductsResource;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetProductsBasedOnSavedCache extends GrpAction
+
+class GetSelectedMasterProductDetails extends GrpAction
 {
     use WithMastersAuthorisation;
 
     public function handle(String $cacheKey, Array $modelData)
     {
         // Remove soon, just temporary since Cache is not used yet. Data will be taken from cache later
-        $products = Product::whereIn('id', $modelData['data'])->get();
-        return MasterBulkEditProductsResource::collection($products)->toArray(request());
-        // return $products;
+        $masterProduct = MasterAsset::whereIn('id', $modelData['data'])->orderBy('created_at')->get();
+        return MasterBulkEditProductsResource::collection($masterProduct)->toArray(request());
     }
 
     // Remove soon, just temporary since Cache is not used yet

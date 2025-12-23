@@ -47,9 +47,9 @@ onMounted(async () => {
         isLoadingFetch.value = true
         const response = await axios.post(
             route(
-                'grp.json.cached.product_list',
+                'grp.masters.master_shops.show.bulk-edit.selected_list',
                 {
-                    cacheKey: 'zzz'
+                    masterShop: route().params.masterShop
                 }
             ),
             { 
@@ -158,26 +158,28 @@ const groupedColumnList = ref([
 
 const onSave = async () => {
     console.log('productsList.value', productsList.value)
-    // try {
-    //     const response = await axios.post(
-    //         route(
-    //             props.imagesUploadRoute.name,
-    //             props.imagesUploadRoute.parameters
-    //         ),
-    //         { data: productsList.value }
-    //     )
-    //     if (response.status !== 200) {
+    try {
+        const response = await axios.post(
+            route(
+                'grp.masters.master_shops.show.bulk-edit.update',
+                {
+                    masterShop: route().params.masterShop
+                }
+            ),
+            { data: productsList.value }
+        )
+        if (response.status !== 200) {
             
-    //     }
-    //     console.log('Response axios:', response.data)
-    // } catch (error: any) {
-    //     console.log('error axios', error)
-    //     notify({
-    //         title: trans("Something went wrong"),
-    //         text: error.message || trans("Please try again or contact administrator"),
-    //         type: 'error'
-    //     })
-    // }
+        }
+        console.log('Response axios:', response.data)
+    } catch (error: any) {
+        console.log('error axios', error)
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    }
 }
 </script>
 
@@ -291,7 +293,7 @@ const onSave = async () => {
                 <Column v-if="selectedColumns.includes('description')" field="description" header="Description" style="min-width: 20rem">
                     <template #body="slotProps">
                         <PureTextarea
-                            v-model="slotProps.data.text"
+                            v-model="slotProps.data.description"
                             inputId="currency-us"
                             fluid
                         />
