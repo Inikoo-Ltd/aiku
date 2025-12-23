@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, inject } from 'vue'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Button, Column, DataTable, Dialog, FileUpload, IconField, InputIcon, InputNumber, InputText, RadioButton, Rating, Select, Tag, Textarea, Toolbar } from 'primevue'
+import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabel, IconField, InputIcon, InputNumber, InputText, MultiSelect, RadioButton, Rating, Select, Tag, Textarea, Toolbar } from 'primevue'
 import axios from 'axios'
 import PureTextarea from '../Pure/PureTextarea.vue'
 import PureCheckbox from '../Pure/PureCheckbox.vue'
 import Image from '@/Components/Image.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSearch, faColumns } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Button from '../Elements/Buttons/Button.vue'
+library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
 // import { ProductService } from '@/service/ProductService'
 
@@ -106,6 +111,48 @@ const rowClass = (xxx: any) => {
         return []
     // }
 }
+
+
+// Section: multiselect columns selector
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'price', 'rrp', 'unit_price', 'unit_price', 'units', 'unit', 'gross_weight', 'family_id', ])
+const groupedColumnList = ref([
+    {
+        label: 'General',
+        items: [
+            { label: 'Name', value: 'name', disabled: true },
+            { label: 'Image', value: 'image' },
+            { label: 'Description', value: 'description' },
+            { label: 'Is For Sale?', value: 'is_for_sale' }
+        ]
+    },
+    {
+        label: 'Pricing',
+        items: [
+            { label: 'Price', value: 'price' },
+            { label: 'RRP', value: 'rrp' },
+        ]
+    },
+    {
+        label: 'Uniting',
+        items: [
+            { label: 'Unit Price', value: 'unit_price' },
+            { label: 'Units', value: 'units' },
+            { label: 'Unit', value: 'unit' }
+        ]
+    },
+    {
+        label: 'Shipping',
+        items: [
+            { label: 'Gross Weight', value: 'gross_weight' },
+        ]
+    },
+    {
+        label: 'Ancestor',
+        items: [
+            { label: 'Family', value: 'family_id' },
+        ]
+    }
+]);
 </script>
 
 
@@ -114,14 +161,14 @@ const rowClass = (xxx: any) => {
         <div class="card">
             <Toolbar class="mb-6">
                 <template #start>
-                    <Button label="Delete" icon="pi pi-trash" severity="danger" variant="outlined"
+                    <ButtonPrime label="Delete" icon="pi pi-trash" severity="danger" variant="outlined"
                         :disabled="!selectedProducts || !selectedProducts.length" />
                 </template>
 
                 <template #end>
                     <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" label="Import" customUpload
                         chooseLabel="Import" class="mr-2" auto :chooseButtonProps="{ severity: 'secondary' }" />
-                    <Button label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV($event)" />
+                    <ButtonPrime label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV($event)" />
                 </template>
             </Toolbar>
 
@@ -142,20 +189,44 @@ const rowClass = (xxx: any) => {
             >
                 <template #header>
                     <div class="flex flex-wrap gap-2 items-center justify-between">
-                        <h4 class="m-0">Manage Products</h4>
                         <IconField>
                             <InputIcon>
-                                <i class="pi pi-search" />
+                                <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
                             </InputIcon>
                             <InputText v-model="filters['global'].value" placeholder="Search..." />
                         </IconField>
+
+                        <div class="w-fit">
+                            <FloatLabel class="w-full md:w-52" variant="on">
+                                <MultiSelect
+                                    v-model="selectedColumns"
+                                    :options="groupedColumnList"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    optionDisabled="disabled"
+                                    filter
+                                    optionGroupLabel="label"
+                                    optionGroupChildren="items"
+                                    display="comma"
+                                    :maxSelectedLabels="2"
+                                    placeholder="Select Columns"
+                                >
+                                    <template #optiongroup="slotProps">
+                                        <div class="flex items-center">
+                                            <div>{{ slotProps.option.label }}</div>
+                                        </div>
+                                    </template>
+                                </MultiSelect>
+                                <label for="on_label">Selected columns</label>
+                            </FloatLabel>
+                        </div>
                     </div>
                 </template>
 
                 <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
 
                 <!-- Column: Name -->
-                <Column field="name" header="Name" frozen sortable style="min-width: 16rem" >
+                <Column v-if="selectedColumns.includes('name')" field="name" header="Name" frozen sortable style="min-width: 16rem" >
                     <template #body="slotProps">
                         <div class="text-xs italic opacity-70">
                             {{ slotProps.data.code }}
@@ -167,7 +238,7 @@ const rowClass = (xxx: any) => {
                 </Column>
 
                 <!-- Column: Image -->
-                <Column header="Image">
+                <Column v-if="selectedColumns.includes('image')" header="Image" xstyle="min-width: 10rem">
                     <template #body="slotProps">
                         <div class=" h-12 aspect-square overflow-hidden">
                             <Image
@@ -178,7 +249,7 @@ const rowClass = (xxx: any) => {
                     </template>
                 </Column>
                 <!-- Column: Description -->
-                <Column field="description" header="Description" style="min-width: 20rem">
+                <Column v-if="selectedColumns.includes('description')" field="description" header="Description" style="min-width: 20rem">
                     <template #body="slotProps">
                         <PureTextarea
                             v-model="slotProps.data.text"
@@ -189,7 +260,7 @@ const rowClass = (xxx: any) => {
                 </Column>
 
                 <!-- Column: Is For Sale -->
-                <Column field="is_for_sale" header="Is For Sale" style="white-space: nowrap">
+                <Column v-if="selectedColumns.includes('is_for_sale')" field="is_for_sale" header="Is For Sale" style="white-space: nowrap">
                     <template #body="slotProps">
                         <div class="flex justify-center">
                             <PureCheckbox
@@ -201,7 +272,7 @@ const rowClass = (xxx: any) => {
                 </Column>
 
                 <!-- Column: Price -->
-                <Column field="price" header="Price" sortable style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('price')" field="price" header="Price" sortable style="min-width: 8rem">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.price"
@@ -219,7 +290,7 @@ const rowClass = (xxx: any) => {
                 </Column>
                 
                 <!-- Column: RPP -->
-                <Column field="rrp" header="RRP" sortable style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.rrp"
@@ -237,7 +308,7 @@ const rowClass = (xxx: any) => {
                 </Column>
                 
                 <!-- Column: Unit price -->
-                <Column field="unit_price" header="Unit price" sortable style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('unit_price')" field="unit_price" header="Unit price" sortable style="min-width: 8rem">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.unit_price"
@@ -255,7 +326,7 @@ const rowClass = (xxx: any) => {
                 </Column>
 
                 <!-- Column: Gross Weight -->
-                <Column field="gross_weight" header="Gross Weight" sortable style="white-space: nowrap">
+                <Column v-if="selectedColumns.includes('gross_weight')" field="gross_weight" header="Gross Weight" sortable style="white-space: nowrap">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.gross_weight"
@@ -271,7 +342,7 @@ const rowClass = (xxx: any) => {
                 </Column>
 
                 <!-- Column: Units -->
-                <Column field="units" header="Units" style="min-width: 6rem">
+                <Column v-if="selectedColumns.includes('units')" field="units" header="Units" style="min-width: 6rem">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.units"
@@ -286,7 +357,7 @@ const rowClass = (xxx: any) => {
                 </Column>
 
                 <!-- Column: Unit -->
-                <Column field="unit" header="Unit" style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('unit')" field="unit" header="Unit" style="min-width: 8rem">
                     <template #body="slotProps">
                         <InputText
                             v-model="slotProps.data.unit"
@@ -301,7 +372,7 @@ const rowClass = (xxx: any) => {
                 
 
                 <!-- Column: Family -->
-                <Column field="family_id" header="Family" sortable style="min-width: 10rem">
+                <Column v-if="selectedColumns.includes('family_id')" field="family_id" header="Family" sortable style="min-width: 10rem">
                     <template #body="{ data }">
                         <!-- TODO: Need fix -->
                         <Select
