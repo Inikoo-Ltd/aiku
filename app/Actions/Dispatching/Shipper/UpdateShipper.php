@@ -77,6 +77,7 @@ class UpdateShipper extends OrgAction
             'website'      => ['sometimes', 'nullable', 'url'],
             'tracking_url' => ['sometimes', 'nullable', 'string', 'max:255'],
             'base_url'     => ['sometimes'],
+            'status'       => ['sometimes', 'required', 'boolean'],
         ];
 
         if (!$this->strict) {

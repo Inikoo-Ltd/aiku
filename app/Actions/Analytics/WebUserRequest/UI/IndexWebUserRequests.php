@@ -92,7 +92,7 @@ class IndexWebUserRequests extends OrgAction
             }
             $table
                 ->withGlobalSearch()
-                ->column(key: 'username', label: __('username'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'ip_address', label: __('ip address'), canBeHidden: false, sortable: true)
                 ->column(key: 'url', label: __('url'), canBeHidden: false)
                 ->column(key: 'user_agent', label: __('user agent'), canBeHidden: false)

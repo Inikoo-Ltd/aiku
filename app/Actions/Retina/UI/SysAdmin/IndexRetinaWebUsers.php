@@ -80,7 +80,7 @@ class IndexRetinaWebUsers extends RetinaAction
                 ->withModelOperations($modelOperations)
                 ->column(key: 'image', label: ['data' => ['fal', 'fa-user-circle'], 'type' => 'icon', 'tooltip' => __('avatar')], type: 'avatar')
                 ->column(key: 'status', label: ['data' => ['fal', 'fa-yin-yang'], 'type' => 'icon', 'tooltip' => __('status')], type: 'icon')
-                ->column(key: 'username', label: __('username'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('contact name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'last_location', label: __('location'), canBeHidden: false)
                 ->column(key: 'last_device', label: __('device'), canBeHidden: false)

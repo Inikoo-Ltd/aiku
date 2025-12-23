@@ -50,7 +50,7 @@ class ShowOrganisationDashboard extends OrgAction
         }
 
         $customRangeData = $this->setupCustomRange($userSettings, $organisation);
-        $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $saved_interval  = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
         $tabsBox = $this->getTabsBox($organisation);
 
@@ -59,9 +59,9 @@ class ShowOrganisationDashboard extends OrgAction
                 [
                     'id'        => 'organisation_dashboard_tab',
                     'intervals' => [
-                        'options'           => $this->dashboardIntervalOption(),
-                        'value'             => $saved_interval,
-                        'range_interval'    => DashboardIntervalFilters::run($saved_interval, $userSettings)
+                        'options'        => $this->dashboardIntervalOption(),
+                        'value'          => $saved_interval,
+                        'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings)
                     ],
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
@@ -78,7 +78,7 @@ class ShowOrganisationDashboard extends OrgAction
                             'charts'      => []
                         ],
                     ],
-                    'tabs_box' => [
+                    'tabs_box'  => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
                     ],
@@ -89,6 +89,7 @@ class ShowOrganisationDashboard extends OrgAction
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
             [
+                'title'       => __('Dashboard').' '.$organisation->name,
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
                 'dashboard'   => $dashboard
             ]

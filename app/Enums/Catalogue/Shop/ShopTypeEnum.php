@@ -18,8 +18,7 @@ enum ShopTypeEnum: string
     case B2C = 'b2c';
     case FULFILMENT = 'fulfilment';
     case DROPSHIPPING = 'dropshipping';
-    case FAIRE = 'faire';
-    case WIX = 'wix';
+    case EXTERNAL = 'external';
 
     public static function labels(): array
     {
@@ -28,8 +27,7 @@ enum ShopTypeEnum: string
             'b2c'          => __('B2C'),
             'fulfilment'   => __('Fulfilment'),
             'dropshipping' => __('Dropshipping'),
-            'faire'        => 'Faire',
-            'wix'          => 'Wix'
+            'external'     => __('External'),
         ];
     }
 }
