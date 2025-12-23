@@ -10,27 +10,61 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterVariant;
-use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
-use Closure;
 
 class ShowMasterVariant extends OrgAction
 {
-
     private MasterProductCategory $parent;
 
-    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request)
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterFamily;
-        $this->initialisationFromGroup($masterFamily->group, $request);
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterVariant);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterFamily;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterVariant);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterFamily;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterVariant);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterFamily;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($masterVariant);
+    }
+
+    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterFamily;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterVariant);
     }
@@ -41,7 +75,7 @@ class ShowMasterVariant extends OrgAction
     public function handle(MasterVariant $masterVariant)
     {
         $masterProductInVariant = MasterAsset::whereIn('id', data_get($masterVariant->data, 'products.*.product.id'))->get();
-        dd($masterVariant, $productInVariant);
+        dd($masterVariant, $masterProductInVariant);
     }
 
     /**

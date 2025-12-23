@@ -27,7 +27,7 @@ const layout = inject('layout', layoutStructure)
 console.log(route().params);
 const getMasterVariantRoute = (item: any) => {
   if(route().current() == 'grp.masters.master_shops.show.master_families.show'){
-    return route('grp.masters.master_shops.show.master_families.show.variant', {
+    return route('grp.masters.master_shops.show.master_families.master_variants.show', {
       masterShop: route().params.masterShop,
       masterFamily: route().params.masterFamily,
       masterVariant: item.slug,

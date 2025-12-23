@@ -135,4 +135,8 @@ class Shipper extends Model implements Auditable
         return $this->hasOne(ShipperStats::class);
     }
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\Dispatch\ShipperFactory::new();
+    }
 }

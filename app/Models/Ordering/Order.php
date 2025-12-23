@@ -143,6 +143,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_shipping_tbc
  * @property string|null $shipping_tbc_amount
  * @property string|null $external_id
+ * @property string|null $tracking_number for search purposes
+ * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -196,6 +198,7 @@ class Order extends Model implements HasMedia, Auditable
         'payment_data'                  => 'array',
         'post_submit_modification_data' => 'array',
         'offer_meters'                  => 'array',
+        'shipping_data'                 => 'array',
 
 
         'date'                   => 'datetime',
@@ -243,7 +246,8 @@ class Order extends Model implements HasMedia, Auditable
         'data'                          => '{}',
         'payment_data'                  => '{}',
         'post_submit_modification_data' => '{}',
-        'offer_meters'                  => '{}'
+        'offer_meters'                  => '{}',
+        'shipping_data'                 => '{}',
     ];
 
     protected $guarded = [];
