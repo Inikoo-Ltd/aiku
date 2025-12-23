@@ -15,11 +15,14 @@ use App\Actions\Billables\ShippingZone\HydrateShippingZones;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
+use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
@@ -79,6 +82,8 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Shipment;
+use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
@@ -117,7 +122,7 @@ beforeEach(function () {
 
     $this->customer = createCustomer($this->shop);
 
-    createWarehouse();
+    $this->warehouse = createWarehouse();
 
     Config::set(
         'inertia.testing.page_paths',
@@ -967,7 +972,7 @@ test('Pay order with accounts payment account creates credit transaction', funct
     $payment->refresh();
 
     expect($payment->creditTransaction)->not->toBeNull()
-        ->and((float) $payment->creditTransaction->amount)->toBe((float) (-$amount))
+        ->and((float) $payment->creditTransaction->amount)->toBe(-$amount)
         ->and($payment->creditTransaction->payment_id)->toBe($payment->id);
 });
 
@@ -1158,4 +1163,97 @@ test('order is_shipping_tbc false when no shipping zone present', function () {
     UpdateOrderIsShippingTBC::run($order);
 
     expect($order->fresh()->is_shipping_tbc)->toBeFalse();
+});
+
+it('hydrates order tracking numbers from multiple delivery notes and shipments', function () {
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    // Create the first delivery note
+    $dn1 = StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN1',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    // Create a second delivery note
+    $dn2 = StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN2',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    // Create a shipper
+    $shipper = Shipper::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->organisation->group_id,
+        'code' => 'SHIPPER1',
+    ]);
+
+    // Create shipments for DN1
+    $shipment1 = Shipment::factory()->create([
+        'tracking' => 'TRACK1',
+        'group_id' => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shipper_id' => $shipper->id,
+    ]);
+    $dn1->shipments()->attach($shipment1);
+
+    $shipment2 = Shipment::factory()->create([
+        'tracking' => 'TRACK2',
+        'group_id' => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shipper_id' => $shipper->id,
+    ]);
+    $dn1->shipments()->attach($shipment2);
+
+    // Create a shipment for DN2
+    $shipment3 = Shipment::factory()->create([
+        'tracking' => 'TRACK3',
+        'group_id' => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shipper_id' => $shipper->id,
+    ]);
+    $dn2->shipments()->attach($shipment3);
+
+    // Create a shipment with 'na' tracking for DN2 (should be ignored)
+    $shipmentNA = Shipment::factory()->create([
+        'tracking' => 'na',
+        'group_id' => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+    ]);
+    $dn2->shipments()->attach($shipmentNA);
+
+    // Run hydrator
+    OrderHydrateShipments::run($order->id);
+
+    $order->refresh();
+
+    expect($order->tracking_number)->toBe('TRACK1, TRACK2, TRACK3')
+        ->and($order->shipping_data)->toEqual([
+            ['delivery_note_id' => $dn1->id, 'delivery_note_reference' => 'DN1', 'shipping_id' => $shipment1->id, 'shipper_slug' => $shipper->slug, 'tracking_number' => 'TRACK1'],
+            ['delivery_note_id' => $dn1->id, 'delivery_note_reference' => 'DN1', 'shipping_id' => $shipment2->id, 'shipper_slug' => $shipper->slug, 'tracking_number' => 'TRACK2'],
+            ['delivery_note_id' => $dn2->id, 'delivery_note_reference' => 'DN2', 'shipping_id' => $shipment3->id, 'shipper_slug' => $shipper->slug, 'tracking_number' => 'TRACK3'],
+        ]);
+});
+
+it('nullifies order tracking number when no shipments exist', function () {
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $order->update(['tracking_number' => 'OLD_TRACKING']);
+    $order->deliveryNotes->each->delete();
+
+    OrderHydrateShipments::run($order->id);
+
+    $order->refresh();
+
+    expect($order->tracking_number)->toBeNull();
 });
