@@ -31,13 +31,14 @@ class OrderHydrateShipments implements ShouldBeUnique
             return null;
         }
 
-        if($order->collection_address_id){
+        if ($order->collection_address_id) {
             $order->update([
                 'tracking_number' => null,
                 'shipping_data'   => [
-                    'is_collection'=>true
+                    'is_collection' => true
                 ]
             ]);
+
             return $order;
         }
 
@@ -53,9 +54,9 @@ class OrderHydrateShipments implements ShouldBeUnique
                 });
             })
             ->filter(
-                fn ($shipment) => $shipment->tracking
-                && strtolower($shipment->tracking) !== 'na'
-                && $shipment->tracking !== '.'
+                fn($shipment) => $shipment->tracking
+                    && strtolower($shipment->tracking) !== 'na'
+                    && $shipment->tracking !== '.'
             );
 
         $trackingNumbers = $shipments->pluck('tracking')
@@ -64,11 +65,12 @@ class OrderHydrateShipments implements ShouldBeUnique
             ->sort()
             ->implode(', ');
 
-        $shippingData = $shipments->map(fn ($shipment) => [
+        $shippingData = $shipments->map(fn($shipment) => [
             'delivery_note_id'        => $shipment->delivery_note_id,
             'delivery_note_reference' => $shipment->delivery_note_reference,
             'shipping_id'             => $shipment->id,
             'shipper_slug'            => $shipment->shipper?->slug,
+            'shipper_label'           => $shipment->trade_as ?: $shipment->shipper?->code,
             'tracking_number'         => $shipment->tracking,
             'trackings'               => $shipment->trackings,
             'tracking_urls'           => $shipment->tracking_urls,

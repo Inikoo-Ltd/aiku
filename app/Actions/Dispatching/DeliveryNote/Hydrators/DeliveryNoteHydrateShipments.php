@@ -31,25 +31,25 @@ class DeliveryNoteHydrateShipments implements ShouldBeUnique
             return;
         }
 
-        if($deliveryNote->collection_address_id){
+        if ($deliveryNote->collection_address_id) {
             $deliveryNote->update([
                 'tracking_number' => null,
                 'shipping_data'   => [
-                    'is_collection'=>true
+                    'is_collection' => true
                 ]
             ]);
+
             return;
         }
-
 
 
         $shipments = $deliveryNote->shipments()
             ->with('shipper')
             ->get()
             ->filter(
-                fn ($shipment) => $shipment->tracking
-                && strtolower($shipment->tracking) !== 'na'
-                && $shipment->tracking !== '.'
+                fn($shipment) => $shipment->tracking
+                    && strtolower($shipment->tracking) !== 'na'
+                    && $shipment->tracking !== '.'
             );
 
         $trackingNumbers = $shipments->pluck('tracking')
@@ -58,9 +58,10 @@ class DeliveryNoteHydrateShipments implements ShouldBeUnique
             ->sort()
             ->implode(', ');
 
-        $shippingData = $shipments->map(fn ($shipment) => [
+        $shippingData = $shipments->map(fn($shipment) => [
             'shipping_id'     => $shipment->id,
             'shipper_slug'    => $shipment->shipper?->slug,
+            'shipper_label'   => $shipment->trade_as ?: $shipment->shipper?->code,
             'tracking_number' => $shipment->tracking,
             'trackings'       => $shipment->trackings,
             'tracking_urls'   => $shipment->tracking_urls,

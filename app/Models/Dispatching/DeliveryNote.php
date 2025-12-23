@@ -140,7 +140,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool|null $has_insurance
  * @property ShopTypeEnum|null $shop_type
  * @property string|null $tracking_number for search purposes
- * @property string $shipping_data for UI purposes
+ * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

@@ -54,6 +54,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property array<array-key, mixed>|null $label_urls
  * @property string|null $label
  * @property ShipmentLabelTypeEnum $label_type
+ * @property string|null $trade_as
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
  * @property-read Group $group
@@ -62,6 +63,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Dispatching\Shipper|null $shipper
  * @property-read Shop|null $shop
  * @property-read UniversalSearch|null $universalSearch
+ * @method static \Database\Factories\Dispatch\ShipmentFactory factory($count = null, $state = [])
  * @method static Builder<static>|Shipment newModelQuery()
  * @method static Builder<static>|Shipment newQuery()
  * @method static Builder<static>|Shipment onlyTrashed()

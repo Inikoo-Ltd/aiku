@@ -41,6 +41,7 @@ class StoreShipment extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
+        data_set($modelData, 'trade_as', $shipper->trade_as);
 
         $modelData = array_merge(
             $modelData,
