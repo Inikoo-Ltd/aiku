@@ -12,7 +12,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
-use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -32,10 +31,10 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', 'ProductCategory');
                 })
-                ->select([ 'product_categories.code', 'product_categories.web_images', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->select(['product_categories.code', 'product_categories.web_images', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where(function ($query) use ($webpage) {
-                    if($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT){
+                    if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                         $query->where('product_categories.department_id', $webpage->model_id)
                             ->orWhereIn('product_categories.id', function ($sub) use ($webpage) {
                                 $sub->select('chm.model_id')
@@ -47,7 +46,7 @@ class GetWebBlockFamilies
                                             ->where('mhc.model_id', $webpage->model_id);
                                     });
                             });
-                    }else{
+                    } else {
                         $query->where('product_categories.sub_department_id', $webpage->model_id);
                     }
                 })
@@ -101,7 +100,6 @@ class GetWebBlockFamilies
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
-    /*     data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request())); */
 
         return $webBlock;
     }
