@@ -283,6 +283,7 @@ const toggleDescription = (event) => {
                                         display="comma"
                                         :maxSelectedLabels="2"
                                         placeholder="Select Columns"
+                                        selectedItemsLabel="{0} columns"
                                     >
                                         <template #optiongroup="slotProps">
                                             <div class="flex items-center">
@@ -290,7 +291,7 @@ const toggleDescription = (event) => {
                                             </div>
                                         </template>
                                     </MultiSelect>
-                                    <label for="on_label">Selected columns</label>
+                                    <label for="on_label">{{ trans("Selected columns") }}</label>
                                 </FloatLabel>
                             </div>
 
