@@ -70,9 +70,10 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
     protected function generatePeriods(Carbon $from, Carbon $to, TimeSeriesFrequencyEnum $frequency): array
     {
         $periods = [];
-        $current = $from->copy();
+        $current = $from->copy()->setTimezone('UTC');
+        $toUtc = $to->copy()->setTimezone('UTC');
 
-        while ($current->lt($to)) {
+        while ($current->lt($toUtc)) {
             $periodStart = $current->copy();
             $periodEnd = match ($frequency) {
                 TimeSeriesFrequencyEnum::DAILY => $current->copy()->endOfDay(),
@@ -82,8 +83,8 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
                 TimeSeriesFrequencyEnum::YEARLY => $current->copy()->endOfYear(),
             };
 
-            if ($periodEnd->gt($to)) {
-                $periodEnd = $to->copy();
+            if ($periodEnd->gt($toUtc)) {
+                $periodEnd = $toUtc->copy();
             }
 
             $periods[] = [

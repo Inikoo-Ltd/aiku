@@ -54,8 +54,8 @@ class SeedProductCategoryTimeSeries
             return;
         }
 
-        $from = Carbon::now()->subYear()->startOfYear();
-        $to = Carbon::now()->endOfDay();
+        $from = Carbon::now('UTC')->subYear()->startOfYear();
+        $to = Carbon::now('UTC')->endOfDay();
 
         ProductCategoryHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to);
     }
