@@ -145,7 +145,7 @@ const groupedColumnList = ref([
     {
         label: 'Uniting',
         items: [
-            { label: 'Units', value: 'units' },
+            // { label: 'Units', value: 'units' },
             { label: 'Unit', value: 'unit' }
         ]
     },
@@ -349,8 +349,11 @@ const toggleDescription = (event) => {
                     <template #body="slotProps">
                         <div class="flex justify-center">
                             <PureCheckbox
-                                v-model="slotProps.data.is_for_sale"
+                                :modelValue="slotProps.data?.not_for_sale_from_trade_unit ? false : slotProps.data.is_for_sale"
+                                @update:model-value="(e) => slotProps.data?.not_for_sale_from_trade_unit ? false : slotProps.data.is_for_sale = e"
                                 fluid
+                                :disabled="slotProps.data?.not_for_sale_from_trade_unit"
+                                v-tooltip="slotProps.data?.not_for_sale_from_trade_unit ? 'Not editable, not for sale from trade unit' : ''"
                             />
                         </div>
                     </template>
@@ -457,7 +460,7 @@ const toggleDescription = (event) => {
                 
 
                 <!-- Column: Family -->
-                <Column v-if="selectedColumns.includes('family_id')" field="family_id" header="Family" sortable style="min-width: 10rem">
+                <Column v-if="selectedColumns.includes('family_id')" field="family_id" header="Family" style="min-width: 10rem">
                     <template #body="{ data }">
                         <div class="w-full md:w-64">
                             <PureMultiselectInfiniteScroll
