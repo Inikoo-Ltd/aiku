@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, inject, watch } from 'vue'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabel, IconField, InputIcon, InputNumber, InputText, MultiSelect, Popover, RadioButton, Rating, Select, Tag, Textarea, Toolbar } from 'primevue'
+import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabel, IconField, InputIcon, InputNumber, InputText, MultiSelect, Popover, RadioButton, Rating, Select, Skeleton, Tag, Textarea, Toolbar } from 'primevue'
 import axios from 'axios'
 
 import PureCheckbox from '../Pure/PureCheckbox.vue'
@@ -17,6 +17,9 @@ import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
 import { set, get } from 'lodash-es'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { router } from '@inertiajs/vue3'
+import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -26,7 +29,8 @@ library.add(faSearch, faColumns)
 //     ProductService.getProducts().then((data) => (products.value = data))
 // })
 
-// const toast = useToast()
+const layout = inject('layout', layoutStructure)
+
 const dt = ref()
 const selectedProducts = ref()
 const filters = ref({
@@ -184,6 +188,7 @@ const onSave = async () => {
         if (response.status !== 200) {
             
         }
+
         console.log('Response axios:', response.data)
 
         notify({
@@ -191,6 +196,14 @@ const onSave = async () => {
             text: trans("Changes may need some seconds to update."),
             type: "success",
         })
+        
+        if (layout.currentQuery?.from) {
+            setTimeout(() => {
+                router.visit(layout.currentQuery?.from, {
+                    
+                })
+            }, 1000)
+        }
     } catch (error: any) {
         console.log('error axios', error)
         notify({
@@ -246,7 +259,14 @@ const toggleDescription = (event) => {
             >
                 <template #header>
                     <div class="flex flex-wrap gap-2 items-center justify-between">
-                        <div class="">
+                        <div class="flex gap-x-2">
+                            <ButtonWithLink
+                                v-if="layout.currentQuery?.from"
+                                :url="layout.currentQuery?.from"
+                                label="Go back"
+                                type="cancel"
+                                size="lg"
+                            />
                             <IconField>
                                 <InputIcon>
                                     <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />

@@ -56,14 +56,20 @@ const compSelectedProductsId = computed(() =>
 console.log(compSelectedProductsId.value)
 
 
+const isLoadingVisit = ref(false)
 const onVisit = () => {
-    const aaa = Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key] === true)
-    
-    console.log('onVisit', aaa)
     router.visit(route('grp.masters.master_shops.show.bulk-edit', {
         masterShop: route().params['masterShop'],
-        id: aaa }
-    ))
+        id: compSelectedProductsId.value,
+        from: window.location.href
+    }), {
+        onStart: () => {
+            isLoadingVisit.value = true
+        },
+        onFinish: () => {
+            isLoadingVisit.value = false
+        },
+    })
 }
 </script>
 
@@ -84,8 +90,11 @@ const onVisit = () => {
         <template #other>
             <Button
                 @click="() => onVisit()"
-                label="visit"
-
+                :label="trans('Bulk edit products') + ` (${compSelectedProductsId?.length})`"
+                :disabled="!compSelectedProductsId.length"
+                type="secondary"
+                icon="fal fa-pencil"
+                :loading="isLoadingVisit"
             />
         </template>
     </PageHeading>
