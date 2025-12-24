@@ -79,26 +79,29 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
             $processedCount = 0;
             $productData = [];
             $lastCustomerId = null;
+            $lastCustomer = null;
             $deleteBackInStockReminderIds = [];
             foreach ($baseQuery->cursor() as $customer) {
                 $processedCount++;
 
                 if ($lastCustomerId === null) {
                     $lastCustomerId = $customer->id;
+                    $lastCustomer = $customer;
                 }
 
 
                 // running code for sending email
                 if ($lastCustomerId !== $customer->id) {
-                    $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
+                    $bulkRun = $this->generateEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
                         'products' => $this->generateProductLinks($productData),
                     ];
-                    SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
+                    SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
 
                     $LastBulkRun = $bulkRun;
 
                     $lastCustomerId = $customer->id;
+                    $lastCustomer = $customer;
                     $productData = []; // Reset for new customer
 
                     // Update last sent time for this outbox
@@ -121,15 +124,13 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
                     'canonical_url' => $canonicalUrl,
                 ];
 
-                // $updateLastOutBoxSent = $currentDateTime;
                 if ($processedCount === $totalCustomers) {
-
                     // Process the last batch
-                    $bulkRun = $this->generateEmailBulkRuns($customer, $outbox->code, $currentDateTime->toDateTimeString());
+                    $bulkRun = $this->generateEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
                         'products' => $this->generateProductLinks($productData),
                     ];
-                    SendBackToStockToCustomerEmail::dispatch($customer, $outbox->code, $additionalData, $bulkRun);
+                    SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
                     // reset product data
                     $productData = [];
                     $LastBulkRun = $bulkRun;

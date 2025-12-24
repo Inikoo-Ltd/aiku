@@ -20,7 +20,6 @@ class BulkDeleteBackInStockReminder
 
     public function handle(array $backInStockReminderIds): void
     {
-        \Log::info($backInStockReminderIds);
         BulkUpdateBackInStockReminderSnapshot::run($backInStockReminderIds);
 
         BackInStockReminder::whereIn('id', $backInStockReminderIds)->delete();
