@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsEsShipping;
@@ -15,12 +16,14 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping;
 use App\Actions\Dispatching\Shipment\Hydrators\ShipmentHydrateUniversalSearch;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\ValidationException;
@@ -33,11 +36,12 @@ class StoreShipment extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData, bool $cascade = true): Shipment
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
+        data_set($modelData, 'trade_as', $shipper->trade_as);
 
         $modelData = array_merge(
             $modelData,
@@ -70,9 +74,6 @@ class StoreShipment extends OrgAction
             if ($shipmentData['status'] == 'success') {
                 $modelData = array_merge($modelData, $shipmentData['modelData']);
             } else {
-
-
-
                 throw ValidationException::withMessages(
                     $shipmentData['errorData']
                 );
@@ -85,13 +86,19 @@ class StoreShipment extends OrgAction
         }
 
 
-
         /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);
         $shipment->refresh();
         $parent->shipments()->attach($shipment->id);
 
         ShipmentHydrateUniversalSearch::dispatch($shipment);
+
+        if ($parent instanceof DeliveryNote) {
+            DeliveryNoteHydrateShipments::dispatch($parent->id);
+            foreach (DB::table('delivery_note_order')->select('order_id')->where('delivery_note_id', $parent->id)->get() as $orderData) {
+                OrderHydrateShipments::dispatch($orderData->order_id);
+            }
+        }
 
         return $shipment;
     }

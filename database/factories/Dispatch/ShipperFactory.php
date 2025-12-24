@@ -8,10 +8,13 @@
 
 namespace Database\Factories\Dispatch;
 
+use App\Models\Dispatching\Shipper;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ShipperFactory extends Factory
 {
+    protected $model = Shipper::class;
+
     public function definition(): array
     {
         return [

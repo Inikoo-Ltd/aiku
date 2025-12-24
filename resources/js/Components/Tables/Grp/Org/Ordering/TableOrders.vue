@@ -5,193 +5,249 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
-import { Order } from "@/types/order";
-import type { Links, Meta } from "@/types/Table";
-import { useFormatTime } from "@/Composables/useFormatTime";
-import Icon from "@/Components/Icon.vue";
-import { useLocaleStore } from "@/Stores/locale";
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { Order } from "@/types/order"
+import type { Links, Meta } from "@/types/Table"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import Icon from "@/Components/Icon.vue"
+import { useLocaleStore } from "@/Stores/locale"
 
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle } from "@fal";
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle } from "@fal"
 import { faShieldAlt, faStar } from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { RouteParams } from "@/types/route-params";
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import NotesDisplay from "@/Components/NotesDisplay.vue";
+import NotesDisplay from "@/Components/NotesDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
-library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle);
+library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
 
 defineProps<{
-  data: {
-    data: {}[]
-    links: Links
-    meta: Meta
-  },
-  tab?: string
-}>();
+    data: {
+        data: {}[]
+        links: Links
+        meta: Meta
+    },
+    tab?: string
+}>()
 
-const locale = useLocaleStore();
+const locale = useLocaleStore()
 
 function orderRoute(order: Order) {
-  switch (route().current()) {
-    case 'grp.org.shops.show.ordering.backlog':
-    case "grp.org.shops.show.ordering.orders.index":
-      return route(
-        "grp.org.shops.show.ordering.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug]);
+    switch (route().current()) {
+        case "grp.org.shops.show.ordering.backlog":
+        case "grp.org.shops.show.ordering.orders.index":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
 
-    case 'grp.org.overview.ordering.backlog':
-    case 'grp.overview.ordering.backlog':
-      return route(
-        "grp.org.shops.show.ordering.orders.show",
-        [order.organisation_slug, order.shop_slug, order.slug]);
+        case "grp.org.overview.ordering.backlog":
+        case "grp.overview.ordering.backlog":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [order.organisation_slug, order.shop_slug, order.slug])
 
-    case "grp.org.shops.show.crm.show.orders.index":
-      return route(
-        "grp.org.shops.show.crm.show.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, order.slug]);
-    case "grp.org.overview.orders_in_basket.index":
-    case "grp.overview.ordering.orders_in_basket.index":
-      return route(
-        "grp.org.shops.show.ordering.orders.show",
-        [order.organisation_slug, order.shop_slug, order.slug]);
-    case "grp.org.shops.show.crm.customers.show.orders.index":
-      return route(
-        "grp.org.shops.show.crm.customers.show.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, order.slug]);
-    case "grp.org.shops.show.crm.customers.show.customer_clients.orders.index":
-      return route(
-        "grp.org.shops.show.crm.customers.show.customer_clients.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerClient, order.slug]);
-    case "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index":
-      return route(
-        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show",
-        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerSalesChannel, (route().params as RouteParams).customerClient, order.slug]);
-    default:
-      return '';
-  }
+        case "grp.org.shops.show.crm.show.orders.index":
+            return route(
+                "grp.org.shops.show.crm.show.orders.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, order.slug])
+        case "grp.org.overview.orders_in_basket.index":
+        case "grp.overview.ordering.orders_in_basket.index":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [order.organisation_slug, order.shop_slug, order.slug])
+        case "grp.org.shops.show.crm.customers.show.orders.index":
+            return route(
+                "grp.org.shops.show.crm.customers.show.orders.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, order.slug])
+        case "grp.org.shops.show.crm.customers.show.customer_clients.orders.index":
+            return route(
+                "grp.org.shops.show.crm.customers.show.customer_clients.orders.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerClient, order.slug])
+        case "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index":
+            return route(
+                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerSalesChannel, (route().params as RouteParams).customerClient, order.slug])
+        default:
+            return ""
+    }
 }
 
 function shopRoute(order: Order) {
-  return route(
-    "grp.org.shops.show.ordering.backlog",
-    [order.organisation_slug, order.shop_slug]);
+    return route(
+        "grp.org.shops.show.ordering.backlog",
+        [order.organisation_slug, order.shop_slug])
 }
 
 function organisationRoute(order: Order) {
-  return route(
-    "grp.org.overview.orders_in_basket.index",
-    [order.organisation_slug]);
+    return route(
+        "grp.org.overview.orders_in_basket.index",
+        [order.organisation_slug])
 }
 
 
 function customerRoute(order: Order) {
-  let routeCurr = route().current();
-  switch (routeCurr) {
-    case "grp.overview.ordering.orders.index":
-    case "grp.org.overview.orders_in_basket.index":
-    case "grp.org.overview.orders.index":
-    case "grp.overview.ordering.orders_in_basket.index":
-    case "grp.org.overview.ordering.backlog":
-    case "grp.overview.ordering.backlog":
-      return route(
-        "grp.org.shops.show.crm.customers.show",
-        [order.organisation_slug, order.shop_slug, order.customer_slug]
-      );
-    default:
-      return route(
-        "grp.org.shops.show.crm.customers.show",
-        [
-          (route().params as RouteParams).organisation,
-          (route().params as RouteParams).shop,
-          order.customer_slug
-        ]
-      );
-  }
+    let routeCurr = route().current()
+    switch (routeCurr) {
+        case "grp.overview.ordering.orders.index":
+        case "grp.org.overview.orders_in_basket.index":
+        case "grp.org.overview.orders.index":
+        case "grp.overview.ordering.orders_in_basket.index":
+        case "grp.org.overview.ordering.backlog":
+        case "grp.overview.ordering.backlog":
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [order.organisation_slug, order.shop_slug, order.customer_slug]
+            )
+        default:
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    order.customer_slug
+                ]
+            )
+    }
 }
 
+const generateRouteDeliveryNote = (id: string) => {
+    if (!id) return ''
+
+    return route('grp.helpers.redirect_delivery_notes', {
+        deliveryNote: id
+    })
+}
 
 </script>
 
 <template>
-  <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5">
 
-    <template #cell(organisation_code)="{ item: order }">
-      <Link :href="organisationRoute(order)" class="secondaryLink">
-      {{ order["organisation_code"] }}
-      </Link>
-    </template>
+        <template #cell(organisation_code)="{ item: order }">
+            <Link :href="organisationRoute(order)" class="secondaryLink">
+                {{ order["organisation_code"] }}
+            </Link>
+        </template>
 
-    <template #cell(shop_code)="{ item: order }">
-      <Link :href="shopRoute(order)" class="secondaryLink">
-      {{ order["shop_code"] }}
-      </Link>
-    </template>
+        <template #cell(shop_code)="{ item: order }">
+            <Link :href="shopRoute(order)" class="secondaryLink">
+                {{ order["shop_code"] }}
+            </Link>
+        </template>
 
-    <template #cell(state)="{ item: order }">
-      <Icon :data="order.state_icon" />
-    </template>
+        <template #cell(state)="{ item: order }">
+            <Icon :data="order.state_icon" />
+        </template>
 
 
-    <template #cell(pay_status)="{ item: order }">
+        <template #cell(pay_status)="{ item: order }">
       <span v-if="order.pay_status == 'waiting'" class="text-blue-400">
         {{ order["pay_status"] }}
       </span>
-      <span v-else-if="order.pay_status == 'success'" class="text-green-500">
+            <span v-else-if="order.pay_status == 'success'" class="text-green-500">
         {{ order["pay_status"] }}
       </span>
-      <span v-else-if="order.pay_status == 'fail'" class="text-red-500">
+            <span v-else-if="order.pay_status == 'fail'" class="text-red-500">
         {{ order["pay_status"] }}
       </span>
-      <span v-else>
+            <span v-else>
         {{ order["pay_status"] }}
       </span>
-    </template>
+        </template>
 
-    <template #cell(reference)="{ item: order }">
-      <div class="flex gap-2 flex-wrap items-center">
-        <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
-        {{ order["reference"] }}
-        </Link>
+        <template #cell(reference)="{ item: order }">
+            <div class="flex gap-2 flex-wrap items-center">
+                <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
+                    {{ order["reference"] }}
+                </Link>
 
-        <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
-          class="text-yellow-500" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
-          class="text-yellow-500" fixed-width aria-hidden="true" />
-        <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
-          class="text-yellow-500" fixed-width aria-hidden="true" /> -->
-        <NotesDisplay :item="order" reference-field="reference" />
-        
-        <a v-if="JSON.parse(order.tracking_urls || '{}')?.[0]"
-            :href="JSON.parse(order.tracking_urls || '{}')[0]"
-            class="underline whitespace-nowrap"
-            target="_blank"
-        >
-            <Button size="xxs" :label="trans('Open tracking')" type="tertiary" iconRight="fal fa-external-link-alt" />
-        </a>
-      </div>
+                <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
+                                 class="text-yellow-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
+                                 class="text-yellow-500" fixed-width aria-hidden="true" />
+                <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
+                  class="text-yellow-500" fixed-width aria-hidden="true" /> -->
+                <NotesDisplay :item="order" reference-field="reference" />
 
-
-    </template>
-
-    <template #cell(customer_name)="{ item: order }">
-      <Link v-if="order.customer_slug" :href="customerRoute(order)" class="secondaryLink">
-      {{ order["customer_name"] }}
-      </Link>
-        <div v-else>
-            {{ order["customer_name"] }}
-        </div>
-    </template>
+                <a v-if="JSON.parse(order.tracking_urls || '{}')?.[0]"
+                   :href="JSON.parse(order.tracking_urls || '{}')[0]"
+                   class="underline whitespace-nowrap"
+                   target="_blank"
+                >
+                    <Button size="xxs" :label="trans('Open tracking')" type="tertiary" iconRight="fal fa-external-link-alt" />
+                </a>
+            </div>
 
 
-    <template #cell(date)="{ item: order }">
-      <div class="text-right">
-        {{ useFormatTime(order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
-      </div>
-    </template>
+        </template>
 
-  </Table>
+        <template #cell(customer_name)="{ item: order }">
+            <Link v-if="order.customer_slug" :href="customerRoute(order)" class="secondaryLink">
+                {{ order["customer_name"] }}
+            </Link>
+            <div v-else>
+                {{ order["customer_name"] }}
+            </div>
+        </template>
+
+
+        <template #cell(date)="{ item: order }">
+            <div class="text-right">
+                {{ useFormatTime(order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+            </div>
+        </template>
+
+        <template #cell(delivery)="{ item: order }">
+            
+            <div v-if="order.state === 'cancelled'">
+                
+            </div>
+            <div v-else-if="order.shipping_data?.is_collection && order.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
+                {{ trans("Collected") }}
+                <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
+            </div>
+            <div v-else-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
+                {{ trans("For Collection") }}
+            </div>
+            
+            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 group pr-2 py-1.5">
+                <div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
+                    <!-- Delivery Note -->
+                    <template v-if="order.shipping_data?.[0].delivery_note_reference">
+                        <Link
+                            :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
+                            class="secondaryLink"
+                            v-tooltip="trans('Delivery Note') + ': ' + order.shipping_data?.[0].delivery_note_reference"
+                        >
+                            <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
+                        </Link>
+                    </template>
+                    
+                    <template v-if="order.shipping_data?.[0].trackings?.[0]">
+                        <span class="opacity-70">|</span> {{ order.shipping_data?.[0].shipper_slug }}:
+                        <a v-if="order.shipping_data?.[0].tracking_urls.length"
+                            :href="order.shipping_data?.[0].tracking_urls[0]"
+                            class="underline"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                            <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                        </a>
+                        
+                        <span v-else>
+                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                        </span>
+                    </template>
+                </div>
+            </div>
+            <div v-else>
+
+            </div>
+        </template>
+
+    </Table>
 </template>

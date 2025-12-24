@@ -110,10 +110,14 @@ const baseEngineOpts = props.formData.blueprint[0].fields.engine.options;
 watch(form, () => {
     if (form.type.toLowerCase() === 'external') {
         props.formData.blueprint[0].fields.engine.options = baseEngineOpts.filter(option => option.label !== 'AIKU');
-        form.engine = baseEngineOpts.filter(option => option.label !== 'AIKU')[0].value;
+        if(form.engine == 'aiku'){
+            form.engine = baseEngineOpts.filter(option => option.label !== 'AIKU')[0].value;
+        }
     } else {
         props.formData.blueprint[0].fields.engine.options = baseEngineOpts.filter(option => option.label == 'AIKU');
-        form.engine = baseEngineOpts.filter(option => option.label == 'AIKU')[0].value;
+        if(form.engine != 'aiku'){
+            form.engine = baseEngineOpts.filter(option => option.label == 'AIKU')[0].value;
+        }
     }
 });
 

@@ -33,6 +33,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $effective_weight
  * @property mixed $picking_sessions_count
  * @property mixed $picking_session_ids
+ * @property mixed $is_premium_dispatch
+ * @property mixed $has_extra_packing
+ * @property mixed $customer_notes
+ * @property mixed $internal_notes
+ * @property mixed $public_notes
+ * @property mixed $shipping_notes
+ * @property mixed $shipping_data
  *
  */
 class DeliveryNotesResource extends JsonResource
@@ -41,7 +48,6 @@ class DeliveryNotesResource extends JsonResource
 
     public function toArray($request): array
     {
-
         return [
             'id'                     => $this->id,
             'slug'                   => $this->slug,
@@ -69,7 +75,8 @@ class DeliveryNotesResource extends JsonResource
             'customer_notes'         => $this->customer_notes,
             'internal_notes'         => $this->internal_notes,
             'public_notes'           => $this->public_notes,
-            'shipping_notes'        => $this->shipping_notes,
+            'shipping_notes'         => $this->shipping_notes,
+            'shipping_data'          => $this->shipping_data,
             'employee_pick_route'    => [
                 'name'       => 'grp.models.delivery_note.employee.pick',
                 'parameters' => [

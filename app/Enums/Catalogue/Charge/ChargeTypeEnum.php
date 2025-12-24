@@ -22,6 +22,7 @@ enum ChargeTypeEnum: string
     case COD = 'cod';
     case PACKING = 'packing';
     case MARKETPLACE_FEE = 'marketplace_fee';
+    case COLLECTION = 'collection';
     case OTHER = 'other';
 
     public static function labels(): array
@@ -35,7 +36,9 @@ enum ChargeTypeEnum: string
             'payment'         => __('Payment'),
             'packing'         => __('Packing'),
             'other'           => __('Other'),
-            'marketplace_fee' => __('Marketplace fee')
+            'marketplace_fee' => __('Marketplace fee'),
+            'collection'      => __('Collection'),
+
         ];
     }
 

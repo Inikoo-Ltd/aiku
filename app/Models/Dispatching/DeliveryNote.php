@@ -139,6 +139,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shipping_zone_id
  * @property bool|null $has_insurance
  * @property ShopTypeEnum|null $shop_type
+ * @property string|null $tracking_number for search purposes
+ * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -190,6 +192,7 @@ class DeliveryNote extends Model implements Auditable
         'type'               => DeliveryNoteTypeEnum::class,
         'shop_type'          => ShopTypeEnum::class,
         'date'               => 'datetime',
+        'shipping_data'      => 'array',
         'order_submitted_at' => 'datetime',
         'assigned_at'        => 'datetime',
         'picking_at'         => 'datetime',
@@ -203,8 +206,9 @@ class DeliveryNote extends Model implements Auditable
     ];
 
     protected $attributes = [
-        'data'    => '{}',
-        'parcels' => '{}',
+        'data'          => '{}',
+        'parcels'       => '{}',
+        'shipping_data' => '{}',
     ];
 
     protected $guarded = [];
