@@ -99,10 +99,6 @@ const onVisit = () => {
         </template>
     </PageHeading>
 
-    <!-- <TableMasterProductsEdit
-        
-        /> -->
-
     <!-- Products Table -->
     <TableMasterProducts
         :data="data"
