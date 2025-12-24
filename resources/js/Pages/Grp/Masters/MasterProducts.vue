@@ -106,7 +106,7 @@ const onVisit = () => {
     <!-- Products Table -->
     <TableMasterProducts
         :data="data"
-        editable_table
+        isCheckBox
         :key="key"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
     />
