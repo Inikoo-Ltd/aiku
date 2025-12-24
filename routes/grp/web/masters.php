@@ -6,11 +6,14 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
 use App\Actions\Catalogue\Shop\UI\CreateShopInGroup;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsBulkEdit;
+use App\Actions\Masters\MasterAsset\UI\UpdateMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterProductCategory\UI\ShowCreateMasterVariant;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoFamily;
@@ -228,6 +231,13 @@ Route::name("master_shops")->prefix('master-shops')
                     Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('show');
                 });
             });
+
+            // Route::prefix('/master-products-bulk-edit')->as('.bulk-edit')->group(function () { 
+
+            // })
+            Route::get('/master-products-bulk-edit', IndexMasterProductsBulkEdit::class)->name('.bulk-edit');
+            Route::post('/master-products-bulk-edit/selectedProducts/', GetSelectedMasterProductDetails::class)->name('.bulk-edit.selected_list');
+            Route::post('/master-products-bulk-edit/update', UpdateMasterProductsBulkEdit::class)->name('.bulk-edit.update');
 
             Route::prefix('master-products')->as('.master_products.')->group(function () {
                 Route::get('', [IndexMasterProducts::class, 'inMasterShop'])->name('index');

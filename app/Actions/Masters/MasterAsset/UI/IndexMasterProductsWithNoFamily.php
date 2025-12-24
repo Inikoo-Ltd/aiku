@@ -248,7 +248,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
 
 
         return Inertia::render(
-            'Masters/MasterProducts',
+            'Masters/MasterOrphanProducts',
             [
                 'breadcrumbs'        => $this->getBreadcrumbs(
                     $this->parent,
