@@ -97,6 +97,16 @@ class ShowMasterVariant extends OrgAction
                 'title'           => __('Show Variant'),
                 'pageHead'        => [
                     'title' => $masterVariant->code,
+                    'actions'       => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', request()->route()->getName()),
+                                'parameters' => request()->route()->originalParameters()
+                            ]
+                        ],
+                    ],
                 ],
                 'data'            => $masterVariant,
                 'master_products' => $products,
