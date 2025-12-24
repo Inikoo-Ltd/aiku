@@ -12,6 +12,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 
 class GetShopNavigation
 {
@@ -65,7 +66,7 @@ class GetShopNavigation
                 ],
             ]
         ];
-        if ($user->hasPermissionTo("products.$shop->id.view")) {
+        if ($user->hasPermissionTo("products.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL && $shop->engine !== ShopEngineEnum::FAIRE) {
             $navigation["catalogue"] = [
                 "root"    => "grp.org.shops.show.catalogue.",
                 "icon"    => ["fal", "fa-books"],
@@ -183,7 +184,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("discounts.$shop->id.view")) {
+        if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL && $shop->engine !== ShopEngineEnum::FAIRE) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",
                 "icon"    => ["fal", "fa-badge-percent"],
@@ -228,7 +229,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("marketing.$shop->id.view")) {
+        if ($user->hasPermissionTo("marketing.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL && $shop->engine !== ShopEngineEnum::FAIRE) {
             $navigation["marketing"] = [
                 "root"    => "grp.org.shops.show.marketing.",
                 "icon"    => ["fal", "fa-bullhorn"],
@@ -371,7 +372,7 @@ class GetShopNavigation
                     ],
                 ];
             } else {
-                if ($shop->engine !== ShopEngineEnum::FAIRE) {
+                if ($shop->type !== ShopTypeEnum::EXTERNAL && $shop->engine !== ShopEngineEnum::FAIRE) {
                     $navigation["web"] = [
                         "scope" => "websites",
                         "icon"  => ["fal", "fa-globe"],
