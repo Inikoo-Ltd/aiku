@@ -50,7 +50,7 @@ const layout: any = inject("layout", {})
 					<div class="max-w-xl w-full">
 						<div v-html="fieldValue.text" class="mb-6"></div>
 						<div class="flex justify-center">
-							<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
+							<LinkIris v-if="fieldValue?.button?.link?.href" :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
 								typeof="button" :type="fieldValue?.button?.link?.type"
 								:canonical_url="fieldValue?.button?.link?.canonical_url">
 								<template #default>
@@ -59,6 +59,12 @@ const layout: any = inject("layout", {})
 										:label="fieldValue?.button?.text" />
 								</template>
 							</LinkIris>
+
+							<div v-else>
+								<Button
+										:injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+										:label="fieldValue?.button?.text" />
+							</div>
 						</div>
 					</div>
 				</div>
