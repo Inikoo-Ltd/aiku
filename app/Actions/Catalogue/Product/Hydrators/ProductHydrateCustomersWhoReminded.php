@@ -31,7 +31,7 @@ class ProductHydrateCustomersWhoReminded implements ShouldBeUnique
     {
 
         $stats         = [
-            'number_customers_who_reminded' => BackInStockReminderSnapshot::where('product_id', $product->id)->whereNotNull('back_in_stock_reminder_id')->whereNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
+            'number_customers_who_reminded' => BackInStockReminderSnapshot::where('product_id', $product->id)->whereNull('reminder_cancelled_at')->whereNotNull('reminder_sent_at')->count(),
             'number_customers_who_un_reminded' => BackInStockReminderSnapshot::where('product_id', $product->id)->whereNotNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
         ];
 
