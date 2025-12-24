@@ -40,7 +40,7 @@ function shipperRoute(shipper: Shipper) {
 		<template #cell(name)="{ item: shipper }">
 			<div class="flex items-center gap-2">
 				<img
-					:src="`/assets/shipper_logo/${shipper.code}.png?${Date.now()}`"
+					:src="`/assets/shipper_logo/${shipper.slug}.png?${Date.now()}`"
 					:alt="shipper.name"
 					class="h-5 w-5 object-contain" />
 				<Link :href="shipperRoute(shipper)" class="primaryLink">

@@ -336,13 +336,13 @@ onMounted(() => {
                     </span>
                     <ToggleSwitch v-model="pickingView">
                         <template #handle="{ checked }">
-                            <FontAwesomeIcon 
-                                :icon="checked ? faCheck : faTimes" 
+                            <FontAwesomeIcon
+                                :icon="checked ? faCheck : faTimes"
                                 :class="checked ? '' : 'text-red-500'"
                                 class="text-xs"
-                                fixed-width 
+                                fixed-width
                             />
-                           
+
                         </template>
                     </ToggleSwitch>
                 </div>
