@@ -15,7 +15,6 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\BackInStockReminderSnapshot;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBackInStockReminderSnapshot extends OrgAction
 {
@@ -34,15 +33,6 @@ class UpdateBackInStockReminderSnapshot extends OrgAction
         return $backInStockReminderSnapshot;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return false;
-    }
-
     public function rules(): array
     {
         // Note: update rules
@@ -54,11 +44,8 @@ class UpdateBackInStockReminderSnapshot extends OrgAction
         return $rules;
     }
 
-    public function action(BackInStockReminderSnapshot|int $backInStockReminderSnapshot, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ?BackInStockReminderSnapshot
+    public function action(BackInStockReminderSnapshot|int $backInStockReminderSnapshot, array $modelData, int $hydratorsDelay = 0): ?BackInStockReminderSnapshot
     {
-        \Log::info("model data in action : ". json_encode($modelData));
-        $this->strict = $strict;
-
         $this->asAction       = true;
 
         // Handle route binding - if ID is passed, resolve the model

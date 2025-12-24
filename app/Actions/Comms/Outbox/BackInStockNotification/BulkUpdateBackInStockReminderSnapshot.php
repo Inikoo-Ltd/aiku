@@ -36,8 +36,8 @@ class BulkUpdateBackInStockReminderSnapshot
                         ];
                         UpdateBackInStockReminderSnapshot::make()->action($modelData->back_in_stock_reminder_id, $snapshotModeldata);
                     } catch (Exception $e) {
-                        Log::info("Failed to Hydrate Customers Tag: " . $e->getMessage());
-                        Sentry::captureMessage("Failed to Hydrate Customers Tag to: " . $e->getMessage());
+                        Log::info("Failed to update back in stock reminder snapshot: " . $e->getMessage());
+                        Sentry::captureMessage("Failed to update back in stock reminder snapshot: " . $e->getMessage());
                     }
                 }
             }
