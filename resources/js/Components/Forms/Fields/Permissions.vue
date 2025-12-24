@@ -204,27 +204,7 @@ const submitGroupPermissions = () => {
 
 }
 
-
-const organisation = [
-    {
-        label: "Ancient Wisdom",
-        slug: "aw"
-    },
-    {
-        label: "Ancient Wisdom SRO",
-        slug: "sk"
-    },
-    {
-        label: "Aromatics",
-        slug: "aroma"
-    },
-    {
-        label: "AW Spain",
-        slug: "es"
-    }
-]
-
-const selectedOrganisation = ref<typeof organisation[number] | null>(null)
+const selectedOrganisation = ref(null)
 
 const organisationPositionCounts = ref({})
 
