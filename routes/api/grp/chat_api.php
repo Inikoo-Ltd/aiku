@@ -9,6 +9,7 @@ use App\Actions\CRM\ChatSession\StoreChatAgent;
 use App\Actions\CRM\ChatSession\GetChatActivity;
 use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
+use App\Actions\CRM\ChatSession\HandleChatTyping;
 use App\Actions\CRM\ChatSession\SendChatMessage;
 use App\Actions\CRM\ChatSession\UpdateChatAgent;
 use App\Actions\CRM\ChatSession\StoreChatSession;
@@ -26,12 +27,14 @@ Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
     ->name('sessions.update');
 
+Route::post('/sessions/{chatSession:ulid}/typing', HandleChatTyping::class)
+    ->name('sessions.typing');
+
 Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity');
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
 
 Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)
     ->name('sessions.guest_profile');
-
 
 Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)
     ->name('sessions.sync_by_email');
