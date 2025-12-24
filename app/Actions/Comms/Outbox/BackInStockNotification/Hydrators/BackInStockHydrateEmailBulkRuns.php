@@ -15,7 +15,7 @@ use App\Models\CRM\Customer;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
-use App\Actions\Comms\Outbox\BackToStockNotification\BulkDeleteBackInStockReminder;
+use App\Actions\Comms\Outbox\BackInStockNotification\BulkDeleteBackInStockReminder;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Comms\Outbox;

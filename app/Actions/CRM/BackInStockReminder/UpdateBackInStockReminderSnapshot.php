@@ -36,8 +36,8 @@ class UpdateBackInStockReminderSnapshot extends OrgAction
 
         CustomerHydrateBackInStockReminders::dispatch($backInStockReminder->customer_id)->delay($this->hydratorsDelay);
         // Note need to update this hydrator
-        ProductHydrateCustomersWhoReminded::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
-        ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
+        // ProductHydrateCustomersWhoReminded::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
+        // ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
 
         return $backInStockReminderSnapshot;
     }
