@@ -337,7 +337,7 @@ const getIcon = (type?: string) => {
                     </div>
                 </AccordionContent>
             </AccordionPanel>
-            <AccordionPanel value="6">
+            <AccordionPanel v-if="gpsr" value="6">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="font-medium text-base">GPSR</span>

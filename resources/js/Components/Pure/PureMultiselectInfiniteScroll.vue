@@ -179,7 +179,7 @@ defineExpose({
         <template #singlelabel="{ value }">
             <!-- {{ $attrs }} -->
             <slot name="singlelabel" :value>
-                <div class="w-full text-left pl-4">{{ value[labelProp || 'name'] }} <span
+                <div class="w-full text-left pl-4 leading-4 truncate mr-2">{{ value[labelProp || 'name'] }} <span
                         v-if="value.code"
                         class="text-sm text-gray-400">({{ value.code }})</span></div>
             </slot>

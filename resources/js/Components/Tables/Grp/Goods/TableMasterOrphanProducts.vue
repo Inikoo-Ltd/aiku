@@ -25,7 +25,6 @@ defineProps<{
     data: {}
     tab?: string
     editable_table?: boolean
-    isCheckBox?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -103,16 +102,6 @@ function masterDepartmentRoute(masterProduct: MasterProduct) {
                 masterDepartment: masterProduct.master_department_slug
             })
     }
-}
-
-function masterSubDepartmentRoute(masterFamily: MasterFamily) {
-    return route(
-        "grp.masters.master_shops.show.master_sub_departments.show",
-        {
-            masterShop: (route().params as RouteParams).masterShop,
-            masterSubDepartment: masterFamily.master_sub_department_slug
-        }
-    );
 }
 
 function masterShopRoute(masterProduct: MasterProduct) {
@@ -218,7 +207,7 @@ function onCancel(item) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox || editable_table"
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="editable_table"
         @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
 
         <template #cell(image_thumbnail)="{ item: collection }">
@@ -242,14 +231,9 @@ function onCancel(item) {
                   :href="(masterDepartmentRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["master_department_code"] }}
             </Link>
-        </template>
-
-
-        <template #cell(master_sub_department_code)="{ item: masterProduct }">
-            <Link v-if="masterProduct.master_sub_department_name" v-tooltip="masterProduct.master_sub_department_name"
-                  :href="(masterSubDepartmentRoute(masterProduct) as string)" class="secondaryLink">
-                {{ masterProduct["master_sub_department_name"] }}
-            </Link>
+            <span v-else class="opacity-70  text-red-500">
+        {{ trans("No department") }}
+      </span>
         </template>
 
         <template #cell(master_family_code)="{ item: masterProduct }">
@@ -257,6 +241,9 @@ function onCancel(item) {
                   :href="(masterFamilyRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["master_family_code"] }}
             </Link>
+            <span v-else class="opacity-70  text-red-500">
+        {{ trans("No family") }}
+      </span>
         </template>
 
         <template #cell(code)="{ item: masterProduct }">

@@ -9,6 +9,7 @@
 use App\Actions\Billables\Charge\UI\CreateCharge;
 use App\Actions\Billables\Charge\UI\EditCharge;
 use App\Actions\Billables\Charge\UI\IndexCharges;
+use App\Actions\Billables\Charge\UI\IndexCustomersInCharge;
 use App\Actions\Billables\Charge\UI\ShowCharge;
 use App\Actions\Billables\Service\UI\IndexShopServices;
 use App\Actions\Billables\ShippingZone\UI\EditShippingZone;
@@ -48,6 +49,7 @@ Route::name("charges.")->prefix('charges')
         Route::prefix('{charge}')->group(function () {
             Route::get('', ShowCharge::class)->name('show');
             Route::get('edit', EditCharge::class)->name('edit');
+            Route::get('customers', IndexCustomersInCharge::class)->name('show.customers.index');
         });
     });
 
