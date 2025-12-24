@@ -282,7 +282,6 @@ const isModalProductForSale = ref(false)
 				:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
 				:gpsr="data.gpsr"
 				:properties="data.properties"
-				xpublic-attachment="[]"
 				:attachments="data.attachment_box"
 			/>
 		</div>
