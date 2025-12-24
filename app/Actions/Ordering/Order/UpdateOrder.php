@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
+use App\Actions\Ordering\Order\UI\AuditOrderCustom;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
@@ -51,7 +52,7 @@ class UpdateOrder extends OrgAction
         $oldShippingZoneId       = $order->shipping_zone_id;
         $oldState                = $order->state;
 
-
+        $oldOrderData  = $order->toArray();
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
         $order->refresh();
@@ -73,6 +74,10 @@ class UpdateOrder extends OrgAction
             CalculateOrderTotalAmounts::run($order, true, true, true);
         }
 
+        if (Arr::hasAny($changes, ['collection_address_id', 'state'])) {
+            $ignoredField = ['updated_at', 'submitted_at', 'in_warehouse_at', 'cancelled_at', 'packed_at', 'settled_at', 'dispatched_at', 'finalised_at'];
+            AuditOrderCustom::run($order, $oldOrderData, Arr::except($order->getChanges(), $ignoredField));
+        }
 
         if (count($changes) > 0) {
             if (Arr::has($changes, 'updated_by_customer_at')) {

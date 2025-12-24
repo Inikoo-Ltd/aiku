@@ -264,7 +264,8 @@ class Order extends Model implements HasMedia, Auditable
         'net_amount',
         'goods_amount',
         'shipping_amount',
-        'payment_amount',
+        'payment_amount', 
+        'shipping_engine',   
         'handing_type',
     ];
 

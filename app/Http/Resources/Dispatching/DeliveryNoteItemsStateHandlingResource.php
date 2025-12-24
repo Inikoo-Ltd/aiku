@@ -68,11 +68,11 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
-        SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
-        WHERE pickings.location_id = location_org_stocks.location_id
-        AND pickings.org_stock_id = location_org_stocks.org_stock_id
-        AND pickings.type = ? AND pickings.delivery_note_item_id = ?
-    ) as pickings_data',
+                    SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
+                    WHERE pickings.location_id = location_org_stocks.location_id
+                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
+                    AND pickings.type = ? AND pickings.delivery_note_item_id = ?
+                ) as pickings_data',
                 ['pick', $this->id]
             )
             ->orderBy('picking_priority')->get();

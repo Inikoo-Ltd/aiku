@@ -16,6 +16,7 @@ use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UI\AuditOrderCustom;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -32,6 +33,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,7 +50,7 @@ class CancelOrder extends OrgAction
 
     public function handle(Order $order): Order
     {
-        $oldState = $order->state;
+        $oldOrder = $order->replicate();
 
         $modelData = [
             'state' => OrderStateEnum::CANCELLED,
@@ -60,6 +62,10 @@ class CancelOrder extends OrgAction
             data_set($modelData, 'cancelled_at', $date);
         }
         $this->update($order, $modelData);
+
+        if (Arr::hasAny($modelData, ['state'])) {
+            AuditOrderCustom::run($order, $oldOrder->toArray(), Arr::except($order->getChanges(), ['updated_at', 'cancelled_at']));
+        }
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
 
@@ -107,7 +113,7 @@ class CancelOrder extends OrgAction
             CancelDeliveryNote::make()->action($deliveryNote, false);
         }
 
-        if ($oldState == OrderStateEnum::CREATING) {
+        if ($oldOrder->state == OrderStateEnum::CREATING->value) {
             CustomerHydrateBasket::run($order->customer_id);
         }
 
@@ -125,7 +131,7 @@ class CancelOrder extends OrgAction
         }
 
         $this->orderHydrators($order);
-        $this->orderHandlingHydrators($order, $oldState);
+        $this->orderHandlingHydrators($order, $oldOrder->state);
         $this->orderHandlingHydrators($order, OrderStateEnum::CANCELLED);
 
         return $order;

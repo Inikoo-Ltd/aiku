@@ -81,6 +81,7 @@ class EditOrder extends OrgAction
                     'blueprint' => [
                         [
                             'title'  => __('id'),
+                            'label' =>  __('Details'),
                             'fields' => [
                                 'reference' => [
                                     'type'  => 'input',

@@ -40,6 +40,7 @@ import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
 import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import type { DeliveryNote } from "@/types/warehouse";
@@ -130,7 +131,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
-        pickings: TablePickings
+        history: TableHistories,
+        pickings: TablePickings,
     };
 
     return components[currentTab.value];

@@ -16,18 +16,19 @@ enum OrderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case TRANSACTIONS                       = 'transactions';
+    case TRANSACTIONS                = 'transactions';
+    case HISTORY                     = 'history';
     case PAYMENTS                    = 'payments';
     // case DISCOUNTS                   = 'discounts';
     case INVOICES                    = 'invoices';
     case DELIVERY_NOTES              = 'delivery_notes';
 
-    // case HISTORY                     = 'history';
-
+    
     case ATTACHMENTS                 = 'attachments';
-
+    
     // case SENT_EMAILS                 = 'sent_emails';
     case DISPATCHED_EMAILS           = 'dispatched_emails';
+    
 
 
 
@@ -82,12 +83,12 @@ enum OrderTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            //OrderTabsEnum::HISTORY => [
-            //     'title' => __('History'),
-            //     'icon'  => 'fal fa-clock',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            // ],
+            OrderTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
 
         };
     }

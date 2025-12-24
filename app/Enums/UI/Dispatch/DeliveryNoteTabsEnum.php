@@ -18,6 +18,7 @@ enum DeliveryNoteTabsEnum: string
     use HasTabsWithIndicator;
 
     case ITEMS = 'items';
+    case HISTORY = 'history';
     // case PICKINGS = 'pickings';
 
 
@@ -28,6 +29,12 @@ enum DeliveryNoteTabsEnum: string
             DeliveryNoteTabsEnum::ITEMS => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
+            ],
+            DeliveryNoteTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             // DeliveryNoteTabsEnum::PICKINGS => [
             //     'title'     => __('pickings'),

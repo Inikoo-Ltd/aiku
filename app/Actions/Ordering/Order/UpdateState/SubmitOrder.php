@@ -22,10 +22,12 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
+use App\Actions\Ordering\Order\UI\AuditOrderCustom;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -44,8 +46,7 @@ class SubmitOrder extends OrgAction
      */
     public function handle(Order $order): Order
     {
-
-        $oldState = $order->state;
+        $oldOrder = $order->replicate();
 
         $modelData = [
             'state'  => OrderStateEnum::SUBMITTED,
@@ -79,6 +80,10 @@ class SubmitOrder extends OrgAction
         }
 
         $this->update($order, $modelData);
+        
+        if (Arr::hasAny($modelData, ['state'])) {
+            AuditOrderCustom::run($order, $oldOrder->toArray(), Arr::except($order->getChanges(), ['updated_at', 'submitted_at']));
+        }
 
         if ($order->shop->masterShop) {
             $order->shop->masterShop->orderingStats->update(
@@ -97,7 +102,7 @@ class SubmitOrder extends OrgAction
         }
 
         $this->orderHydrators($order);
-        $this->orderHandlingHydrators($order, $oldState);
+        $this->orderHandlingHydrators($order, $oldOrder->state);
         $this->orderHandlingHydrators($order, OrderStateEnum::SUBMITTED);
 
         SendNewOrderEmailToSubscribers::dispatch($order->id);

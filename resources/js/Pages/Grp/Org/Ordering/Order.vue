@@ -32,6 +32,7 @@ import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 import axios from "axios"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { notify } from "@kyvg/vue3-notification"
 import OrderProductTable from "@/Components/Dropshipping/Orders/OrderProductTable.vue"
 import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
@@ -224,6 +225,7 @@ const props = defineProps<{
         reference: string
     }
     payments: {}
+    history: {}
     readonly?: boolean
     attachments?: {}
     invoices?: {}
@@ -262,7 +264,8 @@ const component = computed(() => {
         invoices: TableInvoices,
         products: TableProductList,
         payments: TablePayments,
-        dispatched_emails: TableDispatchedEmailsInOrder
+        dispatched_emails: TableDispatchedEmailsInOrder,
+        history: TableHistories
     }
 
     return components[currentTab.value]

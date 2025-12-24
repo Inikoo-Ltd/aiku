@@ -9,11 +9,13 @@
 namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\UI\AuditOrderCustom;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -27,7 +29,7 @@ class UpdateOrderStateToHandling extends OrgAction
      */
     public function handle(Order $order): Order
     {
-        $oldState = $order->state;
+        $oldOrder = $order->replicate();
         $data = [
             'state' => OrderStateEnum::HANDLING
         ];
@@ -48,8 +50,12 @@ class UpdateOrderStateToHandling extends OrgAction
             $this->update($order, $data);
 
             $this->orderHydrators($order);
-            $this->orderHandlingHydrators($order, $oldState);
+            $this->orderHandlingHydrators($order, $oldOrder->state);
             $this->orderHandlingHydrators($order, OrderStateEnum::HANDLING);
+
+            if (Arr::hasAny($data, ['state'])) {
+                AuditOrderCustom::run($order, $oldOrder->toArray(), Arr::except($order->getChanges(), ['updated_at', 'handling_at']));
+            }
 
             return $order;
         }
