@@ -26,8 +26,6 @@ trait WithReorganisePositions
             return [];
         }
 
-
-
         foreach ($positionsWithSlugs as $positionData) {
             $jobPosition = JobPosition::firstWhere('slug', $positionData['slug']);
             $positions[$jobPosition->id] = $this->reorganiseScopes($positionData['scopes']);

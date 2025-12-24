@@ -9,13 +9,19 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\HumanResources\ClockingMachine\Hydrators\ClockingMachineHydrateClockings;
-use App\Actions\HydrateModel;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\HumanResources\ClockingMachine;
-use Illuminate\Support\Collection;
 
-class HydrateClockingMachine extends HydrateModel
+class HydrateClockingMachine
 {
-    public string $commandSignature = 'hydrate:clocking-machine {organisations?*} {--i|id=}';
+    use WithHydrateCommand;
+
+    public string $commandSignature = 'hydrate:clocking-machine {organisations?*} {--s|slugs=}';
+
+    public function __construct()
+    {
+        $this->model = ClockingMachine::class;
+    }
 
 
     public function handle(ClockingMachine $clockingMachine): void
@@ -23,14 +29,4 @@ class HydrateClockingMachine extends HydrateModel
         ClockingMachineHydrateClockings::run($clockingMachine);
     }
 
-
-    protected function getModel(string $slug): ClockingMachine
-    {
-        return ClockingMachine::where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return ClockingMachine::get();
-    }
 }

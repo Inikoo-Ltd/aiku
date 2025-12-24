@@ -34,44 +34,44 @@ class GetIrisProductCategoryNavigation extends IrisAction
             ->get();
 
         foreach ($departments as $department) {
-            $departmentUrl = '/'.$department->url;
+            $departmentUrl = '/' . $department->url;
 
             $collectionsRaw = DB::table('model_has_collections')
                 ->where('model_has_collections.model_id', $department->id)
                 ->where('model_has_collections.type', 'department')
-                ->leftJoin('collections', 'collections.id', '=', 'model_has_collections.collection_id')
-                ->leftJoin('webpages', 'webpages.id', '=', 'collections.webpage_id')
-                ->whereNotNull('collections.webpage_id')
+                ->join('collections', 'collections.id', '=', 'model_has_collections.collection_id')
+                ->join('webpages', 'webpages.id', '=', 'collections.webpage_id')
                 ->select('collections.id', 'collections.name', 'webpages.url')
                 ->limit(10)
                 ->get();
 
             $collections = [];
+
             foreach ($collectionsRaw as $collection) {
+                $families = $this->getFamiliesByCollection($collection->id);
+
                 $collections[] = [
-                    'id'   => $collection->id,
-                    'name' => $collection->name,
-                    'url'  => $departmentUrl.'/'.$collection->url
+                    'id'       => $collection->id,
+                    'name'     => $collection->name,
+                    'url'      => $departmentUrl . '/' . $collection->url,
+                    'families' => $families
                 ];
             }
 
             $departmentData = [
                 'name'            => $department->name,
                 'url'             => $departmentUrl,
-                'sub_departments' => [],
-                'collections'     => $collections
+                'collections'     => $collections,
+                'sub_departments' => []
             ];
 
             $subDepartments = DB::table('product_categories')
                 ->where('type', 'sub_department')
                 ->where('department_id', $department->id)
-                ->whereIn(
-                    'state',
-                    [
-                        ProductCategoryStateEnum::ACTIVE->value,
-                        ProductCategoryStateEnum::DISCONTINUING->value
-                    ]
-                )
+                ->whereIn('state', [
+                    ProductCategoryStateEnum::ACTIVE->value,
+                    ProductCategoryStateEnum::DISCONTINUING->value
+                ])
                 ->whereNotNull('webpage_id')
                 ->whereNull('deleted_at')
                 ->select('id', 'name', 'url')
@@ -79,59 +79,54 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 ->get();
 
             foreach ($subDepartments as $subDepartment) {
-                $subDepartmentUrl = $departmentUrl.'/'.$subDepartment->url;
+                $subDepartmentUrl = $departmentUrl . '/' . $subDepartment->url;
 
                 $subCollectionsRaw = DB::table('model_has_collections')
                     ->where('model_has_collections.model_id', $subDepartment->id)
                     ->where('model_has_collections.type', 'sub_department')
-                    ->leftJoin('collections', 'collections.id', '=', 'model_has_collections.collection_id')
-                    ->leftJoin('webpages', 'webpages.id', '=', 'collections.webpage_id')
-                    ->whereNotNull('collections.webpage_id')
+                    ->join('collections', 'collections.id', '=', 'model_has_collections.collection_id')
+                    ->join('webpages', 'webpages.id', '=', 'collections.webpage_id')
                     ->select('collections.id', 'collections.name', 'webpages.url')
                     ->limit(10)
                     ->get();
 
                 $subCollections = [];
+
                 foreach ($subCollectionsRaw as $subCollection) {
+                    $families = $this->getFamiliesByCollection($subCollection->id);
+
                     $subCollections[] = [
-                        'id'   => $subCollection->id,
-                        'name' => $subCollection->name,
-                        'url'  => $subDepartmentUrl.'/'.$subCollection->url
+                        'id'       => $subCollection->id,
+                        'name'     => $subCollection->name,
+                        'url'      => $subDepartmentUrl . '/' . $subCollection->url,
+                        'families' => $families
                     ];
                 }
 
-                $subDepartmentData = [
-                    'name'        => $subDepartment->name,
-                    'url'         => $subDepartmentUrl,
-                    'families'    => [],
-                    'collections' => $subCollections
-                ];
-
-                $families = DB::table('product_categories')
+                $familiesDirect = DB::table('product_categories')
                     ->where('type', 'family')
                     ->where('sub_department_id', $subDepartment->id)
-                    ->whereIn(
-                        'state',
-                        [
-                            ProductCategoryStateEnum::ACTIVE->value,
-                            ProductCategoryStateEnum::DISCONTINUING->value
-                        ]
-                    )
+                    ->whereIn('state', [
+                        ProductCategoryStateEnum::ACTIVE->value,
+                        ProductCategoryStateEnum::DISCONTINUING->value
+                    ])
                     ->whereNotNull('webpage_id')
                     ->select('id', 'name', 'url')
                     ->limit(10)
-                    ->get();
+                    ->get()
+                    ->map(function ($family) use ($subDepartmentUrl) {
+                        return [
+                            'name' => $family->name,
+                            'url'  => $subDepartmentUrl . '/' . $family->url
+                        ];
+                    });
 
-                foreach ($families as $family) {
-                    $familyUrl = $subDepartmentUrl.'/'.$family->url;
-
-                    $subDepartmentData['families'][] = [
-                        'name' => $family->name,
-                        'url'  => $familyUrl
-                    ];
-                }
-
-                $departmentData['sub_departments'][] = $subDepartmentData;
+                $departmentData['sub_departments'][] = [
+                    'name'        => $subDepartment->name,
+                    'url'         => $subDepartmentUrl,
+                    'collections' => $subCollections,
+                    'families'    => $familiesDirect
+                ];
             }
 
             $data[] = $departmentData;
@@ -139,11 +134,30 @@ class GetIrisProductCategoryNavigation extends IrisAction
 
         return $data;
     }
+    private function getFamiliesByCollection(int $collectionId)
+    {
+        return DB::table('product_categories')
+            ->join('collection_has_models', function ($join) {
+                $join->on('product_categories.id', '=', 'collection_has_models.model_id')
+                    ->where('collection_has_models.model_type', 'ProductCategory');
+            })
+            ->leftJoin('webpages', function ($join) {
+                $join->on('webpages.model_id', '=', 'product_categories.id')
+                    ->where('webpages.model_type', 'ProductCategory');
+            })
+            ->where('collection_has_models.collection_id', $collectionId)
+            ->whereNotNull('webpages.url')
+            ->select([
+                'product_categories.id',
+                'product_categories.name',
+                'webpages.url',
+            ])
+            ->limit(10)
+            ->get();
+    }
 
     public function jsonResponse($data): array
     {
         return $data;
     }
-
-
 }

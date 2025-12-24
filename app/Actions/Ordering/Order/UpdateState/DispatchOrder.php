@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Catalogue\Shop\Faire\UpdateShippingFaireOrder;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
@@ -93,6 +94,10 @@ class DispatchOrder extends OrgAction
                         'shipping_notes' => __('We\'re unable update shipping to customer\'s sales channel due to their sales channel are not found or already deleted.')
                     ]);
                 }
+            }
+
+            if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && app()->isProduction()) {
+                UpdateShippingFaireOrder::run($order->shop, $order);
             }
 
             return $order;

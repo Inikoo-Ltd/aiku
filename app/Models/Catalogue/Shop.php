@@ -8,8 +8,10 @@
 
 namespace App\Models\Catalogue;
 
+use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\CreditTransaction;
@@ -145,6 +147,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
  * @property array<array-key, mixed>|null $offers_data
+ * @property ShopEngineEnum $engine
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -256,27 +259,29 @@ class Shop extends Model implements HasMedia, Auditable
     use InOrganisation;
     use HasHistory;
     use HasImage;
+    use WithFaireShopApiCollection;
 
     protected $casts = [
-        'data'            => 'array',
-        'settings'        => 'array',
-        'location'        => 'array',
-        'extra_languages' => 'array',
+        'data'                         => 'array',
+        'settings'                     => 'array',
+        'location'                     => 'array',
+        'extra_languages'              => 'array',
         'forbidden_dispatch_countries' => 'array',
-        'type'            => ShopTypeEnum::class,
-        'state'           => ShopStateEnum::class,
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
-        'offers_data'     => 'array',
+        'type'                         => ShopTypeEnum::class,
+        'state'                        => ShopStateEnum::class,
+        'engine'                       => ShopEngineEnum::class,
+        'fetched_at'                   => 'datetime',
+        'last_fetched_at'              => 'datetime',
+        'offers_data'                  => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'location' => '{}',
-        'extra_languages' => '{}',
+        'data'                         => '{}',
+        'settings'                     => '{}',
+        'location'                     => '{}',
+        'extra_languages'              => '{}',
         'forbidden_dispatch_countries' => '{}',
-        'offers_data'   => '{}',
+        'offers_data'                  => '{}',
     ];
 
     protected $guarded = [];
@@ -457,6 +462,7 @@ class Shop extends Model implements HasMedia, Auditable
     public function getPaymentAccountTypeAccount(): ?PaymentAccount
     {
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
+
         return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
     }
 

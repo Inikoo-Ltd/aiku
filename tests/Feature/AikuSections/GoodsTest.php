@@ -127,12 +127,11 @@ test('delete stock family', function ($stockFamily) {
 })->depends('create stock family');
 
 test('store ingredient', function () {
-    $ingredient = StoreIngredient::make()->action($this->group, [
-        'name' => 'test'
-    ]);
+    $ingredientData = Ingredient::factory()->definition();
+    $ingredient     = StoreIngredient::make()->action($this->group, $ingredientData);
 
     expect($ingredient)->toBeInstanceOf(Ingredient::class)
-        ->and($ingredient->name)->toBe('test');
+        ->and($ingredient->name)->toBe($ingredientData['name']);
 
     return $ingredient;
 });
@@ -144,7 +143,32 @@ test('update ingredient', function (Ingredient $ingredient) {
 
     expect($ingredient)->toBeInstanceOf(Ingredient::class)
         ->and($ingredient->name)->toBe('update');
+
+    return $ingredient;
 })->depends('store ingredient');
+
+test('index ingredients', function () {
+    $count = Ingredient::count();
+    Ingredient::factory()->count(3)->create(['group_id' => $this->group->id]);
+
+    get(route('grp.goods.ingredients.index'))
+        ->assertOk()
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->component('Goods/Ingredients')
+                ->has('data.data', $count + 3)
+        );
+});
+
+test('show ingredient', function (Ingredient $ingredient) {
+    get(route('grp.goods.ingredients.show', ['ingredient' => $ingredient->slug]))
+        ->assertOk()
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->component('Goods/Ingredient')
+                ->has('pageHead.title')
+        );
+})->depends('update ingredient');
 
 test("UI Show Goods Dashboard", function () {
     $response    = get(

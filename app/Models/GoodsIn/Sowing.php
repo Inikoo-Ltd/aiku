@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $shop_id
  * @property int|null $delivery_note_id
  * @property int|null $delivery_note_item_id
- * @property string $quantity
+ * @property numeric $quantity
  * @property int|null $org_stock_movement_id
  * @property int|null $return_id
  * @property int|null $return_item_id
@@ -41,12 +41,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $location_id
  * @property int|null $original_picking_id
  * @property array<array-key, mixed> $data
- * @property string|null $sowed_at
+ * @property \Illuminate\Support\Carbon|null $sowed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property SowingTypeEnum $type
- * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
- * @property-read \App\Models\Dispatching\DeliveryNoteItem|null $deliveryNoteItem
+ * @property-read DeliveryNote|null $deliveryNote
+ * @property-read DeliveryNoteItem|null $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Location|null $location
  * @property-read OrgStock $orgStock

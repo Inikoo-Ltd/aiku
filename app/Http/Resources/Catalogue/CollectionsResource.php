@@ -45,6 +45,8 @@ use Illuminate\Support\Arr;
  * @property mixed $currency_code
  * @property mixed $sales
  * @property mixed $sales_ly
+ * @property mixed $invoices
+ * @property mixed $invoices_ly
  * @property mixed $current_interval
  */
 class CollectionsResource extends JsonResource
@@ -120,6 +122,9 @@ class CollectionsResource extends JsonResource
             'sales'                   => $this->sales ?? 0,
             'sales_ly'                => $this->sales_ly ?? 0,
             'sales_delta'             => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'invoices'                => $this->invoices ?? 0,
+            'invoices_ly'             => $this->invoices_ly ?? 0,
+            'invoices_delta'          => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'current_interval'        => $this->current_interval ?? 'ytd',
         ];
     }

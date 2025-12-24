@@ -139,6 +139,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shipping_zone_id
  * @property bool|null $has_insurance
  * @property ShopTypeEnum|null $shop_type
+ * @property string|null $tracking_number for search purposes
+ * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -162,7 +164,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
- * @property-read Collection<int, \App\Models\GoodsIn\Sowing> $sowings
+ * @property-read Collection<int, Sowing> $sowings
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -190,6 +192,7 @@ class DeliveryNote extends Model implements Auditable
         'type'               => DeliveryNoteTypeEnum::class,
         'shop_type'          => ShopTypeEnum::class,
         'date'               => 'datetime',
+        'shipping_data'      => 'array',
         'order_submitted_at' => 'datetime',
         'assigned_at'        => 'datetime',
         'picking_at'         => 'datetime',
@@ -203,8 +206,9 @@ class DeliveryNote extends Model implements Auditable
     ];
 
     protected $attributes = [
-        'data'    => '{}',
-        'parcels' => '{}',
+        'data'          => '{}',
+        'parcels'       => '{}',
+        'shipping_data' => '{}',
     ];
 
     protected $guarded = [];

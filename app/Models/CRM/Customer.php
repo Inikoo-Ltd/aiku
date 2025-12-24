@@ -135,6 +135,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
  * @property string|null $post_source_id
  * @property bool $is_credit_customer Sage credit customer flag
  * @property string|null $accounting_reference Sage customer number
+ * @property string|null $external_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers

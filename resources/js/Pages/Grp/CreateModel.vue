@@ -9,7 +9,7 @@ import { Head, useForm, usePage } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle, faAsterisk, faChevronDown } from '@fas'
-import { faPhone } from '@fal'
+import { faAddressBook, faFileSignature, faPhone } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { isArray } from 'lodash-es'
@@ -21,7 +21,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Fieldform list
 
-library.add(faExclamationCircle, faAsterisk, faCheckCircle, faPhone, faChevronDown)
+library.add(faExclamationCircle, faAsterisk, faCheckCircle, faPhone, faChevronDown, faFileSignature, faAddressBook)
 
 const props = defineProps<{
     title: string

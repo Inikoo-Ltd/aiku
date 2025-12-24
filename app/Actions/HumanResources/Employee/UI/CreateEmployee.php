@@ -147,23 +147,23 @@ class CreateEmployee extends OrgAction
 
                                 'worker_number'       => [
                                     'type'     => 'input',
-                                    'label'    => __('worker number'),
+                                    'label'    => __('Worker number'),
                                     'required' => true,
                                     'value'    => ''
                                 ],
                                 'alias'               => [
                                     'type'     => 'input',
-                                    'label'    => __('alias'),
+                                    'label'    => __('Alias'),
                                     'required' => true,
                                     'value'    => ''
                                 ],
                                 'work_email'          => [
                                     'type'  => 'input',
-                                    'label' => __('work email'),
+                                    'label' => __('Work email'),
                                     'value' => ''
                                 ],
                                 'state'               => [
-                                    'label'     => __('state'),
+                                    'label'     => __('State'),
                                     'type'      => 'radio',
                                     'mode'      => 'card',
                                     'valueProp' => 'value',
@@ -184,7 +184,7 @@ class CreateEmployee extends OrgAction
                                 ],
                                 'employment_start_at' => [
                                     'type'     => 'date',
-                                    'label'    => __('employment start at'),
+                                    'label'    => __('Employment start at'),
                                     'value'    => '',
                                     'required' => true
                                 ],
@@ -195,7 +195,7 @@ class CreateEmployee extends OrgAction
                             'fields' => [
                                 'job_title' => [
                                     'type'        => 'input',
-                                    'label'       => __('job title'),
+                                    'label'       => __('Job title'),
                                     'placeholder' => __('Job title'),
                                     'searchable'  => true,
                                     'value'       => ''
@@ -203,7 +203,7 @@ class CreateEmployee extends OrgAction
                                 'positions' => [
                                     'type'     => 'employeePosition',
                                     'required' => true,
-                                    'label'    => __('position'),
+                                    'label'    => __('Position'),
                                     'options'  => [
                                         'positions'   => JobPositionResource::collection($this->organisation->jobPositions),
                                         'shops'       => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
@@ -221,13 +221,13 @@ class CreateEmployee extends OrgAction
 
                                 'username' => [
                                     'type'  => 'input',
-                                    'label' => __('username'),
+                                    'label' => __('Username'),
                                     'value' => ''
 
                                 ],
                                 'password' => [
                                     'type'  => 'password',
-                                    'label' => __('password'),
+                                    'label' => __('Password'),
                                     'value' => ''
                                 ],
                             ]

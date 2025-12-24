@@ -10,10 +10,10 @@
 namespace App\Http\Resources\CRM;
 
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 
 /**
  * @property string $slug
@@ -57,7 +57,8 @@ class CustomerFavouritesResource extends JsonResource
         }
 
 
-        $back_in_stock = false;
+        $back_in_stock_id = null;
+        $back_in_stock    = false;
 
         if ($request->user()) {
             $customer = $request->user()->customer;
@@ -67,7 +68,8 @@ class CustomerFavouritesResource extends JsonResource
                     ->first();
 
                 if ($set_data_back_in_stock) {
-                    $back_in_stock = true;
+                    $back_in_stock    = true;
+                    $back_in_stock_id = $set_data_back_in_stock->id;
                 }
             }
         }
@@ -81,32 +83,34 @@ class CustomerFavouritesResource extends JsonResource
 
         return [
             'id'                   => $this->id,
-            'image_id'             => $this->image_id,
-            'image'                => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'code'                 => $this->code,
             'name'                 => $this->name,
             'stock'                => $this->available_quantity,
             'price'                => $this->price,
-            'price_per_unit'       => $pricePerUnit,
             'rrp'                  => $this->rrp,
+            'rrp_per_unit'         => $rrpPerUnit,
+            'margin'               => $margin,
+            'profit'               => $profit,
             'state'                => $this->state,
             'status'               => $this->status,
             'created_at'           => $this->created_at,
             'updated_at'           => $this->updated_at,
+            'units'                => $units,
             'unit'                 => $this->unit,
             'url'                  => $this->canonical_url,
-            'slug_product'         => $this->slug,
-            'web_images'           => $this->web_images,
+            'top_seller'           => $this->top_seller,
+            'web_images'           => json_decode($this->web_images),
             'transaction_id'       => $this->transaction_id ?? null,
             'quantity_ordered'     => (int)$this->quantity_ordered ?? 0,
             'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
             'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
             'is_back_in_stock'     => $back_in_stock,
-            'margin'               => $margin,
-            'profit'               => $profit,
-            'units'                => $units,
+            'back_in_stock_id'     => $back_in_stock_id,
             'profit_per_unit'      => $profitPerUnit,
-            'rrp_per_unit'         => $rrpPerUnit,
+            'price_per_unit'       => $pricePerUnit,
+            'available_quantity'   => $this->available_quantity,
+            'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
+            'is_on_demand'         => $this->is_on_demand
         ];
     }
 }

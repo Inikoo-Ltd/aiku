@@ -21,6 +21,7 @@ use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,62 +47,111 @@ class IndexMasterCollections extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(MasterCollection::class);
-        $queryBuilder->leftjoin('master_collection_stats', 'master_collections.id', 'master_collection_stats.master_collection_id');
-
-        $queryBuilder->select(
-            [
+        $queryBuilder = QueryBuilder::for(MasterCollection::class)
+            ->leftJoin(
+                'master_collection_stats',
                 'master_collections.id',
-                'master_collections.code',
-                'master_collections.slug',
-                'master_collections.products_status',
-                'master_collections.data',
-                'master_collections.name',
-                'master_collections.status',
-                'master_collections.web_images',
-                'master_collection_stats.number_current_master_families',
-                'master_collection_stats.number_current_master_products',
-                'master_collection_stats.number_current_master_collections',
-                'master_collections.web_images',
-            ]
-        )
-            ->selectRaw("EXISTS(SELECT 1 FROM collections JOIN webpages ON collections.id = webpages.model_id WHERE collections.master_collection_id = master_collections.id AND collections.webpage_id IS NOT NULL AND webpages.deleted_at IS NULL AND webpages.model_type = 'Collection') as has_active_webpage")
-            ->selectRaw(
-                '(
-        SELECT concat(string_agg(master_product_categories.slug,\',\'),\'|\',string_agg(master_product_categories.type,\',\'),\'|\',string_agg(master_product_categories.code,\',\'),\'|\',string_agg(master_product_categories.name,\',\')) FROM model_has_master_collections
-        left join master_product_categories on model_has_master_collections.model_id = master_product_categories.id
-        WHERE model_has_master_collections.master_collection_id = master_collections.id
-   
-        AND model_has_master_collections.model_type = ?
-    ) as parents_data',
-                ['MasterProductCategory',]
+                'master_collection_stats.master_collection_id'
+            )
+            ->leftJoin(
+                'master_shops',
+                'master_shops.id',
+                'master_collections.master_shop_id'
             );
 
+        $queryBuilder->select([
+            'master_collections.id',
+            'master_collections.code',
+            'master_collections.slug',
+            'master_collections.products_status',
+            'master_collections.data',
+            'master_collections.name',
+            'master_collections.status',
+            'master_collections.web_images',
+
+            'master_collection_stats.number_current_master_families',
+            'master_collection_stats.number_current_master_products',
+            'master_collection_stats.number_current_master_collections',
+
+            'master_shops.slug as master_shop_slug',
+            'master_shops.code as master_shop_code',
+            'master_shops.name as master_shop_name',
+        ]);
+
+
+        $queryBuilder->selectRaw("
+            EXISTS (
+                SELECT 1
+                FROM collections
+                JOIN webpages ON collections.id = webpages.model_id
+                WHERE collections.master_collection_id = master_collections.id
+                AND collections.webpage_id IS NOT NULL
+                AND webpages.deleted_at IS NULL
+                AND webpages.model_type = 'Collection'
+            ) AS has_active_webpage
+        ");
+
+
+        $queryBuilder->addSelect(DB::raw("
+            (
+                SELECT json_agg(
+                    json_build_object(
+                        'id', mpc.id,
+                        'code', mpc.code,
+                        'slug', mpc.slug,
+                        'name', mpc.name
+                    )
+                    ORDER BY mpc.code
+                )
+                FROM model_has_master_collections mhmc
+                JOIN master_product_categories mpc
+                    ON mhmc.model_id = mpc.id
+                WHERE mhmc.master_collection_id = master_collections.id
+                AND mhmc.model_type = 'MasterProductCategory'
+                AND mhmc.type = 'master_department'
+            ) AS departments_data
+        "));
+
+        $queryBuilder->addSelect(DB::raw("
+            (
+                SELECT json_agg(
+                    json_build_object(
+                        'id', mpc.id,
+                        'code', mpc.code,
+                        'slug', mpc.slug,
+                        'name', mpc.name
+                    )
+                    ORDER BY mpc.code
+                )
+                FROM model_has_master_collections mhmc
+                JOIN master_product_categories mpc
+                    ON mhmc.model_id = mpc.id
+                WHERE mhmc.master_collection_id = master_collections.id
+                AND mhmc.model_type = 'MasterProductCategory'
+                AND mhmc.type = 'master_sub_department'
+            ) AS sub_departments_data
+        "));
+
+
+        /**
+         * Parent scope
+         */
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_collections.master_shop_id', $parent->id);
         } else {
             $queryBuilder->where('master_collections.group_id', $parent->id);
         }
 
-        $queryBuilder->leftJoin('master_shops', 'master_shops.id', 'master_collections.master_shop_id');
-        $queryBuilder->addSelect([
-            'master_shops.slug as master_shop_slug',
-            'master_shops.code as master_shop_code',
-            'master_shops.name as master_shop_name',
-        ]);
-
         return $queryBuilder
             ->defaultSort('master_collections.code')
-            ->allowedSorts(
-                [
-                    'status',
-                    'code',
-                    'name',
-                    'number_current_master_families',
-                    'number_current_master_products',
-                    'number_current_master_collections'
-                ]
-            )
+            ->allowedSorts([
+                'status',
+                'code',
+                'name',
+                'number_current_master_families',
+                'number_current_master_products',
+                'number_current_master_collections',
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -113,7 +163,7 @@ class IndexMasterCollections extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->withGlobalSearch()
@@ -123,12 +173,13 @@ class IndexMasterCollections extends OrgAction
                     ],
                 );
 
-            $table
-                ->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
-            $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
+            $table->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
+            /*   $table->column(key: 'parents', label: __('Parents'), canBeHidden: false); */
             $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __(key: 'Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'master_department', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false);
+            $table->column(key: 'master_sub_department', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false);
             $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
@@ -189,8 +240,7 @@ class IndexMasterCollections extends OrgAction
                             'tooltip' => __('New master collection'),
                             'label'   => __('Master collection'),
                             'route'   => match ($this->parent::class) {
-                                MasterProductCategory::class => [
-                                ],
+                                MasterProductCategory::class => [],
                                 default => [
                                     'name'       => 'grp.masters.master_shops.show.master_collections.create',
                                     'parameters' => $request->route()->originalParameters()

@@ -127,7 +127,7 @@ class EditWebUser extends OrgAction
                                 ],
                                 'username'     => [
                                     'type'  => 'input',
-                                    'label' => __('username'),
+                                    'label' => __('Username'),
                                     'value' => $webUser->username
                                 ],
                                 'password'     => [

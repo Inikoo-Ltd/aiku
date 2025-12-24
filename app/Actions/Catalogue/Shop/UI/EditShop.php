@@ -13,6 +13,7 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -29,7 +30,7 @@ class EditShop extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
+        return $request->user()->authTo(['org-admin.' . $this->organisation->id, 'shop-admin.' . $this->shop->id]);
     }
 
     public function handle(Shop $shop): Shop
@@ -82,7 +83,7 @@ class EditShop extends OrgAction
             ]
         ];
 
-        // Disable Widget_Key input if shop doesn't have any related website
+        // Disable Widget_Key input if the shop doesn't have any related website
         if ($shop->website) {
             $helpPortalFields['widget_key'] = [
                 'type'          => 'input',
@@ -90,6 +91,351 @@ class EditShop extends OrgAction
                 'label'         => __('Widget Key'),
                 'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
             ];
+        }
+
+        $isExternalFaire =  $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE;
+
+        $allowedBlueprintLabels = [
+            __('Shop details'),
+            __('Properties'),
+            __('Languages'),
+            __('Faire Keys'),
+        ];
+
+        $formData = [
+            'blueprint' => [
+                [
+                    'label'  => __('Shop details'),
+                    'icon'   => 'fa-light fa-id-card',
+                    'fields' => [
+                        'code'  => [
+                            'type'     => 'input',
+                            'label'    => __('Code'),
+                            'value'    => $shop->code,
+                            'required' => true,
+                        ],
+                        'name'  => [
+                            'type'     => 'input',
+                            'label'    => __('Name'),
+                            'value'    => $shop->name,
+                            'required' => true,
+                        ],
+                        "image" => [
+                            "type"  => "avatar",
+                            "label" => __("Logo"),
+                            "value" => $shop->imageSources(320, 320)
+                        ],
+
+                        'contact_name'        => [
+                            'type'  => 'input',
+                            'label' => __('contact name'),
+                            'value' => $shop->contact_name,
+                        ],
+                        'company_name'        => [
+                            'type'  => 'input',
+                            'label' => __('company name'),
+                            'value' => $shop->company_name,
+                        ],
+                        'email'               => [
+                            'type'    => 'input',
+                            'label'   => __('email'),
+                            'value'   => $shop->email,
+                            'options' => [
+                                'inputType' => 'email'
+                            ]
+                        ],
+                        'phone'               => [
+                            'type'  => 'phone',
+                            'label' => __('telephone'),
+                            'value' => $shop->phone,
+                        ],
+                        'address'             => [
+                            'type'    => 'address',
+                            'label'   => __('Address'),
+                            'value'   => AddressFormFieldsResource::make($shop->address)->getArray(),
+                            'options' => [
+                                'countriesAddressData' => GetAddressData::run()
+                            ]
+                        ],
+                        'registration_number' => [
+                            'type'  => 'input',
+                            'label' => __('registration number'),
+                            'value' => $shop->data['registration_number'] ?? '',
+                        ],
+                        'vat_number'          => [
+                            'type'  => 'input',
+                            'label' => __('VAT number'),
+                            'value' => $shop->data['vat_number'] ?? '',
+                        ],
+
+                    ]
+                ],
+                [
+                    'label'  => __('Properties'),
+                    'icon'   => 'fa-light fa-fingerprint',
+                    'fields' => [
+                        'country_id'  => [
+                            'type'        => 'select',
+                            'label'       => __('country'),
+                            'placeholder' => __('Select your country'),
+                            'value'       => $shop->country_id,
+                            'options'     => GetCountriesOptions::run(),
+                            'searchable'  => true
+                        ],
+                        'currency_id' => [
+                            'type'        => 'select',
+                            'label'       => __('currency'),
+                            'placeholder' => __('Select your currency'),
+                            'required'    => true,
+                            'value'       => $shop->currency_id,
+                            'options'     => GetCurrenciesOptions::run(),
+                            'searchable'  => true
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Pricing'),
+                    'icon'   => 'fa-light fa-money-bill',
+                    'fields' => [
+                        'cost_price_ratio' => [
+                            'type'        => 'input_number',
+                            'bind'        => [
+                                'maxFractionDigits' => 3
+                            ],
+                            'label'       => __('pricing ratio'),
+                            'placeholder' => __('Cost price ratio'),
+                            'required'    => true,
+                            'value'       => $shop->cost_price_ratio,
+                            'min'         => 0
+                        ],
+                        'price_rrp_ratio'  => [
+                            'type'        => 'input_number',
+                            'bind'        => [
+                                'maxFractionDigits' => 3
+                            ],
+                            'label'       => __('rrp ratio'),
+                            'placeholder' => __('price rrp ratio'),
+                            'required'    => true,
+                            'value'       => $shop->price_rrp_ratio,
+                            'min'         => 0
+                        ]
+                    ]
+                ],
+                [
+                    'label'  => __('Registration'),
+                    'icon'   => 'fal fa-transporter',
+                    'fields' => [
+                        'required_approval' => [
+                            'type'  => 'toggle',
+                            'label' => __('Require approval'),
+                            'value' => Arr::get($shop->settings, 'registration.require_approval', false),
+                        ],
+                        'required_phone_number' => [
+                            'type'  => 'toggle',
+                            'label' => __('Require phone number'),
+                            'value' => Arr::get($shop->settings, 'registration.require_phone_number', false),
+                        ],
+
+                        'marketing_opt_in_label' => [
+                            'type'  => 'input',
+                            'label' => __('Marketing opt-in label'),
+                            'placeholder'   => __('Opt in to our newsletter for updates and offers.'),
+                            'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_label', ''),
+                        ],
+                        'marketing_opt_in_default' => [
+                            'type'  => 'toggle',
+                            'label' => __('Marketing opt-in set as checked'),
+                            'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_default', false),
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Invoice numbers'),
+                    'icon'   => 'fal fa-file-invoice',
+                    'fields' => [
+                        'invoice_serial_references' => [
+                            'type'    => 'invoice_serial_references',
+                            'options' => [
+                                [
+                                    'type' => [
+                                        'label' => __('Standalone invoice numbers'),
+                                        'key_value' => 'stand_alone_invoice_numbers'
+                                    ],
+                                    'format' => [
+                                        'label' => __('format'),
+                                        'key_value' => 'stand_alone_invoice_numbers_format'
+                                    ],
+                                    'sequence' => [
+                                        'label' => __('sequence'),
+                                        'key_value' => 'stand_alone_invoice_numbers_serial'
+                                    ],
+                                ],
+                                [
+                                    'type' => [
+                                        'label' => __('Standalone refunds numbers'),
+                                        'key_value' => 'stand_alone_refund_numbers'
+                                    ],
+                                    'format' => [
+                                        'label' => __('format'),
+                                        'key_value' => 'stand_alone_refund_numbers_format'
+                                    ],
+                                    'sequence' => [
+                                        'label' => __('sequence'),
+                                        'key_value' => 'stand_alone_refund_numbers_serial'
+                                    ],
+                                ],
+                            ],
+                            'label'   => __('Invoice numbers'),
+                            'value'   => [
+                                'stand_alone_invoice_numbers'        => Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers', false),
+                                'stand_alone_invoice_numbers_format' => $invoiceSerialReference->format,
+                                'stand_alone_invoice_numbers_serial' => $invoiceSerialReference->serial,
+                                'stand_alone_refund_numbers'         => Arr::get($shop->settings, 'invoicing.stand_alone_refund_numbers', false),
+                                'stand_alone_refund_numbers_format'  => $refundSerialReference?->format,
+                                'stand_alone_refund_numbers_serial'  => $refundSerialReference?->serial,
+                            ]
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('invoices footer'),
+                    'icon'   => 'fa-light fa-shoe-prints',
+                    'fields' => [
+                        'invoice_footer' => [
+                            'type'  => 'textEditor',
+                            'label' => __('invoice footer'),
+                            'full'  => true,
+                            'value' => $shop->invoice_footer
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Languages'),
+                    'icon'   => 'fa-light fa-language',
+                    'fields' => [
+                        'language_id'     => [
+                            'type'        => 'select',
+                            'label'       => __('Main language'),
+                            'placeholder' => __('Select your language'),
+                            'required'    => true,
+                            'value'       => $shop->language_id,
+                            'options'     => GetLanguagesOptions::make()->all(),
+                            'searchable'  => true
+                        ],
+                        'extra_languages' => [
+                            'type'        => 'select',
+                            'label'       => __('Extra language'),
+                            'placeholder' => __('Select your language'),
+                            'required'    => true,
+                            'value'       => $shop->extra_languages,
+                            'options'     => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
+                            'searchable'  => true,
+                            'mode'        => 'tags',
+                            'labelProp'   => 'name',
+                            'valueProp'   => 'id',
+                        ]
+                    ],
+                ],
+                [
+                    'label'  => __('Shipping'),
+                    'icon'   => 'fa-light fa-truck',
+                    'fields' => [
+                        'forbidden_dispatch_countries' => [
+                            'type'        => 'multiselect-tags',
+                            'placeholder' => __('Select countries'),
+                            'information' => __('Customer cannot submit order that delivered to these countries'),
+                            'label'       => __('Forbidden Countries'),
+                            'required'    => true,
+                            'value'       => $result,
+                            'options'     => GetCountriesOptions::run(),
+                            'searchable'  => true,
+                            'mode'        => 'tags',
+                            'labelProp'   => 'label',
+                            'valueProp'   => 'id'
+                        ]
+                    ],
+                ],
+                $shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                    'label'  => __('Ebay Redirect Key'),
+                    'icon'   => 'fa-light fa-key',
+                    'fields' => [
+                        'ebay_redirect_key' => [
+                            'type'  => 'input',
+                            'label' => __('Ebay Redirect Key'),
+                            'value' => Arr::get($shop->settings, 'ebay.redirect_key', ''),
+                        ],
+                        'ebay_marketplace_id' => [
+                            'type'  => 'input',
+                            'label' => __('Ebay Marketplace Id'),
+                            'value' => Arr::get($shop->settings, 'ebay.marketplace_id', ''),
+                        ],
+                        'ebay_warehouse_city' => [
+                            'type'  => 'input',
+                            'label' => __('Ebay Warehouse City'),
+                            'value' => Arr::get($shop->settings, 'ebay.warehouse_city', ''),
+                        ],
+                        'ebay_warehouse_state' => [
+                            'type'  => 'input',
+                            'label' => __('Ebay Warehouse State'),
+                            'value' => Arr::get($shop->settings, 'ebay.warehouse_state', ''),
+                        ],
+                        'ebay_warehouse_country' => [
+                            'type'  => 'select',
+                            'label' => __('Ebay Warehouse Country'),
+                            'value' => Arr::get($shop->settings, 'ebay.warehouse_country', ''),
+                            'options'     => GetCountriesOptions::run(),
+                            'mode'        => 'single'
+                        ],
+                    ],
+                ] : [],
+                $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE ?
+                    [
+                        'label' => __('Faire Keys'),
+                        'icon'   => 'fa-light fa-key',
+                        'fields' => [
+                            'faire_access_token' => [
+                                'type'  => 'input',
+                                'label' => __('Faire Access Token'),
+                                'value' => Arr::get($shop->settings, 'faire.access_token', ''),
+                            ]
+                        ],
+                    ] : [],
+                [
+                    'label'  => __('HELP Portal'),
+                    'icon'   => 'fal fa-life-ring',
+                    'fields' => $helpPortalFields,
+                ]
+            ],
+            'args' => [
+                'updateRoute' => [
+                    'name'       => 'grp.models.org.shop.update',
+                    'parameters' => [
+                        'organisation' => $shop->organisation_id,
+                        'shop'         => $shop->id,
+                    ],
+                ],
+            ],
+        ];
+
+        if ($isExternalFaire) {
+            if (!isset($formData['blueprint'])) {
+                $formData['blueprint'] = [];
+            }
+
+            $filteredBlueprint = [];
+
+            foreach ($formData['blueprint'] as $section) {
+                if (
+                    is_array($section)
+                    && isset($section['label'])
+                    && is_string($section['label'])
+                    && in_array($section['label'], $allowedBlueprintLabels, true)
+                ) {
+                    $filteredBlueprint[] = $section;
+                }
+            }
+
+            $formData['blueprint'] = array_values($filteredBlueprint);
         }
 
         return Inertia::render(
@@ -116,315 +462,7 @@ class EditShop extends OrgAction
                     ]
                 ],
 
-                'formData' => [
-                    'blueprint' => [
-                        [
-                            'label'  => __('Shop details'),
-                            'icon'   => 'fa-light fa-id-card',
-                            'fields' => [
-                                'code'  => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'value'    => $shop->code,
-                                    'required' => true,
-                                ],
-                                'name'  => [
-                                    'type'     => 'input',
-                                    'label'    => __('Name'),
-                                    'value'    => $shop->name,
-                                    'required' => true,
-                                ],
-                                "image" => [
-                                    "type"  => "avatar",
-                                    "label" => __("Logo"),
-                                    "value" => $shop->imageSources(320, 320)
-                                ],
-
-                                'contact_name'        => [
-                                    'type'  => 'input',
-                                    'label' => __('contact name'),
-                                    'value' => $shop->contact_name,
-                                ],
-                                'company_name'        => [
-                                    'type'  => 'input',
-                                    'label' => __('company name'),
-                                    'value' => $shop->company_name,
-                                ],
-                                'email'               => [
-                                    'type'    => 'input',
-                                    'label'   => __('email'),
-                                    'value'   => $shop->email,
-                                    'options' => [
-                                        'inputType' => 'email'
-                                    ]
-                                ],
-                                'phone'               => [
-                                    'type'  => 'phone',
-                                    'label' => __('telephone'),
-                                    'value' => $shop->phone,
-                                ],
-                                'address'             => [
-                                    'type'    => 'address',
-                                    'label'   => __('Address'),
-                                    'value'   => AddressFormFieldsResource::make($shop->address)->getArray(),
-                                    'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
-                                    ]
-                                ],
-                                'registration_number' => [
-                                    'type'  => 'input',
-                                    'label' => __('registration number'),
-                                    'value' => $shop->data['registration_number'] ?? '',
-                                ],
-                                'vat_number'          => [
-                                    'type'  => 'input',
-                                    'label' => __('VAT number'),
-                                    'value' => $shop->data['vat_number'] ?? '',
-                                ],
-
-                            ]
-                        ],
-                        [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'fields' => [
-                                'country_id'  => [
-                                    'type'        => 'select',
-                                    'label'       => __('country'),
-                                    'placeholder' => __('Select your country'),
-                                    'value'       => $shop->country_id,
-                                    'options'     => GetCountriesOptions::run(),
-                                    'searchable'  => true
-                                ],
-                                'currency_id' => [
-                                    'type'        => 'select',
-                                    'label'       => __('currency'),
-                                    'placeholder' => __('Select your currency'),
-                                    'required'    => true,
-                                    'value'       => $shop->currency_id,
-                                    'options'     => GetCurrenciesOptions::run(),
-                                    'searchable'  => true
-                                ],
-                            ],
-                        ],
-                        // [
-                        //     'label'  => __('contact/details'),
-                        //     'icon'   => 'fa-light fa-user',
-                        //     'fields' => [
-
-                        //     ]
-                        // ],
-                        [
-                            'label'  => __('Pricing'),
-                            'icon'   => 'fa-light fa-money-bill',
-                            'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('pricing ratio'),
-                                    'placeholder' => __('Cost price ratio'),
-                                    'required'    => true,
-                                    'value'       => $shop->cost_price_ratio,
-                                    'min'         => 0
-                                ],
-                                'price_rrp_ratio'  => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('rrp ratio'),
-                                    'placeholder' => __('price rrp ratio'),
-                                    'required'    => true,
-                                    'value'       => $shop->price_rrp_ratio,
-                                    'min'         => 0
-                                ]
-                            ]
-                        ],
-                        [
-                            'label'  => __('Registration'),
-                            'icon'   => 'fal fa-transporter',
-                            'fields' => [
-                                'required_approval' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Require approval'),
-                                    'value' => Arr::get($shop->settings, 'registration.require_approval', false),
-                                ],
-                                'required_phone_number' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Require phone number'),
-                                    'value' => Arr::get($shop->settings, 'registration.require_phone_number', false),
-                                ],
-
-                                'marketing_opt_in_label' => [
-                                    'type'  => 'input',
-                                    'label' => __('Marketing opt-in label'),
-                                    'placeholder'   => 'Opt in to our newsletter for updates and offers.',
-                                    'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_label', ''),
-                                ],
-                                'marketing_opt_in_default' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Marketing opt-in set as checked'),
-                                    'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_default', false),
-                                ],
-                            ],
-                        ],
-                        [
-                            'label'  => __('Invoice numbers'),
-                            'icon'   => 'fal fa-file-invoice',
-                            'fields' => [
-                                'invoice_serial_references' => [
-                                    'type'    => 'invoice_serial_references',
-                                    'options' => [
-                                            [
-                                                'type' => [
-                                                    'label' => __('Standalone invoice numbers'),
-                                                    'key_value' => 'stand_alone_invoice_numbers'
-                                                ],
-                                                'format' => [
-                                                    'label' => __('format'),
-                                                    'key_value' => 'stand_alone_invoice_numbers_format'
-                                                ],
-                                                'sequence' => [
-                                                    'label' => __('sequence'),
-                                                    'key_value' => 'stand_alone_invoice_numbers_serial'
-                                                ],
-                                            ],
-                                            [
-                                                'type' => [
-                                                    'label' => __('Standalone refunds numbers'),
-                                                    'key_value' => 'stand_alone_refund_numbers'
-                                                ],
-                                                'format' => [
-                                                    'label' => __('format'),
-                                                    'key_value' => 'stand_alone_refund_numbers_format'
-                                                ],
-                                                'sequence' => [
-                                                    'label' => __('sequence'),
-                                                    'key_value' => 'stand_alone_refund_numbers_serial'
-                                                ],
-                                            ],
-                                    ],
-                                    'label'   => __('Invoice numbers'),
-                                    'value'   => [
-                                        'stand_alone_invoice_numbers'        => Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers', false),
-                                        'stand_alone_invoice_numbers_format' => $invoiceSerialReference->format,
-                                        'stand_alone_invoice_numbers_serial' => $invoiceSerialReference->serial,
-                                        'stand_alone_refund_numbers'         => Arr::get($shop->settings, 'invoicing.stand_alone_refund_numbers', false),
-                                        'stand_alone_refund_numbers_format'  => $refundSerialReference?->format,
-                                        'stand_alone_refund_numbers_serial'  => $refundSerialReference?->serial,
-                                    ]
-                                ],
-                            ],
-                        ],
-                        [
-                            'label'  => __('invoices footer'),
-                            'icon'   => 'fa-light fa-shoe-prints',
-                            'fields' => [
-                                'invoice_footer' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('invoice footer'),
-                                    'full'  => true,
-                                    'value' => $shop->invoice_footer
-                                ],
-                            ],
-                        ],
-                        [
-                            'label'  => __('Languages'),
-                            'icon'   => 'fa-light fa-language',
-                            'fields' => [
-                                'language_id'     => [
-                                    'type'        => 'select',
-                                    'label'       => __('Main language'),
-                                    'placeholder' => __('Select your language'),
-                                    'required'    => true,
-                                    'value'       => $shop->language_id,
-                                    'options'     => GetLanguagesOptions::make()->all(),
-                                    'searchable'  => true
-                                ],
-                                'extra_languages' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Extra language'),
-                                    'placeholder' => __('Select your language'),
-                                    'required'    => true,
-                                    'value'       => $shop->extra_languages,
-                                    'options'     => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
-                                    'searchable'  => true,
-                                    'mode'        => 'tags',
-                                    'labelProp'   => 'name',
-                                    'valueProp'   => 'id',
-                                ]
-                            ],
-                        ],
-                        [
-                            'label'  => __('Shipping'),
-                            'icon'   => 'fa-light fa-truck',
-                            'fields' => [
-                                'forbidden_dispatch_countries' => [
-                                    'type'        => 'multiselect-tags',
-                                    'placeholder' => __('Select countries'),
-                                    'information' => __('Customer cannot submit order that delivered to these countries'),
-                                    'label'       => __('Forbidden Countries'),
-                                    'required'    => true,
-                                    'value'       => $result,
-                                    'options'     => GetCountriesOptions::run(),
-                                    'searchable'  => true,
-                                    'mode'        => 'tags',
-                                    'labelProp'   => 'label',
-                                    'valueProp'   => 'id'
-                                ]
-                            ],
-                        ],
-                        $shop->type === ShopTypeEnum::DROPSHIPPING ? [
-                            'label'  => __('Ebay Redirect Key'),
-                            'icon'   => 'fa-light fa-key',
-                            'fields' => [
-                                'ebay_redirect_key' => [
-                                    'type'  => 'input',
-                                    'label' => __('Ebay Redirect Key'),
-                                    'value' => Arr::get($shop->settings, 'ebay.redirect_key', ''),
-                                ],
-                                'ebay_marketplace_id' => [
-                                    'type'  => 'input',
-                                    'label' => __('Ebay Marketplace Id'),
-                                    'value' => Arr::get($shop->settings, 'ebay.marketplace_id', ''),
-                                ],
-                                'ebay_warehouse_city' => [
-                                    'type'  => 'input',
-                                    'label' => __('Ebay Warehouse City'),
-                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_city', ''),
-                                ],
-                                'ebay_warehouse_state' => [
-                                    'type'  => 'input',
-                                    'label' => __('Ebay Warehouse State'),
-                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_state', ''),
-                                ],
-                                'ebay_warehouse_country' => [
-                                    'type'  => 'select',
-                                    'label' => __('Ebay Warehouse Country'),
-                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_country', ''),
-                                    'options'     => GetCountriesOptions::run(),
-                                    'mode'        => 'single'
-                                ],
-                            ],
-                        ] : [],
-                        [
-                            'label'  => __('HELP Portal'),
-                            'icon'   => 'fal fa-life-ring',
-                            'fields' => $helpPortalFields,
-                        ]
-                    ],
-                    'args'      => [
-                        'updateRoute' => [
-                            'name'       => 'grp.models.org.shop.update',
-                            'parameters' => [
-                                'organisation' => $shop->organisation_id,
-                                'shop'         => $shop->id
-                            ]
-                        ],
-                    ]
-                ],
+                'formData' => $formData,
 
             ]
         );
@@ -452,6 +490,4 @@ class EditShop extends OrgAction
             default => []
         };
     }
-
-
 }

@@ -48,7 +48,7 @@ class IndexCollections extends OrgAction
     use WithFamilySubNavigation;
     use WithCollectionsSubNavigation;
 
-    private string $bucket;
+    private string $bucket = 'all';
 
     protected function getElementGroups(Shop $parent): array
     {
@@ -86,7 +86,7 @@ class IndexCollections extends OrgAction
         $queryBuilder->where('collections.shop_id', $shop->id);
         $queryBuilder->leftjoin('collection_stats', 'collection_stats.collection_id', 'collections.id');
         $queryBuilder->leftJoin('collection_sales_intervals', 'collection_sales_intervals.collection_id', 'collections.id');
-
+        $queryBuilder->leftJoin('collection_ordering_intervals', 'collection_ordering_intervals.collection_id', 'collections.id');
 
         $queryBuilder
             ->leftJoin('webpages', function ($join) {
@@ -124,6 +124,10 @@ class IndexCollections extends OrgAction
             ? 'NULL'
             : "collection_sales_intervals.sales_grp_currency_{$interval}_ly";
 
+        $invoicesLyColumn = $interval === 'all'
+            ? 'NULL'
+            : "collection_ordering_intervals.invoices_{$interval}_ly";
+
         $queryBuilder
             ->defaultSort('collections.code')
             ->select([
@@ -154,6 +158,8 @@ class IndexCollections extends OrgAction
                 'currencies.code as currency_code',
                 DB::raw("collection_sales_intervals.sales_grp_currency_{$interval} as sales"),
                 DB::raw("{$salesLyColumn} as sales_ly"),
+                DB::raw("collection_ordering_intervals.invoices_{$interval} as invoices"),
+                DB::raw("{$invoicesLyColumn} as invoices_ly"),
                 DB::raw("'{$interval}' as current_interval"),
             ])
             ->selectRaw(
@@ -187,6 +193,20 @@ class IndexCollections extends OrgAction
                         {
                             $direction = $descending ? 'desc' : 'asc';
                             $query->orderBy("collection_sales_intervals.sales_grp_currency_{$this->interval}", $direction);
+                        }
+                    }
+                ),
+                AllowedSort::custom(
+                    'invoices',
+                    new class ($interval) implements Sort {
+                        public function __construct(private string $interval)
+                        {
+                        }
+
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy("collection_ordering_intervals.invoices_{$this->interval}", $direction);
                         }
                     }
                 ),
@@ -233,7 +253,9 @@ class IndexCollections extends OrgAction
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
             } else {
                 $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
                 $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
@@ -348,8 +370,8 @@ class IndexCollections extends OrgAction
                     : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
 
                 CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
-                    fn () => CollectionsResource::collection($collections)
-                    : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
+                    fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::SALES->value));
@@ -368,27 +390,27 @@ class IndexCollections extends OrgAction
     public function active(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'active';
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionsTabsEnum::values());
 
-        return $this->handle(shop: $shop);
+        return $this->handle(shop: $shop, prefix: CollectionsTabsEnum::INDEX->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inactive(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'inactive';
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionsTabsEnum::values());
 
-        return $this->handle(shop: $shop);
+        return $this->handle(shop: $shop, prefix: CollectionsTabsEnum::INDEX->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inProcess(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'in_process';
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionsTabsEnum::values());
 
-        return $this->handle(shop: $shop);
+        return $this->handle(shop: $shop, prefix: CollectionsTabsEnum::INDEX->value);
     }
 
 

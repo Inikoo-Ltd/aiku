@@ -18,6 +18,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\SysAdmin\User;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Http\RedirectResponse;
@@ -75,9 +76,11 @@ class StorePickingSession extends OrgAction
 
             data_set($modelData, 'state', PickingSessionStateEnum::IN_PROCESS->value);
 
+            $user = request()->user() ?? ($modelData['user_id'] ? User::find($modelData['user_id']) : null);
+            data_set($modelData, 'user_id', $user?->id);
+
             data_set($modelData, 'group_id', $warehouse->group_id);
             data_set($modelData, 'organisation_id', $warehouse->organisation_id);
-            data_set($modelData, 'user_id', request()->user()->id);
 
             /** @var PickingSession $pickingSession */
             $pickingSession = $warehouse->pickingSessions()->create($modelData);
@@ -101,9 +104,9 @@ class StorePickingSession extends OrgAction
 
                 $numberDeliveryNotes++;
                 if ($queued) {
-                    StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
+                    StartHandlingDeliveryNote::make()->action($deliveryNote, $user);
                 } else {
-                    UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, request()->user());
+                    UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $user);
                 }
 
                 foreach ($deliveryNote->deliveryNoteItems as $item) {

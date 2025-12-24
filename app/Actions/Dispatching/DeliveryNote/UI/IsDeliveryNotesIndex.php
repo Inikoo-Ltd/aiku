@@ -35,7 +35,8 @@ trait IsDeliveryNotesIndex
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('delivery_notes.reference', $value);
+                $query->whereWith('delivery_notes.reference', $value)
+                    ->orWhereWith('delivery_notes.tracking_number', $value);
             });
         });
 
@@ -115,7 +116,7 @@ trait IsDeliveryNotesIndex
                   ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
-        return $query->defaultSort('delivery_notes.created_at')
+        return $query->defaultSort('-delivery_notes.date')
             ->select([
                 'delivery_notes.id',
                 'delivery_notes.reference',
@@ -142,6 +143,7 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.internal_notes',
                 'delivery_notes.public_notes',
                 'delivery_notes.shipping_notes',
+                'delivery_notes.shipping_data',
             ])
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
@@ -224,6 +226,10 @@ trait IsDeliveryNotesIndex
                 );
 
 
+            if ($bucket == 'all') {
+                $table->column(key: 'state', label: '', type: 'icon');
+            }
+
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
@@ -235,9 +241,15 @@ trait IsDeliveryNotesIndex
             }
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
+            if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
+                $table->column(key: 'delivery', label: __('Shipping'));
+            }
+
             if ($bucket == 'unassigned' && $pickerEmployee) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }
+
+
         };
     }
 

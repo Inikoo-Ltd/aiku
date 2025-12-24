@@ -12,6 +12,7 @@ namespace App\Models\Goods;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -39,6 +40,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
+ * @method static \Database\Factories\Goods\IngredientFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Ingredient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Ingredient newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Ingredient query()
@@ -46,6 +48,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Ingredient extends Model implements Auditable
 {
+    use HasFactory;
     use HasSlug;
     use HasHistory;
     use InGroup;
