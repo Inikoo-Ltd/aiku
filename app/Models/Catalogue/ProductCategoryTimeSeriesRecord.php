@@ -21,8 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $orders
  * @property int $delivery_notes
  * @property int $customers_invoiced
- * @property string|null $from
- * @property string|null $to
+ * @property \Illuminate\Support\Carbon|null $from
+ * @property \Illuminate\Support\Carbon|null $to
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryTimeSeriesRecord newModelQuery()
@@ -36,6 +36,11 @@ class ProductCategoryTimeSeriesRecord extends Model
 
     protected $guarded = [];
 
-
-
+    protected function casts(): array
+    {
+        return [
+            'from' => 'datetime',
+            'to' => 'datetime',
+        ];
+    }
 }
