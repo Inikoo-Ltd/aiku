@@ -16,6 +16,7 @@ import { trans } from 'laravel-vue-i18n'
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
 import { set, get } from 'lodash-es'
+import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -184,6 +185,12 @@ const onSave = async () => {
             
         }
         console.log('Response axios:', response.data)
+
+        notify({
+            title: trans("Success bulk edit products!"),
+            text: trans("Changes may need some seconds to update."),
+            type: "success",
+        })
     } catch (error: any) {
         console.log('error axios', error)
         notify({
@@ -209,7 +216,7 @@ const toggleDescription = (event) => {
 <template>
     <div>
         <div class="card">
-            <Toolbar class="">
+            <!-- <Toolbar class="">
                 <template #start>
                     <ButtonPrime label="Delete" icon="pi pi-trash" severity="danger" variant="outlined"
                         :disabled="!selectedProducts || !selectedProducts.length" />
@@ -220,7 +227,7 @@ const toggleDescription = (event) => {
                         chooseLabel="Import" class="mr-2" auto :chooseButtonProps="{ severity: 'secondary' }" />
                     <ButtonPrime label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV($event)" />
                 </template>
-            </Toolbar>
+            </Toolbar> -->
 
             <DataTable
                 ref="dt"
@@ -239,7 +246,7 @@ const toggleDescription = (event) => {
             >
                 <template #header>
                     <div class="flex flex-wrap gap-2 items-center justify-between">
-                        <div class="py-2">
+                        <div class="">
                             <IconField>
                                 <InputIcon>
                                     <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
@@ -275,7 +282,7 @@ const toggleDescription = (event) => {
                                 </FloatLabel>
                             </div>
 
-                            <div class="border-l border-gray-300 py-3 ml-3.5 pl-6 ">
+                            <div class="h-full border-l border-gray-300 py-3 ml-3.5 pl-6 ">
                                 <Button
                                     @click="() => onSave()"
                                     label="Save"
@@ -440,35 +447,19 @@ const toggleDescription = (event) => {
                 <!-- Column: Family -->
                 <Column v-if="selectedColumns.includes('family_id')" field="family_id" header="Family" sortable style="min-width: 10rem">
                     <template #body="{ data }">
-                        <!-- TODO: Need fix -->
-                        <Select
-                            v-model="data.master_family_id"
-                            :options="familiesList?.length ? familiesList : [data.master_family_data]"
-                            filter
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select a Family"
-                            class="w-full md:w-56"
-                            @show="() => fetchFamilies(data.shop_id, data.master_family_data)"
-                            @hide="() => familiesList = null"
-                        >
-                            <template #value="slotProps">
-                                <div v-if="slotProps.value" class="flex items-center">
-                                    <!-- <img :alt="slotProps.value.label" src="https://primefaces.org/cdn/primevue/images/flag/flag_placeholder.png" :class="`mr-2 flag flag-${slotProps.value?.code?.toLowerCase()}`" style="width: 18px" /> -->
-                                    <div>{{ (familiesList?.length ? familiesList : [data.master_family_data]).find(family => family.id === slotProps.value)?.name }}</div>
-                                </div>
-
-                                <span v-else>
-                                    {{ slotProps.placeholder }}
-                                </span>
-                            </template>
-                            
-                            <template #option="slotProps">
-                                <div class="flex items-center">
-                                    <div>{{ (familiesList?.length ? familiesList : [data.master_family_data]).find(family => family?.id === slotProps?.option?.id)?.name }}</div>
-                                </div>
-                            </template>
-                        </Select>
+                        <div class="w-full md:w-64">
+                            <PureMultiselectInfiniteScroll
+                                v-model="data.master_family_id"
+                                :fetch-route="{
+                                    name: 'grp.json.master-family.all-master-family',
+                                    parameters: {
+                                        masterShop: route().params.masterShop
+                                    }
+                                }"
+                                :initOptions="data.master_family_data ? [data.master_family_data] : undefined"
+                                :placeholder="trans('Select a family')"
+                            />
+                        </div>
                     </template>
                 </Column>
             </DataTable>

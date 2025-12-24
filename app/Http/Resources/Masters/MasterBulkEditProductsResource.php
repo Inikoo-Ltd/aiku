@@ -40,7 +40,7 @@ class MasterBulkEditProductsResource extends JsonResource
             'name'                       => $masterProduct->name,
             'price'                      => $masterProduct->price,
             'rrp'                        => $masterProduct->rrp ?? 0,
-            'is_for_sale'                => $masterProduct->is_for_sale,
+            'is_for_sale'                => (bool) $masterProduct->is_for_sale,
             'currency'                   => $masterProduct->group->currency->code,
             'master_family_id'           => $masterProduct->master_family_id,
             'master_family_data'         => $masterProduct->masterFamily ? [
