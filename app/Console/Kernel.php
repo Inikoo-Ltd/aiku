@@ -19,6 +19,11 @@ use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
+use App\Actions\Helpers\TimeSeries\ResetDailyTimeSeries;
+use App\Actions\Helpers\TimeSeries\ResetMonthlyTimeSeries;
+use App\Actions\Helpers\TimeSeries\ResetQuarterlyTimeSeries;
+use App\Actions\Helpers\TimeSeries\ResetWeeklyTimeSeries;
+use App\Actions\Helpers\TimeSeries\ResetYearlyTimeSeries;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -89,6 +94,51 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'ResetDailyIntervals',
             ),
             name: 'ResetDailyIntervals',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(ResetYearlyTimeSeries::makeJob())->yearlyOn(1, 1, '02:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetYearlyTimeSeries'
+            ),
+            name: 'ResetYearlyTimeSeries',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(ResetQuarterlyTimeSeries::makeJob())->quarterlyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetQuarterlyTimeSeries',
+            ),
+            name: 'ResetQuarterlyTimeSeries',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(ResetMonthlyTimeSeries::makeJob())->monthlyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetMonthlyTimeSeries',
+            ),
+            name: 'ResetMonthlyTimeSeries',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(ResetWeeklyTimeSeries::makeJob())->weeklyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetWeeklyTimeSeries',
+            ),
+            name: 'ResetWeeklyTimeSeries',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(ResetDailyTimeSeries::makeJob())->dailyAt('02:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ResetDailyTimeSeries',
+            ),
+            name: 'ResetDailyTimeSeries',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
@@ -280,6 +330,15 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'PlatformDeletePortfolioLogs',
             ),
             name: 'PlatformDeletePortfolioLogs',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('faire:orders')->hourly()->sentryMonitor(
+                monitorSlug: 'GetFaireOrders',
+            ),
+            name: 'GetFaireOrders',
             type: 'command',
             scheduledAt: now()->format('H:i')
         );
