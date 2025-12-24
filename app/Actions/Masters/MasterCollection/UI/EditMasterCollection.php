@@ -40,7 +40,7 @@ class EditMasterCollection extends OrgAction
                     'previous' => $this->getPreviousModel($masterCollection, $request),
                     'next'     => $this->getNextModel($masterCollection, $request),
                 ],
-                'title'       => __('Edit master collection'),
+                'title'       => __('Edit master collection').': '.$masterCollection->code,
                 'pageHead'    => [
                     'title'   => __('Edit master collection'),
                     'actions' => [

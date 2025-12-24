@@ -10,9 +10,11 @@ namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Models\Masters\MasterShop;
@@ -49,10 +51,7 @@ class ShowMasterShop extends GrpAction
             'Masters/MasterShop',
             [
                 'title'       => $title.': '.$masterShop->code,
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $masterShop,
-                    $request->route()->getName(),
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($masterShop),
                 'navigation'  => [
                     'previous' => $this->getPreviousModel($masterShop, $request),
                     'next'     => $this->getNextModel($masterShop, $request),
@@ -91,8 +90,14 @@ class ShowMasterShop extends GrpAction
                     ?
                     fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)
                     : Inertia::lazy(fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)),
+
+                MasterShopTabsEnum::HISTORY->value => $this->tab == MasterShopTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))),
+
             ]
-        )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value));
+        )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: MasterShopTabsEnum::HISTORY->value));
     }
 
 

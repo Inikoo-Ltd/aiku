@@ -23,7 +23,7 @@ import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
-import { cloneDeep, uniqueId } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import axios from "axios";
 import ProductSales from "@/Components/Product/ProductSales.vue"
@@ -57,8 +57,6 @@ const props = defineProps<{
     is_single_trade_unit?: boolean
     trade_unit_slug?: string
 }>()
-console.log('sdsjkh',props)
-
 
 const layout = inject('layout', {});
 let currentTab = ref(props.tabs.current)

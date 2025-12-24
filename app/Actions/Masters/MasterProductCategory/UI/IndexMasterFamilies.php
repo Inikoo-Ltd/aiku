@@ -452,7 +452,7 @@ class IndexMasterFamilies extends OrgAction
             ),
             'grp.masters.master_shops.show.master_families.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
+                ShowMasterShop::make()->getBreadcrumbs($parent),
                 $headCrumb(
                     [
                         'name'       => $routeName,
