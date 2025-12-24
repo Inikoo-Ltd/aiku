@@ -12,6 +12,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 
 class GetShopNavigation
 {
@@ -20,6 +21,44 @@ class GetShopNavigation
     public function handle(Shop $shop, User $user): array
     {
         $navigation = [];
+        $isExternalFaire = $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE;
+
+        $dashboardSubSections = [];
+
+        if (!$isExternalFaire) {
+            $dashboardSubSections[] = [
+                "label"   => __("Comms"),
+                "tooltip" => __("Email communications"),
+                "icon"    => ["fal", "fa-satellite-dish"],
+                "route"   => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.dashboard",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+            ];
+        }
+
+        $dashboardSubSections = array_merge($dashboardSubSections, [
+            [
+                "tooltip" => __("Payments"),
+                "label"   => __("Payments"),
+                "icon"    => ["fal", "fa-coins"],
+                "root"    => "grp.org.shops.show.dashboard.payments.accounting.dashboard",
+                "route"   => [
+                    "name"       => "grp.org.shops.show.dashboard.payments.accounting.dashboard",
+                    "parameters" => [$shop->organisation->slug, $shop->slug]
+                ],
+            ],
+            [
+                "label"   => __("Invoices"),
+                "tooltip" => __("Invoices"),
+                "icon"    => ["fal", "fa-file-invoice-dollar"],
+                'root'    => 'grp.org.shops.show.dashboard.invoices',
+                "route"   => [
+                    "name"       => "grp.org.shops.show.dashboard.invoices.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+            ],
+        ]);
 
         $navigation['dashboard'] = [
             'root'  => 'grp.org.shops.show.dashboard.',
@@ -32,40 +71,10 @@ class GetShopNavigation
             ],
 
             'topMenu' => [
-                'subSections' => [
-                    [
-                        "label"   => __("Comms"),
-                        "tooltip" => __("Email communications"),
-                        "icon"    => ["fal", "fa-satellite-dish"],
-                        "route"   => [
-                            "name"       => "grp.org.shops.show.dashboard.comms.dashboard",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                    [
-                        "tooltip" => __("Payments"),
-                        "label"   => __("Payments"),
-                        "icon"    => ["fal", "fa-coins"],
-                        "root"    => "grp.org.shops.show.dashboard.payments.accounting.dashboard",
-                        "route"   => [
-                            "name"       => "grp.org.shops.show.dashboard.payments.accounting.dashboard",
-                            "parameters" => [$shop->organisation->slug, $shop->slug]
-                        ],
-                    ],
-                    [
-                        "label"   => __("Invoices"),
-                        "tooltip" => __("Invoices"),
-                        "icon"    => ["fal", "fa-file-invoice-dollar"],
-                        'root'    => 'grp.org.shops.show.dashboard.invoices',
-                        "route"   => [
-                            "name"       => "grp.org.shops.show.dashboard.invoices.index",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                ],
+                'subSections' => $dashboardSubSections
             ]
         ];
-        if ($user->hasPermissionTo("products.$shop->id.view")) {
+        if ($user->hasPermissionTo("products.$shop->id.view") && !$isExternalFaire) {
             $navigation["catalogue"] = [
                 "root"    => "grp.org.shops.show.catalogue.",
                 "icon"    => ["fal", "fa-books"],
@@ -183,7 +192,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("discounts.$shop->id.view")) {
+        if ($user->hasPermissionTo("discounts.$shop->id.view") && !$isExternalFaire) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",
                 "icon"    => ["fal", "fa-badge-percent"],
@@ -228,7 +237,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("marketing.$shop->id.view")) {
+        if ($user->hasPermissionTo("marketing.$shop->id.view") && !$isExternalFaire) {
             $navigation["marketing"] = [
                 "root"    => "grp.org.shops.show.marketing.",
                 "icon"    => ["fal", "fa-bullhorn"],
@@ -371,7 +380,7 @@ class GetShopNavigation
                     ],
                 ];
             } else {
-                if ($shop->engine !== ShopEngineEnum::FAIRE) {
+                if (!$isExternalFaire) {
                     $navigation["web"] = [
                         "scope" => "websites",
                         "icon"  => ["fal", "fa-globe"],
