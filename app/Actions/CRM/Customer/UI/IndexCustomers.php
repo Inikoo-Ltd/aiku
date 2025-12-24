@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -263,7 +264,7 @@ class IndexCustomers extends OrgAction
                             'description' => ($parent->type == ShopTypeEnum::FULFILMENT || $parent->type == ShopTypeEnum::DROPSHIPPING)
                                 ? __("You can add your customer 🤷🏽‍♂️") : null,
                             'count'       => $parent->crmStats->number_customers,
-                            'action'      => ($parent->type == ShopTypeEnum::FULFILMENT || $parent->type == ShopTypeEnum::DROPSHIPPING)
+                            'action'      => ($parent->type == ShopTypeEnum::FULFILMENT || $parent->type == ShopTypeEnum::DROPSHIPPING) && $this->parent->engine !== ShopEngineEnum::FAIRE
                                 ? [
                                     'type'    => 'button',
                                     'style'   => 'create',
@@ -353,7 +354,7 @@ class IndexCustomers extends OrgAction
         $scope  = $this->parent;
         $action = null;
 
-        if (!$scope instanceof Group && $this->canEdit) {
+        if (!$scope instanceof Group && $this->canEdit && $this->parent->engine !== ShopEngineEnum::FAIRE) {
             $action = [
                 [
                     'type'    => 'button',
