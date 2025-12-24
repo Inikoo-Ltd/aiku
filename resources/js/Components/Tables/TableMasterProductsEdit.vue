@@ -20,6 +20,7 @@ import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
+import PureInput from '../Pure/PureInput.vue'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -311,13 +312,16 @@ const toggleDescription = (event) => {
                 <!-- <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column> -->
 
                 <!-- Column: Name -->
-                <Column v-if="selectedColumns.includes('name')" field="name" header="Name" frozen sortable style="min-width: 16rem" >
+                <Column v-if="selectedColumns.includes('name')" field="name" header="Name" frozen sortable style="min-width: 20rem" >
                     <template #body="slotProps">
                         <div class="text-xs italic opacity-70">
                             {{ slotProps.data.code }}
                         </div>
                         <div class="bg-white font-bold">
-                            {{ slotProps.data.name }}
+                            <PureInput
+                                v-model="slotProps.data.name"
+                                class="mt-1"
+                            />
                         </div>
                     </template>
                 </Column>
