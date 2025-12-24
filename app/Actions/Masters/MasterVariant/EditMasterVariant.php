@@ -18,7 +18,6 @@ use App\Models\Masters\MasterVariant;
 use Lorisleiva\Actions\ActionRequest;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Str;
 
 class EditMasterVariant extends OrgAction
 {
@@ -37,6 +36,9 @@ class EditMasterVariant extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Throwable
+     */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterVariant
     {
         $this->parent = $masterFamily;
@@ -47,6 +49,9 @@ class EditMasterVariant extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Throwable
+     */
     public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): MasterVariant
     {
         $this->parent = $masterFamily;
@@ -113,7 +118,7 @@ class EditMasterVariant extends OrgAction
                             'icon'    => 'fa-light fa-key',
                             'current' => true,
                             'fields'  => [
-                                
+
                             ],
                         ],
                     ],

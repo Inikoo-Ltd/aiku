@@ -12,38 +12,68 @@ import { RouteParams } from "@/types/route-params"
 import { Shipper } from "@/types/shipper"
 
 defineProps<{
-    data: TableTS,
-    tab?: string
+	data: TableTS
+	tab?: string
 }>()
 
-
 function shipperRoute(shipper: Shipper) {
-    switch (route().current()) {
-        case "grp.org.warehouses.show.dispatching.shippers.inactive.index":
-        case "grp.org.warehouses.show.dispatching.shippers.current.index":
-            return route(
-                "grp.org.warehouses.show.dispatching.shippers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).warehouse,
-                    shipper.slug
-                ])
-        default:
-            return ""
-    }
+	switch (route().current()) {
+		case "grp.org.warehouses.show.dispatching.shippers.inactive.index":
+		case "grp.org.warehouses.show.dispatching.shippers.current.index":
+			return route("grp.org.warehouses.show.dispatching.shippers.show", [
+				(route().params as RouteParams).organisation,
+				(route().params as RouteParams).warehouse,
+				shipper.slug,
+			])
+		default:
+			return ""
+	}
 }
-
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(api_shipper)="{ item: shipper }">
-                {{ shipper.type }}
-        </template>
-        <template #cell(name)="{ item: shipper }">
-            <Link :href="shipperRoute(shipper)" class="primaryLink">
-                {{ shipper.name }}
-            </Link>
-        </template>
-    </Table>
+	<!-- <Table :resource="data" :name="tab" class="mt-5">
+		<template #cell(api_shipper)="{ item: shipper }">
+			{{ shipper.type }}
+		</template>
+		<template #cell(name)="{ item: shipper }">
+			<img :src="`{shipper.code}.png`" :alt="shipper.name" class="h-5 w-5 object-contain" />
+			<Link :href="shipperRoute(shipper)" class="primaryLink">
+				{{ shipper.name }}
+			</Link>
+		</template>
+	</Table> -->
+
+	<Table :resource="data" :name="tab" class="mt-5">
+		<template #cell(api_shipper)="{ item: shipper }">
+			{{ shipper.type }}
+		</template>
+
+		<template #cell(name)="{ item: shipper }">
+			<div class="flex items-center gap-2">
+
+        <img
+					
+          :src="`/assets/shipper_logo/${shipper.code}.png?${Date.now()}`"
+					:alt="shipper.name"
+					class="h-5 w-5 object-contain" 
+          
+        />
+
+				<!-- <img
+					
+          :src="`/assets/shipper_logo/${shipper.code}.png?${Date.now()}`"
+					:alt="shipper.name"
+					class="h-5 w-5 object-contain" 
+          @error="($event.target as HTMLImageElement).src = '/assets/shipper_logo/default.png'"
+          
+          /> -->
+          
+
+				<Link :href="shipperRoute(shipper)" class="primaryLink">
+					{{ shipper.name }}
+				</Link>
+			</div>
+		</template>
+	</Table>
 </template>

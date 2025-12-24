@@ -18,7 +18,7 @@ class DeleteOrderAddressCollection extends RetinaAction
 {
     public function handle(Order $order): Order
     {
-        $order= UpdateOrder::run($order, [
+        $order = UpdateOrder::run($order, [
             'collection_address_id' => null
         ]);
 

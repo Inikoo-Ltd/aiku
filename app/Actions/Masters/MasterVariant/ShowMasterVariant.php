@@ -22,7 +22,7 @@ use Inertia\Response;
 class ShowMasterVariant extends OrgAction
 {
     use WithMastersAuthorisation;
-    
+
     private MasterProductCategory $parent;
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -32,7 +32,7 @@ class ShowMasterVariant extends OrgAction
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
-          return $this->handle($masterVariant);
+        return $this->handle($masterVariant);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -42,7 +42,7 @@ class ShowMasterVariant extends OrgAction
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
-         return $this->handle($masterVariant);
+        return $this->handle($masterVariant);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -62,10 +62,10 @@ class ShowMasterVariant extends OrgAction
         $group        = group();
         $this->initialisationFromGroup($group, $request);
 
-       return $this->handle($masterVariant);
+        return $this->handle($masterVariant);
     }
 
-    public function inMasterFamily(MasterShop $masterShop,MasterProductCategory $masterFamily,MasterVariant $masterVariant,ActionRequest $request): Response
+    public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
     {
         $this->parent = $masterFamily;
         $this->initialisationFromGroup(group(), $request);
@@ -85,7 +85,7 @@ class ShowMasterVariant extends OrgAction
                 data_get($masterVariant->data, 'products.*.product.id', [])
             )
             ->get();
-        
+
         return Inertia::render(
             'Masters/Variant',
             [
@@ -99,12 +99,13 @@ class ShowMasterVariant extends OrgAction
             ]
         );
     }
-    
+
 
     /**
      * @throws \Throwable
      */
-    public function asController( MasterVariant $masterVariant, ActionRequest $request ): Response {
+    public function asController(MasterVariant $masterVariant, ActionRequest $request): Response
+    {
         $this->initialisationFromGroup($masterVariant->group, $request);
         return $this->handle($masterVariant);
     }

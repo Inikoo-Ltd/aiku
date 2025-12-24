@@ -41,7 +41,7 @@ class GetFaireOrders extends OrgAction
 
                 $orderExists = Order::where('external_id', $externalId)->exists();
 
-                if($orderExists) {
+                if ($orderExists) {
                     continue;
                 }
 

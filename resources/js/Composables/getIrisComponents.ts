@@ -1,5 +1,6 @@
 import type { Component } from "vue"
 
+
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
 import Header1Iris from "@/Components/CMS/Website/Headers/Header1/Header1Iris.vue"
 import Header2Iris from "@/Components/CMS/Website/Headers/Header2/Header2Iris.vue"

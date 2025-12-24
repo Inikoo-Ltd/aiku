@@ -157,3 +157,6 @@ const hasPermission = (data: PermissionData, permission: string): boolean => {
 export const getEditPermissions = (data: PermissionData) => hasPermission(data, 'edit')
 export const getDeletePermissions = (data: PermissionData) => hasPermission(data, 'delete')
 export const getHiddenPermissions = (data: PermissionData) => hasPermission(data, 'hidden')
+
+// try to bulid rename fitur
+export const getRenamePermision = (data: PermissionData) => hasPermission(data, 'edit')

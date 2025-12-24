@@ -15,16 +15,10 @@ trait WithPreparePositionsForValidation
 {
     public function prepareJobPositionsForValidation(): void
     {
-
-
         if ($this->get('permissions')) {
             $newData = [];
 
             foreach ($this->get('permissions') as $jobPositionCode => $position) {
-
-
-
-
                 if ($jobPositionCode == 'shop-admin') {
                     $newData[] = [
                         'code'   => $jobPositionCode,
@@ -36,7 +30,7 @@ trait WithPreparePositionsForValidation
                     ];
                 } else {
                     $newData[] = match (Arr::get(explode('-', $jobPositionCode), 0)) {
-                        'wah', 'dist', 'ful', 'web', 'mrk', 'cus', 'shk',  => [
+                        'wah', 'dist', 'ful', 'web', 'mrk', 'cus', 'shk', 'ppc' => [
                             'code'   => $jobPositionCode,
                             'scopes' => array_map(function ($scope) {
                                 return [
@@ -68,7 +62,6 @@ trait WithPreparePositionsForValidation
                 if ($jobPosition) {
                     $newData[$key]['slug'] = $jobPosition->slug;
                 }
-
             }
 
 

@@ -13,6 +13,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InMasterShop;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,7 +21,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use App\Models\Masters\MasterAsset;
 
 /**
  * @property int $id
@@ -44,6 +44,8 @@ use App\Models\Masters\MasterAsset;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read \App\Models\Masters\MasterAsset|null $leaderProduct
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterVariantOrderingIntervals|null $orderingIntervals
@@ -132,10 +134,10 @@ class MasterVariant extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterVariantTimeSeries::class);
     }
 
-   public function leaderProduct(): HasOne
-   {
-       return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
-   }
+    public function leaderProduct(): HasOne
+    {
+        return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
+    }
 
 
 }

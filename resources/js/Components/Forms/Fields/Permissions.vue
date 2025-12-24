@@ -52,7 +52,7 @@ const props = defineProps<{
 
 const groupPositionList = {
     group_admin: {
-        department: trans("group admin"),
+        department: trans("Group admin"),
         key: "group_admin",
         level: "group_admin",
         icon: "fas fa-helmet-battle",
@@ -213,9 +213,9 @@ const organisationPositionCounts = ref({})
 <template>
     <div class="flex flex-col gap-y-6">
         <div class="flex gap-x-2">
-            <Fieldset legend="Group permissions" class="w-full max-w-4xl">
+            <Fieldset :legend="trans('Group permissions')" class="w-full max-w-4xl">
                 <div>
-                    <template v-for="(jobGroup, departmentName, idxJobGroup) in groupPositionList" :key="departmentName + idxJobGroup">
+                    <template v-for="(jobGroup, departmentName) in groupPositionList" :key="departmentName + idxJobGroup">
                         <div class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-100 transition-all duration-200 ease-in-out">
                             <!-- Section: Department label -->
                             <div class="flex items-center gap-x-1.5">
@@ -287,7 +287,7 @@ const organisationPositionCounts = ref({})
                 </div>
             </div>
 
-            <div v-for="(organisation, idxOrganisation) in props.fieldData.organisation_list.data"
+            <div v-for="(organisation) in props.fieldData.organisation_list.data"
                  class="border-l-[3px] pl-2 flex flex-col mb-1 gap-y-1"
                  :class="selectedOrganisation?.slug == organisation.slug ? 'border-indigo-500' : 'border-gray-300'"
             >

@@ -21,11 +21,11 @@ enum ShopEngineEnum: string
 
     public function label(): String
     {
-         return match ($this) {
+        return match ($this) {
             ShopEngineEnum::AIKU    =>  'AIKU',
             ShopEngineEnum::SHOPIFY =>  'Shopify',
             ShopEngineEnum::FAIRE   =>  'Faire',
             ShopEngineEnum::WIX     =>  'WIX',
-         };
+        };
     }
 }
