@@ -1,31 +1,31 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch } from "vue"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import draggable from "vuedraggable"
-import { useConfirm } from "primevue/useconfirm"
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Modal from "@/Components/Utils/Modal.vue"
+import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch } from 'vue'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import draggable from 'vuedraggable'
+import { useConfirm } from 'primevue/useconfirm'
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import Modal from '@/Components/Utils/Modal.vue'
 
-import VisibleCheckmark from "@/Components/CMS/Fields/VisibleCheckmark.vue"
-import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
-import SiteSettings from "@/Components/Workshop/SiteSettings.vue"
-import ConfirmPopup from "primevue/confirmpopup"
-import { useLayoutStore } from "@/Stores/layout"
+import VisibleCheckmark from '@/Components/CMS/Fields/VisibleCheckmark.vue'
+import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
+import SiteSettings from '@/Components/Workshop/SiteSettings.vue'
+import ConfirmPopup from 'primevue/confirmpopup'
+import { useLayoutStore } from '@/Stores/layout'
 import {
 	getBlueprint,
 	getEditPermissions,
 	getDeletePermissions,
 	getHiddenPermissions,
 	getRenamePermision,
-} from "@/Composables/getBlueprintWorkshop"
-import { Root, Daum } from "@/types/webBlockTypes"
-import { Root as RootWebpage } from "@/types/webpageTypes"
-import { Collapse } from "vue-collapsed"
-import { trans } from "laravel-vue-i18n"
-import WeblockList from "@/Components/CMS/Webpage/WeblockList.vue"
+} from '@/Composables/getBlueprintWorkshop'
+import { Root, Daum } from '@/types/webBlockTypes'
+import { Root as RootWebpage } from '@/types/webpageTypes'
+import { Collapse } from 'vue-collapsed'
+import { trans } from 'laravel-vue-i18n'
+import WeblockList from '@/Components/CMS/Webpage/WeblockList.vue'
 
 import {
 	faBrowser,
@@ -41,8 +41,8 @@ import {
 	faCopy,
 	faPaste,
 	faEdit,
-} from "@fal"
-import { faBrush, faCogs, faExclamationTriangle, faLayerGroup } from "@fas"
+} from '@fal'
+import { faBrush, faCogs, faExclamationTriangle, faLayerGroup } from '@fas'
 
 library.add(
 	faBrowser,
@@ -65,51 +65,51 @@ const props = defineProps<{
 }>()
 
 const emits = defineEmits<{
-	(e: "add", value: { block: Daum; type: string }): void
-	(e: "delete", value: Daum): void
-	(e: "update", value: Daum): void
-	(e: "order", value: object): void
-	(e: "setVisible", value: object): void
-	(e: "onSaveSiteSettings", value: object): void
-	(e: "openBlockList", value: boolean): void
-	(e: "onDuplicateBlock", value: Number): void
-	(e: "update:selectedTab", value: Number): void
+	(e: 'add', value: { block: Daum; type: string }): void
+	(e: 'delete', value: Daum): void
+	(e: 'update', value: Daum): void
+	(e: 'order', value: object): void
+	(e: 'setVisible', value: object): void
+	(e: 'onSaveSiteSettings', value: object): void
+	(e: 'openBlockList', value: boolean): void
+	(e: 'onDuplicateBlock', value: Number): void
+	(e: 'update:selectedTab', value: Number): void
 }>()
 
 const confirm = useConfirm()
 /* const selectedTab = ref(1) */
-const addType = ref("current")
-const openedBlockSideEditor = inject("openedBlockSideEditor", ref(null))
-const openedChildSideEditor = inject("openedChildSideEditor", ref(null))
-const isAddBlockLoading = inject("isAddBlockLoading", ref(null))
-const isLoadingDeleteBlock = inject("isLoadingDeleteBlock", ref(null))
-const isLoadingBlock = inject("isLoadingBlock", ref(null))
-const filterBlock = inject("filterBlock")
-const changeTab = (index: number) => emits("update:selectedTab", index)
+const addType = ref('current')
+const openedBlockSideEditor = inject('openedBlockSideEditor', ref(null))
+const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
+const isAddBlockLoading = inject('isAddBlockLoading', ref(null))
+const isLoadingDeleteBlock = inject('isLoadingDeleteBlock', ref(null))
+const isLoadingBlock = inject('isLoadingBlock', ref(null))
+const filterBlock = inject('filterBlock')
+const changeTab = (index: number) => emits('update:selectedTab', index)
 const sendNewBlock = (block: Daum) => {
-	emits("add", { block, type: addType.value })
+	emits('add', { block, type: addType.value })
 }
-const sendBlockUpdate = (block: Daum) => emits("update", block)
-const sendOrderBlock = (block: object) => emits("order", block)
-const sendDeleteBlock = (block: Daum) => emits("delete", block)
+const sendBlockUpdate = (block: Daum) => emits('update', block)
+const sendOrderBlock = (block: object) => emits('order', block)
+const sendDeleteBlock = (block: Daum) => emits('delete', block)
 
 const tabs = computed(() => {
 	const baseTabs = [
-		{ label: "Settings", icon: faCogs, tooltip: "Page Setting" },
-		{ label: "Layer", icon: faLayerGroup, tooltip: "Blocks" },
+		{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
+		{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks' },
 	]
 
 	if (openedBlockSideEditor.value !== null) {
-		baseTabs.push({ label: "Style", icon: faBrush, tooltip: "Style" })
+		baseTabs.push({ label: 'Style', icon: faBrush, tooltip: 'Style' })
 	}
 
 	return baseTabs
 })
 
 const filterOptions = [
-	{ label: "All", value: "all" },
-	{ label: "Logged out", value: "logged-out" },
-	{ label: "Logged in", value: "logged-in" },
+	{ label: 'All', value: 'all' },
+	{ label: 'Logged out', value: 'logged-out' },
+	{ label: 'Logged in', value: 'logged-in' },
 ]
 
 const onChangeOrderBlock = () => {
@@ -126,24 +126,24 @@ const onPickBlock = async (block: Daum) => {
 }
 
 const openModalBlockList = () => {
-	addType.value = "current"
+	addType.value = 'current'
 	modelModalBlocklist.value = !modelModalBlocklist.value
-	emits("openBlockList", !modelModalBlocklist.value)
+	emits('openBlockList', !modelModalBlocklist.value)
 }
 
 const setShowBlock = (e: Event, value: Daum) => {
 	e.stopPropagation()
 	e.preventDefault()
-	emits("setVisible", value)
+	emits('setVisible', value)
 	closeContextMenu()
 }
 
 const confirmDelete = (event: Event, data: Daum) => {
 	confirm.require({
 		target: event.currentTarget,
-		message: trans("Remove this block? This action can't be undone."),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Yes, delete"), severity: "danger" },
+		message: trans("move this block? This action can't be undone."),
+		rejectProps: { label: trans('Cancel'), severity: 'secondary', outlined: true },
+		acceptProps: { label: trans('Yes, delete'), severity: 'danger' },
 		accept: () => {
 			sendDeleteBlock(data)
 			closeContextMenu()
@@ -153,9 +153,9 @@ const confirmDelete = (event: Event, data: Daum) => {
 
 const showWebpage = (block: Daum) => {
 	if (!block?.visibility) return true
-	if (filterBlock.value === "all") return true
-	if (filterBlock.value === "logged-out") return block.visibility.out
-	if (filterBlock.value === "logged-in") return block.visibility.in
+	if (filterBlock.value === 'all') return true
+	if (filterBlock.value === 'logged-out') return block.visibility.out
+	if (filterBlock.value === 'logged-in') return block.visibility.in
 	return true
 }
 
@@ -191,13 +191,13 @@ const copyBlock = () => {
 }
 const pasteBlock = () => {
 	if (!copiedBlock.value) return
-	emits("onDuplicateBlock", copiedBlock.value.id)
+	emits('onDuplicateBlock', copiedBlock.value.id)
 	closeContextMenu()
 }
 
 const duplicateBlock = (block: Daum) => {
 	copiedBlock.value = structuredClone(toRaw(block))
-	emits("onDuplicateBlock", copiedBlock.value.id)
+	emits('onDuplicateBlock', copiedBlock.value.id)
 	closeContextMenu()
 }
 
@@ -210,13 +210,13 @@ const onClickBlock = (index) => {
 
 watch(openedBlockSideEditor, (newVal) => {
 	if (newVal === null) {
-		console.log("masuk")
+		console.log('masuk')
 		changeTab(1)
 	}
 })
 
 onMounted(() => {
-	window.addEventListener("click", closeContextMenu)
+	window.addEventListener('click', closeContextMenu)
 	// Method to handle in browser
 	window.openSideEditor = (index: number) => {
 		openedBlockSideEditor.value = index
@@ -226,7 +226,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-	window.removeEventListener("click", closeContextMenu)
+	window.removeEventListener('click', closeContextMenu)
 })
 
 defineExpose({
@@ -276,8 +276,6 @@ const cancelRename = () => {
 	editingIndex.value = null
 	renameValue.value = ""
 }
-
-
 </script>
 
 <template>
@@ -641,20 +639,20 @@ const cancelRename = () => {
 
 <style scoped>
 .text-theme {
-	color: v-bind("layout?.app?.theme[4]") !important;
+	color: v-bind('layout?.app?.theme[4]') !important;
 }
 
 .bg-theme {
-	background-color: v-bind("layout?.app?.theme[4]") !important;
+	background-color: v-bind('layout?.app?.theme[4]') !important;
 }
 
 .border-theme {
-	border-color: v-bind("layout?.app?.theme[4]") !important;
+	border-color: v-bind('layout?.app?.theme[4]') !important;
 }
 
 .ghost {
 	opacity: 0.5;
 	background-color: #e2e8f0;
-	border: 2px dashed v-bind("layout?.app?.theme[4]");
+	border: 2px dashed v-bind('layout?.app?.theme[4]');
 }
 </style>
