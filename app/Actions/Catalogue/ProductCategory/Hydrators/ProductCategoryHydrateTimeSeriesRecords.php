@@ -62,11 +62,6 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
 
         if ($recordsCreated > 0) {
             ProductCategoryHydrateTimeSeriesNumberRecords::dispatch($timeSeries->id);
-
-            $timeSeries->update([
-                'from' => $timeSeries->records()->min('from'),
-                'to' => $timeSeries->records()->max('to'),
-            ]);
         }
 
         return $recordsCreated;
