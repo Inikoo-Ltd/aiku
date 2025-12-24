@@ -55,14 +55,14 @@ class EditMasterDepartment extends OrgAction
                     'previous' => $this->getPreviousModel($masterProductCategory, $request),
                     'next'     => $this->getNextModel($masterProductCategory, $request),
                 ],
-                'title'       => __('Edit Master Department'),
+                'title'       => __('Edit Master Department').' '.$masterProductCategory->code,
                 'pageHead'    => [
                     'title'   => __('Edit master department'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('Exit Edit'),
+                            'label' => __('Exit edit'),
                             'route' => [
                                 'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
