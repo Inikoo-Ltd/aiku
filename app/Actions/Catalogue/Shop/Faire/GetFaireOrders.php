@@ -110,10 +110,15 @@ class GetFaireOrders extends OrgAction
 
     public function asCommand(): void
     {
-        $shop = Shop::where('type', ShopTypeEnum::EXTERNAL)->where('engine', ShopEngineEnum::FAIRE)
+        $shops = Shop::where('type', ShopTypeEnum::EXTERNAL)
+            ->where('engine', ShopEngineEnum::FAIRE)
             ->where('state', ShopStateEnum::OPEN)
-            ->first();
+            ->get();
 
-        $this->handle($shop);
+        foreach ($shops as $shop) {
+            if(Arr::has($shop->settings, 'faire.access_token')) {
+                $this->handle($shop);
+            }
+        }
     }
 }
