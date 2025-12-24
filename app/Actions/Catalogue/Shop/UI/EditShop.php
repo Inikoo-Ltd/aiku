@@ -417,8 +417,8 @@ class EditShop extends OrgAction
             ],
         ];
 
-         if ($isExternalFaire) {
-            if (!isset($formData['blueprint']) || !is_array($formData['blueprint'])) {
+        if ($isExternalFaire) {
+            if (!isset($formData['blueprint'])) {
                 $formData['blueprint'] = [];
             }
 

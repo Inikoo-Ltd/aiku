@@ -14,7 +14,6 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 return [
 
-
     'positions' => [
         'group-admin' => [
             'code'               => 'group-admin',
@@ -237,6 +236,18 @@ return [
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
                 OrganisationTypeEnum::DIGITAL_AGENCY,
+            ]
+        ],
+        'ppc-shop'      => [
+            'code'               => 'ppc-shop',
+            'name'               => 'Shop PPC',
+            'scope'              => JobPositionScopeEnum::SHOPS,
+            'department'         => 'products',
+            'roles'              => [
+                RolesEnum::SHOP_PPC
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP
             ]
         ],
         'cus-m'      => [
@@ -563,7 +574,6 @@ return [
         'mrk' => ['mrk-m', 'mrk-c'],
         'cus' => ['cus-m', 'cus-c']
     ],
-
     'blueprint' => [
         'management' => [
             'title'     => 'management and operations',

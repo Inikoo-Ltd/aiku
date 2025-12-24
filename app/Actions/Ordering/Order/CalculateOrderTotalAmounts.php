@@ -107,6 +107,11 @@ class CalculateOrderTotalAmounts extends OrgAction
             if ($calculateCharges) {
                 CalculateOrderHangingCharges::run($order);
             }
+
+            if ($collectionChanged) {
+                CalculateCollectionCharges::run($order);
+            }
+
         }
     }
 
