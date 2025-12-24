@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 24 Dec 2025 17:29:12 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Web\Webpage\Iris;
 
@@ -20,7 +25,15 @@ class ShowIrisRobotsTxt
         $filePath = "robots/robots_{$website->id}.txt";
 
         if (!Storage::disk('local')->exists($filePath)) {
-            abort(404, 'robots.txt not found for this website');
+            return response(
+                'User-agent: *',
+                200,
+                [
+                    'Content-Type'  => 'text/plain; charset=UTF-8',
+                    'Cache-Control' => 'public, max-age=3600',
+                ]
+            );
+
         }
 
         return response(
