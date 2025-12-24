@@ -22,7 +22,6 @@ use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
-Route::get('robots_debug.txt', ShowIrisRobotsTxt::class)->name('iris_debug_robots');
 
 Route::name('webhooks.')->group(function () {
     Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
