@@ -183,7 +183,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("discounts.$shop->id.view")) {
+        if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->engine !== ShopEngineEnum::FAIRE) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",
                 "icon"    => ["fal", "fa-badge-percent"],
@@ -228,7 +228,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("marketing.$shop->id.view")) {
+        if ($user->hasPermissionTo("marketing.$shop->id.view") && $shop->engine !== ShopEngineEnum::FAIRE) {
             $navigation["marketing"] = [
                 "root"    => "grp.org.shops.show.marketing.",
                 "icon"    => ["fal", "fa-bullhorn"],
