@@ -66,7 +66,7 @@ class GetShopNavigation
                 ],
             ]
         ];
-        if ($user->hasPermissionTo("products.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL && $shop->engine !== ShopEngineEnum::FAIRE) {
+        if ($user->hasPermissionTo("products.$shop->id.view") && !($shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE)) {
             $navigation["catalogue"] = [
                 "root"    => "grp.org.shops.show.catalogue.",
                 "icon"    => ["fal", "fa-books"],
@@ -184,7 +184,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL && $shop->engine !== ShopEngineEnum::FAIRE) {
+        if ($user->hasPermissionTo("discounts.$shop->id.view") && !($shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE)) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",
                 "icon"    => ["fal", "fa-badge-percent"],
@@ -229,7 +229,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("marketing.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL && $shop->engine !== ShopEngineEnum::FAIRE) {
+        if ($user->hasPermissionTo("marketing.$shop->id.view") && !($shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE)) {
             $navigation["marketing"] = [
                 "root"    => "grp.org.shops.show.marketing.",
                 "icon"    => ["fal", "fa-bullhorn"],
