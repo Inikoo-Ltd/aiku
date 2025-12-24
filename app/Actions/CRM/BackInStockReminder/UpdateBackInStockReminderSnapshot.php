@@ -14,7 +14,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedIn
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\BackInStockReminder;
 use App\Models\CRM\BackInStockReminderSnapshot;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,22 +21,15 @@ class UpdateBackInStockReminderSnapshot extends OrgAction
 {
     use WithActionUpdate;
 
-    private BackInStockReminder $backInStockReminder;
+    private BackInStockReminderSnapshot $backInStockReminderSnapshot;
 
-    public function handle(BackInStockReminder $backInStockReminder, array $modelData): ?BackInStockReminderSnapshot
+    public function handle(BackInStockReminderSnapshot $backInStockReminderSnapshot, array $modelData): ?BackInStockReminderSnapshot
     {
+        $this->update($backInStockReminderSnapshot, $modelData);
 
-        $backInStockReminderSnapshot = BackInStockReminderSnapshot::where('back_in_stock_reminder_id', $backInStockReminder->id)->first();
-
-        if ($backInStockReminderSnapshot) {
-
-            $this->update($backInStockReminderSnapshot, $modelData);
-        }
-
-        CustomerHydrateBackInStockReminders::dispatch($backInStockReminder->customer_id)->delay($this->hydratorsDelay);
-        // Note need to update this hydrator
-        // ProductHydrateCustomersWhoReminded::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
-        // ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
+        CustomerHydrateBackInStockReminders::dispatch($backInStockReminderSnapshot->customer_id)->delay($this->hydratorsDelay);
+        ProductHydrateCustomersWhoReminded::dispatch($backInStockReminderSnapshot->product)->delay($this->hydratorsDelay);
+        ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminderSnapshot->product)->delay($this->hydratorsDelay);
 
         return $backInStockReminderSnapshot;
     }
@@ -54,20 +46,33 @@ class UpdateBackInStockReminderSnapshot extends OrgAction
     public function rules(): array
     {
         // Note: update rules
-        $rules = [];
+        $rules = [
+            'reminder_cancelled_at' => 'nullable|date',
+            'reminder_sent_at' => 'nullable|date',
+        ];
 
         return $rules;
     }
 
-    public function action(BackInStockReminder $backInStockReminder, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ?BackInStockReminderSnapshot
+    public function action(BackInStockReminderSnapshot|int $backInStockReminderSnapshot, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ?BackInStockReminderSnapshot
     {
+        \Log::info("model data in action : ". json_encode($modelData));
         $this->strict = $strict;
 
         $this->asAction       = true;
-        $this->backInStockReminder       = $backInStockReminder;
-        $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($backInStockReminder->organisation, $modelData);
 
-        return $this->handle($backInStockReminder, $this->validatedData);
+        // Handle route binding - if ID is passed, resolve the model
+        if (is_int($backInStockReminderSnapshot)) {
+            $backInStockReminderSnapshot = BackInStockReminderSnapshot::where('back_in_stock_reminder_id', $backInStockReminderSnapshot)->first();
+            if (!$backInStockReminderSnapshot) {
+                return null;
+            }
+        }
+
+        $this->backInStockReminderSnapshot       = $backInStockReminderSnapshot;
+        $this->hydratorsDelay = $hydratorsDelay;
+        $this->initialisation($backInStockReminderSnapshot->organisation, $modelData);
+
+        return $this->handle($backInStockReminderSnapshot, $this->validatedData);
     }
 }

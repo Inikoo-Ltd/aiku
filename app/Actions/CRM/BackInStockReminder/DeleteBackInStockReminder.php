@@ -25,7 +25,8 @@ class DeleteBackInStockReminder extends OrgAction
         $snapshotModelData = [
             'reminder_cancelled_at' => now()
         ];
-        UpdateBackInStockReminderSnapshot::run($this->backInStockReminder, $snapshotModelData);
+
+        UpdateBackInStockReminderSnapshot::make()->action($this->backInStockReminder->id, $snapshotModelData);
 
         $backInStockReminder->delete();
 

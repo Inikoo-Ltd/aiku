@@ -34,8 +34,7 @@ class BulkUpdateBackInStockReminderSnapshot
                         $snapshotModeldata = [
                             "reminder_sent_at" => now()
                         ];
-                        UpdateBackInStockReminderSnapshot::run($modelData->back_in_stock_reminder_id, $snapshotModeldata);
-                        Log::info($modelData);
+                        UpdateBackInStockReminderSnapshot::make()->action($modelData->back_in_stock_reminder_id, $snapshotModeldata);
                     } catch (Exception $e) {
                         Log::info("Failed to Hydrate Customers Tag: " . $e->getMessage());
                         Sentry::captureMessage("Failed to Hydrate Customers Tag to: " . $e->getMessage());
