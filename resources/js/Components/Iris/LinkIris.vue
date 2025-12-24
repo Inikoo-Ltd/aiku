@@ -40,32 +40,38 @@ const emit = defineEmits<{
   (e: "finish"): void
 }>()
 
+const computedHref = computed<string | null>(() => {
+  const raw = props.canonical_url ?? props.href
 
-const computedHref = computed(() => {
-  let url = String(props.canonical_url || props.href)
+  if (typeof raw !== "string" || !raw.trim()) return null
 
-  if (props.type !== "internal") return url
+  if (props.type !== "internal") return raw
 
   try {
-    if (/^https?:\/\//.test(url)) {
-      const parsed = new URL(url)
+    if (/^https?:\/\//.test(raw)) {
+      const parsed = new URL(raw)
       return parsed.pathname + parsed.search + parsed.hash
     }
 
-    if (url.startsWith("/")) return url
-    return "/" + url.replace(/^\/+/, "")
+    return raw.startsWith("/")
+      ? raw
+      : `/${raw.replace(/^\/+/, "")}`
   } catch {
-    return url
+    return null
   }
 })
 
 
-const getLinkLocation = (link: string): "iris" | "retina" => {
-  if (link.startsWith("/app") || link.startsWith("/retina")) {
-    return "retina"
-  }
-  return "iris"
-}
+
+
+const linkLocation = computed<"iris" | "retina" | null>(() => {
+  if (!computedHref.value) return null
+
+  return computedHref.value.startsWith("/app") ||
+    computedHref.value.startsWith("/retina")
+    ? "retina"
+    : "iris"
+})
 
 const isLoading = ref(false)
 </script>
@@ -73,7 +79,7 @@ const isLoading = ref(false)
 <template>
   <!-- Internal Inertia link (same app) -->
   <Link
-    v-if="type === 'internal' && (location === getLinkLocation(computedHref)) && computedHref"
+    v-if="type === 'internal' && computedHref && linkLocation === location"
     :href="computedHref"
     :method="method"
     :headers="{ is_logged_in: layout?.iris?.is_logged_in, ...header }"
