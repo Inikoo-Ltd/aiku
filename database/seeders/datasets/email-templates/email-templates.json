@@ -419,5 +419,27 @@
     "arguments": [
       "customer"
     ]
+  },
+   {
+    "outboxes": [
+      "credit_balance_modified_to_customer"
+    ],
+    "name": "Credit balance modified to customer",
+    "content": "beefree_credit_balance_modified_to_customer.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+   {
+    "outboxes": [
+      "credit_balance_modified_to_user"
+    ],
+    "name": "Credit balance modified to user",
+    "content": "credit_balance_modified_to_user.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "customer"
+    ]
   }
 ]
