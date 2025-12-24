@@ -113,12 +113,17 @@ class EditMasterVariant extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('Variant Detail'),
-                            'label'   => __('Variant Detail'),
+                            'title'   => __('Variant'),
+                            'label'   => __('Variant'),
                             'icon'    => 'fa-light fa-key',
                             'current' => true,
                             'fields'  => [
-
+                                'code'  => [
+                                    'type'     => 'input',
+                                    'label'    => __('Code'),
+                                    'value'    => '',
+                                    'required' => true,
+                                ],
                             ],
                         ],
                     ],

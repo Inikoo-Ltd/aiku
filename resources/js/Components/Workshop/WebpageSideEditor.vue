@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch  } from 'vue'
+import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import draggable from 'vuedraggable'
@@ -14,37 +14,66 @@ import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import SiteSettings from '@/Components/Workshop/SiteSettings.vue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useLayoutStore } from '@/Stores/layout'
-import { getBlueprint, getEditPermissions, getDeletePermissions, getHiddenPermissions } from '@/Composables/getBlueprintWorkshop'
+import {
+	getBlueprint,
+	getEditPermissions,
+	getDeletePermissions,
+	getHiddenPermissions,
+	getRenamePermision,
+} from '@/Composables/getBlueprintWorkshop'
 import { Root, Daum } from '@/types/webBlockTypes'
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import WeblockList from '@/Components/CMS/Webpage/WeblockList.vue'
 
-import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash, faPlus, faTrashAlt, faCopy, faPaste } from '@fal'
+import {
+	faBrowser,
+	faDraftingCompass,
+	faRectangleWide,
+	faStars,
+	faBars,
+	faText,
+	faEye,
+	faEyeSlash,
+	faPlus,
+	faTrashAlt,
+	faCopy,
+	faPaste,
+	faEdit,
+} from '@fal'
 import { faBrush, faCogs, faExclamationTriangle, faLayerGroup } from '@fas'
 
-library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash)
+library.add(
+	faBrowser,
+	faDraftingCompass,
+	faRectangleWide,
+	faStars,
+	faBars,
+	faText,
+	faEye,
+	faEyeSlash
+)
 
 const layout = useLayoutStore()
 const modelModalBlocklist = defineModel()
 
 const props = defineProps<{
-  webpage: RootWebpage
-  webBlockTypes: Daum
-  selectedTab: Number
+	webpage: RootWebpage
+	webBlockTypes: Daum
+	selectedTab: Number
 }>()
 
 const emits = defineEmits<{
-  (e: 'add', value: { block: Daum, type: string }): void
-  (e: 'delete', value: Daum): void
-  (e: 'update', value: Daum): void
-  (e: 'order', value: object): void
-  (e: 'setVisible', value: object): void
-  (e: 'onSaveSiteSettings', value: object): void
-  (e: 'openBlockList', value: boolean): void
-  (e: 'onDuplicateBlock', value: Number): void
-  (e: 'update:selectedTab', value: Number): void
+	(e: 'add', value: { block: Daum; type: string }): void
+	(e: 'delete', value: Daum): void
+	(e: 'update', value: Daum): void
+	(e: 'order', value: object): void
+	(e: 'setVisible', value: object): void
+	(e: 'onSaveSiteSettings', value: object): void
+	(e: 'openBlockList', value: boolean): void
+	(e: 'onDuplicateBlock', value: Number): void
+	(e: 'update:selectedTab', value: Number): void
 }>()
 
 const confirm = useConfirm()
@@ -58,359 +87,572 @@ const isLoadingBlock = inject('isLoadingBlock', ref(null))
 const filterBlock = inject('filterBlock')
 const changeTab = (index: number) => emits('update:selectedTab', index)
 const sendNewBlock = (block: Daum) => {
-  emits('add', { block, type: addType.value })
+	emits('add', { block, type: addType.value })
 }
 const sendBlockUpdate = (block: Daum) => emits('update', block)
 const sendOrderBlock = (block: object) => emits('order', block)
 const sendDeleteBlock = (block: Daum) => emits('delete', block)
 
 const tabs = computed(() => {
-  const baseTabs = [
-    { label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
-    { label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks' }
-  ]
+	const baseTabs = [
+		{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
+		{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks' },
+	]
 
-  if (openedBlockSideEditor.value !== null) {
-    baseTabs.push({ label: 'Style', icon: faBrush, tooltip: 'Style' })
-  }
+	if (openedBlockSideEditor.value !== null) {
+		baseTabs.push({ label: 'Style', icon: faBrush, tooltip: 'Style' })
+	}
 
-  return baseTabs
+	return baseTabs
 })
 
 const filterOptions = [
-  { label: 'All', value: 'all' },
-  { label: 'Logged out', value: 'logged-out' },
-  { label: 'Logged in', value: 'logged-in' }
+	{ label: 'All', value: 'all' },
+	{ label: 'Logged out', value: 'logged-out' },
+	{ label: 'Logged in', value: 'logged-in' },
 ]
 
 const onChangeOrderBlock = () => {
-  const payload = {}
-  props.webpage.layout.web_blocks.forEach((item, index) => {
-    payload[item.web_block.id] = { position: index }
-  })
-  sendOrderBlock(payload)
+	const payload = {}
+	props.webpage.layout.web_blocks.forEach((item, index) => {
+		payload[item.web_block.id] = { position: index }
+	})
+	sendOrderBlock(payload)
 }
 
 const onPickBlock = async (block: Daum) => {
-  await sendNewBlock(block)
-  modelModalBlocklist.value = false
+	await sendNewBlock(block)
+	modelModalBlocklist.value = false
 }
 
 const openModalBlockList = () => {
-  addType.value = 'current'
-  modelModalBlocklist.value = !modelModalBlocklist.value
-  emits('openBlockList', !modelModalBlocklist.value)
+	addType.value = 'current'
+	modelModalBlocklist.value = !modelModalBlocklist.value
+	emits('openBlockList', !modelModalBlocklist.value)
 }
 
 const setShowBlock = (e: Event, value: Daum) => {
-  e.stopPropagation()
-  e.preventDefault()
-  emits('setVisible', value)
-  closeContextMenu()
+	e.stopPropagation()
+	e.preventDefault()
+	emits('setVisible', value)
+	closeContextMenu()
 }
 
 const confirmDelete = (event: Event, data: Daum) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: trans("Remove this block? This action can't be undone."),
-    rejectProps: { label: trans('Cancel'), severity: 'secondary', outlined: true },
-    acceptProps: { label: trans('Yes, delete'), severity: 'danger' },
-    accept: () => {
-      sendDeleteBlock(data)
-      closeContextMenu()
-    },
-  })
+	confirm.require({
+		target: event.currentTarget,
+		message: trans("move this block? This action can't be undone."),
+		rejectProps: { label: trans('Cancel'), severity: 'secondary', outlined: true },
+		acceptProps: { label: trans('Yes, delete'), severity: 'danger' },
+		accept: () => {
+			sendDeleteBlock(data)
+			closeContextMenu()
+		},
+	})
 }
 
 const showWebpage = (block: Daum) => {
-  if (!block?.visibility) return true
-  if (filterBlock.value === 'all') return true
-  if (filterBlock.value === 'logged-out') return block.visibility.out
-  if (filterBlock.value === 'logged-in') return block.visibility.in
-  return true
+	if (!block?.visibility) return true
+	if (filterBlock.value === 'all') return true
+	if (filterBlock.value === 'logged-out') return block.visibility.out
+	if (filterBlock.value === 'logged-in') return block.visibility.in
+	return true
 }
 
 const contextMenu = ref({
-  visible: false,
-  top: 0,
-  left: 0,
-  block: null as Daum | null,
+	visible: false,
+	top: 0,
+	left: 0,
+	block: null as Daum | null,
 })
 const copiedBlock = ref<Daum | null>(null)
 
 const openContextMenu = (event: MouseEvent, block: Daum | null = null) => {
-  event.preventDefault()
-  event.stopPropagation()
-  contextMenu.value = {
-    visible: true,
-    top: event.clientY,
-    left: event.clientX,
-    block,
-  }
+	event.preventDefault()
+	event.stopPropagation()
+	contextMenu.value = {
+		visible: true,
+		top: event.clientY,
+		left: event.clientX,
+		block,
+	}
 }
 
 const closeContextMenu = () => {
-  contextMenu.value.visible = false
-  contextMenu.value.block = null
+	contextMenu.value.visible = false
+	contextMenu.value.block = null
 }
 
 const copyBlock = () => {
-  if (contextMenu.value.block) {
-    copiedBlock.value = structuredClone(toRaw(contextMenu.value.block))
-  }
-  closeContextMenu()
+	if (contextMenu.value.block) {
+		copiedBlock.value = structuredClone(toRaw(contextMenu.value.block))
+	}
+	closeContextMenu()
 }
 const pasteBlock = () => {
-  if (!copiedBlock.value) return
-  emits('onDuplicateBlock', copiedBlock.value.id)
-  closeContextMenu()
+	if (!copiedBlock.value) return
+	emits('onDuplicateBlock', copiedBlock.value.id)
+	closeContextMenu()
 }
 
 const duplicateBlock = (block: Daum) => {
-  copiedBlock.value = structuredClone(toRaw(block))
-  emits('onDuplicateBlock', copiedBlock.value.id)
-  closeContextMenu()
+	copiedBlock.value = structuredClone(toRaw(block))
+	emits('onDuplicateBlock', copiedBlock.value.id)
+	closeContextMenu()
 }
 
 const onClickBlock = (index) => {
-  if(openedBlockSideEditor.value === index) changeTab(2)
-  else { 
-    openedBlockSideEditor.value = index
-  }
+	if (openedBlockSideEditor.value === index) changeTab(2)
+	else {
+		openedBlockSideEditor.value = index
+	}
 }
 
 watch(openedBlockSideEditor, (newVal) => {
-  if (newVal === null) {
-    console.log('masuk')
-    changeTab(1)
-  }
+	if (newVal === null) {
+		console.log('masuk')
+		changeTab(1)
+	}
 })
 
 onMounted(() => {
-  window.addEventListener('click', closeContextMenu)
-  // Method to handle in browser
-  window.openSideEditor = (index: number) => {
-    openedBlockSideEditor.value = index
-  }
+	window.addEventListener('click', closeContextMenu)
+	// Method to handle in browser
+	window.openSideEditor = (index: number) => {
+		openedBlockSideEditor.value = index
+	}
 
-  window.listSideWebBlocks = props?.webpage?.layout?.web_blocks
+	window.listSideWebBlocks = props?.webpage?.layout?.web_blocks
 })
 
 onUnmounted(() => {
-  window.removeEventListener('click', closeContextMenu)
+	window.removeEventListener('click', closeContextMenu)
 })
 
 defineExpose({
-  addType
+	addType,
 })
 
+const editingIndex = ref<number | null>(null)
+const renameValue = ref("")
+const MAX_RENAME_LENGTH = 20
+
+const onRenameBlock = () => {
+	if (!contextMenu.value.block) return
+
+	const index = props.webpage.layout.web_blocks.findIndex(
+		(b) => b.id === contextMenu.value.block?.id
+	)
+
+	if (index === -1) return
+
+	editingIndex.value = index
+
+	renameValue.value = contextMenu.value.block.web_block.layout.data.fieldValue?.blocks?.name || ""
+	closeContextMenu()
+}
+
+const saveRename = (index: number) => {
+	const block = props.webpage.layout.web_blocks[index]
+	if (!block) return
+
+	const value = renameValue.value.trim()
+
+	const fieldValue = (block.web_block.layout.data.fieldValue ??= {})
+
+	fieldValue.blocks ??= {}
+
+	if (!value) {
+		delete fieldValue.blocks.name
+	} else {
+		fieldValue.blocks.name = value
+	}
+
+	sendBlockUpdate(block)
+	editingIndex.value = null
+}
+
+const cancelRename = () => {
+	editingIndex.value = null
+	renameValue.value = ""
+}
 </script>
 
-
 <template>
-  <div>
-    <TabGroup :selectedIndex="selectedTab" @change="changeTab">
-      <TabList class="flex border-b border-gray-300">
-        <Tab v-for="(tab, index) in tabs" :key="index"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-none"
-          :class="selectedTab === index ? 'bg-white text-theme border-b-2 border-theme' : ''">
-          <FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
-          {{ tab.label }}
-        </Tab>
-      </TabList>
+	<div>
+		<TabGroup :selectedIndex="selectedTab" @change="changeTab">
+			<TabList class="flex border-b border-gray-300">
+				<Tab
+					v-for="(tab, index) in tabs"
+					:key="index"
+					class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-none"
+					:class="
+						selectedTab === index ? 'bg-white text-theme border-b-2 border-theme' : ''
+					">
+					<FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
+					{{ tab.label }}
+				</Tab>
+			</TabList>
 
-      <TabPanels>
-        <TabPanel class="w-[400px] p-2">
-          <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
-            <SiteSettings :webpage="webpage" :webBlockTypes="webBlockTypes"
-              @onSaveSiteSettings="(v: any) => emits('onSaveSiteSettings', v)" />
-          </div>
-        </TabPanel>
+			<TabPanels>
+				<TabPanel class="w-[400px] p-2">
+					<div class="max-h-[calc(100vh-220px)] overflow-y-auto">
+						<SiteSettings
+							:webpage="webpage"
+							:webBlockTypes="webBlockTypes"
+							@onSaveSiteSettings="(v: any) => emits('onSaveSiteSettings', v)" />
+					</div>
+				</TabPanel>
 
-        <!-- Blocks Tab -->
-        <TabPanel class="w-[400px] p-2">
-          <div class="h-[calc(100vh-220px)] overflow-y-auto relative" @contextmenu="openContextMenu($event, null)">
-            <!-- Header Controls -->
-            <div class="flex justify-between items-center mb-2">
-              <Button type="dashed" @click="openModalBlockList" :icon="faPlus" class="text-sm text-theme border-theme"
-                :size="'xs'" label="Block" />
-              <select
-                class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
-                :value="filterBlock" @change="(event: { target: { value: any } }) => filterBlock = event.target.value">
-                <option disabled value="">Filter</option>
-                <option v-for="option in filterOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </div>
+				<!-- Blocks Tab -->
+				<TabPanel class="w-[400px] p-2">
+					<div
+						class="h-[calc(100vh-220px)] overflow-y-auto relative"
+						@contextmenu="openContextMenu($event, null)">
+						<!-- Header Controls -->
+						<div class="flex justify-between items-center mb-2">
+							<Button
+								type="dashed"
+								@click="openModalBlockList"
+								:icon="faPlus"
+								class="text-sm text-theme border-theme"
+								:size="'xs'"
+								label="Block" />
+							<select
+								class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
+								:value="filterBlock"
+								@change="(event: { target: { value: any } }) => filterBlock = event.target.value">
+								<option disabled value="">Filter</option>
+								<option
+									v-for="option in filterOptions"
+									:key="option.value"
+									:value="option.value">
+									{{ option.label }}
+								</option>
+							</select>
+						</div>
 
-            <!-- Blocks List -->
-            <template v-if="webpage?.layout?.web_blocks.length">
-              <draggable :list="webpage.layout.web_blocks" handle=".handle" @change="onChangeOrderBlock"
-                ghost-class="ghost" group="column" itemKey="id" class="space-y-1">
-                <template #item="{ element, index }">
-                  <div v-if="showWebpage(element)" class="bg-white border border-gray-200 rounded"
-                    @contextmenu="(event: any) => openContextMenu(event, element)">
-                    <div class="flex justify-between items-center px-3 py-2 "
-                      v-tooltip="getEditPermissions(element.web_block.layout.data) ? '' : trans('This block is reserved by system. Not editable.')"
-                      :class="[
-                        openedBlockSideEditor === index ? 'bg-theme text-white' : '',
-                        getEditPermissions(element.web_block.layout.data) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed'
-                      ]">
-                      <button class="flex items-center gap-2 w-full"
-                        @click="()=>onClickBlock(index)"
-                        :disabled="!getEditPermissions(element.web_block.layout.data)">
-                        <FontAwesomeIcon icon="fal fa-bars" class="handle text-sm text-gray-400 cursor-grab" />
-                        <span class="text-sm font-medium truncate">
-                          {{ element.name || element.type }}
-                        </span>
-                        <LoadingIcon v-if="isLoadingBlock === element.id" />
-                      </button>
+						<!-- Blocks List -->
+						<template v-if="webpage?.layout?.web_blocks.length">
+							<draggable
+								:list="webpage.layout.web_blocks"
+								handle=".handle"
+								@change="onChangeOrderBlock"
+								ghost-class="ghost"
+								group="column"
+								itemKey="id"
+								class="space-y-1">
+								<template #item="{ element, index }">
+									<div
+										v-if="showWebpage(element)"
+										class="bg-white border border-gray-200 rounded"
+										@contextmenu="(event: any) => openContextMenu(event, element)">
+										<div
+											class="flex justify-between items-center px-3 py-2"
+											v-tooltip="
+												getEditPermissions(element.web_block.layout.data)
+													? ''
+													: trans(
+															'This block is reserved by system. Not editable.'
+													  )
+											"
+											:class="[
+												openedBlockSideEditor === index
+													? 'bg-theme text-white'
+													: '',
+												getEditPermissions(element.web_block.layout.data)
+													? 'cursor-pointer hover:bg-gray-100'
+													: 'cursor-not-allowed',
+											]">
+											<button
+												class="flex items-center gap-2 w-full"
+												@click="() => onClickBlock(index)"
+												:disabled="
+													!getEditPermissions(
+														element.web_block.layout.data
+													)
+												">
+												<FontAwesomeIcon
+													icon="fal fa-bars"
+													class="handle text-sm text-gray-400 cursor-grab" />
 
-                      <div class="flex items-center gap-1">
-                        <!-- Duplicate Block Button -->
-                        <button v-if="getEditPermissions(element.web_block.layout.data)"
-                          v-tooltip="trans('Duplicate this block')" @click.stop.prevent="duplicateBlock(element)"
-                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
-                          <FontAwesomeIcon :icon="faCopy" fixed-width />
-                        </button>
+												<!-- block Display Name -->
+												<div
+													class="max-w-[240px] overflow-x-auto whitespace-nowrap scrollbar-thin"
+													@click.stop>
+													<input
+														v-if="editingIndex === index"
+														v-model="renameValue"
+														:maxlength="MAX_RENAME_LENGTH"
+														class="text-sm font-medium border rounded px-1 py-0.5 w-full"
+														autofocus
+														@keydown.enter.prevent="saveRename(index)"
+														@keydown.esc.prevent="cancelRename"
+														@blur="saveRename(index)" />
 
+													<span v-else class="text-sm font-medium">
+														<span class="text-sm font-medium">
+															<template
+																v-if="
+																	element.web_block.layout.data
+																		.fieldValue?.blocks?.name
+																">
+																{{
+																	element.web_block.layout.data
+																		.fieldValue.blocks.name
+																}}
+															</template>
+															<template v-else>
+																{{ element.name }}
+															</template>
+														</span>
+													</span>
+												</div>
 
-                        <button v-if="getHiddenPermissions(element.web_block.layout.data)"
-                          v-tooltip="trans('Toggle visibility: hide/show the block from the page')"
-                          @click.stop.prevent="setShowBlock($event, element)"
-                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
-                          <FontAwesomeIcon :icon="element.show ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width />
-                        </button>
+												<!-- <span class="text-sm font-medium truncate">
+													{{ element.name || element.type }}
+												</span> -->
+												<LoadingIcon v-if="isLoadingBlock === element.id" />
+											</button>
 
-                        <button v-if="getDeletePermissions(element.web_block.layout.data)"
-                          @click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
-                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
-                          <LoadingIcon v-if="isLoadingDeleteBlock === element.id" />
-                          <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-500" fixed-width />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </draggable>
-            </template>
-            <div v-else class="flex flex-col items-center text-center py-6 text-gray-500">
-              <FontAwesomeIcon :icon="['fal', 'browser']" class="text-4xl mb-2" />
-              <span class="text-sm font-medium">You don't have any blocks</span>
-            </div>
-            <div v-if="isAddBlockLoading" class="mt-2 skeleton min-h-10 w-full rounded bg-red-500" />
-          </div>
-        </TabPanel>
+											<div class="flex items-center gap-1">
+												<!-- Duplicate Block Button -->
+												<button
+													v-if="
+														getEditPermissions(
+															element.web_block.layout.data
+														)
+													"
+													v-tooltip="trans('Duplicate this block')"
+													@click.stop.prevent="duplicateBlock(element)"
+													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													<FontAwesomeIcon :icon="faCopy" fixed-width />
+												</button>
 
+												<button
+													v-if="
+														getHiddenPermissions(
+															element.web_block.layout.data
+														)
+													"
+													v-tooltip="
+														trans(
+															'Toggle visibility: hide/show the block from the page'
+														)
+													"
+													@click.stop.prevent="
+														setShowBlock($event, element)
+													"
+													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													<FontAwesomeIcon
+														:icon="
+															element.show
+																? 'fal fa-eye'
+																: 'fal fa-eye-slash'
+														"
+														fixed-width />
+												</button>
 
-        <!-- Tab 3: Style -->
-        <TabPanel class="w-[400px] p-2">
-          <div class="max-h-[calc(100vh-220px)] overflow-y-auto pb-14">
-            <template v-if="openedBlockSideEditor !== null">
-              <Collapse :when="true">
-                <div class="p-2 space-y-2">
-                  <VisibleCheckmark v-model="webpage.layout.web_blocks[openedBlockSideEditor].visibility"
-                    @update:modelValue="sendBlockUpdate(webpage.layout.web_blocks[openedBlockSideEditor])" />
-                  <SideEditor
-                    v-model="webpage.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue"
-                    :panelOpen="openedChildSideEditor"
-                    :blueprint="getBlueprint(webpage.layout.web_blocks[openedBlockSideEditor].type, webpage)"
-                    :block="webpage.layout.web_blocks[openedBlockSideEditor]"
-                    @update:modelValue="() => sendBlockUpdate(webpage.layout.web_blocks[openedBlockSideEditor])"
-                    :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[openedBlockSideEditor].id } }" />
-                </div>
-              </Collapse>
-            </template>
-            <template v-else>
-              <p class="text-gray-500 text-sm">Select a block to edit its style.</p>
-            </template>
-          </div>
-        </TabPanel>
-      </TabPanels>
-    </TabGroup>
+												<button
+													v-if="
+														getDeletePermissions(
+															element.web_block.layout.data
+														)
+													"
+													@click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
+													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													<LoadingIcon
+														v-if="
+															isLoadingDeleteBlock === element.id
+														" />
+													<FontAwesomeIcon
+														v-else
+														icon="fal fa-trash-alt"
+														class="text-red-500"
+														fixed-width />
+												</button>
+											</div>
+										</div>
+									</div>
+								</template>
+							</draggable>
+						</template>
+						<div
+							v-else
+							class="flex flex-col items-center text-center py-6 text-gray-500">
+							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-4xl mb-2" />
+							<span class="text-sm font-medium">You don't have any blocks</span>
+						</div>
+						<div
+							v-if="isAddBlockLoading"
+							class="mt-2 skeleton min-h-10 w-full rounded bg-red-500" />
+					</div>
+				</TabPanel>
 
-    <Modal :isOpen="modelModalBlocklist" @onClose="openModalBlockList">
-      <WeblockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="all" />
-    </Modal>
+				<!-- Tab 3: Style -->
+				<TabPanel class="w-[400px] p-2">
+					<div class="max-h-[calc(100vh-220px)] overflow-y-auto pb-14">
+						<template v-if="openedBlockSideEditor !== null">
+							<Collapse :when="true">
+								<div class="p-2 space-y-2">
+									<VisibleCheckmark
+										v-model="
+											webpage.layout.web_blocks[openedBlockSideEditor]
+												.visibility
+										"
+										@update:modelValue="
+											sendBlockUpdate(
+												webpage.layout.web_blocks[openedBlockSideEditor]
+											)
+										" />
+									<SideEditor
+										v-model="
+											webpage.layout.web_blocks[openedBlockSideEditor]
+												.web_block.layout.data.fieldValue
+										"
+										:panelOpen="openedChildSideEditor"
+										:blueprint="
+											getBlueprint(
+												webpage.layout.web_blocks[openedBlockSideEditor]
+													.type,
+												webpage
+											)
+										"
+										:block="webpage.layout.web_blocks[openedBlockSideEditor]"
+										@update:modelValue="
+											() =>
+												sendBlockUpdate(
+													webpage.layout.web_blocks[openedBlockSideEditor]
+												)
+										"
+										:uploadImageRoute="{
+											...webpage.images_upload_route,
+											parameters: {
+												modelHasWebBlocks:
+													webpage.layout.web_blocks[openedBlockSideEditor]
+														.id,
+											},
+										}" />
+								</div>
+							</Collapse>
+						</template>
+						<template v-else>
+							<p class="text-gray-500 text-sm">Select a block to edit its style.</p>
+						</template>
+					</div>
+				</TabPanel>
+			</TabPanels>
+		</TabGroup>
 
-    <ConfirmPopup>
-      <template #icon>
-        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
-      </template>
-    </ConfirmPopup>
-  </div>
+		<Modal :isOpen="modelModalBlocklist" @onClose="openModalBlockList">
+			<WeblockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="all" />
+		</Modal>
 
+		<ConfirmPopup>
+			<template #icon>
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+			</template>
+		</ConfirmPopup>
+	</div>
 
-  <div v-if="contextMenu.visible" :style="{ top: `${contextMenu.top}px`, left: `${contextMenu.left}px` }"
-    class="fixed z-50 bg-white border border-gray-200 shadow-md rounded text-sm min-w-[140px] overflow-hidden">
-    <ul>
-      <template v-if="contextMenu.block">
-        <!-- Toggle Visibility -->
-        <li
-          @click="getHiddenPermissions(contextMenu.block.web_block.layout.data) && setShowBlock($event, contextMenu.block!)"
-          :class="[
-            'flex items-center gap-2 px-3 py-1 cursor-pointer',
-            getHiddenPermissions(contextMenu.block.web_block.layout.data)
-              ? 'hover:bg-gray-100 text-gray-800'
-              : 'text-gray-400 cursor-not-allowed pointer-events-none'
-          ]">
-          <font-awesome-icon :icon="contextMenu.block?.show ? faEyeSlash : faEye" />
-          {{ contextMenu.block?.show ? 'Hide' : 'Unhide' }}
-        </li>
+	<div
+		v-if="contextMenu.visible"
+		:style="{ top: `${contextMenu.top}px`, left: `${contextMenu.left}px` }"
+		class="fixed z-50 bg-white border border-gray-200 shadow-md rounded text-sm min-w-[140px] overflow-hidden">
+		<ul>
+			<template v-if="contextMenu.block">
+				<!-- Toggle Visibility -->
+				<li
+					@click="
+						getHiddenPermissions(contextMenu.block.web_block.layout.data) &&
+							setShowBlock($event, contextMenu.block!)
+					"
+					:class="[
+						'flex items-center gap-2 px-3 py-1 cursor-pointer',
+						getHiddenPermissions(contextMenu.block.web_block.layout.data)
+							? 'hover:bg-gray-100 text-gray-800'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="contextMenu.block?.show ? faEyeSlash : faEye" />
+					{{ contextMenu.block?.show ? "Hide" : "Unhide" }}
+				</li>
 
-        <!-- Delete -->
-        <li
-          @click="getDeletePermissions(contextMenu.block.web_block.layout.data) && confirmDelete($event, contextMenu.block!)"
-          :class="[
-            'flex items-center gap-2 px-3 py-1',
-            getDeletePermissions(contextMenu.block.web_block.layout.data)
-              ? 'hover:bg-gray-100 text-red-600 cursor-pointer'
-              : 'text-gray-400 cursor-not-allowed pointer-events-none'
-          ]">
-          <font-awesome-icon :icon="faTrashAlt" />
-          Delete
-        </li>
+				<!-- Delete -->
+				<li
+					@click="
+						getDeletePermissions(contextMenu.block.web_block.layout.data) &&
+							confirmDelete($event, contextMenu.block!)
+					"
+					:class="[
+						'flex items-center gap-2 px-3 py-1',
+						getDeletePermissions(contextMenu.block.web_block.layout.data)
+							? 'hover:bg-gray-100 text-red-600 cursor-pointer'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="faTrashAlt" />
+					Delete
+				</li>
 
-        <!-- Copy (Always enabled) -->
-        <li @click="getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()" :class="[
-          'flex items-center gap-2 px-3 py-2',
-          getEditPermissions(contextMenu.block.web_block.layout.data)
-            ? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
-            : 'text-gray-400 cursor-not-allowed pointer-events-none'
-        ]">
-          <font-awesome-icon :icon="faCopy" />
-          Copy
-        </li>
-      </template>
-      <template v-else>
-        <li @click="pasteBlock" class="flex items-center gap-2 px-3 py-1 hover:bg-gray-100 cursor-pointer"
-          :class="{ 'text-gray-400 pointer-events-none': !copiedBlock }">
-          <font-awesome-icon :icon="faPaste" />
-          Paste
-        </li>
-      </template>
-    </ul>
-  </div>
+				<!-- Copy (Always enabled) -->
+				<li
+					@click="
+						getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()
+					"
+					:class="[
+						'flex items-center gap-2 px-3 py-2',
+						getEditPermissions(contextMenu.block.web_block.layout.data)
+							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="faCopy" />
+					Copy
+				</li>
 
+				<!--Rename) -->
+				<li
+					@click="
+						getRenamePermision(contextMenu.block.web_block.layout.data) &&
+							onRenameBlock()
+					"
+					:class="[
+						'flex items-center gap-2 px-3 py-2',
+						getRenamePermision(contextMenu.block.web_block.layout.data)
+							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="faEdit" />
+					Rename
+				</li>
+			</template>
+			<template v-else>
+				<li
+					@click="pasteBlock"
+					class="flex items-center gap-2 px-3 py-1 hover:bg-gray-100 cursor-pointer"
+					:class="{ 'text-gray-400 pointer-events-none': !copiedBlock }">
+					<font-awesome-icon :icon="faPaste" />
+					Paste
+				</li>
+			</template>
+		</ul>
+	</div>
 </template>
 
 <style scoped>
 .text-theme {
-  color: v-bind('layout?.app?.theme[4]') !important;
+	color: v-bind('layout?.app?.theme[4]') !important;
 }
 
 .bg-theme {
-  background-color: v-bind('layout?.app?.theme[4]') !important;
+	background-color: v-bind('layout?.app?.theme[4]') !important;
 }
 
 .border-theme {
-  border-color: v-bind('layout?.app?.theme[4]') !important;
+	border-color: v-bind('layout?.app?.theme[4]') !important;
 }
 
 .ghost {
-  opacity: 0.5;
-  background-color: #e2e8f0;
-  border: 2px dashed v-bind('layout?.app?.theme[4]');
+	opacity: 0.5;
+	background-color: #e2e8f0;
+	border: 2px dashed v-bind('layout?.app?.theme[4]');
 }
 </style>
