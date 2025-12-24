@@ -19,6 +19,7 @@ use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Inertia\Response;
 use App\Http\Resources\Masters\MasterProductResource;
+use App\Http\Resources\Masters\MasterProductVariantResource;
 
 class ShowMasterVariant extends OrgAction
 {
@@ -87,7 +88,7 @@ class ShowMasterVariant extends OrgAction
             )
             ->get();
 
-        $products = MasterProductResource::collection($masterProductInVariant);
+        $products = MasterProductVariantResource::collection($masterProductInVariant);
 
         return Inertia::render(
             'Masters/Variant',
