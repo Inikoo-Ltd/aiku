@@ -196,14 +196,6 @@ const onSave = async () => {
             text: trans("Changes may need some seconds to update."),
             type: "success",
         })
-        
-        if (layout.currentQuery?.from) {
-            setTimeout(() => {
-                router.visit(layout.currentQuery?.from, {
-                    
-                })
-            }, 1000)
-        }
     } catch (error: any) {
         console.log('error axios', error)
         notify({

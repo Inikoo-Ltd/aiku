@@ -59,14 +59,15 @@ class IndexMasterProductsBulkEdit extends GrpAction
 
     public function htmlResponse(Group|MasterShop|MasterProductCategory $masterAssets, ActionRequest $request): Response
     {
-        $title = __('Master products');
+        $title = __('Bulk edit Master Products');
 
         return Inertia::render(
             'Masters/MasterProductsBulkEdit',
             [
                 'title'                 => $title,
                 'pageHead'              => [
-                    'title'         => $title,
+                    'model'         => __('Master Products'),
+                    'title'         => __('Bulk Edit'),
                 ],
 
             ]
