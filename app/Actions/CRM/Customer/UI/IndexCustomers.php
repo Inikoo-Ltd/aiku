@@ -264,7 +264,7 @@ class IndexCustomers extends OrgAction
                             'description' => ($parent->type == ShopTypeEnum::FULFILMENT || $parent->type == ShopTypeEnum::DROPSHIPPING)
                                 ? __("You can add your customer 🤷🏽‍♂️") : null,
                             'count'       => $parent->crmStats->number_customers,
-                            'action'      => ($parent->type == ShopTypeEnum::FULFILMENT || $parent->type == ShopTypeEnum::DROPSHIPPING) && $this->parent->engine !== ShopEngineEnum::FAIRE
+                            'action'      => ($parent->type == ShopTypeEnum::FULFILMENT || $parent->type == ShopTypeEnum::DROPSHIPPING)
                                 ? [
                                     'type'    => 'button',
                                     'style'   => 'create',
