@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBullhorn,faCashRegister,faChessQueen,faCube,faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from '@fal'
+import { faAd, faBullhorn,faCashRegister,faChessQueen,faCube,faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from '@fal'
 import { faBoxUsd,faHelmetBattle,faExclamationCircle, faCheckCircle as fasCheckCircle, faCrown as fasCrown } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { get, set } from 'lodash-es'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { get } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
-// import subDepartment from "@/Pages/Grp/Org/Catalogue/SubDepartment.vue";
 
 
-library.add(faBoxUsd,faHelmetBattle,faChessQueen,faCube,faStore,faCashRegister,  faBullhorn,faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle,fasCrown)
+library.add(faAd, faBoxUsd,faHelmetBattle,faChessQueen,faCube,faStore,faCashRegister,  faBullhorn,faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle,fasCrown)
 
 interface TypeShop {
     id: number
@@ -62,8 +60,6 @@ interface optionsJob {
     }
 }
 
-const layout = inject('layout', layoutStructure)
-
 const props = defineProps<{
     form: {
         [key: string]: {}  // key = organisation slug
@@ -97,9 +93,6 @@ const props = defineProps<{
 
 const newForm = reactive(props.form)
 
-
-
-
 const optionsList = {
     shops: props.options.shops.data?.filter(shop => shop.state == 'open'),
     fulfilments: props.options.fulfilments?.data || [],
@@ -125,7 +118,6 @@ const optionsJob = reactive<optionsJob>({
                 number_employees: props.options.positions.data.find(position => position.slug == 'org-admin')?.number_employees || 0,
             }
         ],
-        // value: null
     },
 
     hr: {
@@ -240,11 +232,28 @@ const optionsJob = reactive<optionsJob>({
         isHide: shopsLength < 1,
         // value: null
     },
+    shop_ppc: {
+        key: "ppc",
+        department: trans("PPC"),
+        icon: "fal fa-ad",
+        scope: "shop",
+        subDepartment: [
+            {
+                slug: "ppc-shop",
+                grade: "clerk",
+                label: trans("PPC"),
+                optionsType: ["shops"],
+                number_employees: props.options.positions.data.find(position => position.slug == "shop-ppc")?.number_employees || 0
+            }
+
+        ]
+    },
 
     cus: {
         key: 'cus',
         department: trans("Customer Service"),
         departmentRightIcons: ['fal fa-user', 'fal fa-route'],
+        icon: "fal fa-user",
         scope: 'shop',
         subDepartment: [
             {
@@ -278,6 +287,7 @@ const optionsJob = reactive<optionsJob>({
     buy: {
         key: 'buy',
         department: trans("Buyer"),
+        icon: "fal fa-box-usd",
         subDepartment: [
             {
                 slug: "buy",
@@ -292,6 +302,7 @@ const optionsJob = reactive<optionsJob>({
     wah: {
         key: 'wah',
         department: trans("Warehouse"),
+        icon: "fal fa-inventory",
         subDepartment: [
             {
                 slug: "wah-m",
@@ -314,7 +325,8 @@ const optionsJob = reactive<optionsJob>({
 
     dist: {
         key: 'dist',
-        department: trans("Dispatching"),
+        department: trans("Goods out"),
+        icon: "fal fa-arrow-from-left",
         subDepartment: [
             {
                 slug: "dist-m",
@@ -366,6 +378,7 @@ const optionsJob = reactive<optionsJob>({
     ful: {
         key: 'ful',
         department: trans("Fulfilment"),
+        icon: "fal fa-hand-holding-box",
         subDepartment: [
             {
                 slug: "ful-m",
@@ -400,7 +413,7 @@ const optionsJob = reactive<optionsJob>({
 
 
 // Temporary data
-const openFinetune = ref('')
+const openFineTune = ref('')
 
 
 const isLevelGroupAdmin = (jobGroupLevel?: string) => {
@@ -469,8 +482,7 @@ watch(() => newForm, () => {
                                                         ? true
                                                         : false"
                                                 >
-                                                <!-- {{ (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') }} -->
-            
+
                                                     <div class="relative text-left">
                                                         <div class="absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2">
                                                             <template v-if="isGroupAdminSelected || (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level)) || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin')">
@@ -497,7 +509,7 @@ watch(() => newForm, () => {
                                         </div>
                                         <!-- Button: Advanced selection -->
                                         <div v-if="jobGroup.subDepartment.some(subDep => subDep.optionsType?.some(option => optionsList[option]?.length > 1))" class="flex gap-x-2 px-3">
-                                            <button @click.prevent="() => openFinetune = openFinetune === jobGroup.key ? '' : jobGroup.key"
+                                            <button @click.prevent="() => openFineTune = openFineTune === jobGroup.key ? '' : jobGroup.key"
                                                 class="underline disabled:no-underline whitespace-nowrap  disabled:cursor-auto disabled:text-gray-400"
                                             >
                                                 {{ trans('Shops Fine tuning') }}
@@ -507,7 +519,7 @@ watch(() => newForm, () => {
                                     
                                     <!-- Section: Advanced selection -->
                                     <Transition mode="in-out">
-                                        <div v-if="openFinetune === jobGroup.key" class="relative bg-slate-400/10 border border-gray-300 rounded-md py-2 px-2 mb-3">
+                                        <div v-if="openFineTune === jobGroup.key" class="relative bg-slate-400/10 border border-gray-300 rounded-md py-2 px-2 mb-3">
                                             <div class="flex gap-x-8 mb-3">
                                                 <div class="flex flex-col gap-y-4 pt-4">
                                                     <template v-for="optionData, optionKey, optionIdx in optionsList" :key="optionKey + optionIdx">
@@ -533,7 +545,7 @@ watch(() => newForm, () => {
                                                                         <template v-for="subDep in jobGroup.subDepartment.filter(sub => sub.grade == gradeName)">
                                                                             <div
                                                                                 v-if="subDep.optionsType?.includes(optionKey)"
-                                                                                @click.prevent="'onClickJobFinetune(departmentName, shop.slug, subDep.slug, optionKey)'"
+                                                                                @click.prevent="'onClickJobFineTune(departmentName, shop.slug, subDep.slug, optionKey)'"
                                                                                 class="group h-full  flex items-center justify-center rounded-md px-3 font-medium disabled:text-gray-400 disabled:xxcursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
                                                                                 :disabled="isGroupAdminSelected || isRadioChecked('org-admin') || isRadioChecked('group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDep.slug !== 'shop-admin')"
                                                                                 v-tooltip="subDep.label"
@@ -563,12 +575,6 @@ watch(() => newForm, () => {
                                                         </div>
                                                     </template>
                                                 </div>
-                                                <!-- <div v-for="subDepartment, idxSubDepartment in jobGroup.subDepartment" class="flex flex-col pl-3 first:pl-0">
-                                                    <div class="text-center font-bold">{{ subDepartment.label }}</div>
-                                                    <div v-for="option in subDepartment.optionsType" class="py-[2px] pl-2 rounded">
-            
-                                                    </div>
-                                                </div> -->
                                             </div>
                                             <div v-if="jobGroup.optionsClosed?.length" class="px-2 bg-gray-400/20 py-2 rounded">
                                                 <div class="flex items-center gap-x-1">
@@ -580,7 +586,7 @@ watch(() => newForm, () => {
                                                     {{ option.name }}
                                                 </div>
                                             </div>
-                                            <div @click="openFinetune = ''" class="absolute top-1 right-2 w-fit px-1 text-slate-400 hover:text-slate-500 cursor-pointer">
+                                            <div @click="openFineTune = ''" class="absolute top-1 right-2 w-fit px-1 text-slate-400 hover:text-slate-500 cursor-pointer">
                                                 <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
                                             </div>
                                         </div>

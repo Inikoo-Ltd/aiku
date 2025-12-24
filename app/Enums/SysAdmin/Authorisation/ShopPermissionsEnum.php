@@ -23,7 +23,6 @@ enum ShopPermissionsEnum: string
     case CRM_EDIT = 'crm.edit';
     case CRM_VIEW = 'crm.view';
 
-
     case CRM_PROSPECTS      = 'crm.prospects';
     case CRM_PROSPECTS_EDIT = 'crm.prospects.edit';
     case CRM_PROSPECTS_VIEW = 'crm.prospects.view';
@@ -31,6 +30,7 @@ enum ShopPermissionsEnum: string
     case WEB      = 'web';
     case WEB_EDIT = 'web.edit';
     case WEB_VIEW = 'web.view';
+    case WEB_EDIT_LANDING_PAGES = 'web.edit.landing-pages';
 
     case ORDERS      = 'orders';
     case ORDERS_EDIT = 'orders.edit';
