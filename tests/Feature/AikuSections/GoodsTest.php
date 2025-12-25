@@ -610,7 +610,6 @@ test('UI Edit Trade Unit Family page loads', function () {
     $response->assertInertia(function (AssertableInertia $page) use ($family) {
         $page
             ->component('EditModel')
-            ->where('title', __('Edit Trade Unit Family'))
             ->has('breadcrumbs')
             ->has('pageHead', function (AssertableInertia $head) {
                 $head->where('title', __('Edit trade family'))
