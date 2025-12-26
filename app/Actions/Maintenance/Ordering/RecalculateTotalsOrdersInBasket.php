@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Ordering;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -24,7 +25,8 @@ class RecalculateTotalsOrdersInBasket
 
     public function handle(Order $order): void
     {
-        CalculateOrderTotalAmounts::run($order, true, true, false, true);
+       OrderHydrateCategoriesData::run($order);
+       CalculateOrderTotalAmounts::run($order, true, true, false, true);
     }
 
 

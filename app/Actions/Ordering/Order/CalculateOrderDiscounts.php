@@ -100,7 +100,14 @@ class CalculateOrderDiscounts
     {
         $enabledOffers = [];
 
-        $offersData = DB::table('offers')->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])->where('shop_id', $order->shop_id)->where('status', true)->where('trigger_type', 'Customer')->get();
+        $offersData = DB::table('offers')
+            ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
+            ->where('shop_id', $order->shop_id)
+            ->where('status', true)
+            ->whereIn('trigger_type', [
+                'Customer',
+                'ProductCategory'
+            ])->get();
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {
                 list($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
@@ -118,6 +125,8 @@ class CalculateOrderDiscounts
                         'metadata' => $metadata,
                     ];
                 }
+            } elseif ($offerData->type == 'Category Quantity Ordered') {
+
             }
         }
 

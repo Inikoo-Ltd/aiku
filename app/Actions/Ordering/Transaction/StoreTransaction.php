@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Transaction;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
@@ -91,6 +92,7 @@ class StoreTransaction extends OrgAction
 
         $order->refresh();
         if ($this->strict) {
+            OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
         }
