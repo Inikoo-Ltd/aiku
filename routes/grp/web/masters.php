@@ -232,7 +232,7 @@ Route::name("master_shops")->prefix('master-shops')
                 });
             });
 
-            // Route::prefix('/master-products-bulk-edit')->as('.bulk-edit')->group(function () { 
+            // Route::prefix('/master-products-bulk-edit')->as('.bulk-edit')->group(function () {
 
             // })
             Route::get('/master-products-bulk-edit', IndexMasterProductsBulkEdit::class)->name('.bulk-edit');

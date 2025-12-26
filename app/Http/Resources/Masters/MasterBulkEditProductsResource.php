@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Resources\Masters;
+
 /*
  * Author: Vika Aqordi
  * Created on 22-12-2025-13h-24m
@@ -28,9 +29,7 @@ class MasterBulkEditProductsResource extends JsonResource
 
         $tradeUnits->loadMissing('ingredients');
 
-        $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
-            return $tradeUnit->ingredients->pluck('name');
-        })->unique()->values()->all();
+
 
         return [
             'id'                         => $masterProduct->id,
@@ -41,7 +40,7 @@ class MasterBulkEditProductsResource extends JsonResource
             'price'                      => $masterProduct->price,
             'rrp'                        => $masterProduct->rrp ?? 0,
             'is_for_sale'                   => (bool) $masterProduct->is_for_sale,
-            'not_for_sale_from_trade_unit'  => (bool) $masterProduct->not_for_sale_from_trade_unit,
+            'not_for_sale_from_trade_unit'  => $masterProduct->not_for_sale_from_trade_unit,
             'currency'                   => $masterProduct->group->currency->code,
             'master_family_id'           => $masterProduct->master_family_id,
             'master_family_data'         => $masterProduct->masterFamily ? [

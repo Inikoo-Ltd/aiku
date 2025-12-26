@@ -11,7 +11,6 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
@@ -25,7 +24,6 @@ use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class StoreProductCategoryDiscount extends OrgAction
@@ -105,8 +103,8 @@ class StoreProductCategoryDiscount extends OrgAction
 
         return [
             'end_at' => ['nullable', 'date'],
-            'trigger_data_item_quantity'=>['required','integer','min:1'],
-            'percentage_off'=>['required','numeric','gt:0','lt:1']
+            'trigger_data_item_quantity' => ['required','integer','min:1'],
+            'percentage_off' => ['required','numeric','gt:0','lt:1']
         ];
 
 

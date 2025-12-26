@@ -8,12 +8,9 @@
 
 namespace App\Actions\Maintenance\Dropshipping;
 
-use App\Actions\Dropshipping\Ebay\Product\StoreEbayProduct;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\EbayUser;
-use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 

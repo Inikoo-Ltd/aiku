@@ -18,7 +18,6 @@ use App\Models\Masters\MasterVariant;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Inertia\Response;
-use App\Http\Resources\Masters\MasterProductResource;
 use App\Http\Resources\Masters\MasterProductVariantResource;
 
 class ShowMasterVariant extends OrgAction

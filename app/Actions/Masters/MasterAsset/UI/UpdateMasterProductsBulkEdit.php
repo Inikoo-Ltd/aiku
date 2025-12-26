@@ -12,7 +12,6 @@ namespace App\Actions\Masters\MasterAsset\UI;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -21,8 +20,6 @@ use App\Models\SysAdmin\Group;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductsBulkEdit extends GrpAction
@@ -31,22 +28,22 @@ class UpdateMasterProductsBulkEdit extends GrpAction
 
     private Group|MasterShop|MasterProductCategory $parent;
 
-    public function handle(Group|MasterShop|MasterProductCategory $parent, Array $modelData): Collection
+    public function handle(Group|MasterShop|MasterProductCategory $parent, array $modelData): Collection
     {
         $modelData = Arr::keyBy($modelData['data'], 'id');
         $masterAssets = MasterAsset::whereIn('id', data_get($modelData, '*.id'))->get()->keyBy('id');
         data_forget($modelData, '*.id');
-        
-        foreach ($masterAssets as $id => $masterAsset) {    
+
+        foreach ($masterAssets as $id => $masterAsset) {
             UpdateMasterAsset::dispatch($masterAsset, $modelData[$id]);
         }
 
         return $masterAssets;
     }
 
-    public function rules(): Array
+    public function rules(): array
     {
-        $rules = [
+        return [
             'data'                          =>  ['required', 'array'],
             'data.*.id'                     =>  ['required', 'numeric'],
             'data.*.name'                   =>  ['sometimes', 'string'],
@@ -59,7 +56,6 @@ class UpdateMasterProductsBulkEdit extends GrpAction
             'data.*.master_family_id'       =>  ['sometimes', 'nullable'],
         ];
 
-        return $rules;
     }
 
     public function jsonResponse(Collection $masterAssets): AnonymousResourceCollection
