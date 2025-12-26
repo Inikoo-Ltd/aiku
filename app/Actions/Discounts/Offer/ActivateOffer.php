@@ -8,26 +8,21 @@
 
 namespace App\Actions\Discounts\Offer;
 
-use App\Actions\Discounts\OfferAllowance\ActivatePermanentOfferAllowance;
+use App\Actions\Discounts\OfferAllowance\ActivateOfferAllowance;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\ActionRequest;
 
-class ActivatePermanentOffer extends OrgAction
+class ActivateOffer extends OrgAction
 {
     use WithActionUpdate;
 
 
     public function handle(Offer $offer): Offer
     {
-        if ($offer->duration != OfferDurationEnum::PERMANENT) {
-            abort(419);
-        }
-
         $modelData = [
             'state'  => OfferStateEnum::ACTIVE,
             'status' => true
@@ -39,7 +34,7 @@ class ActivatePermanentOffer extends OrgAction
 
         foreach ($offer->offerAllowances as $offerAllowance) {
             if ($offerAllowance->state == OfferAllowanceStateEnum::SUSPENDED || $offerAllowance->state == OfferAllowanceStateEnum::IN_PROCESS) {
-                ActivatePermanentOfferAllowance::run($offerAllowance);
+                ActivateOfferAllowance::run($offerAllowance);
             }
         }
 

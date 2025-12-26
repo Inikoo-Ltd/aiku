@@ -60,7 +60,7 @@ class CreateVolumeDiscount extends OrgAction
 
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
-        ActivatePermanentOffer::run($offer);
+        ActivateOffer::run($offer);
 
         return $offer;
     }

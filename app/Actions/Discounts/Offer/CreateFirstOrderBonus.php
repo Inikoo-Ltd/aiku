@@ -57,7 +57,7 @@ class CreateFirstOrderBonus extends OrgAction
         data_set($modelData, 'trigger_type', 'Customer');
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
-        ActivatePermanentOffer::run($offer);
+        ActivateOffer::run($offer);
 
         return $offer;
     }
