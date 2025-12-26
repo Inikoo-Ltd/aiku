@@ -26,6 +26,7 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
 use App\Models\Traits\WithPushNotifications;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -36,6 +37,8 @@ use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\LaravelPasskeys\Models\Concerns\HasPasskeys;
+use Spatie\LaravelPasskeys\Models\Concerns\InteractsWithPasskeys;
 
 /**
  * @property int $id
@@ -119,14 +122,16 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  * @mixin \Eloquent
  */
-class User extends Authenticatable implements HasMedia, Auditable
+class User extends Authenticatable implements HasMedia, Auditable, HasPasskeys
 {
     use HasEmail;
     use HasRoles;
     use WithPushNotifications;
     use IsUserable;
     use HasImage;
+    use Notifiable;
     use HasApiTokens;
+    use InteractsWithPasskeys;
 
     protected $guarded = [
     ];
@@ -305,6 +310,16 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function getOrganisation(): ?Organisation
     {
         return $this->getOrganisations()->first();
+    }
+
+    /**
+    * Get the display name for the passkey.
+    */
+    public function getPasskeyDisplayName(): string
+    {
+        // Return a string that identifies this user for passkey purposes
+        // You can use any user attribute that makes sense, like email, username, or name
+        return  $this->username;
     }
 
 
