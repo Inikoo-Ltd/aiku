@@ -54,7 +54,7 @@ class StoreProductCategoryDiscount extends OrgAction
 
         $code = Str::lower($offerCampaign->code.'-'.$productCategory->code);
 
-        data_set($modelData, 'type', 'Category Quantity Ordered');
+        data_set($modelData, 'type', 'Category Ordered');
         data_set($modelData, 'code', $code, false);
         data_set(
             $modelData,
@@ -85,6 +85,8 @@ class StoreProductCategoryDiscount extends OrgAction
                     'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
                     'data'        => [
                         'percentage_off' => $percentageOff,
+                        'category_type'  => $productCategory->type,
+                        'category_id'    => $productCategory->id
                     ]
                 ]
             ]
@@ -100,14 +102,11 @@ class StoreProductCategoryDiscount extends OrgAction
 
     public function rules(): array
     {
-
         return [
-            'end_at' => ['nullable', 'date'],
-            'trigger_data_item_quantity' => ['required','integer','min:1'],
-            'percentage_off' => ['required','numeric','gt:0','lt:1']
+            'end_at'                     => ['nullable', 'date'],
+            'trigger_data_item_quantity' => ['required', 'integer', 'min:1'],
+            'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:1']
         ];
-
-
     }
 
     /**

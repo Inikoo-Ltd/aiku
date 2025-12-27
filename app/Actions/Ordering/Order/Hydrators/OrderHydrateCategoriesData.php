@@ -18,6 +18,7 @@ class OrderHydrateCategoriesData
 
     public function handle(Order $order): void
     {
+        $familyIds = [];
         $categoriesData = [
             'family'         => [],
             'sub_department' => [],
@@ -49,6 +50,7 @@ class OrderHydrateCategoriesData
                     'quantity'   => (float) ($categoriesData['family'][$transaction->family_id]['quantity'] ?? 0) + $transaction->total_quantity,
                     'net_amount' => (float) ($categoriesData['family'][$transaction->family_id]['net_amount'] ?? 0) + $transaction->total_net_amount,
                 ];
+                $familyIds[] = $transaction->family_id;
             }
             if ($transaction->sub_department_id) {
                 $categoriesData['sub_department'][$transaction->sub_department_id] = [
@@ -63,6 +65,8 @@ class OrderHydrateCategoriesData
                 ];
             }
         }
+
+        $categoriesData['family_ids'] = $familyIds;
 
         $order->update([
             'categories_data' => $categoriesData,

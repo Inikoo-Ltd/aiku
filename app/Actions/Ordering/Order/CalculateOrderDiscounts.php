@@ -30,9 +30,19 @@ class CalculateOrderDiscounts
         $this->transactions = collect();
 
         $this->setEnabledOffers($order);
+
         if (count($this->enabledOffers) > 0) {
             $this->transactions = DB::table('transactions')
-                ->select(['id', 'quantity_ordered', 'gross_amount', 'model_type', 'model_id'])
+                ->select([
+                    'id',
+                    'quantity_ordered',
+                    'gross_amount',
+                    'model_type',
+                    'model_id',
+                    'family_id',
+                    'sub_department_id',
+                    'department_id'
+                ])
                 ->where('order_id', $order->id)->where('model_type', 'Product')->get();
 
             $this->processAllowances();
@@ -101,7 +111,7 @@ class CalculateOrderDiscounts
         $enabledOffers = [];
 
         $offersData = DB::table('offers')
-            ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
+            ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
             ->where('shop_id', $order->shop_id)
             ->where('status', true)
             ->whereIn('trigger_type', [
@@ -125,10 +135,16 @@ class CalculateOrderDiscounts
                         'metadata' => $metadata,
                     ];
                 }
-            } elseif ($offerData->type == 'Category Quantity Ordered') {
-
+            } elseif ($offerData->type == 'Category Ordered ToDo') {
+                if (in_array($offerData->trigger_id, $order->categories_data['family_ids'])) {
+                    $enabledOffers[$offerData->allowance_signature] = [
+                        'offer_id'    => $offerData->id,
+                        'offer_label' => $offerData->name
+                    ];
+                }
             }
         }
+
 
         $this->enabledOffers = $enabledOffers;
     }
@@ -177,8 +193,54 @@ class CalculateOrderDiscounts
     public function processAllowance(array $offerData): void
     {
         $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])->where('offer_id', $offerData['offer_id'])->first();
-        if ($allowanceData && $allowanceData->target_type == 'all_products_in_order') {
+
+        if (!$allowanceData) {
+            return;
+        }
+
+        if ($allowanceData->target_type == 'all_products_in_order') {
             $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'all_products_in_product_category') {
+            $this->processAllowanceAllProductsInProductCategory($offerData, $allowanceData);
+        }
+    }
+
+    public function processAllowanceAllProductsInProductCategory(array $offerData, $allowanceData): void
+    {
+        $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
+        $percentageOff    = isset($allowanceOpsData['percentage_off']) ? (float)$allowanceOpsData['percentage_off'] : 0.0;
+
+
+        // Clamp to [0,1]
+        if ($percentageOff < 0) {
+            $percentageOff = 0.0;
+        } elseif ($percentageOff > 1) {
+            $percentageOff = 1.0;
+        }
+
+        if ($percentageOff <= 0) {
+            // Nothing to apply
+            return;
+        }
+
+
+        foreach ($this->transactions as $transaction) {
+            dd($transaction);
+            $current = property_exists($transaction, 'percentage_off') ? $transaction->percentage_off : null;
+
+            // Apply only if undefined or lower than the new percentage
+            if ($current === null || (is_numeric($current) && (float)$current < $percentageOff)) {
+                $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
+
+                $transaction->discounted_percentage = $percentageOff;
+                $transaction->net_amount            = $transaction->gross_amount - $discountedAmount;
+                $transaction->discounted_amount     = $discountedAmount;
+                $transaction->offer_id              = $allowanceData->offer_id;
+                $transaction->offer_campaign_id     = $allowanceData->offer_campaign_id;
+                $transaction->offer_allowance_id    = $allowanceData->id;
+                $transaction->offer_label           = $offerData['offer_label'];
+                $transaction->allowance_type        = 'percentage';
+            }
         }
     }
 
