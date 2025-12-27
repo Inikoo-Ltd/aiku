@@ -29,10 +29,10 @@ class RecalculateTotalsOrdersInBasket
         OrderHydrateCategoriesData::run($order);
         CalculateOrderTotalAmounts::run($order, true, true, false, true);
 
-        foreach($order->transactions as $transaction){
+        foreach ($order->transactions as $transaction) {
 
             $model = $transaction->model;
-            if($model instanceof Product) {
+            if ($model instanceof Product) {
                 $transaction->update(
                     [
                         'family_id'         => $model->family_id,

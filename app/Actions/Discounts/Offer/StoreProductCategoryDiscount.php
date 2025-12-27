@@ -70,7 +70,7 @@ class StoreProductCategoryDiscount extends OrgAction
             $modelData,
             'trigger_data',
             [
-                'item_quantity' => Arr::pull($modelData, 'trigger_data_item_quantity')
+                'item_quantity' => (int) Arr::pull($modelData, 'trigger_data_item_quantity')
             ]
         );
 
