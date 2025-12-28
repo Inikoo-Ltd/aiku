@@ -12,6 +12,7 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
+use App\Actions\Traits\WithDiscountArgumentValidation;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
@@ -29,6 +30,7 @@ class CreateFirstOrderBonus extends OrgAction
 {
     use WithNoStrictRules;
     use WithStoreOffer;
+    use WithDiscountArgumentValidation;
     use WithStoreOfferRules;
 
     /**
@@ -75,6 +77,10 @@ class CreateFirstOrderBonus extends OrgAction
     {
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
+        if (! $discount = $this->validateDiscountArgument($command)) {
+            return 1;
+        }
+
         $modelData = [
             'duration'     => OfferDurationEnum::PERMANENT,
             'trigger_data' => [
@@ -87,7 +93,7 @@ class CreateFirstOrderBonus extends OrgAction
                     'type'          => OfferAllowanceType::PERCENTAGE_OFF,
                     'target_type'   => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
                     'data'          => [
-                        'percentage_off' => $command->argument('discount'),
+                        'percentage_off' => $discount,
                     ]
                 ]
             ]

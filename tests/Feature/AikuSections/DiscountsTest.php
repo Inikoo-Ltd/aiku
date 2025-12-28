@@ -16,6 +16,7 @@ use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
+use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\Offer\SuspendPermanentOffer;
@@ -281,7 +282,7 @@ test('create first order bonus', function () {
     $this->artisan('offer:create_first_order_bonus', [
         'shop'     => $shop->slug,
         'amount'   => 100,
-        'discount' => 10
+        'discount' => 0.10
     ])->assertExitCode(0);
 
     $offer = \App\Models\Discounts\Offer::where('shop_id', $shop->id)
@@ -291,7 +292,7 @@ test('create first order bonus', function () {
 
     expect($offer)->toBeInstanceOf(Offer::class)
         ->and($offer->trigger_data['min_amount'])->toBe(100)
-        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(10);
+        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.10);
 });
 
 test('update offer allowance signature', function () {
@@ -401,9 +402,10 @@ test('create volume discount', function () {
         'type'            => ProductCategoryTypeEnum::FAMILY->value
     ]);
 
-    $this->artisan('offer:create_volume_discount', [
+    $this->artisan('offer:create_volume_gr_discount', [
         'family'        => $category->slug,
         'item_quantity' => 5,
+        'days'          => 0,
         'discount'      => .20
     ])->assertExitCode(0);
 
@@ -465,6 +467,59 @@ test('create product category discount', function () {
 
     expect($offer2)->toBeInstanceOf(Offer::class)
         ->and($offer2->offerAllowances->count())->toBe(1);
+});
+
+test('create volume gr discount', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    /** @var ProductCategory $category */
+    $category = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'VOL-GR',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value
+    ]);
+
+    $this->artisan('offer:create_volume_gr_discount', [
+        'family'        => $category->slug,
+        'item_quantity' => 5,
+        'days'          => 30,
+        'discount'      => .20,
+        'end_at'        => now()->addDays(60)->toDateTimeString(),
+    ])->assertExitCode(0);
+
+    $offer = Offer::where('shop_id', $shop->id)
+        ->where('trigger_type', 'ProductCategory')
+        ->where('trigger_id', $category->id)
+        ->first();
+
+    expect($offer)->toBeInstanceOf(Offer::class)
+        ->and($offer->status)->toBeTrue()
+        ->and($offer->offerAllowances->first()->status)->toBeTrue()
+        ->and($offer->duration)->toBe(OfferDurationEnum::INTERVAL)
+        ->and($offer->trigger_data['item_quantity'])->toBe(5)
+        ->and($offer->trigger_data['interval'])->toBe(30)
+        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.20);
+
+    $offer2 = StoreVolumeGRDiscount::make()->action(
+        $category,
+        [
+            'trigger_data_item_quantity' => 10,
+            'percentage_off'             => .30,
+            'interval'                   => 60,
+        ]
+    );
+
+    expect($offer2)->toBeInstanceOf(Offer::class)
+        ->and($offer2->offerAllowances->count())->toBe(1)
+        ->and($offer2->duration)->toBe(OfferDurationEnum::PERMANENT)
+        ->and($offer2->trigger_data['item_quantity'])->toBe(10)
+        ->and($offer2->trigger_data['interval'])->toBe(60)
+        ->and($offer2->offerAllowances->first()->data['percentage_off'])->toBe(0.30);
 });
 
 test('suspend permanent offer suspends offer and active allowances', function () {
