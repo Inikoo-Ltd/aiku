@@ -200,6 +200,7 @@ class Order extends Model implements HasMedia, Auditable
         'post_submit_modification_data' => 'array',
         'offer_meters'                  => 'array',
         'shipping_data'                 => 'array',
+        'categories_data'               => 'array',
 
 
         'date'                   => 'datetime',
@@ -249,6 +250,7 @@ class Order extends Model implements HasMedia, Auditable
         'post_submit_modification_data' => '{}',
         'offer_meters'                  => '{}',
         'shipping_data'                 => '{}',
+        'categories_data'               => '{}',
     ];
 
     protected $guarded = [];

@@ -128,6 +128,8 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     }
 })
 
+console.log('sdsdsd',layout)
+
 </script>
 
 <template>
@@ -254,7 +256,7 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     </notifications>
 
 
-    <ChatButton data="null" v-if="layout?.app?.environment === 'local'"/>
+    <ChatButton data="null" v-if="layout?.retina?.type === 'fulfilment'" />
 
 
 </template>
