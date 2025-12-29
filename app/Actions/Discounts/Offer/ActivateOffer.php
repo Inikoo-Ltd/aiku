@@ -42,7 +42,7 @@ class ActivateOffer extends OrgAction
         $offer->update($modelData);
         UpdateOfferAllowanceSignature::run($offer);
 
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
+        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
 
         return $offer;
     }
