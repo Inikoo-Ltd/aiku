@@ -8,34 +8,35 @@
 
 namespace App\Models\SysAdmin;
 
-use App\Actions\SysAdmin\User\SendLinkResetPassword;
-use App\Audits\Redactors\PasswordRedactor;
-use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Enums\SysAdmin\User\UserAuthTypeEnum;
-use App\Models\Analytics\UserRequest;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\OutBoxHasSubscriber;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\JobPosition;
-use App\Models\Inventory\Warehouse;
-use App\Models\Production\Production;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
-use App\Models\Traits\WithPushNotifications;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
-use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
+use Illuminate\Support\Collection;
+use App\Models\Inventory\Warehouse;
+use App\Models\Analytics\UserRequest;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Production\Production;
+use App\Models\CRM\Livechat\ChatAgent;
+use App\Models\HumanResources\Employee;
+use OwenIt\Auditing\Contracts\Auditable;
+use App\Models\Comms\OutBoxHasSubscriber;
+use App\Audits\Redactors\PasswordRedactor;
+use App\Models\HumanResources\JobPosition;
+use App\Models\Traits\WithPushNotifications;
+use App\Enums\SysAdmin\User\UserAuthTypeEnum;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Actions\SysAdmin\User\SendLinkResetPassword;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -316,6 +317,11 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function subscribedOutboxes(): HasMany
     {
         return $this->hasMany(OutBoxHasSubscriber::class);
+    }
+
+    public function chatAgent(): HasOne
+    {
+        return $this->hasOne(ChatAgent::class);
     }
 
 

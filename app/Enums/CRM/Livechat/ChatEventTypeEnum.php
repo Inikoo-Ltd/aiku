@@ -10,15 +10,23 @@ enum ChatEventTypeEnum: string
 
     case OPEN = 'open';
     case AI_REPLY = 'ai_reply';
-    case TRANSFER_REQUEST = 'transfer_request';
+    case TRANSFER = 'transfer_request';
     case TRANSFER_ACCEPT = 'transfer_accept';
     case TRANSFER_REJECT = 'transfer_reject';
     case TRANSLATE_MESSAGE = 'translate_message';
+
+    case TRANSFER_TO_AGENT = 'transfer_to_agent';
+
+    case ASSIGNMENT_TO_SELF = 'assignment_to_self';
+
     case CLOSE = 'close';
     case RATING = 'rating';
+    case PRIORITY = 'priority';
     case NOTE = 'note';
-
     case REPLY = 'reply';
+    case SEND = 'send';
+
+    case GUEST_PROFILE = 'guest_profile';
 
     public static function labels(): array
     {
@@ -32,7 +40,12 @@ enum ChatEventTypeEnum: string
             'close' => __('Chat Closed'),
             'rating' => __('Rating Submitted'),
             'note' => __('Note Added'),
-            'reply' => __('reply'),
+            'reply' => __('Reply'),
+            'send' => __('Send'),
+            'transfer_to_agent' => __('Transfer to Agent'),
+            'Assignment_to_self' => __('Assignment to Self'),
+            'priority' => __('Priority Updated'),
+            'guest_profile' => __('Guest Profile'),
         ];
     }
 
@@ -88,7 +101,33 @@ enum ChatEventTypeEnum: string
                 'tooltip' => __('Message Reply'),
                 'icon' => 'fas fa-reply',
                 'class' => 'text-gray-500',
-            ]
+            ],
+            'send' => [
+                'tooltip' => __('Message Sent'),
+                'icon' => 'fas fa-paper-plane',
+                'class' => 'text-blue-500',
+            ],
+            'transfer_to_agent' => [
+                'tooltip' => __('Transfer to Agent'),
+                'icon' => 'fas fa-user',
+                'class' => 'text-purple-500',
+            ],
+            'Assignment_to_self' => [
+                'tooltip' => __('Assignment to Self'),
+                'icon' => 'fas fa-user',
+                'class' => 'text-purple-500',
+            ],
+            'priority' => [
+                'tooltip' => __('Priority Updated'),
+                'icon' => 'fas fa-exclamation-triangle',
+                'class' => 'text-yellow-500',
+            ],
+            'guest_profile' => [
+                'tooltip' => __('Guest Profile'),
+                'icon' => 'fas fa-user',
+                'class' => 'text-purple-500',
+            ],
+
         ];
     }
 }

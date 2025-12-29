@@ -59,6 +59,11 @@ class ChatSession extends Model
         return $this->belongsTo(WebUser::class, 'web_user_id');
     }
 
+    public function chatEvents(): HasMany
+    {
+        return $this->hasMany(ChatEvent::class, 'chat_session_id');
+    }
+
     public function language(): BelongsTo
     {
         return $this->belongsTo(Language::class);
@@ -67,6 +72,11 @@ class ChatSession extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'chat_session_id');
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(ChatAssignment::class, 'chat_session_id');
     }
 
 
@@ -83,4 +93,13 @@ class ChatSession extends Model
         $this->attributes['rating'] = $value;
     }
 
+    public function scopeWithLastMessageTime($query)
+    {
+        return $query->addSelect([
+            'last_message_at' => ChatMessage::select('created_at')
+                ->whereColumn('chat_session_id', 'chat_sessions.id')
+                ->latest()
+                ->limit(1)
+        ]);
+    }
 }
