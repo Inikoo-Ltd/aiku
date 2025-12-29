@@ -5,27 +5,33 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\ProductCategory;
+namespace App\Actions\Helpers\TimeSeries;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Catalogue\ProductCategory;
+use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class EnsureProductCategoryTimeSeries
+class EnsureTimeSeries
 {
     use AsAction;
 
-    public function handle(ProductCategory $productCategory): int
+    public function handle(Model $model): int
     {
+        if (!method_exists($model, 'timeSeries')) {
+            throw new \InvalidArgumentException(
+                sprintf('Model %s does not have a timeSeries relationship', get_class($model))
+            );
+        }
+
         $created = 0;
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-            $exists = $productCategory->timeSeries()
+            $exists = $model->timeSeries()
                 ->where('frequency', $frequency)
                 ->exists();
 
             if (!$exists) {
-                $productCategory->timeSeries()->create([
+                $model->timeSeries()->create([
                     'frequency' => $frequency,
                 ]);
                 $created++;

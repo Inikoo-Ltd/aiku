@@ -8,6 +8,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Actions\Helpers\TimeSeries\EnsureTimeSeries;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Carbon\Carbon;
@@ -44,7 +45,7 @@ class SeedProductCategoryTimeSeries
 
     public function handle(ProductCategory $productCategory, TimeSeriesFrequencyEnum $frequency): void
     {
-        EnsureProductCategoryTimeSeries::run($productCategory);
+        EnsureTimeSeries::run($productCategory);
 
         $timeSeries = $productCategory->timeSeries()
             ->where('frequency', $frequency)
