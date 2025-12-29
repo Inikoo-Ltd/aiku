@@ -44,7 +44,8 @@ class WebBlockFamilyResource extends JsonResource
             'description_extra' => $family->description_extra,
             'id'                => $family->id,
             'image'             => $imageSources,
-            'url'               => $family->webpage->url
+            'url'               => $family->webpage->url,
+            'offers_data'       => $family->offers_data,
         ];
     }
 }

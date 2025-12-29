@@ -79,12 +79,12 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
                 ],
             ],
             'shops' => [
-                'route_target' => [
+                'route_target' => $this->id ? [
                     'name' => 'grp.helpers.redirect_shops_from_dashboard',
                     'parameters' => [
                         'shop' => $this->id,
                     ],
-                ],
+                ] : null,
             ],
         ];
 

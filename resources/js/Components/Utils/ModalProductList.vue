@@ -323,6 +323,14 @@ onUnmounted(() => {
 		tableBody.removeEventListener("scroll", onFetchNext)
 	}
 })
+
+watch(() => model.value, (newValue) => {
+	// console.log('vfcvcvc')
+	if (newValue === true) {
+		// console.log('wwwwwww')
+		fetchProductList()
+	}
+})
 </script>
 
 <template>
@@ -393,6 +401,8 @@ onUnmounted(() => {
 								<Column header="" style="width: 8%">
 									<template #body="slotProps">
 											<NumberWithButtonSave
+												:key="slotProps.data.id"
+												isWithRefreshModel
 												v-model="slotProps.data.quantity_ordered"
 												:min="1"
 												:isLoading="isXxLoading === slotProps.data.id"
@@ -401,7 +411,6 @@ onUnmounted(() => {
 												noUndoButton
 												noSaveButton
 											/>
-
 									</template>
 								</Column>
 
