@@ -11,7 +11,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 
 class ResetDailyTimeSeries
 {
-    use WithResetTimeSeriesIntervals;
+    use WithResetTimeSeries;
 
     public string $commandSignature = 'time-series:reset-daily';
     public string $commandDescription = 'Reset daily time series records';

@@ -8,12 +8,13 @@
 namespace App\Actions\Helpers\TimeSeries;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-trait WithResetTimeSeriesIntervals
+trait WithResetTimeSeries
 {
     use AsAction;
 
@@ -49,7 +50,7 @@ trait WithResetTimeSeriesIntervals
 
     protected function resetProductCategories(): void
     {
-        foreach (ProductCategory::all() as $productCategory) {
+        foreach (ProductCategory::whereNotIn('state', [ProductCategoryStateEnum::IN_PROCESS, ProductCategoryStateEnum::DISCONTINUED])->get() as $productCategory) {
             $timeSeries = $productCategory->timeSeries()
                 ->where('frequency', $this->frequency)
                 ->first();
