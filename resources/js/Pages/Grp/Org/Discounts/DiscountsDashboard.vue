@@ -82,8 +82,8 @@ console.log("Discounts Dashboard Props: ", props);
     />
     
 
-    <div class="p-8 max-w-96">
-        <section v-for="offer in first_order_bonus" class="card bg-gradient-to-r from-green-500 to-teal-500 text-white">
+    <div class="p-8 flex flex-wrap gap-2">
+        <section v-for="offer in first_order_bonus" class="card w-80 bg-gradient-to-r from-green-500 to-teal-500 text-white">
             <div class="text-center  text-base w-[88px] flex flex-col justify-center px-1">
                 {{ locale.currencyFormat(data?.currency?.code, offer.trigger_data.min_amount) }}
                 <span class="text-[0.55rem] leading-[0.5rem]">Min. quantity: {{ offer.trigger_data.order_number }}</span>
