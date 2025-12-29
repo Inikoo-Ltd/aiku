@@ -19,7 +19,7 @@ class GetSelectedMasterProductDetails extends GrpAction
 {
     use WithMastersAuthorisation;
 
-    public function handle(String $cacheKey, array $modelData): array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
+    public function handle(array $modelData): array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
     {
         $masterProduct = MasterAsset::whereIn('id', $modelData['data'])->orderBy('created_at')->get();
         return MasterBulkEditProductsResource::collection($masterProduct)->toArray(request());
@@ -33,12 +33,12 @@ class GetSelectedMasterProductDetails extends GrpAction
 
     }
 
-    public function asController(String $cacheKey, ActionRequest $request): \Illuminate\Http\Response|array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
+    public function asController(ActionRequest $request): \Illuminate\Http\Response|array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
     {
         $group        = group();
         $this->initialisation($group, $request);
 
-        return $this->handle($cacheKey, $this->validatedData);
+        return $this->handle($this->validatedData);
     }
 
 }

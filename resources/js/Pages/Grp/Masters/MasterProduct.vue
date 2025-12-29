@@ -141,7 +141,8 @@ const submitForm = async () => {
                 data: {
                     html: Object.values(error.response.data.errors).flat().join('<br>')
                 },
-                type: 'error'
+                type: 'error',
+                duration: 5000,
             })
         }
     } finally {

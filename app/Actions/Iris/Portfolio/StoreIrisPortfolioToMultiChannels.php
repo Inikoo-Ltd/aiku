@@ -37,6 +37,7 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
             ->get();
 
         $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))
+            ->where('is_for_sale', true)
             ->get();
 
         $existingPortfolios = $channels->flatMap(function ($channel) use ($items) {

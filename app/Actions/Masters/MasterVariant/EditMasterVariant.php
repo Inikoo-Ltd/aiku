@@ -115,14 +115,21 @@ class EditMasterVariant extends OrgAction
                         [
                             'title'   => __('Variant'),
                             'label'   => __('Variant'),
-                            'icon'    => 'fa-light fa-key',
-                            'current' => true,
+                            'icon'    => 'fa-light fa-shapes',
                             'fields'  => [
-                                'code'  => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'value'    => '',
+                                'variant'  => [
+                                    'type'     => 'input-variant',
+                                    'label'    => __('Variants'),
+                                    'value'    => $masterVariant->data,
                                     'required' => true,
+                                    'full'     => true,
+                                    'master_assets_route' => [
+                                        'name' => 'grp.masters.master_shops.show.master_families.master_products.index',
+                                        'parameters' => [
+                                            'masterShop'    => $masterVariant->masterShop->slug,
+                                            'masterFamily'  => $masterVariant->masterFamily->slug
+                                        ]
+                                    ],
                                 ],
                             ],
                         ],
@@ -130,7 +137,7 @@ class EditMasterVariant extends OrgAction
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.master_variant.update',
-                            'parameters' => [$masterVariant->slug]
+                            'parameters' => [$masterVariant->id]
                         ],
                     ]
                 ]
