@@ -103,11 +103,10 @@ class IndexMasterVariant extends OrgAction
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'leader_product_name', label: __('Leader'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_minions', label: __('Invoices'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'number_minions', label: __('Minions'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                 ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                 ->column(key: 'number_used_slots', label: __('Amount Used'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_used_slots_for_sale', label: __('Amount Used For Sale'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'data', label: __('Details'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                ->column(key: 'number_used_slots_for_sale', label: __('Amount Used For Sale'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
         };
     }
 

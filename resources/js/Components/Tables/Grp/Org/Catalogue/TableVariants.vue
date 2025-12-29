@@ -35,17 +35,16 @@ const getMasterVariantRoute = (item: any) => {
   }
 }
 
-console.log('props_ssss',props)
+
 
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
       <template #cell(code)="{ item }">
-        <pre>{{ item }}</pre>
-        <!-- <Link :href="getMasterVariantRoute(item)" class="primaryLink">
+        <Link :href="getMasterVariantRoute(item)" class="primaryLink">
           {{ item.code }}
-        </Link> -->
+        </Link>
       </template>
     </Table>
 </template>
