@@ -481,11 +481,13 @@ onMounted(async () => {
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
         <Teleport to="body">
-            <BubbleMenu  ref="_bubbleMenu"  :editor="editorInstance"
-                v-if="editorInstance && !showDialog" :tippy-options="tippyOptions"
+            <BubbleMenu :tippy-options="{
+                placement: 'bottom',
+                offset: [0, 8],}" ref="_bubbleMenu"  :editor="editorInstance"
+                v-if="editorInstance && !showDialog"
                 class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
 
-                <div class="bg-gray-100 rounded-xl border border-gray-300 divide-y divide-gray-400 isolate">
+                <div class="bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate">
                     <!-- 1st row -->
                     <section id="tiptap-toolbar"
                         class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 overflow-x-auto sm:overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
@@ -905,50 +907,50 @@ onMounted(async () => {
             </slot>
         </div>
 
-        <TiptapTableDialog 
-            v-if="showAddTableDialog" 
+        <TiptapTableDialog
+            v-if="showAddTableDialog"
             :show="showAddTableDialog"
-            @close="() => { showAddTableDialog = false, showDialog = false; }" 
-            @insert="insertTable" 
+            @close="() => { showAddTableDialog = false, showDialog = false; }"
+            @insert="insertTable"
         />
 
-        <TiptapLinkCustomDialog 
-            v-if="showLinkDialogCustom" 
-            :show="showLinkDialogCustom" 
+        <TiptapLinkCustomDialog
+            v-if="showLinkDialogCustom"
+            :show="showLinkDialogCustom"
             :attribut="currentLinkInDialog"
             :key="keyLinkCustomDialog"
-            @close="() => { showLinkDialogCustom = false; showDialog = false; }" 
-            @update="updateLinkCustom" 
+            @close="() => { showLinkDialogCustom = false; showDialog = false; }"
+            @update="updateLinkCustom"
         />
-        <TiptapImageDialog 
-            v-if="showAddImageDialog" 
+        <TiptapImageDialog
+            v-if="showAddImageDialog"
             :show="showAddImageDialog"
-            @close="() => { showAddImageDialog = false, showDialog = false }" 
+            @close="() => { showAddImageDialog = false, showDialog = false }"
             @insert="insertImage"
-            :uploadImageRoute="uploadImageRoute" 
+            :uploadImageRoute="uploadImageRoute"
         />
-        <TiptapLinkDialog 
-            v-if="showLinkDialog" 
-            :show="showLinkDialog" 
+        <TiptapLinkDialog
+            v-if="showLinkDialog"
+            :show="showLinkDialog"
             :current-url="currentLinkInDialog"
-            @close="() => { showLinkDialog = false; showDialog = false; }" 
-            @update="updateLink" 
+            @close="() => { showLinkDialog = false; showDialog = false; }"
+            @update="updateLink"
         />
 
-        <TiptapVideoDialog 
-            v-if="showAddYoutubeDialog" 
-            :show="showAddYoutubeDialog" 
+        <TiptapVideoDialog
+            v-if="showAddYoutubeDialog"
+            :show="showAddYoutubeDialog"
             @insert="insertYoutubeVideo"
-            @close="() => { showAddYoutubeDialog = false; showDialog = false; }" 
+            @close="() => { showAddYoutubeDialog = false; showDialog = false; }"
         />
 
 
-        <Dialog 
-            v-model:visible="CustomLinkConfirm" 
-            :style="{ width: '25rem' }" 
-            modal 
+        <Dialog
+            v-model:visible="CustomLinkConfirm"
+            :style="{ width: '25rem' }"
+            modal
             :closable="false"
-            :dismissableMask="true" 
+            :dismissableMask="true"
             :showHeader="false"
         >
             <div class="pt-5">
@@ -974,13 +976,13 @@ onMounted(async () => {
 
 <style scoped>
 
-.BubbleMenu {
+/* .BubbleMenu {
   position: fixed !important;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
-}
+} */
 
 :deep(.tippy-box) {
     min-width: 10px !important;
@@ -1124,7 +1126,7 @@ onMounted(async () => {
     padding: 0.1rem 0.3rem;
 }
 
-/* 
+/*
 :deep(.ProseMirror > p > br:first-child:last-child) {
   display: none;
 } */
