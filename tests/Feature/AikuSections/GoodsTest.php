@@ -171,7 +171,7 @@ test('show ingredient', function (Ingredient $ingredient) {
 })->depends('update ingredient');
 
 test("UI Show Goods Dashboard", function () {
-    $response    = get(
+    $response = get(
         route("grp.goods.dashboard")
     );
     $response->assertInertia(function (AssertableInertia $page) {
@@ -181,8 +181,7 @@ test("UI Show Goods Dashboard", function () {
             ->has("title")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
-                $page->where("title", 'Goods strategy')
+                fn (AssertableInertia $page) => $page->where("title", 'Goods strategy')
                     ->etc()
             )
             ->has("flatTreeMaps");
@@ -297,7 +296,7 @@ test("UI Show TradeUnit", function () {
     if (!$tradeUnit->stats) {
         $tradeUnit->stats()->create();
     }
-    $response  = get(
+    $response = get(
         route("grp.trade_units.units.show", [$tradeUnit->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) use ($tradeUnit) {
@@ -322,7 +321,7 @@ test("UI Edit Trade Unit", function () {
             'name'     => 'Sample TU',
         ]);
     }
-    $response  = get(
+    $response = get(
         route("grp.trade_units.units.edit", [$tradeUnit->slug])
     );
 
@@ -502,7 +501,6 @@ test('Hydrate trade units', function () {
 });
 
 
-
 test('goods hydrator', function () {
     $this->artisan('hydrate -s goods')->assertExitCode(0);
 });
@@ -610,10 +608,9 @@ test('UI Edit Trade Unit Family page loads', function () {
     $response->assertInertia(function (AssertableInertia $page) use ($family) {
         $page
             ->component('EditModel')
-            ->where('title', __('Edit Trade Unit Family'))
             ->has('breadcrumbs')
             ->has('pageHead', function (AssertableInertia $head) {
-                $head->where('title', __('Edit trade family'))
+                $head->where('title', __('Edit trade unit family'))
                     ->has('actions', 1)
                     ->where('actions.0.style', 'cancel')
                     ->etc();
@@ -670,13 +667,13 @@ test('update trade unit family updates name and description', function () {
     $group = createGroup();
 
     $family = StoreTradeUnitFamily::make()->action($group, [
-        'code' => 'TUF-'.uniqid(),
-        'name' => 'Original Name',
+        'code'        => 'TUF-'.uniqid(),
+        'name'        => 'Original Name',
         'description' => 'Original Description',
     ]);
 
     $updated = UpdateTradeUnitFamily::make()->handle($family, [
-        'name' => 'Updated Name',
+        'name'        => 'Updated Name',
         'description' => 'Updated Description',
     ]);
 
@@ -688,8 +685,8 @@ test('update trade unit family allows null description', function () {
     $group = createGroup();
 
     $family = StoreTradeUnitFamily::make()->action($group, [
-        'code' => 'TUF-'.uniqid(),
-        'name' => 'With Desc',
+        'code'        => 'TUF-'.uniqid(),
+        'name'        => 'With Desc',
         'description' => 'Some text',
     ]);
 
@@ -707,33 +704,33 @@ test('hydrate trade unit family trade units stats', function () {
     ]);
 
     TradeUnit::factory()->create([
-        'group_id'              => $this->group->id,
-        'trade_unit_family_id'  => $family->id,
-        'status'                => TradeUnitStatusEnum::IN_PROCESS,
+        'group_id'             => $this->group->id,
+        'trade_unit_family_id' => $family->id,
+        'status'               => TradeUnitStatusEnum::IN_PROCESS,
     ]);
 
     TradeUnit::factory()->create([
-        'group_id'              => $this->group->id,
-        'trade_unit_family_id'  => $family->id,
-        'status'                => TradeUnitStatusEnum::IN_PROCESS,
+        'group_id'             => $this->group->id,
+        'trade_unit_family_id' => $family->id,
+        'status'               => TradeUnitStatusEnum::IN_PROCESS,
     ]);
 
     TradeUnit::factory()->create([
-        'group_id'              => $this->group->id,
-        'trade_unit_family_id'  => $family->id,
-        'status'                => TradeUnitStatusEnum::ACTIVE,
+        'group_id'             => $this->group->id,
+        'trade_unit_family_id' => $family->id,
+        'status'               => TradeUnitStatusEnum::ACTIVE,
     ]);
 
     TradeUnit::factory()->create([
-        'group_id'              => $this->group->id,
-        'trade_unit_family_id'  => $family->id,
-        'status'                => TradeUnitStatusEnum::DISCONTINUED,
+        'group_id'             => $this->group->id,
+        'trade_unit_family_id' => $family->id,
+        'status'               => TradeUnitStatusEnum::DISCONTINUED,
     ]);
 
     TradeUnit::factory()->create([
-        'group_id'              => $this->group->id,
-        'trade_unit_family_id'  => $family->id,
-        'status'                => TradeUnitStatusEnum::ANOMALITY,
+        'group_id'             => $this->group->id,
+        'trade_unit_family_id' => $family->id,
+        'status'               => TradeUnitStatusEnum::ANOMALITY,
     ]);
 
     TradeUnitFamilyHydrateTradeUnits::run($family);

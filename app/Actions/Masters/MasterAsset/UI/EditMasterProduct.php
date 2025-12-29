@@ -75,13 +75,7 @@ class EditMasterProduct extends GrpAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Master product'),
-                'warning'     => $masterAsset->products ? [
-                    'type'  => 'warning',
-                    'title' => 'warning',
-                    'text'  => __('Changing name or description may affect multiple products in various shops.'),
-                    'icon'  => ['fas', 'fa-exclamation-triangle']
-                ] : null,
+                'title'       => __('Editing master product').': '.$masterAsset->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterAsset,
                     $request->route()->getName(),
@@ -199,48 +193,48 @@ class EditMasterProduct extends GrpAction
                     ],
                 ]
             ],
-            [
-                'label'  => __('Translations'),
-                'icon'   => 'fa-light fa-language',
-                'fields' => [
-                    'name_i8n'              => [
-                        'type'          => 'input_translation',
-                        'label'         => __('translate name'),
-                        'language_from' => 'en',
-                        'full'          => true,
-                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'main'          => $masterProduct->name,
-                        'value'         => $masterProduct->getTranslations('name_i8n')
-                    ],
-                    'description_title_i8n' => [
-                        'type'          => 'input_translation',
-                        'label'         => __('translate description title'),
-                        'main'          => $masterProduct->description_title,
-                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'value'         => $masterProduct->getTranslations('description_title_i8n'),
-                        'language_from' => 'en',
-                        'full'          => true,
-                    ],
-                    'description_i8n'       => [
-                        'type'          => 'textEditor_translation',
-                        'label'         => __('translate description'),
-                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'main'          => $masterProduct->description,
-                        'language_from' => 'en',
-                        'full'          => true,
-                        'value'         => $masterProduct->getTranslations('description_i8n')
-                    ],
-                    'description_extra_i8n' => [
-                        'type'          => 'textEditor_translation',
-                        'language_from' => 'en',
-                        'full'          => true,
-                        'label'         => __('translate description extra'),
-                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'main'          => $masterProduct->description_extra,
-                        'value'         => $masterProduct->getTranslations('description_extra_i8n')
-                    ],
-                ]
-            ],
+//            [
+//                'label'  => __('Translations'),
+//                'icon'   => 'fa-light fa-language',
+//                'fields' => [
+//                    'name_i8n'              => [
+//                        'type'          => 'input_translation',
+//                        'label'         => __('Translate name'),
+//                        'language_from' => 'en',
+//                        'full'          => true,
+//                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+//                        'main'          => $masterProduct->name,
+//                        'value'         => $masterProduct->getTranslations('name_i8n')
+//                    ],
+//                    'description_title_i8n' => [
+//                        'type'          => 'input_translation',
+//                        'label'         => __('Translate description title'),
+//                        'main'          => $masterProduct->description_title,
+//                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+//                        'value'         => $masterProduct->getTranslations('description_title_i8n'),
+//                        'language_from' => 'en',
+//                        'full'          => true,
+//                    ],
+//                    'description_i8n'       => [
+//                        'type'          => 'textEditor_translation',
+//                        'label'         => __('Translate description'),
+//                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+//                        'main'          => $masterProduct->description,
+//                        'language_from' => 'en',
+//                        'full'          => true,
+//                        'value'         => $masterProduct->getTranslations('description_i8n')
+//                    ],
+//                    'description_extra_i8n' => [
+//                        'type'          => 'textEditor_translation',
+//                        'language_from' => 'en',
+//                        'full'          => true,
+//                        'label'         => __('Translate description extra'),
+//                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+//                        'main'          => $masterProduct->description_extra,
+//                        'value'         => $masterProduct->getTranslations('description_extra_i8n')
+//                    ],
+//                ]
+//            ],
             [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
@@ -248,12 +242,12 @@ class EditMasterProduct extends GrpAction
                 'fields' => [
                     'unit'    => [
                         'type'  => 'input',
-                        'label' => __('unit'),
+                        'label' => __('Unit label'),
                         'value' => $masterProduct->unit,
                     ],
                     'barcode' => [
                         'type'     => 'select',
-                        'label'    => __('barcode'),
+                        'label'    => __('Barcode'),
                         'value'    => $masterProduct->barcode,
                         'readonly' => $masterProduct->tradeUnits->count() == 1,
                         'options'  => $barcodes->mapWithKeys(function ($barcode) {
@@ -264,12 +258,12 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             [
-                'label'  => __('Master Family'),
+                'label'  => __('Master family'),
                 'icon'   => 'fal fa-folder',
                 'fields' => [
                     'master_family_id' => [
                         'type'       => 'select_infinite',
-                        'label'      => __('Master Family'),
+                        'label'      => __('Master family'),
                         'options'    => [
                             $masterProduct->masterFamily ? MasterFamiliesResource::make($masterProduct->masterFamily)->toArray(request()) : null
                         ],
@@ -294,7 +288,7 @@ class EditMasterProduct extends GrpAction
                 'icon'   => 'fa-light fa-atom',
                 'fields' => [
                     'trade_units' => [
-                        'label'        => __('Trade Units'),
+                        'label'        => __('Trade units'),
                         'type'         => 'list-selector-trade-unit',
                         'key_quantity' => 'quantity',
                         'withQuantity' => true,
@@ -338,7 +332,7 @@ class EditMasterProduct extends GrpAction
             $masterProduct->not_for_sale_from_trade_unit
                 ? []
                 : [
-                'label'  => __('Sale Status'),
+                'label'  => __('Sale status'),
                 'icon'   => 'fal fa-cart-arrow-down',
                 'fields' => [
                     'is_for_sale' => [

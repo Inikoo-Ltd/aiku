@@ -116,7 +116,7 @@ class GetFaireOrders extends OrgAction
             ->get();
 
         foreach ($shops as $shop) {
-            if(Arr::has($shop->settings, 'faire.access_token')) {
+            if (Arr::has($shop->settings, 'faire.access_token')) {
                 $this->handle($shop);
             }
         }

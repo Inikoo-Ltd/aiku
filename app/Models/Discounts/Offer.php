@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -69,6 +70,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
+ * @property-read Model|\Eloquent|null $trigger
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Discounts\OfferFactory factory($count = null, $state = [])
  * @method static Builder<static>|Offer newModelQuery()
@@ -162,6 +164,12 @@ class Offer extends Model implements Auditable
     public function invoiceTransactions(): BelongsToMany
     {
         return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_allowances');
+    }
+
+
+    public function trigger(): MorphTo
+    {
+        return $this->morphTo();
     }
 
 }

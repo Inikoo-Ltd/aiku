@@ -42,7 +42,7 @@ class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('Cancel'),
+                            'label' => __('Exit edit'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
                                     default                       => preg_replace('/edit$/', 'show', $request->route()->getName())

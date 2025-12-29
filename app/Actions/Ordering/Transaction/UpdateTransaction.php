@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -73,6 +74,9 @@ class UpdateTransaction extends OrgAction
         $this->update($transaction, $modelData, ['data']);
 
         if ($this->strict) {
+
+            OrderHydrateCategoriesData::run($transaction->order);
+
             $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
 
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {

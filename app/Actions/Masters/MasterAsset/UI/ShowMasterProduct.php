@@ -16,6 +16,7 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\GetMasterProductImages;
 use App\Actions\Masters\MasterAsset\GetMasterProductSalesData;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
@@ -27,6 +28,7 @@ use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Http\Resources\Masters\MasterProductSalesResource;
 use App\Models\Masters\MasterAsset;
@@ -102,17 +104,17 @@ class ShowMasterProduct extends GrpAction
         return Inertia::render(
             'Masters/MasterProduct',
             [
-                'title'            => __('Master product').' '.$masterAsset->code,
-                'breadcrumbs'      => $this->getBreadcrumbs(
+                'title'                => __('Master product').' '.$masterAsset->code,
+                'breadcrumbs'          => $this->getBreadcrumbs(
                     $masterAsset,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'       => [
+                'navigation'           => [
                     'previous' => $this->getPreviousModel($masterAsset, $request),
                     'next'     => $this->getNextModel($masterAsset, $request),
                 ],
-                'mini_breadcrumbs' => array_filter(
+                'mini_breadcrumbs'     => array_filter(
                     [
                         $masterAsset->masterFamily && $masterAsset->masterDepartment ? [
                             'label'   => $masterAsset->masterDepartment ? $masterAsset->masterDepartment->name : 'department',
@@ -173,7 +175,7 @@ class ShowMasterProduct extends GrpAction
                         ],
                     ],
                 ),
-                'pageHead'         => [
+                'pageHead'             => [
                     'title'     => $masterAsset->code,
                     'model'     => __('Master Product'),
                     'icon'      => [
@@ -196,7 +198,7 @@ class ShowMasterProduct extends GrpAction
                             'key'   => 'edit',
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => _('Edit'),
+                            'label' => __('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -223,14 +225,14 @@ class ShowMasterProduct extends GrpAction
                         ] : false
                     ],
                 ],
-                'masterAsset'      => $masterAsset,
-                'currency'         => $masterAsset->group->currency,
-                'shopsData'        => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
-                'tradeUnits'       => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
-                'is_single_trade_unit'  => $masterAsset->is_single_trade_unit,
-                'trade_unit_slug'       => $masterAsset->tradeUnits?->first->slug,
-                'salesData'        => GetMasterProductSalesData::run($masterAsset),
-                'tabs'             => [
+                'masterAsset'          => $masterAsset,
+                'currency'             => $masterAsset->group->currency,
+                'shopsData'            => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
+                'tradeUnits'           => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
+                'is_single_trade_unit' => $masterAsset->is_single_trade_unit,
+                'trade_unit_slug'      => $masterAsset->tradeUnits?->first->slug,
+                'salesData'            => GetMasterProductSalesData::run($masterAsset),
+                'tabs'                 => [
                     'current'    => $this->tab,
                     'navigation' => MasterAssetTabsEnum::navigation()
                 ],
@@ -251,6 +253,11 @@ class ShowMasterProduct extends GrpAction
                     fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
 
+                MasterAssetTabsEnum::HISTORY->value => $this->tab == MasterAssetTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))),
+
+
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
@@ -259,7 +266,8 @@ class ShowMasterProduct extends GrpAction
         )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value))
             ->table(IndexMasterProductsSales::make()->tableStructure(prefix: MasterAssetTabsEnum::SALES->value))
             ->table(IndexMailshots::make()->tableStructure($masterAsset))
-            ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value));
+            ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: MasterAssetTabsEnum::HISTORY->value));
     }
 
     public function jsonResponse(MasterAsset $masterAsset): MasterProductResource
@@ -295,7 +303,7 @@ class ShowMasterProduct extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_products.show' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($masterAsset->masterShop, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterAsset->masterShop),
                 $headCrumb(
                     $masterAsset,
                     [

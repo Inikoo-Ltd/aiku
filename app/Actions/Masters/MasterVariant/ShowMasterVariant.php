@@ -18,7 +18,6 @@ use App\Models\Masters\MasterVariant;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Inertia\Response;
-use App\Http\Resources\Masters\MasterProductResource;
 use App\Http\Resources\Masters\MasterProductVariantResource;
 
 class ShowMasterVariant extends OrgAction
@@ -97,6 +96,16 @@ class ShowMasterVariant extends OrgAction
                 'title'           => __('Show Variant'),
                 'pageHead'        => [
                     'title' => $masterVariant->code,
+                    'actions'       => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', request()->route()->getName()),
+                                'parameters' => request()->route()->originalParameters()
+                            ]
+                        ],
+                    ],
                 ],
                 'data'            => $masterVariant,
                 'master_products' => $products,

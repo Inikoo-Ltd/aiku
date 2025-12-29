@@ -15,6 +15,8 @@ use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\StoreOffer;
+use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
+use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\Offer\SuspendPermanentOffer;
@@ -30,6 +32,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -279,7 +282,7 @@ test('create first order bonus', function () {
     $this->artisan('offer:create_first_order_bonus', [
         'shop'     => $shop->slug,
         'amount'   => 100,
-        'discount' => 10
+        'discount' => 0.10
     ])->assertExitCode(0);
 
     $offer = \App\Models\Discounts\Offer::where('shop_id', $shop->id)
@@ -289,7 +292,7 @@ test('create first order bonus', function () {
 
     expect($offer)->toBeInstanceOf(Offer::class)
         ->and($offer->trigger_data['min_amount'])->toBe(100)
-        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(10);
+        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.10);
 });
 
 test('update offer allowance signature', function () {
@@ -399,9 +402,10 @@ test('create volume discount', function () {
         'type'            => ProductCategoryTypeEnum::FAMILY->value
     ]);
 
-    $this->artisan('offer:create_volume_discount', [
+    $this->artisan('offer:create_volume_gr_discount', [
         'family'        => $category->slug,
         'item_quantity' => 5,
+        'days'          => 0,
         'discount'      => .20
     ])->assertExitCode(0);
 
@@ -418,25 +422,125 @@ test('create volume discount', function () {
         ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.2);
 });
 
-test('suspend permanent offer suspends offer and active allowances', function () {
+test('create product category discount', function () {
     $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::CATEGORY_OFFERS)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    /** @var ProductCategory $category */
+    $category = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'CAT-DISC',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value
+    ]);
+
+    $this->artisan('offer:create_category_discount', [
+        'category'      => $category->slug,
+        'item_quantity' => 3,
+        'discount'      => .15,
+        'end_at'        => now()->addDays(7)->toDateTimeString(),
+    ])->assertExitCode(0);
+
+    $offer = Offer::where('shop_id', $shop->id)
+        ->where('trigger_type', 'ProductCategory')
+        ->where('trigger_id', $category->id)
+        ->first();
+
+    expect($offer)->toBeInstanceOf(Offer::class)
+        ->and($offer->status)->toBeTrue()
+        ->and($offer->offerAllowances->first()->status)->toBeTrue()
+        ->and($offer->duration)->toBe(OfferDurationEnum::INTERVAL)
+        ->and($offer->trigger_data['item_quantity'])->toBe(3)
+        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.15);
+
+    $offer2 = StoreProductCategoryDiscount::make()->action(
+        $category,
+        [
+            'trigger_data_item_quantity' => 2,
+            'percentage_off'             => .25,
+            'end_at'                     => now()->addDays(14)->toDateTimeString(),
+        ]
+    );
+
+    expect($offer2)->toBeInstanceOf(Offer::class)
+        ->and($offer2->offerAllowances->count())->toBe(1);
+});
+
+test('create volume gr discount', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    /** @var ProductCategory $category */
+    $category = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'VOL-GR',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value
+    ]);
+
+    $this->artisan('offer:create_volume_gr_discount', [
+        'family'        => $category->slug,
+        'item_quantity' => 5,
+        'days'          => 30,
+        'discount'      => .20,
+        'end_at'        => now()->addDays(60)->toDateTimeString(),
+    ])->assertExitCode(0);
+
+    $offer = Offer::where('shop_id', $shop->id)
+        ->where('trigger_type', 'ProductCategory')
+        ->where('trigger_id', $category->id)
+        ->first();
+
+    expect($offer)->toBeInstanceOf(Offer::class)
+        ->and($offer->status)->toBeTrue()
+        ->and($offer->offerAllowances->first()->status)->toBeTrue()
+        ->and($offer->duration)->toBe(OfferDurationEnum::INTERVAL)
+        ->and($offer->trigger_data['item_quantity'])->toBe(5)
+        ->and($offer->trigger_data['interval'])->toBe(30)
+        ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.20);
+
+    $offer2 = StoreVolumeGRDiscount::make()->action(
+        $category,
+        [
+            'trigger_data_item_quantity' => 10,
+            'percentage_off'             => .30,
+            'interval'                   => 60,
+        ]
+    );
+
+    expect($offer2)->toBeInstanceOf(Offer::class)
+        ->and($offer2->offerAllowances->count())->toBe(1)
+        ->and($offer2->duration)->toBe(OfferDurationEnum::PERMANENT)
+        ->and($offer2->trigger_data['item_quantity'])->toBe(10)
+        ->and($offer2->trigger_data['interval'])->toBe(60)
+        ->and($offer2->offerAllowances->first()->data['percentage_off'])->toBe(0.30);
+});
+
+test('suspend permanent offer suspends offer and active allowances', function () {
+    $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
 
     $offerData = Offer::factory()->definition();
-    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer     = StoreOffer::make()->action($offerCampaign, $offerData);
     // set required flags directly to avoid validation enum rule
     $offer->duration = OfferDurationEnum::PERMANENT;
-    $offer->state = OfferStateEnum::ACTIVE;
-    $offer->status = true;
+    $offer->state    = OfferStateEnum::ACTIVE;
+    $offer->status   = true;
     $offer->save();
 
     $allowanceData = OfferAllowance::factory()->definition();
     data_set($allowanceData, 'trigger_type', 'Shop');
     data_set($allowanceData, 'trigger_id', $offer->shop->id);
-    $allowance = StoreOfferAllowance::make()->action($offer, $allowanceData);
+    $allowance           = StoreOfferAllowance::make()->action($offer, $allowanceData);
     $allowance->duration = OfferDurationEnum::PERMANENT;
-    $allowance->state = OfferAllowanceStateEnum::ACTIVE;
-    $allowance->status = true;
+    $allowance->state    = OfferAllowanceStateEnum::ACTIVE;
+    $allowance->status   = true;
     $allowance->save();
 
     $offer->refresh();
@@ -457,21 +561,21 @@ test('suspend permanent offer suspends offer and active allowances', function ()
 });
 
 test('suspend permanent offer is safe to run twice', function () {
-    $shop = $this->shop;
+    $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
 
-    $offerData = Offer::factory()->definition();
-    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offerData       = Offer::factory()->definition();
+    $offer           = StoreOffer::make()->action($offerCampaign, $offerData);
     $offer->duration = OfferDurationEnum::PERMANENT;
-    $offer->state = OfferStateEnum::ACTIVE;
-    $offer->status = true;
+    $offer->state    = OfferStateEnum::ACTIVE;
+    $offer->status   = true;
     $offer->save();
 
     SuspendPermanentOffer::run($offer);
     $offer->refresh();
     expect($offer->state)->toBe(OfferStateEnum::SUSPENDED);
 
-    // Run again, should remain suspended without error
+    // Run again should remain suspended without error
     SuspendPermanentOffer::run($offer);
     $offer->refresh();
     expect($offer->state)->toBe(OfferStateEnum::SUSPENDED)
@@ -479,11 +583,11 @@ test('suspend permanent offer is safe to run twice', function () {
 });
 
 test('suspend permanent offer aborts on non-permanent offer', function () {
-    $shop = $this->shop;
+    $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
 
-    $offerData = Offer::factory()->definition();
-    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offerData       = Offer::factory()->definition();
+    $offer           = StoreOffer::make()->action($offerCampaign, $offerData);
     $offer->duration = OfferDurationEnum::INTERVAL;
     $offer->save();
 

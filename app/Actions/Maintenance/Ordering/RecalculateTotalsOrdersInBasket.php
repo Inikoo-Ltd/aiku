@@ -9,9 +9,11 @@
 namespace App\Actions\Maintenance\Ordering;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
@@ -24,7 +26,24 @@ class RecalculateTotalsOrdersInBasket
 
     public function handle(Order $order): void
     {
+        OrderHydrateCategoriesData::run($order);
         CalculateOrderTotalAmounts::run($order, true, true, false, true);
+
+        foreach ($order->transactions as $transaction) {
+
+            $model = $transaction->model;
+            if ($model instanceof Product) {
+                $transaction->update(
+                    [
+                        'family_id'         => $model->family_id,
+                        'department_id'     => $model->department_id,
+                        'sub_department_id' => $model->sub_department_id,
+                    ]
+                );
+            }
+        }
+
+
     }
 
 

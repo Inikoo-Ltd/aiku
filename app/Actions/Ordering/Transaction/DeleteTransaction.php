@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Transaction;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
@@ -31,7 +32,7 @@ class DeleteTransaction extends OrgAction
         $order = $transaction->order;
         $order->refresh();
         if ($this->strict) {
-
+            OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order);
             OrderHydrateTransactions::dispatch($order);
         }

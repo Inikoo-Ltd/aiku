@@ -34,8 +34,8 @@ class CalculateCollectionCharges
 
         $chargeApplies = $order->collection_address_id;
 
-        if(!$charge){
-            $chargeApplies=false;
+        if (!$charge) {
+            $chargeApplies = false;
         }
 
 
