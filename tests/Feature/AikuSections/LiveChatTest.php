@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use Log;
+
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use Illuminate\Support\Str;
