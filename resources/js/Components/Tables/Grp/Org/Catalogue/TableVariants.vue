@@ -42,9 +42,10 @@ console.log('props_ssss',props)
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
       <template #cell(code)="{ item }">
-        <Link :href="getMasterVariantRoute(item)" class="primaryLink">
+        <pre>{{ item }}</pre>
+        <!-- <Link :href="getMasterVariantRoute(item)" class="primaryLink">
           {{ item.code }}
-        </Link>
+        </Link> -->
       </template>
     </Table>
 </template>
