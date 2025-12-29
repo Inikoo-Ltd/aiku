@@ -10,6 +10,8 @@ namespace App\Actions\Ordering\Order;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -21,6 +23,8 @@ class CalculateOrderDiscounts
 
     private array $enabledOffers = [];
     private array $offerMeters = [];
+    private bool $isLastInvoicedSet = false;
+    private int|null $daysSinceLastInvoiced = null;
 
     private Order $order;
 
@@ -69,7 +73,8 @@ class CalculateOrderDiscounts
                                     'oa' => $transaction->offer_allowance_id,
                                     't'  => $transaction->allowance_type,
                                     'p'  => percentage($transaction->discounted_percentage, 1),
-                                    'l'  => $transaction->offer_label
+                                    'l'  => $transaction->offer_label,
+                                    'st' => $transaction->sub_trigger
 
                                 ]
                             ]
@@ -144,11 +149,49 @@ class CalculateOrderDiscounts
                         'offer_label' => $offerData->name
                     ];
                 }
+            } elseif ($offerData->type == 'Category Quantity Ordered Order Interval') {
+                if (in_array($offerData->trigger_id, $order->categories_data['family_ids'])) {
+                    $daysSinceLastInvoiced = $this->getDaysSinceLastInvoiced($order);
+                    $triggerData           = json_decode($offerData->trigger_data, true);
+
+                    if ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($triggerData, 'interval')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                            'sub_trigger' => 'i'
+                        ];
+                        continue;
+                    }
+
+
+                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity") >= Arr::get($triggerData, 'item_quantity')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                            'sub_trigger' => 'q'
+                        ];
+                    }
+                }
             }
         }
 
 
         $this->enabledOffers = $enabledOffers;
+    }
+
+    public function getDaysSinceLastInvoiced(Order $order): null|int
+    {
+        if ($this->isLastInvoicedSet) {
+            return $this->daysSinceLastInvoiced;
+        }
+
+        $lastInvoiced                = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
+            return $order->customer->last_invoiced_at;
+        });
+        $this->isLastInvoicedSet     = true;
+        $this->daysSinceLastInvoiced = $lastInvoiced ? -now()->diffInDays($lastInvoiced) : null;
+
+        return $this->daysSinceLastInvoiced;
     }
 
     public function checkAmountAndOrderNumber($order, $offerData): array
@@ -249,6 +292,7 @@ class CalculateOrderDiscounts
                 $transaction->offer_allowance_id    = $allowanceData->id;
                 $transaction->offer_label           = $offerData['offer_label'];
                 $transaction->allowance_type        = 'percentage';
+                $transaction->sub_trigger           = Arr::get($offerData, 'sub_trigger');
             }
         }
     }

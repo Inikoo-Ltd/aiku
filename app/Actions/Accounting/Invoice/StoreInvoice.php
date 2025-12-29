@@ -27,6 +27,7 @@ use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -190,6 +191,8 @@ class StoreInvoice extends OrgAction
                     'last_invoiced_at' => $date
                 ]
             );
+
+            Cache::put("customer_last_invoiced_at_$invoice->customer_id", $date, 7 * 24 * 60 * 60);
         }
 
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
