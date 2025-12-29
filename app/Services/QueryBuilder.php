@@ -13,6 +13,7 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 {
@@ -223,5 +224,117 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     {
         $this->queryBuilder->withTrashed();
         return $this;
+    }
+
+    /**
+     * Add time series aggregation with optional date filtering and last year comparison
+     *
+     * @param string $timeSeriesTable The time series table name (e.g., 'product_category_time_series')
+     * @param string $timeSeriesRecordsTable The time series records table name (e.g., 'product_category_time_series_records')
+     * @param string $foreignKey The foreign key to join time series (e.g., 'product_category_id')
+     * @param array $aggregateColumns Columns to aggregate with their aliases (e.g., ['sales_grp_currency' => 'sales', 'invoices' => 'invoices'])
+     * @param string $frequency The time series frequency enum value (e.g., TimeSeriesFrequencyEnum::DAILY->value)
+     * @param string|null $prefix The prefix for request parameters
+     * @param bool $includeLY Whether to include last year data (default: true)
+     *
+     * @return array ['hasDateFilter' => bool, 'selectRaw' => array] Array containing filter status and SELECT raw statements
+     */
+    public function withTimeSeriesAggregation(
+        string $timeSeriesTable,
+        string $timeSeriesRecordsTable,
+        string $foreignKey,
+        array $aggregateColumns,
+        string $frequency,
+        ?string $prefix = null,
+        bool $includeLY = true
+    ): array {
+        // Parse date filter from request
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'between';
+        $filters = request()->input($argumentName, []);
+
+        // Fallback to non-prefixed parameter
+        if (empty($filters) && $prefix) {
+            $filters = request()->input('between', []);
+        }
+
+        $hasDateFilter = false;
+        $startDate = null;
+        $endDate = null;
+        $startDateLY = null;
+        $endDateLY = null;
+
+        // Check for date filter
+        $dateRange = $filters['from'] ?? $filters['date'] ?? null;
+
+        if ($dateRange) {
+            $parts = explode('-', $dateRange);
+
+            if (count($parts) === 2) {
+                [$start, $end] = $parts;
+                $start = trim($start);
+                $end = trim($end);
+
+                $timezone = request()->header('X-Timezone', 'UTC');
+
+                $startDate = Carbon::createFromFormat('Ymd', $start, $timezone)
+                    ->setTimezone('UTC')
+                    ->startOfDay();
+
+                $endDate = Carbon::createFromFormat('Ymd', $end, $timezone)
+                    ->setTimezone('UTC')
+                    ->endOfDay();
+
+                if ($includeLY) {
+                    $startDateLY = $startDate->copy()->subYear();
+                    $endDateLY = $endDate->copy()->subYear();
+                }
+
+                $hasDateFilter = true;
+            }
+        }
+
+        // Add joins
+        $this->leftJoin($timeSeriesTable, function ($join) use ($timeSeriesTable, $foreignKey, $frequency) {
+            $mainTable = $this->getModel()->getTable();
+            $join->on("$timeSeriesTable.{$foreignKey}", '=', "$mainTable.id")
+                 ->where("$timeSeriesTable.frequency", $frequency);
+        });
+
+        $this->leftJoin($timeSeriesRecordsTable, "{$timeSeriesRecordsTable}.{$timeSeriesTable}_id", "$timeSeriesTable.id");
+
+        // Build SELECT raw statements for aggregation
+        $selectRaw = [];
+
+        foreach ($aggregateColumns as $column => $alias) {
+            // Current period aggregation
+            if ($hasDateFilter) {
+                $selectRaw[$alias] = DB::raw(
+                    "COALESCE(SUM(CASE WHEN {$timeSeriesRecordsTable}.from <= '{$endDate->toDateTimeString()}' " .
+                    "AND {$timeSeriesRecordsTable}.to >= '{$startDate->toDateTimeString()}' " .
+                    "THEN {$timeSeriesRecordsTable}.{$column} ELSE 0 END), 0) as {$alias}"
+                );
+            } else {
+                $selectRaw[$alias] = DB::raw("COALESCE(SUM({$timeSeriesRecordsTable}.{$column}), 0) as {$alias}");
+            }
+
+            // Last year aggregation
+            if ($includeLY) {
+                $aliasLY = $alias . '_ly';
+                if ($hasDateFilter) {
+                    $selectRaw[$aliasLY] = DB::raw(
+                        "COALESCE(SUM(CASE WHEN {$timeSeriesRecordsTable}.from <= '{$endDateLY->toDateTimeString()}' " .
+                        "AND {$timeSeriesRecordsTable}.to >= '{$startDateLY->toDateTimeString()}' " .
+                        "THEN {$timeSeriesRecordsTable}.{$column} ELSE 0 END), 0) as {$aliasLY}"
+                    );
+                } else {
+                    $selectRaw[$aliasLY] = DB::raw("0 as {$aliasLY}");
+                }
+            }
+        }
+
+        return [
+            'hasDateFilter' => $hasDateFilter,
+            'selectRaw' => $selectRaw,
+        ];
     }
 }
