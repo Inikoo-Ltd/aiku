@@ -11,7 +11,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 
 class ResetMonthlyTimeSeries
 {
-    use WithResetTimeSeriesIntervals;
+    use WithResetTimeSeries;
 
     public string $commandSignature = 'time-series:reset-monthly';
     public string $commandDescription = 'Reset monthly time series records';

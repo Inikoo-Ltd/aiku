@@ -5,27 +5,27 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\ProductCategory;
+namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTimeSeriesRecords;
 use App\Actions\Helpers\TimeSeries\EnsureTimeSeries;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Product;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SeedProductCategoryTimeSeries
+class SeedProductTimeSeries
 {
     use AsAction;
 
-    public string $commandSignature = 'product-category:seed-time-series {--frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)}';
+    public string $commandSignature = 'product:seed-time-series {--frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)}';
 
     public function asCommand(Command $command): void
     {
         $frequencyOption = $command->option('frequency');
-        $productCategories = ProductCategory::whereNotIn('state', [ProductCategoryStateEnum::IN_PROCESS, ProductCategoryStateEnum::DISCONTINUED])->get();
+        $products = Product::whereNotNull('asset_id')->whereNotIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])->get();
 
         $frequencies = [];
         if ($frequencyOption === 'all') {
@@ -36,19 +36,23 @@ class SeedProductCategoryTimeSeries
 
         $totalDispatched = 0;
 
-        foreach ($productCategories as $productCategory) {
+        foreach ($products as $product) {
             foreach ($frequencies as $frequency) {
-                $dispatched = $this->handle($productCategory, $frequency);
+                $dispatched = $this->handle($product, $frequency);
                 $totalDispatched += $dispatched;
             }
         }
     }
 
-    public function handle(ProductCategory $productCategory, TimeSeriesFrequencyEnum $frequency): void
+    public function handle(Product $product, TimeSeriesFrequencyEnum $frequency): void
     {
-        EnsureTimeSeries::run($productCategory);
+        if (!$product->asset) {
+            return;
+        }
 
-        $timeSeries = $productCategory->timeSeries()
+        EnsureTimeSeries::run($product->asset);
+
+        $timeSeries = $product->asset->timeSeries()
             ->where('frequency', $frequency)
             ->first();
 
@@ -59,6 +63,6 @@ class SeedProductCategoryTimeSeries
         $from = Carbon::now('UTC')->subYear()->startOfYear();
         $to = Carbon::now('UTC')->endOfDay();
 
-        ProductCategoryHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to);
+        ProductHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to);
     }
 }

@@ -7,13 +7,17 @@
 
 namespace App\Actions\Helpers\TimeSeries;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-trait WithResetTimeSeriesIntervals
+trait WithResetTimeSeries
 {
     use AsAction;
 
@@ -49,7 +53,7 @@ trait WithResetTimeSeriesIntervals
 
     protected function resetProductCategories(): void
     {
-        foreach (ProductCategory::all() as $productCategory) {
+        foreach (ProductCategory::whereNotIn('state', [ProductCategoryStateEnum::IN_PROCESS, ProductCategoryStateEnum::DISCONTINUED])->get() as $productCategory) {
             $timeSeries = $productCategory->timeSeries()
                 ->where('frequency', $this->frequency)
                 ->first();
@@ -68,9 +72,31 @@ trait WithResetTimeSeriesIntervals
         }
     }
 
+    protected function resetProducts(): void
+    {
+        foreach (Product::whereNotIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])->get() as $product) {
+            $timeSeries = $product->timeSeries()
+                ->where('frequency', $this->frequency)
+                ->first();
+
+            if (!$timeSeries) {
+                continue;
+            }
+
+            $dateRange = $this->getDateRangeForFrequency();
+
+            ProductHydrateTimeSeriesRecords::dispatch(
+                $timeSeries->id,
+                $dateRange['from'],
+                $dateRange['to']
+            );
+        }
+    }
+
     public function handle(): void
     {
         $this->resetProductCategories();
+        $this->resetProducts();
     }
 
     public function asCommand(): void
