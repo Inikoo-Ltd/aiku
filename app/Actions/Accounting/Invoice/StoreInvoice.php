@@ -28,7 +28,6 @@ use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -187,7 +186,7 @@ class StoreInvoice extends OrgAction
         $invoice = CategoriseInvoice::run($invoice);
 
         if ($invoice->type == InvoiceTypeEnum::INVOICE) {
-            UpdateCustomerLastInvoicedDate::run($invoice, $this->strict ? null : now());
+            UpdateCustomerLastInvoicedDate::run($invoice->customer, $this->strict ? null : now());
         }
 
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
