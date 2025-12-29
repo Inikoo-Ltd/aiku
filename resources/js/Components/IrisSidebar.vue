@@ -48,7 +48,7 @@ const props = defineProps<{
 }>()
 
 
-const sidebar = useIrisLayoutStore()
+const irisLayout = useIrisLayoutStore()
 
 const layout = inject("layout", {})
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false))
@@ -71,16 +71,12 @@ const activeCustomTopSubIndex = ref<number | null>(null) // active custom menu t
 
 
 const sortedProductCategories = computed(() => {
-	const source =
-		sidebar.sidebar?.product_categories?.length
-			? sidebar.sidebar.product_categories
-			: props.productCategories ?? []
+    const source = irisLayout.sidebar?.product_categories ?? props.productCategories ?? []
 
-	return [...source].sort((a, b) =>
-		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
-	);
-});
-
+    return [...source].sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
+    )
+})
 
 // Custom menus without sorting
 // const customMenusBottom = computed(() => {
@@ -88,23 +84,24 @@ const sortedProductCategories = computed(() => {
 // 	return props.customMenusBottom
 // })
 
-const customMenusBottom = computed(() => {
-	return sidebar.sidebar?.custom_menus_bottom ?? props.customMenusBottom ?? []
-});
 
 
 // const customMenusTop = computed(() => {
 // 	if (!props.customMenusTop) return []
 // 	return props.customMenusTop
 // })
+const customMenusTop = computed(() =>
+    irisLayout.sidebar?.custom_menus_top ?? props.customMenusTop ?? []
+)
 
-const customMenusTop = computed(() => {
-	return sidebar.sidebar?.custom_menus_top ?? props.customMenusTop ?? []
-});
+const customMenusBottom = computed(() =>
+    irisLayout.sidebar?.custom_menus_bottom ?? props.customMenusBottom ?? []
+)
 
-const sidebarFieldValue = computed(() => {
-	return sidebar.sidebar?.fieldValue ?? props.sidebar?.data?.fieldValue
-});
+
+const sidebarFieldValue = computed(() =>
+    irisLayout.sidebar?.fieldValue ?? props.sidebar?.data?.fieldValue
+)
 
 
 // const sortedNavigation = computed(() => {
@@ -212,12 +209,11 @@ const checkMobile = () => {
 };
 
 onMounted(() => {
-	checkMobile()
-	window.addEventListener("resize", checkMobile)
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
 
-	sidebar.fetchSidebar()
-});
-
+    irisLayout.fetchSidebarOnce()
+})
 onUnmounted(() => {
 	window.removeEventListener("resize", checkMobile)
 });

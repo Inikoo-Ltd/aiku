@@ -16,8 +16,8 @@
 import { defineStore } from "pinia"
 import { Image } from "@/types/Image"
 import { Colors } from "@/types/Color"
-import { OrganisationsData, Group, OrganisationState, StackedComponent } from '@/types/LayoutRules'
-import { ref } from "vue";
+import { OrganisationsData, Group, OrganisationState, StackedComponent } from "@/types/LayoutRules"
+import { ref } from "vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import axios from "axios"
 
@@ -47,34 +47,6 @@ const getLocalStorage = () => {
 }
 
 export const useIrisLayoutStore = defineStore("irisLayout", () => {
-	// SIDEBAR CACHE
-	const sidebar = ref<any>(null)
-	const isSidebarLoaded = ref(false)
-	const isSidebarFetching = ref(false)
-
-	const fetchSidebar = async () => {
-		if (isSidebarLoaded.value || isSidebarFetching.value) return
-
-		isSidebarFetching.value = true
-
-		try {
-			const { data } = await axios.get(route("sidebar"))
-
-			sidebar.value = {
-				product_categories: data?.product_categories ?? [],
-				custom_menus_top: data?.custom_menus_top ?? [],
-				custom_menus_bottom: data?.custom_menus_bottom ?? [],
-				fieldValue: data?.fieldValue ?? null,
-			}
-
-			isSidebarLoaded.value = true
-		} catch (error) {
-			console.error("[IrisLayout] Failed fetch sidebar", error)
-		} finally {
-			isSidebarFetching.value = false
-		}
-	}
-
 	const user = ref<User | null>(null)
 	const app = ref<App>({
 		name: "", // For styling navigation depend on which App
@@ -96,6 +68,39 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 	const currentParams = ref<{ [key: string]: string }>({})
 	const currentQuery = ref<{ [key: string]: string }>({})
 
+	const sidebar = ref<null | {
+		product_categories: any[]
+		custom_menus_top: any[]
+		custom_menus_bottom: any[]
+		fieldValue: any
+	}>(null)
+
+	const isSidebarLoaded = ref(false)
+	const isSidebarFetching = ref(false)
+
+	const fetchSidebarOnce = async () => {
+		if (isSidebarLoaded.value || isSidebarFetching.value) return
+
+		isSidebarFetching.value = true
+
+		try {
+			const { data } = await axios.get(route("sidebar"))
+
+			sidebar.value = {
+				product_categories: data?.product_categories ?? [],
+				custom_menus_top: data?.custom_menus_top ?? [],
+				custom_menus_bottom: data?.custom_menus_bottom ?? [],
+				fieldValue: data?.fieldValue ?? null,
+			}
+
+			isSidebarLoaded.value = true
+		} catch (e) {
+			console.error("[IrisSidebar] fetch failed", e)
+		} finally {
+			isSidebarFetching.value = false
+		}
+	}
+
 	return {
 		user,
 		app,
@@ -108,7 +113,6 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 		iris,
 		sidebar,
 		isSidebarLoaded,
-		isSidebarFetching,
-        fetchSidebar,
+		fetchSidebarOnce,
 	}
 })
