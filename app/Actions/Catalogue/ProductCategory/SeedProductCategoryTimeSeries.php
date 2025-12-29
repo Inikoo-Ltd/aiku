@@ -9,6 +9,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
 use App\Actions\Helpers\TimeSeries\EnsureTimeSeries;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Carbon\Carbon;
@@ -24,7 +25,7 @@ class SeedProductCategoryTimeSeries
     public function asCommand(Command $command): void
     {
         $frequencyOption = $command->option('frequency');
-        $productCategories = ProductCategory::all();
+        $productCategories = ProductCategory::whereNotIn('state', [ProductCategoryStateEnum::IN_PROCESS, ProductCategoryStateEnum::DISCONTINUED])->get();
 
         $frequencies = [];
         if ($frequencyOption === 'all') {
