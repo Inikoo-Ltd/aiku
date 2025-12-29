@@ -7,8 +7,10 @@
  * copyright 2025
 */
 
+use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\IrisLogWebUserRequest;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
+use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Basket\FetchIrisEcomBasket;
 use App\Actions\Helpers\Brand\Json\GetIrisBrands;
@@ -47,6 +49,7 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
+    Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Catalogue\Shop;
@@ -37,46 +38,35 @@ trait WithCustomersSubNavigation
             ]
         ];
 
-        // $meta[] = [
-        //     'route'     => [
-        //         'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
-        //         'parameters' => $request->route()->originalParameters()
-        //     ],
-        //     'number'   => $this->parent->crmStats->number_prospect_queries,
-        //     'label'    => __('Lists'),
-        //     'leftIcon' => [
-        //         'icon'    => 'fal fa-code-branch',
-        //         'tooltip' => __('lists')
-        //     ]
-        // ];
+        if ($this->parent instanceof Shop && $this->parent->engine !== ShopEngineEnum::FAIRE) {
+            $meta[] = [
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.polls.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'number'   => $this->parent->crmStats->number_polls ?? 0,
+                'label'    => __('Polls'),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-poll',
+                    'tooltip' => __('polls')
+                ]
+            ];
 
-        $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.polls.index',
-                'parameters' => $request->route()->originalParameters()
-            ],
-            'number'   => $this->parent->crmStats->number_polls ?? 0,
-            'label'    => __('Polls'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-poll',
-                'tooltip' => __('polls')
-            ]
-        ];
+            $meta[] = [
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.traffic_sources.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'number'   => $this->parent->crmStats?->number_traffic_sources ?? 0,
+                'label'    => __('Traffic Sources'),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-route',
+                    'tooltip' => __('traffic sources')
+                ]
+            ];
+        }
 
-        $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.traffic_sources.index',
-                'parameters' => $request->route()->originalParameters()
-            ],
-            'number'   => $this->parent->crmStats?->number_traffic_sources ?? 0,
-            'label'    => __('Traffic Sources'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-route',
-                'tooltip' => __('traffic sources')
-            ]
-        ];
-
-        if ($this->parent instanceof Shop && $this->parent->type === ShopTypeEnum::DROPSHIPPING) {
+        if ($this->parent instanceof Shop && $this->parent->type === ShopTypeEnum::DROPSHIPPING && $this->parent->engine !== ShopEngineEnum::FAIRE) {
             $meta[] = [
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.platforms.index',
@@ -91,45 +81,47 @@ trait WithCustomersSubNavigation
             ];
         }
 
-        $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.web_users.index',
-                'parameters' => $request->route()->originalParameters()
-            ],
-            'align'    => 'right',
-            'number'   => $this->parent->crmStats->number_web_users ?? 0,
-            'label'    => __('Web Users'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-user-circle',
-                'tooltip' => __('Website users')
-            ]
-        ];
+        if ($this->parent instanceof Shop && $this->parent->engine !== ShopEngineEnum::FAIRE) {
+            $meta[] = [
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.web_users.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'align' => 'right',
+                'number' => $this->parent->crmStats->number_web_users ?? 0,
+                'label' => __('Web Users'),
+                'leftIcon' => [
+                    'icon' => 'fal fa-user-circle',
+                    'tooltip' => __('Website users')
+                ]
+            ];
 
-        $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.self_filled_tags.index',
-                'parameters' => $request->route()->originalParameters()
-            ],
-            'number'   => Tag::where('shop_id', $this->parent->id)->where('scope', TagScopeEnum::USER_CUSTOMER)->count() ?? 0,
-            'label'    => __('Self-Filled Tags'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-tags',
-                'tooltip' => __('Self-filled tags')
-            ]
-        ];
+            $meta[] = [
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.self_filled_tags.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'number' => Tag::where('shop_id', $this->parent->id)->where('scope', TagScopeEnum::USER_CUSTOMER)->count() ?? 0,
+                'label' => __('Self-Filled Tags'),
+                'leftIcon' => [
+                    'icon' => 'fal fa-tags',
+                    'tooltip' => __('Self-filled tags')
+                ]
+            ];
 
-        $meta[] = [
-            'route'     => [
-                'name'       => 'grp.org.shops.show.crm.internal_tags.index',
-                'parameters' => $request->route()->originalParameters()
-            ],
-            'number'   => Tag::where('shop_id', $this->parent->id)->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->count() ?? 0,
-            'label'    => __('Internal Tags'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-tags',
-                'tooltip' => __('Internal tags')
-            ]
-        ];
+            $meta[] = [
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.internal_tags.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'number' => Tag::where('shop_id', $this->parent->id)->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->count() ?? 0,
+                'label' => __('Internal Tags'),
+                'leftIcon' => [
+                    'icon' => 'fal fa-tags',
+                    'tooltip' => __('Internal tags')
+                ]
+            ];
+        }
 
         return $meta;
     }

@@ -131,7 +131,7 @@ class Portfolio extends Model implements Auditable
 
     public function item(): BelongsTo
     {
-        return $this->morphTo();
+        return $this->morphTo()->withTrashed();
     }
 
     public function customer(): BelongsTo

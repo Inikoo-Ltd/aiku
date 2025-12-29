@@ -33,11 +33,8 @@ const props = defineProps<{
     <PageHeading :data="pageHead">
     </PageHeading>
 
-    <TableMasterProductsEdit
-        
-    />
-
-
+    <TableMasterProductsEdit/>
+    
 </template>
 
 <style>

@@ -85,6 +85,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property array<array-key, mixed>|null $offers_data
  * @property \Illuminate\Support\Carbon|null $dispatched_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property int|null $family_id
+ * @property int|null $department_id
+ * @property int|null $sub_department_id
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE

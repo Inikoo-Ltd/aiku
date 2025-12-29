@@ -20,6 +20,7 @@ import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
+import PureInput from '../Pure/PureInput.vue'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -145,7 +146,7 @@ const groupedColumnList = ref([
     {
         label: 'Uniting',
         items: [
-            { label: 'Units', value: 'units' },
+            // { label: 'Units', value: 'units' },
             { label: 'Unit', value: 'unit' }
         ]
     },
@@ -192,16 +193,20 @@ const onSave = async () => {
         console.log('Response axios:', response.data)
 
         notify({
-            title: trans("Success bulk edit products!"),
-            text: trans("Changes may need some seconds to update."),
+            title: trans("Successfully updated selected products!"),
+            text: trans("Changes might take some times before being applied fully. Please wait a few seconds"),
             type: "success",
         })
     } catch (error: any) {
-        console.log('error axios', error)
+        // console.log('error axios', error)
+        const errorBagUnique = error.response.data.errors ? new Set(Object.values(error.response.data.errors).flat()) : [];
         notify({
             title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
-            type: 'error'
+            data: {
+                html: errorBagUnique ? [...errorBagUnique].join('<br>') : trans("Please try again or contact administrator"),
+            },
+            type: 'error',
+            duration: 5000,
         })
     } finally {
         isLoadingSave.value = false
@@ -283,6 +288,7 @@ const toggleDescription = (event) => {
                                         display="comma"
                                         :maxSelectedLabels="2"
                                         placeholder="Select Columns"
+                                        selectedItemsLabel="{0} columns"
                                     >
                                         <template #optiongroup="slotProps">
                                             <div class="flex items-center">
@@ -290,7 +296,7 @@ const toggleDescription = (event) => {
                                             </div>
                                         </template>
                                     </MultiSelect>
-                                    <label for="on_label">Selected columns</label>
+                                    <label for="on_label">{{ trans("Selected columns") }}</label>
                                 </FloatLabel>
                             </div>
 
@@ -310,13 +316,16 @@ const toggleDescription = (event) => {
                 <!-- <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column> -->
 
                 <!-- Column: Name -->
-                <Column v-if="selectedColumns.includes('name')" field="name" header="Name" frozen sortable style="min-width: 16rem" >
+                <Column v-if="selectedColumns.includes('name')" field="name" header="Name" frozen sortable style="min-width: 20rem" >
                     <template #body="slotProps">
                         <div class="text-xs italic opacity-70">
                             {{ slotProps.data.code }}
                         </div>
                         <div class="bg-white font-bold">
-                            {{ slotProps.data.name }}
+                            <PureInput
+                                v-model="slotProps.data.name"
+                                class="mt-1"
+                            />
                         </div>
                     </template>
                 </Column>
@@ -349,8 +358,11 @@ const toggleDescription = (event) => {
                     <template #body="slotProps">
                         <div class="flex justify-center">
                             <PureCheckbox
-                                v-model="slotProps.data.is_for_sale"
+                                :modelValue="slotProps.data?.not_for_sale_from_trade_unit ? false : slotProps.data.is_for_sale"
+                                @update:model-value="(e) => slotProps.data?.not_for_sale_from_trade_unit ? false : slotProps.data.is_for_sale = e"
                                 fluid
+                                :disabled="slotProps.data?.not_for_sale_from_trade_unit"
+                                v-tooltip="slotProps.data?.not_for_sale_from_trade_unit ? 'Not editable, not for sale from trade unit' : ''"
                             />
                         </div>
                     </template>
@@ -457,7 +469,7 @@ const toggleDescription = (event) => {
                 
 
                 <!-- Column: Family -->
-                <Column v-if="selectedColumns.includes('family_id')" field="family_id" header="Family" sortable style="min-width: 10rem">
+                <Column v-if="selectedColumns.includes('family_id')" field="family_id" header="Family" style="min-width: 10rem">
                     <template #body="{ data }">
                         <div class="w-full md:w-64">
                             <PureMultiselectInfiniteScroll

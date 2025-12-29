@@ -13,7 +13,7 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\GrpAction;
-use App\Actions\Helpers\Translations\TranslateCategoryModel;
+use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -72,12 +72,12 @@ class StoreFamilyFromMasterFamily extends GrpAction
 
                 if ($family) {
                     if ($subDepartment) {
-                        $data['parent_id'] = $subDepartment->id;
+                        $data['parent_id']         = $subDepartment->id;
                         $data['sub_department_id'] = $subDepartment->id;
-                        $data['department_id'] = $subDepartment->department_id;
+                        $data['department_id']     = $subDepartment->department_id;
                     } elseif ($department) {
-                        $data['parent_id'] = $department->id;
-                        $data['department_id'] = $department->id;
+                        $data['parent_id']         = $department->id;
+                        $data['department_id']     = $department->id;
                         $data['sub_department_id'] = null;
                     }
                     $this->updateFoundFamily($family, $data, $createWebpage);
@@ -101,9 +101,10 @@ class StoreFamilyFromMasterFamily extends GrpAction
                 }
 
                 CloneProductCategoryImagesFromMaster::run($family);
-                TranslateCategoryModel::dispatch(
-                    $family,
-                    Arr::only($data, ['name', 'description', 'description_title', 'description_extra'])
+                TranslateModel::dispatch(
+                    model: $family,
+                    translationData: Arr::only($data, ['name', 'description', 'description_title', 'description_extra']),
+                    overwrite: true
                 );
             }
         }
@@ -120,9 +121,9 @@ class StoreFamilyFromMasterFamily extends GrpAction
                 'comment' => 'first publish'
             ]);
         }
-        TranslateCategoryModel::dispatch(
-            $family,
-            Arr::only($modelData, ['name', 'description', 'description_title', 'description_extra'])
+        TranslateModel::dispatch(
+            model: $family,
+            translationData: Arr::only($modelData, ['name', 'description', 'description_title', 'description_extra'])
         );
     }
 

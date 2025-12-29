@@ -61,7 +61,8 @@ import {
     faBiohazard,
     faFolder,
     faCartArrowDown,
-    faWeight
+    faWeight,
+    faShapes
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -71,6 +72,7 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faShapes,
     faTags,
     faBiohazard,
     faUserTag,

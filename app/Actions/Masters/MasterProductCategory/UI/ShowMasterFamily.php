@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\MasterVariant\IndexMasterVariant;
@@ -23,6 +24,7 @@ use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterFamiliesSalesResource;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterFamilySales;
 use App\Http\Resources\Masters\MasterVariantsResource;
@@ -39,6 +41,7 @@ class ShowMasterFamily extends GrpAction
     use WithMastersAuthorisation;
     use WithMasterFamilyNavigation;
     use WithMasterFamilySubNavigation;
+
     private MasterShop|Group|MasterProductCategory $parent;
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
@@ -109,86 +112,90 @@ class ShowMasterFamily extends GrpAction
     {
         $tabs = [
             MasterFamilyTabsEnum::SALES->value =>
-            $this->tab === MasterFamilyTabsEnum::SALES->value
-                ? fn () => MasterFamiliesSalesResource::collection(
-                    IndexMasterFamilySales::run($masterFamily)
-                )
-                : Inertia::lazy(
-                    fn () =>
-                    MasterFamiliesSalesResource::collection(
+                $this->tab === MasterFamilyTabsEnum::SALES->value
+                    ? fn () => MasterFamiliesSalesResource::collection(
                         IndexMasterFamilySales::run($masterFamily)
                     )
-                ),
+                    : Inertia::lazy(
+                        fn () => MasterFamiliesSalesResource::collection(
+                            IndexMasterFamilySales::run($masterFamily)
+                        )
+                    ),
 
             MasterFamilyTabsEnum::SHOWCASE->value =>
-            $this->tab === MasterFamilyTabsEnum::SHOWCASE->value
-                ? fn () => GetMasterProductCategoryShowcase::run($masterFamily)
-                : Inertia::lazy(
-                    fn () =>
-                    GetMasterProductCategoryShowcase::run($masterFamily)
-                ),
+                $this->tab === MasterFamilyTabsEnum::SHOWCASE->value
+                    ? fn () => GetMasterProductCategoryShowcase::run($masterFamily)
+                    : Inertia::lazy(
+                        fn () => GetMasterProductCategoryShowcase::run($masterFamily)
+                    ),
 
             MasterFamilyTabsEnum::FAMILIES->value =>
-            $this->tab === MasterFamilyTabsEnum::FAMILIES->value
-                ? fn () => FamiliesResource::collection(
-                    IndexFamilies::run($masterFamily)
-                )
-                : Inertia::lazy(
-                    fn () =>
-                    FamiliesResource::collection(
+                $this->tab === MasterFamilyTabsEnum::FAMILIES->value
+                    ? fn () => FamiliesResource::collection(
                         IndexFamilies::run($masterFamily)
                     )
-                ),
+                    : Inertia::lazy(
+                        fn () => FamiliesResource::collection(
+                            IndexFamilies::run($masterFamily)
+                        )
+                    ),
 
             MasterFamilyTabsEnum::IMAGES->value =>
-            $this->tab === MasterFamilyTabsEnum::IMAGES->value
-                ? fn () => GetMasterProductCategoryImages::run($masterFamily)
-                : Inertia::lazy(
-                    fn () =>
-                    GetMasterProductCategoryImages::run($masterFamily)
-                ),
+                $this->tab === MasterFamilyTabsEnum::IMAGES->value
+                    ? fn () => GetMasterProductCategoryImages::run($masterFamily)
+                    : Inertia::lazy(
+                        fn () => GetMasterProductCategoryImages::run($masterFamily)
+                    ),
+
+            MasterFamilyTabsEnum::HISTORY->value =>
+                $this->tab == MasterFamilyTabsEnum::HISTORY->value
+                    ? fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value))
+                    : Inertia::lazy(
+                        fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value))
+                    ),
+
+
         ];
 
         $navigation = MasterFamilyTabsEnum::navigation();
         if (app()->environment('local')) {
             $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
                 $this->tab === MasterFamilyTabsEnum::VARIANTS->value
-                ? fn () => MasterVariantsResource::collection(
-                    IndexMasterVariant::run(
-                        $masterFamily,
-                        MasterFamilyTabsEnum::VARIANTS->value
-                    )
-                )
-                : Inertia::lazy(
-                    fn () =>
-                    MasterVariantsResource::collection(
+                    ? fn () => MasterVariantsResource::collection(
                         IndexMasterVariant::run(
                             $masterFamily,
                             MasterFamilyTabsEnum::VARIANTS->value
                         )
                     )
-                );
+                    : Inertia::lazy(
+                        fn () => MasterVariantsResource::collection(
+                            IndexMasterVariant::run(
+                                $masterFamily,
+                                MasterFamilyTabsEnum::VARIANTS->value
+                            )
+                        )
+                    );
         }
 
         if (app()->environment('production')) {
-            $navigation =  data_forget($navigation, MasterFamilyTabsEnum::VARIANTS->value);
+            $navigation = data_forget($navigation, MasterFamilyTabsEnum::VARIANTS->value);
         }
 
 
         return Inertia::render(
             'Masters/MasterFamily',
             [
-                'title'                 => __('Family'),
-                'breadcrumbs'           => $this->getBreadcrumbs(
+                'title'                   => __('Master family').': '.$masterFamily->code,
+                'breadcrumbs'             => $this->getBreadcrumbs(
                     $masterFamily,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'            => [
+                'navigation'              => [
                     'previous' => $this->getPreviousModel($masterFamily, $request),
                     'next'     => $this->getNextModel($masterFamily, $request),
                 ],
-                'mini_breadcrumbs'      => array_filter(
+                'mini_breadcrumbs'        => array_filter(
                     [
                         $masterFamily->master_department_id ? [
                             'label'   => $masterFamily->masterDepartment->name,
@@ -215,37 +222,39 @@ class ShowMasterFamily extends GrpAction
                             'tooltip' => __('Master Sub-Department'),
                             'icon'    => ['fal', 'folder-tree']
                         ] : [],
-                          [
+                        [
                             'label'   => $masterFamily->name,
                             'tooltip' => 'Master Family',
                             'icon'    => ['fal', 'folder-tree']
                         ]
                     ],
                 ),
-                'familyId'              => $masterFamily->id,
-                'currency'              => $masterFamily->group->currency,
-                'storeProductRoute'     => [
+                'familyId'                => $masterFamily->id,
+                'currency'                => $masterFamily->group->currency,
+                'storeProductRoute'       => [
                     'name'       => 'grp.models.master_family.store-assets',
                     'parameters' => [
                         'masterFamily' => $masterFamily->id,
                     ]
                 ],
-                'pageHead'              => [
+                'pageHead'                => [
                     'title'         => $masterFamily->name,
                     'model'         => __('Master Family'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Department')
                     ],
-                    'iconRight' => $masterFamily->status ? [
-                        'tooltip' => __('Active'),
-                        'icon'    => 'fas fa-check-circle',
-                        'class'   => 'text-green-400'
-                    ] : [
-                        'tooltip' => __('Closed'),
-                        'icon'    => 'fas fa-times-circle',
-                        'class'   => 'text-red-400'
-                    ],
+                    'iconRight'     => $masterFamily->status
+                        ? [
+                            'tooltip' => __('Active'),
+                            'icon'    => 'fas fa-check-circle',
+                            'class'   => 'text-green-400'
+                        ]
+                        : [
+                            'tooltip' => __('Closed'),
+                            'icon'    => 'fas fa-times-circle',
+                            'class'   => 'text-red-400'
+                        ],
                     'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',
@@ -274,7 +283,7 @@ class ShowMasterFamily extends GrpAction
                             'style'   => 'create',
                             'tooltip' => __('Create a variants group for this family'),
                             'label'   => __('Variants'),
-                            'route' => [
+                            'route'   => [
                                 'name'       => preg_replace('/show$/', 'master_variants.create', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
@@ -283,48 +292,23 @@ class ShowMasterFamily extends GrpAction
                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 
                 ],
-                'tabs'                  => [
+                'tabs'                    => [
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
                 'masterProductCategoryId' => $masterFamily->id,
-                'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
-                 ...$tabs,
-
-                /* MasterFamilyTabsEnum::SALES->value => $this->tab == MasterFamilyTabsEnum::SALES->value ?
-                    fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))
-                    : Inertia::lazy(fn () => MasterFamiliesSalesResource::collection(IndexMasterFamilySales::run($masterFamily))),
-
-                MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterProductCategoryShowcase::run($masterFamily)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterFamily)),
-
-                MasterFamilyTabsEnum::FAMILIES->value => $this->tab == MasterFamilyTabsEnum::FAMILIES->value ?
-                    fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))
-                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))),
-
-                MasterFamilyTabsEnum::IMAGES->value => $this->tab == MasterFamilyTabsEnum::IMAGES->value ?
-                    fn () => GetMasterProductCategoryImages::run($masterFamily)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterFamily)),
-
-                MasterFamilyTabsEnum::VARIANTS->value => $this->tab == MasterFamilyTabsEnum::VARIANTS->value ?
-                    fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily, MasterFamilyTabsEnum::VARIANTS->value))
-                    : Inertia::lazy(fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily, MasterFamilyTabsEnum::VARIANTS->value))), */
-                // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
-                //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
-                // FamilyTabsEnum::MAILSHOTS->value => $this->tab == FamilyTabsEnum::MAILSHOTS->value ?
-                //     fn () => MailshotResource::collection(IndexMailshots::run($masterFamily))
-                //     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($masterFamily))),
+                'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
+                ...$tabs,
 
 
             ]
         )
-            // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($masterFamily))
             ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
             ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value))
-            ->table(IndexMasterVariant::make()->tableStructure($masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value));
+            ->table(IndexMasterVariant::make()->tableStructure($masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
+
     }
 
 
@@ -365,7 +349,7 @@ class ShowMasterFamily extends GrpAction
             'grp.masters.master_shops.show.master_families.master_products.index',
             'grp.masters.master_shops.show.master_families.master_products.show' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
                 $headCrumb(
                     $masterFamily,
                     [
