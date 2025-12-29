@@ -20,6 +20,7 @@ enum OfferCampaignTabsEnum: string
     case OVERVIEW            = 'overview';
     case OFFERS              = 'offers';
     case HISTORY             = 'history';
+    case WORKSHOP            = 'workshop';
 
     public function blueprint(): array
     {
@@ -31,6 +32,10 @@ enum OfferCampaignTabsEnum: string
             OfferCampaignTabsEnum::OFFERS => [
                 'title' => __('Offers'),
                 'icon'  => 'fal fa-badge-percent',
+            ],
+            OfferCampaignTabsEnum::WORKSHOP => [
+                'title' => __('Workshop'),
+                'icon'  => 'fal fa-drafting-compass',
             ],
             OfferCampaignTabsEnum::HISTORY => [
                 'title' => __('History'),

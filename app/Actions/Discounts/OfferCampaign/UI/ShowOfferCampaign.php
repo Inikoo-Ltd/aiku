@@ -76,6 +76,9 @@ class ShowOfferCampaign extends OrgAction
                 OfferCampaignTabsEnum::OFFERS->value => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))
                     : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))),
+                OfferCampaignTabsEnum::WORKSHOP->value => $this->tab == OfferCampaignTabsEnum::WORKSHOP->value ?
+                    fn () => GetOfferCampaignWorkshop::run($offerCampaign)
+                    : Inertia::lazy(fn () => GetOfferCampaignWorkshop::run($offerCampaign)),
                 OfferCampaignTabsEnum::HISTORY->value => $this->tab == OfferCampaignTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),

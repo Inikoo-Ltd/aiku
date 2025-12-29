@@ -21,6 +21,7 @@ import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle } from '@fal'
+import CampaignWorkshop from '@/Components/Shop/Offers/CampaignWorkshop.vue'
 library.add( faCommentDollar, faInfoCircle )
 
 
@@ -31,11 +32,12 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    offers: {}
     overview: {
         offerCampaign: {}
         stats: {}
     }
+    offers: {}
+    workshop: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -44,7 +46,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         overview: CampaignOverview,
-        offers: TableOffers
+        offers: TableOffers,
+        workshop: CampaignWorkshop,
     }
 
     return components[currentTab.value]
