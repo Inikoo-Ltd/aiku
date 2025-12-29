@@ -223,7 +223,7 @@ const autoSave = async (value: any) => {
 				</div>
 
 				<Link :href="urlToSidebar" class="text-xs underline hover:text-blue-500 cursor-pointer mt-2">
-				{{ trans("Open Sidebar workhop") }}
+				{{ trans("Open Sidebar workshop") }}
 				<FontAwesomeIcon icon="fal fa-external-link-alt" class="" fixed-width aria-hidden="true" />
 				</Link>
 			</div>

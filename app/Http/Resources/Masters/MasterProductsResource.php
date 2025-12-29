@@ -65,7 +65,7 @@ class MasterProductsResource extends JsonResource
             'rrp'                    => $this->rrp,
             'status'                 => $this->status,
             'currency_code'          => $this->currency_code,
-            'image_thumbnail'        => $this->imageSources(720, 480),
+            'image_thumbnail'        => $this->web_images,
             'status_icon'            => $this->status ? [
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',

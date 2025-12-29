@@ -40,15 +40,25 @@ const form = useForm({
 
 
 const isValid = computed(() => {
-    if (!form.product_leader) return true
-    if (!form.data_variants.variants.length) return true
+ /*    if (!form.product_leader) return true
+    if (!form.data_variants.variants.length) return true */
     return false
 })
 
 
 const save = () => {
-    if (isValid.value) return
-    form.post(route(props.save_route.name, props.save_route.parameters))
+  const products = Object.values(form.data_variants.products)
+
+  const leader =
+    products.find((item: any) => item.is_leader) ||
+    products[0] || 
+    null
+
+  form.product_leader = leader ? leader.product.id : null
+
+  console.log(form.data())
+
+  form.post(route(props.save_route.name, props.save_route.parameters))
 }
 
 </script>
@@ -62,14 +72,14 @@ const save = () => {
         <div class="w-full max-w-2xl p-4 bg-white rounded-lg shadow space-y-4">
 
             <!-- Product Leader -->
-            <div>
+            <!-- <div>
                 <label class="text-xs font-medium">
                     Product Leader <span class="text-red-500">*</span>
                 </label>
                 <PureMultiselectInfiniteScroll v-model="form.product_leader" :fetchRoute="props.master_assets_route"
                     :required="true" valueProp="id" label-prop="name" :caret="false"
                     :placeholder="trans('Select Product Leader')" />
-            </div>
+            </div> -->
 
             <!-- Variants -->
             <div>
