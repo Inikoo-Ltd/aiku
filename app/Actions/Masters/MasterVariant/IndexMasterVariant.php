@@ -51,25 +51,32 @@ class IndexMasterVariant extends OrgAction
             }
         }
 
-        return $queryBuilder
-            ->defaultSort('master_variants.code')
-            ->select([
-                'master_variants.id',
-                'master_variants.slug',
-                'master_variants.code',
-                'master_variants.leader_id',
-                'master_variants.number_minions',
-                'master_variants.number_dimensions',
-                'master_variants.number_used_slots',
-                'master_variants.number_used_slots_for_sale',
-                'master_variants.data',
-            ])
-            ->allowedSorts([
-                'code',
-            ])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+       return $queryBuilder
+        ->defaultSort('master_variants.code')
+        ->select([
+            'master_variants.id',
+            'master_variants.slug',
+            'master_variants.code',
+            'master_variants.leader_id',
+            'master_variants.number_minions',
+            'master_variants.number_dimensions',
+            'master_variants.number_used_slots',
+            'master_variants.number_used_slots_for_sale',
+            'master_variants.data',
+
+            'products.id as leader_product_id',
+            'products.name as leader_product_name',
+            'products.code as leader_product_code',
+            'products.slug as leader_product_slug',
+        ])
+        ->leftJoin('products', 'products.id', '=', 'master_variants.leader_id')
+        ->allowedSorts([
+            'code',
+            'leader_product_name',
+        ])
+        ->allowedFilters([$globalSearch])
+        ->withPaginator($prefix, tableName: request()->route()->getName())
+        ->withQueryString();
     }
 
     public function tableStructure(MasterProductCategory $parent, $prefix = null): Closure
@@ -96,7 +103,7 @@ class IndexMasterVariant extends OrgAction
                 ->withGlobalSearch();
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'leader_id', label: __('Leader ID'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'leader_product_name', label: __('Leader'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                 ->column(key: 'number_minions', label: __('Invoices'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                 ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                 ->column(key: 'number_used_slots', label: __('Amount Used'), canBeHidden: false, sortable: false, searchable: false, align: 'right')

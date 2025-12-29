@@ -145,4 +145,15 @@ trait WithFaireShopApiCollection
     {
         return $this->buildRequest('PUT', "orders/{$orderId}/shipments", $attributes);
     }
+
+    /**
+     * Get packing PDF specific order by ID
+     *
+     * @param string $orderId
+     * @return array
+     */
+    public function getPackingSlip(string $orderId): array
+    {
+        return $this->buildRequest('GET', "orders/{$orderId}/packing-slip-pdf");
+    }
 }
