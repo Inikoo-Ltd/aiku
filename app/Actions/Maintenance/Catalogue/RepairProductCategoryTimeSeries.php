@@ -7,7 +7,7 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Catalogue\ProductCategory\EnsureProductCategoryTimeSeries;
+use App\Actions\Helpers\TimeSeries\EnsureTimeSeries;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
 
@@ -24,6 +24,6 @@ class RepairProductCategoryTimeSeries
 
     public function handle(ProductCategory $productCategory): void
     {
-        EnsureProductCategoryTimeSeries::run($productCategory);
+        EnsureTimeSeries::run($productCategory);
     }
 }
