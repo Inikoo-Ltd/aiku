@@ -6,16 +6,11 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use Log;
-use Exception;
-use App\Models\Admin;
-use App\Actions\StoreAdmin;
+
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
-use Illuminate\Http\Request;
-use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
@@ -70,9 +65,9 @@ beforeEach(function () {
     $this->customer = $customer;
 
     $this->action = new StoreChatSession();
-     $this->sendMessageAction = new SendChatMessage();
-     $this->assignmentChatAction = new AssignChatToAgent();
-      $this->closeChatAction = new CloseChatSession();
+    $this->sendMessageAction = new SendChatMessage();
+    $this->assignmentChatAction = new AssignChatToAgent();
+    $this->closeChatAction = new CloseChatSession();
 
 
 
@@ -413,7 +408,7 @@ test('can assign chat session to agent', function () {
     ])->inRandomOrder()->first();
 
 
-    $assignment =$this->assignmentChatAction->handle($chatSession, $agent->id, $agent->id);
+    $assignment = $this->assignmentChatAction->handle($chatSession, $agent->id, $agent->id);
 
     expect($assignment->chat_agent_id)->toBe($agent->id)
         ->and($assignment->chat_session_id)->toBe($chatSession->id)
@@ -424,7 +419,7 @@ test('can assign chat session to agent', function () {
 
 
 test('can send message from agent after assignment', function () {
-     $this->group      = createGroup();
+    $this->group      = createGroup();
     $this->adminGuest = createAdminGuest($this->group);
 
     $agent = ChatAgent::where('user_id', $this->adminGuest->id)
@@ -441,9 +436,9 @@ test('can send message from agent after assignment', function () {
     }
 
     $chatSession = ChatSession::whereHas('assignments', function ($query) use ($agent) {
-            $query->where('chat_agent_id', $agent->id)
-                  ->where('status', ChatAssignmentStatusEnum::ACTIVE);
-        })
+        $query->where('chat_agent_id', $agent->id)
+              ->where('status', ChatAssignmentStatusEnum::ACTIVE);
+    })
         ->where('status', ChatSessionStatusEnum::ACTIVE)
         ->first();
 
@@ -534,7 +529,7 @@ test('can send message without text but with media', function () {
         'message_type' => ChatMessageTypeEnum::IMAGE->value,
         'sender_type' => ChatSenderTypeEnum::GUEST->value,
         'media_id' => 1,
-        'message_text'=> null,
+        'message_text' => null,
     ];
 
     $chatMessage = $this->sendMessageAction->handle($this->chatSession, $modelData);
@@ -546,7 +541,7 @@ test('can send message without text but with media', function () {
 
 
 test('can send system message', function () {
-     $this->chatSession = ChatSession::find(5);
+    $this->chatSession = ChatSession::find(5);
 
     $modelData = [
         'message_text' => 'System notification',
