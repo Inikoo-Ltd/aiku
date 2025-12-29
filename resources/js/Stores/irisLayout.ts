@@ -3,7 +3,7 @@
  *  created on: 18-10-2024
  *  github: https://github.com/aqordeon
  *  copyright: 2024
-*/
+ */
 
 /*
  *  Author: Raul Perusquia <raul@inikoo.com>
@@ -13,27 +13,27 @@
 // import { Navigation, grpNavigation, orgNavigation } from "@/types/Navigation"
 // import { useColorTheme } from '@/Composables/useStockList'
 
-
 import { defineStore } from "pinia"
 import { Image } from "@/types/Image"
 import { Colors } from "@/types/Color"
-import { OrganisationsData, Group, OrganisationState, StackedComponent} from '@/types/LayoutRules'
-import { ref } from "vue";
+import { OrganisationsData, Group, OrganisationState, StackedComponent } from "@/types/LayoutRules"
+import { ref } from "vue"
 import { useColorTheme } from "@/Composables/useStockList"
+import axios from "axios"
 
 interface User {
-    id: number
-    avatar_thumbnail: Image
-    email: string
-    username: string
+	id: number
+	avatar_thumbnail: Image
+	email: string
+	username: string
 }
 
 interface App {
-    name: string
-    color: unknown | Colors
-    theme: string[]
-    url: string | null
-    environment: string | null
+	name: string
+	color: unknown | Colors
+	theme: string[]
+	url: string | null
+	environment: string | null
 }
 
 const getLocalStorage = () => {
@@ -42,31 +42,73 @@ const getLocalStorage = () => {
 		storageIris = JSON.parse(localStorage.getItem("iris") || "{}") // Get layout from localStorage
 		return storageIris
 	}
-    
-    return storageIris
+
+	return storageIris
 }
 
-export const useIrisLayoutStore = defineStore('irisLayout', () => {
-    const user = ref<User | null>(null)
-    const app = ref<App>({
-        name: "",  // For styling navigation depend on which App
-        color: null,  // Styling layout color
-        theme: useColorTheme[3],  // For styling app color (same as Retina)
-        url: null, // For url on logo top left
-        environment: null // 'local' | 'staging'
-    })
+export const useIrisLayoutStore = defineStore("irisLayout", () => {
+	// SIDEBAR CACHE
+	const sidebar = ref<any>(null)
+	const isSidebarLoaded = ref(false)
+	const isSidebarFetching = ref(false)
 
-    const iris_varnish = { 
-        isFetching : false
-    }
-    const iris = {
-        is_logged_in : getLocalStorage().is_logged_in || false
-    }
-    const iris_variables = getLocalStorage().iris_variables || {}
-    const offer_meters = getLocalStorage().offer_meters || {}
-    const currentRoute = ref<string | undefined>("iris.login") // Define value to avoid route null at the first load
-    const currentParams = ref<{[key: string]: string}>({})
-    const currentQuery = ref<{[key: string]: string}>({})
+	const fetchSidebar = async () => {
+		if (isSidebarLoaded.value || isSidebarFetching.value) return
 
-    return { user, app, currentRoute, currentParams, currentQuery, iris_varnish, iris_variables, offer_meters, iris }
+		isSidebarFetching.value = true
+
+		try {
+			const { data } = await axios.get(route("sidebar"))
+
+			sidebar.value = {
+				product_categories: data?.product_categories ?? [],
+				custom_menus_top: data?.custom_menus_top ?? [],
+				custom_menus_bottom: data?.custom_menus_bottom ?? [],
+				fieldValue: data?.fieldValue ?? null,
+			}
+
+			isSidebarLoaded.value = true
+		} catch (error) {
+			console.error("[IrisLayout] Failed fetch sidebar", error)
+		} finally {
+			isSidebarFetching.value = false
+		}
+	}
+
+	const user = ref<User | null>(null)
+	const app = ref<App>({
+		name: "", // For styling navigation depend on which App
+		color: null, // Styling layout color
+		theme: useColorTheme[3], // For styling app color (same as Retina)
+		url: null, // For url on logo top left
+		environment: null, // 'local' | 'staging'
+	})
+
+	const iris_varnish = {
+		isFetching: false,
+	}
+	const iris = {
+		is_logged_in: getLocalStorage().is_logged_in || false,
+	}
+	const iris_variables = getLocalStorage().iris_variables || {}
+	const offer_meters = getLocalStorage().offer_meters || {}
+	const currentRoute = ref<string | undefined>("iris.login") // Define value to avoid route null at the first load
+	const currentParams = ref<{ [key: string]: string }>({})
+	const currentQuery = ref<{ [key: string]: string }>({})
+
+	return {
+		user,
+		app,
+		currentRoute,
+		currentParams,
+		currentQuery,
+		iris_varnish,
+		iris_variables,
+		offer_meters,
+		iris,
+		sidebar,
+		isSidebarLoaded,
+		isSidebarFetching,
+        fetchSidebar,
+	}
 })
