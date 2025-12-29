@@ -7,34 +7,35 @@
  * copyright 2025
 */
 
+use Illuminate\Support\Facades\Route;
+use App\Actions\Iris\IrisLogWebUserRequest;
+use App\Actions\Helpers\Tag\Json\GetIrisTags;
+use App\Actions\Iris\Json\GetIrisSidebarData;
+use App\Actions\Iris\Json\GetIrisFirstHitData;
+use App\Actions\Iris\Basket\FetchIrisEcomBasket;
+use App\Actions\Helpers\Brand\Json\GetIrisBrands;
+use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
+use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
+use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
+use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
 use App\Actions\Catalogue\Product\Json\GetIrisAnnouncements;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProduct;
-use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisLastOrderedProducts;
-use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
-use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
-use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProduct;
+use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
-use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
-use App\Actions\Helpers\Brand\Json\GetIrisBrands;
-use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
-use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
-use App\Actions\Helpers\Tag\Json\GetIrisTags;
-use App\Actions\Iris\IrisLogWebUserRequest;
-use App\Actions\Iris\Basket\FetchIrisEcomBasket;
-use App\Actions\Iris\Json\GetIrisFirstHitData;
-use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
-use Illuminate\Support\Facades\Route;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('product-category/{productCategory:id}/portfolio-data', GetIrisPortfoliosInProductCategory::class)->name('product_category.portfolio_data');
@@ -48,6 +49,7 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
+    Route::get('/iris/sidebar', GetIrisSidebarData::class)->name('iris.sidebar');
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
