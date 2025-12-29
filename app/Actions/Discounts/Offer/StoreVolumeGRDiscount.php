@@ -134,7 +134,7 @@ class StoreVolumeGRDiscount extends OrgAction
             'end_at'                     => ['nullable', 'date', 'after:today'],
             'trigger_data_item_quantity' => ['required', 'integer', 'min:1'],
             'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:1'],
-            'interval'                  => ['nullable', 'integer', 'min:0'],
+            'interval'                   => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -161,7 +161,6 @@ class StoreVolumeGRDiscount extends OrgAction
     public function asCommand(Command $command): int
     {
         $family = ProductCategory::where('slug', $command->argument('family'))->firstOrFail();
-
 
 
         $modelData      = [

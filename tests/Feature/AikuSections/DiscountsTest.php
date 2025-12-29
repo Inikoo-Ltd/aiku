@@ -10,6 +10,7 @@
 
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
+use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
@@ -740,10 +741,12 @@ describe('calculate order discounts', function () {
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(400.0);
 
-        $todayMinus5Days = now()->subDays(5)->toDateString();
+        $todayMinus5Days = now()->subDays(5);
 
+        UpdateCustomerLastInvoicedDate::run($order->customer,$todayMinus5Days);
 
-
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(280.0);
 
     });
 
