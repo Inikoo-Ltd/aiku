@@ -15,12 +15,13 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class GetFaireOrders extends OrgAction
 {
-    public string $commandSignature = 'faire:orders';
+    public string $commandSignature = 'faire:orders {shop}';
 
     public function handle(Shop $shop): void
     {
@@ -60,8 +61,8 @@ class GetFaireOrders extends OrgAction
                     $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
 
                     foreach (Arr::get($faireOrder, 'items', []) as $item) {
-                        $product = Product::whereIn('shop_id', $shop->id)
-                            ->where('external_id', $item['variant_id'])
+                        $product = Product::where('shop_id', $shop->id)
+                            ->where('code', $item['sku'])
                             ->first();
 
                         $historicAsset = $product->asset?->historicAsset;
@@ -74,10 +75,10 @@ class GetFaireOrders extends OrgAction
                             order: $awOrder,
                             historicAsset: $historicAsset,
                             modelData: [
-                                'quantity_ordered'        => $item['quantity'],
+                                'quantity_ordered' => $item['quantity'],
                                 'external_id' => $item['id'],
-                                'net_amount' => ($item['price'] / 100) * $item['quantity'],
-                                'gross_amount' => ($item['price'] / 100) * $item['quantity']
+                                'net_amount' => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
+                                'gross_amount' => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity']
                             ]
                         );
                     }
@@ -104,11 +105,11 @@ class GetFaireOrders extends OrgAction
         ];
     }
 
-    public function asCommand(): void
+    public function asCommand(Command $command): void
     {
         $shops = Shop::where('type', ShopTypeEnum::EXTERNAL)
             ->where('engine', ShopEngineEnum::FAIRE)
-            ->where('state', ShopStateEnum::OPEN)
+            ->where('slug', $command->argument('shop'))
             ->get();
 
         foreach ($shops as $shop) {
