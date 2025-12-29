@@ -32,6 +32,7 @@ use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Actions\CRM\WebUser\StoreWebUser;
 
 beforeAll(function () {
     loadDB();

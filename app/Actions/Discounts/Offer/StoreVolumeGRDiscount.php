@@ -12,7 +12,6 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
-use App\Actions\Traits\WithDiscountArgumentValidation;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
@@ -32,7 +31,6 @@ class StoreVolumeGRDiscount extends OrgAction
 {
     use WithNoStrictRules;
     use WithStoreOffer;
-    use WithDiscountArgumentValidation;
     use WithStoreOfferRules {
         rules as storeOfferBaseRules;
     }
@@ -61,7 +59,6 @@ class StoreVolumeGRDiscount extends OrgAction
             return null;
         }
 
-
         if ($itemQuantity == 1) {
             $type = 'Category Ordered';
         } else {
@@ -71,7 +68,6 @@ class StoreVolumeGRDiscount extends OrgAction
             $type = $type.' Order Interval';
         }
         data_set($modelData, 'type', $type);
-
 
         $code = Str::lower($offerCampaign->code.'-'.$family->code);
         data_set($modelData, 'code', $code, false);
@@ -88,7 +84,6 @@ class StoreVolumeGRDiscount extends OrgAction
             Translate::run($label, $english, $family->shop->language).' '.$family->code,
             false
         );
-
 
         $triggerData = [
             'item_quantity' => $itemQuantity
@@ -139,7 +134,7 @@ class StoreVolumeGRDiscount extends OrgAction
             'end_at'                     => ['nullable', 'date', 'after:today'],
             'trigger_data_item_quantity' => ['required', 'integer', 'min:1'],
             'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:1'],
-            'interval'                   => ['nullable', 'integer', 'min:0'],
+            'interval'                  => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -167,14 +162,12 @@ class StoreVolumeGRDiscount extends OrgAction
     {
         $family = ProductCategory::where('slug', $command->argument('family'))->firstOrFail();
 
-        if (!$discount = $this->validateDiscountArgument($command)) {
-            return 1;
-        }
+
 
         $modelData      = [
             'end_at'                     => $command->argument('end_at') ? Carbon::parse($command->argument('end_at')) : null,
             'trigger_data_item_quantity' => $command->argument('item_quantity'),
-            'percentage_off'             => $discount,
+            'percentage_off'             => $command->argument('discount'),
             'interval'                   => $command->argument('days'),
 
 

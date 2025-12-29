@@ -64,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property OfferAllowanceTargetTypeEnum|null $target_type
  * @property OfferDurationEnum|null $duration
  * @property string|null $bracket
+ * @property \Illuminate\Support\Carbon|null $last_suspended_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -99,9 +100,10 @@ class OfferAllowance extends Model implements Auditable
         'class'           => OfferAllowanceClass::class,
         'target_type'     => OfferAllowanceTargetTypeEnum::class,
         'duration'        => OfferDurationEnum::class,
-        'begin_at'        => 'datetime',
-        'end_at'          => 'datetime',
-        'fetched_at'      => 'datetime',
+        'begin_at'          => 'datetime',
+        'end_at'            => 'datetime',
+        'last_suspended_at' => 'datetime',
+        'fetched_at'        => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 

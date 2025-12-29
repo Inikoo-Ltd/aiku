@@ -8,42 +8,38 @@
 
 namespace App\Actions\Discounts\Offer;
 
-use App\Actions\Discounts\OfferAllowance\SuspendPermanentOfferAllowance;
+use App\Actions\Discounts\OfferAllowance\SuspendOfferAllowance;
+use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\ActionRequest;
 
-class SuspendPermanentOffer extends OrgAction
+class SuspendOffer extends OrgAction
 {
     use WithActionUpdate;
 
 
     public function handle(Offer $offer): Offer
     {
-        if ($offer->duration != OfferDurationEnum::PERMANENT) {
-            abort(419);
-        }
-
         $modelData = [
-            'state'  => OfferStateEnum::SUSPENDED,
-            'status' => false,
-            'end_at' => now()
+            'state'             => OfferStateEnum::SUSPENDED,
+            'status'            => false,
+            'last_suspended_at' => now(),
         ];
-
 
 
         foreach ($offer->offerAllowances as $offerAllowance) {
             if ($offerAllowance->state == OfferAllowanceStateEnum::ACTIVE) {
-                SuspendPermanentOfferAllowance::run($offerAllowance);
+                SuspendOfferAllowance::run($offerAllowance);
             }
         }
 
 
         $offer->update($modelData);
+        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
 
         return $offer;
     }
