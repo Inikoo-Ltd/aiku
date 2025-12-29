@@ -49,7 +49,7 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
-    Route::get('/iris/sidebar', GetIrisSidebarData::class)->name('iris.sidebar');
+    Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
