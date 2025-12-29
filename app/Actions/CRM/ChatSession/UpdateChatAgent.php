@@ -14,7 +14,7 @@ class UpdateChatAgent
 {
     use AsAction;
 
-     public function rules(): array
+    public function rules(): array
     {
         return [
             'user_id' => [
