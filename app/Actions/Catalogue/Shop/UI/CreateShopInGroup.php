@@ -199,7 +199,7 @@ class CreateShopInGroup extends GrpAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowMasterShop::make()->getBreadcrumbs($this->masterShop, 'grp.masters.master_shops.show'),
+            ShowMasterShop::make()->getBreadcrumbs($this->masterShop),
             [
                 [
                     'type'          => 'creatingModel',

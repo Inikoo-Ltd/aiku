@@ -14,6 +14,7 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
@@ -25,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -127,18 +129,40 @@ class OfferAllowance extends Model implements Auditable
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
                 $slug = '';
-                if ($this->type) {
-                    $slug = $this->type->slug();
-                }
+
                 if ($this->target_type) {
-                    $slug .= '-'.$this->target_type->slug();
+                    $slug = $this->target_type->slug();
+
+                    if ($this->target_type == OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY) {
+                        $category = ProductCategory::find($this->target_id);
+                        if ($category) {
+                            $slug .= '-'.$category->code;
+                        }
+                    }
+
                 }
+                if ($this->type) {
+                    $slug .= '-'.$this->type->slug();
+
+
+                    if ($this->type == OfferAllowanceType::PERCENTAGE_OFF) {
+                        $percentage = Arr::get($this->data, 'percentage_off', '');
+                        if ($percentage) {
+                            $slug .= '-'.(100 * $percentage);
+
+                        }
+
+
+                    }
+
+                }
+
 
                 return preg_replace('/^-/', '', $slug);
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug')
-            ->slugsShouldBeNoLongerThan(128);
+            ->slugsShouldBeNoLongerThan(255);
     }
 
     public function getRouteKeyName(): string

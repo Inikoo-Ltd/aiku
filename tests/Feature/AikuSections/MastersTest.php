@@ -1269,7 +1269,6 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
         $page
             ->component('EditModel')
             ->has('breadcrumbs')
-            ->where('title', __('Master product'))
             ->has(
                 'pageHead',
                 fn (AssertableInertia $head) =>

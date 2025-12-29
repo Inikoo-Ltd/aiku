@@ -242,8 +242,8 @@ class ShowFamily extends OrgAction
                     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
                 FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($family))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family))),
+                    fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
 
                 FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
                     fn () => GetProductCategoryImages::run($family)

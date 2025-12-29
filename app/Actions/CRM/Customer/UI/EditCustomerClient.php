@@ -35,7 +35,7 @@ class EditCustomerClient extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit client'),
+                'title'       => __('Edit client').' '.$customerClient->name,
                 'pageHead'    => [
                     'title'   => __('Edit client'),
                     'icon'    => [
@@ -46,7 +46,7 @@ class EditCustomerClient extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('Cancel'),
+                            'label' => __('Exit edit'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
                                     'shops.show.customers.create' => 'shops.show.customers.index',

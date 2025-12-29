@@ -16,11 +16,11 @@ use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class TranslateCategoryModel
+class TranslateModel
 {
     use AsAction;
 
-    public function handle(ProductCategory|Product $model, array $translationData): void
+    public function handle(ProductCategory|Product $model, array $translationData, bool $overwrite = false): void
     {
         $english      = Language::where('code', 'en')->first();
         $shopLanguage = $model->shop->language;
@@ -28,19 +28,19 @@ class TranslateCategoryModel
         $modelData = [];
 
 
-        if (Arr::exists($translationData, 'unit')) {
+        if ($model instanceof Product && Arr::get($translationData, 'unit') && (!$model->unit || $overwrite)) {
             data_set($modelData, 'unit', Translate::run($translationData['unit'], $english, $shopLanguage));
         }
-        if (Arr::exists($translationData, 'name')) {
+        if (Arr::get($translationData, 'name') && (!$model->name || $overwrite)) {
             data_set($modelData, 'name', Translate::run($translationData['name'], $english, $shopLanguage));
         }
-        if (Arr::exists($translationData, 'description')) {
+        if (Arr::get($translationData, 'description') && (!$model->description || $overwrite)) {
             data_set($modelData, 'description', Translate::run($translationData['description'], $english, $shopLanguage));
         }
-        if (Arr::exists($translationData, 'description_title')) {
+        if (Arr::get($translationData, 'description_title') && (!$model->description_title || $overwrite)) {
             data_set($modelData, 'description_title', Translate::run($translationData['description_title'], $english, $shopLanguage));
         }
-        if (Arr::exists($translationData, 'description_extra')) {
+        if (Arr::get($translationData, 'description_extra') && (!$model->description_extra || $overwrite)) {
             data_set($modelData, 'description_extra', Translate::run($translationData['description_extra'], $english, $shopLanguage));
         }
 
@@ -65,7 +65,6 @@ class TranslateCategoryModel
             if ($model instanceof Product && Arr::exists($modelData, 'unit')) {
                 data_set($modelData, 'is_unit_reviewed', true);
             }
-
         } else {
             if (Arr::exists($modelData, 'name')) {
                 data_set(
@@ -126,7 +125,6 @@ class TranslateCategoryModel
                     ) ? false : null
                 );
             }
-
         }
 
 

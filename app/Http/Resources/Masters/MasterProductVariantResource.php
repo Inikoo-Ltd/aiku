@@ -11,8 +11,6 @@ use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use Illuminate\Support\Facades\DB;
 use App\Models\Goods\TradeUnit;
 use App\Actions\Masters\MasterAsset\GetMasterProductSalesData;
-use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
-use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 
 class MasterProductVariantResource extends JsonResource
 {

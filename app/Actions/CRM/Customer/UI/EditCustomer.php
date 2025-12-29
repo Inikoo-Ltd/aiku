@@ -47,7 +47,7 @@ class EditCustomer extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('customer'),
+                'title'       => __('Edit Customer').' '.$customer->reference,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

@@ -21,6 +21,8 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 
+Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+
 Route::name('webhooks.')->group(function () {
     Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
 });
@@ -71,7 +73,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::prefix("")->group(function () {
         Route::group([], __DIR__ . '/system.php');
-        Route::get('/robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/sitemaps/{sitemapType}.xml', ShowIrisSubSitemap::class)
             ->where('sitemapType', 'products|departments|sub_departments|families|contents|blogs|pages|collections')

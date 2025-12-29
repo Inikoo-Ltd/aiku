@@ -13,6 +13,7 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateOfferAllowances;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOffers;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Ordering\Order;
 
@@ -26,6 +27,7 @@ class HydrateOrders
     public function handle(Order $order): void
     {
         OrderHydrateTransactions::run($order);
+        OrderHydrateCategoriesData::run($order);
         OrderHydrateOfferCampaigns::run($order);
         OrderHydrateOffers::run($order);
         OrderHydrateOfferAllowances::run($order);

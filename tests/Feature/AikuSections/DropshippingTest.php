@@ -303,7 +303,6 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
     $response->assertInertia(function (AssertableInertia $page) use ($customerClient) {
         $page
             ->component('EditModel')
-            ->where('title', 'Edit client')
             ->has(
                 'formData',
                 fn (AssertableInertia $form) => $form

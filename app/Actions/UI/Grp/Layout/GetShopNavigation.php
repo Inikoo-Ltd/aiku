@@ -182,7 +182,7 @@ class GetShopNavigation
                         ],
                     ],
                 ];
-        }
+            }
         }
 
         if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->engine !== ShopEngineEnum::FAIRE) {
