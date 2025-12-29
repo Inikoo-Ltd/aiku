@@ -193,16 +193,20 @@ const onSave = async () => {
         console.log('Response axios:', response.data)
 
         notify({
-            title: trans("Success bulk edit products!"),
-            text: trans("Changes may need some seconds to update."),
+            title: trans("Successfully updated selected products!"),
+            text: trans("Changes might take some times before being applied fully. Please wait a few seconds"),
             type: "success",
         })
     } catch (error: any) {
-        console.log('error axios', error)
+        // console.log('error axios', error)
+        const errorBagUnique = error.response.data.errors ? new Set(Object.values(error.response.data.errors).flat()) : [];
         notify({
             title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
-            type: 'error'
+            data: {
+                html: errorBagUnique ? [...errorBagUnique].join('<br>') : trans("Please try again or contact administrator"),
+            },
+            type: 'error',
+            duration: 5000,
         })
     } finally {
         isLoadingSave.value = false

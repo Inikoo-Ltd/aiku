@@ -14,9 +14,6 @@ use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterAsset;
-use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Group;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
@@ -26,9 +23,7 @@ class UpdateMasterProductsBulkEdit extends GrpAction
 {
     use WithMastersEditAuthorisation;
 
-    private Group|MasterShop|MasterProductCategory $parent;
-
-    public function handle(Group|MasterShop|MasterProductCategory $parent, array $modelData): Collection
+    public function handle(array $modelData): Collection
     {
         $modelData = Arr::keyBy($modelData['data'], 'id');
         $masterAssets = MasterAsset::whereIn('id', data_get($modelData, '*.id'))->get()->keyBy('id');
@@ -51,11 +46,22 @@ class UpdateMasterProductsBulkEdit extends GrpAction
             'data.*.is_for_sale'            =>  ['sometimes', 'boolean'],
             'data.*.price'                  =>  ['sometimes', 'numeric'],
             'data.*.units'                  =>  ['sometimes', 'numeric'],
-            'data.*.unit'                   =>  ['sometimes', 'string'],
+            'data.*.unit'                   =>  ['sometimes', 'required', 'string'],
             'data.*.gross_weight'           =>  ['sometimes', 'numeric'],
             'data.*.master_family_id'       =>  ['sometimes', 'nullable'],
         ];
+    }
 
+    public function getValidationMessages()
+    {
+        return [
+            'data.*.name.string'                =>  __('Product Name cannot be empty'),
+            'data.*.price.numeric'              =>  __('Product Price must be a number and cannot be empty'),
+            'data.*.units.numeric'              =>  __('Product Units must be a number and cannot be empty'),
+            'data.*.unit.required'              =>  __('Product Unit cannot be empty'),
+            'data.*.unit.string'                =>  __('Product Unit cannot be empty'),
+            'data.*.gross_weight.numeric'       =>  __('Product Gross Weight must be a number and cannot be empty'),
+        ];
     }
 
     public function jsonResponse(Collection $masterAssets): AnonymousResourceCollection
@@ -66,10 +72,9 @@ class UpdateMasterProductsBulkEdit extends GrpAction
     public function asController(ActionRequest $request)
     {
         $group        = group();
-        $this->parent = $group;
         $this->initialisation($group, $request);
 
-        return $this->handle($group, $this->validatedData);
+        return $this->handle($this->validatedData);
     }
 
 }
