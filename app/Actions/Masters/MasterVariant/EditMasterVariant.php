@@ -115,11 +115,11 @@ class EditMasterVariant extends OrgAction
                         [
                             'title'   => __('Variant'),
                             'label'   => __('Variant'),
-                            'icon'    => 'fa-light fa-key',
+                            'icon'    => 'fa-light fa-shapes',
                             'fields'  => [
-                                'code'  => [
+                                'variant'  => [
                                     'type'     => 'input-variant',
-                                    'label'    => __('Code'),
+                                    'label'    => __('Variants'),
                                     'value'    => $masterVariant->data,
                                     'required' => true,
                                     'full'     => true,

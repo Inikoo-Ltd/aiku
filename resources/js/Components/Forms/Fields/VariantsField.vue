@@ -29,7 +29,6 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
-console.log('ssddd', props)
 
 </script>
 <template>
