@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import Drawer from "primevue/drawer"
-import { ref, inject, onMounted, onUnmounted, computed } from "vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Drawer from 'primevue/drawer';
+import { ref, inject, onMounted, onUnmounted, computed } from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 // import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBars, faChevronCircleDown } from "@fal"
-import { getStyles } from "@/Composables/styles"
-import { isNull } from "lodash-es"
-import IrisSidebarDesktop from "./Iris/Layout/IrisSidebarDesktop.vue"
-import IrisSidebarMobile from "./Iris/Layout/IrisSidebarMobile.vue"
-import { Image as ImageTS } from "@/types/Image"
-import Image from "./Image.vue"
-import { trans } from "laravel-vue-i18n"
-import { faSearch, faTimes } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
+import { faBars, faChevronCircleDown } from '@fal';
+import { getStyles } from '@/Composables/styles';
+import { isNull } from 'lodash-es';
+import IrisSidebarDesktop from './Iris/Layout/IrisSidebarDesktop.vue';
+import IrisSidebarMobile from './Iris/Layout/IrisSidebarMobile.vue';
+import { Image as ImageTS } from '@/types/Image';
+import Image from './Image.vue';
+import { trans } from 'laravel-vue-i18n';
+import { faSearch, faTimes } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { useIrisLayoutStore } from '@/Stores/irisLayout';
 library.add(faSearch, faTimes)
 
 const props = defineProps<{
@@ -78,8 +78,8 @@ const sortedProductCategories = computed(() => {
 
 	return [...source].sort((a, b) =>
 		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
-	)
-})
+	);
+});
 
 
 // Custom menus without sorting
@@ -90,7 +90,7 @@ const sortedProductCategories = computed(() => {
 
 const customMenusBottom = computed(() => {
 	return sidebar.sidebar?.custom_menus_bottom ?? props.customMenusBottom ?? []
-})
+});
 
 
 // const customMenusTop = computed(() => {
@@ -100,11 +100,11 @@ const customMenusBottom = computed(() => {
 
 const customMenusTop = computed(() => {
 	return sidebar.sidebar?.custom_menus_top ?? props.customMenusTop ?? []
-})
+});
 
 const sidebarFieldValue = computed(() => {
 	return sidebar.sidebar?.fieldValue ?? props.sidebar?.data?.fieldValue
-})
+});
 
 
 // const sortedNavigation = computed(() => {
@@ -121,7 +121,7 @@ const sortedSubDepartments = computed(() => {
 	return [...(category.sub_departments ?? []), ...(category.collections ?? [])]
 		.filter((item) => item?.name)
 		.sort((a, b) => a.name.localeCompare(b.name))
-})
+});
 
 // Custom sub departments without sorting
 const customSubDepartments = computed(() => {
@@ -131,7 +131,7 @@ const customSubDepartments = computed(() => {
 	)
 		return []
 	return customMenusBottom.value[activeCustomIndex.value].sub_departments
-})
+});
 
 const sortedFamilies = computed(() => {
 	if (
@@ -142,7 +142,7 @@ const sortedFamilies = computed(() => {
 	return [...sortedSubDepartments.value[activeSubIndex.value].families].sort((a, b) =>
 		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
 	)
-})
+});
 
 // Custom families without sorting
 const customFamilies = computed(() => {
@@ -152,7 +152,7 @@ const customFamilies = computed(() => {
 	)
 		return []
 	return customSubDepartments.value[activeCustomSubIndex.value].families
-})
+});
 
 // Custom top sub departments without sorting
 const customTopSubDepartments = computed(() => {
@@ -162,7 +162,7 @@ const customTopSubDepartments = computed(() => {
 	)
 		return []
 	return customMenusTop.value[activeCustomTopIndex.value].sub_departments
-})
+});
 
 // Custom top families without sorting
 const customTopFamilies = computed(() => {
@@ -172,62 +172,62 @@ const customTopFamilies = computed(() => {
 	)
 		return []
 	return customTopSubDepartments.value[activeCustomTopSubIndex.value].families
-})
+});
 
 // reset subdepartment when category changes
 const setActiveCategory = (index: number) => {
-	activeIndex.value = index
-	activeSubIndex.value = null
+	activeIndex.value = index;
+	activeSubIndex.value = null;
 	// Reset custom menu states
-	activeCustomIndex.value = null
-	activeCustomSubIndex.value = null
-	activeCustomTopIndex.value = null
-	activeCustomTopSubIndex.value = null
-}
+	activeCustomIndex.value = null;
+	activeCustomSubIndex.value = null;
+	activeCustomTopIndex.value = null;
+	activeCustomTopSubIndex.value = null;
+};
 
 const setActiveCustomCategory = (index: number) => {
-	activeCustomIndex.value = index
-	activeCustomSubIndex.value = null
+	activeCustomIndex.value = index;
+	activeCustomSubIndex.value = null;
 	// Reset product category states
-	activeIndex.value = null
-	activeSubIndex.value = null
+	activeIndex.value = null;
+	activeSubIndex.value = null;
 	// Reset custom top menu states
-	activeCustomTopIndex.value = null
-	activeCustomTopSubIndex.value = null
-}
+	activeCustomTopIndex.value = null;
+	activeCustomTopSubIndex.value = null;
+};
 
 const setActiveCustomTopCategory = (index: number) => {
-	activeCustomTopIndex.value = index
-	activeCustomTopSubIndex.value = null
+	activeCustomTopIndex.value = index;
+	activeCustomTopSubIndex.value = null;
 	// Reset product category states
-	activeIndex.value = null
-	activeSubIndex.value = null
+	activeIndex.value = null;
+	activeSubIndex.value = null;
 	// Reset custom bottom menu states
-	activeCustomIndex.value = null
-	activeCustomSubIndex.value = null
-}
+	activeCustomIndex.value = null;
+	activeCustomSubIndex.value = null;
+};
 
 const checkMobile = () => {
 	isMobile.value = window.innerWidth < 768
-}
+};
 
 onMounted(() => {
 	checkMobile()
 	window.addEventListener("resize", checkMobile)
 
 	sidebar.fetchSidebar()
-})
+});
 
 onUnmounted(() => {
 	window.removeEventListener("resize", checkMobile)
-})
+});
 
 const getHref = (item) => {
-	if (item.type === "external" && item.url !== null) {
-		if (item.url.startsWith("http://") || item.url.startsWith("https://")) {
-			return item.url
+	if (item.type === 'external' && item.url !== null) {
+		if (item.url.startsWith('http://') || item.url.startsWith('https://')) {
+			return item.url;
 		}
-		return `https://${item.url}`
+		return `https://${item.url}`;
 	}
 
 	return `${item.url}` // Internal
@@ -237,11 +237,11 @@ const getTarget = (item) => {
 	if (item.target) {
 		return item.target
 	}
-	if (item.type === "external") {
-		return "_blank"
+	if (item.type === 'external') {
+		return '_blank'
 	}
-	return "_self"
-}
+	return '_self'
+};
 
 const internalHref = (item) => {
 	// "https://www.aw-dropship.com/new",   -> /new
@@ -256,8 +256,8 @@ const internalHref = (item) => {
 }
 
 const onClickLuigi = () => {
-	const input = document.getElementById("luigi_mobile") as HTMLInputElement | null
-	if (input) input.focus()
+	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
+	if (input) input.focus();
 }
 </script>
 

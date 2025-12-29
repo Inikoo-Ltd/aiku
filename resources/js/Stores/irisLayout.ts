@@ -16,8 +16,8 @@
 import { defineStore } from "pinia"
 import { Image } from "@/types/Image"
 import { Colors } from "@/types/Color"
-import { OrganisationsData, Group, OrganisationState, StackedComponent } from "@/types/LayoutRules"
-import { ref } from "vue"
+import { OrganisationsData, Group, OrganisationState, StackedComponent } from '@/types/LayoutRules'
+import { ref } from "vue";
 import { useColorTheme } from "@/Composables/useStockList"
 import axios from "axios"
 
