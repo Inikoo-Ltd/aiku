@@ -51,32 +51,31 @@ class IndexMasterVariant extends OrgAction
             }
         }
 
-       return $queryBuilder
-        ->defaultSort('master_variants.code')
-        ->select([
-            'master_variants.id',
-            'master_variants.slug',
-            'master_variants.code',
-            'master_variants.leader_id',
-            'master_variants.number_minions',
-            'master_variants.number_dimensions',
-            'master_variants.number_used_slots',
-            'master_variants.number_used_slots_for_sale',
-            'master_variants.data',
-
-            'products.id as leader_product_id',
-            'products.name as leader_product_name',
-            'products.code as leader_product_code',
-            'products.slug as leader_product_slug',
-        ])
-        ->leftJoin('products', 'products.id', '=', 'master_variants.leader_id')
-        ->allowedSorts([
-            'code',
-            'leader_product_name',
-        ])
-        ->allowedFilters([$globalSearch])
-        ->withPaginator($prefix, tableName: request()->route()->getName())
-        ->withQueryString();
+        return $queryBuilder
+         ->leftJoin('master_assets', 'master_assets.id', '=', 'master_variants.leader_id')
+         ->defaultSort('master_variants.code')
+         ->select([
+             'master_variants.id',
+             'master_variants.slug',
+             'master_variants.code',
+             'master_variants.leader_id',
+             'master_variants.number_minions',
+             'master_variants.number_dimensions',
+             'master_variants.number_used_slots',
+             'master_variants.number_used_slots_for_sale',
+             'master_variants.data',
+             'master_assets.id as leader_product_id',
+             'master_assets.name as leader_product_name',
+             'master_assets.code as leader_product_code',
+             'master_assets.slug as leader_product_slug',
+         ])
+         ->allowedSorts([
+             'code',
+             'leader_product_name',
+         ])
+         ->allowedFilters([$globalSearch])
+         ->withPaginator($prefix, tableName: request()->route()->getName())
+         ->withQueryString();
     }
 
     public function tableStructure(MasterProductCategory $parent, $prefix = null): Closure
