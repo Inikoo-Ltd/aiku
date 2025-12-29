@@ -10,6 +10,9 @@ namespace App\Actions\Helpers\Intervals;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateOrderingIntervals;
@@ -53,6 +56,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateFin
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -64,6 +68,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
+use App\Models\Billables\Charge;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -414,6 +419,61 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
+
+            AssetHydrateDeliveryNotesIntervals::dispatch(
+                assetID: $product->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            AssetHydrateInvoiceIntervals::dispatch(
+                assetID: $product->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            AssetHydrateInvoicedCustomersIntervals::dispatch(
+                assetID: $product->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+    }
+
+    protected function resetCharges(): void
+    {
+        foreach (
+            Charge::whereNot('state', ChargeStateEnum::DISCONTINUED)->get() as $charge
+        ) {
+            AssetHydrateSalesIntervals::dispatch(
+                assetID: $charge->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            AssetHydrateOrderIntervals::dispatch(
+                assetID: $charge->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            AssetHydrateDeliveryNotesIntervals::dispatch(
+                assetID: $charge->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            AssetHydrateInvoiceIntervals::dispatch(
+                assetID: $charge->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            AssetHydrateInvoicedCustomersIntervals::dispatch(
+                assetID: $charge->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
         }
     }
 
@@ -641,6 +701,7 @@ trait WithResetIntervals
         $this->resetMasterShops();
         $this->resetShops();
         $this->resetProducts();
+        $this->resetCharges();
         $this->resetPlatforms();
         $this->resetInvoiceCategories();
         $this->resetProductCategories();

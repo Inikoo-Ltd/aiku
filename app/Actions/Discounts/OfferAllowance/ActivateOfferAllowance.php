@@ -10,22 +10,17 @@ namespace App\Actions\Discounts\OfferAllowance;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\OfferAllowance;
 use Lorisleiva\Actions\ActionRequest;
 
-class ActivatePermanentOfferAllowance extends OrgAction
+class ActivateOfferAllowance extends OrgAction
 {
     use WithActionUpdate;
 
 
     public function handle(OfferAllowance $offerAllowance): OfferAllowance
     {
-
-        if ($offerAllowance->duration != OfferDurationEnum::PERMANENT) {
-            return $offerAllowance;
-        }
 
         $modelData = [
             'state' => OfferAllowanceStateEnum::ACTIVE,

@@ -149,14 +149,14 @@ class EditGuest extends GrpAction
                             'fields' => [
                                 'username' => [
                                     'type'  => 'input',
-                                    'label' => __('username'),
+                                    'label' => __('Username'),
                                     'value' => $user ? $user->username : ''
 
                                 ],
                                 'password' => [
                                     'type'  => 'password',
                                     "placeholder" => "********",
-                                    'label' => __('password'),
+                                    'label' => __('Password'),
 
                                 ],
                             ]

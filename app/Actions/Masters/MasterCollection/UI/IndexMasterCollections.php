@@ -281,7 +281,7 @@ class IndexMasterCollections extends OrgAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_collections.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
+                ShowMasterShop::make()->getBreadcrumbs($parent),
                 $headCrumb(
                     [
                         'name'       => $routeName,

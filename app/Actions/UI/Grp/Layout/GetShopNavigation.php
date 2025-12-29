@@ -8,9 +8,10 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
-use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\User;
+use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 class GetShopNavigation
 {
@@ -32,7 +33,7 @@ class GetShopNavigation
 
             'topMenu' => [
                 'subSections' => [
-                    [
+                     $shop->engine !== ShopEngineEnum::FAIRE ? [
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
                         "icon"    => ["fal", "fa-satellite-dish"],
@@ -40,8 +41,8 @@ class GetShopNavigation
                             "name"       => "grp.org.shops.show.dashboard.comms.dashboard",
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
-                    ],
-                    [
+                    ] : null,
+                    $shop->engine !== ShopEngineEnum::FAIRE ? [
                         "tooltip" => __("Payments"),
                         "label"   => __("Payments"),
                         "icon"    => ["fal", "fa-coins"],
@@ -50,7 +51,7 @@ class GetShopNavigation
                             "name"       => "grp.org.shops.show.dashboard.payments.accounting.dashboard",
                             "parameters" => [$shop->organisation->slug, $shop->slug]
                         ],
-                    ],
+                    ] : null,
                     [
                         "label"   => __("Invoices"),
                         "tooltip" => __("Invoices"),
@@ -63,65 +64,64 @@ class GetShopNavigation
                     ],
                 ],
             ]
-
         ];
         if ($user->hasPermissionTo("products.$shop->id.view")) {
             $navigation["catalogue"] = [
-                "root"    => "grp.org.shops.show.catalogue.",
-                "icon"    => ["fal", "fa-books"],
-                "label"   => __("Catalogue"),
-                "route"   => [
-                    "name"       => 'grp.org.shops.show.catalogue.dashboard',
+                "root" => "grp.org.shops.show.catalogue.",
+                "icon" => ["fal", "fa-books"],
+                "label" => __("Catalogue"),
+                "route" => [
+                    "name" => 'grp.org.shops.show.catalogue.dashboard',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
                     "subSections" => [
                         [
                             "tooltip" => __("Catalogue"),
-                            "icon"    => ["fal", "fa-books"],
-                            'root'    => 'grp.org.shops.show.catalogue.dashboard',
-                            "route"   => [
-                                "name"       => 'grp.org.shops.show.catalogue.dashboard',
+                            "icon" => ["fal", "fa-books"],
+                            'root' => 'grp.org.shops.show.catalogue.dashboard',
+                            "route" => [
+                                "name" => 'grp.org.shops.show.catalogue.dashboard',
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
                         [
-                            "label"   => __("Departments"),
+                            "label" => __("Departments"),
                             "tooltip" => __("Departments"),
-                            "icon"    => ["fal", "fa-folder-tree"],
-                            'root'    => 'grp.org.shops.show.catalogue.departments.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.catalogue.departments.index",
+                            "icon" => ["fal", "fa-folder-tree"],
+                            'root' => 'grp.org.shops.show.catalogue.departments.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.catalogue.departments.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
                         [
-                            "label"   => __("Families"),
+                            "label" => __("Families"),
                             "tooltip" => __("Families"),
-                            "icon"    => ["fal", "fa-folder"],
-                            'root'    => 'grp.org.shops.show.catalogue.families.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.catalogue.families.index",
+                            "icon" => ["fal", "fa-folder"],
+                            'root' => 'grp.org.shops.show.catalogue.families.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.catalogue.families.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
                         [
-                            "label"   => __("Products"),
+                            "label" => __("Products"),
                             "tooltip" => __("Products"),
-                            "icon"    => ["fal", "fa-cube"],
-                            'root'    => 'grp.org.shops.show.catalogue.products.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.catalogue.products.current_products.index",
+                            "icon" => ["fal", "fa-cube"],
+                            'root' => 'grp.org.shops.show.catalogue.products.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.catalogue.products.current_products.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
                         [
-                            "label"   => __("Collections"),
+                            "label" => __("Collections"),
                             "tooltip" => __("Collections"),
-                            "icon"    => ["fal", "fa-album-collection"],
-                            'root'    => 'grp.org.shops.show.catalogue.collections.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.catalogue.collections.index",
+                            "icon" => ["fal", "fa-album-collection"],
+                            'root' => 'grp.org.shops.show.catalogue.collections.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.catalogue.collections.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
@@ -129,61 +129,63 @@ class GetShopNavigation
                 ],
             ];
 
-            $navigation["billables"] = [
-                "root"    => "grp.org.shops.show.billables.",
-                "icon"    => ["fal", "fa-ballot"],
-                "label"   => __("Billables"),
-                "route"   => [
-                    "name"       => 'grp.org.shops.show.billables.dashboard',
-                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                ],
-                "topMenu" => [
-                    "subSections" => [
-                        [
-                            "tooltip" => __("Shop"),
-                            "icon"    => ["fal", "fa-store-alt"],
-                            'root'    => 'grp.org.shops.show.billables.dashboard',
-                            "route"   => [
-                                "name"       => 'grp.org.shops.show.billables.dashboard',
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
+            if ($shop->engine !== ShopEngineEnum::FAIRE) {
+                $navigation["billables"] = [
+                    "root" => "grp.org.shops.show.billables.",
+                    "icon" => ["fal", "fa-ballot"],
+                    "label" => __("Billables"),
+                    "route" => [
+                        "name" => 'grp.org.shops.show.billables.dashboard',
+                        "parameters" => [$shop->organisation->slug, $shop->slug],
+                    ],
+                    "topMenu" => [
+                        "subSections" => [
+                            [
+                                "tooltip" => __("Shop"),
+                                "icon" => ["fal", "fa-store-alt"],
+                                'root' => 'grp.org.shops.show.billables.dashboard',
+                                "route" => [
+                                    "name" => 'grp.org.shops.show.billables.dashboard',
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
                             ],
-                        ],
-                        [
-                            "label"   => __("Shipping"),
-                            "tooltip" => __("Shipping"),
-                            "icon"    => ["fal", "fa-shipping-fast"],
-                            'root'    => 'grp.org.shops.show.billables.shipping.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.billables.shipping.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            [
+                                "label" => __("Shipping"),
+                                "tooltip" => __("Shipping"),
+                                "icon" => ["fal", "fa-shipping-fast"],
+                                'root' => 'grp.org.shops.show.billables.shipping.',
+                                "route" => [
+                                    "name" => "grp.org.shops.show.billables.shipping.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
                             ],
-                        ],
-                        [
-                            "label"   => __("Charges"),
-                            "tooltip" => __("Charges"),
-                            "icon"    => ["fal", "fa-charging-station"],
-                            'root'    => 'grp.org.shops.show.billables.charges.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.billables.charges.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            [
+                                "label" => __("Charges"),
+                                "tooltip" => __("Charges"),
+                                "icon" => ["fal", "fa-charging-station"],
+                                'root' => 'grp.org.shops.show.billables.charges.',
+                                "route" => [
+                                    "name" => "grp.org.shops.show.billables.charges.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
                             ],
-                        ],
-                        [
-                            "label"   => __("Services"),
-                            "tooltip" => __("Services"),
-                            "icon"    => ["fal", "fa-concierge-bell"],
-                            'root'    => 'grp.org.shops.show.billables.services.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.billables.services.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            [
+                                "label" => __("Services"),
+                                "tooltip" => __("Services"),
+                                "icon" => ["fal", "fa-concierge-bell"],
+                                'root' => 'grp.org.shops.show.billables.services.',
+                                "route" => [
+                                    "name" => "grp.org.shops.show.billables.services.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
                             ],
                         ],
                     ],
-                ],
-            ];
+                ];
+            }
         }
 
-        if ($user->hasPermissionTo("discounts.$shop->id.view")) {
+        if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->engine !== ShopEngineEnum::FAIRE) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",
                 "icon"    => ["fal", "fa-badge-percent"],
@@ -228,7 +230,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("marketing.$shop->id.view")) {
+        if ($user->hasPermissionTo("marketing.$shop->id.view") && $shop->engine !== ShopEngineEnum::FAIRE) {
             $navigation["marketing"] = [
                 "root"    => "grp.org.shops.show.marketing.",
                 "icon"    => ["fal", "fa-bullhorn"],
@@ -371,18 +373,20 @@ class GetShopNavigation
                     ],
                 ];
             } else {
-                $navigation["web"] = [
-                    "scope" => "websites",
-                    "icon"  => ["fal", "fa-globe"],
-                    "label" => __("Website"),
-                    "root"  => "grp.org.shops.show.web.",
-                    "route" => [
-                        "name"       => "grp.org.shops.show.web.websites.index",
-                        "parameters" => [$shop->organisation->slug, $shop->slug],
-                    ],
+                if ($shop->engine !== ShopEngineEnum::FAIRE) {
+                    $navigation["web"] = [
+                        "scope" => "websites",
+                        "icon"  => ["fal", "fa-globe"],
+                        "label" => __("Website"),
+                        "root"  => "grp.org.shops.show.web.",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.web.websites.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
 
-                    "topMenu" => []
-                ];
+                        "topMenu" => []
+                    ];
+                }
             }
         }
 

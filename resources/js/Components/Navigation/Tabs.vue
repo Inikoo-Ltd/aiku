@@ -30,7 +30,8 @@ import {
 	faDotCircle,
 	faFolderTree,
 	faAlbumCollection,
-	faPenAlt
+	faPenAlt,
+	faShapes
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -38,6 +39,7 @@ import type { Navigation } from "@/types/Tabs"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(
+	faShapes,
 	faInfoCircle,
 	faRoad,
 	faClock,

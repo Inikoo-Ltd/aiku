@@ -87,12 +87,12 @@ class EditRetinaWebUser extends RetinaAction
                                 ],
                                 'username' => [
                                     'type'  => 'input',
-                                    'label' => __('username'),
+                                    'label' => __('Username'),
                                     'value' => $webUser->username
                                 ],
                                 'password' => [
                                     'type'  => 'password',
-                                    'label' => __('password'),
+                                    'label' => __('Password'),
                                     'value' => ''
                                 ],
                             ], $webUser->is_root ? [] : [

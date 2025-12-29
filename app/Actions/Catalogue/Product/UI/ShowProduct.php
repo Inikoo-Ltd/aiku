@@ -21,6 +21,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithSalesIntervals;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
@@ -45,6 +46,7 @@ class ShowProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
+    use WithSalesIntervals;
 
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -386,6 +388,10 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+
+                'salesIntervals' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
+                    fn () => $this->getSalesIntervalsData($product, $this->organisation->currency->code)
+                    : Inertia::lazy(fn () => $this->getSalesIntervalsData($product, $this->organisation->currency->code)),
 
                 ProductTabsEnum::CONTENT->value => $this->tab == ProductTabsEnum::CONTENT->value ?
                     fn () => GetProductContent::run($product)

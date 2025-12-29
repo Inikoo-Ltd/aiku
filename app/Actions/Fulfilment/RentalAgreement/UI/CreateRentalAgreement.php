@@ -38,7 +38,7 @@ class CreateRentalAgreement extends OrgAction
             ],
             'username' => [
                 'type'        => 'input',
-                'label'       => __('username'),
+                'label'       => __('Username'),
                 'required'    => true
             ],
         ] : [];

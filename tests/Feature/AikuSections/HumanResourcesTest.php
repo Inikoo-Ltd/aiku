@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\HumanResources\ClockingMachine\GetClockingMachineAppQRCode;
 use App\Actions\HumanResources\ClockingMachine\HydrateClockingMachine;
@@ -26,12 +27,14 @@ use App\Actions\HumanResources\Timesheet\StoreTimesheet;
 use App\Actions\HumanResources\Workplace\Search\ReindexWorkplaceSearch;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
+use App\Models\Analytics\AikuScopedSection;
 use App\Models\Helpers\Address;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
@@ -54,6 +57,19 @@ beforeEach(function () {
     $this->organisation = createOrganisation();
     $this->adminGuest   = createAdminGuest($this->organisation->group);
 
+    $workplace = Workplace::first();
+    if (!$workplace) {
+        data_set($storeData, 'name', 'workplace');
+        data_set($storeData, 'type', WorkplaceTypeEnum::HQ->value);
+
+        $workplace = StoreWorkplace::make()->action(
+            $this->organisation,
+            $storeData
+        );
+    }
+    $this->workplace = $workplace;
+
+
     Config::set(
         'inertia.testing.page_paths',
         [resource_path('js/Pages/Grp')]
@@ -63,7 +79,7 @@ beforeEach(function () {
 });
 
 test('check seeded job positions', function () {
-    expect($this->organisation->group->humanResourcesStats->number_job_positions)->toBe(32);
+    expect($this->organisation->group->humanResourcesStats->number_job_positions)->toBe(33);
     /** @var JobPosition $jobPosition */
     $jobPosition = $this->organisation->jobPositions()->first();
     expect($jobPosition->stats)->toBeInstanceOf(JobPositionStats::class)
@@ -79,7 +95,7 @@ test('create working place successful', function () {
 
     $workplace = StoreWorkplace::make()->action($this->organisation, $modelData);
     expect($workplace)->toBeInstanceOf(Workplace::class)
-        ->and($this->organisation->humanResourcesStats->number_workplaces)->toBe(1)
+        ->and($this->organisation->humanResourcesStats->number_workplaces)->toBe(2)
         ->and($this->organisation->humanResourcesStats->number_workplaces_type_branch)->toBe(1)
         ->and($this->organisation->humanResourcesStats->number_workplaces_type_home)->toBe(0);
 
@@ -108,7 +124,7 @@ test('create working place by command', function () {
     $workplace = Workplace::where('name', 'office2')->first();
     $this->organisation->refresh();
     expect($workplace)->not->toBeNull()
-        ->and($this->organisation->humanResourcesStats->number_workplaces)->toBe(2);
+        ->and($this->organisation->humanResourcesStats->number_workplaces)->toBe(3);
 });
 
 test('create employee successful', function () {
@@ -123,7 +139,8 @@ test('create employee successful', function () {
         'worker_number'       => '1234567890',
         'work_email'          => null,
         'email'               => null,
-        'username'            => null,
+        'username'            => 'the_username',
+        'password'            => 'secret',
         'type'                => EmployeeTypeEnum::EMPLOYEE,
     ];
     $employee  = StoreEmployee::make()->action($this->organisation, $arrayData);
@@ -222,7 +239,7 @@ test('can show hr dashboard', function () {
             ->component('Org/HumanResources/HumanResourcesDashboard')
             ->has('breadcrumbs', 2)
             ->where('stats.0.stat', 1)->where('stats.0.route.name', 'grp.org.hr.employees.index')
-            ->where('stats.1.stat', 2)->where('stats.1.route.name', 'grp.org.hr.workplaces.index');
+            ->where('stats.1.stat', 3)->where('stats.1.route.name', 'grp.org.hr.workplaces.index');
     });
 });
 
@@ -233,7 +250,7 @@ test('can show list of workplaces', function () {
             ->component('Org/HumanResources/Workplaces')
             ->has('title')
             ->has('breadcrumbs', 3)
-            ->has('data.data', 2);
+            ->has('data.data', 3);
     });
 });
 
@@ -269,11 +286,9 @@ test('can show employee', function () {
         $page
             ->component('Org/HumanResources/Employee')
             ->has('breadcrumbs', 3)
-            ->where('pageHead.meta.1.route.name', 'grp.org.sysadmin.users.show')
-            ->where('pageHead.meta.1.route.parameters', $employee->alias)
-            ->has('tabs.navigation', 7);
+            ->has('tabs.navigation', 3);
     });
-})->todo();
+});
 
 test('new timesheet for employee', function (Employee $employee) {
     $timesheet = StoreTimesheet::make()->action($employee, [
@@ -345,7 +360,7 @@ test('second clocking ', function (Timesheet $timesheet, Workplace $workplace) {
 test('hydrate clocking machine', function (ClockingMachine $clockingMachine) {
     HydrateClockingMachine::run($clockingMachine);
     $this->artisan('hydrate:clocking-machine '.$this->organisation->slug)->assertExitCode(0);
-})->depends('create clocking machines')->todo();
+})->depends('create clocking machines');
 
 
 test('employees notes search', function () {
@@ -396,4 +411,348 @@ test('hydrate job timesheets', function () {
     $this->artisan('hydrate:timesheets')->assertExitCode(0);
     $timesheet = Timesheet::first();
     HydrateTimesheets::run($timesheet);
+});
+
+
+test('UI Index calendar', function () {
+    $response = $this->get(route('grp.org.hr.calendars.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/Calendar')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Employees')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show calendar', function () {
+    $this->withoutExceptionHandling();
+
+    $employee = Employee::first();
+
+    $response = get(route('grp.org.hr.calendars.show', [
+        $employee->organisation->slug,
+        $employee->slug
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) use ($employee) {
+        $page
+            ->component('Org/HumanResources/Calendar')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->etc()
+            )
+            ->has('tabs');
+    });
+});
+
+test('UI Index clockings', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.hr.workplaces.show.clockings.index', [
+        $this->organisation->slug,
+        $this->workplace->slug
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/Clockings')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Clockings')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI Index clocking machines', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.hr.workplaces.show.clocking_machines.index', [$this->organisation->slug, $this->workplace->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/ClockingMachines')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Clocking machines')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show clocking machine', function () {
+    $clockingMachine = ClockingMachine::first();
+
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.hr.workplaces.show.clocking_machines.show', [
+        $clockingMachine->organisation->slug,
+        $clockingMachine->workplace->slug,
+        $clockingMachine->slug
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) use ($clockingMachine) {
+        $page
+            ->component('Org/HumanResources/ClockingMachine')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $clockingMachine->name)
+                    ->etc()
+            )
+            ->has('tabs');
+    });
+});
+
+test('UI create clocking machine', function () {
+    $response = get(route('grp.org.hr.workplaces.show.clocking_machines.create', [$this->organisation->slug, $this->workplace->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 5);
+    });
+});
+
+test('UI edit clocking machine', function () {
+    $clockingMachine = ClockingMachine::first();
+
+    $response = get(route('grp.org.hr.workplaces.show.clocking_machines.edit', [
+        $clockingMachine->organisation->slug,
+        $clockingMachine->workplace->slug,
+        $clockingMachine->slug
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) use ($clockingMachine) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('formData.blueprint.0.fields', 2)
+            ->has('pageHead')
+            ->has(
+                'formData.args.updateRoute',
+                fn (AssertableInertia $page) => $page
+                    ->where('name', 'grp.models.clocking_machine..update')
+                    ->where('parameters', $clockingMachine->id)
+            )
+            ->has('breadcrumbs', 4);
+    });
+});
+
+test('UI Index employees', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.hr.employees.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/Employees')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Employees')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI create employee', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.hr.employees.create', [$this->organisation->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+    });
+});
+
+test('UI show employee', function () {
+    $employee = Employee::first();
+
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.hr.employees.show', [
+        $employee->organisation->slug,
+        $employee->slug
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) use ($employee) {
+        $page
+            ->component('Org/HumanResources/Employee')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $employee->contact_name)
+                    ->etc()
+            )
+            ->has('tabs');
+    });
+});
+
+test('UI edit employee', function () {
+    $employee = Employee::first();
+
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.hr.employees.edit', [
+        $employee->organisation->slug,
+        $employee->slug
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) use ($employee) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('pageHead')
+            ->has('formData')
+            ->has(
+                'formData.args.updateRoute',
+                fn (AssertableInertia $page) => $page
+                    ->where('name', 'grp.models.employee.update')
+                    ->where('parameters', [$employee->id])
+            )
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI show job position', function () {
+    $jobPosition = JobPosition::first();
+
+    $response = $this->get(route('grp.org.hr.job_positions.show', [
+        $this->organisation->slug,
+        $jobPosition->slug
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($jobPosition) {
+        $page
+            ->component('Org/HumanResources/JobPosition')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $jobPosition->name)
+                    ->etc()
+            )
+            ->has('tabs');
+    });
+});
+
+test('UI Index job positions', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.hr.job_positions.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/JobPositions')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Responsibilities')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI create workplace', function () {
+    $response = get(route('grp.org.hr.workplaces.create', [$this->organisation->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+    });
+});
+
+test('UI edit workplace', function () {
+    $response = get(route('grp.org.hr.workplaces.edit', [$this->organisation->slug, $this->workplace->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('pageHead')
+            ->has('formData')
+            ->has(
+                'formData.args.updateRoute',
+                fn (AssertableInertia $page) => $page
+                    ->where('name', 'grp.models.workplace.update')
+                    ->where('parameters', $this->workplace->id)
+            )
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI Index timesheets', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.hr.timesheets.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/Timesheets')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('pageHead')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Timesheets')
+                    ->etc()
+            )
+            ->has('data');
+    });
+});
+
+test('UI show timesheet', function () {
+    $this->withoutExceptionHandling();
+
+    $timesheet = Timesheet::first();
+
+    $response = $this->get(route('grp.org.hr.timesheets.show', [
+        $timesheet->organisation->slug,
+        $timesheet->id
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($timesheet) {
+        $page
+            ->component('Org/HumanResources/Timesheet')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $timesheet->date->format('l, j F Y'))
+                    ->etc()
+            )
+            ->has('tabs');
+    });
+});
+
+test('UI get section route hr employee index', function () {
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.hr.employees.index', [
+        'organisation' => $this->organisation->slug
+    ]);
+    expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_HR->value)
+        ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
 });

@@ -55,6 +55,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read \App\Models\Dispatching\ShipperStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @method static \Database\Factories\Dispatch\ShipperFactory factory($count = null, $state = [])
  * @method static Builder<static>|Shipper newModelQuery()
  * @method static Builder<static>|Shipper newQuery()
  * @method static Builder<static>|Shipper onlyTrashed()
@@ -135,4 +136,8 @@ class Shipper extends Model implements Auditable
         return $this->hasOne(ShipperStats::class);
     }
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\Dispatch\ShipperFactory::new();
+    }
 }

@@ -19,8 +19,12 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTruck } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTruck)
 
 const props = defineProps<{
     data: TableTS,
@@ -134,6 +138,14 @@ const onClickPick = () => {
         }
     )
 }
+
+const generateRouteDeliveryNote = (id: string) => {
+    if (!id) return ''
+
+    return route('grp.helpers.redirect_delivery_notes', {
+        deliveryNote: id
+    })
+}
 </script>
 
 <template>
@@ -144,6 +156,10 @@ const onClickPick = () => {
             <!-- <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
                 {{ deliveryNote["reference"] }}
             </Link> -->
+        </template>
+
+        <template #cell(state)="{ item: deliveryNote }">
+            <Icon :data="deliveryNote.state_icon" />
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
@@ -178,6 +194,43 @@ const onClickPick = () => {
 
         <template #cell(action)="{ item: deliveryNote }">
             <Button @click="() => isModalPick = deliveryNote" type="secondary" :label="trans('Pick')" size="xs" />
+        </template>
+
+        <template #cell(delivery)="{ item: deliveryNote }">
+            <div v-if="deliveryNote.state === 'cancelled'">
+                
+            </div>
+            <div v-else-if="deliveryNote.shipping_data?.is_collection && deliveryNote.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
+                {{ trans("Collected") }}
+                <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
+            </div>
+            <div v-else-if="deliveryNote.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
+                {{ trans("For Collection") }}
+            </div>
+            
+            <div v-else-if="deliveryNote.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 group pr-2 py-1.5">
+                <div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
+                    <template v-if="deliveryNote.shipping_data?.[0].trackings?.[0]">
+                        {{ deliveryNote.shipping_data?.[0].shipper_slug }}:
+                        <a v-if="deliveryNote.shipping_data?.[0].tracking_urls.length"
+                            :href="deliveryNote.shipping_data?.[0].tracking_urls[0]"
+                            class="underline"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ deliveryNote.shipping_data?.[0].trackings?.[0] }}
+                            <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                        </a>
+                        
+                        <span v-else>
+                            {{ deliveryNote.shipping_data?.[0].trackings?.[0] }}
+                        </span>
+                    </template>
+                </div>
+            </div>
+            <div v-else>
+
+            </div>
         </template>
     </Table>
 

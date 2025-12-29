@@ -74,7 +74,7 @@ const idxSlideLoading = ref<string | null>(null)
                     </template>
                 </LinkIris>
 
-                <!-- <LinkIris
+              <!--   <LinkIris
                     v-for="(item, index) in props?.fieldValue?.collections || []"
                     :key="index"
                     :href="`${item.url}`"

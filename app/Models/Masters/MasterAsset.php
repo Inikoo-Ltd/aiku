@@ -235,12 +235,16 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'code',
         'name',
         'description',
+        'description_title',
+        'description_extra',
         'status',
         'state',
         'price',
         'rrp',
         'unit',
         'is_main',
+        'barcode',
+        'is_for_sale'
     ];
 
     public function getRouteKeyName(): string
@@ -298,7 +302,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
     }
-
 
     public function stats(): HasOne
     {
@@ -412,7 +415,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
     }
-
 
     public function tradeUnitTagsViaTradeUnits(): LaravelCollection
     {

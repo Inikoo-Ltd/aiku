@@ -248,7 +248,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
 
 
         return Inertia::render(
-            'Masters/MasterProducts',
+            'Masters/MasterOrphanProducts',
             [
                 'breadcrumbs'        => $this->getBreadcrumbs(
                     $this->parent,
@@ -295,7 +295,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_products_orphan' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
+                ShowMasterShop::make()->getBreadcrumbs($parent),
                 $headCrumb(
                     [
                         'name'       => $routeName,

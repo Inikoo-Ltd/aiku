@@ -15,6 +15,7 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\GrpAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
@@ -43,7 +44,7 @@ class CreateShopInGroup extends GrpAction
     public function htmlResponse(ActionRequest $request): Response
     {
         return Inertia::render(
-            'CreateModel',
+            'CreateShop',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('New shop'),
@@ -77,7 +78,8 @@ class CreateShopInGroup extends GrpAction
                                     'options'     => GetOrganisationOptions::run(),
                                     'required'    => true,
                                     'mode'        => 'single',
-                                    'searchable'  => true
+                                    'searchable'  => true,
+                                    'key'         => 'organisation_select'
                                 ],
                                 'code' => [
                                     'type'     => 'input',
@@ -97,7 +99,19 @@ class CreateShopInGroup extends GrpAction
                                     'options'     => Options::forEnum(ShopTypeEnum::class),
                                     'required'    => true,
                                     'mode'        => 'single',
-                                    'searchable'  => true
+                                    'searchable'  => true,
+                                    'key'         => 'shop_type_select',
+                                ],
+                                'engine' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Engine'),
+                                    'placeholder' => __('Select one option'),
+                                    'options'     => Options::forEnum(ShopEngineEnum::class),
+                                    'required'    => true,
+                                    'value'       => ShopEngineEnum::AIKU,
+                                    'mode'        => 'single',
+                                    'searchable'  => true,
+                                    'key'         => 'engine_type_select',
                                 ],
                             ]
                         ],
@@ -185,7 +199,7 @@ class CreateShopInGroup extends GrpAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowMasterShop::make()->getBreadcrumbs($this->masterShop, 'grp.masters.master_shops.show'),
+            ShowMasterShop::make()->getBreadcrumbs($this->masterShop),
             [
                 [
                     'type'          => 'creatingModel',

@@ -47,6 +47,7 @@ class StoreOffer extends OrgAction
             $offer->stats()->create();
             foreach ($allowances as $allowanceData) {
                 data_set($allowanceData, 'duration', $offer->duration);
+                data_set($allowanceData, 'end_at', $offer->end_at);
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
             UpdateOfferAllowanceSignature::run($offer);

@@ -58,6 +58,8 @@ class MasterProductResource extends JsonResource
             'packing_group'                 => $masterProduct->packing_group,
             'proper_shipping_name'          => $masterProduct->proper_shipping_name,
             'hazard_identification_number'  => $masterProduct->hazard_identification_number,
+            'id'                            => $masterProduct->id,
+            'main_images'                   => $masterProduct->imageSources(),
         ];
     }
 }

@@ -37,12 +37,12 @@ class GetIrisProductsInProductCategory extends IrisAction
         ));
         $perPage = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $queryBuilder->where('department_id', $productCategory->id);
+            $queryBuilder->where('products.department_id', $productCategory->id);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $queryBuilder->where('family_id', $productCategory->id);
+            $queryBuilder->where('products.family_id', $productCategory->id);
             $perPage = 250;
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $queryBuilder->where('sub_department_id', $productCategory->id);
+            $queryBuilder->where('products.sub_department_id', $productCategory->id);
         }
 
 

@@ -4,15 +4,17 @@ namespace App\Actions\Catalogue\Shop\Faire;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -24,12 +26,24 @@ class GetFaireOrders extends OrgAction
     {
         DB::transaction(function () use ($shop) {
             $orders = $shop->getFaireOrders([
-                //'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
+                'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
             ]);
 
+            $shops = $shop->masterShop->shops()
+                ->whereNot('type', ShopTypeEnum::EXTERNAL)
+                ->whereNot('engine', ShopEngineEnum::FAIRE)
+                ->pluck('id');
+
             foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
+                $externalId = Arr::get($faireOrder, 'id');
                 $retailerId = Arr::get($faireOrder, 'retailer_id');
                 $retailer = GetFaireRetailers::run($shop, $retailerId);
+
+                $orderExists = Order::where('external_id', $externalId)->exists();
+
+                if ($orderExists) {
+                    continue;
+                }
 
                 if ($retailer) {
                     data_set($retailer, 'contact_name', Arr::get($retailer, 'name'));
@@ -47,16 +61,18 @@ class GetFaireOrders extends OrgAction
                         $customer = StoreCustomer::make()->action($shop, $retailer);
                     }
 
-                    data_set($faireOrder, 'external_id', Arr::get($faireOrder, 'id'));
+                    data_set($faireOrder, 'external_id', $externalId);
                     $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
 
                     foreach (Arr::get($faireOrder, 'items', []) as $item) {
-                        $product = Product::where('shop_id', $shop->id)
-                            ->where('sku', $item['sku'])
+                        $product = Product::whereIn('shop_id', $shops)
+                            ->where('organisation_id', $awOrder->organisation_id)
+                            ->where('code', 'ILIKE', "%{$item['sku']}%")
                             ->first();
+
                         $historicAsset = $product->asset?->historicAsset;
 
-                        if(! $historicAsset) {
+                        if (! $historicAsset) {
                             continue;
                         }
 
@@ -69,6 +85,8 @@ class GetFaireOrders extends OrgAction
                             ]
                         );
                     }
+
+                    SubmitOrder::run($awOrder);
                 }
             }
         });
@@ -92,10 +110,15 @@ class GetFaireOrders extends OrgAction
 
     public function asCommand(): void
     {
-        $shop = Shop::where('type', ShopTypeEnum::FAIRE)
+        $shops = Shop::where('type', ShopTypeEnum::EXTERNAL)
+            ->where('engine', ShopEngineEnum::FAIRE)
             ->where('state', ShopStateEnum::OPEN)
-            ->first();
+            ->get();
 
-        $this->handle($shop);
+        foreach ($shops as $shop) {
+            if (Arr::has($shop->settings, 'faire.access_token')) {
+                $this->handle($shop);
+            }
+        }
     }
 }

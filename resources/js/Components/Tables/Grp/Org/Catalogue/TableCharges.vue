@@ -34,6 +34,18 @@ function shopRoute(charge: {}) {
     }
 }
 
+function customersRoute(charge: {}) {
+    console.log(route().current())
+    switch (route().current()) {
+        case "grp.org.shops.show.billables.charges.index":
+            return route(
+                "grp.org.shops.show.billables.charges.show.customers.index",
+                [route().params["organisation"], route().params["shop"], charge.slug])
+        default:
+            return null
+    }
+}
+
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -48,6 +60,11 @@ const locale = inject('locale', aikuLocaleStructure)
         <template #cell(code)="{ item: charge }">
             <Link :href="shopRoute(charge)" class="primaryLink">
             {{ charge["code"] }}
+            </Link>
+        </template>
+        <template #cell(customers_invoiced_all)="{ item: charge }">
+            <Link :href="customersRoute(charge)" class="secondaryLink">
+            {{ charge["customers_invoiced_all"] }}
             </Link>
         </template>
         <template #cell(sales_all)="{ item: charge }">

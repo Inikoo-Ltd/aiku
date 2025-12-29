@@ -44,7 +44,7 @@ class CreateUser extends InertiaAction
 
                                 'username' => [
                                     'type'  => 'input',
-                                    'label' => __('username'),
+                                    'label' => __('Username'),
                                     'value' => ''
                                 ],
                                 'name'     => [

@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithSalesIntervals;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -34,6 +35,7 @@ class ShowFamily extends OrgAction
     use WithFamilySubNavigation;
     use WithFamilyNavigation;
     use WithWebpageActions;
+    use WithSalesIntervals;
 
     private Organisation|ProductCategory|Shop $parent;
 
@@ -231,13 +233,17 @@ class ShowFamily extends OrgAction
                     fn () => GetProductCategoryShowcase::run($family)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
 
+                'salesIntervals' => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
+                    fn () => $this->getSalesIntervalsData($family, $this->organisation->currency->code)
+                    : Inertia::lazy(fn () => $this->getSalesIntervalsData($family, $this->organisation->currency->code)),
+
                 FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                     fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
                     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
                 FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($family))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family))),
+                    fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
 
                 FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
                     fn () => GetProductCategoryImages::run($family)

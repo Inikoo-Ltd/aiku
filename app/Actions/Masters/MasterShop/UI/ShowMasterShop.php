@@ -10,8 +10,11 @@ namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Models\Masters\MasterShop;
@@ -22,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowMasterShop extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
+    use WithMasterShopNavigation;
+
 
     public function handle(MasterShop $masterShop): MasterShop
     {
@@ -45,14 +50,11 @@ class ShowMasterShop extends GrpAction
         return Inertia::render(
             'Masters/MasterShop',
             [
-                'title'       => $title,
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $masterShop,
-                    $request->route()->getName(),
-                ),
+                'title'       => $title.': '.$masterShop->code,
+                'breadcrumbs' => $this->getBreadcrumbs($masterShop),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($masterShop, $request),
-                    'next'     => $this->getNext($masterShop, $request),
+                    'previous' => $this->getPreviousModel($masterShop, $request),
+                    'next'     => $this->getNextModel($masterShop, $request),
                 ],
 
                 'pageHead' => [
@@ -63,8 +65,8 @@ class ShowMasterShop extends GrpAction
                         'icon'  => 'fal fa-store-alt'
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions' => [
-                         [
+                    'actions'       => [
+                        [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => 'Edit',
@@ -84,14 +86,19 @@ class ShowMasterShop extends GrpAction
                     ?
                     fn () => MasterShopResource::make($masterShop)->resolve()
                     : Inertia::lazy(fn () => MasterShopResource::make($masterShop)->resolve()),
-                MasterShopTabsEnum::SHOPS->value => $this->tab == MasterShopTabsEnum::SHOPS->value
+                MasterShopTabsEnum::SHOPS->value    => $this->tab == MasterShopTabsEnum::SHOPS->value
                     ?
                     fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)
                     : Inertia::lazy(fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)),
-            ]
-        )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value));
-    }
 
+                MasterShopTabsEnum::HISTORY->value => $this->tab == MasterShopTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))),
+
+            ]
+        )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: MasterShopTabsEnum::HISTORY->value));
+    }
 
 
     public function jsonResponse(MasterShop $masterShop): MasterShopResource
@@ -99,7 +106,7 @@ class ShowMasterShop extends GrpAction
         return new MasterShopResource($masterShop);
     }
 
-    public function getBreadcrumbs(MasterShop $masterShop, $routeName, $suffix = null): array
+    public function getBreadcrumbs(MasterShop $masterShop, $suffix = null): array
     {
         return
             array_merge(
@@ -135,38 +142,5 @@ class ShowMasterShop extends GrpAction
             );
     }
 
-    public function getPrevious(MasterShop $masterShop, ActionRequest $request): ?array
-    {
-        $previous = MasterShop::where('code', '<', $masterShop->code)->where('group_id', $this->group->id)->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    public function getNext(MasterShop $masterShop, ActionRequest $request): ?array
-    {
-        $next = MasterShop::where('code', '>', $masterShop->code)->where('group_id', $this->group->id)->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
-    }
-
-    private function getNavigation(?MasterShop $masterShop, string $routeName): ?array
-    {
-        if (!$masterShop) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.masters.master_shops.show' => [
-                'label' => $masterShop->name,
-                'route' => [
-                    'name'       => 'grp.masters.master_shops.show',
-                    'parameters' => [
-                        'masterShop' => $masterShop->slug
-                    ]
-
-                ]
-            ]
-        };
-    }
 
 }

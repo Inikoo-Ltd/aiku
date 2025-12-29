@@ -25,6 +25,7 @@ defineProps<{
     data: {}
     tab?: string
     editable_table?: boolean
+    isCheckBox?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -217,7 +218,7 @@ function onCancel(item) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="editable_table"
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox || editable_table"
         @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
 
         <template #cell(image_thumbnail)="{ item: collection }">

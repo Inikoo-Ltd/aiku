@@ -189,39 +189,41 @@ const getActionIcon = (icon: any) => {
 <style lang="scss">
 
 .buttonPrimary {
-  background-color: v-bind('layout?.app?.theme[4]') !important;
-  color: v-bind('layout?.app?.theme[5]') !important;
-  border: v-bind('`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`');
+  background-color: var(--theme-color-4) !important;
+  color: var(--theme-color-5) !important;
+  border: 1px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
 
   &:hover {
-    background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`') !important;
+    background-color: color-mix(in srgb, var(--theme-color-4) 85%, black) !important;
   }
 
   &:focus {
-    box-shadow: 0 0 0 2px v-bind('layout?.app?.theme[4]') !important;
+    box-shadow: 0 0 0 2px var(--theme-color-4) !important;
   }
 
   &:disabled {
-    background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 50%, grey)`') !important;
+    background-color: color-mix(in srgb, var(--theme-color-4) 70%, grey) !important;
   }
 }
 
 .buttonSecondary {
   // Primary but less opacity
-  background-color: v-bind('layout?.app?.theme[4] + "22"') !important;
-  border: v-bind('`1px solid ${layout?.app?.theme[4] + "88"}`');
-  color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 50%, black)`') !important;
+  background-color: color-mix(in srgb, var(--theme-color-4) 14%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--theme-color-4) 53%, transparent);
+  color: color-mix(in srgb, var(--theme-color-4) 50%, black) !important;
 
   &:hover {
-    background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4] + "22"} 90%, black)`') !important;
+    background-color: color-mix(in srgb, color-mix(in srgb, var(--theme-color-4) 13%, transparent) 90%, black) !important;
   }
 
   &:focus {
-    box-shadow: 0 0 0 2px v-bind('layout?.app?.theme[4]') !important;
+    box-shadow: 0 0 0 2px var(--theme-color-4) !important;
   }
 
   &:disabled {
-    background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4] + "22"} 70%, black)`') !important;
+    // background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4] + "22"} 70%, black)`') !important;
+    background-color: color-mix(in srgb, color-mix(in srgb, var(--theme-color-4) 13%, transparent) 80%, black) !important;
+    // color: color-mix(in srgb, var(--theme-color-4) 60%, transparent) !important;
   }
 }
 
@@ -229,15 +231,15 @@ const getActionIcon = (icon: any) => {
   // Primary but less opacity
   @apply bg-transparent text-xl !important;
 
-  color: v-bind('layout?.app?.theme[4]') !important;
+  color: var(--theme-color-4) !important;
 
   &:hover {
-    color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, ${layout?.app?.theme[5]})`') !important;
+    // color: color-mix(in srgb, var(--theme-color-4) 85%, var(--theme-color-5)) !important;
+    background-color: color-mix(in srgb, var(--theme-color-4) 20%, transparent) !important;
   }
 
-
   &:disabled {
-    background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[5]} 50%, grey)`') !important;
+    background-color: color-mix(in srgb, var(--theme-color-4) 50%, grey) !important;
   }
 }
 </style>

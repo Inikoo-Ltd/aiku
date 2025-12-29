@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
 use App\Actions\Masters\MasterCollection\GetMasterCollectionsImages;
 use App\Actions\Masters\MasterCollection\GetMasterCollectionsInMasterCollection;
@@ -22,6 +23,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterCollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Catalogue\FamiliesInCollectionResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterCollection;
@@ -91,7 +93,7 @@ class ShowMasterCollection extends GrpAction
         return Inertia::render(
             'Masters/MasterCollection',
             [
-                'title'       => __('Master collection'),
+                'title'       => __('Master collection').': '.$masterCollection->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterCollection,
                     $request->route()->getName(),
@@ -225,6 +227,12 @@ class ShowMasterCollection extends GrpAction
                     fn () =>  GetMasterCollectionsImages::run($masterCollection)
                     : Inertia::lazy(fn () => GetMasterCollectionsImages::run($masterCollection)),
 
+
+                MasterCollectionTabsEnum::HISTORY->value => $this->tab == MasterCollectionTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($masterCollection, prefix: MasterCollectionTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterCollection, prefix: MasterCollectionTabsEnum::HISTORY->value))),
+
+
                 MasterCollectionTabsEnum::SHOP_COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::SHOP_COLLECTIONS->value ?
                     fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))
                     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))),
@@ -247,6 +255,10 @@ class ShowMasterCollection extends GrpAction
         )->table(
             IndexCollectionsInMasterCollection::make()->tableStructure(
                 prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value,
+            )
+        )->table(
+            IndexHistory::make()->tableStructure(
+                prefix: MasterCollectionTabsEnum::HISTORY->value,
             )
         );
     }
@@ -280,7 +292,7 @@ class ShowMasterCollection extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_collections.show' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($masterCollection->masterShop, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterCollection->masterShop),
                 $headCrumb(
                     $masterCollection,
                     [

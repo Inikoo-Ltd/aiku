@@ -27,14 +27,14 @@ class EditTradeUnitFamily extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit Trade Unit Family'),
+                'title'       => __('Edit Trade Unit Family').' '.$tradeUnitFamily->code,
                 'pageHead'    => [
-                    'title'        => __('Edit trade family'),
+                    'title'        => __('Edit trade unit family'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('Cancel'),
+                            'label' => __('Exit edit'),
                             'route' => [
                                 'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
@@ -17,9 +18,11 @@ class DeleteOrderAddressCollection extends RetinaAction
 {
     public function handle(Order $order): Order
     {
-        return UpdateOrder::run($order, [
+        $order = UpdateOrder::run($order, [
             'collection_address_id' => null
         ]);
+
+        return OrderHydrateShipments::run($order->id);
     }
 
     public function asController(Order $order, ActionRequest $request): Order
