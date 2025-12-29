@@ -3,16 +3,18 @@
 namespace App\Actions\CRM\ChatSession;
 
 use App\Models\CRM\WebUser;
-use App\Models\SysAdmin\User;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use App\Events\BroadcastRealtimeChat;
+use App\Events\BroadcastChatListEvent;
 use App\Models\CRM\Livechat\ChatAgent;
-use App\Models\CRM\Livechat\ChatEvent;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
-use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 
 class SendChatMessage
@@ -21,34 +23,56 @@ class SendChatMessage
 
     public function handle(ChatSession $chatSession, array $modelData): ChatMessage
     {
-        $chatMessageData = [];
+        $exists = ChatMessage::where('chat_session_id', $chatSession->id)
+            ->where('sender_type', $modelData['sender_type'])
+            ->where('message_text', $modelData['message_text'])
+            ->whereBetween('created_at', [now()->subSeconds(1), now()])
+            ->first();
 
-        data_set($chatMessageData, 'chat_session_id', $chatSession->id);
-        data_set($chatMessageData, 'message_type', $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value);
-        data_set($chatMessageData, 'sender_type', $modelData['sender_type']);
-        data_set($chatMessageData, 'sender_id', $modelData['sender_id'] ?? null);
-        data_set($chatMessageData, 'message_text', $modelData['message_text']);
-        data_set($chatMessageData, 'media_id', $modelData['media_id'] ?? null);
-        data_set($chatMessageData, 'is_read', false);
+        if ($exists) {
+            return $exists;
+        }
+
+        $chatMessageData = [
+            'chat_session_id' => $chatSession->id,
+            'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => $modelData['sender_type'],
+            'sender_id'       => $modelData['sender_id'] ?? null,
+            'message_text'    => $modelData['message_text'],
+            'media_id'        => $modelData['media_id'] ?? null,
+            'is_read'         => false,
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ];
 
         $chatMessage = ChatMessage::create($chatMessageData);
 
-        $this->updateSessionTimestamps($chatSession, $modelData['sender_type']);
+        $this->updateSessionTimestamps(
+            $chatSession,
+            $modelData['sender_type']
+        );
 
-        $this->logMessageEvent($chatSession, $modelData['sender_type'], $modelData['sender_id'] ?? null, $chatMessage);
+        $this->logMessageEvent(
+            $chatSession,
+            $modelData['sender_type'],
+            $modelData['sender_id'] ?? null,
+            $chatMessage
+        );
+
+        BroadcastRealtimeChat::dispatch($chatMessage);
+        BroadcastChatListEvent::dispatch();
 
         return $chatMessage;
     }
-
 
     protected function updateSessionTimestamps(ChatSession $chatSession, string $senderType): void
     {
         $updateData = [];
 
-        if ($senderType === ChatActorTypeEnum::GUEST->value || $senderType === ChatActorTypeEnum::USER->value) {
-            $updateData['last_visitor_message_at'] = now();
-        } elseif ($senderType === ChatActorTypeEnum::AGENT->value) {
-            $updateData['last_agent_message_at'] = now();
+        if ($senderType === ChatSenderTypeEnum::GUEST->value || $senderType === ChatSenderTypeEnum::USER->value) {
+            data_set($updateData, 'last_visitor_message_at', now());
+        } elseif ($senderType === ChatSenderTypeEnum::AGENT->value) {
+            data_set($updateData, 'last_agent_message_at', now());
         }
 
         if (!empty($updateData)) {
@@ -56,20 +80,24 @@ class SendChatMessage
         }
     }
 
-
     protected function logMessageEvent(ChatSession $chatSession, string $senderType, ?int $senderId, ChatMessage $message): void
     {
-        ChatEvent::create([
-            'chat_session_id' => $chatSession->id,
-            'event_type' => ChatEventTypeEnum::MESSAGE_SENT->value,
-            'actor_type' => $senderType,
-            'actor_id' => $senderId,
-            'payload' => [
-                'message_id' => $message->id,
-                'message_type' => $message->message_type,
-                'is_guest_message' => in_array($senderType, [ChatActorTypeEnum::GUEST->value, ChatActorTypeEnum::USER->value]),
-            ],
-        ]);
+        $actorType = match ($senderType) {
+            ChatActorTypeEnum::AGENT->value => ChatActorTypeEnum::AGENT,
+            ChatSenderTypeEnum::USER->value => ChatActorTypeEnum::USER,
+            default => ChatActorTypeEnum::GUEST
+        };
+
+        $isGuestMessage = in_array($senderType, [ChatActorTypeEnum::GUEST->value, ChatActorTypeEnum::USER->value]);
+
+        StoreChatEvent::make()->messageSent(
+            $chatSession,
+            $actorType,
+            $senderId,
+            $message->id,
+            $message->message_type->value,
+            $isGuestMessage
+        );
     }
 
     public function rules(): array
@@ -84,75 +112,94 @@ class SendChatMessage
                 'required',
                 Rule::enum(ChatMessageTypeEnum::class)
             ],
-            'sender_type' => [
-                'required',
-                Rule::in([
-                    ChatActorTypeEnum::GUEST->value,
-                    ChatActorTypeEnum::USER->value,
-                    ChatActorTypeEnum::AGENT->value,
-                    ChatActorTypeEnum::SYSTEM->value,
-                    ChatActorTypeEnum::AI->value,
-                ])
-            ],
             'sender_id' => [
                 'nullable',
-                'integer'
+                'integer',
+                Rule::exists('web_users', 'id'),
             ],
             'media_id' => [
-                'nullable',
+                'sometimes',
                 'exists:media,id'
             ],
         ];
     }
 
-    public function asController(ChatSession $chatSession, ActionRequest $request): ChatMessage
+    public function asController(Request $request, string $ulid, ?string $organisation = null): ChatMessage
     {
-        $senderData = $this->determineSenderData();
+        $this->validateUlid($ulid);
 
-        $request->merge($senderData);
+        $validated = $request->validate($this->rules());
 
-        return $this->handle($chatSession, $request->validated());
+        $chatSession = ChatSession::where('ulid', $ulid)->first();
+
+        $senderData = $this->determineSenderData($validated, $chatSession);
+
+        $validated = array_merge($validated, $senderData);
+
+        return $this->handle($chatSession, $validated);
+    }
+
+    protected function validateUlid($ulid): void
+    {
+        validator(
+            ['session_ulid' => $ulid],
+            $this->ulidRules()
+        )->validate();
     }
 
 
-    protected function determineSenderData(): array
+    protected function ulidRules(): array
     {
-        if (auth()->check()) {
-            $user = auth()->user();
-            if ($user instanceof User) {
-                $agent = ChatAgent::where('user_id', $user->id)->first();
-                if ($agent) {
-                    return [
-                        'sender_type' => ChatActorTypeEnum::AGENT->value,
-                        'sender_id' => $agent->id,
-                    ];
-                }
-            }
-        }
-
-        $webUserGuards = ['retina', 'web'];
-        foreach ($webUserGuards as $guard) {
-            if (auth()->guard($guard)->check()) {
-                $webUser = auth()->guard($guard)->user();
-                if ($webUser instanceof WebUser) {
-                    return [
-                        'sender_type' => ChatActorTypeEnum::USER->value,
-                        'sender_id' => $webUser->id,
-                    ];
-                }
-            }
-        }
-
         return [
-            'sender_type' => ChatActorTypeEnum::GUEST->value,
-            'sender_id' => null,
+            'session_ulid' => [
+                'required',
+                'string',
+                'ulid',
+                Rule::exists('chat_sessions', 'ulid')
+            ]
         ];
     }
 
 
-    public function htmlResponse(ChatMessage $chatMessage): RedirectResponse
+
+    protected function determineSenderData(array $validated, ChatSession $chatSession): array
     {
-        return Redirect::route('chat.sessions.show', $chatMessage->chatSession->ulid)
-            ->with('success', __('Message sent successfully'));
+        $user = Auth::user();
+        if ($user && ($agent = ChatAgent::where('user_id', $user->id)->first())) {
+            return [
+                'sender_type' => ChatSenderTypeEnum::AGENT->value,
+                'sender_id' => $agent->id,
+            ];
+        }
+
+        if (!empty($validated['sender_id'])) {
+
+            $webUser = WebUser::find($validated['sender_id']);
+
+            if ($webUser) {
+                $chatSession->update([
+                    'web_user_id' => $webUser->id,
+                    'updated_at'  => now(),
+                ]);
+                return [
+                    'sender_type' => ChatSenderTypeEnum::USER->value,
+                    'sender_id'   => $webUser->id,
+                ];
+            }
+        }
+
+        return [
+            'sender_type' => ChatSenderTypeEnum::GUEST->value,
+            'sender_id' => null,
+        ];
+    }
+
+    public function jsonResponse(ChatMessage $chatMessage): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Message sent successfully',
+            'message_id' => $chatMessage->id
+        ], 201);
     }
 }
