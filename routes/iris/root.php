@@ -13,12 +13,15 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
+use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
+
+Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
 Route::name('webhooks.')->group(function () {
     Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
