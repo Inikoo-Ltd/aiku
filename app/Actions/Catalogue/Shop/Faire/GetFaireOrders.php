@@ -82,6 +82,8 @@ class GetFaireOrders extends OrgAction
                             modelData: [
                                 'quantity_ordered'        => $item['quantity'],
                                 'external_id' => $item['id'],
+                                'net_amount' => ($item['price'] / 100) * $item['quantity'],
+                                'gross_amount' => ($item['price'] / 100) * $item['quantity']
                             ]
                         );
                     }
