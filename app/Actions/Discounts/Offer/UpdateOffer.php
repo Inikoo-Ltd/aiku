@@ -33,6 +33,15 @@ class UpdateOffer extends OrgAction
 
     public function handle(Offer $offer, array $modelData): Offer
     {
+        if (isset($modelData['trigger_data_item_quantity'])) {
+            $newTriggerData = array_merge(
+            (array) $offer->trigger_data,
+            ['item_quantity' => $modelData['trigger_data_item_quantity']]
+            );
+            unset($modelData['trigger_data_item_quantity']);
+            $modelData['trigger_data'] = $newTriggerData;
+        }
+
         $offer = $this->update($offer, $modelData);
 
         if ($offer->wasChanged(['name'])) {
@@ -89,6 +98,7 @@ class UpdateOffer extends OrgAction
             'data'         => ['sometimes', 'required'],
             'settings'     => ['sometimes', 'required'],
             'trigger_data' => ['sometimes', 'required'],
+            'trigger_data_item_quantity' => ['sometimes', 'integer'],
             'start_at'     => ['sometimes', 'date'],
             'end_at'       => ['sometimes', 'nullable', 'date'],
         ];
