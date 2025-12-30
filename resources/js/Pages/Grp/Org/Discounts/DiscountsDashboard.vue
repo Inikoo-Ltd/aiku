@@ -13,6 +13,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue";
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue";
 import { useFormatTime } from "@/Composables/useFormatTime"
+import Coupon from "@/Components/Utils/Coupon.vue"
 
 const props = defineProps<{
     title: string;
@@ -82,45 +83,10 @@ console.log("Discounts Dashboard Props: ", props);
     />
     
 
-    <div class="p-8 max-w-96">
-        <section v-for="offer in first_order_bonus" class="card bg-gradient-to-r from-green-500 to-teal-500 text-white">
-            <div class="text-center  text-base w-[88px] flex flex-col justify-center px-1">
-                {{ locale.currencyFormat(data?.currency?.code, offer.trigger_data.min_amount) }}
-                <span class="text-[0.55rem] leading-[0.5rem]">Min. quantity: {{ offer.trigger_data.order_number }}</span>
-            </div>
-            <div class="card-right">
-                <p class="card-info">{{ offer.name }}</p>
-                <strong class="text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.created_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : 'Not described' }}</strong>
-            </div>
-        </section>
-    </div>
+    <Coupon :first_order_bonus :currency_code="data.currency.code" />
 
     <!-- <pre>{{ first_order_bonus }}</pre> -->
 </template>
 
 
-<style lang="scss" scoped>
-.card{
-    display: flex;
-    align-items: center;
-    border-radius: 8px;
-    -webkit-mask-image: radial-gradient(circle at 88px 4px, transparent 4px, red 4.5px), radial-gradient(closest-side circle at 50%, red 99%, transparent 100%);
-    -webkit-mask-size: 100%, 2px 4px;
-    -webkit-mask-repeat: repeat, repeat-y;
-    -webkit-mask-position: 0 -4px, 87px;
-    -webkit-mask-composite: source-out;
-    mask-composite: subtract;
-}
 
-.card-right{
-    padding: 16px 12px;
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-}
-.card-info{
-    margin: 0;
-    font-size: 14px;
-    line-height: 20px;
-}
-</style>

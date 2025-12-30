@@ -93,6 +93,7 @@ class ShowOffer extends OrgAction
                     'actions'    => $actions
                 ],
                 'data'        => $offer,
+                'currency_code' => $offer->shop->currency->code,
             ]
         );
     }

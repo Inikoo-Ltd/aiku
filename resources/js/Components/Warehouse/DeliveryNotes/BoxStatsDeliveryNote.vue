@@ -313,7 +313,7 @@ const updateCollection = async (e: Event) => {
 
                 <template v-if="!boxStats?.is_collection">
                     <div class="font-semibold xmb-2 text-base">
-                        {{ trans("Shipping") }}
+                        {{  }}
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
@@ -542,7 +542,7 @@ const updateCollection = async (e: Event) => {
                                         :max-fraction-digits="3"
                                     />
                                 </div>
-                                
+
                                 <div class="col-span-9 flex items-center gap-x-1 font-light">
                                     <InputNumber
                                         :min="0.001"

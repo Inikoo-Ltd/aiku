@@ -36,19 +36,20 @@ export const aikuLocaleStructure = {
 		}).formatToParts(123).find(part => part.type === 'currency')?.value ?? '';
 	},
     currencyFormat: (currencyCode: string | null, amount: number): string | number => {
-		if (typeof amount === "undefined" || amount === null) return 0
+		// if (typeof amount === "undefined" || amount === null) return 0
+		const getAmount = amount ?? 0
 
 		if (!currencyCode) {
-			return amount || 0
+			return getAmount || 0
 		}
 
         try {
             return new Intl.NumberFormat(aikuLocaleStructure.language.code, {
                 style: "currency",
                 currency: currencyCode,
-            }).format(amount || 0)
+            }).format(getAmount || 0)
         } catch (e) {
-            return amount || 0
+            return getAmount || 0
         }
     }
 }
