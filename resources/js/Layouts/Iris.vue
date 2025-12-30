@@ -116,9 +116,32 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
 
+const isSidebarFetching = ref(false)
+
+const fetchSidebarOnce = async () => {
+    if (layout.isSidebarLoaded.value || isSidebarFetching.value) return
+
+    isSidebarFetching.value = true
+
+    try {
+        const { data } = await axios.get(route("iris.json.sidebar"))
+
+        layout.iris.sidebar  = data.sidebar
+
+        layout.isSidebarLoaded = true
+    } catch (e) {
+        console.error("[IrisSidebar] fetch failed", e)
+    } finally {
+        isSidebarFetching.value = false
+    }
+}
+
+
+
 onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
 getAnnouncements()
+fetchSidebarOnce()
 })
 
 // Watch: open Side Basket if cart have any changes
@@ -128,7 +151,6 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     }
 })
 
-console.log('sdsdsd',layout)
 
 </script>
 

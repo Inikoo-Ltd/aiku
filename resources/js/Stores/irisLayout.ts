@@ -68,38 +68,7 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 	const currentParams = ref<{ [key: string]: string }>({})
 	const currentQuery = ref<{ [key: string]: string }>({})
 
-	const sidebar = ref<null | {
-		product_categories: any[]
-		custom_menus_top: any[]
-		custom_menus_bottom: any[]
-		fieldValue: any
-	}>(null)
-
 	const isSidebarLoaded = ref(false)
-	const isSidebarFetching = ref(false)
-
-	const fetchSidebarOnce = async () => {
-		if (isSidebarLoaded.value || isSidebarFetching.value) return
-
-		isSidebarFetching.value = true
-
-		try {
-			const { data } = await axios.get(route("sidebar"))
-
-			sidebar.value = {
-				product_categories: data?.product_categories ?? [],
-				custom_menus_top: data?.custom_menus_top ?? [],
-				custom_menus_bottom: data?.custom_menus_bottom ?? [],
-				fieldValue: data?.fieldValue ?? null,
-			}
-
-			isSidebarLoaded.value = true
-		} catch (e) {
-			console.error("[IrisSidebar] fetch failed", e)
-		} finally {
-			isSidebarFetching.value = false
-		}
-	}
 
 	return {
 		user,
@@ -111,8 +80,6 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 		iris_variables,
 		offer_meters,
 		iris,
-		sidebar,
-		isSidebarLoaded,
-		fetchSidebarOnce,
+		isSidebarLoaded
 	}
 })
