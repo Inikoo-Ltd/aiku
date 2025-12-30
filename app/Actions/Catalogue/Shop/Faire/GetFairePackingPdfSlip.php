@@ -8,7 +8,6 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
 
 class GetFairePackingPdfSlip extends OrgAction
 {

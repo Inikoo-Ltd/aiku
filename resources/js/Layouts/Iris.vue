@@ -15,7 +15,9 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage } from '@fal'
+import { faHome, faImage, faMedal } from '@fal'
+import { faMedal as fasMedal } from '@fas'
+import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
@@ -29,7 +31,7 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/ChatButton.vue'
 import axios from 'axios'
 
-library.add(faHome, faImage, faExclamationTriangle, faWhatsapp)
+library.add(faHome, faImage, faExclamationTriangle, faMedal, fasMedal, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -116,9 +118,32 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
 
+const isSidebarFetching = ref(false)
+
+const fetchSidebarOnce = async () => {
+    if (layout.isSidebarLoaded.value || isSidebarFetching.value) return
+
+    isSidebarFetching.value = true
+
+    try {
+        const { data } = await axios.get(route("iris.json.sidebar"))
+
+        layout.iris.sidebar  = data.sidebar
+
+        layout.isSidebarLoaded = true
+    } catch (e) {
+        console.error("[IrisSidebar] fetch failed", e)
+    } finally {
+        isSidebarFetching.value = false
+    }
+}
+
+
+
 onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
 getAnnouncements()
+fetchSidebarOnce()
 })
 
 // Watch: open Side Basket if cart have any changes
@@ -128,7 +153,6 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     }
 })
 
-console.log('sdsdsd',layout)
 
 </script>
 

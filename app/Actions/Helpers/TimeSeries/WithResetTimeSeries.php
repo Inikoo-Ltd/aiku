@@ -7,11 +7,14 @@
 
 namespace App\Actions\Helpers\TimeSeries;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Carbon\Carbon;
@@ -93,10 +96,32 @@ trait WithResetTimeSeries
         }
     }
 
+    protected function resetCollections(): void
+    {
+        foreach (Collection::whereNotIn('state', [CollectionStateEnum::IN_PROCESS])->get() as $collection) {
+            $timeSeries = $collection->timeSeries()
+                ->where('frequency', $this->frequency)
+                ->first();
+
+            if (!$timeSeries) {
+                continue;
+            }
+
+            $dateRange = $this->getDateRangeForFrequency();
+
+            CollectionHydrateTimeSeriesRecords::dispatch(
+                $timeSeries->id,
+                $dateRange['from'],
+                $dateRange['to']
+            );
+        }
+    }
+
     public function handle(): void
     {
         $this->resetProductCategories();
         $this->resetProducts();
+        $this->resetCollections();
     }
 
     public function asCommand(): void

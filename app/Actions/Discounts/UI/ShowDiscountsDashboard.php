@@ -27,7 +27,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
-use App\Models\Discounts\OfferCampaign;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 
@@ -59,7 +58,7 @@ class ShowDiscountsDashboard extends OrgAction
         if ($saved_interval === DateIntervalEnum::CUSTOM) {
             $saved_interval = DateIntervalEnum::ALL;
         }
-        
+
         $firstOrderBonus = IndexOfferCampaigns::run($this->shop)
             ->where('type', OfferCampaignTypeEnum::FIRST_ORDER->value)
             ->first()

@@ -2,13 +2,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUser, faBuilding, faEnvelope, faPhone, faTags } from "@fas"
+import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal } from "@fas"
+import { faMedal } from "@fal"
+import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import EmailSubscribetion from '@/Components/EmailSubscribetion.vue'
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "@inertiajs/vue3";
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import GoldReward from '@/Components/Utils/GoldReward.vue'
 
-library.add(faUser, faBuilding, faEnvelope, faPhone, faXmark, faTags)
+library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags)
 
 const props = defineProps<{
     data: {}
@@ -32,7 +36,7 @@ onMounted(() => {
 <template>
     <div class="p-8">
         <!-- Customer Contact Information -->
-        <div v-if="data?.customer" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div v-if="data?.customer" class="relative mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -96,6 +100,13 @@ onMounted(() => {
                         containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
                     />
                 </div> -->
+
+                <div v-if="false" class="absolute top-5 right-7 text-4xl">
+                    <GoldReward />
+
+                    <!-- <FontAwesomeIcon icon="fad fa-medal" class="text-blue-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-medal" class="text-green-500" fixed-width aria-hidden="true" /> -->
+                </div>
             </div>
         </div>
 
@@ -105,10 +116,6 @@ onMounted(() => {
                 {{ trans("Welcome to the E-commerce dashboard. Here you can manage your business-to-business operations.") }}
             </p>
         </div>
-
-        <!-- resources/js/Pages/Retina/Dashboard/RetinaB2BDashboard.vue
-        <pre class="bg-yellow-100">{{ data }}</pre> -->
-
     </div>
 
     <div v-if="showBanner" class="absolute inset-x-0 bottom-0">

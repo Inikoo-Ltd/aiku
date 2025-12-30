@@ -37,11 +37,9 @@ class GetIrisSidebarData
                 GetIrisProductCategoryNavigation::run($website);
 
             return [
-                'sidebar' => array_merge(
-                    $isSidebarActive === 'active' ? $sidebarLayout : [],
-                    [
-                        'product_categories' => $irisProductCategoryNavigation
-                    ]
+                'sidebar'              => array_merge(
+                    $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
+                    ['product_categories' => $irisProductCategoryNavigation]
                 )
             ];
         };

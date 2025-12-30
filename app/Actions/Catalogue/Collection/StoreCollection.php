@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -57,6 +58,10 @@ class StoreCollection extends OrgAction
         $collection->salesIntervals()->create();
         $collection->orderingIntervals()->create();
         $collection->orderingStats()->create();
+
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            $collection->timeSeries()->create(['frequency' => $frequency]);
+        }
 
         if ($imageData['image']) {
             $this->processCatalogueImage($imageData, $collection);

@@ -743,7 +743,7 @@ describe('calculate order discounts', function () {
 
         $todayMinus5Days = now()->subDays(5);
 
-        UpdateCustomerLastInvoicedDate::run($order->customer,$todayMinus5Days);
+        UpdateCustomerLastInvoicedDate::run($order->customer, $todayMinus5Days);
 
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(280.0);

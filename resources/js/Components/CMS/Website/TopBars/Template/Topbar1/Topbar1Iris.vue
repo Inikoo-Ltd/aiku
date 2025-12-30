@@ -16,6 +16,7 @@ import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import GoldReward from "@/Components/Utils/GoldReward.vue"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
 
@@ -151,11 +152,11 @@ watch(
                     class="button min-w-max"
                 >
                     <template #icon>
-                        <FontAwesomeIcon  class="button" icon="fal fa-user" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
                     </template>
                     <template #label>
-                        <span class="button"
-                            v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                        <span class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                        <GoldReward v-if="false" />
                     </template>
                 </Button>
             </LinkIris>

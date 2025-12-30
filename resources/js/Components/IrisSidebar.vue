@@ -48,9 +48,8 @@ const props = defineProps<{
 }>()
 
 
-const irisLayout = useIrisLayoutStore()
+const irisLayout = inject("layout", {})
 
-const layout = inject("layout", {})
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false))
 
 const isMobile = ref(false)
@@ -61,46 +60,33 @@ const activeCustomSubIndex = ref<number | null>(null) // active custom menu subd
 const activeCustomTopIndex = ref<number | null>(null) // active custom menu top
 const activeCustomTopSubIndex = ref<number | null>(null) // active custom menu top subdepartment
 
-// Computed properties for sorted data
-// const sortedProductCategories = computed(() => {
-// 	if (!props.productCategories) return []
-// 	return [...props.productCategories].sort((a, b) =>
-// 		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
-// 	)
-// })
-
 
 const sortedProductCategories = computed(() => {
-    const source = irisLayout.sidebar?.product_categories ?? props.productCategories ?? []
-
-    return [...source].sort((a, b) =>
-        (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
-    )
+	if (!props.productCategories) return []
+	return [...props.productCategories].sort((a, b) =>
+		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
+	)
 })
 
+
+
 // Custom menus without sorting
-// const customMenusBottom = computed(() => {
-// 	if (!props.customMenusBottom) return []
-// 	return props.customMenusBottom
-// })
+const customMenusBottom = computed(() => {
+	if (!props.customMenusBottom) return []
+	return props.customMenusBottom
+})
 
 
 
-// const customMenusTop = computed(() => {
-// 	if (!props.customMenusTop) return []
-// 	return props.customMenusTop
-// })
-const customMenusTop = computed(() =>
-    irisLayout.sidebar?.custom_menus_top ?? props.customMenusTop ?? []
-)
+const customMenusTop = computed(() => {
+	if (!props.customMenusTop) return []
+	return props.customMenusTop
+})
 
-const customMenusBottom = computed(() =>
-    irisLayout.sidebar?.custom_menus_bottom ?? props.customMenusBottom ?? []
-)
 
 
 const sidebarFieldValue = computed(() =>
-    irisLayout.sidebar?.fieldValue ?? props.sidebar?.data?.fieldValue
+    irisLayout.iris.sidebar?.fieldValue ?? props.sidebar?.data?.fieldValue
 )
 
 
@@ -211,8 +197,6 @@ const checkMobile = () => {
 onMounted(() => {
     checkMobile()
     window.addEventListener("resize", checkMobile)
-
-    irisLayout.fetchSidebarOnce()
 })
 onUnmounted(() => {
 	window.removeEventListener("resize", checkMobile)
