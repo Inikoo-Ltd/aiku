@@ -14,7 +14,6 @@ use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\Traits\WithSalesIntervals;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -33,7 +32,6 @@ class ShowDepartment extends OrgAction
     use WithDepartmentSubNavigation;
     use WithWebpageActions;
     use WithDepartmentNavigation;
-    use WithSalesIntervals;
 
     private Organisation|Shop $parent;
 
@@ -147,9 +145,9 @@ class ShowDepartment extends OrgAction
                     fn () => GetProductCategoryShowcase::run($department)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($department)),
 
-                'salesIntervals' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
-                    fn () => $this->getSalesIntervalsData($department, $this->organisation->currency->code)
-                    : Inertia::lazy(fn () => $this->getSalesIntervalsData($department, $this->organisation->currency->code)),
+                'salesData' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
+                    fn () => GetProductCategoryTimeSeriesData::run($department)
+                    : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($department)),
 
                 DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value
                     ?
