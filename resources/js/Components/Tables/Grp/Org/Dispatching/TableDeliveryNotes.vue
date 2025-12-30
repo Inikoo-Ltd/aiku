@@ -237,19 +237,17 @@ const generateRouteDeliveryNote = (id: string) => {
 		</template>
 
 		<template #cell(delivery)="{ item: deliveryNote }">
-			<img
-				:src="
-					deliveryNote.shipping_data?.[0]?.shipper_slug
-						? `/assets/shipper_logo/${deliveryNote.shipping_data[0].shipper_slug}.png`
-						: '/assets/shipper_logo/pending.png'"
-				class="h-5 w-5 object-contain" />
-
-
 			<div v-if="deliveryNote.state === 'cancelled'"></div>
 
-			<div
-				v-else-if="deliveryNote.shipping_data?.[0]?.trackings?.[0]"
-				class="flex flex-col gap-1 group pr-2 py-1.5">
+			<div v-else-if="deliveryNote.shipping_data?.[0]?.trackings?.[0]"
+				class="flex gap-1 group pr-2 py-1.5">
+				<img
+					v-if="deliveryNote.shipping_data?.[0]?.shipper_slug"
+					:src="`/assets/shipper_logo/${deliveryNote.shipping_data[0].shipper_slug}.png`"
+					class="h-5 w-5 object-contain"
+					:title="deliveryNote.shipping_data?.[0]?.shipper_label"
+					v-tooltip="deliveryNote.shipping_data?.[0]?.shipper_label"
+				/>
 				<div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
 					<template v-if="deliveryNote.shipping_data?.[0].trackings?.[0]">
 						{{ deliveryNote.shipping_data?.[0].shipper_slug }}:
