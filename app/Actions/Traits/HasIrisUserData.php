@@ -12,6 +12,7 @@ use App\Actions\Iris\CaptureTrafficSource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 trait HasIrisUserData
@@ -68,19 +69,26 @@ trait HasIrisUserData
         }
 
         $grData = [
-            'is_gr'           => false,
-            'is_gr_armistice' => false,
-            'meter'           => [0, 30]
+            'shop_has_gr'           => false,
+            'shop_has_gr_armistice' => false,
+            'customer_is_gr'        => false,
+            'meter'                 => [0, 30]
         ];
 
-        return [
+
+        if (Arr::get($this->shop->offers_data, 'gr.active')) {
+            $grData['shop_has_gr'] = true;
+        }
+
+
+        $firstHitData = [
             'is_logged_in' => true,
             'auth'         => [
                 'user'                  => LoggedWebUserResource::make($webUser)->getArray(),
                 'customerSalesChannels' => $customerSalesChannels
             ],
-            'customer'     => $this->customer,
             'variables'    => [
+                'customer_id'          => $this->customer->id,
                 'reference'            => $this->customer->reference,
                 'name'                 => $this->webUser->contact_name,
                 'username'             => $this->webUser->username,
@@ -95,5 +103,9 @@ trait HasIrisUserData
             'offer_meters' => $offerMeters,
             'gr_data'      => $grData,
         ];
+
+       // dd($firstHitData);
+
+        return $firstHitData;
     }
 }

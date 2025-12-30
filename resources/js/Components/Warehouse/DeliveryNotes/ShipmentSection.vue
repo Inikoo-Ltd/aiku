@@ -576,7 +576,7 @@ const onCopyDataCustomer = (field: string) => {
 							<div
 								v-else
 								v-for="(shipment, index) in optionShippingList.filter(
-									(shipment) => external_order.status ? shipment.slug === 'faire' : shipment.api_shipper
+									(shipment) => shipment.api_shipper
 								)"
 								@click="
 									() => (
