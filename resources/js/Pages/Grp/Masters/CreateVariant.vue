@@ -9,6 +9,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import PureVariantField from "@/Components/Pure/PureVariantField.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 type Variant = {
     label: string
@@ -40,25 +41,40 @@ const form = useForm({
 
 
 const isValid = computed(() => {
- /*    if (!form.product_leader) return true
-    if (!form.data_variants.variants.length) return true */
+    // if (!form.product_leader) return true
+    if (!form.data_variants.variants.length || !Object.values(form.data_variants.products).some(p => p.is_leader) || !form.data_variants.groupBy) return true
     return false
 })
 
 
 const save = () => {
-  const products = Object.values(form.data_variants.products)
+    const products = Object.values(form.data_variants.products)
 
-  const leader =
-    products.find((item: any) => item.is_leader) ||
-    products[0] || 
-    null
+    const leader =
+        products.find((item: any) => item.is_leader) ||
+        products[0] || 
+        null
 
-  form.product_leader = leader ? leader.product.id : null
+    form.product_leader = leader ? leader.product.id : null
 
-  console.log(form.data())
+    console.log(form.data())
 
-  form.post(route(props.save_route.name, props.save_route.parameters))
+    form.post(route(props.save_route.name, props.save_route.parameters), {
+        onSuccess: (response) => {
+            console.log("Success callback");
+        },
+        onError: (errorBag) => {
+            const errorBagUnique = errorBag ? new Set(Object.values(errorBag).flat()) : [];
+            notify({
+                title: "Something went wrong",
+                data: {
+                    html: errorBagUnique ? [...errorBagUnique].join('<br>') : trans("Please try again or contact administrator")
+                },
+                type: 'error',
+                duration: 5000
+            });
+        },
+    })
 }
 
 </script>
@@ -70,21 +86,9 @@ const save = () => {
 
     <div class="flex justify-center mt-6">
         <div class="w-full max-w-2xl p-4 bg-white rounded-lg shadow space-y-4">
-
-            <!-- Product Leader -->
-            <!-- <div>
-                <label class="text-xs font-medium">
-                    Product Leader <span class="text-red-500">*</span>
-                </label>
-                <PureMultiselectInfiniteScroll v-model="form.product_leader" :fetchRoute="props.master_assets_route"
-                    :required="true" valueProp="id" label-prop="name" :caret="false"
-                    :placeholder="trans('Select Product Leader')" />
-            </div> -->
-
             <!-- Variants -->
             <div>
-                <PureVariantField v-model="form.data_variants" :master_assets_route="master_assets_route"
-                    :master_asset="master_asset" />
+                <PureVariantField v-model="form.data_variants" :master_assets_route="master_assets_route" :master_asset="master_asset" />
             </div>
 
             <!-- SAVE -->

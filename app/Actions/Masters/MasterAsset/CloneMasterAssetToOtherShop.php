@@ -77,10 +77,10 @@ class CloneMasterAssetToOtherShop extends OrgAction
     public function getValidationMessages(): array
     {
         return [
-            'masterAsset.unit.required'  => 'Master product have missing Unit. Please edit master product first',
-            'masterAsset.units.required' => 'Master product have missing Units. Please contact administrator to fix this issue',
-            'shop_products.*.price'      => 'Required to input Price on selected shop',
-            'shop_products.*.rrp'        => 'Required to input RRP on selected shop',
+            'masterAsset.unit.required'  => __('Master product have missing Unit. Please edit master product first'),
+            'masterAsset.units.required' => __('Master product have missing Units. Please contact administrator to fix this issue'),
+            'shop_products.*.price'      => __('Required to input Price on selected shop'),
+            'shop_products.*.rrp'        => __('Required to input RRP on selected shop'),
         ];
     }
 }
