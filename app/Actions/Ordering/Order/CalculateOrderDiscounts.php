@@ -149,6 +149,17 @@ class CalculateOrderDiscounts
                         'offer_label' => $offerData->name
                     ];
                 }
+            } elseif ($offerData->type == 'Category Quantity Ordered') {
+                if (in_array($offerData->trigger_id, $order->categories_data['family_ids'])) {
+                    $triggerData = json_decode($offerData->trigger_data, true);
+
+                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity") >= Arr::get($triggerData, 'item_quantity')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+                }
             } elseif ($offerData->type == 'Category Quantity Ordered Order Interval') {
                 if (in_array($offerData->trigger_id, $order->categories_data['family_ids'])) {
                     $daysSinceLastInvoiced = $this->getDaysSinceLastInvoiced($order);

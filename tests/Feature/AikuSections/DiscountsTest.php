@@ -10,8 +10,7 @@
 
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
-use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
@@ -20,16 +19,17 @@ use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateOffer;
-use App\Actions\Discounts\Offer\SuspendPermanentOffer;
+use App\Actions\Discounts\Offer\SuspendOffer;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
-use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
@@ -37,17 +37,16 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
-use App\Models\Helpers\TaxCategory;
 use Inertia\Testing\AssertableInertia;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -58,19 +57,23 @@ beforeAll(function () {
 
 
 beforeEach(function () {
-    $this->organisation = createOrganisation();
-    $this->group        = $this->organisation->group;
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    list(
+        $this->organisation,
+        $this->user,
+        $this->shop
+    ) = createShop();
 
-    $shop = Shop::first();
-    if (!$shop) {
-        $storeData = Shop::factory()->definition();
-        $shop      = StoreShop::make()->action(
-            $this->organisation,
-            $storeData
-        );
-    }
-    $this->shop = $shop;
+    $this->group      = $this->organisation->group;
+    $this->adminGuest = createAdminGuest($this->organisation->group);
+
+    list(
+        $this->tradeUnit,
+        $this->product
+    ) = createProduct($this->shop);
+
+    $this->customer = createCustomer($this->shop);
+
+
     Config::set(
         'inertia.testing.page_paths',
         [resource_path('js/Pages/Grp')]
@@ -424,7 +427,7 @@ test('create volume discount', function () {
     expect($offer)->toBeInstanceOf(Offer::class)
         ->and($offer->status)->toBeTrue()
         ->and($offer->offerAllowances->first()->status)->toBeTrue()
-        ->and($offer->allowance_signature)->toBe('all_products_in_product_category:1:percentage_off:0.2')
+        ->and($offer->allowance_signature)->toBe('all_products_in_product_category:3:percentage_off:0.2')
         ->and($offer->trigger_data['item_quantity'])->toBe(5)
         ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.2);
 });
@@ -554,17 +557,15 @@ test('suspend permanent offer suspends offer and active allowances', function ()
     expect($offer->state)->toBe(OfferStateEnum::ACTIVE)
         ->and($offer->status)->toBeTrue();
 
-    $suspended = SuspendPermanentOffer::run($offer);
+    $suspended = SuspendOffer::run($offer);
 
     $suspended->refresh();
     expect($suspended->state)->toBe(OfferStateEnum::SUSPENDED)
-        ->and($suspended->status)->toBeFalse()
-        ->and($suspended->end_at)->not->toBeNull();
+        ->and($suspended->status)->toBeFalse();
 
     $allowance = $suspended->offerAllowances()->first();
     expect($allowance->state)->toBe(OfferAllowanceStateEnum::SUSPENDED)
-        ->and($allowance->status)->toBeFalse()
-        ->and($allowance->end_at)->not->toBeNull();
+        ->and($allowance->status)->toBeFalse();
 });
 
 test('suspend permanent offer is safe to run twice', function () {
@@ -578,481 +579,176 @@ test('suspend permanent offer is safe to run twice', function () {
     $offer->status   = true;
     $offer->save();
 
-    SuspendPermanentOffer::run($offer);
+    SuspendOffer::run($offer);
     $offer->refresh();
     expect($offer->state)->toBe(OfferStateEnum::SUSPENDED);
 
     // Run again should remain suspended without error
-    SuspendPermanentOffer::run($offer);
+    SuspendOffer::run($offer);
     $offer->refresh();
     expect($offer->state)->toBe(OfferStateEnum::SUSPENDED)
         ->and($offer->status)->toBeFalse();
 });
 
-test('suspend permanent offer aborts on non-permanent offer', function () {
-    $shop          = $this->shop;
-    $offerCampaign = $shop->offerCampaigns()->first();
 
-    $offerData       = Offer::factory()->definition();
-    $offer           = StoreOffer::make()->action($offerCampaign, $offerData);
-    $offer->duration = OfferDurationEnum::INTERVAL;
-    $offer->save();
-
-    expect(fn () => SuspendPermanentOffer::run($offer))
-        ->toThrow(HttpException::class);
+test('delete all active offers', function () {
+    foreach (Offer::where('status', true)->get() as $offer) {
+        DeleteOffer::make()->action($offer, true);
+    }
+    foreach (Offer::where('state', OfferStateEnum::IN_PROCESS)->get() as $offer) {
+        DeleteOffer::make()->action($offer, true);
+    }
+    expect(Offer::where('status', true)->count())->toBe(0);
 });
 
 describe('calculate order discounts', function () {
-
     test('CalculateOrderDiscounts: Amount AND Order Number trigger applies discount', function () {
-        $shop = $this->shop;
-        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => 'c1@example.com']), strict: false);
+        $shop     = $this->shop;
+        $customer = $this->customer;
 
         if (!$shop->offerCampaigns()->exists()) {
             SeedShopOfferCampaigns::run($shop);
         }
-        $offerCampaign = $shop->offerCampaigns()->first();
-        $offer = StoreOffer::run($offerCampaign, [
-            'code' => 'FIRSTORDER_'.uniqid(),
-            'name' => 'First Order Discount',
-            'type' => 'Amount AND Order Number',
-            'trigger_type' => 'Customer',
-            'state' => OfferStateEnum::ACTIVE,
-            'trigger_data' => [
-                'min_amount' => 100,
-                'order_number' => 1
-            ]
-        ]);
-        $offer->update(['status' => true]);
 
-        $allowance = StoreOfferAllowance::run($offer, [
-            'type' => OfferAllowanceType::PERCENTAGE_OFF,
-            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
-            'data' => ['percentage_off' => 0.10],
-            'state' => OfferAllowanceStateEnum::ACTIVE,
-            'trigger_scope' => 'NA'
-        ]);
-        $allowance->update(['status' => true]);
-        UpdateOfferAllowanceSignature::run($offer);
 
-        $order = Order::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'customer_id' => $customer->id,
-            'currency_id' => $shop->currency_id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'grp_exchange' => 1,
-            'org_exchange' => 1,
-            'gross_amount' => 150,
-            'categories_data' => ['family_ids' => []],
-            'state' => OrderStateEnum::CREATING
-        ]);
-        $order->stats()->create();
+        $firstOrderBonusOffer =
+            StoreFirstOrderBonus::make()->action(
+                $shop,
+                [
+                    'trigger_data_min_amount' => 150.0,
+                    'percentage_off'          => 0.10
+                ]
+            );
 
-        DB::table('transactions')->insert([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'model_type' => 'Product',
-            'model_id' => 1,
-            'gross_amount' => 150,
-            'net_amount' => 150,
+        expect($firstOrderBonusOffer)->toBeInstanceOf(Offer::class)
+            ->and($firstOrderBonusOffer->status)->toBeTrue();
+
+
+        $order = StoreOrder::make()->action($customer, []);
+
+        expect($order)->toBeInstanceOf(Order::class);
+
+        $product = $shop->products()->first();
+
+        expect($product)->toBeInstanceOf(Product::class)
+            ->and((float)$product->price)->toBe(100.0);
+
+        $transactionData = [
             'quantity_ordered' => 1,
-            'group_id' => $shop->group_id,
-            'organisation_id' => $shop->organisation_id,
-            'shop_id' => $shop->id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'date' => now(),
-            'data' => '{}',
+        ];
+        $item            = $product->historicAsset;
+        $transaction     = StoreTransaction::make()->action($order, $item, $transactionData);
+        $order->refresh();
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(100.0);
+
+        UpdateTransaction::run($transaction, [
+            'quantity_ordered' => 2,
         ]);
-
-        CalculateOrderDiscounts::run($order);
-
-        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
-        expect((float)$transaction->net_amount)->toBe(135.0)
-            ->and($transaction->offers_data)->not->toBeEmpty();
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(180.0);
     });
 
-    test('CalculateOrderDiscounts: Amount AND Order Number trigger fails if amount too low', function () {
-        $shop = $this->shop;
-        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => 'c2@example.com']), strict: false);
-
-        $offerCampaign = $shop->offerCampaigns()->first();
-        $offer = StoreOffer::run($offerCampaign, [
-            'code' => 'HIGHVAL_'.uniqid(),
-            'name' => 'High Value First Order',
-            'type' => 'Amount AND Order Number',
-            'trigger_type' => 'Customer',
-            'state' => OfferStateEnum::ACTIVE,
-            'trigger_data' => [
-                'min_amount' => 1000,
-                'order_number' => 1
-            ]
-        ]);
-        $offer->update(['status' => true]);
-
-        $allowance = StoreOfferAllowance::run($offer, [
-            'type' => OfferAllowanceType::PERCENTAGE_OFF,
-            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
-            'data' => ['percentage_off' => 0.50],
-            'state' => OfferAllowanceStateEnum::ACTIVE,
-            'trigger_scope' => 'NA'
-        ]);
-        $allowance->update(['status' => true]);
-        UpdateOfferAllowanceSignature::run($offer);
-
-        $order = Order::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'customer_id' => $customer->id,
-            'currency_id' => $shop->currency_id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'grp_exchange' => 1,
-            'org_exchange' => 1,
-            'gross_amount' => 150,
-            'categories_data' => ['family_ids' => []],
-            'state' => OrderStateEnum::CREATING
-        ]);
-        $order->stats()->create();
-
-        DB::table('transactions')->insert([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'model_type' => 'Product',
-            'model_id' => 1,
-            'gross_amount' => 150,
-            'net_amount' => 150,
-            'quantity_ordered' => 1,
-            'group_id' => $shop->group_id,
-            'organisation_id' => $shop->organisation_id,
-            'shop_id' => $shop->id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'date' => now(),
-            'data' => '{}',
-        ]);
-
-        CalculateOrderDiscounts::run($order);
-
-        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
-        expect((float)$transaction->net_amount)->toBe(150.0);
-    });
 
     test('CalculateOrderDiscounts: Category Ordered trigger', function () {
-        $shop = $this->shop;
-        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => 'c3@example.com']), strict: false);
+        $product = $this->shop->products()->first();
 
-        $category = ProductCategory::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'type' => ProductCategoryTypeEnum::FAMILY->value,
-            'code' => 'CAT_'.uniqid()
-        ]);
+        $categoryDiscount = StoreProductCategoryDiscount::make()->action(
+            $product->family,
+            [
+                'trigger_data_item_quantity' => 1,
+                'percentage_off'             => 0.60,
+            ]
+        );
 
-        $offerCampaign = $shop->offerCampaigns()->first();
-        $offer = StoreOffer::run($offerCampaign, [
-            'code' => 'FAMDISC_'.uniqid(),
-            'name' => 'Family Discount',
-            'type' => 'Category Ordered',
-            'trigger_type' => 'ProductCategory',
-            'trigger_id' => $category->id,
-            'state' => OfferStateEnum::ACTIVE,
-        ]);
-        $offer->update(['status' => true]);
+        expect($categoryDiscount)->toBeInstanceOf(Offer::class);
 
-        $allowance = StoreOfferAllowance::run($offer, [
-            'type' => OfferAllowanceType::PERCENTAGE_OFF,
-            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY,
-            'data' => ['percentage_off' => 0.20, 'category_id' => $category->id],
-            'state' => OfferAllowanceStateEnum::ACTIVE,
-            'trigger_scope' => 'NA'
-        ]);
-        $allowance->update(['status' => true]);
-        UpdateOfferAllowanceSignature::run($offer);
-
-        $order = Order::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'customer_id' => $customer->id,
-            'currency_id' => $shop->currency_id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'grp_exchange' => 1,
-            'org_exchange' => 1,
-            'categories_data' => ['family_ids' => [$category->id]],
-            'state' => OrderStateEnum::CREATING
-        ]);
-        $order->stats()->create();
-
-        DB::table('transactions')->insert([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'model_type' => 'Product',
-            'model_id' => 1,
-            'family_id' => $category->id,
-            'gross_amount' => 100,
-            'net_amount' => 100,
-            'quantity_ordered' => 1,
-            'group_id' => $shop->group_id,
-            'organisation_id' => $shop->organisation_id,
-            'shop_id' => $shop->id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'date' => now(),
-            'data' => '{}',
-        ]);
-
-        CalculateOrderDiscounts::run($order);
+        $order = Order::first();
 
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
         expect((float)$transaction->net_amount)->toBe(80.0);
     });
 
-    test('CalculateOrderDiscounts: Precedence logic', function () {
-        $shop = $this->shop;
-        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => 'c4@example.com']), strict: false);
+    test('suspend all active offers', function () {
+        foreach (Offer::where('state', OfferStateEnum::ACTIVE)->get() as $offer) {
+            SuspendOffer::run($offer);
+        }
+        expect(Offer::where('status', true)->count())->toBe(0);
 
-        $offerCampaign = $shop->offerCampaigns()->first();
-
-        // 10% discount
-        $offer1 = StoreOffer::run($offerCampaign, [
-            'code' => '10OFF_'.uniqid(),
-            'name' => '10% Off',
-            'type' => 'Amount AND Order Number',
-            'trigger_type' => 'Customer',
-            'state' => OfferStateEnum::ACTIVE,
-            'trigger_data' => ['min_amount' => 0, 'order_number' => 1]
-        ]);
-        $offer1->update(['status' => true]);
-
-        $allowance1 = StoreOfferAllowance::run($offer1, [
-            'type' => OfferAllowanceType::PERCENTAGE_OFF,
-            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
-            'data' => ['percentage_off' => 0.10],
-            'state' => OfferAllowanceStateEnum::ACTIVE,
-            'trigger_scope' => 'NA'
-        ]);
-        $allowance1->update(['status' => true]);
-        UpdateOfferAllowanceSignature::run($offer1);
-
-        // 20% discount
-        $offer2 = StoreOffer::run($offerCampaign, [
-            'code' => '20OFF_'.uniqid(),
-            'name' => '20% Off',
-            'type' => 'Amount AND Order Number',
-            'trigger_type' => 'Customer',
-            'state' => OfferStateEnum::ACTIVE,
-            'trigger_data' => ['min_amount' => 0, 'order_number' => 1]
-        ]);
-        $offer2->update(['status' => true]);
-
-        $allowance2 = StoreOfferAllowance::run($offer2, [
-            'type' => OfferAllowanceType::PERCENTAGE_OFF,
-            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
-            'data' => ['percentage_off' => 0.20],
-            'state' => OfferAllowanceStateEnum::ACTIVE,
-            'trigger_scope' => 'NA'
-        ]);
-        $allowance2->update(['status' => true]);
-        UpdateOfferAllowanceSignature::run($offer2);
-
-        $order = Order::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'customer_id' => $customer->id,
-            'currency_id' => $shop->currency_id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'grp_exchange' => 1,
-            'org_exchange' => 1,
-            'gross_amount' => 100,
-            'categories_data' => ['family_ids' => []],
-            'state' => OrderStateEnum::CREATING
-        ]);
-        $order->stats()->create();
-
-        DB::table('transactions')->insert([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'model_type' => 'Product',
-            'model_id' => 1,
-            'gross_amount' => 100,
-            'net_amount' => 100,
-            'quantity_ordered' => 1,
-            'group_id' => $shop->group_id,
-            'organisation_id' => $shop->organisation_id,
-            'shop_id' => $shop->id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'date' => now(),
-            'data' => '{}',
-        ]);
-
-        CalculateOrderDiscounts::run($order);
+        $order = Order::first();
 
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
-        expect((float)$transaction->net_amount)->toBe(80.0); // 20% should win
+        expect((float)$transaction->net_amount)->toBe(200.0);
     });
 
-    test('CalculateOrderDiscounts: Category Quantity Ordered Order Interval trigger applies discount on quantity', function () {
-        $shop = $this->shop;
-        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => 'c5@example.com']), strict: false);
+    test('CalculateOrderDiscounts: Category Ordered trigger item quantity', function () {
+        $product = $this->shop->products()->first();
 
-        $category = ProductCategory::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'type' => ProductCategoryTypeEnum::FAMILY->value,
-            'code' => 'QTYCAT_'.uniqid()
-        ]);
-
-        $offerCampaign = $shop->offerCampaigns()->first();
-        $offer = StoreOffer::run($offerCampaign, [
-            'code' => 'BULKFAM_'.uniqid(),
-            'name' => 'Bulk Family Discount',
-            'type' => 'Category Quantity Ordered Order Interval',
-            'trigger_type' => 'ProductCategory',
-            'trigger_id' => $category->id,
-            'state' => OfferStateEnum::ACTIVE,
-            'trigger_data' => [
-                'item_quantity' => 10,
-                'interval' => 30
+        $categoryDiscount = StoreProductCategoryDiscount::make()->action(
+            $product->family,
+            [
+                'trigger_data_item_quantity' => 5,
+                'percentage_off'             => 0.30,
             ]
+        );
+
+        expect($categoryDiscount)->toBeInstanceOf(Offer::class)
+            ->and($categoryDiscount->status)->toBeTrue()
+            ->and($categoryDiscount->trigger_type)->toBe('ProductCategory')
+            ->and($categoryDiscount->type)->toBe('Category Quantity Ordered');
+
+        $order = Order::first();
+
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(200.0);
+
+        UpdateTransaction::run($transaction, [
+            'quantity_ordered' => 5,
         ]);
-        $offer->update(['status' => true]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(350.0);
 
-        $allowance = StoreOfferAllowance::run($offer, [
-            'type' => OfferAllowanceType::PERCENTAGE_OFF,
-            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY,
-            'data' => ['percentage_off' => 0.25, 'category_id' => $category->id],
-            'state' => OfferAllowanceStateEnum::ACTIVE,
-            'trigger_scope' => 'NA'
-        ]);
-        $allowance->update(['status' => true]);
-        UpdateOfferAllowanceSignature::run($offer);
+        SuspendOffer::run($categoryDiscount);
 
-        $order = Order::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'customer_id' => $customer->id,
-            'currency_id' => $shop->currency_id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'grp_exchange' => 1,
-            'org_exchange' => 1,
-            'categories_data' => [
-                'family_ids' => [$category->id],
-                'family' => [
-                    $category->id => ['quantity' => 12]
-                ]
-            ],
-            'state' => OrderStateEnum::CREATING
-        ]);
-
-        DB::table('transactions')->insert([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'model_type' => 'Product',
-            'model_id' => 1,
-            'family_id' => $category->id,
-            'gross_amount' => 1000,
-            'net_amount' => 1000,
-            'quantity_ordered' => 12,
-            'group_id' => $shop->group_id,
-            'organisation_id' => $shop->organisation_id,
-            'shop_id' => $shop->id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'date' => now(),
-            'data' => '{}',
-        ]);
-
-        CalculateOrderDiscounts::run($order);
-
-        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
-        expect((float)$transaction->net_amount)->toBe(750.0)
-            ->and($transaction->offers_data)->not->toBeEmpty();
     });
 
-    test('CalculateOrderDiscounts: Category Quantity Ordered Order Interval trigger applies discount on interval', function () {
-        $shop = $this->shop;
+    test('CalculateOrderDiscounts: Vol/GR', function () {
+        $product = $this->shop->products()->first();
 
-        // Mock customer last_invoiced_at
-        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), [
-            'email' => 'c6@example.com',
-            'last_invoiced_at' => now()->subDays(5)
-        ]), strict: false);
-
-        $category = ProductCategory::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'type' => ProductCategoryTypeEnum::FAMILY->value,
-            'code' => 'INTCAT_'.uniqid()
-        ]);
-
-        $offerCampaign = $shop->offerCampaigns()->first();
-        $offer = StoreOffer::run($offerCampaign, [
-            'code' => 'RECENT_'.uniqid(),
-            'name' => 'Recent Order Discount',
-            'type' => 'Category Quantity Ordered Order Interval',
-            'trigger_type' => 'ProductCategory',
-            'trigger_id' => $category->id,
-            'state' => OfferStateEnum::ACTIVE,
-            'trigger_data' => [
-                'item_quantity' => 100, // Very high, won't trigger by quantity
-                'interval' => 10 // Within 10 days
+        $VolGRDiscount = StoreVolumeGRDiscount::make()->action(
+            $product->family,
+            [
+                'trigger_data_item_quantity' => 5,
+                'percentage_off'             => 0.30,
+                'interval'                   => 30,
             ]
+        );
+
+        expect($VolGRDiscount)->toBeInstanceOf(Offer::class)
+            ->and($VolGRDiscount->status)->toBeTrue()
+            ->and($VolGRDiscount->trigger_type)->toBe('ProductCategory')
+            ->and($VolGRDiscount->type)->toBe('Category Quantity Ordered Order Interval');
+
+        $order = Order::first();
+
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(350.0);
+
+        UpdateTransaction::run($transaction, [
+            'quantity_ordered' => 4,
         ]);
-        $offer->update(['status' => true]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(400.0);
 
-        $allowance = StoreOfferAllowance::run($offer, [
-            'type' => OfferAllowanceType::PERCENTAGE_OFF,
-            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY,
-            'data' => ['percentage_off' => 0.15, 'category_id' => $category->id],
-            'state' => OfferAllowanceStateEnum::ACTIVE,
-            'trigger_scope' => 'NA'
-        ]);
-        $allowance->update(['status' => true]);
-        UpdateOfferAllowanceSignature::run($offer);
+        $todayMinus5Days = now()->subDays(5);
 
-        $order = Order::factory()->create([
-            'shop_id' => $shop->id,
-            'organisation_id' => $shop->organisation_id,
-            'group_id' => $shop->group_id,
-            'customer_id' => $customer->id,
-            'currency_id' => $shop->currency_id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'grp_exchange' => 1,
-            'org_exchange' => 1,
-            'categories_data' => [
-                'family_ids' => [$category->id],
-                'family' => [
-                    $category->id => ['quantity' => 1] // Low quantity
-                ]
-            ],
-            'state' => OrderStateEnum::CREATING
-        ]);
+        UpdateCustomerLastInvoicedDate::run($order->customer,$todayMinus5Days);
 
-        DB::table('transactions')->insert([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'model_type' => 'Product',
-            'model_id' => 1,
-            'family_id' => $category->id,
-            'gross_amount' => 100,
-            'net_amount' => 100,
-            'quantity_ordered' => 1,
-            'group_id' => $shop->group_id,
-            'organisation_id' => $shop->organisation_id,
-            'shop_id' => $shop->id,
-            'tax_category_id' => TaxCategory::first()?->id,
-            'date' => now(),
-            'data' => '{}',
-        ]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(280.0);
 
-        CalculateOrderDiscounts::run($order);
-
-        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
-        expect((float)$transaction->net_amount)->toBe(85.0);
     });
 
-})->todo();
+
+});

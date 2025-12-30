@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Discounts\OfferAllowance\ActivateOfferAllowance;
+use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -40,6 +41,8 @@ class ActivateOffer extends OrgAction
 
         $offer->update($modelData);
         UpdateOfferAllowanceSignature::run($offer);
+
+        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
 
         return $offer;
     }

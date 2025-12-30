@@ -15,7 +15,7 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\OfferAllowance;
 use Lorisleiva\Actions\ActionRequest;
 
-class SuspendPermanentOfferAllowance extends OrgAction
+class SuspendOfferAllowance extends OrgAction
 {
     use WithActionUpdate;
 
@@ -28,9 +28,9 @@ class SuspendPermanentOfferAllowance extends OrgAction
         }
 
         $modelData = [
-            'state' => OfferAllowanceStateEnum::SUSPENDED,
-            'status' => false,
-            'end_at' => now()
+            'state'             => OfferAllowanceStateEnum::SUSPENDED,
+            'status'            => false,
+            'last_suspended_at' => now(),
         ];
 
         $offerAllowance->update($modelData);
