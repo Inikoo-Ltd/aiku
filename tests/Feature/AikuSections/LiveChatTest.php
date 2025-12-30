@@ -14,7 +14,6 @@ use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
-use function Pest\Laravel\actingAs;
 use App\Models\SysAdmin\Organisation;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatEvent;
@@ -33,10 +32,11 @@ use App\Actions\CRM\ChatSession\CloseChatSession;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
-use Illuminate\Auth\Access\AuthorizationException;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
+
+use function Pest\Laravel\actingAs;
 
 beforeAll(function () {
     loadDB();
@@ -481,7 +481,9 @@ test('can send message from agent after assignment', function () {
 
 test('can send message without text but with media', function () {
 
-    $chatSession = ChatSession::find(2);
+    $chatSession = ChatSession::find(1)
+        ?? ChatSession::inRandomOrder()->first();
+
 
     $modelData = [
         'message_type' => ChatMessageTypeEnum::IMAGE->value,
@@ -500,7 +502,8 @@ test('can send message without text but with media', function () {
 
 test('can send system message', function () {
 
-    $chatSession = ChatSession::find(2);
+    $chatSession = ChatSession::find(1)
+        ?? ChatSession::inRandomOrder()->first();
 
     $modelData = [
         'message_text' => 'System notification',

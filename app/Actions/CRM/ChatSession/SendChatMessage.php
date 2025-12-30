@@ -16,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
 class SendChatMessage
 {
@@ -117,6 +118,10 @@ class SendChatMessage
                 'integer',
                 Rule::exists('web_users', 'id'),
             ],
+            'sender_type' => [
+                'sometimes',
+                Rule::enum(ChatSenderTypeEnum::class)
+            ],
             'media_id' => [
                 'sometimes',
                 'exists:media,id'
@@ -124,19 +129,29 @@ class SendChatMessage
         ];
     }
 
-    public function asController(Request $request, string $ulid, ?string $organisation = null): ChatMessage
+    public function asController(Request $request, string $ulid, ?string $organisation = null): array
     {
         $this->validateUlid($ulid);
 
         $validated = $request->validate($this->rules());
 
-        $chatSession = ChatSession::where('ulid', $ulid)->first();
+        $chatSession = ChatSession::where('ulid', $ulid)->firstOrFail();
 
-        $senderData = $this->determineSenderData($validated, $chatSession);
+        $senderResult = $this->determineSenderData($validated, $chatSession);
 
-        $validated = array_merge($validated, $senderData);
+        if (! $senderResult['ok']) {
+            return $senderResult;
+        }
 
-        return $this->handle($chatSession, $validated);
+        $validated = array_merge($validated, $senderResult['data']);
+
+        $chatMessage = $this->handle($chatSession, $validated);
+
+        return [
+            'ok' => true,
+            'data' => $chatMessage,
+            'code' => 201,
+        ];
     }
 
     protected function validateUlid($ulid): void
@@ -164,15 +179,62 @@ class SendChatMessage
 
     protected function determineSenderData(array $validated, ChatSession $chatSession): array
     {
-        $user = Auth::user();
-        if ($user && ($agent = ChatAgent::where('user_id', $user->id)->first())) {
+        $senderType = $validated['sender_type'] ?? null;
+
+        if ($senderType === ChatSenderTypeEnum::SYSTEM->value) {
             return [
-                'sender_type' => ChatSenderTypeEnum::AGENT->value,
-                'sender_id' => $agent->id,
+                'ok' => true,
+                'data' => [
+                    'sender_type' => ChatSenderTypeEnum::SYSTEM->value,
+                    'sender_id'   => null,
+                ],
+            ];
+        }
+        if ($senderType === ChatSenderTypeEnum::AGENT->value) {
+
+            $user = Auth::user();
+
+            if (! $user) {
+                return [
+                    'ok' => false,
+                    'message' => 'Only authenticated agents can send chats',
+                    'code' => 403,
+                ];
+            }
+
+            $agent = ChatAgent::where('user_id', $user->id)->first();
+
+            if (! $agent) {
+                return [
+                    'ok' => false,
+                    'message' => 'Only agents can send messages.',
+                    'code' => 403,
+                ];
+            }
+
+            $isAssigned = $chatSession->assignments()
+                ->where('chat_agent_id', $agent->id)
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+                ->exists();
+
+            if (! $isAssigned) {
+                return [
+                    'ok' => false,
+                    'message' => 'Agent is not assigned to this chat session.',
+                    'code' => 403,
+                ];
+            }
+
+            return [
+                'ok' => true,
+                'data' => [
+                    'sender_type' => ChatSenderTypeEnum::AGENT->value,
+                    'sender_id'   => $agent->id,
+                ],
             ];
         }
 
-        if (!empty($validated['sender_id'])) {
+        if (! empty($validated['sender_id'])) {
 
             $webUser = WebUser::find($validated['sender_id']);
 
@@ -181,25 +243,43 @@ class SendChatMessage
                     'web_user_id' => $webUser->id,
                     'updated_at'  => now(),
                 ]);
+
                 return [
-                    'sender_type' => ChatSenderTypeEnum::USER->value,
-                    'sender_id'   => $webUser->id,
+                    'ok' => true,
+                    'data' => [
+                        'sender_type' => ChatSenderTypeEnum::USER->value,
+                        'sender_id'   => $webUser->id,
+                    ],
                 ];
             }
         }
 
         return [
-            'sender_type' => ChatSenderTypeEnum::GUEST->value,
-            'sender_id' => null,
+            'ok' => true,
+            'data' => [
+                'sender_type' => ChatSenderTypeEnum::GUEST->value,
+                'sender_id'   => null,
+            ],
         ];
     }
 
-    public function jsonResponse(ChatMessage $chatMessage): JsonResponse
+
+    public function jsonResponse($result): JsonResponse
     {
+        if (! $result['ok']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code'] ?? 400);
+        }
+
+        /** @var ChatMessage $message */
+        $message = $result['data'];
+
         return response()->json([
-            'success' => true,
-            'message' => 'Message sent successfully',
-            'message_id' => $chatMessage->id
-        ], 201);
+            'success'    => true,
+            'message'    => 'Message sent successfully',
+            'message_id' => $message->id,
+        ], $result['code'] ?? 200);
     }
 }
