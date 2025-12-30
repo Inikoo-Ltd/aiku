@@ -463,6 +463,7 @@ class ShowDeliveryNote extends OrgAction
             'picker'           => $deliveryNote->pickerUser,
             'packer'           => $deliveryNote->packerUser,
             'parcels'          => $deliveryNote->parcels,
+            'is_external_order' => (bool) $order->external_id,
             'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
             'shipments_routes' => [
                 'submit_route' => [

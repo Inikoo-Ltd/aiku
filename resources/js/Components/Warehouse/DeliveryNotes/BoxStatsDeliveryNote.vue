@@ -79,6 +79,7 @@ const props = defineProps<{
                 tracking: string
             }[]
         }[]
+		is_external_order: boolean
         platform?: {
             logo: string
             name: string
@@ -464,6 +465,7 @@ const updateCollection = async (e: Event) => {
                         </dt>
                         <dd class="text-gray-500 w-full">
                             <ShipmentSection
+								:is_external_order="boxStats.is_external_order"
                                 :shipping_fields="boxStats.shipping_fields"
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"

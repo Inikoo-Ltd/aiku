@@ -70,6 +70,7 @@ const props = defineProps<{
 		email: string
 		address: Address
 	}
+	is_external_order: boolean
 }>()
 
 const emits = defineEmits<{
@@ -508,7 +509,7 @@ const onCopyDataCustomer = (field: string) => {
 				</li>
 			</ul>
 
-			<div>
+			<div class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
 				<Button
 					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
@@ -523,6 +524,18 @@ const onCopyDataCustomer = (field: string) => {
 				<div v-else-if="!shipments.length" class="italic text-gray-400 text-xs">
 					{{ trans("No shipment yet. Waiting for warehouse team to add shipment..") }}
 				</div>
+			</div>
+			<div>
+				<Button
+					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
+					v-if="!shipments.length && props.shipments_routes?.submit_route?.name && is_external_order"
+					:disabled="props.shipments_routes?.submit_route?.name ? false : true"
+					@click="() => ((isModalShipment = true), onOpenModalTrackingNumber())"
+					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
+					:label="trans('Faire Packing Slip')"
+					icon="fas fa-eye"
+					type="dashed"
+					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
 			</div>
 		</div>
 
