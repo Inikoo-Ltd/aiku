@@ -57,7 +57,6 @@ class GetFaireProducts extends OrgAction
                     'trade_units' => $tradeUnits
                 ]);
 
-                StoreAsset::run($product, []);
                 StoreHistoricAsset::run($product, []);
 
                 echo $product->code . "\n";
