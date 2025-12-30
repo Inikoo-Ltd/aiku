@@ -45,14 +45,14 @@ const isLoadingFetchExistenceChannels = ref(false)
 const productExistenceInChannels = ref<number[]>([])
 
 const fetchProductExistInChannel = async () => {
-    if(layout.iris?.customer?.id){
+    if(layout?.iris_variables?.id){
         try {
             isLoadingFetchExistenceChannels.value = true
             const response = await axios.get(
                 route(
                     "iris.json.customer.product.channel_ids.index",
                     {
-                        customer: layout.iris?.customer?.id,
+                        customer: layout?.iris_variables?.id,
                         product: product.value.id
                     }
                 )
@@ -119,7 +119,7 @@ const fetchData = async () => {
 }
 
 onMounted(() => {
-    if (layout.iris?.customer && layout?.iris?.is_logged_in) {
+    if (layout?.iris_variables && layout?.iris?.is_logged_in) {
         fetchProductExistInChannel()
         fetchData() // break chaced
     }
