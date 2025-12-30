@@ -2,6 +2,8 @@
 
 namespace App\Actions\Catalogue\Shop\Faire;
 
+use App\Actions\Catalogue\Asset\StoreAsset;
+use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -54,6 +56,9 @@ class GetFaireProducts extends OrgAction
                     'unit' => $masterAsset->unit,
                     'trade_units' => $tradeUnits
                 ]);
+
+                StoreAsset::run($product, []);
+                StoreHistoricAsset::run($product, []);
 
                 echo $product->code . "\n";
             }
