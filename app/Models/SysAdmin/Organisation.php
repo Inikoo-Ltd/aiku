@@ -138,6 +138,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $colour
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
+ * @property string $opening_hours
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -269,20 +270,22 @@ class Organisation extends Model implements HasMedia, Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'     => 'array',
-        'settings' => 'array',
-        'source'   => 'array',
-        'location' => 'array',
+        'data'                         => 'array',
+        'settings'                     => 'array',
+        'source'                       => 'array',
+        'location'                     => 'array',
         'forbidden_dispatch_countries' => 'array',
-        'type'     => OrganisationTypeEnum::class
+        'type'                         => OrganisationTypeEnum::class,
+        'opening_hours'                => 'array'
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'source'   => '{}',
-        'location' => '{}',
-        'forbidden_dispatch_countries' => '{}'
+        'data'                         => '{}',
+        'settings'                     => '{}',
+        'source'                       => '{}',
+        'location'                     => '{}',
+        'forbidden_dispatch_countries' => '{}',
+        'opening_hours'                => '{}'
     ];
 
     protected $guarded = [];

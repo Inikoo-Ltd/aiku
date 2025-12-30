@@ -92,7 +92,7 @@ class IndexMasterVariant extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'MasterProductCategory' => [
-                            'title' => __("No families found"),
+                            'title' => __("No master variants found under this master family"),
                             'count' => 0,
                         ],
                         default => null
