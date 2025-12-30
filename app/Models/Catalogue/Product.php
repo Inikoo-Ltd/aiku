@@ -12,7 +12,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
-use App\Models\CRM\BackInStockReminder;
+use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
 use App\Models\Dropshipping\Portfolio;

@@ -8,11 +8,11 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
+use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
-use App\Actions\CRM\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
@@ -26,13 +26,13 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerDropshippingTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
+use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
-use App\Http\Resources\Accounting\PaymentsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;

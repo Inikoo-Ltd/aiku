@@ -35,14 +35,16 @@ class EditOffer extends OrgAction
                 ),
                 'title'       => __('Edit Offer'),
                 'pageHead'    => [
-                    'title' => __('Edit Offer')
+                    'title' => $offer->name,
+                    'model' => __('Edit Offer'),
+                    'icon'  => 'fal fa-pencil'
                 ],
                 'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
                         [
                             [
-                                'title'  => __('Name'),
+                                'title'  => __('Properties'),
                                 'fields' => [
                                     'name'        => [
                                         'type'        => 'input',
@@ -51,8 +53,16 @@ class EditOffer extends OrgAction
                                         'required'    => true,
                                         'value'       => $offer->name,
                                     ],
+                                    'trigger_data_item_quantity'        => [
+                                        'type'        => 'input_number',
+                                        'label'       => __('Product quantity'),
+                                        'information'   => __('Total quantity of all products'),
+                                        'placeholder' => __('Quantity'),
+                                        'required'    => true,
+                                        'value'       => $offer->trigger_data['item_quantity'] ?? '',
+                                    ],
                                 ]
-                            ]
+                            ],
                         ],
                     'args'      => [
                         'updateRoute' => [

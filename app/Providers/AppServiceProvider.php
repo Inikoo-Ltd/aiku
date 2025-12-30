@@ -92,7 +92,6 @@ class AppServiceProvider extends ServiceProvider
 
                 // CRM
                 'Appointment'                   => 'App\Models\CRM\Appointment',
-                'BackInStockReminder'           => 'App\Models\CRM\BackInStockReminder',
                 'Customer'                      => 'App\Models\CRM\Customer',
                 'CustomerNote'                  => 'App\Models\CRM\CustomerNote',
                 'Favourite'                     => 'App\Models\CRM\Favourite',
@@ -211,7 +210,8 @@ class AppServiceProvider extends ServiceProvider
                 'EmailBulkRun'                  => 'App\Models\Comms\EmailBulkRun',
                 'EmailOngoingRun'               => 'App\Models\Comms\EmailOngoingRun',
                 'OutBoxHasSubscriber'           => 'App\Models\Comms\OutBoxHasSubscriber',
-
+                'BackInStockReminderSnapshot'   => 'App\Models\Comms\BackInStockReminderSnapshot',
+                'BackInStockReminder'           => 'App\Models\Comms\BackInStockReminder',
 
                 // Catalogue
                 'Shop'                          => 'App\Models\Catalogue\Shop',

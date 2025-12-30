@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 30 Dec 2025 15:41:37 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,6 +8,7 @@
 
 namespace App\Actions\Discounts\OfferCampaign\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
@@ -28,52 +30,49 @@ class OfferCampaignHydrateStateFromOffers implements ShouldBeUnique
     public function handle(OfferCampaign $offerCampaign): void
     {
 
-        $hasActive=false;
-        $hasFinished=false;
-        $hasSuspended=false;
+        $hasActive = false;
+        $hasFinished = false;
+        $hasSuspended = false;
 
         foreach ($offerCampaign->offers as $offer) {
-            if($offer->state==OfferStateEnum::ACTIVE){
-                $hasActive=true;
+            if ($offer->state == OfferStateEnum::ACTIVE) {
+                $hasActive = true;
             }
-            if($offer->state==OfferStateEnum::FINISHED){
-                $hasFinished=true;
+            if ($offer->state == OfferStateEnum::FINISHED) {
+                $hasFinished = true;
             }
-            if($offer->state==OfferStateEnum::SUSPENDED){
-                $hasSuspended=true;
+            if ($offer->state == OfferStateEnum::SUSPENDED) {
+                $hasSuspended = true;
             }
 
         }
 
-        $state=OfferCampaignStateEnum::IN_PROCESS;
-        $status=false;
-        if($hasActive){
-            $state=OfferCampaignStateEnum::ACTIVE;
-            $status=true;
-        }elseif($hasFinished){
-            $state=OfferCampaignStateEnum::FINISHED;
-        }elseif($hasSuspended){
-            $state=OfferCampaignStateEnum::SUSPENDED;
+        $state = OfferCampaignStateEnum::IN_PROCESS;
+        $status = false;
+        if ($hasActive) {
+            $state = OfferCampaignStateEnum::ACTIVE;
+            $status = true;
+        } elseif ($hasFinished) {
+            $state = OfferCampaignStateEnum::FINISHED;
+        } elseif ($hasSuspended) {
+            $state = OfferCampaignStateEnum::SUSPENDED;
         }
 
-        $modelData=[
-            'state'=>$state,
-            'status'=>$status
+        $modelData = [
+            'state' => $state,
+            'status' => $status
         ];
-        
-        if(!$offerCampaign->start_at &&  $state==OfferCampaignStateEnum::ACTIVE){
+
+        if (!$offerCampaign->start_at &&  $state == OfferCampaignStateEnum::ACTIVE) {
             $modelData['start_at'] = $offerCampaign->offers()->min('start_at') ?? now();
         }
 
-        if(!$offerCampaign->finish_at && $state==OfferCampaignStateEnum::FINISHED){
+        if (!$offerCampaign->finish_at && $state == OfferCampaignStateEnum::FINISHED) {
             $modelData['finish_at'] = $offerCampaign->offers()->max('end_at') ?? now();
         }
 
-
         $offerCampaign->update($modelData);
-
-
-
+        ShopHydrateOffersData::run($offerCampaign->shop_id);
 
     }
 
@@ -84,7 +83,7 @@ class OfferCampaignHydrateStateFromOffers implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
-        if($command->argument('offer_campaign')) {
+        if ($command->argument('offer_campaign')) {
             $offerCampaign = OfferCampaign::findOrFail($command->argument('offer_campaign'));
             $this->handle($offerCampaign);
             $command->info("Hydrated offer campaign $offerCampaign->code");

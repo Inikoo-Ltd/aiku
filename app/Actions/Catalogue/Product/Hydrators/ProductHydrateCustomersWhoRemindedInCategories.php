@@ -10,9 +10,9 @@ namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Product;
+use App\Models\Comms\BackInStockReminderSnapshot;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Models\CRM\BackInStockReminderSnapshot;
 
 class ProductHydrateCustomersWhoRemindedInCategories implements ShouldBeUnique
 {
