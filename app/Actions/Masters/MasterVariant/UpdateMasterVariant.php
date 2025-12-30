@@ -33,7 +33,7 @@ class UpdateMasterVariant extends OrgAction
     {
         $this->number_minions = array_reduce(data_get($this->variant['variants'], '*.options'), function ($carry, $item) {
             return $carry * count($item);
-        }, 1);
+        }, 1) - 1; // Minus one to exclude the leader product
 
         $this->number_dimensions = count($this->variant['variants']);
         $this->number_used_slots = count($this->variant['products']);

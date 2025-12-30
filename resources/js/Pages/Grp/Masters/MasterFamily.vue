@@ -37,7 +37,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
-import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
+import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
 
 library.add(
     faFolder,
@@ -94,7 +94,7 @@ const component = computed(() => {
         history: TableHistories,
         images : ImagesManagement,
         sales: ProductCategorySales,
-        variants: TableVariants,
+        variants: TableMasterVariants,
     }
     return components[currentTab.value] ?? ModelDetails
 })

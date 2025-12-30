@@ -61,6 +61,7 @@ const save = () => {
         },
         onError: (errorBag) => {
             const errorBagUnique = errorBag ? new Set(Object.values(errorBag).flat()) : [];
+            console.log('Fail', errorBag);
             notify({
                 title: "Something went wrong",
                 data: {
@@ -70,7 +71,7 @@ const save = () => {
                 duration: 5000
             });
         },
-    })
+    });
 }
 
 </script>

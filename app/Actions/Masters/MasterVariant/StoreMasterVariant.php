@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterAsset;
@@ -16,6 +17,7 @@ use App\Models\Masters\MasterVariant;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,6 +50,21 @@ class StoreMasterVariant extends OrgAction
 
             $masterVariant->refresh();
 
+            foreach($masterVariant->masterFamily->productCategories as $productCategory){
+                if(!$productCategory->shop) continue;
+                StoreVariantFromMaster::make()->action(
+                    masterVariant: $masterVariant,
+                    shop: $productCategory->shop,
+                    modelData: Arr::except($modelData, [
+                        'master_family_id',
+                        'master_sub_department_id',
+                        'master_department_id',
+                        'group_id',
+                        'master_shop_id'
+                    ])
+                );
+            }
+
             return $masterVariant;
         });
 
@@ -58,7 +75,7 @@ class StoreMasterVariant extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!collect($request->input('data_variants.products'))->where('is_leader', true)->count() > 0) {
+        if (!$request->input('data_variants.products') || !collect($request->input('data_variants.products'))->where('is_leader', true)->count() > 0) {
             throw ValidationException::withMessages([
                 'leader_id' => __('A leader product must first be selected before being able to generate this variant.')
             ]);
@@ -70,7 +87,7 @@ class StoreMasterVariant extends OrgAction
         $this->set('code', $code);
         $this->number_minions = array_reduce(data_get($this->data_variants['variants'], '*.options'), function ($carry, $item) {
             return $carry * count($item);
-        }, 1);
+        }, 1) - 1; // Minus one to exclude the leader product
         $this->number_dimensions = count($this->data_variants['variants']);
         $this->number_used_slots = count($this->data_variants['products']);
         $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->data_variants['products']))->select('is_for_sale', true)->count();
