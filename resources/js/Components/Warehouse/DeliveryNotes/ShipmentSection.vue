@@ -28,6 +28,7 @@ import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RadioButton } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 const props = defineProps<{
 	shipments: {
@@ -69,6 +70,10 @@ const props = defineProps<{
 		phone: string
 		email: string
 		address: Address
+	}
+	external_order: {
+		status: boolean
+		route_view_packing_slip: routeType
 	}
 }>()
 
@@ -508,7 +513,7 @@ const onCopyDataCustomer = (field: string) => {
 				</li>
 			</ul>
 
-			<div>
+			<div class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
 				<Button
 					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
@@ -523,6 +528,17 @@ const onCopyDataCustomer = (field: string) => {
 				<div v-else-if="!shipments.length" class="italic text-gray-400 text-xs">
 					{{ trans("No shipment yet. Waiting for warehouse team to add shipment..") }}
 				</div>
+			</div>
+			<div>
+				<a target="_blank" :href="route(external_order?.route_view_packing_slip?.name, external_order?.route_view_packing_slip?.parameters)">
+				<Button
+					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
+					v-if="external_order?.status"
+					:label="trans('Faire Packing Slip')"
+					icon="fas fa-eye"
+					type="dashed"
+					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
+				</a>
 			</div>
 		</div>
 

@@ -148,7 +148,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_migrating_to_aiku
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
- * @property string $opening_hours
+ * @property array<array-key, mixed> $opening_hours
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses

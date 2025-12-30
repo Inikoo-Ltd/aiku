@@ -463,6 +463,17 @@ class ShowDeliveryNote extends OrgAction
             'picker'           => $deliveryNote->pickerUser,
             'packer'           => $deliveryNote->packerUser,
             'parcels'          => $deliveryNote->parcels,
+            'external_order' => [
+                'status'     => (bool) $order->external_id,
+                'route_view_packing_slip'      => [
+                    'name'       => 'grp.org.shops.show.ordering.faire_packing_slip.download',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug,
+                        'shop'         => $deliveryNote->shop->slug,
+                        'order'        => $order->slug
+                    ]
+                ]
+            ],
             'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
             'shipments_routes' => [
                 'submit_route' => [
