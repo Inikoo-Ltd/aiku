@@ -65,6 +65,7 @@ use App\Models\Helpers\Timezone;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Workplace;
 use App\Models\Inventory\Location;
@@ -885,5 +886,8 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Box::class);
     }
 
-
+    public function holidays(): HasMany
+    {
+        return $this->hasMany(Holiday::class);
+    }
 }
