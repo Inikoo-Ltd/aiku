@@ -70,10 +70,10 @@ trait WithIrisInertia
                     $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
                     ['product_categories' => $irisProductCategoryNavigation]
                 ),
-                'sidebar'              => array_merge(
+              /*   'sidebar'              => array_merge(
                     $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
                     ['product_categories' => $irisProductCategoryNavigation]
-                ),
+                ), */
                 'shop'                 => [
                     'type'                  => $shop->type->value,
                     'id'                    => $shop->id,
