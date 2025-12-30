@@ -148,6 +148,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_migrating_to_aiku
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
+ * @property string $opening_hours
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -273,6 +274,7 @@ class Shop extends Model implements HasMedia, Auditable
         'fetched_at'                   => 'datetime',
         'last_fetched_at'              => 'datetime',
         'offers_data'                  => 'array',
+        'opening_hours'                => 'array'
     ];
 
     protected $attributes = [
@@ -282,6 +284,7 @@ class Shop extends Model implements HasMedia, Auditable
         'extra_languages'              => '{}',
         'forbidden_dispatch_countries' => '{}',
         'offers_data'                  => '{}',
+        'opening_hours'                => '{}',
     ];
 
     protected $guarded = [];

@@ -53,7 +53,7 @@ enum MasterFamilyTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             MasterFamilyTabsEnum::VARIANTS => [
-                 'title' => __('Variants'),
+                 'title' => __('Master Variants'),
                  'icon'  => 'fal fa-shapes',
              ],
         };

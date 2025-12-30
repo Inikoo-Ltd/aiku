@@ -75,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\CollectionTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newModelQuery()
