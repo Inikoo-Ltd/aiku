@@ -163,7 +163,7 @@ watch(computedSelectedSidebarData,
 );
 
 const screenType = inject('screenType', 'desktop')
-console.log('sss',layout)
+
 </script>
 
 <template>
