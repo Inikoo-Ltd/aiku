@@ -277,8 +277,19 @@ class EditFulfilment extends OrgAction
                                     'value'     => $fulfilment->settings['rental_agreement_cut_off']['weekly']['day']
                                 ]
                             ]
-                        ]
-
+                        ],
+                        [
+                            'label'  => __('Chat'),
+                            'icon'   => 'fal fa-comment-alt',
+                            'fields' => [
+                                'enable_chat'  => [
+                                    'type'          => 'toggle',
+                                    'information'   => __('If active, will enable the Chat feature on this shop website'),
+                                    'label'         => __('Enable Chat Feature'),
+                                    'value'         => Arr::get($fulfilment->settings, 'chat.enable_chat', false),
+                                ]
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

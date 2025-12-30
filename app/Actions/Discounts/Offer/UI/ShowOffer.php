@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Catalogue\OfferResource;
 
 class ShowOffer extends OrgAction
 {
@@ -66,15 +67,12 @@ class ShowOffer extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
-                'label' => __('Edit'),
                 'route' => [
                     'name'       => 'grp.org.shops.show.discounts.offers.edit',
                     'parameters' => $request->route()->originalParameters()
                 ],
-                'icon' => ['fal', 'fa-sliders-h']
             ];
         }
-
         return Inertia::render(
             'Org/Discounts/Offer',
             [
@@ -92,7 +90,7 @@ class ShowOffer extends OrgAction
                     'icon'       => $icon,
                     'actions'    => $actions
                 ],
-                'data'        => $offer,
+                'data'        => OfferResource::make($offer),
                 'currency_code' => $offer->shop->currency->code,
             ]
         );
