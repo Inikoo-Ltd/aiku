@@ -7,11 +7,11 @@
  * copyright 2024
 */
 
-namespace App\Actions\CRM\BackInStockReminder;
+namespace App\Actions\Comms\BackInStockReminder;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\BackInStockReminder;
+use App\Models\Comms\BackInStockReminder;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteBackInStockReminder extends OrgAction

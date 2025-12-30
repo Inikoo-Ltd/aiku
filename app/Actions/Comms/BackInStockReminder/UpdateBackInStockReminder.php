@@ -7,14 +7,14 @@
  * copyright 2024
 */
 
-namespace App\Actions\CRM\BackInStockReminder;
+namespace App\Actions\Comms\BackInStockReminder;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\BackInStockReminder;
+use App\Models\Comms\BackInStockReminder;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 

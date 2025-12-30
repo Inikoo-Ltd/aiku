@@ -8,12 +8,12 @@
 
 namespace App\Actions\Retina\CRM;
 
-use App\Actions\CRM\BackInStockReminder\DeleteBackInStockReminder;
+use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use Lorisleiva\Actions\ActionRequest;
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaBackInStockReminder extends RetinaAction
 {

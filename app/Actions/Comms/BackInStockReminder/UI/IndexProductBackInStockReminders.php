@@ -7,13 +7,13 @@
  * copyright 2024
 */
 
-namespace App\Actions\CRM\BackInStockReminder\UI;
+namespace App\Actions\Comms\BackInStockReminder\UI;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\BackInStockReminder;
+use App\Models\Comms\BackInStockReminder;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -23,14 +23,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexProductBackInStockReminders extends OrgAction
 {
-    private Product $parent;
-
     public function handle(Product $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('customers.reference', $value)
-                    ->orWhereAnyWordStartWith('customers.name', 'ILIKE', $value);
+                    ->orWhereAnyWordStartWith('customers.name', $value);
             });
         });
 
@@ -75,7 +73,6 @@ class IndexProductBackInStockReminders extends OrgAction
             }
 
 
-            $stats     = $parent->stats;
             $noResults = __("Nobody need reminder for this product");
 
 
@@ -90,8 +87,8 @@ class IndexProductBackInStockReminders extends OrgAction
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, searchable: true);
             $table->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: false, searchable: true);
-            $table->column(key: 'phone', label: __('Phone'), canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'email', label: __('Email'), canBeHidden: false, searchable: true);
+            $table->column(key: 'phone', label: __('Phone'), canBeHidden: false, searchable: true);
         };
     }
 

@@ -7,14 +7,14 @@
  * copyright 2024
 */
 
-namespace App\Actions\CRM\BackInStockReminder;
+namespace App\Actions\Comms\BackInStockReminder;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\BackInStockReminderSnapshot;
+use App\Models\Comms\BackInStockReminderSnapshot;
 
 class UpdateBackInStockReminderSnapshot extends OrgAction
 {
@@ -35,18 +35,15 @@ class UpdateBackInStockReminderSnapshot extends OrgAction
 
     public function rules(): array
     {
-        // Note: update rules
-        $rules = [
+        return [
             'reminder_cancelled_at' => 'nullable|date',
-            'reminder_sent_at' => 'nullable|date',
+            'reminder_sent_at'      => 'nullable|date',
         ];
-
-        return $rules;
     }
 
     public function action(BackInStockReminderSnapshot|int $backInStockReminderSnapshot, array $modelData, int $hydratorsDelay = 0): ?BackInStockReminderSnapshot
     {
-        $this->asAction       = true;
+        $this->asAction = true;
 
         // Handle route binding - if ID is passed, resolve the model
         if (is_int($backInStockReminderSnapshot)) {
@@ -56,8 +53,8 @@ class UpdateBackInStockReminderSnapshot extends OrgAction
             }
         }
 
-        $this->backInStockReminderSnapshot       = $backInStockReminderSnapshot;
-        $this->hydratorsDelay = $hydratorsDelay;
+        $this->backInStockReminderSnapshot = $backInStockReminderSnapshot;
+        $this->hydratorsDelay              = $hydratorsDelay;
         $this->initialisation($backInStockReminderSnapshot->organisation, $modelData);
 
         return $this->handle($backInStockReminderSnapshot, $this->validatedData);
