@@ -18,6 +18,7 @@ use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\Webpage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -192,5 +193,9 @@ class Collection extends Model implements Auditable, HasMedia
         return $this->morphOne(Webpage::class, 'model');
     }
 
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(CollectionTimeSeries::class);
+    }
 
 }
