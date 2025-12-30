@@ -30,18 +30,14 @@ const props = defineProps<{
 const form = useForm({
     product_leader: null as any,
     data_variants: {
-        variants: [
-            { label: "Color", options: ["Red", "Blue"], active: false },
-            { label: "Size", options: ["L", "XL"], active: false }
-        ] as Variant[],
-        groupBy: "Color",
+        variants: [] as Variant[],
+        groupBy: null,
         products: {} as Record<string, any>
     }
 })
 
 
 const isValid = computed(() => {
-    // if (!form.product_leader) return true
     if (!form.data_variants.variants.length || !Object.values(form.data_variants.products).some(p => p.is_leader) || !form.data_variants.groupBy) return true
     return false
 })
@@ -83,15 +79,11 @@ const save = () => {
 <template>
     <Head :title="capitalize(props.title)" />
     <PageHeading :data="props.pageHead" />
-
     <div class="flex justify-center mt-6">
         <div class="w-full max-w-2xl p-4 bg-white rounded-lg shadow space-y-4">
-            <!-- Variants -->
             <div>
                 <PureVariantField v-model="form.data_variants" :master_assets_route="master_assets_route" :master_asset="master_asset" />
             </div>
-
-            <!-- SAVE -->
             <Button full class="bg-blue-600 text-white disabled:opacity-50" :loading="form.processing" @click="save" :disabled="isValid" :label="'Save Variants'"></Button>
         </div>
     </div>
