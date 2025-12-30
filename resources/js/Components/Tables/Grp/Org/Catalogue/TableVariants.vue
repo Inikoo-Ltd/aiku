@@ -35,7 +35,7 @@ const getMasterVariantRoute = (item: any) => {
   }
 }
 
-console.log('props_ssss',props)
+
 
 </script>
 

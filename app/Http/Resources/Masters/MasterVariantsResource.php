@@ -20,9 +20,19 @@ class MasterVariantsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id,
-            'code'                   => $this->code,
-            'slug'                   => $this->slug,
+            'id'                            => $this->id,
+            'code'                          => $this->code,
+            'slug'                          => $this->slug,
+            'leader_id'                     => $this->leader_id,
+            'number_minions'                => $this->number_minions,
+            'number_dimensions'             => $this->number_dimensions,
+            'number_used_slots'             => $this->number_used_slots,
+            'number_used_slots_for_sale'    => $this->number_used_slots_for_sale,
+            'data'                          => $this->data,
+            'leader_product_id'             => $this->leader_product_id,
+            'leader_product_name'           => $this->leader_product_name,
+            'leader_product_code'           => $this->leader_product_code,
+            'leader_product_slug'           => $this->leader_product_slug,
         ];
     }
 }

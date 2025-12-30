@@ -31,12 +31,10 @@ class HydrateCustomersTag
         $tableName = (new $this->model())->getTable();
         $dateThreshold = now()->subYear();
 
-        // Get RFM tag IDs
         $rfmTagIds = Tag::whereIn('data->type', ['recency', 'frequency', 'monetary'])
             ->pluck('id')
             ->toArray();
 
-        // Process customers with recent invoices (hydrate RFM tags)
         $query = DB::table($tableName)
             ->select("$tableName.id")
             ->whereExists(function ($q) use ($tableName, $dateThreshold) {
@@ -62,16 +60,15 @@ class HydrateCustomersTag
             }
         );
 
-        // Process customers WITHOUT recent invoices but have RFM tags (detach RFM tags)
         if (!empty($rfmTagIds)) {
             $customersToCleanup = DB::table($tableName)
                 ->select("$tableName.id")
                 ->whereExists(function ($q) use ($tableName, $rfmTagIds) {
                     $q->select(DB::raw(1))
-                        ->from('taggables')
-                        ->whereColumn('taggables.taggable_id', "$tableName.id")
-                        ->where('taggables.taggable_type', 'Customer')
-                        ->whereIn('taggables.tag_id', $rfmTagIds);
+                        ->from('model_has_tags')
+                        ->whereColumn('model_has_tags.model_id', "$tableName.id")
+                        ->where('model_has_tags.model_type', Customer::class)
+                        ->whereIn('model_has_tags.tag_id', $rfmTagIds);
                 })
                 ->whereNotExists(function ($q) use ($tableName, $dateThreshold) {
                     $q->select(DB::raw(1))

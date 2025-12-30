@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property array<array-key, mixed>|null $payload
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Model|\Eloquent|null $actor
+ * @property-read Model|\Eloquent $actor
  * @property-read \App\Models\CRM\Livechat\ChatSession $chatSession
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent fromActor(\App\Enums\CRM\Livechat\ChatActorTypeEnum $actorType, ?int $actorId = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEvent newModelQuery()
@@ -52,7 +52,7 @@ class ChatEvent extends Model
 
     public function actor(): MorphTo
     {
-        return $this->morphTo('actor', 'actor_type', 'actor_id');
+        return $this->morphTo('actor_id');
     }
 
     public function isOpenEvent(): bool
@@ -67,17 +67,11 @@ class ChatEvent extends Model
     }
 
 
-    public function isTransferRequest(): bool
-    {
-        return $this->event_type === ChatEventTypeEnum::TRANSFER_REQUEST;
-    }
-
 
     public function isTransferAccept(): bool
     {
         return $this->event_type === ChatEventTypeEnum::TRANSFER_ACCEPT;
     }
-
 
     public function isTransferReject(): bool
     {
@@ -100,6 +94,11 @@ class ChatEvent extends Model
     public function isNote(): bool
     {
         return $this->event_type === ChatEventTypeEnum::NOTE;
+    }
+
+    public function isGuestProfile(): bool
+    {
+        return $this->event_type === ChatEventTypeEnum::GUEST_PROFILE;
     }
 
 
@@ -131,7 +130,6 @@ class ChatEvent extends Model
     public function getTransferDetails(): ?array
     {
         if (!in_array($this->event_type, [
-            ChatEventTypeEnum::TRANSFER_REQUEST,
             ChatEventTypeEnum::TRANSFER_ACCEPT,
             ChatEventTypeEnum::TRANSFER_REJECT
         ]) || !$this->payload) {
@@ -183,6 +181,4 @@ class ChatEvent extends Model
             'payload' => $payload,
         ]);
     }
-
-
 }

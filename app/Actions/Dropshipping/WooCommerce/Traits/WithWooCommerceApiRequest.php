@@ -161,7 +161,8 @@ trait WithWooCommerceApiRequest
             $response = Http::timeout($this->timeOut)
                 ->withHeaders([
                     'Accept'       => 'application/json',
-                    'Content-Type' => 'application/json'
+                    'Content-Type' => 'application/json',
+                    'User-Agent'   => 'WooCommerce AW Connect API Client-PHP/1.0',
                 ])
                 ->connectTimeout($this->timeOut)
                 ->withBasicAuth(

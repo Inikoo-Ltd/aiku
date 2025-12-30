@@ -12,6 +12,21 @@ namespace App\Http\Resources\Masters;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 
+/**
+ * @property mixed $id
+ * @property mixed $reference
+ * @property mixed $slug
+ * @property mixed $organisation_slug
+ * @property mixed $shop_slug
+ * @property mixed $customer_name
+ * @property mixed $customer_slug
+ * @property mixed $date
+ * @property mixed $pay_status
+ * @property mixed $currency_code
+ * @property mixed $total_sales
+ * @property mixed $product_asset
+ * @property mixed $product_code
+ */
 class MasterProductSalesResource extends JsonResource
 {
     public function toArray($request): array

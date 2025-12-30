@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\GrpAction;
-use App\Actions\Helpers\Translations\TranslateCategoryModel;
+use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -101,15 +101,16 @@ class StoreProductFromMasterProduct extends GrpAction
                         'comment' => 'first publish'
                     ]);
 
-                    TranslateCategoryModel::dispatch(
-                        $product,
-                        Arr::only($data, [
+                    TranslateModel::dispatch(
+                        model: $product,
+                        transactionData: Arr::only($data, [
                             'unit',
                             'name',
                             'description',
                             'description_title',
                             'description_extra'
-                        ])
+                        ]),
+                        overwrite: true
                     );
                 }
             }
@@ -127,7 +128,7 @@ class StoreProductFromMasterProduct extends GrpAction
                 'comment' => 'first publish'
             ]);
         }
-        TranslateCategoryModel::dispatch(
+        TranslateModel::dispatch(
             $product,
             Arr::only($modelData, ['name', 'description', 'description_title', 'description_extra'])
         );

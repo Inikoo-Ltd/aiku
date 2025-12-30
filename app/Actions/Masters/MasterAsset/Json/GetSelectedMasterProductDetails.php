@@ -11,40 +11,34 @@ namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
 use App\Models\Masters\MasterAsset;
-use App\Models\SysAdmin\Organisation;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterBulkEditProductsResource;
 use Lorisleiva\Actions\ActionRequest;
-
 
 class GetSelectedMasterProductDetails extends GrpAction
 {
     use WithMastersAuthorisation;
 
-    public function handle(String $cacheKey, Array $modelData)
+    public function handle(array $modelData): array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
     {
-        // Remove soon, just temporary since Cache is not used yet. Data will be taken from cache later
         $masterProduct = MasterAsset::whereIn('id', $modelData['data'])->orderBy('created_at')->get();
         return MasterBulkEditProductsResource::collection($masterProduct)->toArray(request());
     }
 
-    // Remove soon, just temporary since Cache is not used yet
-    public function rules(): Array
+    public function rules(): array
     {
-        $rules = [
+        return [
             'data'  => ['sometimes', 'array']
         ];
 
-        return $rules;
     }
 
-    public function asController(String $cacheKey, ActionRequest $request)
+    public function asController(ActionRequest $request): \Illuminate\Http\Response|array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
     {
         $group        = group();
         $this->initialisation($group, $request);
 
-        return $this->handle($cacheKey, $this->validatedData);
+        return $this->handle($this->validatedData);
     }
 
 }

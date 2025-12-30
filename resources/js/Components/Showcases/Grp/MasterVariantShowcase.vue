@@ -45,21 +45,18 @@ type MasterProduct = {
 }
 
 const props = defineProps<{
-    title: string
-    pageHead: any
     data: {
-        data: {
-            variants: Variant[]
-            products: Record<string, VariantProductMap>
-        }
-    }
-    master_products: {
-        data: MasterProduct[]
-    }
+		data: {
+			data: {
+				variants: Variant[]
+				products: Record<string, VariantProductMap>
+			}
+		}
+	}
 }>()
 
-const variants = computed(() => props.data?.data?.variants || [])
-const products = computed(() => Object.values(props.data?.data?.products || {}))
+const variants = computed(() => props.data?.data?.data?.variants || [])
+const products = computed(() => Object.values(props.data?.data?.data?.products || {}))
 
 const selectedVariants = ref<Record<string, string>>(
     Object.fromEntries(variants.value.map(v => [v.label, v.options[0] || ""]))
@@ -83,27 +80,15 @@ const selectedVariantProduct = computed(() =>
 
 const selectedProduct = computed(() =>
     selectedVariantProduct.value
-        ? props.master_products.data.find(
+        ? props.data.master_products.data.find(
             p => p.id === selectedVariantProduct.value.product.id
         ) ?? null
         : null
 )
+console.log(selectedProduct.value,props);
 </script>
 
 <template>
-
-    <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
-
-    <!-- PRODUCT HEADER -->
-    <section class="bg-white px-4 py-3 shadow-sm mb-4 rounded">
-        <h1 class="text-lg font-semibold flex items-center gap-2 text-gray-800">
-            <ProductUnitLabel v-if="selectedProduct?.units" :units="selectedProduct.units"
-                :unit="selectedProduct.unit" />
-            {{ selectedProduct?.name || "Select variant" }}
-        </h1>
-    </section>
-
     <!-- MAIN GRID -->
     <section class="grid grid-cols-1 lg:grid-cols-4 gap-4">
 

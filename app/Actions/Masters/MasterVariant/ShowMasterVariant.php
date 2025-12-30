@@ -9,19 +9,20 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
-use App\Actions\OrgAction;
+use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\UI\SupplyChain\MasterVariantTabsEnum;
+use App\Http\Resources\Masters\MasterProductVariantResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterVariant;
 use Inertia\Inertia;
-use Lorisleiva\Actions\ActionRequest;
 use Inertia\Response;
-use App\Http\Resources\Masters\MasterProductResource;
-use App\Http\Resources\Masters\MasterProductVariantResource;
+use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterVariant extends OrgAction
+class ShowMasterVariant extends GrpAction
 {
     use WithMastersAuthorisation;
 
@@ -32,7 +33,7 @@ class ShowMasterVariant extends OrgAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -42,7 +43,7 @@ class ShowMasterVariant extends OrgAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -52,7 +53,7 @@ class ShowMasterVariant extends OrgAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -62,7 +63,7 @@ class ShowMasterVariant extends OrgAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -70,7 +71,7 @@ class ShowMasterVariant extends OrgAction
     public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
     {
         $this->parent = $masterFamily;
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisation(group(), $request)->withTab(MasterVariantTabsEnum::values())->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -80,23 +81,24 @@ class ShowMasterVariant extends OrgAction
      */
     public function handle(MasterVariant $masterVariant): Response
     {
-        $masterVariant->leaderProduct;
-        $masterProductInVariant = MasterAsset::query()
-            ->whereIn(
-                'id',
-                data_get($masterVariant->data, 'products.*.product.id', [])
-            )
-            ->get();
-
-        $products = MasterProductVariantResource::collection($masterProductInVariant);
+        $masterProductInVariant = MasterProductVariantResource::collection(MasterAsset::whereIn('id', data_get($masterVariant->data, 'products.*.product.id', []))->get());
 
         return Inertia::render(
-            'Masters/Variant',
+            'Masters/MasterVariant',
             [
-                'breadcrumbs'     => [],
+                'breadcrumbs'     => $this->getBreadcrumbs(
+                    $masterVariant,
+                    request()->route()->getName(),
+                    request()->route()->originalParameters()
+                ),
                 'title'           => __('Show Variant'),
                 'pageHead'        => [
                     'title' => $masterVariant->code,
+                    'model'         => __('Master Variants'),
+                    'icon'          => [
+                        'icon'  => ['fal', 'fa-shapes'],
+                        'title' => __('Department')
+                    ],
                     'actions'       => [
                         [
                             'type'  => 'button',
@@ -108,8 +110,18 @@ class ShowMasterVariant extends OrgAction
                         ],
                     ],
                 ],
-                'data'            => $masterVariant,
-                'master_products' => $products,
+                'tabs'                    => [
+                    'current'    => $this->tab,
+                    'navigation' => MasterVariantTabsEnum::navigation()
+                ],
+                MasterVariantTabsEnum::SHOWCASE->value => 
+                    $this->tab === MasterVariantTabsEnum::SHOWCASE->value ? [
+                        'data'            => $masterVariant,
+                        'master_products' => $masterProductInVariant
+                    ] : Inertia::lazy(fn () => [
+                        'data'            => $masterVariant,
+                        'master_products' => $masterProductInVariant,
+                    ]),
             ]
         );
     }
@@ -120,7 +132,49 @@ class ShowMasterVariant extends OrgAction
      */
     public function asController(MasterVariant $masterVariant, ActionRequest $request): Response
     {
-        $this->initialisationFromGroup($masterVariant->group, $request);
+        $this->initialisation($masterVariant->group, $request);
         return $this->handle($masterVariant);
+    }
+
+    public function getBreadcrumbs(MasterVariant $masterVariant, string $routeName, array $routeParameters, $suffix = null): array
+    {
+        $headCrumb = function (MasterVariant $masterVariant, array $routeParameters, $suffix) {
+            return [
+
+                [
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'label' => __('Master variant')
+                        ],
+                        'model' => [
+                            'route' => $routeParameters['model'],
+                            'label' => $masterVariant->code,
+                        ],
+                    ],
+                    'suffix'         => $suffix,
+
+                ],
+
+            ];
+        };
+
+        return array_merge(
+            ShowMasterFamily::make()->getBreadcrumbs(
+                masterFamily: $masterVariant->masterFamily,
+                routeName: 'grp.masters.master_shops.show.master_families.show',
+                routeParameters: $routeParameters,
+            ),
+            $headCrumb(
+                $masterVariant,
+                [
+                    'model' => [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ]
+                ],
+                $suffix
+            )
+        );
     }
 }

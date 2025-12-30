@@ -145,6 +145,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $external_id
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
+ * @property array<array-key, mixed> $categories_data
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -199,6 +200,7 @@ class Order extends Model implements HasMedia, Auditable
         'post_submit_modification_data' => 'array',
         'offer_meters'                  => 'array',
         'shipping_data'                 => 'array',
+        'categories_data'               => 'array',
 
 
         'date'                   => 'datetime',
@@ -248,6 +250,7 @@ class Order extends Model implements HasMedia, Auditable
         'post_submit_modification_data' => '{}',
         'offer_meters'                  => '{}',
         'shipping_data'                 => '{}',
+        'categories_data'               => '{}',
     ];
 
     protected $guarded = [];

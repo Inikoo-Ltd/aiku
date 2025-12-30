@@ -9,7 +9,6 @@
 namespace App\Actions\Traits\Rules;
 
 use App\Rules\IUnique;
-use Illuminate\Validation\Rule;
 
 trait WithStoreOfferRules
 {
@@ -35,7 +34,6 @@ trait WithStoreOfferRules
             'start_at'     => ['sometimes', 'date'],
             'end_at'       => ['sometimes', 'nullable', 'date'],
             'type'         => ['required', 'string'],
-            'trigger_type' => ['sometimes', Rule::in(['Order'])],
         ];
     }
 }

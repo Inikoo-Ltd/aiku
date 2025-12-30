@@ -37,6 +37,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
   const components: any = {
     index: TableSubDepartments,
+    sales: TableSubDepartments,
     need_review: TableSubDepartments,
   }
 

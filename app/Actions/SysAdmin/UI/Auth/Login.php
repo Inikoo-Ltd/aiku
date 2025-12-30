@@ -8,21 +8,22 @@
 
 namespace App\Actions\SysAdmin\UI\Auth;
 
-use App\Actions\SysAdmin\User\AuthoriseUserWithLegacyPassword;
-use App\Actions\SysAdmin\User\LogUserFailLogin;
-use App\Actions\SysAdmin\User\LogUserLogin;
-use App\Actions\Traits\WithLogin;
-use App\Enums\SysAdmin\User\UserAuthTypeEnum;
-use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\User;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use App\Models\SysAdmin\User;
+use App\Actions\Traits\WithLogin;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\ValidationException;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\CRM\Agent\UpdateAgent;
+use Illuminate\Support\Facades\Session;
+use App\Actions\SysAdmin\User\LogUserLogin;
+use Illuminate\Support\Facades\RateLimiter;
+use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use Lorisleiva\Actions\Concerns\AsController;
+use Illuminate\Validation\ValidationException;
+use App\Actions\SysAdmin\User\LogUserFailLogin;
+use App\Actions\SysAdmin\User\AuthoriseUserWithLegacyPassword;
 
 class Login
 {
@@ -87,6 +88,9 @@ class Login
             datetime: now()
         );
 
+        if ($user) {
+            UpdateAgent::make()->setOnline($user->id);
+        }
 
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');

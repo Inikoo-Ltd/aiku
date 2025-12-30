@@ -40,14 +40,14 @@ class EditMasterCollection extends OrgAction
                     'previous' => $this->getPreviousModel($masterCollection, $request),
                     'next'     => $this->getNextModel($masterCollection, $request),
                 ],
-                'title'       => __('Edit Master Collection'),
+                'title'       => __('Edit master collection').': '.$masterCollection->code,
                 'pageHead'    => [
                     'title'   => __('Edit master collection'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('Cancel'),
+                            'label' => __('Exit edit'),
                             'route' => [
                                 'name' => 'grp.masters.master_shops.show.master_collections.show',
                                 'parameters' => array_values($request->route()->originalParameters())

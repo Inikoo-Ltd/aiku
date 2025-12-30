@@ -8,7 +8,7 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Helpers\Translations\TranslateCategoryModel;
+use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
@@ -43,9 +43,9 @@ class RepairProductEmptyTranslatedStrings
                         if ($masterProduct->{$field}) {
                             $command->info("Repairing product $field $product->slug  from  $masterProduct->slug ");
 
-                            TranslateCategoryModel::dispatch(
-                                $product,
-                                [
+                            TranslateModel::dispatch(
+                                model: $product,
+                                translationData: [
                                     $field => $masterProduct->{$field}
                                 ]
                             );
