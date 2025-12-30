@@ -256,17 +256,47 @@ const setLeader = (node: Node, checked: boolean) => {
   }
 }
 
+const isVariantValid = (v: Variant) => {
+  const hasLabel = v.label?.trim().length > 0
+  const validOptions = v.options.filter(o => o?.trim())
+
+  return hasLabel && validOptions.length > 0
+}
+
 const toggleActive = (i: number) => {
+  const v = model.value.variants[i]
+
+  // jika mau CLOSE (Done)
+  if (v.active) {
+    if (!isVariantValid(v)) {
+      alert("Variant name and at least one option are required")
+      return
+    }
+
+    // bersihkan option kosong
+    v.options = v.options.filter(o => o?.trim())
+  }
+
   model.value.variants.forEach(
-    (v, idx) => (v.active = idx === i ? !v.active : false)
+    (variant, idx) => (variant.active = idx === i ? !variant.active : false)
   )
+
+  if (model.value.variants.length == 1)
+    model.value.groupBy =  model.value.variants[i].label
 }
 
 const addVariant = () => {
   model.value.variants.forEach(v => (v.active = false))
-  model.value.variants.push({ label: "", options: [""], active: true })
-}
 
+  model.value.variants.push({
+    label: "",
+    options: [""],
+    active: true
+  })
+
+ 
+
+}
 const addOption = (i: number) => {
   model.value.variants[i].options.push("")
 }
@@ -278,13 +308,21 @@ const removeOption = (vi: number, oi: number) => {
 
 const deleteVariant = (i: number) => {
   model.value.variants.splice(i, 1)
-  model.value.groupBy = model.value.variants[0]?.label ?? ""
+
+  if (
+    !model.value.groupBy ||
+    !model.value.variants.some(v => v.label === model.value.groupBy)
+  ) {
+    model.value.groupBy = model.value.variants[0]?.label ?? ""
+  }
+
   syncProducts()
 }
 
 const noLeader = computed(() => {
   return !Object.values(model.value.products).some(p => p.is_leader)
 })
+
 
 </script>
 
@@ -343,8 +381,9 @@ const noLeader = computed(() => {
                 <Button type="red_outline" size="xs" @click="deleteVariant(vi)">
                   {{ trans('Delete') }}
                 </Button>
-                <Button size="xs" @click="toggleActive(vi)">
-                  {{ trans('Done') }}
+                <Button size="xs" :class="!isVariantValid(v) && 'opacity-50 cursor-not-allowed'"
+                  :disabled="!isVariantValid(v)" @click="toggleActive(vi)">
+                      {{ trans('done') }}
                 </Button>
               </div>
             </div>
@@ -352,10 +391,13 @@ const noLeader = computed(() => {
         </div>
 
         <!-- ADD VARIANT -->
-        <Button v-if="model.variants.length < 2" type="dashed" size="xs" class="mt-2" :icon="faPlus"
-          @click="addVariant">
-          {{ trans('Add Variant') }}
-        </Button>
+        <div>
+          <Button v-if="model.variants.length < 2" type="dashed" size="xs" class="mt-2" :icon="faPlus"
+            @click="addVariant">
+            {{ trans('Add Variant') }}
+          </Button>
+        </div>
+
 
         <!-- GROUP BY -->
         <div class="border-t mt-6 pt-3" v-if="validVariants.length">
@@ -382,11 +424,11 @@ const noLeader = computed(() => {
             <table class="min-w-full table-fixed divide-y">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
-                    {{ trans('Leader') }}
-                  </th>
-                  <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
+                  <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2 text-start">
                     {{ trans('Variant') }}
+                  </th>
+                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
+                    {{ trans('Leader') }}
                   </th>
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
                     {{ trans('Product') }}
@@ -398,11 +440,7 @@ const noLeader = computed(() => {
                 <template v-for="node in buildNodes" :key="keyToString(node.key)">
                   <!-- PARENT -->
                   <tr class="hover:bg-gray-50 h-[70px]">
-                    <td class="px-4 text-center">
-                      <input v-if="!node.children" type="checkbox" :disabled="!node.product" :checked="node.is_leader"
-                        @change="setLeader(node, $event.target.checked)"
-                        class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
-                    </td>
+                  
 
                     <td class="px-4">
                       <div class="flex items-center">
@@ -414,6 +452,12 @@ const noLeader = computed(() => {
 
                         <span class="truncate">{{ node.label }}</span>
                       </div>
+                    </td>
+
+                    <td class="px-4 text-center">
+                      <input v-if="!node.children" type="checkbox" :disabled="!node.product" :checked="node.is_leader"
+                        @change="setLeader(node, $event.target.checked)"
+                        class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
                     <td v-if="!node.children" class="px-4">
@@ -445,14 +489,16 @@ const noLeader = computed(() => {
                   <!-- CHILD -->
                   <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]" :key="keyToString(child.key)"
                     class="hover:bg-gray-50 h-[70px]">
-                    <td class="px-4 text-center">
+                    <td class="px-8 text-sm text-gray-700">
+                      ↳ {{ child.label }}
+                    </td>
+
+                     <td class="px-4 text-center">
                       <input type="checkbox" :disabled="!child.product" :checked="child.is_leader"
                         @change="setLeader(child, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
-                    <td class="px-8 text-sm text-gray-700">
-                      ↳ {{ child.label }}
-                    </td>
+
                     <td class="p-4">
                       <PureMultiselectInfiniteScroll :model-value="child.product"
                         @update:model-value="val => setProduct(child, val)" :fetchRoute="master_assets_route"

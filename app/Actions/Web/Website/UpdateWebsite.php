@@ -64,6 +64,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.jira_help_desk_widget", Arr::pull($modelData, "jira_help_desk_widget"));
         }
 
+        if (Arr::has($modelData, "enable_chat")) {
+            data_set($modelData, "settings.enable_chat", Arr::pull($modelData, "enable_chat"));
+        }
+
         if (Arr::has($modelData, "google_tag_id")) {
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
@@ -236,6 +240,7 @@ class UpdateWebsite extends OrgAction
                 File::types(['txt'])
                     ->max(50) // 50KB max
             ],
+            'enable_chat'              => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
