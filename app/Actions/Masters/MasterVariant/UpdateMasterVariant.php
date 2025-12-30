@@ -23,9 +23,9 @@ class UpdateMasterVariant extends OrgAction
     public function handle(MasterVariant $masterVariant, array $modelData): MasterVariant
     {
         $masterVariant->update($modelData);
-        
+
         // TODO Hydrate Child
-        
+
         return $masterVariant;
     }
 
@@ -38,7 +38,7 @@ class UpdateMasterVariant extends OrgAction
         $this->number_dimensions = count($this->variant['variants']);
         $this->number_used_slots = count($this->variant['products']);
         $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->variant['products']))->select('is_for_sale', true)->count();
-        
+
         $this->data = $request->input('variant');
         $this->leader_id = data_get(collect($request->input('variant.products'))->where('is_leader', true)->first(), 'product.id');
     }

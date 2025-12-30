@@ -63,9 +63,9 @@ class StoreMasterVariant extends OrgAction
                 'leader_id' => __('A leader product must first be selected before being able to generate this variant.')
             ]);
         }
-        
+
         $this->leader_id = data_get(collect($request->input('data_variants.products'))->where('is_leader', true)->first(), 'product.id');
-        
+
         $code = MasterAsset::find($this->leader_id)->code . '-var-' . now()->format('His');
         $this->set('code', $code);
         $this->number_minions = array_reduce(data_get($this->data_variants['variants'], '*.options'), function ($carry, $item) {
@@ -74,7 +74,7 @@ class StoreMasterVariant extends OrgAction
         $this->number_dimensions = count($this->data_variants['variants']);
         $this->number_used_slots = count($this->data_variants['products']);
         $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->data_variants['products']))->select('is_for_sale', true)->count();
-        
+
 
         if ($this->data_variants) {
             $this->set('data', $this->data_variants);

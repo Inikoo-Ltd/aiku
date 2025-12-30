@@ -20,6 +20,9 @@ use App\Actions\HumanResources\Employee\Search\ReindexEmployeeSearch;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployeeWorkingHours;
+use App\Actions\HumanResources\Holiday\DeleteHoliday;
+use App\Actions\HumanResources\Holiday\StoreHoliday;
+use App\Actions\HumanResources\Holiday\UpdateHoliday;
 use App\Actions\HumanResources\JobPosition\HydrateJobPosition;
 use App\Actions\HumanResources\JobPosition\Search\ReindexJobPositionSearch;
 use App\Actions\HumanResources\Timesheet\HydrateTimesheets;
@@ -32,6 +35,7 @@ use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Holiday\HolidayTypeEnum;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
@@ -39,6 +43,7 @@ use App\Models\Helpers\Address;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\JobPositionStats;
 use App\Models\HumanResources\Timesheet;
@@ -755,4 +760,73 @@ test('UI get section route hr employee index', function () {
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_HR->value)
         ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
+});
+
+it('can store a holiday', function () {
+    $organisation = createOrganisation();
+
+    $holidayData = [
+        'type'  => HolidayTypeEnum::PUBLIC->value,
+        'label' => 'New Year',
+        'from'  => '2026-01-01',
+        'to'    => '2026-01-01',
+    ];
+
+    $holiday = StoreHoliday::run($organisation, $holidayData);
+
+    expect($holiday)->toBeInstanceOf(Holiday::class)
+        ->and($holiday->label)->toBe('New Year')
+        ->and($holiday->type)->toBe(HolidayTypeEnum::PUBLIC)
+        ->and($holiday->year)->toBe(2026);
+
+    $this->assertDatabaseHas('holidays', [
+        'id'              => $holiday->id,
+        'organisation_id' => $organisation->id,
+        'label'           => 'New Year',
+    ]);
+});
+
+it('can update a holiday', function () {
+    $organisation = createOrganisation();
+    $holiday      = Holiday::create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+        'type'            => HolidayTypeEnum::PUBLIC->value,
+        'year'            => 2026,
+        'label'           => 'Old Label',
+        'from'            => '2026-01-01',
+        'to'              => '2026-01-01',
+    ]);
+
+    $updateData = [
+        'label' => 'Updated Label',
+    ];
+
+    $updatedHoliday = UpdateHoliday::run($holiday, $updateData);
+
+    expect($updatedHoliday->label)->toBe('Updated Label');
+
+    $this->assertDatabaseHas('holidays', [
+        'id'    => $holiday->id,
+        'label' => 'Updated Label',
+    ]);
+});
+
+it('can delete a holiday', function () {
+    $organisation = createOrganisation();
+    $holiday      = Holiday::create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+        'type'            => HolidayTypeEnum::PUBLIC->value,
+        'year'            => 2026,
+        'label'           => 'New Year',
+        'from'            => '2026-01-01',
+        'to'              => '2026-01-01',
+    ]);
+
+    DeleteHoliday::run($holiday);
+
+    $this->assertDatabaseMissing('holidays', [
+        'id' => $holiday->id,
+    ]);
 });

@@ -50,6 +50,7 @@ const footer = usePage().props?.iris?.footer
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
+const useChat = usePage().props?.use_chat
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
@@ -280,7 +281,7 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     </notifications>
 
 
-    <ChatButton data="null" v-if="layout?.retina?.type === 'fulfilment'" />
+    <ChatButton data="null" v-if="useChat" />
 
 
 </template>
