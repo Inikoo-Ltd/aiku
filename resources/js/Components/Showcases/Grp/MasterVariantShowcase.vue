@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
-import { computed, provide, ref } from "vue"
+import { computed, provide, ref, watch } from "vue"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faImage)
 
@@ -46,21 +47,27 @@ type MasterProduct = {
 
 const props = defineProps<{
     data: {
-		data: {
+		master_variant: {
 			data: {
 				variants: Variant[]
 				products: Record<string, VariantProductMap>
 			}
 		}
+        master_products: {
+            data: MasterProduct[]
+        }
 	}
 }>()
 
-const variants = computed(() => props.data?.data?.data?.variants || [])
-const products = computed(() => Object.values(props.data?.data?.data?.products || {}))
+const variants = computed(() => props.data?.master_variant?.data?.variants || [])
+const products = computed(() => Object.values(props.data?.master_variant?.data?.products || {}))
 
 const selectedVariants = ref<Record<string, string>>(
     Object.fromEntries(variants.value.map(v => [v.label, v.options[0] || ""]))
 )
+
+const leaderProduct = Object.values(products.value).find(p => p.is_leader);
+if(leaderProduct) selectedVariants.value = Object.fromEntries(variants.value.map(v => [v.label, leaderProduct[v.label] ?? ""]));
 
 const toggleVariant = (label: string, option: string) => {
     selectedVariants.value[label] = option
@@ -91,7 +98,7 @@ console.log(selectedProduct.value,props);
 <template>
     <!-- MAIN GRID -->
     <section class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-
+        
         <!-- LEFT : VARIANT + IMAGE -->
         <div class="bg-white p-4 rounded-xl shadow-sm space-y-5">
 
@@ -121,7 +128,7 @@ console.log(selectedProduct.value,props);
 
                     <div v-else class="flex flex-col items-center justify-center text-gray-400">
                         <FontAwesomeIcon icon="image" class="text-4xl mb-2" />
-                        <span class="text-xs">No product image</span>
+                        <span class="text-xs">{{ trans('No product image') }}</span>
                     </div>
                 </div>
 
@@ -133,7 +140,16 @@ console.log(selectedProduct.value,props);
         </div>
 
         <!-- CENTER : PRODUCT DETAIL -->
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-2 pt-4">
+            <div class="mb-3 grid grid-cols-2">
+                <span class="text-xl font-medium pl-5 text-gray-500">
+                    {{ trans('Product Name:') }}
+                </span>
+                <span class="text-xl font-medium pr-5 text-right">
+                    {{ selectedProduct?.name ?? '-' }}
+                </span>
+            </div>
+
             <TradeUnitMasterProductSummary v-if="selectedProduct" :data="selectedProduct" :gpsr="selectedProduct.gpsr"
                 :properties="selectedProduct.properties" :attachments="selectedProduct.attachment_box" />
         </div>

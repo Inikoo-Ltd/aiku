@@ -123,11 +123,11 @@ class AssignChatToAgent
     public function getValidationMessages(): array
     {
         return [
-            'agent_id.required' => 'Agent ID is required',
-            'agent_id.integer' => 'Agent ID must be an integer',
-            'agent_id.exists' => 'Agent not found',
-            'note.string' => 'Transfer reason must be a string',
-            'note.max' => 'Transfer reason must not exceed 500 characters',
+            'agent_id.required'     => __('Agent ID is required'),
+            'agent_id.integer'      => __('Agent ID must be an integer'),
+            'agent_id.exists'       => __('Agent not found'),
+            'note.string'           => __('Transfer reason must be a string'),
+            'note.max'              => __('Transfer reason must not exceed 500 characters'),
         ];
     }
 
