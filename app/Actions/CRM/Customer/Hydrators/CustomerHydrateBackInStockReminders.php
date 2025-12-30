@@ -10,6 +10,7 @@
 namespace App\Actions\CRM\Customer\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Models\CRM\BackInStockReminderSnapshot;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,11 +38,10 @@ class CustomerHydrateBackInStockReminders implements ShouldBeUnique
         }
 
         $stats = [
-            'number_reminders' => $customer->backInStockReminder()->whereNull('un_reminded_at')->count(),
-            'number_reminders_cancelled' => $customer->backInStockReminder()->whereNotNull('un_reminded_at')->count(),
+            'number_reminders' => BackInStockReminderSnapshot::where('customer_id', $customerId)->whereNull('reminder_cancelled_at')->whereNotNull('reminder_sent_at')->count(),
+            'number_reminders_cancelled' => BackInStockReminderSnapshot::where('customer_id', $customerId)->whereNotNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
         ];
 
         $customer->stats()->update($stats);
     }
-
 }
