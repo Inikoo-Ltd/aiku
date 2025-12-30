@@ -390,14 +390,17 @@ const onCopyDataCustomer = (field: string) => {
 					<div class="flex flex-col justify-between gap-x-2 relative">
 						<!-- <pre>{{ shipment }}</pre> -->
 						<div class="font-semibold text-sm flex items-center gap-2">
-							<img
+							<img v-if="shipment.shipper_slug"
 								:src="
-									shipment.slug
-										? `/assets/shipper_logo/${shipment.slug}.png`
+									shipment.shipper_slug
+										? `/assets/shipper_logo/${shipment.shipper_slug}.png`
 										: null
 								"
 								:alt="shipment.name"
-								class="h-4 w-4 object-contain" />
+								class="h-4 w-4 object-contain"
+								:title="shipment.name"
+								v-tooltip="shipment.name"
+							/>
 							<span>{{ shipment.name }}</span>
 						</div>
 						<!-- <div class="font-semibold text-sm">{{ shipment.name }}</div> -->
