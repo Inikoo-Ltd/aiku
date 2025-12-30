@@ -15,8 +15,9 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterVariant;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterVariant extends OrgAction
@@ -50,19 +51,30 @@ class StoreMasterVariant extends OrgAction
             return $masterVariant;
         });
 
+        // TODO Hydrate Child
+
         return $masterVariant;
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        // TODOO
-        // Change to real Code Getter
-        $code = MasterAsset::find($this->product_leader)->code . '-var-' . now()->format('His');
-        $this->set('code', $code);
-
-        if ($this->product_leader) {
-            $this->set('leader_id', $this->product_leader);
+        if (!collect($request->input('data_variants.products'))->where('is_leader', true)->count() > 0) {
+            throw ValidationException::withMessages([
+                'leader_id' => __('A leader product must first be selected before being able to generate this variant.')
+            ]);
         }
+
+        $this->leader_id = data_get(collect($request->input('data_variants.products'))->where('is_leader', true)->first(), 'product.id');
+
+        $code = MasterAsset::find($this->leader_id)->code . '-var-' . now()->format('His');
+        $this->set('code', $code);
+        $this->number_minions = array_reduce(data_get($this->data_variants['variants'], '*.options'), function ($carry, $item) {
+            return $carry * count($item);
+        }, 1);
+        $this->number_dimensions = count($this->data_variants['variants']);
+        $this->number_used_slots = count($this->data_variants['products']);
+        $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->data_variants['products']))->select('is_for_sale', true)->count();
+
 
         if ($this->data_variants) {
             $this->set('data', $this->data_variants);
@@ -72,23 +84,35 @@ class StoreMasterVariant extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id' => [
-                'required',
-                Rule::exists('master_assets', 'id')
-            ],
-            'code' => [
-                'required',
-                'max:32',
-                new AlphaDashDot(),
-                new IUnique(
-                    table: 'master_variants',
-                    extraConditions: [
-                        ['column' => 'master_shop_id', 'value' => $this->masterShop->id ?? null],
-                        ['column' => 'deleted_at', 'operator' => 'null'],
-                    ]
-                ),
-            ],
-            'data' => ['sometimes', 'array'],
+            'leader_id'                     =>  ['required', 'exists:master_assets,id'],
+            'code'                          =>  [
+                                                    'required',
+                                                    'max:32',
+                                                    new AlphaDashDot(),
+                                                    new IUnique(
+                                                        table: 'master_variants',
+                                                        extraConditions: [
+                                                            ['column' => 'master_shop_id', 'value' => $this->masterShop->id ?? null],
+                                                            ['column' => 'deleted_at', 'operator' => 'null'],
+                                                        ]
+                                                    ),
+                                                ],
+            'number_minions'                =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
+            'number_dimensions'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
+            'number_used_slots'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
+            'number_used_slots_for_sale'    =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
+            'data'                          =>  ['required', 'array'],
+            'data.variants'                 =>  ['sometimes', 'array'],
+            'data.groupBy'                  =>  ['sometimes', 'string'],
+            'data.products'                 =>  ['sometimes', 'array', 'min:1'],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'data.groupBy'          => __('A grouping criteria must be selected'),
+            'data.products.min'     => __('At least one product must be present in the variant'),
         ];
     }
 
@@ -107,16 +131,31 @@ class StoreMasterVariant extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterVariant
+    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): RedirectResponse
     {
         $this->initialisationFromGroup($masterProductCategory->group, $request);
 
-        return $this->handle($masterProductCategory, $this->validatedData);
+        $masterVariant = $this->handle($masterProductCategory, $this->validatedData);
+
+        return $this->redirectSuccess($masterVariant, $request);
     }
 
-    public function jsonResponse(MasterVariant $masterVariant): MasterVariant
+    public function redirectSuccess(MasterVariant $masterVariant, ActionRequest $request): RedirectResponse
     {
-        return $masterVariant;
+        return redirect()
+            ->route('grp.masters.master_shops.show.master_families.show', [
+                'tab'          => 'variants',
+                'masterShop'    => $masterVariant->masterShop->slug,
+                'masterFamily'  => $masterVariant->masterFamily->slug,
+            ])
+            ->with(
+                'notification',
+                [
+                    'status'  => 'success',
+                    'title'   => __('Success!'),
+                    'description' => __('Master Variant :_masterVarCode has been created successfully.', ['_masterVarCode' => $masterVariant->code]),
+                ]
+            )
+            ->setStatusCode(303); // important for inertia POST redirects
     }
-
 }

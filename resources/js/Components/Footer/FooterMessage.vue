@@ -31,7 +31,7 @@ const onPinTab = () => {
 }
 
 
-console.log('message',layout)
+
 </script>
 
 <template>

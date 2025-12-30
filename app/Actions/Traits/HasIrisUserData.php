@@ -67,6 +67,12 @@ trait HasIrisUserData
             }
         }
 
+        $grData = [
+            'is_gr'           => false,
+            'is_gr_armistice' => false,
+            'meter'           => [0, 30]
+        ];
+
         return [
             'is_logged_in' => true,
             'auth'         => [
@@ -86,8 +92,8 @@ trait HasIrisUserData
                 'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
             // 'traffic_source_cookies' => CaptureTrafficSource::run(),
-            'offer_meters' => $offerMeters
-
+            'offer_meters' => $offerMeters,
+            'gr_data'      => $grData,
         ];
     }
 }

@@ -12,7 +12,7 @@ import Message from "primevue/message";
 import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue";
 import ReviewContent from '@/Components/ReviewContent.vue';
-import SalesIntervalsCompact from '@/Components/Product/SalesIntervalsCompact.vue';
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
 import { faExternalLink } from '@far';
 import { routeType } from "@/types/route"
 
@@ -51,7 +51,7 @@ const props = withDefaults(defineProps<{
         storeFamilyRoute: any
         shopsData: any
     };
-    salesIntervals?: object;
+    salesData?: object;
     isMaster?: boolean
 }>(), {
     // Default values
@@ -131,9 +131,9 @@ const openFamilyModal = () => {
                 <!-- Spacing / Content area -->
             </div>
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
-                <!-- Sales Intervals -->
-                <SalesIntervalsCompact v-if="salesIntervals" :intervalsData="salesIntervals" />
-                
+                <!-- Sales Analytics Compact -->
+                <SalesAnalyticsCompact v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0" :salesData="salesData" />
+
                 <!-- Master Navigation or Review Content -->
                 <MasterNavigation v-if="isMaster"
                     sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"

@@ -8,7 +8,6 @@ use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -27,7 +26,7 @@ class GetFaireOrders extends OrgAction
     {
         DB::transaction(function () use ($shop) {
             $orders = $shop->getFaireOrders([
-                'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
+                // 'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
             ]);
 
             foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
@@ -35,7 +34,7 @@ class GetFaireOrders extends OrgAction
                 $retailerId = Arr::get($faireOrder, 'retailer_id');
                 $retailer = GetFaireRetailers::run($shop, $retailerId);
 
-                $orderExists = Order::where('external_id', $externalId)->exists();
+                $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
 
                 if ($orderExists) {
                     continue;
@@ -65,7 +64,7 @@ class GetFaireOrders extends OrgAction
                             ->where('code', $item['sku'])
                             ->first();
 
-                        $historicAsset = $product->asset?->historicAsset;
+                        $historicAsset = $product?->asset?->historicAsset;
 
                         if (! $historicAsset) {
                             continue;

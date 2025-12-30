@@ -7,7 +7,6 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -27,13 +26,13 @@ class GetFaireProducts extends OrgAction
 
         foreach (Arr::get($products, 'products', []) as $product) {
             foreach ($product['variants'] as $variant) {
-                $masterAsset = MasterAsset::where('code', 'ILIKE','%' . $variant['sku'] . '%')->first();
+                $masterAsset = MasterAsset::where('code', 'ILIKE', '%' . $variant['sku'] . '%')->first();
 
                 if (! $masterAsset) {
                     continue;
                 }
 
-                if(Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
+                if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
                     continue;
                 }
 
@@ -57,7 +56,6 @@ class GetFaireProducts extends OrgAction
                     'trade_units' => $tradeUnits
                 ]);
 
-                StoreAsset::run($product, []);
                 StoreHistoricAsset::run($product, []);
 
                 echo $product->code . "\n";

@@ -114,12 +114,12 @@ class ShowMasterVariant extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterVariantTabsEnum::navigation()
                 ],
-                MasterVariantTabsEnum::SHOWCASE->value => 
+                MasterVariantTabsEnum::SHOWCASE->value =>
                     $this->tab === MasterVariantTabsEnum::SHOWCASE->value ? [
-                        'data'            => $masterVariant,
+                        'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant
                     ] : Inertia::lazy(fn () => [
-                        'data'            => $masterVariant,
+                        'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant,
                     ]),
             ]

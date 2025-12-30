@@ -123,7 +123,7 @@ class ShowOutbox extends OrgAction
             unset($navigation[OutboxTabsEnum::MAILSHOTS->value]);
         }
 
-        if (!in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
+        if (!in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD, OutboxCodeEnum::OOS_NOTIFICATION])) {
             unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }
 

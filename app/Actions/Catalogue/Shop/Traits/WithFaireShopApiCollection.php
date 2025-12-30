@@ -54,7 +54,7 @@ trait WithFaireShopApiCollection
             );
 
         if ($response->successful()) {
-            if($isFileDownload) {
+            if ($isFileDownload) {
                 return $response->body();
             }
 
