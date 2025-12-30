@@ -14,7 +14,7 @@ use App\Models\CRM\Customer;
 use App\Actions\Comms\Email\SendReOrderRemainderToCustomerEmail;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
-use App\Actions\Comms\Outbox\ReorderRemainder\WithGenerateEmailBulkRuns;
+use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Customer\CustomerStateEnum;
