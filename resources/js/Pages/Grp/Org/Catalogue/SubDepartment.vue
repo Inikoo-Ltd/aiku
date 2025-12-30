@@ -78,7 +78,8 @@ const props = defineProps<{
     mailshots: {}
     products: {}
     history?: {}
-    images?:object
+    images?: object
+    salesData?: object
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -167,7 +168,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData"></component>
 
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
