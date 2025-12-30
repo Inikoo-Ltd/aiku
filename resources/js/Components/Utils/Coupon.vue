@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
 
 const props = defineProps<{
@@ -15,6 +16,7 @@ const props = defineProps<{
         duration: string  // 'permanent'
         created_at: string
         end_at: string
+        percentage_off: string
     }[]
     currency_code: string
 }>()
@@ -24,14 +26,27 @@ const locale = inject('locale', aikuLocaleStructure)
 
 <template>
     <div class="p-8 flex flex-wrap gap-2">
-        <section v-for="offer in first_order_bonus" class="card w-96 bg-gradient-to-l from-teal-300 to-teal-500 text-white">
-            <div class="text-center  text-base w-[88px] flex flex-col justify-center px-1">
-                {{ locale.currencyFormat(currency_code, offer.trigger_data?.min_amount ?? 0) }}
-                <span class="text-xs">Min. quantity: {{ offer.trigger_data?.order_number ?? '-' }}</span>
+        <section v-for="offer in first_order_bonus" class="card w-96 bg-gradient-to-l from-purple-300 to-purple-500/90 text-white">
+            <div class="text-center text-base w-[88px] flex flex-col justify-center px-1">
+                <span class="text-2xl font-black">{{ Number(offer.percentage_off ?? 0)*100 }}%</span>
+                <span class="text-xxs tracking-[0.3em]">
+                    {{ trans("Discount") }}
+                </span>
             </div>
             <div class="card-right">
-                <p class="card-info">{{ offer.name }}</p>
-                <strong class="text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.created_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : 'Not described' }}</strong>
+                <span class="text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.created_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : trans('Finished') }}</span>
+                <p class="text-base font-semibold leading-none">{{ offer.name }}</p>
+                <div class="mt-2 grid grid-cols-2 gap-x-2 gap-y-0">
+                    <div class="text-xxs">
+                        {{ trans("Min. amount") }}: {{ locale.currencyFormat(currency_code, offer.trigger_data?.min_amount ?? 0) }}
+                    </div>
+                    <div class="text-xxs">
+                        {{ trans("Min. order") }}: {{ offer.trigger_data?.order_number ?? '-' }}
+                    </div>
+                    <div class="text-xxs">
+                        {{ trans("Min. quantity") }}: {{ offer.trigger_data?.item_quantity ?? '-' }}
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -59,10 +74,5 @@ const locale = inject('locale', aikuLocaleStructure)
     display: flex;
     flex: 1;
     flex-direction: column;
-}
-.card-info{
-    margin: 0;
-    font-size: 14px;
-    line-height: 20px;
 }
 </style>
