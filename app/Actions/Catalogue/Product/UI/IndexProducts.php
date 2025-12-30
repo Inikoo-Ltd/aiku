@@ -14,17 +14,14 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\AllowedSort;
-use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexProducts extends OrgAction
 {
@@ -57,6 +54,20 @@ class IndexProducts extends OrgAction
 
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
+        // Use reusable time series aggregation method
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'customers_invoiced' => 'customers_invoiced',
+                'sales_grp_currency' => 'sales',
+                'invoices' => 'invoices'
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: true
+        );
 
         if ($bucket == 'current') {
             $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
@@ -83,20 +94,6 @@ class IndexProducts extends OrgAction
             }
         }
 
-        $interval = request()->input('interval', 'all');
-
-        $customersInvoicedColumn = $interval === 'all'
-            ? 'NULL'
-            : "asset_ordering_intervals.customers_invoiced_{$interval}_ly";
-
-        $salesLyColumn = $interval === 'all'
-            ? 'NULL'
-            : "asset_sales_intervals.sales_grp_currency_{$interval}_ly";
-
-        $invoicesLyColumn = $interval === 'all'
-            ? 'NULL'
-            : "asset_ordering_intervals.invoices_{$interval}_ly";
-
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -108,15 +105,24 @@ class IndexProducts extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
-                DB::raw("asset_ordering_intervals.customers_invoiced_{$interval} as customers_invoiced"),
-                DB::raw("{$customersInvoicedColumn} as customers_invoiced_ly"),
-                DB::raw("asset_sales_intervals.sales_grp_currency_{$interval} as sales"),
-                DB::raw("{$salesLyColumn} as sales_ly"),
-                DB::raw("asset_ordering_intervals.invoices_{$interval} as invoices"),
-                DB::raw("{$invoicesLyColumn} as invoices_ly"),
-                DB::raw("'{$interval}' as current_interval"),
+                $timeSeriesData['selectRaw']['customers_invoiced'],
+                $timeSeriesData['selectRaw']['customers_invoiced_ly'],
+                $timeSeriesData['selectRaw']['sales'],
+                $timeSeriesData['selectRaw']['invoices'],
+                $timeSeriesData['selectRaw']['sales_ly'],
+                $timeSeriesData['selectRaw']['invoices_ly'],
             ])
-            ->selectRaw("'{$shop->currency->code}' as currency_code");
+            ->selectRaw("'{$shop->currency->code}' as currency_code")
+            ->groupBy([
+                'products.id',
+                'products.code',
+                'products.name',
+                'products.state',
+                'products.price',
+                'products.created_at',
+                'products.updated_at',
+                'products.slug',
+            ]);
 
         return $queryBuilder->allowedSorts([
                 'code',
@@ -124,48 +130,9 @@ class IndexProducts extends OrgAction
                 'shop_slug',
                 'department_slug',
                 'family_slug',
-                AllowedSort::custom(
-                    'customers_invoiced',
-                    new class ($interval) implements Sort {
-                        public function __construct(private string $interval)
-                        {
-                        }
-
-                        public function __invoke(Builder $query, bool $descending, string $property)
-                        {
-                            $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("asset_ordering_intervals.customers_invoiced_{$this->interval}", $direction);
-                        }
-                    }
-                ),
-                AllowedSort::custom(
-                    'sales',
-                    new class ($interval) implements Sort {
-                        public function __construct(private string $interval)
-                        {
-                        }
-
-                        public function __invoke(Builder $query, bool $descending, string $property)
-                        {
-                            $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("asset_sales_intervals.sales_grp_currency_{$this->interval}", $direction);
-                        }
-                    }
-                ),
-                AllowedSort::custom(
-                    'invoices',
-                    new class ($interval) implements Sort {
-                        public function __construct(private string $interval)
-                        {
-                        }
-
-                        public function __invoke(Builder $query, bool $descending, string $property)
-                        {
-                            $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("asset_ordering_intervals.invoices_{$this->interval}", $direction);
-                        }
-                    }
-                ),
+                'customers_invoiced',
+                'sales',
+                'invoices',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -192,7 +159,7 @@ class IndexProducts extends OrgAction
             }
 
             if ($sales) {
-                $table->withInterval();
+                $table->betweenDates(['date']);
             }
 
             $table
