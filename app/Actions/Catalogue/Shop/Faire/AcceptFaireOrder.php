@@ -10,6 +10,10 @@ class AcceptFaireOrder extends OrgAction
 {
     public function handle(Shop $shop, Order $order): array
     {
-        return $shop->acceptFaireOrder($order->external_id);
+        $acceptedOrder = $shop->acceptFaireOrder($order->external_id);
+
+        GetFairePackingPdfSlip::run($shop, $order, true);
+
+        return $acceptedOrder;
     }
 }
