@@ -116,6 +116,7 @@ trait WithSendBulkEmails
             'pay-info' => Arr::get($additionalData, 'pay_info'),
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
+            'products' => Arr::get($additionalData, 'products'),
 
             default => $originalPlaceholder,
         };

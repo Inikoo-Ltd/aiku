@@ -45,7 +45,7 @@ const props = defineProps<{
         collections: { dataList: routeType, submitAttach: routeType, detach: routeType }
     }
     url_master: routeType | null
-    salesIntervals?: object
+    salesData?: object
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -191,7 +191,7 @@ const onSubmitAttach = async ({
         :data="props[currentTab as keyof typeof props]"
         :tab="currentTab"
         :routes="props.routes?.[currentTab]"
-        :salesIntervals="salesIntervals"
+        :salesData="salesData"
     />
 
     <!-- Modal: Products -->

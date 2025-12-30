@@ -104,7 +104,7 @@ const props = defineProps<{
     }
     webpage_canonical_url?: string
     sales: {}
-    salesIntervals?: object
+    salesData?: object
     is_single_trade_unit?: boolean
     trade_unit_slug?: string
 }>()
@@ -191,7 +191,7 @@ const showMissingTaxonomyMessage = computed(() => {
     </div>
 
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesIntervals="salesIntervals" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
 </template>
 
 
