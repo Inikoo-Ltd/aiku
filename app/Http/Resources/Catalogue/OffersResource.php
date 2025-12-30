@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 
 /**
  * @property int $shop_id
@@ -29,6 +30,7 @@ class OffersResource extends JsonResource
             'shop_slug'           => $this->shop_slug,
             'offer_campaign_slug' => $this->offer_campaign_slug,
             'slug'                => $this->slug,
+            'state'                => OfferStateEnum::stateIcon()[$this->state->value],
             'code'                => $this->code,
             'name'                => $this->name,
             'organisation_name' => $this->organisation_name,

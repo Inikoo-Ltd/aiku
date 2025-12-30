@@ -20,4 +20,56 @@ enum OfferStateEnum: string
     case SUSPENDED = 'suspended';
 
 
+    public static function labels(): array
+    {
+        return [
+            self::IN_PROCESS->value => __('In process'),
+            self::ACTIVE->value  => __('Active'),
+            self::FINISHED->value => __('Finished'),
+            self::SUSPENDED->value  => __('Suspended'),
+        ];
+    }
+
+    public static function stateIcon(): array
+    {
+        return [
+            self::IN_PROCESS->value         => [
+                'tooltip' => self::labels()[self::IN_PROCESS->value],
+                'icon'    => 'fal fa-seedling',
+                'class'   => 'text-lime-500',  // Color for normal icon (Aiku)
+                'color'   => 'lime',  // Color for box (Retina)
+                'app'     => [
+                    'name' => 'seedling',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            self::ACTIVE->value         => [
+                'tooltip' => self::labels()[self::ACTIVE->value],
+                'icon'    => 'fal fa-broadcast-tower',
+                'class'   => 'text-green-600 animate-pulse'
+            ],
+            self::FINISHED->value         => [
+                'tooltip' => self::labels()[self::FINISHED->value],
+                'icon'    => 'fal fa-tasks',
+                'class'   => 'text-gray-500',
+                'color'   => 'purple',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            self::SUSPENDED->value         => [
+                'tooltip' => self::labels()[self::SUSPENDED->value],
+                'icon'    => 'fal fa-ban',
+                'class'   => 'text-red-500',
+                'color'   => 'slate',
+                'app'     => [
+                    'name' => 'ban',
+                    'type' => 'font-awesome-5'
+                ]
+            ]
+        ];
+    }
+
+
 }
