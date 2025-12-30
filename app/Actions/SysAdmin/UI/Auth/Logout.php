@@ -8,9 +8,10 @@
 
 namespace App\Actions\SysAdmin\UI\Auth;
 
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
+use App\Actions\CRM\Agent\UpdateAgent;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class Logout
@@ -20,6 +21,10 @@ class Logout
 
     public function handle(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        if ($user) {
+            UpdateAgent::make()->setOffline($user->id);
+        }
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

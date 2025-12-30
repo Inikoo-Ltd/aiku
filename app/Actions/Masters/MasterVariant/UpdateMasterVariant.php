@@ -11,8 +11,6 @@ namespace App\Actions\Masters\MasterVariant;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterVariant;
-use App\Rules\AlphaDashDot;
-use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterVariant extends OrgAction
@@ -26,22 +24,16 @@ class UpdateMasterVariant extends OrgAction
         return $this->update($masterVariant, $modelData, ['data']);
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $this->data = $request->input('variant');
+        $this->leader_id = data_get(collect($request->input('variant.products'))->where('is_leader', true)->first(), 'product.id');
+    }
+
     public function rules(): array
     {
         return [
-            'code' => [
-                'sometimes',
-                'max:32',
-                new AlphaDashDot(),
-                new IUnique(
-                    table: 'master_variants',
-                    extraConditions: [
-                        ['column' => 'master_shop_id', 'value' => $this->masterVariant->master_shop_id ?? null],
-                        ['column' => 'deleted_at', 'operator' => 'null'],
-                        ['column' => 'id', 'value' => $this->masterVariant->id ?? null, 'operator' => '!='],
-                    ]
-                ),
-            ],
+            'leader_id' => ['required', 'exists:master_assets,id',],
             'data' => ['sometimes', 'array'],
         ];
     }

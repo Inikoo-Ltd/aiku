@@ -388,18 +388,53 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ] : [],
-                $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE ?
-                    [
-                        'label' => __('Faire Keys'),
-                        'icon'   => 'fa-light fa-key',
-                        'fields' => [
-                            'faire_access_token' => [
-                                'type'  => 'input',
-                                'label' => __('Faire Access Token'),
-                                'value' => Arr::get($shop->settings, 'faire.access_token', ''),
-                            ]
+                $shop->type === ShopTypeEnum::EXTERNAL ?
+                    match ($shop->engine) {
+                        ShopEngineEnum::FAIRE => [
+                            'label' => __('Faire Keys'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => [
+                                'faire_access_token' => [
+                                    'type'  => 'input',
+                                    'label' => __('Faire Access Token'),
+                                    'value' => Arr::get($shop->settings, 'faire.access_token', ''),
+                                ]
+                            ],
                         ],
-                    ] : [],
+                        ShopEngineEnum::WIX => [
+                            'label' => __('Wix Keys'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => [
+                                'wix_access_token' => [
+                                    'type'  => 'input',
+                                    'label' => __('Wix Access Token'),
+                                    'value' => Arr::get($shop->settings, 'wix.access_token', ''),
+                                ]
+                            ],
+                        ],
+                        ShopEngineEnum::SHOPIFY => [
+                            'label' => __('Shopify Keys'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => [
+                                'shopify_api_secret' => [
+                                    'type'  => 'input',
+                                    'label' => __('Shopify Access Token'),
+                                    'value' => Arr::get($shop->settings, 'shopify.api_secret', ''),
+                                ],
+                                'shopify_api_key' => [
+                                    'type'  => 'input',
+                                    'label' => __('Shopify Access Token'),
+                                    'value' => Arr::get($shop->settings, 'shopify.api_key', ''),
+                                ],
+                                'shopify_access_token' => [
+                                    'type'  => 'input',
+                                    'label' => __('Shopify Access Token'),
+                                    'value' => Arr::get($shop->settings, 'shopify.access_token', ''),
+                                ]
+                            ],
+                        ],
+                        default => []
+                    } : [],
                 [
                     'label'  => __('HELP Portal'),
                     'icon'   => 'fal fa-life-ring',

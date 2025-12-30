@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Vika Aqordi
  * Created on 22-12-2025-16h-04m
@@ -10,32 +11,17 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentNavigation;
-use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilyNavigation;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
-use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
-use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
-use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
-use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
-use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
 class IndexMasterProductsBulkEdit extends GrpAction
 {

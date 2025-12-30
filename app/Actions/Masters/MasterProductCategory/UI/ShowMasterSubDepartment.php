@@ -17,8 +17,8 @@ use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigati
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
-use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Masters\MasterSubDepartmentsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
@@ -69,62 +69,64 @@ class ShowMasterSubDepartment extends GrpAction
         return Inertia::render(
             'Masters/MasterSubDepartment',
             [
-                'title'       => __('Master sub-department'),
-                 'breadcrumbs' => $this->getBreadcrumbs(
-                     $masterSubDepartment,
-                     $request->route()->getName(),
-                     $request->route()->originalParameters()
-                 ),
-                'navigation'  => [
+                'title'            => __('Master sub-department').': '.$masterSubDepartment->code,
+                'breadcrumbs'      => $this->getBreadcrumbs(
+                    $masterSubDepartment,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'navigation'       => [
                     'previous' => $this->getPreviousModel($masterSubDepartment, $request),
                     'next'     => $this->getNextModel($masterSubDepartment, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => $masterSubDepartment->masterDepartment->name,
-                            'to'    => [
+                            'label'   => $masterSubDepartment->masterDepartment->name,
+                            'to'      => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show',
                                 'parameters' => [
-                                    'masterShop'         => $masterSubDepartment->masterShop->slug,
-                                    'masterDepartment'   => $masterSubDepartment->masterDepartment->slug
+                                    'masterShop'       => $masterSubDepartment->masterShop->slug,
+                                    'masterDepartment' => $masterSubDepartment->masterDepartment->slug
                                 ]
                             ],
                             'tooltip' => 'Master Department',
-                            'icon' => ['fal', 'folder-tree']
+                            'icon'    => ['fal', 'folder-tree']
                         ],
                         [
-                            'label' => $masterSubDepartment->name,
-                            'to'    => [
+                            'label'   => $masterSubDepartment->name,
+                            'to'      => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                                 'parameters' => [
-                                    'masterShop'         => $masterSubDepartment->masterShop->slug,
-                                    'masterDepartment'   => $masterSubDepartment->masterDepartment->slug,
+                                    'masterShop'          => $masterSubDepartment->masterShop->slug,
+                                    'masterDepartment'    => $masterSubDepartment->masterDepartment->slug,
                                     'masterSubDepartment' => $masterSubDepartment->slug
                                 ]
                             ],
                             'tooltip' => __('Master Sub-Department'),
-                            'icon' => ['fal', 'folder-download']
+                            'icon'    => ['fal', 'folder-download']
                         ],
                     ],
                 ),
-                'pageHead'    => [
-                    'title'   => $masterSubDepartment->name,
-                    'model'   => __('Master sub-department'),
-                    'icon'    => [
+                'pageHead'         => [
+                    'title'         => $masterSubDepartment->name,
+                    'model'         => __('Master sub-department'),
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-folder-download'],
                         'title' => __('Master sub-department')
                     ],
-                    'iconRight' => $masterSubDepartment->status ? [
-                        'tooltip' => __('Active'),
-                        'icon'    => 'fas fa-check-circle',
-                        'class'   => 'text-green-400'
-                    ] : [
-                        'tooltip' => __('Closed'),
-                        'icon'    => 'fas fa-times-circle',
-                        'class'   => 'text-red-400'
-                    ],
-                    'actions' => [
+                    'iconRight'     => $masterSubDepartment->status
+                        ? [
+                            'tooltip' => __('Active'),
+                            'icon'    => 'fas fa-check-circle',
+                            'class'   => 'text-green-400'
+                        ]
+                        : [
+                            'tooltip' => __('Closed'),
+                            'icon'    => 'fas fa-times-circle',
+                            'class'   => 'text-red-400'
+                        ],
+                    'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -144,13 +146,13 @@ class ShowMasterSubDepartment extends GrpAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
-                'tabs'        => [
+                'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => MasterSubDepartmentTabsEnum::navigation()
                 ],
 
-                'routes' => [
-                    'fetch_families' => [
+                'routes'     => [
+                    'fetch_families'  => [
                         'name'       => 'grp.json.master_product_category.families.index',
                         'parameters' => [
                             'masterProductCategory' => $masterSubDepartment->slug
@@ -169,22 +171,22 @@ class ShowMasterSubDepartment extends GrpAction
                         ]
                     ]
                 ],
-                'storeRoute' =>  match ($this->parent::class) {
+                'storeRoute' => match ($this->parent::class) {
                     MasterShop::class => [
-                        'name' => 'grp.models.master_shops.master_family.store',
+                        'name'       => 'grp.models.master_shops.master_family.store',
                         'parameters' => [
                             'masterShop' => $this->parent->id
                         ]
                     ],
                     MasterProductCategory::class => [
-                        'name' => 'grp.models.master-sub-department.master_family.store',
-                            'parameters' => [
-                                'masterSubDepartment' => $this->parent->id
+                        'name'       => 'grp.models.master-sub-department.master_family.store',
+                        'parameters' => [
+                            'masterSubDepartment' => $this->parent->id
                         ]
                     ],
                     default => []
                 },
-                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterSubDepartment->masterShop, 'shops')),
+                'shopsData'  => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterSubDepartment->masterShop, 'shops')),
 
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)
@@ -195,11 +197,11 @@ class ShowMasterSubDepartment extends GrpAction
                     : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))),
 
                 MasterSubDepartmentTabsEnum::HISTORY->value => $this->tab == MasterSubDepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment))),
+                    fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment, MasterSubDepartmentTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment, MasterSubDepartmentTabsEnum::HISTORY->value))),
 
                 MasterSubDepartmentTabsEnum::IMAGES->value => $this->tab == MasterSubDepartmentTabsEnum::IMAGES->value ?
-                    fn () =>  GetMasterProductCategoryImages::run($masterSubDepartment)
+                    fn () => GetMasterProductCategoryImages::run($masterSubDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterSubDepartment)),
 
 
@@ -210,9 +212,9 @@ class ShowMasterSubDepartment extends GrpAction
     }
 
 
-    public function jsonResponse(MasterProductCategory $masterSubDepartment): DepartmentsResource
+    public function jsonResponse(MasterProductCategory $masterSubDepartment): MasterSubDepartmentsResource
     {
-        return new DepartmentsResource($masterSubDepartment);
+        return new MasterSubDepartmentsResource($masterSubDepartment);
     }
 
     public function getBreadcrumbs(MasterProductCategory $masterSubDepartment, string $routeName, array $routeParameters, $suffix = null): array
@@ -268,7 +270,7 @@ class ShowMasterSubDepartment extends GrpAction
             'grp.masters.master_shops.show.master_sub_departments.master_families.show',
             'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
-                (new ShowMasterShop())->getBreadcrumbs($masterSubDepartment->masterShop, $routeName, $suffix),
+                ShowMasterShop::make()->getBreadcrumbs($masterSubDepartment->masterShop),
                 $headCrumb(
                     $masterSubDepartment,
                     [

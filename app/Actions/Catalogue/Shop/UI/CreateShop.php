@@ -96,7 +96,8 @@ class CreateShop extends OrgAction
                                     'options'     => GetCountriesOptions::run(),
                                     'value'       => $this->organisation->country_id,
                                     'required'    => true,
-                                    'mode'        => 'single'
+                                    'mode'        => 'single',
+                                    'searchable'  => true
                                 ],
                                 'language_id' => [
                                     'type'        => 'select',
@@ -105,7 +106,8 @@ class CreateShop extends OrgAction
                                     'options'     => GetLanguagesOptions::make()->all(),
                                     'value'       => $this->organisation->language_id,
                                     'required'    => true,
-                                    'mode'        => 'single'
+                                    'mode'        => 'single',
+                                    'searchable'  => true
                                 ],
                                 'currency_id' => [
                                     'type'        => 'select',
@@ -114,7 +116,8 @@ class CreateShop extends OrgAction
                                     'options'     => GetCurrenciesOptions::run(),
                                     'value'       => $this->organisation->currency_id,
                                     'required'    => true,
-                                    'mode'        => 'single'
+                                    'mode'        => 'single',
+                                    'searchable'  => true
                                 ],
                                 'timezone_id' => [
                                     'type'        => 'select',
@@ -123,7 +126,8 @@ class CreateShop extends OrgAction
                                     'options'     => GetTimeZonesOptions::run(),
                                     'value'       => $this->organisation->timezone_id,
                                     'required'    => true,
-                                    'mode'        => 'single'
+                                    'mode'        => 'single',
+                                    'searchable'  => true
                                 ],
 
                             ]

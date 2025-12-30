@@ -17,6 +17,7 @@ use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
@@ -130,9 +131,21 @@ class IndexFamilies extends OrgAction
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
+
+        // Use reusable time series aggregation method
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'product_category_time_series',
+            timeSeriesRecordsTable: 'product_category_time_series_records',
+            foreignKey: 'product_category_id',
+            aggregateColumns: [
+                'sales_grp_currency' => 'sales',
+                'invoices' => 'invoices'
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: true
+        );
         if ($parent instanceof Group) {
             $queryBuilder->where('product_categories.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Shop') {
@@ -150,16 +163,6 @@ class IndexFamilies extends OrgAction
         } elseif (class_basename($parent) == 'MasterProductCategory') {
             $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
         }
-
-        $interval = request()->input('interval', 'all');
-
-        $salesLyColumn = $interval === 'all'
-            ? 'NULL'
-            : "product_category_sales_intervals.sales_grp_currency_{$interval}_ly";
-
-        $invoicesLyColumn = $interval === 'all'
-            ? 'NULL'
-            : "product_category_ordering_intervals.invoices_{$interval}_ly";
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -187,11 +190,10 @@ class IndexFamilies extends OrgAction
                 'currencies.code as currency_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                DB::raw("product_category_sales_intervals.sales_grp_currency_$interval as sales"),
-                DB::raw("$salesLyColumn as sales_ly"),
-                DB::raw("product_category_ordering_intervals.invoices_$interval as invoices"),
-                DB::raw("$invoicesLyColumn as invoices_ly"),
-                DB::raw("'$interval' as current_interval"),
+                $timeSeriesData['selectRaw']['sales'],
+                $timeSeriesData['selectRaw']['sales_ly'],
+                $timeSeriesData['selectRaw']['invoices'],
+                $timeSeriesData['selectRaw']['invoices_ly'],
                 'product_categories.master_product_category_id',
                 DB::raw(
                     "(
@@ -209,6 +211,32 @@ class IndexFamilies extends OrgAction
                 )::text as collections"
                 ),
             ])
+            ->groupBy([
+                'product_categories.id',
+                'product_categories.slug',
+                'product_categories.code',
+                'product_categories.name',
+                'product_categories.state',
+                'product_categories.description',
+                'product_categories.created_at',
+                'product_categories.image_id',
+                'product_categories.updated_at',
+                'product_categories.web_images',
+                'departments.slug',
+                'departments.code',
+                'departments.name',
+                'sub_departments.slug',
+                'sub_departments.code',
+                'sub_departments.name',
+                'product_category_stats.number_current_products',
+                'shops.slug',
+                'shops.code',
+                'shops.name',
+                'currencies.code',
+                'organisations.name',
+                'organisations.slug',
+                'product_categories.master_product_category_id',
+            ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
@@ -221,34 +249,8 @@ class IndexFamilies extends OrgAction
                 'number_current_products',
                 'sub_department_name',
                 'department_name',
-                AllowedSort::custom(
-                    'sales',
-                    new class ($interval) implements Sort {
-                        public function __construct(private string $interval)
-                        {
-                        }
-
-                        public function __invoke(Builder $query, bool $descending, string $property)
-                        {
-                            $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("product_category_sales_intervals.sales_grp_currency_$this->interval", $direction);
-                        }
-                    }
-                ),
-                AllowedSort::custom(
-                    'invoices',
-                    new class ($interval) implements Sort {
-                        public function __construct(private string $interval)
-                        {
-                        }
-
-                        public function __invoke(Builder $query, bool $descending, string $property)
-                        {
-                            $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("product_category_ordering_intervals.invoices_$this->interval", $direction);
-                        }
-                    }
-                ),
+                'sales',
+                'invoices',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -296,7 +298,7 @@ class IndexFamilies extends OrgAction
             }
 
             if ($sales) {
-                $table->withInterval();
+                $table->betweenDates(['date']);
             }
 
             $table

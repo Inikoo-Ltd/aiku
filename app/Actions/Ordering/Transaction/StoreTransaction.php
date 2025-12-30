@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Transaction;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
@@ -20,6 +21,7 @@ use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\HistoricAsset;
+use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
@@ -41,6 +43,24 @@ class StoreTransaction extends OrgAction
         if (Arr::get($modelData, 'model_type') == 'Product') {
             $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+
+            /** @var Product $product */
+            $product = $historicAsset->model;
+
+            data_set($modelData, 'family_id', $product->family_id);
+            data_set($modelData, 'department_id', $product->department_id);
+            data_set($modelData, 'sub_department_id', $product->sub_department_id);
+
+
+            $unitWeight = $product->gross_weight ?? 0;
+
+            $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
+            $estimatedWeight = (int)ceil($estimatedWeight);
+
+
+            data_set($modelData, 'estimated_weight', $estimatedWeight);
+
+
         } else {
             $net   = Arr::get($modelData, 'net_amount', 0);
             $gross = Arr::get($modelData, 'gross_amount', 0);
@@ -74,14 +94,6 @@ class StoreTransaction extends OrgAction
             data_set($modelData, 'submitted_at', now(), overwrite: false);
         }
 
-        $unitWeight = $historicAsset->model->gross_weight ?? 0;
-
-        $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
-        $estimatedWeight = (int)ceil($estimatedWeight);
-
-
-        data_set($modelData, 'estimated_weight', $estimatedWeight);
-
 
         $modelData = $this->processExchanges($modelData, $order->shop);
 
@@ -91,6 +103,7 @@ class StoreTransaction extends OrgAction
 
         $order->refresh();
         if ($this->strict) {
+            OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
         }

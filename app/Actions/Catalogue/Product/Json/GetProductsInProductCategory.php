@@ -37,11 +37,11 @@ class GetProductsInProductCategory extends OrgAction
         $queryBuilder->where('products.available_quantity', '>', 0);
 
         if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $queryBuilder->where('department_id', $parent->id);
+            $queryBuilder->where('products.department_id', $parent->id);
         } elseif ($parent->type == ProductCategoryTypeEnum::FAMILY) {
-            $queryBuilder->where('family_id', $parent->id);
+            $queryBuilder->where('products.family_id', $parent->id);
         } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $queryBuilder->where('sub_department_id', $parent->id);
+            $queryBuilder->where('products.sub_department_id', $parent->id);
         }
 
         if ($seeAlso) {

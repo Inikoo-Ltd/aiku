@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\InertiaTable\InertiaTable;
@@ -36,6 +37,7 @@ class IndexSubDepartments extends OrgAction
     use WithDepartmentSubNavigation;
 
     private Shop|ProductCategory|Organisation $parent;
+    private bool $sales = true;
 
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -94,6 +96,22 @@ class IndexSubDepartments extends OrgAction
         $queryBuilder->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', 'organisations.id');
+        $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
+
+        // Use reusable time series aggregation method
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'product_category_time_series',
+            timeSeriesRecordsTable: 'product_category_time_series_records',
+            foreignKey: 'product_category_id',
+            aggregateColumns: [
+                'sales_grp_currency' => 'sales',
+                'invoices' => 'invoices'
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: true
+        );
+
         return $queryBuilder
             ->defaultSort('product_categories.code')
             ->select([
@@ -113,25 +131,53 @@ class IndexSubDepartments extends OrgAction
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
+                'currencies.code as currency_code',
                 'organisations.slug as organisation_slug',
                 'organisations.code as organisation_code',
                 'organisations.name as organisation_name',
                 'product_category_stats.number_current_families as number_families',
                 'product_category_stats.number_current_products as number_products',
-
+                $timeSeriesData['selectRaw']['sales'],
+                $timeSeriesData['selectRaw']['sales_ly'],
+                $timeSeriesData['selectRaw']['invoices'],
+                $timeSeriesData['selectRaw']['invoices_ly'],
+            ])
+            ->groupBy([
+                'product_categories.id',
+                'product_categories.slug',
+                'product_categories.code',
+                'product_categories.name',
+                'product_categories.state',
+                'product_categories.description',
+                'product_categories.master_product_category_id',
+                'product_categories.created_at',
+                'product_categories.updated_at',
+                'product_categories.web_images',
+                'departments.slug',
+                'departments.code',
+                'departments.name',
+                'shops.slug',
+                'shops.code',
+                'shops.name',
+                'currencies.code',
+                'organisations.slug',
+                'organisations.code',
+                'organisations.name',
+                'product_category_stats.number_current_families',
+                'product_category_stats.number_current_products',
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales', 'invoices'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Shop|ProductCategory|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Shop|ProductCategory|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false, $sales = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit, $sales) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -146,6 +192,10 @@ class IndexSubDepartments extends OrgAction
                         elements: $elementGroup['elements']
                     );
                 }
+            }
+
+            if ($sales) {
+                $table->betweenDates(['date']);
             }
 
             $buttonLabel = __('New sub-department');
@@ -177,20 +227,27 @@ class IndexSubDepartments extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
 
+            if ($sales) {
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            } else {
+                if ($parent instanceof Organisation) {
+                    $table->column(key: 'shop_code', label: __('Shop'), sortable: true, searchable: true);
+                    $table->column(key: 'department_code', label: __('department'), sortable: true, searchable: true);
+                }
 
-            if ($parent instanceof Organisation) {
-                $table->column(key: 'shop_code', label: __('Shop'), sortable: true, searchable: true);
-                $table->column(key: 'department_code', label: __('department'), sortable: true, searchable: true);
+                if (class_basename($parent) == 'MasterProductCategory') {
+                    $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+                }
+                $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
+                $table->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                    ->column(key: 'number_families', label: __('families'), sortable: true)
+                    ->column(key: 'number_products', label: __('products'), sortable: true);
             }
-
-            if (class_basename($parent) == 'MasterProductCategory') {
-                $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
-            }
-            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
-            $table->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
-                ->column(key: 'number_families', label: __('families'), sortable: true)
-                ->column(key: 'number_products', label: __('products'), sortable: true);
         };
     }
 
@@ -208,7 +265,6 @@ class IndexSubDepartments extends OrgAction
         }
 
         $navigation = ProductCategoryTabsEnum::navigation();
-        unset($navigation[ProductCategoryTabsEnum::SALES->value]);
 
         $title      = __('Sub-departments');
         $model      = '';
@@ -271,15 +327,20 @@ class IndexSubDepartments extends OrgAction
                 ],
                 'data'        => SubDepartmentsResource::collection($subDepartment),
 
-                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
+                ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => SubDepartmentsResource::collection($subDepartment)
                     : Inertia::lazy(fn () => SubDepartmentsResource::collection($subDepartment)),
+
+                ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
+                    fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
                     : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
-        )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))
+        )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+        ->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))
         ->table(IndexSubDepartmentsNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
     }
 

@@ -65,7 +65,7 @@ trait WithMasterFamilySubNavigation
                 'route'     => $routeFamily,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Department')
+                    'tooltip' => __('Family')
                 ]
             ],
              [
@@ -74,7 +74,7 @@ trait WithMasterFamilySubNavigation
                  'route'     => $routeProducts,
                  'leftIcon' => [
                      'icon'    => ['fal', 'fa-cube'],
-                     'tooltip' => __('products')
+                     'tooltip' => __('Products')
                  ]
              ],
         ];

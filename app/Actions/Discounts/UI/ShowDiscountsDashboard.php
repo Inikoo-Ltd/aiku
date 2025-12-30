@@ -26,6 +26,9 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
+use App\Models\Discounts\OfferCampaign;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 
 class ShowDiscountsDashboard extends OrgAction
 {
@@ -55,6 +58,8 @@ class ShowDiscountsDashboard extends OrgAction
         if ($saved_interval === DateIntervalEnum::CUSTOM) {
             $saved_interval = DateIntervalEnum::ALL;
         }
+        
+        $firstOrderBonus = IndexOfferCampaigns::run($this->shop)->where('type', OfferCampaignTypeEnum::FIRST_ORDER->value)->first()->offers()->get();
 
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
@@ -122,7 +127,11 @@ class ShowDiscountsDashboard extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ],
-                ]
+                ],
+                'data'  => [
+                    'currency'  => $this->shop->currency
+                ],
+                'first_order_bonus' => $firstOrderBonus
             ]
         );
     }

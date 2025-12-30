@@ -400,7 +400,7 @@ console.log('sdasd',props)
 </script>
 
 <template>
-    <div id="products-1">
+    <div id="products">
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)

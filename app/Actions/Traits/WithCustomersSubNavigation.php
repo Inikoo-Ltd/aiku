@@ -38,20 +38,7 @@ trait WithCustomersSubNavigation
             ]
         ];
 
-        // $meta[] = [
-        //     'route'     => [
-        //         'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
-        //         'parameters' => $request->route()->originalParameters()
-        //     ],
-        //     'number'   => $this->parent->crmStats->number_prospect_queries,
-        //     'label'    => __('Lists'),
-        //     'leftIcon' => [
-        //         'icon'    => 'fal fa-code-branch',
-        //         'tooltip' => __('lists')
-        //     ]
-        // ];
-
-        if($this->parent instanceof Shop && $this->parent->engine !== ShopEngineEnum::FAIRE) {
+        if ($this->parent instanceof Shop && $this->parent->engine !== ShopEngineEnum::FAIRE) {
             $meta[] = [
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.polls.index',
@@ -94,7 +81,7 @@ trait WithCustomersSubNavigation
             ];
         }
 
-        if($this->parent instanceof Shop && $this->parent->engine !== ShopEngineEnum::FAIRE) {
+        if ($this->parent instanceof Shop && $this->parent->engine !== ShopEngineEnum::FAIRE) {
             $meta[] = [
                 'route' => [
                     'name' => 'grp.org.shops.show.crm.web_users.index',

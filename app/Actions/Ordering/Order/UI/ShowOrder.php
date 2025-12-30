@@ -263,7 +263,7 @@ class ShowOrder extends OrgAction
         }
 
         $platform = $order->platform;
-        if (!$platform) {
+        if (!$platform && $this->shop->type === ShopTypeEnum::DROPSHIPPING) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
@@ -289,7 +289,7 @@ class ShowOrder extends OrgAction
                 ]
             ];
         }
-        // dd($request->route()->originalParameters());
+
         return Inertia::render(
             'Org/Ordering/Order',
             [

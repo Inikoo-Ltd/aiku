@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\CRM\Customer\MatchCustomerProspects;
+use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\OrgAction;
@@ -184,12 +185,8 @@ class StoreInvoice extends OrgAction
         $invoice->refresh();
         $invoice = CategoriseInvoice::run($invoice);
 
-        if ($this->strict && $invoice->type == InvoiceTypeEnum::INVOICE) {
-            $invoice->customer->update(
-                [
-                    'last_invoiced_at' => $date
-                ]
-            );
+        if ($invoice->type == InvoiceTypeEnum::INVOICE) {
+            UpdateCustomerLastInvoicedDate::run($invoice->customer, $this->strict ? null : now());
         }
 
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);

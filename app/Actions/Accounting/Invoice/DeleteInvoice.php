@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
+use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
@@ -60,6 +61,8 @@ class DeleteInvoice extends OrgAction
         } catch (Throwable) {
             //
         }
+
+        UpdateCustomerLastInvoicedDate::run($invoice->customer);
 
         CustomerHydrateClv::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
 

@@ -68,6 +68,7 @@ import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
 import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
 import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
 import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
+import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -137,7 +138,8 @@ export const componentsList: { [key: string]: Component } = {
     'email_subscriptions': WrapperEmailSubscribetion,
     'input_twin': InputTwin,
     'list-selector-trade-unit': ListSelectorTradeUnit,
-    'file_upload': FileUpload
+    'file_upload': FileUpload,
+    'input-variant' : VariantsField
 }
 
 export const getComponent = (componentName: string) => {

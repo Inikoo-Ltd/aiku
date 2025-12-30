@@ -143,6 +143,9 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         'code',
         'name',
         'description',
+        'description_title',
+        'description_extra',
+        'cost_price_ratio'
     ];
 
     public function getRouteKeyName(): string
