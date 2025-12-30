@@ -14,6 +14,26 @@ use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
 
+/**
+ * @property int $id
+ * @property int $group_id
+ * @property int $organisation_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property HolidayTypeEnum $type
+ * @property int $year
+ * @property string|null $label
+ * @property \Illuminate\Support\Carbon $from
+ * @property \Illuminate\Support\Carbon $to
+ * @property array<array-key, mixed> $data
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday query()
+ * @mixin \Eloquent
+ */
 class Holiday extends Model implements Auditable
 {
     use HasHistory;

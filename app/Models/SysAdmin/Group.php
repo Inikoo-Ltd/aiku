@@ -170,6 +170,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
  * @property-read \App\Models\SysAdmin\GroupGoodsStats|null $goodsStats
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Guest> $guests
+ * @property-read LaravelCollection<int, Holiday> $holidays
  * @property-read \App\Models\SysAdmin\GroupHumanResourcesStats|null $humanResourcesStats
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
