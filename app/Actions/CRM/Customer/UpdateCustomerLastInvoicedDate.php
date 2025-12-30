@@ -55,7 +55,7 @@ class UpdateCustomerLastInvoicedDate
 
     public function asCommand(Command $command): void
     {
-        $customer   = Customer::where('slug',$command->argument('customer'))->firstOrFail();
+        $customer   = Customer::where('slug', $command->argument('customer'))->firstOrFail();
 
         $this->handle($customer, Carbon::parse($command->argument('date')));
 
