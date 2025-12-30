@@ -227,7 +227,21 @@ const generateRouteDeliveryNote = (id: string) => {
                     </template>
                     
                     <template v-if="order.shipping_data?.[0].trackings?.[0]">
-                        <span class="opacity-70">|</span> {{ order.shipping_data?.[0].shipper_slug }}:
+                        <span>
+                            <span class="opacity-70">|</span>
+                            <img v-if="order.shipping_data?.[0].shipper_slug"
+                                :src="
+                                    order.shipping_data?.[0].shipper_slug
+                                        ? `/assets/shipper_logo/${order.shipping_data?.[0].shipper_slug}.png`
+                                        : null
+                                "
+                                :alt="order.shipping_data?.[0].shipper_label"
+                                class="ml-1 h-4 w-4 object-contain inline-block"
+                                :title="order.shipping_data?.[0].shipper_label"
+                                v-tooltip="order.shipping_data?.[0].shipper_label"
+                            />
+                            {{ order.shipping_data?.[0].shipper_slug }}:
+                        </span>
                         <a v-if="order.shipping_data?.[0].tracking_urls.length"
                             :href="order.shipping_data?.[0].tracking_urls[0]"
                             class="underline"
