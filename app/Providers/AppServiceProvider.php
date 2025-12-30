@@ -12,6 +12,8 @@ namespace App\Providers;
 use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Lorisleiva\Actions\Facades\Actions;
@@ -55,6 +57,21 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+
+        ParallelTesting::setUpTestCase(function ($token, $testCase) {
+            $databaseName = env('DB_DATABASE_TEST', 'aiku_test')."_".$token;
+
+            $testCasePath = get_class($testCase);
+
+            if (str_contains($testCasePath, 'Tests\Feature\\')) {
+                config(['database.connections.aiku.database' => $databaseName]);
+                DB::connection('aiku');
+                DB::purge('aiku');
+                DB::reconnect('aiku');
+            }
+        });
+
+
         if ($this->app->runningInConsole()) {
             Actions::registerCommands();
         }
