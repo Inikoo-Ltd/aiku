@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Discounts\OfferAllowance\ActivateOfferAllowance;
+use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateStateFromOffers;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -41,6 +42,7 @@ class ActivateOffer extends OrgAction
 
         $offer->update($modelData);
         UpdateOfferAllowanceSignature::run($offer);
+        OfferCampaignHydrateStateFromOffers::run($offer->offerCampaign);
 
         RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
 
