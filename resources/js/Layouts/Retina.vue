@@ -35,6 +35,7 @@ import { faSearch, faBell, faPlus } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import ChatButton from '@/Components/Chat/ChatButton.vue'
 
 library.add(faMedal, fasMedal, fadMedal)
 library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
@@ -49,7 +50,7 @@ interface Notification {
     status?: 'success' | 'error' | 'info' | 'warning' | 'failure'
 }
 
-
+const useChat = usePage().props?.use_chat
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
 initialiseRetinaApp()
@@ -363,6 +364,8 @@ const getBgColorDependsOnStatus = (status: string) => {
             <Notification :notification="props" />
         </template>
     </notifications>
+
+     <ChatButton data="null" v-if="useChat" />
 </template>
 
 <style lang="scss">

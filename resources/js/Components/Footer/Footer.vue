@@ -56,7 +56,7 @@ library.add(faHeart, faComputerClassic, faDiscord)
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
-                <FooterMessage />
+                <FooterMessage v-if="layout?.user?.is_agent" />
                 <FooterActiveUsers />
             </div>
         </div>

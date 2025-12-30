@@ -43,6 +43,8 @@ class HandleIrisInertiaRequests extends Middleware
                         'location' => $request->url()
                     ]);
                 },
+
+                'use_chat'    => $website->settings['enable_chat'] ?? false,
                 'iris'        => $this->getIrisData($website),
                 "retina" => [
                     "type" => $request->get('shop_type'),
