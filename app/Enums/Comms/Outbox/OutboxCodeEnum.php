@@ -207,6 +207,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::INVITE,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            // NOTE: need confirm to raul
+            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
+            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER,
             => ['Fulfilment', 'Shop'],
 
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
@@ -221,7 +224,6 @@ enum OutboxCodeEnum: string
         };
     }
 
-
     public function shopTypes(): array
     {
         return match ($this) {
@@ -229,7 +231,12 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
-            OutboxCodeEnum::PASSWORD_REMINDER => ['b2b', 'b2c', 'dropshipping', 'fulfilment'],
+            OutboxCodeEnum::PASSWORD_REMINDER,
+            //NOTE: need confirm to raul
+            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
+            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER,
+
+            => ['b2b', 'b2c', 'dropshipping', 'fulfilment'],
 
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
