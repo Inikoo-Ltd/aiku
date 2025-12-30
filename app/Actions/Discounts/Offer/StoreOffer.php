@@ -25,6 +25,9 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Models\SysAdmin\Organisation;
+use App\Models\Catalogue\Shop;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreOffer extends OrgAction
 {
@@ -37,7 +40,6 @@ class StoreOffer extends OrgAction
     public function handle(OfferCampaign $offerCampaign, array $modelData): Offer
     {
 
-
         $modelData = $this->prepareOfferData($offerCampaign, $modelData);
         $allowances = Arr::pull($modelData, 'allowances', []);
         $offer = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
@@ -47,7 +49,7 @@ class StoreOffer extends OrgAction
             $offer->stats()->create();
             foreach ($allowances as $allowanceData) {
                 data_set($allowanceData, 'duration', $offer->duration);
-                data_set($allowanceData, 'end_at', $offer->end_at);
+                data_set($allowanceData, 'end_at', null);
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
             UpdateOfferAllowanceSignature::run($offer);
@@ -62,6 +64,18 @@ class StoreOffer extends OrgAction
 
         return $offer;
     }
+
+    public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request)
+    {
+        dd($offerCampaign);
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->action(
+            $offerCampaign,
+            $this->validatedData
+        );
+    }
+
 
     public function rules(): array
     {

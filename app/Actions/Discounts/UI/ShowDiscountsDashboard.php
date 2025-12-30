@@ -26,6 +26,8 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Discounts\OfferCampaign;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 
 class ShowDiscountsDashboard extends OrgAction
 {
@@ -56,6 +58,22 @@ class ShowDiscountsDashboard extends OrgAction
             $saved_interval = DateIntervalEnum::ALL;
         }
 
+        $hasFirstOrderCampaign = OfferCampaign::where('shop_id', $this->shop->id)
+            ->where('type', OfferCampaignTypeEnum::FIRST_ORDER)
+            ->exists();
+
+        $firstOrderBonus = null;
+        if ($hasFirstOrderCampaign) {
+            $campaign = OfferCampaign::where('shop_id', $this->shop->id)
+                ->where('type', OfferCampaignTypeEnum::FIRST_ORDER)
+                ->first();
+
+            $firstOrderBonus = $campaign->offers()->first();
+        }
+
+        $routeParameters = $request->route()->originalParameters();
+
+
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
             [
@@ -71,6 +89,7 @@ class ShowDiscountsDashboard extends OrgAction
                         'title' => __('Offer')
                     ],
                     'title'     => __('Offers Dashboard'),
+                    'actions'   => $this->getHeaderActions($firstOrderBonus, $routeParameters),
                 ],
                 'intervals' => [
                     'options'        => $this->dashboardIntervalOption(),
@@ -125,6 +144,39 @@ class ShowDiscountsDashboard extends OrgAction
                 ]
             ]
         );
+    }
+
+    private function getHeaderActions($offer, array $routeParameters): array
+    {
+        $actions = [];
+
+        if (!$offer) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('Create First Order Bonus'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.discounts.offers.create',
+                    'parameters' => $routeParameters
+                ],
+                'tooltip' => __('Create First Order Bonus')
+            ];
+        } else {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Edit First Order Bonus'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.discounts.offers.edit',
+                    'parameters' => array_merge($routeParameters, [
+                        'offer' => $offer->slug
+                    ])
+                ],
+                'tooltip' => __('Edit existing First Order Bonus offer')
+            ];
+        }
+
+        return $actions;
     }
 
     public function getBreadcrumbs(array $routeParameters): array
