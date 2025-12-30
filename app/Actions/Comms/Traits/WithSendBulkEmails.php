@@ -117,6 +117,7 @@ trait WithSendBulkEmails
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
             'products' => Arr::get($additionalData, 'products'),
+            'previous-balance' => Arr::get($additionalData, 'previous_balance'),
 
             default => $originalPlaceholder,
         };

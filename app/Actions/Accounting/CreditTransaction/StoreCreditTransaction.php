@@ -37,6 +37,7 @@ class StoreCreditTransaction extends OrgAction
         data_set($modelData, 'date', now(), overwrite: false);
 
         $modelData = $this->processExchanges($modelData, $customer->shop, 'amount');
+        \Log::info('Processing exchanges for credit transaction', ['data' => $modelData]);
 
         /** @var CreditTransaction $creditTransaction */
         $creditTransaction = $customer->creditTransactions()->create($modelData);
