@@ -5,9 +5,11 @@ namespace App\Actions\Catalogue\Shop\Faire;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Http\Response;
+use Lorisleiva\Actions\ActionRequest;
 
 class GetFairePackingPdfSlip extends OrgAction
 {
@@ -19,11 +21,13 @@ class GetFairePackingPdfSlip extends OrgAction
 
         return response($pdfBinary, 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="packing-slip-'.$order->slug.'.pdf"');
+            ->header('Content-Disposition', 'inline; filename="packing-slip-'.$order->slug.'.pdf"');
     }
 
-    public function asController(Shop $shop, Order $order): Response|ResponseFactory
+    public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): Response|ResponseFactory
     {
+        $this->initialisationFromShop($shop, $request);
+
         return $this->handle($shop, $order);
     }
 

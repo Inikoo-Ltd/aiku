@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useNumberFormat } from '@/Composables/useNumberFormat'
+import { computed, inject } from 'vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUsers } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 
 library.add(faUsers)
+
+const locale = inject('locale', aikuLocaleStructure)
 
 interface CustomerMetrics {
     total_customers: number
@@ -53,7 +55,21 @@ const props = defineProps<{
     salesData: SalesData
 }>()
 
-const { formatCurrency, formatNumber, formatDate, getDeltaIndicator, formatPercentage } = useNumberFormat()
+// Format helpers using locale
+const formatCurrency = (amount: number, currency: string) => locale.currencyFormat(currency, amount)
+const formatNumber = (num: number) => locale.number(num)
+const formatDate = (date: string | null) => {
+    if (!date) return 'N/A'
+    return new Date(date).toLocaleDateString(locale.locale_iso)
+}
+const formatPercentage = (percentage: number, decimals: number = 1) => {
+    return `${percentage.toFixed(decimals)}%`
+}
+const getDeltaIndicator = (delta: number) => {
+    if (delta > 0) return { icon: '▲', color: 'text-green-600' }
+    if (delta < 0) return { icon: '▼', color: 'text-red-600' }
+    return { icon: '─', color: 'text-gray-400' }
+}
 
 // Computed formatted values
 const formattedSalesSince = computed(() => formatDate(props.salesData.all_sales_since))

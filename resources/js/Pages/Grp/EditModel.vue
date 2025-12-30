@@ -62,7 +62,8 @@ import {
     faFolder,
     faCartArrowDown,
     faWeight,
-    faShapes
+    faShapes,
+    faCommentAlt
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -121,7 +122,8 @@ library.add(
     faMoneyBill,
     faFolder,
     faCartArrowDown,
-    faWeight
+    faWeight,
+    faCommentAlt
 )
 
 const props = defineProps<{
@@ -281,7 +283,6 @@ const getSeverity = (type?: string) => {
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 

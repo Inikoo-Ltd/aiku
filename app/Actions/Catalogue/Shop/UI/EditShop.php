@@ -436,10 +436,22 @@ class EditShop extends OrgAction
                         default => []
                     } : [],
                 [
+                    'label'  => __('Chat'),
+                    'icon'   => 'fal fa-comment-alt',
+                    'fields' => [
+                        'enable_chat'  => [
+                            'type'          => 'toggle',
+                            'information'   => __('If active, will enable the Chat feature on this shop website'),
+                            'label'         => __('Enable Chat Feature'),
+                            'value'         => Arr::get($shop->settings, 'chat.enable_chat', false),
+                        ]
+                    ],
+                ],
+                [
                     'label'  => __('HELP Portal'),
                     'icon'   => 'fal fa-life-ring',
                     'fields' => $helpPortalFields,
-                ]
+                ],
             ],
             'args' => [
                 'updateRoute' => [

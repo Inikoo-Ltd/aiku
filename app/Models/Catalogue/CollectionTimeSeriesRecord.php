@@ -8,7 +8,6 @@
 namespace App\Models\Catalogue;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -43,10 +42,5 @@ class CollectionTimeSeriesRecord extends Model
             'from' => 'datetime',
             'to'   => 'datetime',
         ];
-    }
-
-    public function timeSeries(): BelongsTo
-    {
-        return $this->belongsTo(CollectionTimeSeries::class);
     }
 }

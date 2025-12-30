@@ -63,7 +63,7 @@ const props = defineProps<{
     images?: object
     sales: any
     content?: {}
-    salesIntervals?: object
+    salesData?: object
 }>()
 console.log("family", props)
 const currentTab = ref(props.tabs.current)
@@ -136,7 +136,7 @@ const showDialog = ref(false)
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesIntervals="salesIntervals" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" />
 
 
     <FormCreateMasterProduct

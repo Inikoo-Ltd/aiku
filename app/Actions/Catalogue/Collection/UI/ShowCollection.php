@@ -19,7 +19,6 @@ use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\Traits\WithSalesIntervals;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\CollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionResource;
@@ -40,7 +39,6 @@ class ShowCollection extends OrgAction
     use WithCollectionSubNavigation;
     use WithCollectionNavigation;
     use WithCatalogueAuthorisation;
-    use WithSalesIntervals;
 
     private Organisation|Shop|ProductCategory $parent;
 
@@ -306,9 +304,9 @@ class ShowCollection extends OrgAction
                     fn () => GetCollectionShowcase::run($collection)
                     : Inertia::lazy(fn () => GetCollectionShowcase::run($collection)),
 
-                'salesIntervals' => $this->tab == CollectionTabsEnum::SHOWCASE->value ?
-                    fn () => $this->getSalesIntervalsData($collection, $this->organisation->currency->code)
-                    : Inertia::lazy(fn () => $this->getSalesIntervalsData($collection, $this->organisation->currency->code)),
+                'salesData' => $this->tab == CollectionTabsEnum::SHOWCASE->value ?
+                    fn () => GetCollectionTimeSeriesData::run($collection)
+                    : Inertia::lazy(fn () => GetCollectionTimeSeriesData::run($collection)),
 
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
