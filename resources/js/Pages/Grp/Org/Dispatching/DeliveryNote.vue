@@ -109,7 +109,10 @@ const props = defineProps<{
         submit_route: routeType
         fetch_route: routeType
     }
-	is_external_order: boolean
+	external_order: {
+		status: boolean
+		route_view_packing_slip: routeType
+	}
     address: {
         delivery: {}
         options: {

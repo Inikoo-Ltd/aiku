@@ -28,6 +28,7 @@ import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RadioButton } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 const props = defineProps<{
 	shipments: {
@@ -70,7 +71,10 @@ const props = defineProps<{
 		email: string
 		address: Address
 	}
-	is_external_order: boolean
+	external_order: {
+		status: boolean
+		route_view_packing_slip: routeType
+	}
 }>()
 
 const emits = defineEmits<{
@@ -526,16 +530,15 @@ const onCopyDataCustomer = (field: string) => {
 				</div>
 			</div>
 			<div>
+				<a target="_blank" :href="route(external_order?.route_view_packing_slip?.name, external_order?.route_view_packing_slip?.parameters)">
 				<Button
 					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
-					v-if="!shipments.length && props.shipments_routes?.submit_route?.name && is_external_order"
-					:disabled="props.shipments_routes?.submit_route?.name ? false : true"
-					@click="() => ((isModalShipment = true), onOpenModalTrackingNumber())"
-					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
+					v-if="external_order?.status"
 					:label="trans('Faire Packing Slip')"
 					icon="fas fa-eye"
 					type="dashed"
 					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
+				</a>
 			</div>
 		</div>
 
