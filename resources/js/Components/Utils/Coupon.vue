@@ -4,6 +4,9 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
 
+import { isBefore, parseISO } from 'date-fns'
+
+
 const props = defineProps<{
     first_order_bonus: {
         name: string
@@ -22,19 +25,38 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+
+// Method: check if the coupon is expired
+const isOfferExpired = (endAt: string) => {
+    if (!endAt) return false 
+
+    return isBefore(parseISO(endAt), new Date())
+}
+
 </script>
 
 <template>
     <div class="p-8 flex flex-wrap gap-2">
-        <section v-for="offer in first_order_bonus" class="card w-96 bg-gradient-to-l from-purple-300 to-purple-500/90 text-white">
+        <section v-for="offer in first_order_bonus" class="card w-96 relative isolate"
+            :class="isOfferExpired(offer.end_at) ? 'bg-gradient-to-l from-gray-100 to-gray-300/90 text-black/40' : 'bg-gradient-to-l from-purple-300 to-purple-500/90 text-white'"
+        >
             <div class="text-center text-base w-[88px] flex flex-col justify-center px-1">
                 <span class="text-2xl font-black">{{ Number(offer.percentage_off ?? 0)*100 }}%</span>
-                <span class="text-xxs tracking-[0.3em]">
+                <span class="text-xxs tracking-[0.2em]">
                     {{ trans("Discount") }}
                 </span>
             </div>
-            <div class="card-right">
-                <span class="text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.created_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : trans('Finished') }}</span>
+
+            <div v-if="offer.state === 'suspended'" class="z-10 absolute inset-0 bg-black/60 flex items-center justify-center rounded-md">
+                <img src="/assets/suspended_stamp.webp" class="-rotate-[9deg] h-1/2"/>
+            </div>
+
+            <div class="relative card-right">
+                <div v-if="isOfferExpired(offer.end_at)" class="absolute top-0 right-0 text-xxs bg-red-400 rounded-xs text-white px-1 w-fit">
+                    {{ trans("Expired") }}
+                </div>
+
+                <span class="text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.created_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : trans('No Expiration') }}</span>
                 <p class="text-base font-semibold leading-none">{{ offer.name }}</p>
                 <div class="mt-2 grid grid-cols-2 gap-x-2 gap-y-0">
                     <div class="text-xxs">

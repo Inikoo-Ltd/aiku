@@ -50,13 +50,8 @@ enum OfferStateEnum: string
             ],
             self::FINISHED->value         => [
                 'tooltip' => self::labels()[self::FINISHED->value],
-                'icon'    => 'fal fa-tasks',
+                'icon'    => 'fal fa-check-double',
                 'class'   => 'text-gray-500',
-                'color'   => 'purple',
-                'app'     => [
-                    'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
             ],
             self::SUSPENDED->value         => [
                 'tooltip' => self::labels()[self::SUSPENDED->value],
