@@ -118,8 +118,8 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'faire_access_token');
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
-        
-        if(Arr::exists($modelData, 'enable_chat')){
+
+        if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
             UpdateWebsite::make()->action(
                 website: $shop->website,
@@ -298,7 +298,7 @@ class UpdateShop extends OrgAction
             'ebay_warehouse_country'       => ['sometimes', 'string'],
             'faire_access_token'           => ['sometimes', 'string'],
             'wix_access_token'             => ['sometimes', 'string'],
-            'enable_chat'                  => ['sometimes', 'boolean'], 
+            'enable_chat'                  => ['sometimes', 'boolean'],
             'portal_link'                  => ['sometimes', 'string'],
             'widget_key'                   => ['sometimes', 'string'],
             'required_approval'            => ['sometimes', 'boolean'],

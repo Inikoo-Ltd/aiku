@@ -2,7 +2,6 @@
 
 namespace App\Actions\Catalogue\Shop\Faire;
 
-use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\OrgAction;

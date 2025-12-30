@@ -24,7 +24,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $to
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\CollectionTimeSeries|null $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeriesRecord query()

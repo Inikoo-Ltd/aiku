@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\BackInStock\UI;
 
-use App\Actions\CRM\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
+use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;

@@ -8,12 +8,12 @@
 
 namespace App\Actions\Comms\Outbox\BackInStockNotification;
 
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Catalogue\Product;
+use App\Models\Comms\BackInStockReminder;
 use App\Services\QueryBuilder;
-use App\Models\CRM\BackInStockReminder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class TestingUpdateProductStock
 {

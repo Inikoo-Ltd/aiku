@@ -21,6 +21,7 @@ defineProps<{
 function offerRoute(offer: Order) {
     switch (route().current()) {
         case "grp.org.shops.show.discounts.offers.index":
+        case "grp.org.shops.show.discounts.campaigns.show":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
                 [route().params["organisation"], route().params["shop"], offer.slug])

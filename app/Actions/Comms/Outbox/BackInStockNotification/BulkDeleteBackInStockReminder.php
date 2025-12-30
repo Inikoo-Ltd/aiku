@@ -8,9 +8,9 @@
 
 namespace App\Actions\Comms\Outbox\BackInStockNotification;
 
-use Lorisleiva\Actions\Concerns\AsAction;
-use App\Models\CRM\BackInStockReminder;
+use App\Models\Comms\BackInStockReminder;
 use Illuminate\Console\Command;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class BulkDeleteBackInStockReminder
 {

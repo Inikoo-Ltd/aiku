@@ -8,13 +8,13 @@
 
 namespace App\Actions\Comms\Outbox\BackInStockNotification;
 
-use App\Actions\CRM\BackInStockReminder\UpdateBackInStockReminderSnapshot;
-use Lorisleiva\Actions\Concerns\AsAction;
-use App\Models\CRM\BackInStockReminderSnapshot;
-use Illuminate\Support\Collection;
+use App\Actions\Comms\BackInStockReminder\UpdateBackInStockReminderSnapshot;
+use App\Models\Comms\BackInStockReminderSnapshot;
 use App\Services\QueryBuilder;
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
 class BulkUpdateBackInStockReminderSnapshot

@@ -10,7 +10,7 @@
 namespace App\Actions\CRM\Customer\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Models\CRM\BackInStockReminderSnapshot;
+use App\Models\Comms\BackInStockReminderSnapshot;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;

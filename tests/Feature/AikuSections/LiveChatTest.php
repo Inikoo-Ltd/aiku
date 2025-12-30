@@ -14,7 +14,6 @@ use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
-use function Pest\Laravel\actingAs;
 use App\Models\SysAdmin\Organisation;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatEvent;
@@ -33,10 +32,11 @@ use App\Actions\CRM\ChatSession\CloseChatSession;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
-use Illuminate\Auth\Access\AuthorizationException;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
+
+use function Pest\Laravel\actingAs;
 
 beforeAll(function () {
     loadDB();

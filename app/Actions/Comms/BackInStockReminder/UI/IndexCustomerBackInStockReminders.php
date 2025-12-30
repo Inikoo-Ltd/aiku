@@ -7,13 +7,13 @@
  * copyright 2024
 */
 
-namespace App\Actions\CRM\BackInStockReminder\UI;
+namespace App\Actions\Comms\BackInStockReminder\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\BackInStockReminder;
+use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Closure;

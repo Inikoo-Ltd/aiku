@@ -207,6 +207,10 @@ class ShowSubDepartment extends OrgAction
                     fn () => GetProductCategoryShowcase::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($subDepartment)),
 
+                'salesData' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
+                    fn () => GetProductCategoryTimeSeriesData::run($subDepartment)
+                    : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($subDepartment)),
+
                 DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value
                     ?
                     fn () => CustomersResource::collection(
