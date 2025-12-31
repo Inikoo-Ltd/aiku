@@ -10,13 +10,16 @@ namespace App\Actions\Helpers\TimeSeries;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateTimeSeriesRecords;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\Website;
 use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -117,11 +120,33 @@ trait WithResetTimeSeries
         }
     }
 
+    protected function resetWebsites(): void
+    {
+        foreach (Website::whereNotIn('state', [WebsiteStateEnum::IN_PROCESS, WebsiteStateEnum::CLOSED])->get() as $website) {
+            $timeSeries = $website->timeSeries()
+                ->where('frequency', $this->frequency)
+                ->first();
+
+            if (!$timeSeries) {
+                continue;
+            }
+
+            $dateRange = $this->getDateRangeForFrequency();
+
+            WebsiteHydrateTimeSeriesRecords::dispatch(
+                $timeSeries->id,
+                $dateRange['from'],
+                $dateRange['to']
+            );
+        }
+    }
+
     public function handle(): void
     {
         $this->resetProductCategories();
         $this->resetProducts();
         $this->resetCollections();
+        $this->resetWebsites();
     }
 
     public function asCommand(): void
