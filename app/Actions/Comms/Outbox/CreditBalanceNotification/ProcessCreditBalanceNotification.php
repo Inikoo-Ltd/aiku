@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Outbox\CreditBalanceNotification;
 
 use App\Actions\OrgAction;
 use App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer;
+use App\Actions\Comms\Email\SendCreditBalanceEmailToUser;
 use App\Models\CRM\Customer;
 
 class ProcessCreditBalanceNotification extends OrgAction
@@ -32,5 +33,6 @@ class ProcessCreditBalanceNotification extends OrgAction
             'balance' => $currentCreditBalance->running_amount,
         ];
         SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalData);
+        SendCreditBalanceEmailToUser::dispatch($customer, $additionalData);
     }
 }
