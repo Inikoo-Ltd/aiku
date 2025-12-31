@@ -14,8 +14,8 @@ return new class extends Migration
             $table->unsignedSmallInteger('organisation_id')->index();
             $table->foreign('organisation_id')->references('id')->on('organisations')->onUpdate('cascade')->onDelete('cascade');
 
-            $table->unsignedSmallInteger('shop_id')->index();
-            $table->foreign('shop_id')->references('id')->on('shops')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedSmallInteger('shop_id')->nullable()->index();
+            $table->foreign('shop_id')->references('id')->on('shops')->onUpdate('cascade')->onDelete('set null');
 
             $table->unsignedSmallInteger('chat_agent_id')->index();
             $table->foreign('chat_agent_id')->references('id')->on('chat_agents')->onUpdate('cascade')->onDelete('cascade');
