@@ -2,51 +2,34 @@
 
 namespace App\Actions\Catalogue\Shop\Faire;
 
-use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Http\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetFairePackingPdfSlip extends OrgAction
 {
     public string $commandSignature = 'faire:packing-slip {shop} {order?}';
+    private Order $order;
 
-    public function handle(Shop $shop, Order $order, bool $saveFile = false): Response|ResponseFactory|array
+    public function handle(Shop $shop, Order $order): array|string
     {
-        $pdfBinary = $shop->getPackingSlip($order->external_id);
-
-        if ($saveFile) {
-            $tempPath = tempnam(sys_get_temp_dir(), 'packing-slip-');
-            file_put_contents($tempPath, $pdfBinary);
-
-            $attachmentData = [
-                'path' => $tempPath,
-                'originalName' => 'packing-slip-' . $order->slug . '.pdf',
-                'scope' => 'packing-slip',
-                'caption' => 'Packing Slip for Order ' . $order->slug,
-                'extension' => 'pdf'
-            ];
-
-            SaveModelAttachment::make()->action($order, $attachmentData);
-
-            // Clean up temporary file
-            @unlink($tempPath);
-
-            return $attachmentData;
-        }
-
-        return response($pdfBinary, 200)
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="packing-slip-' . $order->slug . '.pdf"');
+        return $shop->getPackingSlip($order->external_id);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): Response|ResponseFactory
+    public function htmlResponse($pdfBinary): Response
     {
+        return response($pdfBinary, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="packing-slip-' . $this->order->slug . '.pdf"');
+    }
+
+    public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): array|string
+    {
+        $this->order = $order;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $order);
