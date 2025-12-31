@@ -6,29 +6,28 @@
  * Copyright (c) 2025, Eka Yudinata
  */
 
-namespace App\Actions\Comms\Outbox\BackInStockNotification\Hydrators;
+namespace App\Actions\Comms\Outbox\BackInStockNotification;
 
 use App\Actions\Comms\Email\SendBackToStockToCustomerEmail;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Lorisleiva\Actions\Concerns\AsAction;
-use App\Models\CRM\Customer;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
-use App\Actions\Comms\Outbox\BackInStockNotification\BulkDeleteBackInStockReminder;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Comms\Outbox;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Comms\Outbox;
+use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class BackInStockHydrateEmailBulkRuns implements ShouldQueue
+class RunBackInStockEmailBulkRuns
 {
     use AsAction;
     use WithGenerateEmailBulkRuns;
     use WithActionUpdate;
+
     public string $commandSignature = 'hydrate:back-in-stock-reminder';
     public string $jobQueue = 'low-priority';
 
@@ -46,9 +45,15 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
 
         $currentDateTime = Carbon::now()->utc();
 
+        /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
+
+            if(!$outbox->shop->is_aiku){
+                continue;
+            }
+
             $lastOutBoxSent = $outbox->last_sent_at;
-            // make customers as main table
+            // make customers as the main table
             $baseQuery = QueryBuilder::for(Customer::class);
             $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
             $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
@@ -63,14 +68,14 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
                 $baseQuery->where('back_in_stock_reminders.created_at', '>', $lastOutBoxSent);
                 $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
             }
-            // check another customers conditions
+            // check another customers condition
             $baseQuery->whereNull('customers.deleted_at');
-            // check another product conditions
+            // check another product condition
             $baseQuery->whereNull('products.deleted_at');
             // order by customer id
             $baseQuery->orderBy('customers.id');
 
-            $LastBulkRun = null;
+            $lastBulkRun = null;
             $updateLastOutBoxSent = null;
 
             // Get count before iterating
@@ -98,7 +103,7 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
                     ];
                     SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
 
-                    $LastBulkRun = $bulkRun;
+                    $lastBulkRun = $bulkRun;
 
                     $lastCustomerId = $customer->id;
                     $lastCustomer = $customer;
@@ -133,7 +138,7 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
                     SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
                     // reset product data
                     $productData = [];
-                    $LastBulkRun = $bulkRun;
+                    $lastBulkRun = $bulkRun;
 
                     // Update last sent time for this outbox
                     $updateLastOutBoxSent = $currentDateTime;
@@ -145,8 +150,8 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
 
             // Note: Make sure this runs only once at the end
             // check Job Chaining Bus::chain
-            if ($LastBulkRun) {
-                EmailBulkRunHydrateDispatchedEmails::dispatch($LastBulkRun);
+            if ($lastBulkRun) {
+                EmailBulkRunHydrateDispatchedEmails::dispatch($lastBulkRun);
             }
 
             if ($updateLastOutBoxSent) {
@@ -176,7 +181,7 @@ class BackInStockHydrateEmailBulkRuns implements ShouldQueue
             $url = $product['canonical_url'];
             $name = $product['product_name'];
 
-            $links[] = "<a ses:no-track href=\"{$url}\">{$name}</a>";
+            $links[] = "<a ses:no-track href=\"$url\">$name</a>";
         }
 
         return implode(', ', $links);
