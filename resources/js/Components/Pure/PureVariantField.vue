@@ -264,23 +264,23 @@ const isVariantValid = (v: Variant) => {
 }
 
 const toggleActive = (i: number) => {
-	// 🔹 hapus variant dengan label kosong
+
 	model.value.variants = model.value.variants.filter(
 		v => v.label && v.label.trim() !== ""
 	)
 
-	// 🔹 trim option di SEMUA variant
+
 	model.value.variants.forEach(variant => {
 		if (Array.isArray(variant.options)) {
 			variant.options = variant.options.filter(o => o?.trim())
 		}
 	})
 
-	// re-calc index setelah filter
+
 	const v = model.value.variants[i]
 	if (!v) return
 
-	// 🔹 validasi hanya saat ingin mengaktifkan
+
 	if (!v.active) {
 		if (!isVariantValid(v)) {
 			alert("Variant name and at least one option are required")
@@ -288,12 +288,12 @@ const toggleActive = (i: number) => {
 		}
 	}
 
-	// 🔹 toggle active (single active)
+
 	model.value.variants.forEach((variant, idx) => {
 		variant.active = idx === i ? !variant.active : false
 	})
 
-	// 🔹 set groupBy jika hanya satu variant
+
 	if (model.value.variants.length === 1) {
 		model.value.groupBy = model.value.variants[0].label
 	}
@@ -419,7 +419,7 @@ const noLeader = computed(() => {
         <div class="border-t mt-6 pt-3" v-if="validVariants.length">
           <div class="flex items-center gap-2">
             <span class="text-sm"> {{ trans('Group by') }} </span>
-            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm min-w-fit w-48">
+            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
               <option v-for="v in validVariants" :key="v.label" :value="v.label">
                 {{ v.label }}
               </option>
