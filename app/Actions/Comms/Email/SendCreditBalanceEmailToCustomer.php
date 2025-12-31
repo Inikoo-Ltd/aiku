@@ -15,15 +15,14 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
 use App\Actions\Comms\Traits\WithSendCustomerOutboxEmail;
 
-class SendCreditBalanceUpdateEmailToCustomer extends OrgAction
+class SendCreditBalanceEmailToCustomer extends OrgAction
 {
     use WithSendCustomerOutboxEmail;
 
     public string $jobQueue = 'low-priority';
 
-    public function handle(Customer $customer, OutboxCodeEnum $outboxCodeEnum, array $additionalData = []): DispatchedEmail
+    public function handle(Customer $customer, array $additionalData = []): DispatchedEmail
     {
-        return $this->sendCustomerOutboxEmail($customer, $outboxCodeEnum, $additionalData);
+        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER, $additionalData);
     }
-
 }
