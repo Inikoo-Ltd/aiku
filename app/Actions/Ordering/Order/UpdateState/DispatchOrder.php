@@ -8,7 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
-use App\Actions\Catalogue\Shop\Faire\UpdateShippingFaireOrder;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;

@@ -264,26 +264,42 @@ const isVariantValid = (v: Variant) => {
 }
 
 const toggleActive = (i: number) => {
-  const v = model.value.variants[i]
 
-  // jika mau CLOSE (Done)
-  if (v.active) {
-    if (!isVariantValid(v)) {
-      alert("Variant name and at least one option are required")
-      return
-    }
+	model.value.variants = model.value.variants.filter(
+		v => v.label && v.label.trim() !== ""
+	)
 
-    // bersihkan option kosong
-    v.options = v.options.filter(o => o?.trim())
-  }
 
-  model.value.variants.forEach(
-    (variant, idx) => (variant.active = idx === i ? !variant.active : false)
-  )
+	model.value.variants.forEach(variant => {
+		if (Array.isArray(variant.options)) {
+			variant.options = variant.options.filter(o => o?.trim())
+		}
+	})
 
-  if (model.value.variants.length == 1)
-    model.value.groupBy =  model.value.variants[i].label
+
+	const v = model.value.variants[i]
+	if (!v) return
+
+
+	if (!v.active) {
+		if (!isVariantValid(v)) {
+			alert("Variant name and at least one option are required")
+			return
+		}
+	}
+
+
+	model.value.variants.forEach((variant, idx) => {
+		variant.active = idx === i ? !variant.active : false
+	})
+
+
+	if (model.value.variants.length === 1) {
+		model.value.groupBy = model.value.variants[0].label
+	}
 }
+
+
 
 const addVariant = () => {
   model.value.variants.forEach(v => (v.active = false))
@@ -403,7 +419,7 @@ const noLeader = computed(() => {
         <div class="border-t mt-6 pt-3" v-if="validVariants.length">
           <div class="flex items-center gap-2">
             <span class="text-sm"> {{ trans('Group by') }} </span>
-            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm min-w-fit w-48">
+            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
               <option v-for="v in validVariants" :key="v.label" :value="v.label">
                 {{ v.label }}
               </option>

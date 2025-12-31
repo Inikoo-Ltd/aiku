@@ -8,7 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
-use App\Actions\Catalogue\Shop\Faire\AcceptFaireOrder;
+use App\Actions\Catalogue\Shop\External\Faire\AcceptFaireOrder;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
