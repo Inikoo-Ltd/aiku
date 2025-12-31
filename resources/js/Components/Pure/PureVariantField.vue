@@ -264,26 +264,42 @@ const isVariantValid = (v: Variant) => {
 }
 
 const toggleActive = (i: number) => {
-  const v = model.value.variants[i]
 
-  // jika mau CLOSE (Done)
-  if (v.active) {
-    if (!isVariantValid(v)) {
-      alert("Variant name and at least one option are required")
-      return
-    }
+	model.value.variants = model.value.variants.filter(
+		v => v.label && v.label.trim() !== ""
+	)
 
-    // bersihkan option kosong
-    v.options = v.options.filter(o => o?.trim())
-  }
 
-  model.value.variants.forEach(
-    (variant, idx) => (variant.active = idx === i ? !variant.active : false)
-  )
+	model.value.variants.forEach(variant => {
+		if (Array.isArray(variant.options)) {
+			variant.options = variant.options.filter(o => o?.trim())
+		}
+	})
 
-  if (model.value.variants.length == 1)
-    model.value.groupBy =  model.value.variants[i].label
+
+	const v = model.value.variants[i]
+	if (!v) return
+
+
+	if (!v.active) {
+		if (!isVariantValid(v)) {
+			alert("Variant name and at least one option are required")
+			return
+		}
+	}
+
+
+	model.value.variants.forEach((variant, idx) => {
+		variant.active = idx === i ? !variant.active : false
+	})
+
+
+	if (model.value.variants.length === 1) {
+		model.value.groupBy = model.value.variants[0].label
+	}
 }
+
+
 
 const addVariant = () => {
   model.value.variants.forEach(v => (v.active = false))

@@ -71,7 +71,7 @@ class ShowMasterVariant extends GrpAction
     public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
     {
         $this->parent = $masterFamily;
-        $this->initialisation(group(), $request)->withTab(MasterVariantTabsEnum::values())->withTab(MasterVariantTabsEnum::values());
+        $this->initialisation(group(), $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -91,13 +91,13 @@ class ShowMasterVariant extends GrpAction
                     request()->route()->getName(),
                     request()->route()->originalParameters()
                 ),
-                'title'           => __('Show Variant'),
+                'title'           => __('Show Master Variant'),
                 'pageHead'        => [
                     'title' => $masterVariant->code,
                     'model'         => __('Master Variants'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-shapes'],
-                        'title' => __('Department')
+                        'title' => __('Master Variant')
                     ],
                     'actions'       => [
                         [

@@ -10,6 +10,6 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|VariantOrderingStats query()
  * @mixin \Eloquent
  */
-class VariantOrderingStats extends Model
+class VariantSalesOrderingStats extends Model
 {
 }

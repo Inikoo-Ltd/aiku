@@ -79,6 +79,7 @@ test('can create chat session for guest with minimal data', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -100,6 +101,7 @@ test('can create chat session for guest with custom guest identifier', function 
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
         'guest_identifier' => $guestIdentifier,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -116,6 +118,7 @@ test('can create chat session for authenticated web user', function () {
         'language_id' => 68,
         'priority' => ChatPriorityEnum::HIGH->value,
         'ai_model_version' => 'gpt-4-turbo',
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -131,6 +134,7 @@ test('create chat event for guest session', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -174,6 +178,7 @@ test('creates chat event for authenticated user session', function () {
         'web_user_id' => $webUser->id,
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -210,6 +215,7 @@ test('json response structure is correct', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -237,6 +243,7 @@ test('handles different priority levels correctly', function () {
         $modelData = [
             'language_id' => 68,
             'priority' => $priority,
+            'shop_id' => 30,
         ];
 
         $chatSession = $this->action->handle($modelData);
@@ -249,6 +256,7 @@ test('uses default values when not provided', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -262,6 +270,7 @@ test('guest identifier is generated when not provided for guest', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession1 = $this->action->handle($modelData);
@@ -303,6 +312,7 @@ test('can send text message from guest', function () {
         'guest_identifier' => 'guest_test_' . Str::random(5),
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL,
+        'shop_id' => 30,
         'ai_model_version' => 'default',
         'created_at' => now(),
         'updated_at' => now(),
@@ -360,6 +370,7 @@ test('can send text message from web user', function () {
         'status' => ChatSessionStatusEnum::ACTIVE,
         'guest_identifier' => null,
         'language_id' => 68,
+        'shop_id' => 30,
         'priority' => ChatPriorityEnum::NORMAL,
         'ai_model_version' => 'default',
         'created_at' => now(),
@@ -404,6 +415,10 @@ test('authenticated agent can assign chat session to self', function () {
         'ulid' => Str::ulid(),
         'status' => ChatSessionStatusEnum::WAITING->value,
         'guest_identifier' => 'guest_001',
+        'language_id' => 68,
+        'shop_id' => 30,
+        'priority' => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
         'created_at' => now(),
         'updated_at' => now(),
     ]);
@@ -542,6 +557,12 @@ test('can close chat session by agent from active assignment', function (): void
         'ulid' => Str::ulid(),
         'status' => ChatSessionStatusEnum::ACTIVE->value,
         'guest_identifier' => 'guest_close_test',
+        'language_id' => 68,
+        'shop_id' => 30,
+        'priority' => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $assignment = ChatAssignment::create([

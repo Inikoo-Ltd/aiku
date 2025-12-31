@@ -26,6 +26,8 @@ class ChatSessionResource extends JsonResource
             'created_at' => $this->formatDate($chatSession->created_at),
             'closed_at' => $chatSession->closed_at ? $this->formatDate($chatSession->closed_at) : null,
             'priority' => $chatSession->priority->value,
+            'shop_id'  => $chatSession->shop_id,
+            'shop_name' => $chatSession->shop ? $chatSession->shop->name : null,
             'contact_name' => $chatSession->webUser ? $chatSession->webUser->contact_name : null,
         ];
     }
