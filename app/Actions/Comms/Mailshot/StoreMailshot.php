@@ -137,7 +137,13 @@ class StoreMailshot extends OrgAction
     public function htmlResponse(Mailshot $mailshot): \Symfony\Component\HttpFoundation\Response
     {
 
-        return Inertia::location(route('grp.org.shops.show.marketing.mailshots.index', [
+        $routeName = match ($mailshot->type) {
+            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
+            MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.index',
+            default => null
+        };
+
+        return Inertia::location(route($routeName, [
             'organisation' => $mailshot->shop->organisation->slug,
             'shop'         => $mailshot->shop->slug
         ]));
