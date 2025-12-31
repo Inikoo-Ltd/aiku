@@ -37,13 +37,37 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_dimensions
  * @property int $number_used_slots
  * @property int $number_used_slots_for_sale
- * @property string $data
+ * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property int $master_variant_id
+ * @property string $slug
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \App\Models\Catalogue\ProductCategory|null $department
+ * @property-read \App\Models\Catalogue\ProductCategory|null $family
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read \App\Models\Catalogue\Product|null $leaderProduct
+ * @property-read MasterVariant|null $masterVariant
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\Catalogue\VariantSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Catalogue\VariantSalesOrderingIntervals|null $salesOrderingIntervals
+ * @property-read \App\Models\Catalogue\VariantSalesOrderingStats|null $salesOrderingStats
+ * @property-read \App\Models\Catalogue\VariantSalesStats|null $salesStats
+ * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\VariantTimeSeries> $timeSeries
+ * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant withoutTrashed()
  * @mixin \Eloquent
  */
 class Variant extends Model implements Auditable, HasMedia
@@ -116,7 +140,7 @@ class Variant extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(VariantSalesStats::class);
     }
-    
+
     public function salesIntervals(): HasOne
     {
         return $this->hasOne(VariantSalesIntervals::class);

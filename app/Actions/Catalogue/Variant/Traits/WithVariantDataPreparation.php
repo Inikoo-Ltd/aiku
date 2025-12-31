@@ -7,7 +7,6 @@
  * copyright 2025
 */
 
-
 namespace App\Actions\Catalogue\Variant\Traits;
 
 use Illuminate\Support\Arr;
@@ -50,7 +49,9 @@ trait WithVariantDataPreparation
                     ->where('shop_id', $this->shop->id)
                     ->first();
 
-                if (! $product) return [];
+                if (! $product) {
+                    return [];
+                }
 
                 $data = Arr::except($variant, 'product');
                 data_set($data, 'product', ProductResourceForVariant::make($product)->resolve());
@@ -59,7 +60,7 @@ trait WithVariantDataPreparation
             })
             ->filter()
             ->toArray();
-        
+
         $this->set('data.products', $products);
 
         $this->leadItem = collect($products)->where('is_leader', true)->first();
@@ -103,7 +104,7 @@ trait WithVariantDataPreparation
         $this->organisation_id = $this->shop->organisation_id;
         $this->group_id = $this->shop->group->id;
         $this->shop_id  = $this->shop->id;
-        
+
         $this->master_variant_id = $this->parent->id;
     }
 

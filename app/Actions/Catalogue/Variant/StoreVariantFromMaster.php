@@ -55,67 +55,68 @@ class StoreVariantFromMaster extends OrgAction
 
     public function prepareForValidation(): void
     {
-        // Call function set on Trait. If need to update logic, update it there please.
+        // Call function set on Trait. If you need to update logic, update it here, please.
         $this->prepareForVariantCreation();
     }
 
     public function rules(): array
     {
         return [
-            'leader_id'                     =>  ['required', 'exists:products,id'],
-            'family_id'                     =>  ['required', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)],
-            'department_id'                 =>  ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::DEPARTMENT)],
-            'sub_department_id'             =>  ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)],
-            'shop_id'                       =>  ['required', Rule::exists('shops', 'id')],
-            'organisation_id'               =>  ['required', Rule::exists('organisations', 'id')],
-            'group_id'                      =>  ['required', Rule::exists('groups', 'id')],
-            'code'                          =>  [
-                                                    'required',
-                                                    'max:32',
-                                                    new AlphaDashDot(),
-                                                    new IUnique(
-                                                        table: 'variants',
-                                                        extraConditions: [
-                                                            ['column' => 'shop_id', 'value' => $this->shop->id ?? null],
-                                                            ['column' => 'deleted_at', 'operator' => 'null'],
-                                                        ]
-                                                    ),
-                                                ],
-            'slug'                          =>  ['required', 'string'],
-            'number_minions'                =>  ['required', 'numeric'],
-            'number_dimensions'             =>  ['required', 'numeric'],
-            'number_used_slots'             =>  ['required', 'numeric'],
-            'number_used_slots_for_sale'    =>  ['required', 'numeric'],
-            'data'                          =>  ['required', 'array'],
-            'data.variants'                 =>  ['required', 'array'],
-            'data.groupBy'                  =>  ['required', 'string'],
-            'data.products'                 =>  ['required', 'array', 'min:1'],
-            'master_variant_id'             =>  ['required'],
+            'leader_id'                  => ['required', 'exists:products,id'],
+            'family_id'                  => ['required', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)],
+            'department_id'              => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::DEPARTMENT)],
+            'sub_department_id'          => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)],
+            'shop_id'                    => ['required', Rule::exists('shops', 'id')],
+            'organisation_id'            => ['required', Rule::exists('organisations', 'id')],
+            'group_id'                   => ['required', Rule::exists('groups', 'id')],
+            'code'                       => [
+                'required',
+                'max:32',
+                new AlphaDashDot(),
+                new IUnique(
+                    table: 'variants',
+                    extraConditions: [
+                        ['column' => 'shop_id', 'value' => $this->shop->id ?? null],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+                    ]
+                ),
+            ],
+            'slug'                       => ['required', 'string'],
+            'number_minions'             => ['required', 'numeric'],
+            'number_dimensions'          => ['required', 'numeric'],
+            'number_used_slots'          => ['required', 'numeric'],
+            'number_used_slots_for_sale' => ['required', 'numeric'],
+            'data'                       => ['required', 'array'],
+            'data.variants'              => ['required', 'array'],
+            'data.groupBy'               => ['required', 'string'],
+            'data.products'              => ['required', 'array', 'min:1'],
+            'master_variant_id'          => ['required'],
         ];
     }
 
     public function getValidationMessages(): array
     {
         $validationMessages = [
-            'data.groupBy'          => __('A grouping criteria must be selected'),
-            'data.products'     => __('At least one product must be present in the variant'),
+            'data.groupBy'  => __('A grouping criteria must be selected'),
+            'data.products' => __('At least one product must be present in the variant'),
         ];
 
-        if($this->asAction) {
-            array_merge($validationMessages, [
-                'data.leader_id'    => __("Unable to assign leader. This master product is missing in one or more Families mapped under the Master Family"),
+        if ($this->asAction) {
+            $validationMessages = array_merge($validationMessages, [
+                'data.leader_id' => __("Unable to assign leader. This master product is missing in one or more Families mapped under the Master Family"),
             ]);
         }
+
         return $validationMessages;
     }
-    
+
     /**
      * @throws \Throwable
      */
     public function action(MasterVariant $masterVariant, Shop $shop, array $modelData, int $hydratorsDelay = 0): Variant
     {
         $this->parent = $masterVariant;
-        $this->shop = $shop;
+        $this->shop   = $shop;
 
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;

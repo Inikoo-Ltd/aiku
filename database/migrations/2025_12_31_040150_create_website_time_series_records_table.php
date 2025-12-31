@@ -18,14 +18,14 @@ return new class () extends Migration {
         Schema::create('website_time_series_records', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('website_time_series_id')->index();
-            $table->foreign('website_time_series_id')->references('id')->on('website_time_series')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreign('website_time_series_id')->references('id')->on('website_time_series')->onDelete('set null');
 
             $table->unsignedInteger('visitors')->default(0);
             $table->unsignedInteger('sessions')->default(0);
             $table->unsignedInteger('page_views')->default(0);
             $table->unsignedInteger('avg_session_duration')->default(0);
-            $table->decimal('bounce_rate', 5, 2)->default(0);
-            $table->decimal('pages_per_session', 5, 2)->default(0);
+            $table->decimal('bounce_rate', 5)->default(0);
+            $table->decimal('pages_per_session', 5)->default(0);
             $table->unsignedInteger('new_visitors')->default(0);
             $table->unsignedInteger('returning_visitors')->default(0);
             $table->unsignedInteger('visitors_desktop')->default(0);
