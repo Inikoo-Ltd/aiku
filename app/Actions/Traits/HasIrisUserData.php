@@ -8,11 +8,11 @@
 
 namespace App\Actions\Traits;
 
-use App\Actions\Iris\CaptureTrafficSource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 trait HasIrisUserData
@@ -20,7 +20,7 @@ trait HasIrisUserData
     /**
      * Build the Iris user data payload shared across Iris/Retina actions.
      *
-     * Note: Consuming classes are expected to provide $this->webUser, $this->customer and $this->shop.
+     * Note: Consuming classes are expected to provide $this->webUser, $this->customer, and $this->shop.
      *
      * @return array
      * @throws \Psr\Container\ContainerExceptionInterface
@@ -72,16 +72,49 @@ trait HasIrisUserData
             'shop_has_gr'           => false,
             'shop_has_gr_armistice' => false,
             'customer_is_gr'        => false,
-            'meter'                 => [0, 30]
         ];
 
 
         if (Arr::get($this->shop->offers_data, 'gr.active')) {
             $grData['shop_has_gr'] = true;
+
+            $lastDaysSinceLastInvoiced = Cache::remember("customer_days_since_last_invoiced_at_".$this->customer->id, now()->addMinutes(15), function () {
+                return $this->customer->last_invoiced_at ? -now()->diffInDays($this->customer->last_invoiced_at) : null;
+            });
+
+            $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
+
+            if ($lastDaysSinceLastInvoiced != null && $lastDaysSinceLastInvoiced <= $grInterval) {
+                $grData['customer_is_gr'] = true;
+                $grData['gr_label']       = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
+                $grData['meter']          = [
+                    $grInterval - $lastDaysSinceLastInvoiced,
+                    $grInterval
+                ];
+            }
+        }
+
+        $offerData = null;
+
+        if (Arr::get($this->shop->offers_data, 'gr.active')) {
+            $lastDaysSinceLastInvoiced = Cache::remember("customer_days_since_last_invoiced_at_".$this->customer->id, now()->addMinutes(15), function () {
+                return $this->customer->last_invoiced_at ? -now()->diffInDays($this->customer->last_invoiced_at) : null;
+            });
+
+            $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
+
+            if ($lastDaysSinceLastInvoiced != null && $lastDaysSinceLastInvoiced <= $grInterval) {
+                $offerData['type']  = 'gr';
+                $offerData['label'] = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
+                $offerData['meter'] = [
+                    $grInterval - $lastDaysSinceLastInvoiced,
+                    $grInterval
+                ];
+            }
         }
 
 
-        $firstHitData = [
+        return [
             'is_logged_in' => true,
             'auth'         => [
                 'user'                  => LoggedWebUserResource::make($webUser)->getArray(),
@@ -101,11 +134,7 @@ trait HasIrisUserData
             ],
             // 'traffic_source_cookies' => CaptureTrafficSource::run(),
             'offer_meters' => $offerMeters,
-            'gr_data'      => $grData,
+            'offer_data'   => $offerData,
         ];
-
-       // dd($firstHitData);
-
-        return $firstHitData;
     }
 }

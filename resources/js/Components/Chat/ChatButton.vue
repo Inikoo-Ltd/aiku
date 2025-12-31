@@ -423,7 +423,7 @@ defineExpose({
 			<div
 				v-if="open"
 				ref="panelRef"
-				class="fixed bottom-[9rem] right-5 z-[70] w-[350px] lg:h-[450px] 2xl:h-[550px] bg-[#f6f6f7] rounded-md overflow-hidden border">
+				class="fixed bottom-[9rem] right-5 z-[70] w-[350px] h-fit  bg-[#f6f6f7] rounded-md overflow-hidden border">
 				<MessageArea
 					:messages="messages"
 					:session="chatSession"
@@ -435,7 +435,8 @@ defineExpose({
 					@send-message="sendMessage"
 					@reload="(loadMore: any) => getMessages(loadMore)"
 					@mounted="forceScrollBottom"
-					@new-session="startNewSession" />
+					@new-session="startNewSession"
+				/>
 			</div>
 		</transition>
 	</div>

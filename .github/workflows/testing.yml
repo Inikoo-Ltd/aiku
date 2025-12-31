@@ -34,4 +34,4 @@ jobs:
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
-        run: /usr/bin/php8.4 -dxdebug.mode=off vendor/bin/pest --exclude-group=integration --stop-on-defect
+        run: /usr/bin/php8.4 -dxdebug.mode=off vendor/bin/pest --parallel --exclude-group=integration --stop-on-defect

@@ -126,6 +126,9 @@ beforeEach(function () {
 });
 
 test('create fulfilment shop', function () {
+
+    setPermissionsTeamId($this->group->id);
+
     $organisation = $this->organisation;
     $storeData    = Shop::factory()->definition();
     data_set($storeData, 'type', ShopTypeEnum::FULFILMENT->value);

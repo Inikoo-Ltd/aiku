@@ -33,7 +33,7 @@ import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vu
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
-import ProductSales from "@/Components/Product/ProductSales.vue";
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import { trans } from "laravel-vue-i18n"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 
@@ -128,8 +128,8 @@ const component = computed(() => {
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
-        attachments : AttachmentManagement,
-        sales: ProductSales,
+        attachments: AttachmentManagement,
+        sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
     }
     console.log(currentTab.value)

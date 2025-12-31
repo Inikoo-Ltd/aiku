@@ -217,7 +217,6 @@ beforeEach(function () {
         ->shouldReceive('handle')
         ->with('localhost')
         ->andReturn($this->website);
-
 });
 
 test('show log in', function () {

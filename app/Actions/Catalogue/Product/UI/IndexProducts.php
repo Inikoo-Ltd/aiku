@@ -66,7 +66,8 @@ class IndexProducts extends OrgAction
             ],
             frequency: TimeSeriesFrequencyEnum::DAILY->value,
             prefix: $prefix,
-            includeLY: true
+            includeLY: true,
+            localKey: 'asset_id'
         );
 
         if ($bucket == 'current') {
