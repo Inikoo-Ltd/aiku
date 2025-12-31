@@ -444,14 +444,14 @@ class Kernel extends ConsoleKernel
         }
 
 
-         $this->logSchedule(
-             $schedule->job(RunBackInStockEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
-                 monitorSlug: 'BackToStockHydrateEmailBulkRuns',
-             ),
-             name: 'BackToStockHydrateEmailBulkRuns',
-             type: 'job',
-             scheduledAt: now()->format('H:i')
-         );
+        $this->logSchedule(
+            $schedule->job(RunBackInStockEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'BackToStockHydrateEmailBulkRuns',
+            ),
+            name: 'BackToStockHydrateEmailBulkRuns',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void

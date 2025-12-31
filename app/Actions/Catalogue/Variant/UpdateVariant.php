@@ -18,7 +18,7 @@ use App\Models\Masters\MasterVariant;
 class UpdateVariant extends OrgAction
 {
     use WithVariantDataPreparation;
-    
+
     protected MasterVariant $parent;
     protected Shop $shop;
 

@@ -29,7 +29,7 @@ class UpdateMasterVariant extends OrgAction
             $masterVariant->update($modelData);
             $masterVariant->refresh();
 
-            foreach($masterVariant->variants as $variant){
+            foreach ($masterVariant->variants as $variant) {
                 UpdateVariant::make()->action($variant, $modelData);
             }
 

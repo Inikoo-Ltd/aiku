@@ -42,6 +42,7 @@ use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SetGrpApiTreblle;
 use App\Http\Middleware\SetRetinaApiTreblle;
 use App\Http\Middleware\SetWebUserLocale;
+use App\Http\Middleware\TrackWebsiteVisitor;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -181,6 +182,7 @@ class Kernel extends HttpKernel
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             //LogWebUserRequestMiddleware::class,
+            TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
         ],
@@ -199,6 +201,7 @@ class Kernel extends HttpKernel
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             //LogWebUserRequestMiddleware::class,
+            TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
         ],

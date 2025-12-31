@@ -11,7 +11,6 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;

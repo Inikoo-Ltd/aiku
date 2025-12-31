@@ -228,7 +228,8 @@ const toggleBackInStock = () =>
                         />
 
                         <!-- Back in stock notify -->
-                        <button v-else-if="layout?.app?.environment === 'local'" @click.prevent="toggleBackInStock"
+                         
+                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'" @click.prevent="toggleBackInStock"
                             class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all shadow-lg"
                             v-tooltip="product.is_back_in_stock
                                 ? trans('You will be notified')
