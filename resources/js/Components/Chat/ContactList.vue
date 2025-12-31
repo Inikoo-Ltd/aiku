@@ -50,7 +50,7 @@ const reloadContacts = async () => {
 			params.assigned_to_me = layout?.user?.id
 		}
 		// just a moment code hours
-		const PLUS_8_HOURS = 8 * 60 * 60 * 1000
+		const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
 
 		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
 		console.log("✅ Contacts:", res)
@@ -157,6 +157,7 @@ const handleSendMessage = async (text: string) => {
 		const payload = {
 			message_text: text,
 			message_type: "text",
+			sender_type: "agent",
 		}
 
 		const assignRoute: routeType = {

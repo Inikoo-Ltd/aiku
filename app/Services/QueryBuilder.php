@@ -236,6 +236,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
      * @param string $frequency The time series frequency enum value (e.g., TimeSeriesFrequencyEnum::DAILY->value)
      * @param string|null $prefix The prefix for request parameters
      * @param bool $includeLY Whether to include last year data (default: true)
+     * @param string|null $localKey The local key column to join on (e.g., 'asset_id'). Defaults to 'id'
      *
      * @return array ['hasDateFilter' => bool, 'selectRaw' => array] Array containing filter status and SELECT raw statements
      */
@@ -246,7 +247,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         array $aggregateColumns,
         string $frequency,
         ?string $prefix = null,
-        bool $includeLY = true
+        bool $includeLY = true,
+        ?string $localKey = null
     ): array {
         // Parse date filter from request
         $argumentName = ($prefix ? $prefix . '_' : '') . 'between';
@@ -294,9 +296,10 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         }
 
         // Add joins
-        $this->leftJoin($timeSeriesTable, function ($join) use ($timeSeriesTable, $foreignKey, $frequency) {
+        $this->leftJoin($timeSeriesTable, function ($join) use ($timeSeriesTable, $foreignKey, $frequency, $localKey) {
             $mainTable = $this->getModel()->getTable();
-            $join->on("$timeSeriesTable.{$foreignKey}", '=', "$mainTable.id")
+            $joinColumn = $localKey ? "$mainTable.$localKey" : "$mainTable.id";
+            $join->on("$timeSeriesTable.{$foreignKey}", '=', $joinColumn)
                  ->where("$timeSeriesTable.frequency", $frequency);
         });
 

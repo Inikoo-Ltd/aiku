@@ -91,7 +91,7 @@ trait WithTimeSeriesData
                 $previousYearRecord = DB::table($timeSeriesRecordsTable)
                     ->where($this->getTimeSeriesForeignKey($timeSeriesRecordsTable), $record->{$this->getTimeSeriesForeignKey($timeSeriesRecordsTable)})
                     ->whereYear('from', $year - 1)
-                    ->whereRaw('QUARTER(from) = ?', [$quarter])
+                    ->whereRaw('EXTRACT(QUARTER FROM "from") = ?', [$quarter])
                     ->first();
 
                 $previousYearSales = $previousYearRecord->sales_grp_currency ?? 0;

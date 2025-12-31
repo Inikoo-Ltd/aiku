@@ -35,8 +35,8 @@ class UpdateOffer extends OrgAction
     {
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(
-            (array) $offer->trigger_data,
-            ['item_quantity' => $modelData['trigger_data_item_quantity']]
+                $offer->trigger_data,
+                ['item_quantity' => $modelData['trigger_data_item_quantity']]
             );
             unset($modelData['trigger_data_item_quantity']);
             $modelData['trigger_data'] = $newTriggerData;
@@ -74,7 +74,7 @@ class UpdateOffer extends OrgAction
     public function rules(ActionRequest $request): array
     {
         $rules = [
-            'code'         => [
+            'code'                       => [
                 'sometimes',
                 new IUnique(
                     table: 'offers',
@@ -94,13 +94,13 @@ class UpdateOffer extends OrgAction
                 'max:64',
                 'alpha_dash'
             ],
-            'name'         => ['sometimes', 'max:250', 'string'],
-            'data'         => ['sometimes', 'required'],
-            'settings'     => ['sometimes', 'required'],
-            'trigger_data' => ['sometimes', 'required'],
+            'name'                       => ['sometimes', 'max:250', 'string'],
+            'data'                       => ['sometimes', 'required'],
+            'settings'                   => ['sometimes', 'required'],
+            'trigger_data'               => ['sometimes', 'required'],
             'trigger_data_item_quantity' => ['sometimes', 'integer'],
-            'start_at'     => ['sometimes', 'date'],
-            'end_at'       => ['sometimes', 'nullable', 'date'],
+            'start_at'                   => ['sometimes', 'date'],
+            'end_at'                     => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {
@@ -134,6 +134,7 @@ class UpdateOffer extends OrgAction
         return $this->handle($offer, $this->validatedData);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, Offer $offer, ActionRequest $request): offer
     {
         $this->offer = $offer;

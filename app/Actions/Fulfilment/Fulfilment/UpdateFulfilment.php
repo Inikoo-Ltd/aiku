@@ -51,10 +51,10 @@ class UpdateFulfilment extends OrgAction
             data_forget($modelData, 'monthly_cut_off');
         }
 
-        if(Arr::exists($modelData, 'enable_chat')) {
+        if (Arr::exists($modelData, 'enable_chat')) {
             data_set($settings, 'chat.enable_chat', data_get($modelData, 'enable_chat'));
             $updateSettings     = true;
-            
+
             UpdateWebsite::make()->action(
                 website: $fulfilment->shop->website,
                 modelData: ['enable_chat'   => Arr::pull($modelData, 'enable_chat')],
@@ -182,7 +182,7 @@ class UpdateFulfilment extends OrgAction
             'registration_number'        => ['sometimes', 'string'],
             'vat_number'                 => ['sometimes', 'string'],
             'invoice_footer'             => ['sometimes', 'string'],
-            'enable_chat'                => ['sometimes', 'boolean'], 
+            'enable_chat'                => ['sometimes', 'boolean'],
             'sender_email'               => ['sometimes', 'email'],
             'image'                      => [
                 'sometimes',

@@ -53,7 +53,7 @@ jobs:
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test with coverage
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: /usr/bin/php8.4 vendor/bin/pest -d memory_limit=-1 --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
+        run: /usr/bin/php8.4 -d memory_limit=-1 vendor/bin/pest --parallel --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
       - name: Process coverage to Codecov
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
         uses: codecov/codecov-action@v5

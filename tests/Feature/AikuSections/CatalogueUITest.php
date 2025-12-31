@@ -118,7 +118,7 @@ beforeEach(function () {
     actingAs($this->user);
 });
 
-// Department
+
 
 test('UI Index catalogue departments', function () {
     $this->withoutExceptionHandling();

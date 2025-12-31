@@ -196,7 +196,7 @@ const fetchProductExistInChannel = async () => {
                 props.routeGetCategoryChannels.name,
                 {
                     ...props.routeGetCategoryChannels.parameters,
-                    customer: layout.iris?.customer?.id,
+                    customer: layout?.iris_variables?.id,
                 }
             )
         )

@@ -38,6 +38,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import ImagesManagement from '@/Components/Goods/ImagesManagement.vue'
+import ProductCategoryTimeSeriesTable from '@/Components/Product/ProductCategoryTimeSeriesTable.vue'
 import Breadcrumb from 'primevue/breadcrumb'
 
 library.add(
@@ -79,6 +80,7 @@ const props = defineProps<{
     products: {}
     history?: {}
     images?: object
+    sales?: object
     salesData?: object
 }>()
 
@@ -93,7 +95,8 @@ const component: Component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
-        images :ImagesManagement
+        images: ImagesManagement,
+        sales: ProductCategoryTimeSeriesTable
     }
     return components[currentTab.value]
 
