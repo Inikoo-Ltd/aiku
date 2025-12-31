@@ -143,20 +143,22 @@ watch(
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
             <!-- Section: Profile -->
-            <LinkIris href="/app/dashboard" :type="'internal'">
+            <LinkIris href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
-                    v-tooltip="trans('Profile')"
+                    
                     icon="fal fa-user"
                     type="transparent"
                     class="button min-w-max"
                 >
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
+                        <span v-tooltip="trans('Profile')">
+                            <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
+                        </span>
                     </template>
                     <template #label>
-                        <span class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-                        <GoldReward v-if="false" />
+                        <span v-tooltip="trans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                        <GoldReward v-if="layout.gr_data?.customer_is_gr" />
                     </template>
                 </Button>
             </LinkIris>
