@@ -46,8 +46,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\Masters\MasterAsset|null $leaderProduct
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterVariantOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterVariantOrderingStats|null $orderingStats
@@ -56,6 +58,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterVariantStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterVariantTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Variant> $variants
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariant newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariant newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariant onlyTrashed()

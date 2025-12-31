@@ -112,6 +112,7 @@ const loadChatSession = () => {
 /**
  * Create a new chat session
  */
+
 const createSession = async (): Promise<ChatSessionData | null> => {
 	console.log("layout user", layout.user?.id)
 
@@ -131,6 +132,7 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 		const payload: any = {
 			language_id: 64,
 			priority: "normal",
+			shop_id : layout?.iris?.shop?.id
 		}
 
 		if (isLoggedIn) {

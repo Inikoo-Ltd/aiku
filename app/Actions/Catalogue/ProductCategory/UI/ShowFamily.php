@@ -159,7 +159,7 @@ class ShowFamily extends OrgAction
             ];
         }
 
-        $tabs = [            
+        $tabs = [
             FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
                 fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
                 : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
@@ -184,7 +184,7 @@ class ShowFamily extends OrgAction
                 fn () => GetProductCategoryContent::run($family)
                 : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
         ];
-        
+
         if (app()->environment('local')) {
             $tabs[FamilyTabsEnum::VARIANTS->value] =
                 $this->tab === FamilyTabsEnum::VARIANTS->value

@@ -19,7 +19,7 @@ return new class () extends Migration {
         Schema::create('website_time_series', function (Blueprint $table) {
             $table->smallIncrements('id');
             $table->unsignedSmallInteger('website_id')->index();
-            $table->foreign('website_id')->references('id')->on('websites')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreign('website_id')->references('id')->on('websites')->onDelete('set null');
             $this->getTimeSeriesFields($table);
         });
     }

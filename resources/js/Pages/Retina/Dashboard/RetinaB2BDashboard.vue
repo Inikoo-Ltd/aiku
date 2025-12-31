@@ -39,7 +39,7 @@ onMounted(() => {
     <div class="p-8">
         <!-- Customer Contact Information -->
         <div v-if="data?.customer" class="relative mb-8 p-4  rounded-lg border "
-            :class="layout.gr_data?.customer_is_gr ? 'bg-yellow-50/30 border-yellow-300' : 'bg-gray-50 border-gray-200'"
+            :class="layout.offer_data?.type === 'gr' ? 'bg-yellow-50/30 border-yellow-300' : 'bg-gray-50 border-gray-200'"
         >
             <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
 
@@ -105,7 +105,7 @@ onMounted(() => {
                     />
                 </div> -->
 
-                <div v-if="layout.gr_data?.customer_is_gr" class="absolute top-5 right-7 text-4xl">
+                <div v-if="layout.offer_data?.type === 'gr'" class="absolute top-5 right-7 text-4xl">
                     <GoldReward />
                 </div>
             </div>

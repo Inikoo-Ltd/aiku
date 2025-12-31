@@ -48,7 +48,7 @@ class RunBackInStockEmailBulkRuns
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
 
-            if(!$outbox->shop->is_aiku){
+            if (!$outbox->shop->is_aiku) {
                 continue;
             }
 
