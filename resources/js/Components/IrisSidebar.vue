@@ -202,16 +202,16 @@ onUnmounted(() => {
 	window.removeEventListener("resize", checkMobile)
 });
 
-const getHref = (item) => {
-	if (item.type === 'external' && item.url !== null) {
-		if (item.url.startsWith('http://') || item.url.startsWith('https://')) {
-			return item.url;
-		}
-		return `https://${item.url}`;
-	}
+// const getHref = (item) => {
+// 	if (item.type === 'external' && item.url !== null) {
+// 		if (item.url.startsWith('http://') || item.url.startsWith('https://')) {
+// 			return item.url;
+// 		}
+// 		return `https://${item.url}`;
+// 	}
 
-	return `${item.url}` // Internal
-}
+// 	return `${item.url}` // Internal
+// }
 
 const getTarget = (item) => {
 	if (item.target) {
@@ -230,7 +230,7 @@ const internalHref = (item) => {
 	// "aw-dropship.com/new"   -> /new
 	if (!item.url) return ""
 
-	const path = item.url.replace(/^(https?:\/\/)?(www\.)?[^/]+/, "")
+	const path = item.url.includes("/") ? item.url.replace(/^(https?:\/\/)?(www\.)?[^/]+/, "") : item.url
 
 	return path
 }

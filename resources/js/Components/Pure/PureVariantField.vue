@@ -403,7 +403,7 @@ const noLeader = computed(() => {
         <div class="border-t mt-6 pt-3" v-if="validVariants.length">
           <div class="flex items-center gap-2">
             <span class="text-sm"> {{ trans('Group by') }} </span>
-            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm min-w-fit w-48">
               <option v-for="v in validVariants" :key="v.label" :value="v.label">
                 {{ v.label }}
               </option>

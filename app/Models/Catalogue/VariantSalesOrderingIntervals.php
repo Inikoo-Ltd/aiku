@@ -10,6 +10,6 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|VariantOrderingIntervals query()
  * @mixin \Eloquent
  */
-class VariantOrderingIntervals extends Model
+class VariantSalesOrderingIntervals extends Model
 {
 }

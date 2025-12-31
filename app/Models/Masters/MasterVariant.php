@@ -8,6 +8,7 @@
 
 namespace App\Models\Masters;
 
+use App\Models\Catalogue\Variant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
@@ -104,6 +105,16 @@ class MasterVariant extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
+    public function masterDepartment(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_department_id');
+    }
+
+    public function masterSubDepartment(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_sub_deparment_id');
+    }
+
     public function masterFamily(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
@@ -139,5 +150,9 @@ class MasterVariant extends Model implements Auditable, HasMedia
         return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
     }
 
+    public function variants(): HasMany
+    {
+        return $this->hasMany(Variant::class);
+    }
 
 }

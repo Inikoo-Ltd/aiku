@@ -1,13 +1,13 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 15-10-2024-15h-10m
- * github: https://github.com/KirinZero0
- * copyright 2024
+ * author Louis Perez
+ * created on 31-12-2025-09h-32m
+ * github: https://github.com/louis-perez
+ * copyright 2025
 */
 
-namespace App\Http\Resources\Masters;
+namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,8 +25,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property-read string      $leader_product_name
  * @property-read string      $leader_product_code
  * @property-read string      $leader_product_slug
+ * @property-read string      $parent_code
+ * @property-read string      $parent_slug
  */
-class MasterVariantsResource extends JsonResource
+class VariantsResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -44,6 +46,8 @@ class MasterVariantsResource extends JsonResource
             'leader_product_name'           => $this->leader_product_name,
             'leader_product_code'           => $this->leader_product_code,
             'leader_product_slug'           => $this->leader_product_slug,
+            'parent_code'                   => $this->parent_code,
+            'parent_slug'                   => $this->parent_slug,
         ];
     }
 }
