@@ -10,6 +10,7 @@ namespace App\Models\Web;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -47,6 +48,11 @@ class WebsiteTimeSeries extends Model
     public function records(): HasMany
     {
         return $this->hasMany(WebsiteTimeSeriesRecord::class);
+    }
+
+    public function website(): BelongsTo
+    {
+        return $this->belongsTo(Website::class);
     }
 
 }
