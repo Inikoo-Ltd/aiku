@@ -264,26 +264,42 @@ const isVariantValid = (v: Variant) => {
 }
 
 const toggleActive = (i: number) => {
-  const v = model.value.variants[i]
+	// 🔹 hapus variant dengan label kosong
+	model.value.variants = model.value.variants.filter(
+		v => v.label && v.label.trim() !== ""
+	)
 
-  // jika mau CLOSE (Done)
-  if (v.active) {
-    if (!isVariantValid(v)) {
-      alert("Variant name and at least one option are required")
-      return
-    }
+	// 🔹 trim option di SEMUA variant
+	model.value.variants.forEach(variant => {
+		if (Array.isArray(variant.options)) {
+			variant.options = variant.options.filter(o => o?.trim())
+		}
+	})
 
-    // bersihkan option kosong
-    v.options = v.options.filter(o => o?.trim())
-  }
+	// re-calc index setelah filter
+	const v = model.value.variants[i]
+	if (!v) return
 
-  model.value.variants.forEach(
-    (variant, idx) => (variant.active = idx === i ? !variant.active : false)
-  )
+	// 🔹 validasi hanya saat ingin mengaktifkan
+	if (!v.active) {
+		if (!isVariantValid(v)) {
+			alert("Variant name and at least one option are required")
+			return
+		}
+	}
 
-  if (model.value.variants.length == 1)
-    model.value.groupBy =  model.value.variants[i].label
+	// 🔹 toggle active (single active)
+	model.value.variants.forEach((variant, idx) => {
+		variant.active = idx === i ? !variant.active : false
+	})
+
+	// 🔹 set groupBy jika hanya satu variant
+	if (model.value.variants.length === 1) {
+		model.value.groupBy = model.value.variants[0].label
+	}
 }
+
+
 
 const addVariant = () => {
   model.value.variants.forEach(v => (v.active = false))
