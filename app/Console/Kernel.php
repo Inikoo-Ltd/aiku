@@ -324,14 +324,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->command('faire:orders')->hourly()->sentryMonitor(
-                monitorSlug: 'GetFaireOrders',
-            ),
-            name: 'GetFaireOrders',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
+//        $this->logSchedule(
+//            $schedule->command('faire:orders')->hourly()->sentryMonitor(
+//                monitorSlug: 'GetFaireOrders',
+//            ),
+//            name: 'GetFaireOrders',
+//            type: 'command',
+//            scheduledAt: now()->format('H:i')
+//        );
 
         $this->logSchedule(
             $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
