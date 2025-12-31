@@ -19,6 +19,7 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\UI\Catalogue\CollectionsTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -184,6 +185,7 @@ class IndexCollectionsInProductCategory extends OrgAction
 
 
         $actions = [];
+        $navigation = CollectionsTabsEnum::navigation();
 
 
         return Inertia::render(
@@ -207,7 +209,11 @@ class IndexCollectionsInProductCategory extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'      => null,
-                'data'        => CollectionsResource::collection($collections),
+                'tabs'           => [
+                    'current'    => $this->tab,
+                    'navigation' => $navigation,
+                ],
+                'data'           => CollectionsResource::collection($collections),
                 'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  => [
@@ -246,8 +252,18 @@ class IndexCollectionsInProductCategory extends OrgAction
                     ]
 
                 ],
+
+                CollectionsTabsEnum::INDEX->value => $this->tab == CollectionsTabsEnum::INDEX->value ?
+                    fn () => CollectionsResource::collection($collections)
+                    : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
+
+                CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
+                    fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure($productCategory));
+        )->table($this->tableStructure($productCategory,prefix: CollectionsTabsEnum::INDEX->value))
+          ->table($this->tableStructure($productCategory, prefix: CollectionsTabsEnum::SALES->value));
+    
     }
 
 
@@ -255,7 +271,7 @@ class IndexCollectionsInProductCategory extends OrgAction
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $department;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionsTabsEnum::values());
 
         return $this->handle(parent: $department);
     }
@@ -264,7 +280,7 @@ class IndexCollectionsInProductCategory extends OrgAction
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $subDepartment;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionsTabsEnum::values());
 
         return $this->handle(parent: $subDepartment);
     }
@@ -273,7 +289,7 @@ class IndexCollectionsInProductCategory extends OrgAction
     public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $subDepartment;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionsTabsEnum::values());
 
         return $this->handle(parent: $subDepartment);
     }
