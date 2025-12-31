@@ -482,33 +482,32 @@ onMounted(() => {
 		box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
 	}
 }
-/* User message bubble */
+
 .user-bubble {
 	background-color: v-bind("layout?.app?.theme[4]") !important;
 	color: v-bind("layout?.app?.theme[5]") !important;
 }
 
-/* Agent message bubble */
+
 .agent-bubble {
 	background-color: white;
 	color: #161616;
 }
 
-/* System message bubble */
 .system-bubble {
 	background-color: #fef3c7;
 	border: 1px solid #fbbf24;
 	font-style: italic;
 }
 
-/* Auto-resize textarea */
+
 textarea {
 	min-height: 40px;
 	max-height: 120px;
 	transition: height 0.2s;
 }
 
-/* Loading spinner animation */
+
 @keyframes spin {
 	from {
 		transform: rotate(0deg);
