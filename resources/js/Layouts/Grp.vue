@@ -253,7 +253,7 @@ onMounted(() => {
 	setColorStyleRoot(layout?.app?.theme)
 })
 
-
+console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
 <template>
@@ -308,6 +308,7 @@ onMounted(() => {
 		<!-- Sidebar: Right -->
 
 		<RightSideBar
+			v-if="Object.values(layout.rightSidebar).some((value) => value.show)"
 			class="fixed top-[2.7rem] transition-all duration-200 ease-in-out"
 			:class="[
 				Object.values(layout.rightSidebar).some((value) => value.show)
