@@ -439,8 +439,7 @@ class Kernel extends ConsoleKernel
 
             $schedule->command($command)
                 ->everyMinute()
-                ->timezone('UTC')
-                ->sentryMonitor(monitorSlug: $config['slug']);
+                ->timezone('UTC');
         }
 
 
