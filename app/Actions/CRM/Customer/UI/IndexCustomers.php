@@ -137,8 +137,8 @@ class IndexCustomers extends OrgAction
             $queryBuilder->whereIn('customers.id', function ($query) use ($parent) {
                 $query->select('customer_id')
                     ->from('transactions')
-                    ->where('model_id', $parent->id)
-                    ->where('model_type', 'Product')
+                    ->where('asset_id', $parent->asset_id)
+                    ->whereNull('deleted_at')
                     ->distinct();
             });
         }

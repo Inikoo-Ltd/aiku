@@ -22,8 +22,8 @@ import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
-import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
 import ProductCategoryContent from "@/Components/Showcases/Grp/ProductCategoryContent.vue"
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 
 library.add(
     faFolder,
@@ -80,7 +80,7 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images: ImagesManagement,
-        sales: ProductCategorySales,
+        sales: ProductCategoryTimeSeriesTable,
         content: ProductCategoryContent,
     }
     return components[currentTab.value] ?? ModelDetails
