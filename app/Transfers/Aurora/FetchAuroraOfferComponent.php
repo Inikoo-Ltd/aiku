@@ -10,6 +10,7 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOfferComponent extends FetchAurora
@@ -132,6 +133,7 @@ class FetchAuroraOfferComponent extends FetchAurora
             data_set($this->parsedData, 'offerAllowance.trigger_id', $trigger->id);
         }
 
+        $type = OfferAllowanceType::UNKNOWN;
 
         $this->parsedData['offer']          = $offer;
         $this->parsedData['offerAllowance'] = [
