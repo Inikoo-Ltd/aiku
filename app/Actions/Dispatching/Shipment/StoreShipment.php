@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
-use App\Actions\Catalogue\Shop\Faire\GetFairePackingPdfSlip;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
@@ -63,7 +62,6 @@ class StoreShipment extends OrgAction
                 'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
-                'faire' => GetFairePackingPdfSlip::run($parent->shop, $parent->orders->first(), true),
                 default => [
                     'status'    => 'error',
                     'errorData' => [

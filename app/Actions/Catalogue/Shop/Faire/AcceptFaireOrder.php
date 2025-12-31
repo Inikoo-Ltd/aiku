@@ -12,7 +12,7 @@ class AcceptFaireOrder extends OrgAction
     {
         $acceptedOrder = $shop->acceptFaireOrder($order->external_id);
 
-        GetFairePackingPdfSlip::run($shop, $order, true);
+        DownloadFairePackingPdfSlip::run($shop, $order);
 
         return $acceptedOrder;
     }

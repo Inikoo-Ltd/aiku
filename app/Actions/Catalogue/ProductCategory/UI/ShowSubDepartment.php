@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
@@ -211,6 +212,10 @@ class ShowSubDepartment extends OrgAction
                     fn () => GetProductCategoryTimeSeriesData::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($subDepartment)),
 
+                DepartmentTabsEnum::SALES->value => $this->tab == DepartmentTabsEnum::SALES->value ?
+                    fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($subDepartment, DepartmentTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($subDepartment, DepartmentTabsEnum::SALES->value))),
+
                 DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value
                     ?
                     fn () => CustomersResource::collection(
@@ -242,7 +247,8 @@ class ShowSubDepartment extends OrgAction
                 prefix: 'customers'
             )
         )
-            ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value))
+            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: DepartmentTabsEnum::SALES->value));
     }
 
 

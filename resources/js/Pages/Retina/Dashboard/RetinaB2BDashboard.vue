@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal } from "@fas"
@@ -11,6 +11,7 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "@inertiajs/vue3";
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import GoldReward from '@/Components/Utils/GoldReward.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags)
 
@@ -19,6 +20,7 @@ const props = defineProps<{
 }>()
 
 console.log('RetinaB2BDashboard', props)
+const layout = inject('layout', retinaLayoutStructure)
 
 const showBanner = ref(true);
 
@@ -36,7 +38,9 @@ onMounted(() => {
 <template>
     <div class="p-8">
         <!-- Customer Contact Information -->
-        <div v-if="data?.customer" class="relative mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div v-if="data?.customer" class="relative mb-8 p-4  rounded-lg border "
+            :class="layout.gr_data?.customer_is_gr ? 'bg-yellow-50/30 border-yellow-300' : 'bg-gray-50 border-gray-200'"
+        >
             <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -101,11 +105,8 @@ onMounted(() => {
                     />
                 </div> -->
 
-                <div v-if="false" class="absolute top-5 right-7 text-4xl">
+                <div v-if="layout.gr_data?.customer_is_gr" class="absolute top-5 right-7 text-4xl">
                     <GoldReward />
-
-                    <!-- <FontAwesomeIcon icon="fad fa-medal" class="text-blue-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon icon="fal fa-medal" class="text-green-500" fixed-width aria-hidden="true" /> -->
                 </div>
             </div>
         </div>

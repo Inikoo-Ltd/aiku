@@ -78,12 +78,20 @@ class ChatSessionListResource extends JsonResource
                 'organisation_slug' => $webUser->customer->organisation->slug,
                 'shop' => $webUser->customer->shop->name,
                 'shop_slug' => $webUser->customer->shop->slug,
+                'image' => !blank($webUser->image_id)
+                    ? $webUser->imageSources(320, 320)
+                    : [
+                        'original' => '/retina-default-user.svg'
+                    ],
             ] : null,
 
             'guest_profile' => $guestProfile ? [
                 'name' => $guestProfile['name'],
                 'email' => $guestProfile['email'],
                 'phone' => $guestProfile['phone'],
+                'image' => [
+                    'original' => '/retina-default-user.svg'
+                ]
             ] : null,
 
             'assigned_agent' => $activeAssignment ? [

@@ -18,7 +18,7 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
-use App\Http\Resources\Catalogue\FamilySalesResource;
+use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
@@ -224,8 +224,8 @@ class ShowFamily extends OrgAction
                 'is_orphan'        => !$family->department_id,
 
                 FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
-                    fn () => FamilySalesResource::collection(IndexFamilySales::run($family, FamilyTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => FamilySalesResource::collection(IndexFamilySales::run($family, FamilyTabsEnum::SALES->value))),
+                    fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
 
                 FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($family)
@@ -256,7 +256,7 @@ class ShowFamily extends OrgAction
         )->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($family))
             ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
-            ->table(IndexFamilySales::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value));
+            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value));
     }
 
 

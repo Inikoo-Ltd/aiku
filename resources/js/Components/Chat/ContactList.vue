@@ -8,6 +8,8 @@ import MessageAreaAgent from "@/Components/Chat/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
 import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { faUser, faUserAlien } from "@far"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const layout: any = inject("layout", {})
 
@@ -50,16 +52,15 @@ const reloadContacts = async () => {
 			params.assigned_to_me = layout?.user?.id
 		}
 		// just a moment code hours
-		const PLUS_8_HOURS = 8 * 60 * 60 * 1000
+		const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
 
 		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params })
-		console.log("✅ Contacts:", res)
 		contacts.value = res.data.data.sessions.map(
 			(s: SessionAPI): Contact => ({
 				id: s.id,
 				ulid: s.ulid,
 				name: s.contact_name || s.guest_identifier || "",
-				avatar: `https://i.pravatar.cc/100?u=${s.ulid}`,
+				avatar: null,
 				lastMessage: s.last_message?.message ?? "",
 				lastMessageTime: s.last_message?.created_at
 					? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
@@ -157,6 +158,7 @@ const handleSendMessage = async (text: string) => {
 		const payload = {
 			message_text: text,
 			message_type: "text",
+			sender_type: "agent",
 		}
 
 		const assignRoute: routeType = {
@@ -244,128 +246,201 @@ const formatLastMessage = (msg: string) => {
 	if (!msg) return ""
 	return msg.length > 10 ? msg.substring(0, 10) + "..." : msg
 }
+
+const tabClass = (tab: string) => {
+	return activeTab.value === tab
+		? "tabPrimary"
+		: "tabInactive"
+}
+
 </script>
 
 <template>
 	<div class="w-full h-full flex flex-col bg-white">
-		<div class="px-4 py-3 border-b font-semibold text-gray-700">Contacts</div>
+		<!-- Header -->
+		<div class="px-3 py-2 border-b text-sm font-semibold text-gray-700">
+			Contacts
+		</div>
 
-		<div class="flex border-b text-sm">
-			<div
-				class="px-4 py-2 cursor-pointer"
-				:class="[
-					activeTab === 'waiting'
-						? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-						: 'text-gray-600',
-				]"
-				@click="activeTab = 'waiting'">
+		<!-- Tabs -->
+		<div class="flex border-b text-xs">
+			<div class="tabItem" :class="tabClass('waiting')" @click="activeTab = 'waiting'">
 				Waiting
 			</div>
-
-			<div
-				class="px-4 py-2 cursor-pointer"
-				:class="[
-					activeTab === 'active'
-						? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-						: 'text-gray-600',
-				]"
-				@click="activeTab = 'active'">
+			<div class="tabItem" :class="tabClass('active')" @click="activeTab = 'active'">
 				Active
 			</div>
-
-			<div
-				class="px-4 py-2 cursor-pointer"
-				:class="[
-					activeTab === 'closed'
-						? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-						: 'text-gray-600',
-				]"
-				@click="activeTab = 'closed'">
+			<div class="tabItem" :class="tabClass('closed')" @click="activeTab = 'closed'">
 				Closed
 			</div>
 		</div>
 
+		<!-- Content -->
 		<div class="flex-1">
-			<div v-if="!selectedSession">
-				<div class="overflow-y-auto h-[calc(100vh-160px)]">
+			<div v-if="!selectedSession" class="overflow-y-auto h-[calc(100vh-140px)]">
+				<div v-if="filteredContacts.length === 0"
+					class="h-full flex flex-col items-center justify-center gap-2 text-center px-4">
+					<div class="text-2xl font-semibold" :style="{ color: 'var(--theme-color-4)' }">
+						💬
+					</div>
+
+					<div class="text-sm font-medium text-gray-700">
+						{{ trans('No conversations') }}
+					</div>
+
+					<div class="text-xs text-gray-500">
+						{{ trans('There are no chats at the moment') }}
+					</div>
+				</div>
+
+				<!-- LIST -->
+				<div v-else>
 					<div v-for="c in filteredContacts" :key="c.id">
-						<div
-							class="relative flex items-center gap-4 px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
+						<div class="relative flex items-center gap-3 px-3 py-2 border-b hover:bg-gray-50 cursor-pointer"
 							@click="handleClickContact(c)">
-							<div
-								v-if="isAssigning[c.ulid]"
+							<!-- Loading overlay -->
+							<div v-if="isAssigning[c.ulid]"
 								class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
-								<LoadingIcon class="w-20 h-20 text-white" />
+								<LoadingIcon class="w-10 h-10 text-white" />
 							</div>
-							<img :src="c.avatar" class="w-12 h-12 rounded-full object-cover" />
-							<div class="flex-1">
-								<div class="font-semibold text-gray-800">
-									{{ capitalize(c.name) }}
-								</div>
-								<div class="flex items-start gap-1">
-									<span
-										v-if="c.webUser?.id"
-										class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-green-100 text-green-800">
-										{{ trans("Customer") }}
-									</span>
-									<span
-										v-else
-										class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-blue-100 text-blue-800">
-										{{ trans("Guest") }}
+
+							<!-- Avatar -->
+							<div
+								class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+								<img v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
+
+								<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+							</div>
+
+							<!-- Main content -->
+							<div class="flex-1 min-w-0">
+								<!-- Name + badges -->
+								<div class="flex items-center gap-1.5">
+									<span class="text-sm font-medium text-gray-800 truncate">
+										{{ capitalize(c.name) }}
 									</span>
 
-									<span
-										class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium border"
+									<span class="text-[10px] px-1.5 py-0.5 rounded border"
 										:class="priorityClass(c.priority)">
 										{{ capitalize(c.priority) }}
 									</span>
+
+									<span class="text-[10px] px-1.5 py-0.5 rounded" :class="c.webUser?.id
+										? 'bg-green-100 text-green-700'
+										: 'bg-blue-100 text-blue-700'">
+										{{ c.webUser?.id ? trans('Customer') : trans('Guest') }}
+									</span>
 								</div>
-								<div class="text-sm text-gray-500 truncate">
+
+								<!-- Last message -->
+								<div class="text-xs text-gray-500 truncate leading-snug">
 									{{ formatLastMessage(c.lastMessage) }}
 								</div>
 							</div>
-							<span class="text-xs text-gray-400">{{ c.lastMessageTime }}</span>
 
-							<div
-								v-if="c.unread && activeTab !== 'closed'"
-								class="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-								{{ c.unread }}
+							<!-- Time + unread -->
+							<div class="flex flex-col items-end gap-0.5 shrink-0">
+								<span class="text-[10px] text-gray-400">
+									{{ c.lastMessageTime }}
+								</span>
+
+								<span v-if="c.unread && activeTab !== 'closed'"
+									class="min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center"
+									:style="{ backgroundColor: 'var(--theme-color-4)' }">
+									{{ c.unread }}
+								</span>
 							</div>
 						</div>
 
-						<div
-							v-if="errorPerContact[c.ulid]"
-							class="px-4 py-2 text-xs text-red-600 border-b bg-red-50">
+						<!-- Error -->
+						<div v-if="errorPerContact[c.ulid]" class="px-3 py-1 text-xs text-red-600 bg-red-50 border-b">
 							{{ errorPerContact[c.ulid] }}
 						</div>
 					</div>
+
 				</div>
 			</div>
 
-			<div v-else class="relative h-[calc(100vh-160px)]">
-				<div
-					v-if="sidePanelVisible"
-					class="absolute z-[9999] right-[420px] bottom-0 w-[350px]">
-					<ChatSidePanel
-						:session="selectedSession"
-						:initialTab="sidePanelInitialTab"
-						@close="closeSidePanel"
-						@sync-success="onSyncSuccess"
-						@transfer-agent-success="onTransferAgentSuccess" />
+			<!-- Chat view tetap -->
+			<div v-else class="relative h-[calc(100vh-140px)]">
+				<div v-if="sidePanelVisible" class="absolute z-[9999] right-[420px] bottom-0 w-[350px]">
+					<ChatSidePanel :session="selectedSession" :initialTab="sidePanelInitialTab" @close="closeSidePanel"
+						@sync-success="onSyncSuccess" @transfer-agent-success="onTransferAgentSuccess" />
 				</div>
 
 				<div class="h-full">
-					<MessageAreaAgent
-						:messages="messages"
-						:session="selectedSession"
-						@back="back"
-						@send-message="handleSendMessage"
-						@close-session="closeSession"
-						@view-history="showHistoryPanel"
-						@view-user-profile="showProfilePanel"
-						@view-message-details="showMessageDetailsPanel" />
+					<MessageAreaAgent :messages="messages" :session="selectedSession" @back="back"
+						@send-message="handleSendMessage" @close-session="closeSession" @view-history="showHistoryPanel"
+						@view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel" />
 				</div>
 			</div>
 		</div>
 	</div>
 </template>
+
+
+<style>
+/* Tabs */
+.tabItem {
+	padding: 6px 12px;
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.tabPrimary {
+	color: var(--theme-color-4);
+	border-bottom-color: var(--theme-color-4);
+	font-weight: 600;
+}
+
+.tabInactive {
+	color: #6b7280;
+}
+
+.tabInactive:hover {
+	color: var(--theme-color-4);
+}
+
+/* Contact item */
+.contactItem {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	border-bottom: 1px solid #e5e7eb;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.contactItem:hover {
+	background: color-mix(in srgb, var(--theme-color-4) 6%, white);
+}
+
+.badge {
+	font-size: 10px;
+	padding: 2px 6px;
+	border-radius: 4px;
+	line-height: 1;
+}
+
+.badgeCustomer {
+	background: color-mix(in srgb, var(--theme-color-4) 15%, white);
+	color: var(--theme-color-4);
+}
+
+.badgeGuest {
+	background: #eff6ff;
+	color: #2563eb;
+}
+
+/* Unread */
+.unreadBadge {
+	background: var(--theme-color-4);
+	color: white;
+	font-size: 10px;
+	padding: 2px 6px;
+	border-radius: 999px;
+}
+</style>

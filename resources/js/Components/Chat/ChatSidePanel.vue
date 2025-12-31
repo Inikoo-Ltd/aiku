@@ -354,8 +354,14 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div
-		class="w-[380px] h-[calc(100vh-180px)] bg-white flex flex-col rounded-t-lg shadow-xl ring-1 ring-gray-200 overflow-hidden pb-5">
+	 <Teleport to="body">
+
+    <div
+      class="fixed inset-0"
+      @click="emit('close')" />
+
+	 <div
+   		class="fixed right-[25rem] top-[120px] z-[9999] w-[380px] h-[calc(100vh-180px)] bg-white flex flex-col rounded-xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
 		<div class="px-4 py-3 border-b">
 			<div class="flex items-start">
 				<div class="w-10"></div>
@@ -639,6 +645,7 @@ onMounted(async () => {
 			</div>
 		</div>
 	</div>
+	  </Teleport>
 </template>
 
 <style scoped>
