@@ -133,9 +133,21 @@ watch(
 
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full ">
             <!-- Section: Main title -->
-            <div v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
+            <div v-if="layout.offer_data">
+                {{ trans("Hello") }}, <span class="font-bold">{{ layout.iris_variables?.name }}</span>!
+                <span v-if="layout.offer_data?.type === 'gr'" class="text-yellow-500 inline-flex items-center gap-x-1">
+                    {{ layout.offer_data?.label }}
+                    <GoldReward />
+                </span>
+                <span v-if="layout.offer_data?.type === 'fob'" class="text-yellow-500">
+                    {{ layout.offer_data?.label }}
+                    <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
+                </span>
+            </div>
+            <div v-else-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
                 class="text-center flex items-center"
-                v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)" />
+                v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
+            />
         </div>
 
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
@@ -158,7 +170,7 @@ watch(
                     </template>
                     <template #label>
                         <span v-tooltip="trans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-                        <GoldReward v-if="layout.gr_data?.customer_is_gr" />
+                        <!-- <GoldReward v-if="layout.offer_data?.type === 'gr'" /> -->
                     </template>
                 </Button>
             </LinkIris>
