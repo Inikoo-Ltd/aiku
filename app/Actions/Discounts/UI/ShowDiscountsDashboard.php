@@ -141,7 +141,11 @@ class ShowDiscountsDashboard extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ],
-                ]
+                ],
+                'data'  => [
+                    'currency'  => $this->shop->currency
+                ],
+                'first_order_bonus' => $firstOrderBonus
             ]
         );
     }

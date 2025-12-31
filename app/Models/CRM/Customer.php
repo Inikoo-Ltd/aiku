@@ -13,6 +13,7 @@ use App\Enums\CRM\Customer\CustomerRejectReasonEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\MitSavedCard;
@@ -22,6 +23,7 @@ use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\AmazonUser;
@@ -71,7 +73,6 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
 /**
  * App\Models\CRM\Customer
@@ -142,7 +143,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Collection<int, \App\Models\CRM\BackInStockReminder> $backInStockReminder
+ * @property-read Collection<int, BackInStockReminder> $backInStockReminder
  * @property-read Collection<int, CustomerClient> $clients
  * @property-read \App\Models\CRM\CustomerComms|null $comms
  * @property-read Collection<int, CreditTransaction> $creditTransactions

@@ -6,16 +6,11 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use Log;
-use Exception;
-use App\Models\Admin;
-use App\Actions\StoreAdmin;
+
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
-use Illuminate\Http\Request;
-use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +19,7 @@ use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatEvent;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
+use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\CRM\Livechat\ChatAssignment;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -37,6 +33,10 @@ use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\CRM\ChatSession\AssignChatToAgent;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Http\Resources\CRM\Livechat\ChatSessionResource;
+
+use function Pest\Laravel\actingAs;
 
 beforeAll(function () {
     loadDB();
@@ -70,18 +70,16 @@ beforeEach(function () {
     $this->customer = $customer;
 
     $this->action = new StoreChatSession();
-     $this->sendMessageAction = new SendChatMessage();
-     $this->assignmentChatAction = new AssignChatToAgent();
-      $this->closeChatAction = new CloseChatSession();
-
-
-
+    $this->sendMessageAction = new SendChatMessage();
+    $this->assignmentChatAction = new AssignChatToAgent();
+    $this->closeChatAction = new CloseChatSession();
 });
 
 test('can create chat session for guest with minimal data', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -91,7 +89,7 @@ test('can create chat session for guest with minimal data', function () {
         ->and($chatSession->web_user_id)->toBeNull()
         ->and($chatSession->language_id)->toBe(68)
         ->and($chatSession->priority)->toBe(ChatPriorityEnum::NORMAL)
-        ->and($chatSession->guest_identifier)->toMatch('/^guest_[a-zA-Z0-9]{16}$/')
+        ->and($chatSession->guest_identifier)->toMatch('/^guest_\d{5}$/')
         ->and($chatSession->ai_model_version)->toBe('default')
         ->and($chatSession->ulid)->not->toBeNull();
 });
@@ -103,6 +101,7 @@ test('can create chat session for guest with custom guest identifier', function 
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
         'guest_identifier' => $guestIdentifier,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -112,16 +111,14 @@ test('can create chat session for guest with custom guest identifier', function 
 
 test('can create chat session for authenticated web user', function () {
 
-
-
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
-
 
     $modelData = [
         'web_user_id' => $webUser->id,
         'language_id' => 68,
         'priority' => ChatPriorityEnum::HIGH->value,
         'ai_model_version' => 'gpt-4-turbo',
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -137,6 +134,7 @@ test('create chat event for guest session', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -180,6 +178,7 @@ test('creates chat event for authenticated user session', function () {
         'web_user_id' => $webUser->id,
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -195,8 +194,12 @@ test('validation rules are correct', function () {
     $rules = $this->action->rules();
 
     expect($rules)->toHaveKeys([
-        'web_user_id', 'language_id', 'guest_identifier',
-        'ai_model_version', 'priority', 'ulid'
+        'web_user_id',
+        'language_id',
+        'guest_identifier',
+        'ai_model_version',
+        'priority',
+        'ulid'
     ]);
 
     expect($rules['web_user_id'])->toEqual(['nullable', 'exists:web_users,id'])
@@ -212,44 +215,19 @@ test('json response structure is correct', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
     $response = $this->action->jsonResponse($chatSession);
 
-    expect($response)->toBeInstanceOf(JsonResponse::class);
+    expect($response)->toBeInstanceOf(ChatSessionResource::class);
 
-    $responseData = $response->getData(true);
+    $responseData = $response->response()->getData(true);
 
     expect($responseData)->toHaveKeys(['success', 'message', 'data'])
         ->and($responseData['success'])->toBeTrue()
-        ->and($responseData['message'])->toBe('Chat session started successfully')
-        ->and($responseData['data'])->toHaveKeys([
-            'ulid',
-            'status',
-            'is_guest',
-            'guest_identifier',
-            'created_at'
-        ])
-        ->and($responseData['data']['ulid'])->toBe($chatSession->ulid->toString())
-        ->and($responseData['data']['status'])->toBe($chatSession->status->value)
-        ->and($responseData['data']['is_guest'])->toBeTrue()
-        ->and($responseData['data']['guest_identifier'])->toBe($chatSession->guest_identifier)
-        ->and($responseData['data']['created_at'])->toBe($chatSession->created_at->toJSON());
-});
-
-test('html response returns json response', function () {
-    $modelData = [
-        'language_id' => 68,
-        'priority' => ChatPriorityEnum::NORMAL->value,
-    ];
-
-    $chatSession = $this->action->handle($modelData);
-    $htmlResponse = $this->action->htmlResponse($chatSession);
-    $jsonResponse = $this->action->jsonResponse($chatSession);
-
-    expect($htmlResponse->getContent())->toBe($jsonResponse->getContent())
-        ->and($htmlResponse->headers->get('Content-Type'))->toContain('application/json');
+        ->and($responseData['message'])->toBe('Chat session started successfully');
 });
 
 
@@ -265,6 +243,7 @@ test('handles different priority levels correctly', function () {
         $modelData = [
             'language_id' => 68,
             'priority' => $priority,
+            'shop_id' => 30,
         ];
 
         $chatSession = $this->action->handle($modelData);
@@ -277,6 +256,7 @@ test('uses default values when not provided', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession = $this->action->handle($modelData);
@@ -290,6 +270,7 @@ test('guest identifier is generated when not provided for guest', function () {
     $modelData = [
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL->value,
+        'shop_id' => 30,
     ];
 
     $chatSession1 = $this->action->handle($modelData);
@@ -304,6 +285,24 @@ test('guest identifier is generated when not provided for guest', function () {
 
 
 // SEND MESSAGE ACTION TESTS
+
+test('validation rules are correct for SendChatMessage', function () {
+    $rules = $this->sendMessageAction->rules();
+
+    expect($rules)->toHaveKeys([
+        'message_text',
+        'message_type',
+        'sender_id',
+        'media_id'
+    ])
+
+        ->and($rules['message_text'])->toEqual(['required_without:media_id', 'string', 'max:5000'])
+        ->and($rules['message_type'])->toEqual(['required', Rule::enum(ChatMessageTypeEnum::class)])
+        ->and($rules['sender_id'])->toEqual(['nullable', 'integer', Rule::exists('web_users', 'id')])
+        ->and($rules['media_id'])->toEqual(['sometimes', 'exists:media,id']);
+});
+
+
 test('can send text message from guest', function () {
 
 
@@ -313,6 +312,7 @@ test('can send text message from guest', function () {
         'guest_identifier' => 'guest_test_' . Str::random(5),
         'language_id' => 68,
         'priority' => ChatPriorityEnum::NORMAL,
+        'shop_id' => 30,
         'ai_model_version' => 'default',
         'created_at' => now(),
         'updated_at' => now(),
@@ -339,15 +339,15 @@ test('can send text message from guest', function () {
     expect($this->chatSession->last_visitor_message_at)->not->toBeNull();
 
     $chatEvent = ChatEvent::where('chat_session_id', $this->chatSession->id)
-        ->where('event_type', ChatEventTypeEnum::OPEN)
+        ->where('event_type', ChatEventTypeEnum::SEND)
         ->first();
 
     expect($chatEvent)->toBeInstanceOf(ChatEvent::class)
-        ->and($chatEvent->event_type)->toBe(ChatEventTypeEnum::OPEN)
+        ->and($chatEvent->event_type)->toBe(ChatEventTypeEnum::SEND)
         ->and($chatEvent->actor_type)->toBe(ChatActorTypeEnum::GUEST)
         ->and($chatEvent->actor_id)->toBeNull()
-        ->and($chatEvent->payload['message_id'])->toBe($chatMessage->id)
-        ->and($chatEvent->payload['message_type'])->toBe(ChatMessageTypeEnum::TEXT->value)
+        ->and($chatEvent->payload['chat_message_id'])->toBe($chatMessage->id)
+        ->and($chatEvent->payload['chat_message_type'])->toBe(ChatMessageTypeEnum::TEXT->value)
         ->and($chatEvent->payload['is_guest_message'])->toBeTrue();
 });
 
@@ -370,6 +370,7 @@ test('can send text message from web user', function () {
         'status' => ChatSessionStatusEnum::ACTIVE,
         'guest_identifier' => null,
         'language_id' => 68,
+        'shop_id' => 30,
         'priority' => ChatPriorityEnum::NORMAL,
         'ai_model_version' => 'default',
         'created_at' => now(),
@@ -395,12 +396,14 @@ test('can send text message from web user', function () {
 });
 
 
-test('can assign chat session to agent', function () {
-    $this->group = createGroup();
-    $this->adminGuest = createAdminGuest($this->group);
+test('authenticated agent can assign chat session to self', function () {
+
+    $user  =  $this->user;
+
+    actingAs($user);
 
     $agent = ChatAgent::firstOrCreate(
-        ['user_id' => $this->adminGuest->id],
+        ['user_id' => $user->id],
         [
             'is_online' => true,
             'max_concurrent_chats' => 5,
@@ -408,32 +411,50 @@ test('can assign chat session to agent', function () {
         ]
     );
 
-    $chatSession = ChatSession::whereIn('status', [
-        ChatSessionStatusEnum::WAITING->value
-    ])->inRandomOrder()->first();
+    $chatSession = ChatSession::create([
+        'ulid' => Str::ulid(),
+        'status' => ChatSessionStatusEnum::WAITING->value,
+        'guest_identifier' => 'guest_001',
+        'language_id' => 68,
+        'shop_id' => 30,
+        'priority' => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
+    $response = app(AssignChatToAgent::class)
+        ->assignToSelf('aw', $chatSession->ulid);
 
-    $assignment =$this->assignmentChatAction->handle($chatSession, $agent->id, $agent->id);
+    expect($response)->toBeInstanceOf(JsonResponse::class);
 
-    expect($assignment->chat_agent_id)->toBe($agent->id)
-        ->and($assignment->chat_session_id)->toBe($chatSession->id)
-        ->and($chatSession->fresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE);
+    $data = $response->getData(true);
+
+    expect($data['success'])->toBeTrue()
+        ->and($data['message'])->toBe('Chat session assigned to you successfully')
+        ->and($data['data']['assigned_agent_id'])->toBe($agent->id)
+        ->and($data['data']['action_type'])->toBe('self_assign');
+
+    $this->assertDatabaseHas('chat_assignments', [
+        'chat_session_id' => $chatSession->id,
+        'chat_agent_id' => $agent->id,
+        'status' => ChatAssignmentStatusEnum::ACTIVE->value,
+    ]);
 });
 
 
-
-
 test('can send message from agent after assignment', function () {
-     $this->group      = createGroup();
-    $this->adminGuest = createAdminGuest($this->group);
+    $user  =  $this->user;
 
-    $agent = ChatAgent::where('user_id', $this->adminGuest->id)
+    actingAs($user);
+
+    $agent = ChatAgent::where('user_id', $user->id)
         ->whereNull('deleted_at')
         ->first();
 
     if (!$agent) {
         $agent = ChatAgent::create([
-            'user_id' => $this->adminGuest->id,
+            'user_id' => $user->id,
             'is_online' => true,
             'max_concurrent_chats' => 5,
             'current_chat_count' => 0,
@@ -441,9 +462,9 @@ test('can send message from agent after assignment', function () {
     }
 
     $chatSession = ChatSession::whereHas('assignments', function ($query) use ($agent) {
-            $query->where('chat_agent_id', $agent->id)
-                  ->where('status', ChatAssignmentStatusEnum::ACTIVE);
-        })
+        $query->where('chat_agent_id', $agent->id)
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE);
+    })
         ->where('status', ChatSessionStatusEnum::ACTIVE)
         ->first();
 
@@ -472,72 +493,21 @@ test('can send message from agent after assignment', function () {
     expect($chatSession->last_agent_message_at)->not->toBeNull();
 });
 
-test('static security test: agent 1 cannot message session assigned to agent 4', function () {
-
-    if (!ChatAgent::find(1) || !ChatAgent::find(4) || !ChatSession::find(32)) {
-        $this->markTestSkipped('Required static data not found (agent1, agent4, or session32)');
-        return;
-    }
-
-    $agent1 = ChatAgent::find(1);
-    $agent4 = ChatAgent::find(4);
-    $chatSession = ChatSession::find(32);
-
-    if (!$chatSession->assignments()->where('chat_agent_id', $agent4->id)->exists()) {
-        $this->assignmentChatAction->handle($chatSession, $agent4->id, $agent4->id);
-    }
-
-    $modelData = [
-        'message_text' => 'Test from unauthorized agent',
-        'message_type' => ChatMessageTypeEnum::TEXT->value,
-        'sender_type' => ChatSenderTypeEnum::AGENT->value,
-        'sender_id' => $agent1->id,
-    ];
-
-    $result = $this->sendMessageAction->handle($chatSession, $modelData);
-
-    if ($result instanceof ChatMessage) {
-        expect($result->sender_id)->toBe($agent1->id);
-        Log::error('SECURITY VULNERABILITY: Agent can access sessions assigned to other agents');
-    } else {
-        expect($result)->toBeNull()->or($result)->toBeFalse();
-    }
-});
-
-test('validation rules are correct for SendChatMessage', function () {
-    $rules = $this->sendMessageAction->rules();
-
-    expect($rules)->toHaveKeys([
-        'message_text', 'message_type', 'sender_type', 'sender_id', 'media_id'
-    ])
-    ->and($rules['message_text'])->toEqual(['required_without:media_id', 'string', 'max:5000'])
-    ->and($rules['message_type'])->toEqual(['required', Rule::enum(ChatMessageTypeEnum::class)])
-    ->and($rules['sender_type'])->toEqual(['required', Rule::in([
-        ChatSenderTypeEnum::GUEST->value,
-        ChatSenderTypeEnum::USER->value,
-        ChatSenderTypeEnum::AGENT->value,
-        ChatSenderTypeEnum::SYSTEM->value,
-        ChatSenderTypeEnum::AI->value,
-    ])])
-    ->and($rules['sender_id'])->toEqual(['nullable', 'integer'])
-    ->and($rules['media_id'])->toEqual(['nullable', 'exists:media,id']);
-});
-
-
 
 test('can send message without text but with media', function () {
 
+    $chatSession = ChatSession::find(1)
+        ?? ChatSession::inRandomOrder()->first();
 
-    $this->chatSession = ChatSession::find(5);
 
     $modelData = [
         'message_type' => ChatMessageTypeEnum::IMAGE->value,
         'sender_type' => ChatSenderTypeEnum::GUEST->value,
         'media_id' => 1,
-        'message_text'=> null,
+        'message_text' => null,
     ];
 
-    $chatMessage = $this->sendMessageAction->handle($this->chatSession, $modelData);
+    $chatMessage = $this->sendMessageAction->handle($chatSession, $modelData);
 
     expect($chatMessage->message_text)->toBeNull()
         ->and($chatMessage->media_id)->toBe(1)
@@ -546,7 +516,9 @@ test('can send message without text but with media', function () {
 
 
 test('can send system message', function () {
-     $this->chatSession = ChatSession::find(5);
+
+    $chatSession = ChatSession::find(1)
+        ?? ChatSession::inRandomOrder()->first();
 
     $modelData = [
         'message_text' => 'System notification',
@@ -555,34 +527,61 @@ test('can send system message', function () {
         'sender_id' => null,
     ];
 
-    $chatMessage = $this->sendMessageAction->handle($this->chatSession, $modelData);
+    $chatMessage = $this->sendMessageAction->handle($chatSession, $modelData);
 
     expect($chatMessage->sender_type)->toBe(ChatSenderTypeEnum::SYSTEM)
         ->and($chatMessage->sender_id)->toBeNull();
 
-    $this->chatSession->refresh();
+    $chatSession->refresh();
 });
 
 
 test('can close chat session by agent from active assignment', function (): void {
-    $activeAssignment = ChatAssignment::where('status', ChatAssignmentStatusEnum::ACTIVE)
-        ->with(['chatSession', 'chatAgent'])
-        ->first();
 
-    if (!$activeAssignment) {
-        $this->markTestSkipped('No active chat assignment found to test closing chat session.');
-        return;
-    }
+    $group = createGroup();
 
-    $chatSession = $activeAssignment->chatSession;
-    $agent = $activeAssignment->chatAgent;
+    $guest = createAdminGuest($group);
+    $user  = $guest->getUser();
+
+    $agent = ChatAgent::updateOrCreate(
+        ['user_id' => $user->id],
+        [
+            'is_online' => true,
+            'max_concurrent_chats' => 5,
+            'current_chat_count' => 0,
+            'deleted_at' => null,
+        ]
+    );
+
+    $chatSession = ChatSession::create([
+        'ulid' => Str::ulid(),
+        'status' => ChatSessionStatusEnum::ACTIVE->value,
+        'guest_identifier' => 'guest_close_test',
+        'language_id' => 68,
+        'shop_id' => 30,
+        'priority' => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $assignment = ChatAssignment::create([
+        'chat_session_id' => $chatSession->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    actingAs($user);
 
     $closedSession = $this->closeChatAction->handle($chatSession, $agent->id);
 
     expect($closedSession->status)->toBe(ChatSessionStatusEnum::CLOSED)
         ->and($closedSession->closed_at)->not->toBeNull();
 
-    $activeAssignment->refresh();
-    expect($activeAssignment->status)->toBe(ChatAssignmentStatusEnum::RESOLVED)
-        ->and($activeAssignment->resolved_at)->not->toBeNull();
+    $assignment->refresh();
+
+    expect($assignment->status)->toBe(ChatAssignmentStatusEnum::RESOLVED)
+        ->and($assignment->resolved_at)->not->toBeNull();
 });

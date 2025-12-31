@@ -22,8 +22,9 @@ import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
-import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
 import ProductCategoryContent from "@/Components/Showcases/Grp/ProductCategoryContent.vue"
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
 
 library.add(
     faFolder,
@@ -63,7 +64,8 @@ const props = defineProps<{
     images?: object
     sales: any
     content?: {}
-    salesIntervals?: object
+    salesData?: object
+    variants?: {}
 }>()
 console.log("family", props)
 const currentTab = ref(props.tabs.current)
@@ -80,8 +82,9 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images: ImagesManagement,
-        sales: ProductCategorySales,
+        sales: ProductCategoryTimeSeriesTable,
         content: ProductCategoryContent,
+        variants: TableVariants,
     }
     return components[currentTab.value] ?? ModelDetails
 })
@@ -136,7 +139,7 @@ const showDialog = ref(false)
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesIntervals="salesIntervals" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" />
 
 
     <FormCreateMasterProduct

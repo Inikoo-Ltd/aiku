@@ -21,7 +21,6 @@ use App\Actions\Api\Group\Customer\IndexApiCustomers;
 use App\Actions\Api\Group\Organisation\ShowApiOrganisation;
 use App\Actions\Api\Group\Organisation\IndexApiOrganisations;
 
-
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');

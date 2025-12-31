@@ -4,7 +4,6 @@ namespace App\Actions\CRM\ChatSession;
 
 use Exception;
 use App\Models\SysAdmin\User;
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -68,20 +67,20 @@ class StoreChatAgent
         try {
             $user = User::find($data['user_id']);
             if (!$user) {
-                 throw new HttpResponseException(response()->json([
-                    'success' => false,
-                    'message' => 'User not found'
+                throw new HttpResponseException(response()->json([
+                   'success' => false,
+                   'message' => 'User not found'
                 ], 404));
             }
 
-              $chatAgentData = [
-                'user_id'              => $data['user_id'],
-                'max_concurrent_chats' => $data['max_concurrent_chats'] ?? 10,
-                'is_online'            => $data['is_online'] ?? false,
-                'is_available'         => $data['is_available'] ?? true,
-                'current_chat_count'   => 0,
-                'specialization'       => $data['specialization'] ?? [],
-                'auto_accept'          => $data['auto_accept'] ?? false,
+            $chatAgentData = [
+              'user_id'              => $data['user_id'],
+              'max_concurrent_chats' => $data['max_concurrent_chats'] ?? 10,
+              'is_online'            => $data['is_online'] ?? false,
+              'is_available'         => $data['is_available'] ?? true,
+              'current_chat_count'   => 0,
+              'specialization'       => $data['specialization'] ?? [],
+              'auto_accept'          => $data['auto_accept'] ?? false,
             ];
 
             $chatAgent = ChatAgent::create($chatAgentData);

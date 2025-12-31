@@ -26,12 +26,13 @@ export const useLocaleStore = defineStore("locale", () => {
 	}
 
 	const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
-		if (typeof amount === "undefined" || amount === null) return 0
+		// if (typeof amount === "undefined" || amount === null) return 0
+		const getAmount = amount ?? 0
 		if (!currencyCode) {
-			return amount || 0
+			return getAmount || 0
 		}
 
-		const num = typeof amount === "string" ? parseFloat(amount) : (amount || 0)
+		const num = typeof getAmount === "string" ? parseFloat(getAmount) : (getAmount || 0)
 
 		const formatter = new Intl.NumberFormat(language.value.code, {
 			style: (currencyCode || currencyInertia.value?.code) ? "currency" : "decimal",

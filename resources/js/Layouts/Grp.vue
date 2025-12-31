@@ -73,6 +73,7 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
+	faShare,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
@@ -162,7 +163,8 @@ library.add(
 	faTrashAlt,
 	faCheck,
 	faAsterisk,
-	faMailBulk
+	faMailBulk,
+	faShare
 )
 
 provide("layout", useLayoutStore())
@@ -251,7 +253,7 @@ onMounted(() => {
 	setColorStyleRoot(layout?.app?.theme)
 })
 
-
+console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
 <template>
@@ -306,7 +308,8 @@ onMounted(() => {
 		<!-- Sidebar: Right -->
 
 		<RightSideBar
-			class="fixed top-16 transition-all duration-200 ease-in-out"
+			v-if="Object.values(layout.rightSidebar).some((value) => value.show)"
+			class="fixed top-[2.7rem] transition-all duration-200 ease-in-out"
 			:class="[
 				Object.values(layout.rightSidebar).some((value) => value.show)
 					? 'right-0 lg:w-[30%] xl:w-[20%]'

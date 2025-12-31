@@ -24,6 +24,7 @@ enum OutboxMergeTagsEnum: string
     case RESET_PASSWORD_URL = 'Reset_Password_URL';
     case UNSUBSCRIBE = 'Unsubscribe';
     case REJECTED_NOTES = 'Rejected Notes';
+    case PRODUCTS = 'Products';
 
     public static function tags(): array
     {
@@ -67,6 +68,10 @@ enum OutboxMergeTagsEnum: string
             [
                 'name'  => __('Rejected Notes'),
                 'value' => '[Rejected Notes]'
+            ],
+            [
+                'name'  => __('Products'),
+                'value' => '[Products]'
             ],
         ];
     }

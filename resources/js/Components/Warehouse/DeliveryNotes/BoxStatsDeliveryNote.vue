@@ -79,6 +79,10 @@ const props = defineProps<{
                 tracking: string
             }[]
         }[]
+		external_order: {
+			status: boolean
+			route_view_packing_slip: routeType
+		}
         platform?: {
             logo: string
             name: string
@@ -313,7 +317,7 @@ const updateCollection = async (e: Event) => {
 
                 <template v-if="!boxStats?.is_collection">
                     <div class="font-semibold xmb-2 text-base">
-                        {{ trans("Shipping") }}
+                        {{  }}
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
@@ -464,6 +468,7 @@ const updateCollection = async (e: Event) => {
                         </dt>
                         <dd class="text-gray-500 w-full">
                             <ShipmentSection
+								:external_order="boxStats.external_order"
                                 :shipping_fields="boxStats.shipping_fields"
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"
@@ -542,7 +547,7 @@ const updateCollection = async (e: Event) => {
                                         :max-fraction-digits="3"
                                     />
                                 </div>
-                                
+
                                 <div class="col-span-9 flex items-center gap-x-1 font-light">
                                     <InputNumber
                                         :min="0.001"

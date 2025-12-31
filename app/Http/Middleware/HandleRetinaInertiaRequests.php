@@ -101,7 +101,8 @@ class HandleRetinaInertiaRequests extends Middleware
                             ->whereNot('platform_id', 4)
                             ->exists(),
                 ],
-                'iris'     => $this->getIrisData($website, $webUser)
+                'iris'        => $this->getIrisData($website, $webUser),
+                'use_chat'    => $website->settings['enable_chat'] ?? false,
             ],
             parent::share($request),
         );

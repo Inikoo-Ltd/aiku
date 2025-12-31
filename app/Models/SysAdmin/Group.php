@@ -68,6 +68,7 @@ use App\Models\Helpers\Query;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
@@ -169,6 +170,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
  * @property-read \App\Models\SysAdmin\GroupGoodsStats|null $goodsStats
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Guest> $guests
+ * @property-read LaravelCollection<int, Holiday> $holidays
  * @property-read \App\Models\SysAdmin\GroupHumanResourcesStats|null $humanResourcesStats
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -286,17 +288,17 @@ class Group extends Authenticatable implements Auditable, HasMedia
     protected function casts(): array
     {
         return [
-            'limits'   => 'array',
-            'data'     => 'array',
-            'settings' => 'array',
+            'limits'          => 'array',
+            'data'            => 'array',
+            'settings'        => 'array',
             'extra_languages' => 'array'
         ];
     }
 
     protected $attributes = [
-        'limits'   => '{}',
-        'data'     => '{}',
-        'settings' => '{}',
+        'limits'          => '{}',
+        'data'            => '{}',
+        'settings'        => '{}',
         'extra_languages' => '{}'
     ];
 
@@ -824,6 +826,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(EmailAddress::class);
     }
+
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
@@ -966,5 +969,8 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(PaymentGatewayLog::class);
     }
 
-
+    public function holidays(): HasMany
+    {
+        return $this->hasMany(Holiday::class);
+    }
 }

@@ -33,7 +33,7 @@ import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vu
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
-import ProductSales from "@/Components/Product/ProductSales.vue";
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import { trans } from "laravel-vue-i18n"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 
@@ -104,7 +104,7 @@ const props = defineProps<{
     }
     webpage_canonical_url?: string
     sales: {}
-    salesIntervals?: object
+    salesData?: object
     is_single_trade_unit?: boolean
     trade_unit_slug?: string
 }>()
@@ -128,8 +128,8 @@ const component = computed(() => {
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
-        attachments : AttachmentManagement,
-        sales: ProductSales,
+        attachments: AttachmentManagement,
+        sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
     }
     console.log(currentTab.value)
@@ -191,7 +191,7 @@ const showMissingTaxonomyMessage = computed(() => {
     </div>
 
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesIntervals="salesIntervals" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
 </template>
 
 

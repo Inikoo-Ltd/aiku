@@ -41,6 +41,8 @@ class ShipmentsResource extends JsonResource
         return [
             'id'                      => $shipment->id,
             'name'                    => $shipment->shipper->name,
+            'shipper_slug'            => $shipment->shipper->slug,
+            'shipper_code'            => $shipment->shipper->code,
             'reference'               => $shipment->reference,
             'tracking'                => $shipment->tracking,
             'trackings'               => $shipment->trackings,

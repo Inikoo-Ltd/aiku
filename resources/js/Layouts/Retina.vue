@@ -24,19 +24,21 @@ import { isArray } from "lodash-es"
 import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt } from "@fal"
-import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo, faCircle } from '@fas'
+import { faExclamationTriangle, faCheckCircle as falCheckCircle, faHeart, faSparkles, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faMedal } from "@fal"
+import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faSparkles as fasSparkles, faInfo, faCircle, faMedal as fasMedal } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faSearch, faBell, faPlus } from '@far'
-import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
+import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import ChatButton from '@/Components/Chat/ChatButton.vue'
 
-library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
+library.add(faMedal, fasMedal, fadMedal)
+library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
 
@@ -48,7 +50,7 @@ interface Notification {
     status?: 'success' | 'error' | 'info' | 'warning' | 'failure'
 }
 
-
+const useChat = usePage().props?.use_chat
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
 initialiseRetinaApp()
@@ -186,13 +188,6 @@ const hideSuperchatWidget = () => {
     }, 900)
 }
 
-onMounted(() => {
-    // if (layout.iris?.is_have_gtm) {
-    setColorStyleRoot(layout?.app?.theme)
-    hideSuperchatWidget()
-    // }
-})
-
 
 watch(
   () => usePage().url,
@@ -252,6 +247,35 @@ const getBgColorDependsOnStatus = (status: string) => {
             return ''
     }
 }
+
+const isSidebarFetching = ref(false)
+const fetchSidebarOnce = async () => {
+    if (isSidebarFetching.value) return
+
+    isSidebarFetching.value = true
+
+    try {
+        const baseUrl = window.location.origin
+        const { data } = await axios.get(`${baseUrl}/json/sidebar`)
+
+        layout.iris.sidebar = data.sidebar
+        layout.isSidebarLoaded = true
+    } catch (e) {
+        console.error("[IrisSidebar] fetch failed", e)
+    } finally {
+        isSidebarFetching.value = false
+    }
+}
+
+onMounted(() => {
+    fetchSidebarOnce()
+    // if (layout.iris?.is_have_gtm) {
+    setColorStyleRoot(layout?.app?.theme)
+    hideSuperchatWidget()
+    // }
+})
+
+
 </script>
 
 <template>
@@ -362,6 +386,8 @@ const getBgColorDependsOnStatus = (status: string) => {
             <Notification :notification="props" />
         </template>
     </notifications>
+
+     <ChatButton data="null" v-if="useChat" />
 </template>
 
 <style lang="scss">

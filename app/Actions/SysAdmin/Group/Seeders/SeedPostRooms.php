@@ -68,7 +68,7 @@ class SeedPostRooms extends GrpAction
         }
 
         $this->handle($group);
-        echo "Success seed group post rooms ✅ \n";
+        $command->line("Success seed group post rooms ✅");
 
         return 0;
     }

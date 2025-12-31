@@ -35,6 +35,7 @@ import { routeType } from "@/types/route";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import Breadcrumb from 'primevue/breadcrumb'
 
 library.add(
@@ -72,7 +73,8 @@ const props = defineProps<{
     showcase?: object
     url_master?:routeType
     images?:object
-    salesIntervals?: object
+    sales?: object
+    salesData?: object
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -87,7 +89,8 @@ const component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
-        images :ImagesManagement
+        images: ImagesManagement,
+        sales: ProductCategoryTimeSeriesTable
     };
     return components[currentTab.value];
 
@@ -148,7 +151,7 @@ const component = computed(() => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesIntervals="salesIntervals"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData"></component>
 </template>
 
 <style scoped>

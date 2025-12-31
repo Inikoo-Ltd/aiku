@@ -8,6 +8,7 @@
 
 namespace App\Console;
 
+use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -269,17 +270,6 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-
-        // No need for now because it similar like PingActiveWooChannel
-        /*$this->logSchedule(
-            $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'ReviveInActiveWooChannel',
-            ),
-            name: 'ReviveInActiveWooChannel',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );*/
-
         $this->logSchedule(
             $schedule->command('ebay:ping')->daily()->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'CheckAllEbayChannels',
@@ -452,6 +442,16 @@ class Kernel extends ConsoleKernel
                 ->timezone('UTC')
                 ->sentryMonitor(monitorSlug: $config['slug']);
         }
+
+
+        $this->logSchedule(
+            $schedule->job(RunBackInStockEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'BackToStockHydrateEmailBulkRuns',
+            ),
+            name: 'BackToStockHydrateEmailBulkRuns',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void

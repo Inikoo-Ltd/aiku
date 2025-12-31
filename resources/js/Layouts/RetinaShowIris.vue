@@ -21,6 +21,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { initialiseRetinaApp } from '@/Composables/initialiseRetinaApp'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
+import ChatButton from '@/Components/Chat/ChatButton.vue'
+import axios from 'axios'
 library.add(faExclamationTriangle)
 
 initialiseIrisApp()  // Init Iris app
@@ -35,13 +37,29 @@ const header = usePage().props?.iris?.header
 const navigation =  usePage().props?.iris?.menu
 const footer =  usePage().props?.iris?.footer
 const theme =  usePage().props?.iris?.theme ? usePage().props?.iris?.theme :  {color : [...useColorTheme[2]]}
+const useChat = usePage().props?.use_chat
 
 console.log('irisTheme', usePage().props.iris)
 
-onMounted(() => {
-    irisStyleVariables(theme?.color)
-})
+const isSidebarFetching = ref(false)
 
+const fetchSidebarOnce = async () => {
+    if (isSidebarFetching.value) return
+
+    isSidebarFetching.value = true
+
+    try {
+        const baseUrl = window.location.origin
+        const { data } = await axios.get(`${baseUrl}/json/sidebar`)
+
+        layout.iris.sidebar = data.sidebar
+        layout.isSidebarLoaded = true
+    } catch (e) {
+        console.error("[IrisSidebar] fetch failed", e)
+    } finally {
+        isSidebarFetching.value = false
+    }
+}
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');
@@ -70,6 +88,12 @@ const setFirstVisitToFalse = () => {
 // Section: To open/close the mobile menu
 const isOpenMenuMobile = ref(false)
 provide('isOpenMenuMobile', isOpenMenuMobile)
+
+onMounted(() => {
+    irisStyleVariables(theme?.color)
+    fetchSidebarOnce()
+})
+
 </script>
 
 <template>
@@ -111,6 +135,8 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
             <Notification :notification="props" />
         </template>
     </notifications> 
+
+      <ChatButton data="null" v-if="useChat" />
 </template>
 
 <style lang="scss">

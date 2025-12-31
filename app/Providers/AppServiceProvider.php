@@ -12,6 +12,8 @@ namespace App\Providers;
 use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Lorisleiva\Actions\Facades\Actions;
@@ -55,6 +57,21 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+
+        ParallelTesting::setUpTestCase(function ($token, $testCase) {
+            $databaseName = env('DB_DATABASE_TEST', 'aiku_test')."_".$token;
+
+            $testCasePath = get_class($testCase);
+
+            if (str_contains($testCasePath, 'Tests\Feature\\')) {
+                config(['database.connections.aiku.database' => $databaseName]);
+                DB::connection('aiku');
+                DB::purge('aiku');
+                DB::reconnect('aiku');
+            }
+        });
+
+
         if ($this->app->runningInConsole()) {
             Actions::registerCommands();
         }
@@ -92,7 +109,6 @@ class AppServiceProvider extends ServiceProvider
 
                 // CRM
                 'Appointment'                   => 'App\Models\CRM\Appointment',
-                'BackInStockReminder'           => 'App\Models\CRM\BackInStockReminder',
                 'Customer'                      => 'App\Models\CRM\Customer',
                 'CustomerNote'                  => 'App\Models\CRM\CustomerNote',
                 'Favourite'                     => 'App\Models\CRM\Favourite',
@@ -184,6 +200,7 @@ class AppServiceProvider extends ServiceProvider
                 'ClockingMachine'               => 'App\Models\HumanResources\ClockingMachine',
                 'EmployeeJobPosition'           => 'App\Models\HumanResources\EmployeeJobPosition',
                 'TimeTracker'                   => 'App\Models\HumanResources\TimeTracker',
+                'Holiday'                       => 'App\Models\HumanResources\Holiday',
 
                 // Inventory
                 'Warehouse'                     => 'App\Models\Inventory\Warehouse',
@@ -210,7 +227,8 @@ class AppServiceProvider extends ServiceProvider
                 'EmailBulkRun'                  => 'App\Models\Comms\EmailBulkRun',
                 'EmailOngoingRun'               => 'App\Models\Comms\EmailOngoingRun',
                 'OutBoxHasSubscriber'           => 'App\Models\Comms\OutBoxHasSubscriber',
-
+                'BackInStockReminderSnapshot'   => 'App\Models\Comms\BackInStockReminderSnapshot',
+                'BackInStockReminder'           => 'App\Models\Comms\BackInStockReminder',
 
                 // Catalogue
                 'Shop'                          => 'App\Models\Catalogue\Shop',

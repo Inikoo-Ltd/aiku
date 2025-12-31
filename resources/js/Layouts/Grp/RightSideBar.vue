@@ -40,7 +40,7 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 </script>
 
 <template>
-	<div class="text-xs h-full border-l border-gray-200 bg-white space-y-4">
+	<div class="text-xs h-full border-l border-gray-200 bg-text-xs h-full border-l border-gray-200 bg-white fixed top-16 transition-all duration-200 ease-in-out right-0 lg:w-[30%] xl:w-[20%]">
 		<TransitionGroup name="list" tag="ul">
 			<!-- Online Users -->
 			<li v-if="layout.rightSidebar.activeUsers.show" class="" key="1">
@@ -107,7 +107,5 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 		<div v-if="layout?.rightSidebar?.message?.show">
 			<ContactList />
 		</div>
-
-		<!-- Add new here -->
 	</div>
 </template>

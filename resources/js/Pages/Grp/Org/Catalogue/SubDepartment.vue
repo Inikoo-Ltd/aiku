@@ -38,6 +38,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import ImagesManagement from '@/Components/Goods/ImagesManagement.vue'
+import ProductCategoryTimeSeriesTable from '@/Components/Product/ProductCategoryTimeSeriesTable.vue'
 import Breadcrumb from 'primevue/breadcrumb'
 
 library.add(
@@ -78,7 +79,9 @@ const props = defineProps<{
     mailshots: {}
     products: {}
     history?: {}
-    images?:object
+    images?: object
+    sales?: object
+    salesData?: object
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -92,7 +95,8 @@ const component: Component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
-        images :ImagesManagement
+        images: ImagesManagement,
+        sales: ProductCategoryTimeSeriesTable
     }
     return components[currentTab.value]
 
@@ -167,7 +171,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData"></component>
 
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector

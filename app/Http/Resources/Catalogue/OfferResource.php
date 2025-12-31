@@ -25,6 +25,10 @@ class OfferResource extends JsonResource
 {
     public function toArray($request): array
     {
+        preg_match('/percentage_off:([0-9]*\.?[0-9]+)/', $this->allowance_signature, $matches);
+
+        $percentage_off = $matches[1] ?? null;
+
         return [
             'shop_id'           => $this->shop_id,
             'offer_campaign_id' => $this->offer_campaign_id,
@@ -34,6 +38,7 @@ class OfferResource extends JsonResource
             'data'              => $this->data,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
+            'percentage_off'    => $percentage_off,
         ];
     }
 }

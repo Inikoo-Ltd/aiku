@@ -11,15 +11,15 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
 use App\Actions\Discounts\Offer\Search\OfferRecordSearch;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
-use App\Actions\Maintenance\Ordering\RecalculateShopTotalsOrdersInBasket;
+use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\OfferResource;
-use App\Models\Discounts\Offer;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
@@ -33,6 +33,15 @@ class UpdateOffer extends OrgAction
 
     public function handle(Offer $offer, array $modelData): Offer
     {
+        if (isset($modelData['trigger_data_item_quantity'])) {
+            $newTriggerData = array_merge(
+                $offer->trigger_data,
+                ['item_quantity' => $modelData['trigger_data_item_quantity']]
+            );
+            unset($modelData['trigger_data_item_quantity']);
+            $modelData['trigger_data'] = $newTriggerData;
+        }
+
         $offer = $this->update($offer, $modelData);
 
         if ($offer->wasChanged(['name'])) {
@@ -65,7 +74,7 @@ class UpdateOffer extends OrgAction
     public function rules(ActionRequest $request): array
     {
         $rules = [
-            'code'         => [
+            'code'                       => [
                 'sometimes',
                 new IUnique(
                     table: 'offers',
@@ -85,12 +94,13 @@ class UpdateOffer extends OrgAction
                 'max:64',
                 'alpha_dash'
             ],
-            'name'         => ['sometimes', 'max:250', 'string'],
-            'data'         => ['sometimes', 'required'],
-            'settings'     => ['sometimes', 'required'],
-            'trigger_data' => ['sometimes', 'required'],
-            'start_at'     => ['sometimes', 'date'],
-            'end_at'       => ['sometimes', 'nullable', 'date'],
+            'name'                       => ['sometimes', 'max:250', 'string'],
+            'data'                       => ['sometimes', 'required'],
+            'settings'                   => ['sometimes', 'required'],
+            'trigger_data'               => ['sometimes', 'required'],
+            'trigger_data_item_quantity' => ['sometimes', 'integer'],
+            'start_at'                   => ['sometimes', 'date'],
+            'end_at'                     => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {
@@ -124,6 +134,7 @@ class UpdateOffer extends OrgAction
         return $this->handle($offer, $this->validatedData);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, Offer $offer, ActionRequest $request): offer
     {
         $this->offer = $offer;

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\CRM;
 
-use App\Actions\CRM\BackInStockReminder\StoreBackInStockReminder;
+use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;

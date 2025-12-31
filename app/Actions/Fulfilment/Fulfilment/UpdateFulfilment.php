@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithGetRecurringBillEndDate;
+use App\Actions\Web\Website\UpdateWebsite;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Rules\IUnique;
@@ -48,6 +49,19 @@ class UpdateFulfilment extends OrgAction
             $settings['rental_agreement_cut_off']['monthly']['is_weekdays'] = $modelData['monthly_cut_off']['isWeekdays'] ?? false;
             $updateSettings                                                 = true;
             data_forget($modelData, 'monthly_cut_off');
+        }
+
+        if (Arr::exists($modelData, 'enable_chat')) {
+            data_set($settings, 'chat.enable_chat', data_get($modelData, 'enable_chat'));
+            $updateSettings     = true;
+
+            UpdateWebsite::make()->action(
+                website: $fulfilment->shop->website,
+                modelData: ['enable_chat'   => Arr::pull($modelData, 'enable_chat')],
+                hydratorsDelay: 0,
+                strict: false,
+                audit: true
+            );
         }
 
         if ($updateSettings) {
@@ -168,7 +182,8 @@ class UpdateFulfilment extends OrgAction
             'registration_number'        => ['sometimes', 'string'],
             'vat_number'                 => ['sometimes', 'string'],
             'invoice_footer'             => ['sometimes', 'string'],
-            'sender_email'             => ['sometimes', 'email'],
+            'enable_chat'                => ['sometimes', 'boolean'],
+            'sender_email'               => ['sometimes', 'email'],
             'image'                      => [
                 'sometimes',
                 'nullable',

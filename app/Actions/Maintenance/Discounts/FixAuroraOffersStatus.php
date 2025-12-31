@@ -44,15 +44,15 @@ class FixAuroraOffersStatus
             $auroraDealData          = DB::connection('aurora')->table('Deal Dimension')->where('Deal Key', $sourceData[1])->first();
 
 
-            if($auroraDealData) {
+            if ($auroraDealData) {
                 $auroraStatus               = $auroraDealData->{'Deal Status'};
                 $expirationAuroraParsedDate = null;
                 $expirationAuroraDate       = $auroraDealData->{'Deal Expiration Date'};
                 if ($expirationAuroraDate) {
                     $expirationAuroraParsedDate = Carbon::parse($auroraDealData->{'Deal Expiration Date'});
                 }
-            }else{
-                $auroraStatus='Finished';
+            } else {
+                $auroraStatus = 'Finished';
                 $expirationAuroraParsedDate = null;
                 $expirationAuroraDate = null;
             }

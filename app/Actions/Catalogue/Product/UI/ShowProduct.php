@@ -12,22 +12,22 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Comms\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\CRM\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
+use App\Actions\Goods\Asset\UI\IndexAssetTimeSeries;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\Traits\WithSalesIntervals;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
-use App\Http\Resources\Catalogue\ProductSalesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Goods\AssetTimeSeriesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
@@ -46,7 +46,6 @@ class ShowProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
-    use WithSalesIntervals;
 
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -389,17 +388,21 @@ class ShowProduct extends OrgAction
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
-                'salesIntervals' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
-                    fn () => $this->getSalesIntervalsData($product, $this->organisation->currency->code)
-                    : Inertia::lazy(fn () => $this->getSalesIntervalsData($product, $this->organisation->currency->code)),
+                'salesData' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
+                    fn () => GetProductTimeSeriesData::run($product)
+                    : Inertia::lazy(fn () => GetProductTimeSeriesData::run($product)),
 
                 ProductTabsEnum::CONTENT->value => $this->tab == ProductTabsEnum::CONTENT->value ?
                     fn () => GetProductContent::run($product)
                     : Inertia::lazy(fn () => GetProductContent::run($product)),
 
                 ProductTabsEnum::SALES->value => $this->tab == ProductTabsEnum::SALES->value ?
-                    fn () => ProductSalesResource::collection(IndexProductSales::run($product, ProductTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => ProductSalesResource::collection(IndexProductSales::run($product, ProductTabsEnum::SALES->value))),
+                    fn () => $product->asset
+                        ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
+                        : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))
+                    : Inertia::lazy(fn () => $product->asset
+                        ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
+                        : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))),
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
                     fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
@@ -439,7 +442,7 @@ class ShowProduct extends OrgAction
             ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
             ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
-            ->table(IndexProductSales::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
+            ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
             ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value));
     }
 

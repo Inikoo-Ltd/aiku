@@ -65,6 +65,7 @@ use App\Models\Helpers\Timezone;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Workplace;
 use App\Models\Inventory\Location;
@@ -138,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $colour
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
+ * @property array<array-key, mixed> $opening_hours
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -170,6 +172,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\OrganisationFulfilmentStats|null $fulfilmentStats
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read LaravelCollection<int, Holiday> $holidays
  * @property-read \App\Models\SysAdmin\OrganisationHumanResourcesStats|null $humanResourcesStats
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
@@ -269,20 +272,22 @@ class Organisation extends Model implements HasMedia, Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'     => 'array',
-        'settings' => 'array',
-        'source'   => 'array',
-        'location' => 'array',
+        'data'                         => 'array',
+        'settings'                     => 'array',
+        'source'                       => 'array',
+        'location'                     => 'array',
         'forbidden_dispatch_countries' => 'array',
-        'type'     => OrganisationTypeEnum::class
+        'type'                         => OrganisationTypeEnum::class,
+        'opening_hours'                => 'array'
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'source'   => '{}',
-        'location' => '{}',
-        'forbidden_dispatch_countries' => '{}'
+        'data'                         => '{}',
+        'settings'                     => '{}',
+        'source'                       => '{}',
+        'location'                     => '{}',
+        'forbidden_dispatch_countries' => '{}',
+        'opening_hours'                => '{}'
     ];
 
     protected $guarded = [];
@@ -882,5 +887,8 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Box::class);
     }
 
-
+    public function holidays(): HasMany
+    {
+        return $this->hasMany(Holiday::class);
+    }
 }

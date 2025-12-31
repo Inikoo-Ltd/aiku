@@ -12,8 +12,19 @@ namespace App\Http\Resources\Masters;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property mixed $id
- * @property string $code
+ * @property-read int         $id
+ * @property-read string      $code
+ * @property-read string      $slug
+ * @property-read int         $leader_id
+ * @property-read int         $number_minions
+ * @property-read int         $number_dimensions
+ * @property-read int         $number_used_slots
+ * @property-read int         $number_used_slots_for_sale
+ * @property-read array       $data
+ * @property-read int         $leader_product_id
+ * @property-read string      $leader_product_name
+ * @property-read string      $leader_product_code
+ * @property-read string      $leader_product_slug
  */
 class MasterVariantsResource extends JsonResource
 {

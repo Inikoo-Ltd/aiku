@@ -16,11 +16,18 @@ trait WithFaireShopApiCollection
      * @param string $token
      * @return void
      */
-    protected function initializeApi(): void
+    protected function initializeApi($isFileDownload = false): void
     {
+        $headers = [];
+        if (! $isFileDownload) {
+            $headers = [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json'
+            ];
+        }
+
         $this->defaultHeaders = [
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
+            ...$headers,
             'X-FAIRE-ACCESS-TOKEN' => Arr::get($this->settings, 'faire.access_token')
         ];
     }
@@ -33,9 +40,9 @@ trait WithFaireShopApiCollection
      * @param array $params
      * @return array
      */
-    protected function buildRequest(string $method, string $endpoint, array $params = [], $data = []): array
+    protected function buildRequest(string $method, string $endpoint, array $params = [], $data = [], $isFileDownload = false): array|string
     {
-        $this->initializeApi();
+        $this->initializeApi($isFileDownload);
 
         $url = $this->baseUrl . trim($endpoint, '/');
 
@@ -47,6 +54,10 @@ trait WithFaireShopApiCollection
             );
 
         if ($response->successful()) {
+            if ($isFileDownload) {
+                return $response->body();
+            }
+
             return $response->json();
         }
 
@@ -152,8 +163,8 @@ trait WithFaireShopApiCollection
      * @param string $orderId
      * @return array
      */
-    public function getPackingSlip(string $orderId): array
+    public function getPackingSlip(string $orderId): array|string
     {
-        return $this->buildRequest('GET', "orders/{$orderId}/packing-slip-pdf");
+        return $this->buildRequest(method: 'GET', endpoint: "orders/{$orderId}/packing-slip-pdf", isFileDownload: true);
     }
 }

@@ -9,11 +9,11 @@
 namespace Database\Factories\SysAdmin;
 
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
+use Database\Factories\Helpers\AddressFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class OrganisationFactory extends Factory
@@ -25,8 +25,8 @@ class OrganisationFactory extends Factory
         $timezone = Timezone::where('name', fake()->timezone('US'))->firstOrFail();
         $currency = Currency::where('code', 'USD')->firstOrFail();
 
-
         return [
+            'ulid'        => (string)\Illuminate\Support\Str::ulid(),
             'code'        => fake()->lexify(),
             'name'        => fake()->company(),
             'email'       => fake()->safeEmail(),
@@ -35,7 +35,7 @@ class OrganisationFactory extends Factory
             'timezone_id' => $timezone->id,
             'currency_id' => $currency->id,
             'type'        => OrganisationTypeEnum::SHOP->value,
-            'address'     => Address::factory()->definition()
+            'address'     => (new AddressFactory())->definition(),
         ];
     }
 }

@@ -24,7 +24,7 @@ import { router } from "@inertiajs/vue3"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
-import SalesIntervalsCompact from '@/Components/Product/SalesIntervalsCompact.vue'
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -95,18 +95,18 @@ const props = defineProps<{
 			warnings: string | null
 		}
 		availability_status?: {
-			from_master: boolean     
-			from_trade_unit: boolean  
-			is_for_sale: boolean           
-			product_state: string        
+			from_master: boolean
+			from_trade_unit: boolean
+			is_for_sale: boolean
+			product_state: string
 			product_state_icon: []
 			parentLink?: []
 		}
 		images: any
 		main_image: ImageTS
 	}
-	salesIntervals?: object
 	handleTabUpdate?: Function
+	salesData?: object
 }>()
 
 
@@ -167,13 +167,13 @@ const getTooltips = () => {
 				:unit="data.product?.data?.unit"
 				class="mr-2"
 			/>
-			
+
 			<!-- Product name -->
 			<span class="align-middle">
 				{{ data.product.data.name }}
 			</span>
 		</div>
-		
+
 		<div v-if="data.availability_status" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center flex gap-y-2 flex-wrap justify-end">
 			<LabelSKU
 				v-if="data.product.data.picking_factor"
@@ -185,7 +185,7 @@ const getTooltips = () => {
 				<template #col_code="{ data }">
 					{{ data.org_stock_code }}
 				</template>
-				
+
 				<template #col_name="{ data }">
 					{{ data.org_stock_name }}
 				</template>
@@ -198,7 +198,7 @@ const getTooltips = () => {
 				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
 			</span>
 
-			<span 
+			<span
 				v-tooltip="getTooltips()"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
 				v-on:click="editIsForSale"
@@ -220,7 +220,7 @@ const getTooltips = () => {
 			</span>
 		</div>
 	</div>
-	
+
 	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
@@ -257,20 +257,16 @@ const getTooltips = () => {
 
 		<!-- Product Summary - spans 2 columns -->
 		<div class="lg:col-span-2">
-			<ProductSummary 
-				:data="{...data.product.data, tags: data.tags, brands: data.brands}" 
-				:properties="data.properties" 
+			<ProductSummary
+				:data="{...data.product.data, tags: data.tags, brands: data.brands}"
+				:properties="data.properties"
 				:parts="data.org_stocks"
-				:public-attachment="data.attachment_box.public" 
+				:public-attachment="data.attachment_box.public"
 				:gpsr="data.gpsr"
 				:attachments="data.attachment_box"
 			/>
 		</div>
 
-		<!-- Sales Analytics - right sidebar -->
-		<div v-if="salesIntervals">
-			<SalesIntervalsCompact :intervalsData="salesIntervals" />
-		</div>
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
@@ -289,6 +285,10 @@ const getTooltips = () => {
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div> -->
 
+			<!-- Sales Analytics Compact -->
+			<div v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0">
+				<SalesAnalyticsCompact :salesData="salesData" />
+			</div>
 		</div>
 
 	</div>

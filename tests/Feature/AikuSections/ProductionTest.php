@@ -47,6 +47,7 @@ beforeAll(function () {
 beforeEach(function () {
     $this->organisation = createOrganisation();
     $this->group        = group();
+    setPermissionsTeamId($this->group->id);
     $this->guest        = createAdminGuest($this->group);
 
     $production = Production::first();

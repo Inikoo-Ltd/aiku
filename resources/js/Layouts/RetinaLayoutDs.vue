@@ -128,7 +128,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 								<div
 									class="bottom-full left-3"
 									:class="layout.leftSidebar.show ? '' : 'px-2'"
-									v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris?.customer?.reference}`"
+									v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris_variables?.reference}`"
 								>
 									<div class="text-xxs text-gray-500 -mb-1 italic">
 										{{ trans("Customer reference:") }}
@@ -136,7 +136,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 									<div class="text-xl text-[#1d252e] font-semibold flex items-center gap-2">
 										<Transition name="slide-to-left">
-											<span>#{{ layout?.iris?.customer?.reference ?? '-' }}</span>
+											<span>#{{ layout?.iris_variables?.reference ?? '-' }}</span>
 										</Transition>
 									</div>
 								</div>
