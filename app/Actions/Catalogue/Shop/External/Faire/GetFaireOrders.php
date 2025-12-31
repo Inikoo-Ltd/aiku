@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Catalogue\Shop\Faire;
+namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;

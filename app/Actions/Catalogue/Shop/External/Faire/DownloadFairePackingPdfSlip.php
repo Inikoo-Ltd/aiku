@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Catalogue\Shop\Faire;
+namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\OrgAction;
