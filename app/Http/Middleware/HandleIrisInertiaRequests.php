@@ -23,7 +23,7 @@ class HandleIrisInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-
+        $outbox_oos_enabled = $request->website->shop->outboxes()?->where('code', 'oos_notification')->where('state', 'active')->exists();
 
         $website = $request->get('website');
 
@@ -52,6 +52,7 @@ class HandleIrisInertiaRequests extends Middleware
                 "layout" => [
                     "app_theme" => Arr::get($websiteTheme, 'color'),
                 ],
+                'outbox_oos_enabled' => $outbox_oos_enabled
             ];
 
 
