@@ -3,6 +3,7 @@
 namespace App\Models\CRM\Livechat;
 
 use App\Models\CRM\WebUser;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -80,6 +81,11 @@ class ChatSession extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(ChatAssignment::class, 'chat_session_id');
+    }
+
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 
 
