@@ -169,4 +169,5 @@ Route::prefix('{website}/announcements')->name('announcements.')->group(function
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('', ShowWebsiteAnalyticsDashboard::class)->name('dashboard');
     Route::get('web-user-requests', IndexWebUserRequests::class)->name('web_user_requests.index');
+    Route::get('visitors', [\App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors::class, 'asController'])->name('visitors.index');
 });
