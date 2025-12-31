@@ -9,6 +9,7 @@
 namespace App\Models\Catalogue;
 
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
+use App\Actions\Catalogue\Shop\Traits\WithShopifyShopApiCollection;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -261,6 +262,7 @@ class Shop extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasImage;
     use WithFaireShopApiCollection;
+    use WithShopifyShopApiCollection;
 
     protected $casts = [
         'data'                         => 'array',
