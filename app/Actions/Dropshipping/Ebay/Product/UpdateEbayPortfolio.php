@@ -77,6 +77,10 @@ class UpdateEbayPortfolio implements ShouldBeUnique
 
         $availableQuantity = $product->available_quantity ?? 0;
 
+        if (! $product->is_for_sale) {
+            $availableQuantity = 0;
+        }
+
         if ($customerSalesChannel->max_quantity_advertise > 0) {
             $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
         }
