@@ -37,17 +37,17 @@ const handleToggleLeftBar = () => {
         id="leftSidebar"
     >
         <!-- Reference -->
-        <div class="hidden md:block absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris?.customer?.reference}`">
+        <div class="hidden md:block absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris_variables?.reference}`">
             <div v-if="layout.leftSidebar.show" class="text-xxs text-gray-500 -mb-1 italic">
                 {{ trans("Customer reference:") }}
             </div>
             <div class=" text-xl text-[#1d252e] font-semibold flex items-center gap-2">
                 <Transition name="slide-to-left">
-                    <span v-if="layout.leftSidebar.show">#{{layout?.iris?.customer?.reference ?? '-'}}</span>
+                    <span v-if="layout.leftSidebar.show">#{{layout?.iris_variables?.reference ?? '-'}}</span>
                 </Transition>
                 <FontAwesomeIcon 
-                    v-if="layout.leftSidebar.show && layout?.iris?.customer?.reference" 
-                    @click="useCopyText(layout?.iris?.customer?.reference)" 
+                    v-if="layout.leftSidebar.show && layout?.iris_variables?.reference" 
+                    @click="useCopyText(layout?.iris_variables?.reference)" 
                     icon="far fa-copy"
                     class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
                     v-tooltip="trans('Copy reference to clipboard')"
@@ -79,10 +79,10 @@ const handleToggleLeftBar = () => {
                     {{ trans("Customer reference:") }}
                 </div>
                 <div class=" text-xl font-semibold flex items-center gap-2">
-                    <span>#{{layout?.iris?.customer?.reference ?? '-'}}</span>
+                    <span>#{{layout?.iris_variables?.reference ?? '-'}}</span>
                     <FontAwesomeIcon 
-                        v-if="layout?.iris?.customer?.reference" 
-                        @click="useCopyText(layout?.iris?.customer?.reference)" 
+                        v-if="layout?.iris_variables?.reference" 
+                        @click="useCopyText(layout?.iris_variables?.reference)" 
                         icon="far fa-copy"
                         class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
                         v-tooltip="trans('Copy reference to clipboard')"

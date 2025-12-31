@@ -477,7 +477,7 @@ console.log('sdasd',props)
                         </span>
                     </div>
 
-                    <div v-if="layout?.iris?.customer?.id">
+                    <div v-if="layout?.iris_variables?.id">
                         <ButtonAddCategoryToPortfolio :products :categoryId 
                             :routeGetCategoryChannels="{
                                 name: props.fieldValue.model_type == 'ProductCategory' ? 'iris.json.customer.product_category.channel_ids.index' : 'iris.json.customer.collection.channel_ids.index',

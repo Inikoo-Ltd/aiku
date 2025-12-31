@@ -74,6 +74,7 @@ beforeEach(
     function () {
         $this->organisation = createOrganisation();
         $this->group        = group();
+        setPermissionsTeamId($this->group->id);
         $this->guest        = createAdminGuest($this->group);
 
         $this->artisan('warehouse:seed-permissions')->assertExitCode(0);

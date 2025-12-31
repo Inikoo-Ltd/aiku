@@ -42,9 +42,9 @@ beforeAll(function () {
 
 beforeEach(function () {
     \Tests\Helpers\setupDropshippingTest($this);
-
-
 });
+
+
 
 test('test platform were seeded', function () {
     expect($this->group->platforms()->count())->toBe(8);

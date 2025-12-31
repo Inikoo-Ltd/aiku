@@ -56,14 +56,21 @@ function loadDB(): void
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__.'/../', '.env.testing');
     $dotenv->load();
 
+    $databaseName = env('DB_DATABASE_TEST', 'aiku_test');
+    $numberParallelRestoreJobs = 16;
+    if (env('TEST_TOKEN')) {
+        $databaseName .= '_'.env('TEST_TOKEN');
+        $numberParallelRestoreJobs = 2;
+    }
+
     shell_exec(
         './devops/devel/reset_test_database.sh '.
-        env('DB_DATABASE_TEST', 'aiku_testing').' '.
+        $databaseName.' '.
         env('DB_PORT').' '.
         env('DB_USERNAME').' '.
         env('DB_PASSWORD').' '.
         env('DB_HOST').
-        ' tests/datasets/db_dumps/aiku.dump'
+        ' tests/datasets/db_dumps/aiku.dump '.$numberParallelRestoreJobs
     );
 }
 
