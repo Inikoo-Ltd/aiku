@@ -29,7 +29,7 @@ class OutboxHydrateEmailBulkRuns implements ShouldBeUnique
 
     public function handle(Outbox $outbox): void
     {
-        if ($outbox->model_type != 'EmailBulkRun') {
+        if ($outbox->model_type != 'EmailOngoingRun') {
             return;
         }
         $count = DB::table('email_bulk_runs')

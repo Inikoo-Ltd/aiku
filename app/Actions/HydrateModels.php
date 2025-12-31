@@ -189,12 +189,15 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:post_rooms');
         $command->call('hydrate:org_post_rooms');
         $command->call('hydrate:outboxes');
-        $command->call('hydrate:mailshots');
         foreach (Shop::all() as $shop) {
             $command->call('hydrate:mailshots', [
                 '-s' => $shop->slug
             ]);
         }
+        $command->call('hydrate:mailshots');
+        $command->call('hydrate:email_bulk_runs');
+        $command->call('hydrate:dispatched_emails');
+
     }
 
     protected function hydrateSysadmin(Command $command): void
