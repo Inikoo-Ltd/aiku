@@ -28,11 +28,18 @@ class ProcessCreditBalanceNotification extends OrgAction
             $previousCreditBalance = $creditBalances->last();
             $currentCreditBalance = $creditBalances->first();
         }
-        $additionalData = [
+        $additionalDataForCustomer = [
             'previous_balance' => $previousCreditBalance?->running_amount ?? 0,
             'balance' => $currentCreditBalance->running_amount,
         ];
-        SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalData);
-        SendCreditBalanceEmailToUser::dispatch($customer, $additionalData);
+        $additionalDataForUser = [
+            'previous_balance' => $previousCreditBalance?->running_amount ?? 0,
+            'balance' => $currentCreditBalance->running_amount,
+            'customer_name' => $customer->name,
+            // 'customer_link' => route
+        ];
+
+        SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
+        SendCreditBalanceEmailToUser::dispatch($customer, $additionalDataForUser);
     }
 }

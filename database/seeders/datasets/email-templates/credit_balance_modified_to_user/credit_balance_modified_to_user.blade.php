@@ -5,14 +5,6 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <title>Credit Balance Update Notification</title>
 
-  <!--[if mso]>
-  <style type="text/css">
-    .fallback-text {
-      font-family: Arial, sans-serif;
-    }
-  </style>
-  <![endif]-->
-
   <style type="text/css">
       img {
           max-width: 100%;
@@ -139,7 +131,8 @@
 
                           <tr style="border-bottom: 1px solid #e9e9e9;">
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 0; font-weight: bold; color: #555; width: 35%;">Amount:</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 16px; padding: 12px 0; color: #27AE60; font-weight: 600;">[Currency][Amount]</td>
+                              [Preview Amount]
+                              <!-- <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 16px; padding: 12px 0; color: #27AE60; font-weight: 600;">[Preview Amount]</td> -->
                           </tr>
 
                           <tr style="border-bottom: 1px solid #e9e9e9;">
@@ -152,14 +145,16 @@
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 0; color: #333; line-height: 1.6;">[Note]</td>
                           </tr>
 
-                          <tr style="background-color: #f9f9f9;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 16px 0; font-weight: bold; color: #555; width: 35%;">Previous Balance:</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 16px 0; color: #333;">[Currency][Previous Balance]</td>
-                          </tr>
+                          <tr style="background-color: #e8f4f8; border: 1px solid #b8d4e3; border-radius: 8px;">
+                            <td colspan="2" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 16px 12px; color: #333; border-radius: 8px;">
+                                <strong>Preview balance:</strong>
+                                [Preview Balance]
 
-                          <tr style="background-color: #e8f5e9;">
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 16px; padding: 16px 0; font-weight: bold; color: #333; width: 35%;">New Balance:</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 18px; padding: 16px 0; color: #27AE60; font-weight: bold;">[Currency][New Balance]</td>
+                                <!-- <span style="color: #333;">[Currency][Previous Balance]</span>
+                                <span style="color: #dc3545;"> - [Currency][Amount]</span>
+                                <span style="color: #dc3545; margin: 0 8px;">→</span>
+                                <span style="color: #333; font-weight: bold;">[Currency][New Balance]</span> -->
+                            </td>
                           </tr>
 
                       </table>
