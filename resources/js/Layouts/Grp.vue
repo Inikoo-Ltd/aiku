@@ -308,7 +308,7 @@ onMounted(() => {
 		<!-- Sidebar: Right -->
 
 		<RightSideBar
-			class="fixed top-16 transition-all duration-200 ease-in-out"
+			class="fixed top-[2.7rem] transition-all duration-200 ease-in-out"
 			:class="[
 				Object.values(layout.rightSidebar).some((value) => value.show)
 					? 'right-0 lg:w-[30%] xl:w-[20%]'
