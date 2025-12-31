@@ -766,3 +766,7 @@ test('email bulk runs', function () {
     HydrateEmailBulkRuns::run($emailBulkRun);
     $this->artisan('hydrate:email_bulk_runs --slugs '.$emailBulkRun->id)->assertExitCode(0);
 });
+
+test('comms hydrator', function () {
+    $this->artisan('hydrate -s comms')->assertExitCode(0);
+});
