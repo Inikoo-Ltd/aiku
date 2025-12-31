@@ -8,6 +8,7 @@
 
 namespace App\Models\Masters;
 
+use App\Models\Catalogue\Variant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
@@ -147,6 +148,11 @@ class MasterVariant extends Model implements Auditable, HasMedia
     public function leaderProduct(): HasOne
     {
         return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(Variant::class);
     }
 
 }

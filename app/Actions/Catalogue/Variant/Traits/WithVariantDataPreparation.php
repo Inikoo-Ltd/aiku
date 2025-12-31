@@ -21,33 +21,22 @@ trait WithVariantDataPreparation
      * Prepare and normalize Variant data for Create/Update actions.
      * THIS ONLY WORKS FOR VARIANT, DO NOT USE ON MASTER VARIANT
      */
-    protected function prepareVariantData(): void
+    protected ?array $leadItem = null;
+
+    public function prepareForVariantCreation(): void
     {
-        $this->family_id = $this->parent->masterFamily
-            ->productCategories
-            ->where('shop_id', $this->shop->id)
-            ->firstOrFail()
-            ->id;
+        $this->prepareForeignKeys();
+        $this->prepareVariantData();
+        $this->prepareCodeSlug();
+    }
 
-        $this->department_id = $this->parent->masterDepartment
-            ? $this->parent->masterDepartment->productCategories
-                ->where('shop_id', $this->shop->id)
-                ->firstOrFail()
-                ->id
-            : null;
+    public function prepareForVariantUpdate(): void
+    {
+        $this->prepareVariantData();
+    }
 
-        $this->sub_department_id = $this->parent->masterSubDepartment
-            ? $this->parent->masterSubDepartment->productCategories
-                ->where('shop_id', $this->shop->id)
-                ->firstOrFail()
-                ->id
-            : null;
-
-        $this->organisation_id = $this->shop->organisation_id;
-        $this->group_id = $this->shop->group->id;
-        $this->shop_id  = $this->shop->id;
-
-
+    private function prepareVariantData(): void
+    {
         $masterProductList = MasterAsset::whereIn(
             'id',
             array_keys(data_get($this->data, 'products', []))
@@ -73,11 +62,9 @@ trait WithVariantDataPreparation
         
         $this->set('data.products', $products);
 
-        $leader = collect($products)->where('is_leader', true)->first();
+        $this->leadItem = collect($products)->where('is_leader', true)->first();
 
-        $this->leader_id = data_get($leader, 'product.id');
-        $this->set('code', data_get($leader, 'product.code') . '-var-' . now()->format('His'));
-        $this->set('slug', strtolower($this->code));
+        $this->leader_id = data_get($this->leadItem, 'product.id');
 
         $this->number_minions = array_reduce(
             data_get($this->data['variants'], '*.options'),
@@ -89,7 +76,41 @@ trait WithVariantDataPreparation
         $this->number_used_slots_for_sale = Product::whereIn('id', array_keys($products))
             ->where('is_for_sale', true)
             ->count();
+    }
 
+    private function prepareForeignKeys(): void
+    {
+        $this->family_id = $this->parent->masterFamily
+            ->productCategories
+            ->where('shop_id', $this->shop->id)
+            ->firstOrFail()
+            ->id;
+
+        $this->department_id = $this->parent->masterDepartment
+            ? $this->parent->masterDepartment->productCategories
+                ->where('shop_id', $this->shop->id)
+                ->firstOrFail()
+                ->id
+            : null;
+
+        $this->sub_department_id = $this->parent->masterSubDepartment
+            ? $this->parent->masterSubDepartment->productCategories
+                ->where('shop_id', $this->shop->id)
+                ->firstOrFail()
+                ->id
+            : null;
+
+        $this->organisation_id = $this->shop->organisation_id;
+        $this->group_id = $this->shop->group->id;
+        $this->shop_id  = $this->shop->id;
+        
         $this->master_variant_id = $this->parent->id;
+    }
+
+    private function prepareCodeSlug(): void
+    {
+        $code = data_get($this->leadItem, 'product.code') . '-var-' . now()->format('His');
+        $this->set('code', $code);
+        $this->set('slug', strtolower($code));
     }
 }

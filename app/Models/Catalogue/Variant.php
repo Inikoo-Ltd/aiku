@@ -111,4 +111,29 @@ class Variant extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Product::class, 'id', 'leader_id');
     }
+
+    public function salesStats(): HasOne
+    {
+        return $this->hasOne(VariantSalesStats::class);
+    }
+    
+    public function salesIntervals(): HasOne
+    {
+        return $this->hasOne(VariantSalesIntervals::class);
+    }
+
+    public function salesOrderingStats(): HasOne
+    {
+        return $this->hasOne(VariantSalesOrderingStats::class);
+    }
+
+    public function salesOrderingIntervals(): HasOne
+    {
+        return $this->hasOne(VariantSalesOrderingIntervals::class);
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(VariantTimeSeries::class);
+    }
 }

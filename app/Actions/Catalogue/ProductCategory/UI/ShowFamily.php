@@ -8,17 +8,19 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\OrgAction;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
+use App\Actions\Catalogue\Variant\IndexVariant;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
+use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
@@ -157,6 +159,51 @@ class ShowFamily extends OrgAction
             ];
         }
 
+        $tabs = [            
+            FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
+                fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
+                : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
+
+            FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
+                fn () => GetProductCategoryShowcase::run($family)
+                : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
+
+            FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
+                fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
+
+            FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
+                fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
+
+            FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
+                fn () => GetProductCategoryImages::run($family)
+                : Inertia::lazy(fn () => GetProductCategoryImages::run($family)),
+
+            FamilyTabsEnum::CONTENT->value => $this->tab == FamilyTabsEnum::CONTENT->value ?
+                fn () => GetProductCategoryContent::run($family)
+                : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
+        ];
+        
+        if (app()->environment('local')) {
+            $tabs[FamilyTabsEnum::VARIANTS->value] =
+                $this->tab === FamilyTabsEnum::VARIANTS->value
+                    ? fn () => VariantsResource::collection(
+                        IndexVariant::run(
+                            $family,
+                            FamilyTabsEnum::VARIANTS->value
+                        )
+                    )
+                    : Inertia::lazy(
+                        fn () => VariantsResource::collection(
+                            IndexVariant::run(
+                                $family,
+                                FamilyTabsEnum::VARIANTS->value
+                            )
+                        )
+                    );
+        }
+
         return Inertia::render(
             'Org/Catalogue/Family',
             [
@@ -222,40 +269,16 @@ class ShowFamily extends OrgAction
                     'navigation' => FamilyTabsEnum::navigation()
                 ],
                 'is_orphan'        => !$family->department_id,
-
-                FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
-                    fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
-
-                FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
-                    fn () => GetProductCategoryShowcase::run($family)
-                    : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
-
                 'salesData' => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryTimeSeriesData::run($family)
                     : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($family)),
-
-                FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
-                    fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                    : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
-
-                FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
-
-                FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
-                    fn () => GetProductCategoryImages::run($family)
-                    : Inertia::lazy(fn () => GetProductCategoryImages::run($family)),
-
-                FamilyTabsEnum::CONTENT->value => $this->tab == FamilyTabsEnum::CONTENT->value ?
-                    fn () => GetProductCategoryContent::run($family)
-                    : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
-
-
+                ...$tabs
             ]
-        )->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure($family))
+        )
+            ->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+            ->table(IndexMailshots::make()->tableStructure(parent: $family))
             ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
+            ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
             ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value));
     }
 

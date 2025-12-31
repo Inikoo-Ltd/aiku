@@ -8,10 +8,12 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterVariant;
 use App\Models\Masters\MasterAsset;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterVariant extends OrgAction
@@ -22,11 +24,17 @@ class UpdateMasterVariant extends OrgAction
 
     public function handle(MasterVariant $masterVariant, array $modelData): MasterVariant
     {
-        $masterVariant->update($modelData);
+        return DB::transaction(function () use ($modelData, $masterVariant) {
 
-        // TODO Hydrate Child
+            $masterVariant->update($modelData);
+            $masterVariant->refresh();
 
-        return $masterVariant;
+            foreach($masterVariant->variants as $variant){
+                UpdateVariant::make()->action($variant, $modelData);
+            }
+
+            return $masterVariant;
+        });
     }
 
     public function prepareForValidation(ActionRequest $request): void

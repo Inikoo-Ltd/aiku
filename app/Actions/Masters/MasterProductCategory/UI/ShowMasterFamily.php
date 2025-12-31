@@ -303,10 +303,10 @@ class ShowMasterFamily extends GrpAction
 
             ]
         )
-            ->table(IndexMailshots::make()->tableStructure($masterFamily))
+            ->table(IndexMailshots::make()->tableStructure(parent: $masterFamily))
             ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
             ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value))
-            ->table(IndexMasterVariant::make()->tableStructure($masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
+            ->table(IndexMasterVariant::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
 
     }

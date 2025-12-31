@@ -3,6 +3,7 @@
 namespace App\Models\Catalogue;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -21,4 +22,10 @@ use Illuminate\Database\Eloquent\Model;
  */
 class VariantTimeSeries extends Model
 {
+    protected $guarded = [];
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(Variant::class);
+    }
 }

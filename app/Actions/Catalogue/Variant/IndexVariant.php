@@ -7,28 +7,28 @@
  * copyright 2025
 */
 
-namespace App\Actions\Masters\MasterVariant;
+namespace App\Actions\Catalogue\Variant;
 
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\InertiaTable\InertiaTable;
-use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterVariant;
+use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Variant;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 use Closure;
 
-class IndexMasterVariant extends OrgAction
+class IndexVariant extends OrgAction
 {
     /**
      * @throws \Throwable
      */
-    public function handle(MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('master_variants.code', $value);
+                $query->whereAnyWordStartWith('variants.code', $value);
             });
         });
 
@@ -36,37 +36,40 @@ class IndexMasterVariant extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(MasterVariant::class);
+        $queryBuilder = QueryBuilder::for(Variant::class);
 
-        if ($parent instanceof MasterProductCategory) {
-            if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                $queryBuilder->where('master_variants.master_family_id', $parent->id);
-            } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $queryBuilder->where('master_variants.master_sub_department_id', $parent->id);
-            } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                $queryBuilder->where('master_variants.master_department_id', $parent->id);
+        if ($parent instanceof ProductCategory) {
+            if ($parent->type == ProductCategoryTypeEnum::FAMILY) {
+                $queryBuilder->where('variants.family_id', $parent->id);
+            } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $queryBuilder->where('variants.sub_department_id', $parent->id);
+            } elseif ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $queryBuilder->where('variants.department_id', $parent->id);
             } else {
                 abort(419);
             }
         }
 
         return $queryBuilder
-         ->leftJoin('master_assets', 'master_assets.id', '=', 'master_variants.leader_id')
-         ->defaultSort('master_variants.code')
+         ->leftJoin('products', 'products.id', '=', 'variants.leader_id')
+         ->leftJoin('master_variants', 'master_variants.id', '=', 'variants.master_variant_id')
+         ->defaultSort('variants.code')
          ->select([
-             'master_variants.id',
-             'master_variants.slug',
-             'master_variants.code',
-             'master_variants.leader_id',
-             'master_variants.number_minions',
-             'master_variants.number_dimensions',
-             'master_variants.number_used_slots',
-             'master_variants.number_used_slots_for_sale',
-             'master_variants.data',
-             'master_assets.id as leader_product_id',
-             'master_assets.name as leader_product_name',
-             'master_assets.code as leader_product_code',
-             'master_assets.slug as leader_product_slug',
+             'variants.id',
+             'variants.slug',
+             'variants.code',
+             'variants.leader_id',
+             'variants.number_minions',
+             'variants.number_dimensions',
+             'variants.number_used_slots',
+             'variants.number_used_slots_for_sale',
+             'variants.data',
+             'products.id as leader_product_id',
+             'products.name as leader_product_name',
+             'products.code as leader_product_code',
+             'products.slug as leader_product_slug',
+             'master_variants.code as parent_code',
+             'master_variants.slug as parent_slug',
          ])
          ->allowedSorts([
              'code',
@@ -77,7 +80,7 @@ class IndexMasterVariant extends OrgAction
          ->withQueryString();
     }
 
-    public function tableStructure(MasterProductCategory $parent, $prefix = null): Closure
+    public function tableStructure(ProductCategory $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
@@ -90,8 +93,8 @@ class IndexMasterVariant extends OrgAction
                 ->defaultSort('code')
                 ->withEmptyState(
                     match (class_basename($parent)) {
-                        'MasterProductCategory' => [
-                            'title' => __("No master variants found under this master family"),
+                        'ProductCategory' => [
+                            'title' => __("No variants found under this family"),
                             'count' => 0,
                         ],
                         default => null

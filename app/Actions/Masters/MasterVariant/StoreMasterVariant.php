@@ -85,13 +85,13 @@ class StoreMasterVariant extends OrgAction
 
         $code = MasterAsset::find($this->leader_id)->code . '-var-' . now()->format('His');
         $this->set('code', $code);
+        
         $this->number_minions = array_reduce(data_get($this->data_variants['variants'], '*.options'), function ($carry, $item) {
             return $carry * count($item);
         }, 1) - 1; // Minus one to exclude the leader product
         $this->number_dimensions = count($this->data_variants['variants']);
         $this->number_used_slots = count($this->data_variants['products']);
         $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->data_variants['products']))->select('is_for_sale', true)->count();
-
 
         if ($this->data_variants) {
             $this->set('data', $this->data_variants);
@@ -127,10 +127,12 @@ class StoreMasterVariant extends OrgAction
 
     public function getValidationMessages(): array
     {
-        return [
+        $validationMessages = [
             'data.groupBy'          => __('A grouping criteria must be selected'),
-            'data.products.min'     => __('At least one product must be present in the variant'),
+            'data.products'     => __('At least one product must be present in the variant'),
         ];
+
+        return $validationMessages;
     }
 
     /**
@@ -173,6 +175,6 @@ class StoreMasterVariant extends OrgAction
                     'description' => __('Master Variant :_masterVarCode has been created successfully.', ['_masterVarCode' => $masterVariant->code]),
                 ]
             )
-            ->setStatusCode(303); // important for inertia POST redirects
+            ->setStatusCode(303);
     }
 }

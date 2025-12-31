@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
@@ -38,12 +37,13 @@ class StoreVariantFromMaster extends OrgAction
         $variant = DB::transaction(function () use ($modelData) {
             $variant = Variant::create($modelData);
 
-            // TODO Stats. Need Raul to create the Model for each
-            // $variant->orderingStats()->create();
-            // $variant->orderingIntervals()->create();
-            // foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-            //     $variant->timeSeries()->create(['frequency' => $frequency]);
-            // }
+            $variant->salesStats()->create();
+            $variant->salesIntervals()->create();
+            $variant->salesOrderingStats()->create();
+            $variant->salesOrderingIntervals()->create();
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                $variant->timeSeries()->create(['frequency' => $frequency]);
+            }
 
             $variant->refresh();
 
@@ -56,7 +56,7 @@ class StoreVariantFromMaster extends OrgAction
     public function prepareForValidation(): void
     {
         // Call function set on Trait. If need to update logic, update it there please.
-        $this->prepareVariantData();
+        $this->prepareForVariantCreation();
     }
 
     public function rules(): array
@@ -76,7 +76,7 @@ class StoreVariantFromMaster extends OrgAction
                                                     new IUnique(
                                                         table: 'variants',
                                                         extraConditions: [
-                                                            ['column' => 'master_shop_id', 'value' => $this->masterShop->id ?? null],
+                                                            ['column' => 'shop_id', 'value' => $this->shop->id ?? null],
                                                             ['column' => 'deleted_at', 'operator' => 'null'],
                                                         ]
                                                     ),
@@ -92,6 +92,21 @@ class StoreVariantFromMaster extends OrgAction
             'data.products'                 =>  ['required', 'array', 'min:1'],
             'master_variant_id'             =>  ['required'],
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        $validationMessages = [
+            'data.groupBy'          => __('A grouping criteria must be selected'),
+            'data.products'     => __('At least one product must be present in the variant'),
+        ];
+
+        if($this->asAction) {
+            array_merge($validationMessages, [
+                'data.leader_id'    => __("Unable to assign leader. This master product is missing in one or more Families mapped under the Master Family"),
+            ]);
+        }
+        return $validationMessages;
     }
     
     /**

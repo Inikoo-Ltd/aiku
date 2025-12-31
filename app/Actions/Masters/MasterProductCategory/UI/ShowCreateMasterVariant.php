@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -80,11 +81,10 @@ class ShowCreateMasterVariant extends OrgAction
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Masters/CreateVariant',
+            'Masters/CreateMasterVariant',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterFamily,
-                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('Create Master Variant'),
@@ -110,13 +110,22 @@ class ShowCreateMasterVariant extends OrgAction
     }
 
 
-    public function getBreadcrumbs(MasterProductCategory $masterFamily, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterProductCategory $masterFamily, array $routeParameters): array
     {
-        return ShowMasterFamily::make()->getBreadcrumbs(
-            masterFamily: $masterFamily,
-            routeName: preg_replace('/edit$/', 'show', $routeName),
-            routeParameters: $routeParameters,
-            suffix: '('.__('Creating master variants').')'
+        return array_merge(
+            ShowMasterFamily::make()->getBreadcrumbs(
+                masterFamily: $masterFamily,
+                routeName: 'grp.masters.master_shops.show.master_families.show',
+                routeParameters: $routeParameters,
+            ),
+            [
+                [
+                    'type' => 'creatingModel',
+                    'creatingModel' => [
+                        'label' => __('Creating Master Variant'),
+                    ]
+                ]
+            ]
         );
     }
 }
