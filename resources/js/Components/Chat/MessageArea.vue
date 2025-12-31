@@ -245,295 +245,229 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="flex flex-col h-full">
-		<div
-			class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-700 bg-white shadow-sm flex justify-between items-center">
+	<div class="flex flex-col h-full bg-white">
+		<!-- Header -->
+		<div class="chat-header">
 			<span>{{ trans("Chat Support") }}</span>
 
-			<div v-if="isLoggedIn" class="flex items-center gap-2">
-				<button
-					:class="[
-						'px-3 py-1 rounded-md text-sm',
-						activeMenu === 'chat'
-							? 'buttonPrimary text-white'
-							: 'bg-gray-100 text-gray-700',
-					]"
-					@click="activeMenu = 'chat'">
-					Chat
-				</button>
-
-				<button
-					:class="[
-						'px-3 py-1 rounded-md text-sm',
-						activeMenu === 'history'
-							? 'buttonPrimary text-white'
-							: 'bg-gray-100 text-gray-700',
-					]"
-					@click="activeMenu = 'history'">
-					History
+			<div v-if="isLoggedIn" class="flex gap-1">
+				<button v-for="m in ['chat', 'history']" :key="m" @click="activeMenu = m"
+					:class="['tab-btn', activeMenu === m && 'tab-active']">
+					{{ capitalize(m) }}
 				</button>
 			</div>
 		</div>
 
+		<!-- History -->
 		<div v-if="activeMenu === 'history'" class="flex-1 overflow-y-auto">
-			<template v-if="!selectedHistory">
-				<div v-if="isLoadingHistory" class="text-sm text-gray-500">Loading...</div>
-				<div v-else>
-					<div
-						v-for="s in userSessions"
-						:key="s.ulid"
-						class="flex items-start gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer"
-						@click="
-							selectedHistory = {
-								ulid: s.ulid,
-								contact_name: s.contact_name,
-								guest_identifier: s.guest_identifier,
-							}
-						">
-						<div class="flex-1">
-							<div class="flex items-center justify-between">
-								<div class="text-sm">
-									{{ s.contact_name || s.guest_identifier }}
-								</div>
-								<div class="text-xs text-gray-400">
-									{{ s.last_message?.created_at }}
-								</div>
-							</div>
-							<div class="text-xs text-gray-600 truncate">
-								{{ s.last_message?.message }}
-							</div>
-						</div>
-					</div>
-				</div>
-			</template>
-
-			<MessageHistory
-				v-else
-				:sessionUlid="selectedHistory.ulid"
-				:session="selectedHistory"
+			<MessageHistory v-if="selectedHistory" :sessionUlid="selectedHistory.ulid" :session="selectedHistory"
 				@back="selectedHistory = null" />
-		</div>
 
-		<!-- Messages Area -->
-		<div
-			ref="messagesContainer"
-			@scroll="onScroll"
-			class="messages-container flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
-			v-if="activeMenu === 'chat' && messages.length > 0">
-			<template v-for="(groupMessages, date) in groupedMessages()" :key="date">
-				<!-- Date Separator -->
-				<div class="flex justify-center">
-					<div class="px-3 py-1 shadow-sm bg-white text-gray-600 text-xs rounded-full">
-						{{ date }}
-					</div>
+			<div v-else>
+				<div v-if="isLoadingHistory" class="p-3 text-sm text-gray-400">
+					Loading...
 				</div>
 
-				<!-- Messages -->
-				<div v-for="message in groupMessages" :key="message.id" class="message-item">
-					<div
-						class="flex"
-						:class="isUserMessage(message) ? 'justify-end' : 'justify-start'">
-						<div class="max-w-[80%]">
-							<div
-								v-if="!isUserMessage(message)"
-								class="text-xs text-gray-500 mb-1 ml-1">
-								{{ getSenderName(message) }}
-							</div>
-
-							<div
-								class="flex items-end gap-2"
-								:class="isUserMessage(message) ? 'flex-row-reverse' : ''">
-								<div
-									class="px-3 py-2 rounded-lg shadow-md text-sm break-words whitespace-normal max-w-full"
-									:class="[
-										isUserMessage(message)
-											? 'user-bubble rounded-br-none'
-											: message.sender_type === 'agent'
-											? 'agent-bubble  rounded-bl-none'
-											: 'system-bubble  rounded-bl-none',
-									]">
-									{{ message.message_text }}
-
-									<div
-										class="text-xs mt-1 text-right"
-										:class="
-											isUserMessage(message)
-												? 'text-white/70'
-												: 'text-gray-500'
-										">
-										<span v-if="isUserMessage(message)" class="ml-1">
-											{{ message.is_read ? "✓✓" : "✓" }}
-										</span>
-									</div>
-								</div>
-							</div>
-						</div>
+				<div v-for="s in userSessions" :key="s.ulid" class="history-item" @click="selectedHistory = s">
+					<div class="flex justify-between text-sm">
+						<span>{{ s.contact_name || s.guest_identifier }}</span>
+						<span class="text-xs text-gray-400">
+							{{ s.last_message?.created_at }}
+						</span>
 					</div>
+					<div class="text-xs text-gray-500 truncate">
+						{{ s.last_message?.message }}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Messages -->
+		<div ref="messagesContainer" @scroll="onScroll" class="messages-wrap"
+			v-if="activeMenu === 'chat' && messages.length">
+
+
+			<template v-for="(group, date) in groupedMessages()" :key="date">
+				<div class="mx-auto flex text-xs text-gray-400 justify-center">{{ date }}</div>
+
+				<div v-for="m in group" :key="m.id"
+					:class="['flex', isUserMessage(m) ? 'justify-end' : 'justify-start']">
+
+				<div
+	:class="[
+		'bubble',
+		isUserMessage(m)
+			? 'bubble-user'
+			: m.sender_type === 'agent'
+				? 'bubble-agent'
+				: 'bubble-system',
+	]"
+>
+	<div class="bubble-text">
+		{{ m.message_text }}
+	</div>
+
+	<div class="bubble-meta">
+		<span class="bubble-time-text">
+			{{ formatTime(m.created_at) }}
+		</span>
+
+		<span v-if="isUserMessage(m)" class="bubble-check">
+			{{ m.is_read ? "✓✓" : "✓" }}
+		</span>
+	</div>
+</div>
+
 				</div>
 			</template>
 
-			<div v-if="activeMenu === 'chat' && loading" class="flex justify-center py-4">
-				<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+			<div v-if="loading" class="flex justify-center py-3">
+				<div class="loader" />
 			</div>
 		</div>
 
-		<div
-			v-if="activeMenu === 'chat' && isLoggedIn && messages.length === 0"
-			class="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500 bg-gray-50">
-			<div class="mb-4">
-				<svg
-					class="w-16 h-16 mx-auto text-gray-300"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="1"
-						d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-				</svg>
-			</div>
-
-			<h3 class="text-lg font-medium mb-2">{{ trans("No messages yet") }}</h3>
-			<p class="text-sm mb-4">
-				{{ trans("Start the conversation by sending a message") }}
-			</p>
+		<!-- Empty -->
+		<div v-if="activeMenu === 'chat' && !messages.length && isLoggedIn"
+			class="flex-1 grid place-content-center text-gray-400 text-sm">
+			{{ trans("Start the conversation") }}
 		</div>
 
-		<div v-if="activeMenu === 'chat' && isRating">
-			<div
-				class="p-3 border-t border-gray-200 bg-white flex items-center justify-between gap-2">
-				<div class="flex items-center gap-1">
-					<button
-						v-for="n in 5"
-						:key="n"
-						class="p-1"
-						@click="updateRating(n)"
-						@mouseover="hoverRating = n"
-						@mouseleave="hoverRating = null">
-						<FontAwesomeIcon
-							:icon="faStar"
-							class="text-lg"
-							:class="[
-								n <= (hoverRating ?? selectedRating ?? props.rating ?? 0)
-									? 'text-yellow-400'
-									: 'text-gray-300',
-								starPop === n ? 'star-pop' : '',
-							]" />
-					</button>
-				</div>
-				<button
-					class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 flex items-center gap-2"
-					@click="$emit('new-session')">
-					<FontAwesomeIcon :icon="faPlus" class="text-sm" />
-					<span>New Chat</span>
+		<!-- Rating -->
+		<div v-if="activeMenu === 'chat' && isRating" class="rating-bar">
+			<div class="flex gap-1">
+				<button v-for="n in 5" :key="n" @click="updateRating(n)">
+					<FontAwesomeIcon :icon="faStar"
+						:class="n <= (selectedRating ?? rating ?? 0) ? 'text-yellow-400' : 'text-gray-300'" />
 				</button>
 			</div>
-		</div>
-		<div v-if="activeMenu === 'chat' && !isRating">
-			<div
-				v-if="!isLoggedIn && !guestProfileSubmitted"
-				class="flex-1 flex flex-col items-center justify-center border-gray-200 bg-white p-4">
-				<GuestProfileForm
-					:sessionUlid="session?.ulid"
-					@submitted="onGuestProfileSubmitted" />
-			</div>
 
-			<div
-				v-if="isLoggedIn || guestProfileSubmitted"
-				class="p-3 border-t border-gray-200 bg-white flex items-center gap-2">
-				<textarea
-					v-model="input"
-					@keydown="handleKeyDown"
-					:placeholder="trans('Type your message...')"
-					:disabled="!session || isSending || isRating"
-					class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none resize-none"
-					rows="1"
-					@input="autoResize"
-					ref="textArea" />
-				<Button
-					:icon="isSending ? faSpinner : faPaperPlane"
-					:loading="isSending"
-					@click="sendMessage"
-					:disabled="!input.trim() || !session || isSending || isRating"
-					class="px-4" />
-			</div>
+			<button class="new-chat-btn" @click="$emit('new-session')">
+				<FontAwesomeIcon :icon="faPlus" />
+				New Chat
+			</button>
 		</div>
 
-		<div v-if="false" class="text-xs text-gray-500 p-2 border-t border-gray-100 bg-gray-50">
-			<div v-if="session">Session: {{ session.ulid?.substring(0, 12) }}...</div>
-			<div v-else>No active session</div>
+		<!-- Input -->
+		<div v-if="activeMenu === 'chat' && !isRating" class="border-t p-2 flex gap-2 items-end">
+
+			<GuestProfileForm v-if="!isLoggedIn && !guestProfileSubmitted" :sessionUlid="session?.ulid"
+				@submitted="onGuestProfileSubmitted" />
+
+			<template v-else>
+				<textarea v-model="input" rows="1" @keydown="handleKeyDown" placeholder="Type a message..."
+					class="chat-input" />
+
+				<Button :icon="isSending ? faSpinner : faPaperPlane" :loading="isSending" :disabled="!input.trim()"
+					class="send-btn" @click="sendMessage" />
+			</template>
 		</div>
 	</div>
 </template>
 
 <style scoped>
-.buttonPrimary {
-	background-color: v-bind("layout?.app?.theme[4]") !important;
-	color: v-bind("layout?.app?.theme[5]") !important;
 
-	&:hover {
-		background-color: v-bind(
-			"`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`"
-		) !important;
-	}
-
-	&:focus {
-		box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
-	}
+.chat-header {
+	@apply flex justify-between items-center px-3 py-2 border-b text-sm font-semibold;
 }
 
-.user-bubble {
-	background-color: v-bind("layout?.app?.theme[4]") !important;
-	color: v-bind("layout?.app?.theme[5]") !important;
+.tab-btn {
+	@apply px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 transition;
+}
+
+.tab-active {
+	background-color: v-bind("layout.app.theme[4]");
+	color: v-bind("layout.app.theme[5]");
 }
 
 
-.agent-bubble {
-	background-color: white;
-	color: #161616;
-}
-
-.system-bubble {
-	background-color: #fef3c7;
-	border: 1px solid #fbbf24;
-	font-style: italic;
+.history-item {
+	@apply px-3 py-2 border-b cursor-pointer hover:bg-gray-50;
 }
 
 
-textarea {
-	min-height: 40px;
-	max-height: 120px;
-	transition: height 0.2s;
+.bubble {
+	@apply flex flex-col gap-0.5 text-sm leading-snug shadow-sm;
+	padding: 6px 10px;
+	border-radius: 12px;
+	max-width: 78%;
+}
+
+
+.bubble-text {
+	@apply whitespace-pre-wrap break-words;
+}
+
+
+.bubble-meta {
+	@apply flex items-center justify-end gap-1 text-[10px] opacity-70;
+	line-height: 1;
+}
+
+.bubble-time-text,
+.bubble-check {
+	@apply leading-none;
+}
+
+
+.bubble-user {
+	background-color: v-bind("layout.app.theme[4]");
+	color: v-bind("layout.app.theme[5]");
+	border-bottom-right-radius: 4px;
+}
+
+.bubble-agent {
+	@apply bg-white text-gray-800;
+	border-bottom-left-radius: 4px;
+}
+
+.bubble-system {
+	@apply bg-amber-100 text-amber-800 italic text-xs;
+}
+
+
+.chat-input {
+	@apply flex-1 resize-none px-3 py-2 border rounded-lg text-sm outline-none;
+	border-color: v-bind("layout.app.theme[4]");
+}
+
+.send-btn {
+	background-color: v-bind("layout.app.theme[4]");
+	color: v-bind("layout.app.theme[5]");
+}
+
+
+.loader {
+	width: 20px;
+	height: 20px;
+	border-radius: 9999px;
+	border: 2px solid transparent;
+	border-top-color: v-bind("layout.app.theme[4]");
+	animation: spin 1s linear infinite;
+}
+
+
+.rating-bar {
+	@apply flex justify-between items-center border-t px-3 py-2;
+}
+
+.new-chat-btn {
+	@apply flex items-center gap-2 text-sm px-3 py-1 rounded border;
+	border-color: v-bind("layout.app.theme[4]");
+	color: v-bind("layout.app.theme[4]");
+}
+
+.messages-wrap {
+	max-height: calc(100vh - 400px);
+	overflow-y: auto;
+	@apply bg-gray-50 px-3 py-2 space-y-2;
+	scroll-behavior: smooth;
 }
 
 
 @keyframes spin {
-	from {
-		transform: rotate(0deg);
-	}
 	to {
 		transform: rotate(360deg);
 	}
 }
 
-.animate-spin {
-	animation: spin 1s linear infinite;
-}
-
-.star-pop {
-	animation: pop 0.3s ease-out;
-}
-
-@keyframes pop {
-	0% {
-		transform: scale(1);
-	}
-	40% {
-		transform: scale(1.6);
-	}
-	100% {
-		transform: scale(1);
-	}
-}
 </style>
