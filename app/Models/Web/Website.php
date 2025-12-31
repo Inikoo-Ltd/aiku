@@ -137,7 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Snapshot|null $unpublishedProductsSnapshot
  * @property-read Snapshot|null $unpublishedSidebarSnapshot
  * @property-read Snapshot|null $unpublishedSubDepartmentSnapshot
- * @property-read Collection<int, WebsiteVisitor> $visitors
+ * @property-read Collection<int, \App\Models\Web\WebsiteVisitor> $visitors
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
  * @property-read Collection<int, WebUserRequest> $webUserRequests

@@ -261,9 +261,9 @@ class IndexCollectionsInProductCategory extends OrgAction
                     fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure($productCategory,prefix: CollectionsTabsEnum::INDEX->value))
+        )->table($this->tableStructure($productCategory, prefix: CollectionsTabsEnum::INDEX->value))
           ->table($this->tableStructure($productCategory, prefix: CollectionsTabsEnum::SALES->value));
-    
+
     }
 
 

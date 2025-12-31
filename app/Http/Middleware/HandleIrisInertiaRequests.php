@@ -29,7 +29,7 @@ class HandleIrisInertiaRequests extends Middleware
             ?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])
             ->select('id', 'code', 'state')
             ->get()
-            ->mapWithKeys(fn($item) => [
+            ->mapWithKeys(fn ($item) => [
                 $item->code->value => [
                     'id'    => $item->id,
                     'state' => $item->state,
