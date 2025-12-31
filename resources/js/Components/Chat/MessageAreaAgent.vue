@@ -146,7 +146,7 @@ const getMessages = async (loadMore = false) => {
 		const response = await axios.get(url)
 		const messages = response.data?.data?.messages ?? response.data?.messages ?? []
 
-		const PLUS_8_HOURS = 8 * 60 * 60 * 1000
+		const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
 
 		const fetched = messages.map((msg: ChatMessage) => ({
 			...msg,

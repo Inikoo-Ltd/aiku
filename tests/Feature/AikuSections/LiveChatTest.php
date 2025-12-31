@@ -481,7 +481,9 @@ test('can send message from agent after assignment', function () {
 
 test('can send message without text but with media', function () {
 
-    $chatSession = ChatSession::find(2);
+    $chatSession = ChatSession::find(1)
+        ?? ChatSession::inRandomOrder()->first();
+
 
     $modelData = [
         'message_type' => ChatMessageTypeEnum::IMAGE->value,
@@ -500,7 +502,8 @@ test('can send message without text but with media', function () {
 
 test('can send system message', function () {
 
-    $chatSession = ChatSession::find(2);
+    $chatSession = ChatSession::find(1)
+        ?? ChatSession::inRandomOrder()->first();
 
     $modelData = [
         'message_text' => 'System notification',
