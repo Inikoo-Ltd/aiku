@@ -143,17 +143,17 @@ class CalculateOrderDiscounts
                     ];
                 }
             } elseif ($offerData->type == 'Category Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data,'family_ids'))) {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $enabledOffers[$offerData->allowance_signature] = [
                         'offer_id'    => $offerData->id,
                         'offer_label' => $offerData->name
                     ];
                 }
             } elseif ($offerData->type == 'Category Quantity Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data,'family_ids'))) {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
-                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity") >= Arr::get($triggerData, 'item_quantity')) {
+                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -161,7 +161,7 @@ class CalculateOrderDiscounts
                     }
                 }
             } elseif ($offerData->type == 'Category Quantity Ordered Order Interval') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data,'family_ids'))) {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $daysSinceLastInvoiced = $this->getDaysSinceLastInvoiced($order);
                     $triggerData           = json_decode($offerData->trigger_data, true);
 
@@ -175,7 +175,7 @@ class CalculateOrderDiscounts
                     }
 
 
-                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity") >= Arr::get($triggerData, 'item_quantity')) {
+                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
