@@ -25,7 +25,19 @@ class HandleIrisInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $website = $request->get('website');
-        $outBoxes = $website?->shop?->outboxes()?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])->select('id', 'code', 'state')->get()?->toArray() ?? [];
+        $outBoxes = $website?->shop?->outboxes()
+            ?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])
+            ->select('id', 'code', 'state')
+            ->get()
+            ->mapWithKeys(fn($item) => [
+                $item->code->value => [
+                    'id'    => $item->id,
+                    'state' => $item->state,
+                ],
+            ])
+            ->toArray() ?? [];
+
+
         $firstLoadOnlyProps = [];
 
 

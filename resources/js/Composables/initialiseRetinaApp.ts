@@ -145,6 +145,8 @@ export const initialiseRetinaApp = () => {
         layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
         layout.log_user = () => initialiseLogUser(layout)
 
+        layout.outboxes =  usePage().props.outboxes
+
     })
 
     watch(() => usePage().props.iris, (newVal) => {
