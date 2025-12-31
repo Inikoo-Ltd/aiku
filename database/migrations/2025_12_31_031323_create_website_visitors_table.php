@@ -44,8 +44,8 @@ return new class () extends Migration {
             $table->dateTimeTz('last_seen_at');
 
             $table->text('referrer_url')->nullable();
-            $table->string('landing_page',4096)->nullable();
-            $table->string('exit_page',4096)->nullable();
+            $table->string('landing_page', 4096)->nullable();
+            $table->string('exit_page', 4096)->nullable();
 
             $table->boolean('is_bounce')->default(false);
             $table->boolean('is_new_visitor')->default(true);
