@@ -24,23 +24,19 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 
-console.log(route().params);
-
-const getVariantRoute = (item: any) => {
-  return route('grp.org.shops.show.catalogue.families.show.variants.show', {
-    organisation: route().params.organisation,
-    shop: route().params.shop,
-    family: route().params.family,
-    variant: item.slug,
+const getMasterVariantRoute = (item: any) => {
+  return route('grp.masters.master_shops.show.master_families.master_variants.show', {
+    masterShop: route().params.masterShop,
+    masterFamily: route().params.masterFamily,
+    masterVariant: item.slug,
   });
 }
 
 const getLeaderProductRoute = (item: any) => {
-  return route('grp.org.shops.show.catalogue.families.show.products.show', {
-    organisation: route().params.organisation,
-    shop: route().params.shop,
-    family: route().params.family,
-    product: item.leader_product_slug,
+  return route('grp.masters.master_shops.show.master_families.master_products.show', {
+    masterShop: route().params.masterShop,
+    masterFamily: route().params.masterFamily,
+    masterProduct: item.leader_product_slug,
   });
 }
 
@@ -49,7 +45,7 @@ const getLeaderProductRoute = (item: any) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
       <template #cell(code)="{ item }">
-        <Link :href="getVariantRoute(item)" class="primaryLink">
+        <Link :href="getMasterVariantRoute(item)" class="primaryLink">
           {{ item.code }}
         </Link>
       </template>

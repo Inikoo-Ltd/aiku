@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
 import { computed, provide, ref, watch } from "vue"
 
-import PageHeading from "@/Components/Headings/PageHeading.vue"
-import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import ImagePrime from "primevue/image"
 import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vue"
 
-import { capitalize } from "@/Composables/capitalize"
 import { useLayoutStore } from "@/Stores/layout"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -32,7 +28,7 @@ type VariantProductMap = {
     [key: string]: any
 }
 
-type MasterProduct = {
+type Product = {
     id: number
     name: string
     slug: string
@@ -47,20 +43,20 @@ type MasterProduct = {
 
 const props = defineProps<{
     data: {
-		master_variant: {
+		variant: {
 			data: {
 				variants: Variant[]
 				products: Record<string, VariantProductMap>
 			}
 		}
-        master_products: {
-            data: MasterProduct[]
+        products: {
+            data: Product[]
         }
 	}
 }>()
 
-const variants = computed(() => props.data?.master_variant?.data?.variants || [])
-const products = computed(() => Object.values(props.data?.master_variant?.data?.products || {}))
+const variants = computed(() => props.data?.variant?.data?.variants || [])
+const products = computed(() => Object.values(props.data?.variant?.data?.products || {}))
 
 const selectedVariants = ref<Record<string, string>>(
     Object.fromEntries(variants.value.map(v => [v.label, v.options[0] || ""]))
@@ -87,8 +83,8 @@ const selectedVariantProduct = computed(() =>
 
 const selectedProduct = computed(() =>
     selectedVariantProduct.value
-        ? props.data.master_products.data.find(
-            p => p.id === selectedVariantProduct.value.product.id
+        ? props.data.products.data.find(
+            p => p.id === selectedVariantProduct.value?.product.id
         ) ?? null
         : null
 )

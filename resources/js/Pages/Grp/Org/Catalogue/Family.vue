@@ -24,6 +24,7 @@ import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
 import ProductCategoryContent from "@/Components/Showcases/Grp/ProductCategoryContent.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
 
 library.add(
     faFolder,
@@ -64,6 +65,7 @@ const props = defineProps<{
     sales: any
     content?: {}
     salesData?: object
+    variants?: {}
 }>()
 console.log("family", props)
 const currentTab = ref(props.tabs.current)
@@ -82,6 +84,7 @@ const component = computed(() => {
         images: ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
         content: ProductCategoryContent,
+        variants: TableVariants,
     }
     return components[currentTab.value] ?? ModelDetails
 })

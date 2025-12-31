@@ -48,6 +48,8 @@ class ChatSessionListResource extends JsonResource
 
         $webUser = $this->web_user_id ? $this->webUser : null;
 
+        $shop = $this->shop_id ? $this->shop : null;
+
         return [
             'ulid' => $this->ulid,
             'status' => $this->status,
@@ -83,6 +85,20 @@ class ChatSessionListResource extends JsonResource
                     : [
                         'original' => '/retina-default-user.svg'
                     ],
+            ] : null,
+
+            'shop' => $shop ? [
+                'id' => $shop->id,
+                'name' => $shop->name,
+                'slug' => $shop->slug,
+                'domain' => $shop->website->domain,
+            ] : null,
+
+            'organisation' => $shop ? [
+                'id' => $shop->organisation->id,
+                'name' => $shop->organisation->name,
+                'slug' => $shop->organisation->slug,
+
             ] : null,
 
             'guest_profile' => $guestProfile ? [
