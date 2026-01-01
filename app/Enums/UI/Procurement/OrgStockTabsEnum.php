@@ -35,14 +35,10 @@ enum OrgStockTabsEnum: string
                 'type'  => 'icon',
             ],
             OrgStockTabsEnum::FEEDBACKS => [
-                'align' => 'right',
-                'type'  => 'icon',
                 'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
             ],
             OrgStockTabsEnum::TRADE_UNITS => [
-                'align' => 'right',
-                'type'  => 'icon',
                 'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
             ],
