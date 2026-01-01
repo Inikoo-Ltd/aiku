@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInOrgStock;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInOrgStock;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -185,6 +186,29 @@ class ShowOrgStock extends OrgAction
 
 
         return match ($routeName) {
+            'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show' =>
+            array_merge(
+                (new ShowOrgStockFamily())->getBreadcrumbs(
+                    Arr::except($routeParameters, ['orgStock'])
+                ),
+                $headCrumb(
+                    $orgStock,
+                    [
+                        'index' => [
+                            'name'       => preg_replace('/\.show$/', '.index', $routeName),
+                            'parameters' => Arr::except($routeParameters, ['orgStock'])
+                        ],
+                        'model' => [
+                            'name'       => $routeName,
+                            'parameters' => $routeParameters
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+
+
             'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
             'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit', 'maya.org.warehouses.show.inventory.org_stocks.edit' =>
             array_merge(
