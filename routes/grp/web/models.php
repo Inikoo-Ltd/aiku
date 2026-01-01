@@ -1084,6 +1084,7 @@ Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->n
 
 
 require __DIR__.'/models/inventory/warehouse.php';
+require __DIR__.'/models/goods_in/return.php';
 require __DIR__.'/models/inventory/location_org_stock.php';
 require __DIR__.'/models/inventory/warehouse_area.php';
 require __DIR__.'/models/inventory/location.php';
