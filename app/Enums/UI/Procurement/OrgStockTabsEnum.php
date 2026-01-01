@@ -16,17 +16,9 @@ enum OrgStockTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
     case SHOWCASE = 'showcase';
-    case SALES = 'sales';
-    case STOCK_HISTORY = 'stock_history';
 
-
-    case PURCHASE_ORDERS = 'purchase_orders';
-    case SUPPLIERS_PRODUCTS = 'supplier_products';
-    case PRODUCTS = 'products';
     case TRADE_UNITS = 'trade_units';
-
     case HISTORY = 'history';
     case IMAGES = 'images';
     case ATTACHMENTS = 'attachments';
@@ -42,31 +34,11 @@ enum OrgStockTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
             ],
-            OrgStockTabsEnum::SALES => [
-                'title' => __('Sales'),
-                'icon'  => 'fal fa-dollar-sign',
-            ],
-            OrgStockTabsEnum::STOCK_HISTORY => [
-                'title' => __('Stock history'),
-                'icon'  => 'fal fa-scanner',
-            ],
             OrgStockTabsEnum::FEEDBACKS => [
                 'align' => 'right',
                 'type'  => 'icon',
                 'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
-            ],
-            OrgStockTabsEnum::PURCHASE_ORDERS => [
-                'title' => __('Purchase orders'),
-                'icon'  => 'fal fa-clipboard',
-            ],
-            OrgStockTabsEnum::SUPPLIERS_PRODUCTS => [
-                'title' => __('Supplier product'),
-                'icon'  => 'fal fa-hand-receiving',
-            ],
-            OrgStockTabsEnum::PRODUCTS => [
-                'title' => __('Products'),
-                'icon'  => 'fal fa-cube',
             ],
             OrgStockTabsEnum::TRADE_UNITS => [
                 'align' => 'right',
