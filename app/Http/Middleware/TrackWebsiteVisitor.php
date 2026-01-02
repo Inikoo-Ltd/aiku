@@ -9,6 +9,7 @@ namespace App\Http\Middleware;
 
 use App\Actions\Web\WebsiteVisitor\ProcessWebsiteVisitorTracking;
 use Closure;
+use hisorange\BrowserDetect\Parser;
 use Illuminate\Http\Request;
 
 class TrackWebsiteVisitor
@@ -43,6 +44,10 @@ class TrackWebsiteVisitor
             return false;
         }
 
+        if ($this->isBot($request)) {
+            return false;
+        }
+
         $routeName = $request->route()?->getName();
         if (!$routeName) {
             return false;
@@ -64,5 +69,19 @@ class TrackWebsiteVisitor
         }
 
         return true;
+    }
+
+    protected function isBot(Request $request): bool
+    {
+        $userAgent = $request->userAgent();
+
+        if (!$userAgent) {
+            return false;
+        }
+
+        $parsedUserAgent = (new Parser())->parse($userAgent);
+        $deviceType = $parsedUserAgent->deviceType();
+
+        return strtolower($deviceType) === 'bot';
     }
 }

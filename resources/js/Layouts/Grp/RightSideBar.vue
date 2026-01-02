@@ -16,7 +16,7 @@ import { useTruncate } from "@/Composables/useTruncate"
 import { Link } from "@inertiajs/vue3"
 import { useIsFutureIsAPast } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
-import ContactList from "@/Components/Chat/ContactList.vue"
+import ContactList from "@/Components/Chat/Agent/ContactList.vue"
 library.add(faTimes, faPencil)
 
 const layout = useLayoutStore()

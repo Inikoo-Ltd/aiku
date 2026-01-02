@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, inject } from "vue"
 import axios from "axios"
-import Button from "../Elements/Buttons/Button.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
 
 
 const props = defineProps<{ sessionUlid: string }>()

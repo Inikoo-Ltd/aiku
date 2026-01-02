@@ -30,7 +30,8 @@ class StoreRetinaPortfoliosFromProductCategoryToAllChannels extends RetinaAction
             $portfolios = $customerSalesChannel->portfolios->where('item_type', 'Product');
             $portfolioItemIds = $portfolios->pluck('item_id')->all();
 
-            $products = $productCategory->getProducts()->reject(function ($product) use ($portfolioItemIds) {
+            // Changed to only get Active Products; If is_for_sale is false / status is discontinued, will be ignored
+            $products = $productCategory->getActiveProducts()->reject(function ($product) use ($portfolioItemIds) {
                 return in_array($product->id, $portfolioItemIds);
             });
 

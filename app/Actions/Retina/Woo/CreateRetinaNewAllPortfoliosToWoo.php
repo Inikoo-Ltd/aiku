@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Woo;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,10 +23,18 @@ class CreateRetinaNewAllPortfoliosToWoo extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
+        // Bulk upload portfolio item will now ignore based on condition set below
         $portfolios = $customerSalesChannel
             ->portfolios()
             ->where('status', true)
             ->where('platform_status', false)
+            ->whereExists(function ($q) {
+                $q->selectRaw(1)
+                    ->from('products as p')
+                    ->whereColumn('p.id', 'portfolios.item_id')
+                    ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
+                    ->where('p.is_for_sale', true);
+            })
             ->pluck('id');
 
         $payload = [

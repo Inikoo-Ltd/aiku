@@ -428,7 +428,7 @@ onMounted(async () => {
 							</div>
 						</div>
 					</template>
-					<MessageHistory v-else :sessionUlid="selectedHistory?.ulid || ''"
+					<MessageHistory v-else :sessionUlid="selectedHistory?.ulid || ''" viewerType="agent"
 						:session="selectedHistory || undefined" @back="selectedHistory = null" />
 				</div>
 

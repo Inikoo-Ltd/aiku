@@ -5,17 +5,12 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faPaperPlane,
-	faPaperclip,
 	faArrowLeft,
 	faEllipsisVertical,
 	faTimesCircle,
-	faHistory,
-	faAddressCard,
 	faMessage,
-	faExclamation,
 } from "@fortawesome/free-solid-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
