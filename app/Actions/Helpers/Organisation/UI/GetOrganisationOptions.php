@@ -45,7 +45,7 @@ class GetOrganisationOptions
         foreach ($query->get() as $org) {
             $selectOptions[$org->id] = [
                 'label' => $org->code . ' | ' . $org->name,
-
+                'value' => $org->id,
             ];
         }
 

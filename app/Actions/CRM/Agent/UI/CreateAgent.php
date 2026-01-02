@@ -34,7 +34,7 @@ class CreateAgent extends OrgAction
             ->whereNotNull('user_id')
             ->orderBy('contact_name')
             ->get()
-            ->map(fn($employee) => [
+            ->map(fn ($employee) => [
                 'label' => "{$employee->organisation->code} | {$employee->contact_name}"
                     ?? $employee->alias
                     ?? 'Unnamed',
@@ -74,10 +74,18 @@ class CreateAgent extends OrgAction
                             'title'  => __('CRM Agent Information'),
 
                             'fields' => [
+                                'user_id' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Agent'),
+                                    'placeholder' => __('Select user'),
+                                    'required'    => true,
+                                    'options'     => $employees,
+                                ],
+
                                 'organisation_id' => [
                                     'type'        => 'select',
                                     'label'       => __('Organisation'),
-                                    'placeholder' => __('Select one option'),
+                                    'placeholder' => __('Select organisation'),
                                     'options'     => GetOrganisationOptions::make()->filter($organisation->slug),
                                     'required'    => true,
                                     'mode'        => 'single',
@@ -86,23 +94,15 @@ class CreateAgent extends OrgAction
                                 ],
 
                                 'shop_id' => [
-                                    'type'        => 'select',
+                                    'type'     => 'multiselect-tags',
+                                    'placeholder' => __('Select shops'),
                                     'label'       => __('Shop'),
-                                    'placeholder' => __('Select one option'),
                                     'options'     => GetShopOptions::run($organisation->slug),
                                     'required'    => false,
-                                    'mode'        => 'single',
-                                    'searchable'  => true,
-                                    'key'         => 'shop_select'
+                                    'labelProp' => 'label',
+                                    'valueProp' => 'value',
                                 ],
 
-                                'user_id' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Agent'),
-                                    'placeholder' => __('Select user'),
-                                    'required'    => true,
-                                    'options'     => $employees,
-                                ],
 
                                 'max_concurrent_chats' => [
                                     'type'     => 'input_number',
@@ -127,7 +127,6 @@ class CreateAgent extends OrgAction
                             ],
                         ],
                     ],
-
                     'route' => $route,
                 ],
             ]

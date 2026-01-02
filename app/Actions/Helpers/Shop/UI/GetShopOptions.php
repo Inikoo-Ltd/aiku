@@ -21,12 +21,12 @@ class GetShopOptions
             ->whereHas('organisation', function ($q) use ($organisationSlug) {
                 $q->where('slug', $organisationSlug);
             });
-
         $selectOptions = [];
 
         foreach ($query->get() as $shop) {
             $selectOptions[$shop->id] = [
                 'label' => $shop->code . ' | ' . $shop->name,
+                'value' => $shop->id,
             ];
         }
 

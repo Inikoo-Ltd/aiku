@@ -8,6 +8,7 @@ use App\Actions\OrgAction;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
+use App\Models\CRM\Livechat\ShopHasChatAgent;
 use App\Actions\Helpers\Shop\UI\GetShopOptions;
 use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
@@ -106,14 +107,33 @@ class EditAgent extends OrgAction
                                 'organisation_id' => [
                                     'type'  => 'select',
                                     'label' => __('Organisation'),
+                                    'placeholder' => __('Select organisation'),
                                     'options'  => GetOrganisationOptions::make()->filter($organisation->slug),
-                                    'value' => $agent->organisations->pluck('id')->toArray() ?? null,
+                                    'value' => optional(
+                                        $agent->organisations
+                                            ->firstWhere('slug', $organisation->slug)
+                                    )->id,
+                                    'readonly'    => true,
                                 ],
+
                                 'shop_id' => [
-                                    'type'  => 'select',
+                                    'type'  => 'multiselect-tags',
                                     'label' => __('Shop'),
+                                    'placeholder' => __('Select shop'),
                                     'options'     => GetShopOptions::run($organisation->slug),
-                                    'value' => $agent->shops->pluck('id')->toArray() ?? null,
+                                    'value'       => ShopHasChatAgent::query()
+                                        ->where('chat_agent_id', $agent->id)
+                                        ->whereHas(
+                                            'organisation',
+                                            fn ($q) =>
+                                            $q->where('slug', $organisation->slug)
+                                        )
+                                        ->pluck('shop_id')
+                                        ->filter()
+                                        ->values()
+                                        ->toArray(),
+                                    'labelProp' => 'label',
+                                    'valueProp' => 'value',
                                 ],
                             ],
                         ],
@@ -138,7 +158,7 @@ class EditAgent extends OrgAction
     /**
      * Controller endpoint
      */
-    public function asController(Organisation $organisation,  $agentId, ActionRequest $request): Response
+    public function asController(Organisation $organisation, $agentId, ActionRequest $request): Response
     {
         $this->initialisation($organisation, $request);
         $agent = ChatAgent::findOrFail($agentId);
