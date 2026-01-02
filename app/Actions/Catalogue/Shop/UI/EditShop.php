@@ -128,17 +128,17 @@ class EditShop extends OrgAction
 
                         'contact_name'        => [
                             'type'  => 'input',
-                            'label' => __('contact name'),
+                            'label' => __('Contact name'),
                             'value' => $shop->contact_name,
                         ],
                         'company_name'        => [
                             'type'  => 'input',
-                            'label' => __('company name'),
+                            'label' => __('Company name'),
                             'value' => $shop->company_name,
                         ],
                         'email'               => [
                             'type'    => 'input',
-                            'label'   => __('email'),
+                            'label'   => __('Email'),
                             'value'   => $shop->email,
                             'options' => [
                                 'inputType' => 'email'
@@ -146,7 +146,7 @@ class EditShop extends OrgAction
                         ],
                         'phone'               => [
                             'type'  => 'phone',
-                            'label' => __('telephone'),
+                            'label' => __('Telephone'),
                             'value' => $shop->phone,
                         ],
                         'address'             => [
@@ -159,7 +159,7 @@ class EditShop extends OrgAction
                         ],
                         'registration_number' => [
                             'type'  => 'input',
-                            'label' => __('registration number'),
+                            'label' => __('Registration number'),
                             'value' => $shop->data['registration_number'] ?? '',
                         ],
                         'vat_number'          => [
@@ -176,7 +176,7 @@ class EditShop extends OrgAction
                     'fields' => [
                         'country_id'  => [
                             'type'        => 'select',
-                            'label'       => __('country'),
+                            'label'       => __('Country'),
                             'placeholder' => __('Select your country'),
                             'value'       => $shop->country_id,
                             'options'     => GetCountriesOptions::run(),
@@ -184,7 +184,7 @@ class EditShop extends OrgAction
                         ],
                         'currency_id' => [
                             'type'        => 'select',
-                            'label'       => __('currency'),
+                            'label'       => __('Currency'),
                             'placeholder' => __('Select your currency'),
                             'required'    => true,
                             'value'       => $shop->currency_id,
@@ -202,7 +202,7 @@ class EditShop extends OrgAction
                             'bind'        => [
                                 'maxFractionDigits' => 3
                             ],
-                            'label'       => __('pricing ratio'),
+                            'label'       => __('Pricing ratio'),
                             'placeholder' => __('Cost price ratio'),
                             'required'    => true,
                             'value'       => $shop->cost_price_ratio,
@@ -213,7 +213,7 @@ class EditShop extends OrgAction
                             'bind'        => [
                                 'maxFractionDigits' => 3
                             ],
-                            'label'       => __('rrp ratio'),
+                            'label'       => __('RRP ratio'),
                             'placeholder' => __('price rrp ratio'),
                             'required'    => true,
                             'value'       => $shop->price_rrp_ratio,
@@ -276,11 +276,11 @@ class EditShop extends OrgAction
                                         'key_value' => 'stand_alone_refund_numbers'
                                     ],
                                     'format' => [
-                                        'label' => __('format'),
+                                        'label' => __('Format'),
                                         'key_value' => 'stand_alone_refund_numbers_format'
                                     ],
                                     'sequence' => [
-                                        'label' => __('sequence'),
+                                        'label' => __('Sequence'),
                                         'key_value' => 'stand_alone_refund_numbers_serial'
                                     ],
                                 ],
@@ -298,12 +298,12 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
-                    'label'  => __('invoices footer'),
+                    'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [
                         'invoice_footer' => [
                             'type'  => 'textEditor',
-                            'label' => __('invoice footer'),
+                            'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $shop->invoice_footer
                         ],

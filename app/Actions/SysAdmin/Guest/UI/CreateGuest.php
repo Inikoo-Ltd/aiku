@@ -80,7 +80,7 @@ class CreateGuest extends InertiaAction
                                 ],
                                 'email'        => [
                                     'type'  => 'input',
-                                    'label' => __('email'),
+                                    'label' => __('Email'),
                                     'value' => ''
                                 ],
                             ]

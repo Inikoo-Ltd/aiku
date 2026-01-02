@@ -94,7 +94,7 @@ class EditAgent extends OrgAction
                                 ],
                                 'email'        => [
                                     'type'    => 'input',
-                                    'label'   => __('email'),
+                                    'label'   => __('Email'),
                                     'value'   => $agent->organisation->email,
                                     'options' => [
                                         'inputType' => 'email'
@@ -123,7 +123,7 @@ class EditAgent extends OrgAction
 
                                 'currency_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('currency'),
+                                    'label'       => __('Currency'),
                                     'placeholder' => __('Select a currency'),
                                     'options'     => GetCurrenciesOptions::run(),
                                     'required'    => true,

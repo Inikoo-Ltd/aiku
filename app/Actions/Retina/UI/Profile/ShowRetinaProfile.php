@@ -33,12 +33,12 @@ class ShowRetinaProfile extends RetinaAction
         $personalInformationFields = [
             'contact_name' => [
                 'type'  => 'input',
-                'label' => __('contact name'),
+                'label' => __('Contact name'),
                 'value' => $customer->contact_name
             ],
             'email'        => [
                 'type'  => 'input',
-                'label' => __('email'),
+                'label' => __('Email'),
                 'value' => $customer->email
             ],
             'about'        => [
@@ -97,7 +97,7 @@ class ShowRetinaProfile extends RetinaAction
                     ],
                     'email'           => [
                         'type'  => 'input',
-                        'label' => __('email'),
+                        'label' => __('Email'),
                         'value' => $customer->email
                     ],
                     'phone'           => [
@@ -117,22 +117,10 @@ class ShowRetinaProfile extends RetinaAction
             ];
         }
 
-        /*  $sections["language"] = [
-             "label"  => __("Language"),
-             "icon"   => "fal fa-language",
-             "fields" => [
-                 "language_id" => [
-                     "type"     => "language",
-                     "label"    => __("language"),
-                     "value"    => $webUser->language_id,
-                     "options"  => GetLanguagesOptions::make()->translated(),
-                     "required" => true,
-                 ],
-             ],
-         ]; */
+
 
         $currentSection = "properties";
-        if ($request->has("section") and Arr::has($sections, $request->get("section"))) {
+        if ($request->has("section") && Arr::has($sections, $request->get("section"))) {
             $currentSection = $request->get("section");
         }
 

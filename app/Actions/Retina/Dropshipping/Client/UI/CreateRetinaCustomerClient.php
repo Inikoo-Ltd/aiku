@@ -48,7 +48,7 @@ class CreateRetinaCustomerClient extends RetinaAction
                     'blueprint' =>
                         [
                             [
-                                'title'  => __('contact'),
+                                'title'  => __('Contact'),
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
@@ -56,11 +56,11 @@ class CreateRetinaCustomerClient extends RetinaAction
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('contact name')
+                                        'label' => __('Contact name')
                                     ],
                                     'email' => [
                                         'type'  => 'input',
-                                        'label' => __('email')
+                                        'label' => __('Email')
                                     ],
                                     'phone' => [
                                         'type'  => 'input',

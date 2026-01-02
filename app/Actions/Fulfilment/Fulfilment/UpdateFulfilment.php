@@ -31,9 +31,15 @@ class UpdateFulfilment extends OrgAction
 
     public function handle(Fulfilment $fulfilment, array $modelData): Fulfilment
     {
+        if (Arr::has($modelData, 'invoice_serial_references')) {
+            UpdateShop::make()->action($fulfilment->shop, Arr::only($modelData, ['invoice_serial_references']));
+            data_forget($modelData, 'invoice_serial_references');
+            $fulfilment->refresh();
+        }
+
         $settings       = $fulfilment->settings;
         $updateSettings = false;
-        $updateAll = Arr::get($modelData, 'update_all', false);
+        $updateAll      = Arr::get($modelData, 'update_all', false);
         data_forget($modelData, 'update_all');
 
         if (Arr::exists($modelData, 'weekly_cut_off_day')) {
@@ -53,11 +59,11 @@ class UpdateFulfilment extends OrgAction
 
         if (Arr::exists($modelData, 'enable_chat')) {
             data_set($settings, 'chat.enable_chat', data_get($modelData, 'enable_chat'));
-            $updateSettings     = true;
+            $updateSettings = true;
 
             UpdateWebsite::make()->action(
                 website: $fulfilment->shop->website,
-                modelData: ['enable_chat'   => Arr::pull($modelData, 'enable_chat')],
+                modelData: ['enable_chat' => Arr::pull($modelData, 'enable_chat')],
                 hydratorsDelay: 0,
                 strict: false,
                 audit: true
@@ -140,6 +146,7 @@ class UpdateFulfilment extends OrgAction
                     } else {
                         $fail($attribute.' is invalid.');
                     }
+
                     return false;
                 },
             ],
@@ -184,6 +191,7 @@ class UpdateFulfilment extends OrgAction
             'invoice_footer'             => ['sometimes', 'string'],
             'enable_chat'                => ['sometimes', 'boolean'],
             'sender_email'               => ['sometimes', 'email'],
+            'invoice_serial_references'  => ['sometimes', 'array'],
             'image'                      => [
                 'sometimes',
                 'nullable',
