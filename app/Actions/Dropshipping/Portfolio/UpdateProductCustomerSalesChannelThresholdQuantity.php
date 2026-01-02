@@ -22,7 +22,7 @@ class UpdateProductCustomerSalesChannelThresholdQuantity implements ShouldBeUniq
     use WithActionUpdate;
 
     public string $commandSignature = 'csc:threshold {productId}';
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'ds';
 
     public function getJobUniqueId(int|null $productId): string
     {
