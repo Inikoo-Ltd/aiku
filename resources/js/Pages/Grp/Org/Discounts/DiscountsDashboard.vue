@@ -82,8 +82,7 @@ console.log("Discounts Dashboard Props: ", props);
         :currentTab="blocks.current_tab"
     />
     
-
-    <Coupon :first_order_bonus :currency_code="data.currency.code" />
+    <Coupon v-if="first_order_bonus" :first_order_bonus="[first_order_bonus]" :currency_code="data.currency.code" />
 
     <!-- <pre>{{ first_order_bonus }}</pre> -->
 </template>

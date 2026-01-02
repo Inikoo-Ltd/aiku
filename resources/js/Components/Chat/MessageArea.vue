@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, watch } from "vue"
+import { ref, inject, onMounted, watch, computed } from "vue"
 import Button from "../Elements/Buttons/Button.vue"
-// import { faPaperPlane, faSpinner } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar, faPlus, faSpinner, faPaperPlane } from "@fortawesome/free-solid-svg-icons"
 import GuestProfileForm from "@/Components/Chat/GuestProfileForm.vue"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
+import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 
 const props = defineProps({
 	messages: {
@@ -39,7 +39,6 @@ const input = ref("")
 const isSending = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
 const selectedRating = ref<number | null>(null)
-const hoverRating = ref<number | null>(null)
 const starPop = ref<number | null>(null)
 const activeMenu = ref<"chat" | "history">("chat")
 const isLoadingHistory = ref(false)
@@ -72,29 +71,8 @@ watch(
 	}
 )
 
-const formatTime = (timestamp: string) => {
-	if (!timestamp) return ""
 
-	const date = new Date(timestamp)
-	return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-}
 
-const formatDate = (timestamp: string) => {
-	if (!timestamp) return ""
-
-	const date = new Date(timestamp)
-	const today = new Date()
-	const yesterday = new Date(today)
-	yesterday.setDate(yesterday.getDate() - 1)
-
-	if (date.toDateString() === today.toDateString()) {
-		return trans("Today")
-	} else if (date.toDateString() === yesterday.toDateString()) {
-		return trans("Yesterday")
-	} else {
-		return date.toLocaleDateString()
-	}
-}
 
 const loadUserSessions = async () => {
 	if (!layout?.user?.id) return
@@ -126,23 +104,25 @@ const updateRating = async (r: number) => {
 	}, 300)
 }
 
-const groupedMessages = () => {
-	const groups: Record<string, any[]> = {}
+const groupedMessages = computed(() => {
+	const groups: Record<string, LocalChatMessage[]> = {}
 
-	props.messages.forEach((message) => {
-		const date = formatDate(message.created_at)
-		if (!groups[date]) {
-			groups[date] = []
-		}
-		groups[date].push(message)
-	})
+	props.messages
+		.slice()
+		.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
+		.forEach((msg) => {
+			const label = new Intl.DateTimeFormat("id-ID", {
+				day: "2-digit",
+				month: "long",
+				year: "numeric",
+			}).format(new Date(msg.created_at))
+
+				; (groups[label] ??= []).push(msg)
+		})
 
 	return groups
-}
+})
 
-/**
- * Send message handler
- */
 const sendMessage = async () => {
 	if (!props.isLoggedIn && !guestProfileSubmitted.value) return
 	if (props.isRating) return
@@ -187,30 +167,6 @@ const isUserMessage = (message: any) => {
 	return message.sender_type === "guest" || message.sender_type === "user"
 }
 
-const getBubbleClass = (message: any) => {
-	if (isUserMessage(message)) {
-		return "user-bubble"
-	} else if (message.sender_type === "agent") {
-		return "agent-bubble"
-	} else {
-		return "system-bubble"
-	}
-}
-
-const getSenderName = (message: any) => {
-	switch (message.sender_type) {
-		case "guest":
-			return trans("You")
-		case "user":
-			return props.session?.contact_name || trans("User")
-		case "agent":
-			return message.sender?.name || trans("Support Agent")
-		case "system":
-			return trans("System")
-		default:
-			return message.sender_type
-	}
-}
 
 watch(
 	() => props.messages,
@@ -250,10 +206,10 @@ onMounted(() => {
 		<div class="chat-header">
 			<span>{{ trans("Chat Support") }}</span>
 
-			<div v-if="isLoggedIn" class="flex gap-1">
+			<div v-if="isLoggedIn" class="flex gap-1 capitalize">
 				<button v-for="m in ['chat', 'history']" :key="m" @click="activeMenu = m"
 					:class="['tab-btn', activeMenu === m && 'tab-active']">
-					{{ capitalize(m) }}
+					{{ m }}
 				</button>
 			</div>
 		</div>
@@ -287,37 +243,12 @@ onMounted(() => {
 			v-if="activeMenu === 'chat' && messages.length">
 
 
-			<template v-for="(group, date) in groupedMessages()" :key="date">
+			<template v-for="(group, date) in groupedMessages" :key="date">
 				<div class="mx-auto flex text-xs text-gray-400 justify-center">{{ date }}</div>
 
 				<div v-for="m in group" :key="m.id"
 					:class="['flex', isUserMessage(m) ? 'justify-end' : 'justify-start']">
-
-				<div
-	:class="[
-		'bubble',
-		isUserMessage(m)
-			? 'bubble-user'
-			: m.sender_type === 'agent'
-				? 'bubble-agent'
-				: 'bubble-system',
-	]"
->
-	<div class="bubble-text">
-		{{ m.message_text }}
-	</div>
-
-	<div class="bubble-meta">
-		<span class="bubble-time-text">
-			{{ formatTime(m.created_at) }}
-		</span>
-
-		<span v-if="isUserMessage(m)" class="bubble-check">
-			{{ m.is_read ? "✓✓" : "✓" }}
-		</span>
-	</div>
-</div>
-
+					<BubbleChat :message="m" viewerType="user" />
 				</div>
 			</template>
 
@@ -357,15 +288,13 @@ onMounted(() => {
 				<textarea v-model="input" rows="1" @keydown="handleKeyDown" placeholder="Type a message..."
 					class="chat-input" />
 
-				<Button :icon="isSending ? faSpinner : faPaperPlane" :loading="isSending" :disabled="!input.trim()"
-					class="send-btn" @click="sendMessage" />
+				<Button :icon="isSending ? faSpinner : faPaperPlane" :loading="isSending" :disabled="!input.trim()"  @click="sendMessage" />
 			</template>
 		</div>
 	</div>
 </template>
 
 <style scoped>
-
 .chat-header {
 	@apply flex justify-between items-center px-3 py-2 border-b text-sm font-semibold;
 }
@@ -430,10 +359,6 @@ onMounted(() => {
 	border-color: v-bind("layout.app.theme[4]");
 }
 
-.send-btn {
-	background-color: v-bind("layout.app.theme[4]");
-	color: v-bind("layout.app.theme[5]");
-}
 
 
 .loader {

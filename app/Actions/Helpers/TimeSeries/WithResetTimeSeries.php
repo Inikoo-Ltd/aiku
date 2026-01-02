@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\TimeSeries;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateTimeSeriesRecords;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateTimeSeriesRecords;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -19,6 +20,7 @@ use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Masters\MasterAsset;
 use App\Models\Web\Website;
 use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -78,10 +80,31 @@ trait WithResetTimeSeries
         }
     }
 
+    protected function resetMasterAssets(): void
+    {
+        foreach (MasterAsset::where('status', true)->get() as $masterAsset) {
+            $timeSeries = $masterAsset->timeSeries()
+            ->where('frequency', $this->frequency)
+            ->first();
+
+            if (!$timeSeries) {
+                continue;
+            }
+
+            $dateRange = $this->getDateRangeForFrequency();
+
+            MasterAssetHydrateTimeSeriesRecords::dispatch(
+                $timeSeries->id,
+                $dateRange['from'],
+                $dateRange['to']
+            );
+        }
+    }
+
     protected function resetProducts(): void
     {
         foreach (Product::whereNotIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])->get() as $product) {
-            $timeSeries = $product->timeSeries()
+            $timeSeries = $product->asset->timeSeries()
                 ->where('frequency', $this->frequency)
                 ->first();
 
@@ -144,6 +167,7 @@ trait WithResetTimeSeries
     public function handle(): void
     {
         $this->resetProductCategories();
+        $this->resetMasterAssets();
         $this->resetProducts();
         $this->resetCollections();
         $this->resetWebsites();
