@@ -9,9 +9,9 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
-use App\Http\Resources\Helpers\SnapshotResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
@@ -38,10 +38,7 @@ class ShowMailshotWorkshop extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
-
-        $snapshot = $mailshot->email->unpublishedSnapshot;
-
-        $beeFreeSettings = $snapshot->group->settings['beefree'];
+        $email = $mailshot->email;
         return Inertia::render(
             'Org/Web/Workshop/Outbox/OutboxWorkshop', //NEED VUE FILE
             [
@@ -70,33 +67,36 @@ class ShowMailshotWorkshop extends OrgAction
                     ]
 
                 ],
-                'snapshot'    => SnapshotResource::make($snapshot)->getArray(),
-                'builder'     => $snapshot->builder,
+                'unpublished_layout' => $email->unpublishedSnapshot->layout,
+                'snapshot'    => $email->unpublishedSnapshot,
+                'builder'     => $email->builder,
                 'imagesUploadRoute'   => [
                     'name'       => 'grp.models.email-templates.images.store',
-                    'parameters' => $snapshot->id
+                    'parameters' => $email->id
                 ],
                 'updateRoute'         => [
-                    'name'       => 'grp.models.shop.outboxes.workshop.update',
+                    'name'       => 'grp.models.shop.mailshot.workshop.update',
                     'parameters' => [
                         'shop' => $mailshot->shop_id,
-                        'outbox' => $mailshot->outbox_id
+                        'mailshot' => $mailshot->id
                     ],
                     'method' => 'patch'
                 ],
                 'loadRoute'           => [
                     'name'       => 'grp.models.email-templates.content.show',
-                    'parameters' => $snapshot->id
+                    'parameters' => $email->id
                 ],
                 'publishRoute'           => [
-                    'name'       => 'grp.models.shop.outboxes.publish',
+                    'name'       => 'grp.models.shop.mailshot.publish',
                     'parameters' => [
                         'shop' => $mailshot->shop_id,
-                        'outbox' => $mailshot->outbox_id
+                        'mailshot' => $mailshot->id
                     ],
                     'method' => 'post'
                 ],
-                'apiKey'            =>  $beeFreeSettings
+                'mergeTags' => GetMailshotMergeTags::run(),
+                'status' => $email->outbox->state,
+                'organisationSlug' => $this->organisation->slug
             ]
         );
     }
