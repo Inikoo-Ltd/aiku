@@ -32,7 +32,6 @@ class GetPortfolios extends RetinaApiAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
         $query = QueryBuilder::for(Portfolio::class);
-
         $query->where('customer_sales_channel_id', $customerSalesChannel->id);
 
         $query->with(['item']);
@@ -44,11 +43,17 @@ class GetPortfolios extends RetinaApiAction
         }
 
         if ($customerSalesChannel->customer->is_fulfilment) {
-            $query->where('item_type', class_basename(StoredItem::class));
+            $query->where('portfolios.item_type', class_basename(StoredItem::class));
         } else {
-            $query->where('item_type', class_basename(Product::class));
+            $query->where('portfolios.item_type', class_basename(Product::class));
         }
 
+        $query->leftJoin('products', 'products.id', 'portfolios.item_id')
+            ->select(
+                'portfolios.*',
+                'products.state as product_state',
+                'products.is_for_sale',
+            );
 
         return $query->withPaginator(null, queryName: 'per_page')
         ->withQueryString();
