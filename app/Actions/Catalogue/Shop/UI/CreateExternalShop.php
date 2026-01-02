@@ -15,6 +15,7 @@ use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,7 +35,7 @@ class CreateExternalShop extends OrgAction
         $type = $request->route()->parameter('type');
 
         $externalShopBlueprint = match ($type) {
-            ShopEngineEnum::FAIRE => [
+            ShopEngineEnum::FAIRE->value => [
                 [
                     'title'  => __('detail'),
                     'fields' => [
@@ -94,7 +95,7 @@ class CreateExternalShop extends OrgAction
                     ]
                 ]
             ],
-            ShopEngineEnum::SHOPIFY => [
+            ShopEngineEnum::SHOPIFY->value => [
                 [
                     'title'  => __('detail'),
                     'fields' => [
@@ -140,8 +141,19 @@ class CreateExternalShop extends OrgAction
         );
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $this->set('type', $request->route()->parameter('type'));
+    }
 
-    public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
+    public function rules(): array
+    {
+        return [
+            'type' => ['required', Rule::enum(ShopEngineEnum::class)]
+        ];
+    }
+
+    public function asController(Organisation $organisation, string $type, ActionRequest $request): ActionRequest
     {
         $this->initialisation($organisation, $request);
 
