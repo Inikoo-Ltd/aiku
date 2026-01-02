@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 04 Apr 2024 19:02:34 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Thu, 04 Apr 2024 19:02:34 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -12,7 +12,6 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\Marketplace\Agent\UI\RemoveMarketplaceAgent;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Http\RedirectResponse;
@@ -139,24 +138,6 @@ class EditAgent extends OrgAction
                                 ],
                             ]
                         ],
-                        // [
-                        //     'title'     => __('Delete'),
-                        //     'icon'      => 'fa-light fa-trash-alt',
-                        //     'operation' => [
-                        //         [
-                        //             'component' => 'removeModelAction',
-                        //             'data'      => RemoveMarketplaceAgent::make()->getAction(
-                        //                 route:[
-                        //                     'name'       => 'grp.models.marketplace-agent.delete',
-                        //                     'parameters' => array_values($request->route()->originalParameters())
-                        //                 ]
-                        //             )
-                        //         ],
-
-
-                        //     ]
-                        // ],
-
                     ],
 
                     'args' => [

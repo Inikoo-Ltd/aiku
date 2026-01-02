@@ -24,7 +24,6 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
         return Inertia::render(
             'CreateModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('New client'),
                 'pageHead'    => [
                     'title'   => __('New client'),
