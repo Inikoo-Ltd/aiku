@@ -159,11 +159,13 @@ class ShowDiscountsDashboard extends OrgAction
                 'type'  => 'button',
                 'style' => 'create',
                 'label' => __('Create First Order Bonus'),
+                'disabled'  => true,
                 'route' => [
                     'name'       => 'grp.org.shops.show.discounts.offers.create',
                     'parameters' => $routeParameters
                 ],
-                'tooltip' => __('Create First Order Bonus')
+                // 'tooltip' => __('Create First Order Bonus')
+                'tooltip' => __('Create First Order Bonus (not available yet)')
             ];
         } else {
             $actions[] = [
