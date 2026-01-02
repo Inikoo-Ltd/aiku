@@ -9,6 +9,7 @@ import { faPlus } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
 import Image from "@/Components/Image.vue"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
 /* ---------------- types ---------------- */
 
@@ -370,18 +371,18 @@ const noLeader = computed(() => {
           <div v-else class="p-3 bg-gray-50 space-y-2">
             <div>
               <label class="text-xs font-medium">
-                {{ trans('Name') }} <span class="text-red-500">*</span>
+                {{ trans('Option type name') }} <span class="text-red-500">*</span>
               </label>
-              <PureInput v-model="v.label" placeholder="Color, Size"/>
+              <PureInput v-model="v.label" :placeholder="trans('e.g. color, size')" />
             </div>
 
             <div>
               <label class="text-xs font-medium">
-                {{ trans('Options') }} <span class="text-red-500">*</span>
+                {{ trans('Option value') }} <span class="text-red-500">*</span>
               </label>
 
               <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
-                <PureInput v-model="v.options[oi]" placeholder="Value" class="flex-1" />
+                <PureInput v-model="v.options[oi]" class="flex-1" :placeholder="trans('e.g. blue, red or S, M, L, XL')" />
                 <button class="text-red-500" @click="removeOption(vi, oi)">
                   <FontAwesomeIcon :icon="faTrashAlt" />
                 </button>
@@ -410,7 +411,7 @@ const noLeader = computed(() => {
         <div>
           <Button v-if="model.variants.length < 2" type="dashed" size="xs" class="mt-2" :icon="faPlus"
             @click="addVariant">
-            {{ trans('Add Variant') }}
+            {{ trans('Add Option') }}
           </Button>
         </div>
 
@@ -432,7 +433,7 @@ const noLeader = computed(() => {
             {{ trans('List of Variants') }} <span class="text-red-500">*</span>
           </label>
           <span v-if="noLeader" class="text-xs text-gray-500 font-medium italic w-full block text-red-500">
-            A product leader must be selected
+            {{trans('One of the products must be leader, it will show as default in webpage')}}
           </span>
           
           <!-- TABLE -->
