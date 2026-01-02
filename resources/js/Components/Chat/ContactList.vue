@@ -271,13 +271,13 @@ const tabClass = (tab: string) => {
 		<!-- Tabs -->
 		<div class="flex border-b text-xs">
 			<div class="tabItem" :class="tabClass('waiting')" @click="activeTab = 'waiting'">
-				Waiting
+				{{ trans('Waiting') }}
 			</div>
 			<div class="tabItem" :class="tabClass('active')" @click="activeTab = 'active'">
-				Active
+				{{ trans('Active') }}
 			</div>
 			<div class="tabItem" :class="tabClass('closed')" @click="activeTab = 'closed'">
-				Closed
+				{{ trans('Closed') }}
 			</div>
 		</div>
 
