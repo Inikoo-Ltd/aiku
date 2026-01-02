@@ -33,6 +33,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -85,9 +86,16 @@ class StoreExternalShop extends OrgAction
 
         if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
             $modelData = $this->handleFaireShop($modelData);
+        } else if($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
+            $modelData = $this->handleShopifyShop();
         }
 
         return StoreShop::make()->action($organisation, $modelData);
+    }
+
+    public function handleShopifyShop()
+    {
+
     }
 
     public function handleFaireShop(array $modelData): array
@@ -104,6 +112,7 @@ class StoreExternalShop extends OrgAction
             throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
         }
 
+        data_set($modelData, 'state', ShopStateEnum::OPEN);
         data_set($modelData, 'name', $faireBrand['name']);
         data_set($modelData, 'settings.faire', array_merge($this->settings['faire'], [
             'brand' => $faireBrand['name']
