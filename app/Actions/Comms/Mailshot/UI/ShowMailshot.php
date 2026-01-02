@@ -69,7 +69,7 @@ class ShowMailshot extends OrgAction
                 ),
                 'pageHead'                        => [
                     'icon'    => 'fal fa-coins',
-                    'title'   => 'Mailshot '.$mailshot->id,
+                    'title'   => 'Mailshot ' . $mailshot->id,
                     'edit'    => $this->canEdit ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -97,7 +97,7 @@ class ShowMailshot extends OrgAction
                             'label' => __('Edit'),
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
-                                'name'       => "grp.org.shops.show.marketing.mailshots.edit",
+                                'name'       => "grp.org.shops.show.marketing.newsletters.edit",
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
@@ -209,6 +209,4 @@ class ShowMailshot extends OrgAction
             default => []
         };
     }
-
-
 }
