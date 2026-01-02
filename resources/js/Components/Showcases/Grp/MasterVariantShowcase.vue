@@ -98,7 +98,7 @@ console.log(selectedProduct.value,props);
 <template>
     <!-- MAIN GRID -->
     <section class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        
+
         <!-- LEFT : VARIANT + IMAGE -->
         <div class="bg-white p-4 rounded-xl shadow-sm space-y-5">
 
@@ -161,7 +161,7 @@ console.log(selectedProduct.value,props);
 
         <!-- RIGHT : SALES -->
         <div class="bg-white p-4 rounded-xl shadow-sm text-sm text-gray-600">
-            <SalesAnalyticsCompact v-if="selectedProduct?.salesData" :salesData="selectedProduct.salesData" />
+            <SalesAnalyticsCompact v-if="selectedProduct?.salesData && selectedProduct?.salesData.yearly_sales && selectedProduct?.salesData.yearly_sales.length > 0" :salesData="selectedProduct.salesData" />
         </div>
     </section>
 </template>
