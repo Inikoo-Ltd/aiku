@@ -61,9 +61,9 @@ class StoreExternalShop extends OrgAction
             $modelData['state'] = ShopStateEnum::OPEN;
             $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
 
-            if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+            if ($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
                 $modelData = $this->handleFaireShop($modelData);
-            } else if($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
+            } elseif ($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
                 data_set($modelData, 'name', Arr::get($modelData, 'shop_url'));
 
                 $shopifyUser = $this->handleShopifyShop($organisation, $modelData);
@@ -74,7 +74,7 @@ class StoreExternalShop extends OrgAction
 
             $shop = StoreShop::make()->action($organisation, $modelData);
 
-            if(isset($shopifyUser) && $modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
+            if (isset($shopifyUser) && $modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
                 $shopifyUser->update([
                     'external_shop_id' => $shop->id
                 ]);
@@ -99,7 +99,7 @@ class StoreExternalShop extends OrgAction
 
         $faireBrand = $this->getFaireBrand();
 
-        if(! Arr::has($faireBrand, 'name')) {
+        if (! Arr::has($faireBrand, 'name')) {
             throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
         }
 

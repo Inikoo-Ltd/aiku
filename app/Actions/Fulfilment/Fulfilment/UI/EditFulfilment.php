@@ -41,7 +41,7 @@ class EditFulfilment extends OrgAction
     public function htmlResponse(Fulfilment $fulfilment, ActionRequest $request): Response
     {
 
-        $shop= $fulfilment->shop;
+        $shop = $fulfilment->shop;
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();

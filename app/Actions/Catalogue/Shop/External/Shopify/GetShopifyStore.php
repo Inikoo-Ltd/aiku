@@ -3,7 +3,6 @@
 namespace App\Actions\Catalogue\Shop\External\Shopify;
 
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 

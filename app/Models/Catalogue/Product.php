@@ -170,6 +170,8 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $not_for_sale_from_master
  * @property bool $not_for_sale_from_trade_unit
  * @property bool|null $is_unit_reviewed
+ * @property int|null $variant_id
+ * @property bool $is_variant_leader
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

@@ -135,6 +135,8 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $not_for_sale_from_trade_unit
  * @property array<array-key, mixed>|null $web_images
  * @property array<array-key, mixed> $tax_category
+ * @property int|null $master_variant_id
+ * @property bool $is_variant_leader
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

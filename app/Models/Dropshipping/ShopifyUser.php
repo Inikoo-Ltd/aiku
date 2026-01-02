@@ -74,6 +74,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $shopify_shop_id
  * @property string|null $shopify_fulfilment_service_id
  * @property string|null $shopify_location_id
+ * @property int|null $external_shop_id
  * @property WebUserTypeEnum $state
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \Osiset\ShopifyApp\Storage\Models\Charge> $charges
@@ -81,6 +82,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read Collection<int, DebugWebhooks> $debugWebhooks
+ * @property-read Shop|null $externalShop
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
