@@ -8,7 +8,7 @@
 
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
-use App\Actions\Catalogue\Shop\Faire\GetFairePackingPdfSlip;
+use App\Actions\Catalogue\Shop\External\Faire\GetFairePackingPdfSlip;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;

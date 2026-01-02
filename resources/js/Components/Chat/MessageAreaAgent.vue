@@ -18,6 +18,8 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Image from "@/Components/Image.vue"
+import { faUser } from "@far"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -263,13 +265,21 @@ const handleClickOutside = (e: MouseEvent) => {
 				<FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
 			</button>
 
-			<img :src="`https://i.pravatar.cc/80?u=${session?.ulid}`" class="w-8 h-8 rounded-full" />
 
-			<span class="flex-1 text-sm font-semibold truncate">
+			<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+				<Image v-if="session.image" :src="session.image" class="w-full h-full rounded-full object-cover" />
+
+				<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+			</div>
+
+			<span
+				class="flex-1 text-sm font-semibold truncate cursor-pointer primary-text hover:primary-text-hover transition-colors"
+				@click="onViewMessageDetails">
 				{{ session?.guest_identifier || session?.contact_name }}
 			</span>
 
-			<div class="relative" ref="menuRef">
+
+			<!-- <div class="relative" ref="menuRef">
 				<button @click.stop="isMenuOpen = !isMenuOpen">
 					<FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
 				</button>
@@ -303,7 +313,7 @@ const handleClickOutside = (e: MouseEvent) => {
 						<FontAwesomeIcon :icon="faMessage" /> {{ trans('Message Details') }}
 					</button>
 				</div>
-			</div>
+			</div> -->
 
 		</header>
 

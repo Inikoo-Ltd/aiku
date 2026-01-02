@@ -20,6 +20,7 @@ enum FamilyTabsEnum: string
     case CONTENT = 'content';
     case IMAGES = 'images';
     case SALES = 'sales';
+    case VARIANTS = 'variants';
 
     case OFFERS = 'offers';
     case HISTORY = 'history';
@@ -59,6 +60,10 @@ enum FamilyTabsEnum: string
             FamilyTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            FamilyTabsEnum::VARIANTS => [
+                'title' => __('Variants'),
+                'icon'  => 'fal fa-shapes',
             ],
         };
     }

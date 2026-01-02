@@ -81,7 +81,8 @@ class WebBlockProductResource extends JsonResource
             'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'      => $isOnDemand
+            'is_on_demand'      => $isOnDemand,
+            'is_back_in_stock'  => $product->backInStockReminders
         ];
     }
 

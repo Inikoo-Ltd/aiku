@@ -79,11 +79,13 @@ const onUnselectFavourite = (p: ProductResource) => emits("unsetFavorite", p)
 const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
 const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", p)
 
+console.log('sss',props.product)
 
 </script>
 
 
 <template>
+
     <!-- DESKTOP -->
     <div
         v-if="screenType !== 'mobile'"
@@ -150,16 +152,16 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
                             </div>
 
                             <!-- REMIND ME -->
-                            <button v-if="!product.stock && layout?.app?.environment === 'local'"
-                                v-tooltip="product.is_back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
-                                @click="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                            <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
+                                v-tooltip="customerData.back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
+                                @click="() => customerData.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                                 class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
-                                    :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']"
+                                    :icon="customerData.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                    :class="[customerData.back_in_stock ? 'text-green-600' : 'text-gray-600']"
                                 />
-                                <span>{{ product.is_back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
+                                <span>{{ customerData.back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
                             </button>
                         </div>
                     </div>
@@ -304,11 +306,11 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
 
               <FontAwesomeIcon
                 v-if="layout?.iris?.is_logged_in && layout?.retina?.type !== 'dropshipping'"
-                :icon="customerData?.is_favourite ? fasHeart : faHeart"
+                :icon="product?.is_favourite ? fasHeart : faHeart"
                 class="text-xl cursor-pointer transition-colors duration-300"
-                :class="customerData?.is_favourite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'"
+                :class="product?.is_favourite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'"
                 @click="
-                    customerData?.is_favourite
+                    product?.is_favourite
                         ? onUnselectFavourite(product)
                         : onAddFavourite(product)
                 "
@@ -338,6 +340,16 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
             </div>
         </div>
 
+        <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
+            v-tooltip="customerData.is_back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
+            @click="() => customerData.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+            class="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+            <LoadingIcon v-if="isLoadingRemindBackInStock" />
+            <FontAwesomeIcon v-else :icon="customerData.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                :class="[customerData.back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+            <span>{{ customerData.back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
+        </button>
+
         <!-- ADD TO CART -->
         <div class="mt-6 flex flex-col gap-2">
             <EcomAddToBasketv2
@@ -354,6 +366,7 @@ const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", 
                 disabled
                 full
             />
+            
 
             <LinkIris
                 v-else

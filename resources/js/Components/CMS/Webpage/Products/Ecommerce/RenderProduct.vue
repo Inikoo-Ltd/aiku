@@ -12,6 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents"
+import axios from "axios"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -145,75 +146,59 @@ const onUnselectFavourite = (product: ProductResource) => {
 }
 
 
-const onAddBackInStock = (product: ProductResource) => {
-    router.post(
-        route(props.attachBackInStockRoute.name, {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            only: ['iris'],
-            preserveState: true,
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                product.is_back_in_stock = true
-                layout.reload_handle()
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-                emits('afterOnAddBackInStock', product)
-            },
-        }
-    )
+const onAddBackInStock = async (product: ProductResource) => {
+	isLoadingRemindBackInStock.value = true
+
+	try {
+		await axios.post(
+			route(props.attachBackInStockRoute.name, {
+				product: product.id
+			}),
+			{
+				// item_id: [product.id]
+			}
+		)
+
+		product.is_back_in_stock = true
+		layout.reload_handle()
+
+		emits("afterOnAddBackInStock", product)
+	} catch (error) {
+		notify({
+			title: trans("Something went wrong"),
+			text: trans("Failed to add the product to remind back in stock"),
+			type: "error"
+		})
+	} finally {
+		isLoadingRemindBackInStock.value = false
+	}
 }
 
-const onUnselectBackInStock = (product: ProductResource) => {
-    router.delete(
-        route(props.detachBackInStockRoute.name, {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['iris'],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
-                product.is_back_in_stock = false
-                layout.reload_handle()
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-                emits('afterOnUnselectBackInStock', product)
-            },
-        }
-    )
+const onUnselectBackInStock = async (product: ProductResource) => {
+	isLoadingRemindBackInStock.value = true
+
+	try {
+		await axios.delete(
+			route(props.detachBackInStockRoute.name, {
+				product: product.id
+			})
+		)
+
+		product.is_back_in_stock = false
+		layout.reload_handle()
+
+		emits("afterOnUnselectBackInStock", product)
+	} catch (error) {
+		notify({
+			title: trans("Something went wrong"),
+			text: trans("Failed to remove the product from remind back in stock"),
+			type: "error"
+		})
+	} finally {
+		isLoadingRemindBackInStock.value = false
+	}
 }
+
 
 
 </script>

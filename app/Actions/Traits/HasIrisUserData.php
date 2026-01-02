@@ -94,6 +94,26 @@ trait HasIrisUserData
             }
         }
 
+        $offerData = null;
+
+        if (Arr::get($this->shop->offers_data, 'gr.active')) {
+            $lastDaysSinceLastInvoiced = Cache::remember("customer_days_since_last_invoiced_at_".$this->customer->id, now()->addMinutes(15), function () {
+                return $this->customer->last_invoiced_at ? -now()->diffInDays($this->customer->last_invoiced_at) : null;
+            });
+
+            $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
+
+            if ($lastDaysSinceLastInvoiced != null && $lastDaysSinceLastInvoiced <= $grInterval) {
+                $offerData['type']  = 'gr';
+                $offerData['label'] = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
+                $offerData['meter'] = [
+                    $grInterval - $lastDaysSinceLastInvoiced,
+                    $grInterval
+                ];
+            }
+        }
+
+
         return [
             'is_logged_in' => true,
             'auth'         => [
@@ -114,7 +134,7 @@ trait HasIrisUserData
             ],
             // 'traffic_source_cookies' => CaptureTrafficSource::run(),
             'offer_meters' => $offerMeters,
-            'gr_data'      => $grData,
+            'offer_data'   => $offerData,
         ];
     }
 }

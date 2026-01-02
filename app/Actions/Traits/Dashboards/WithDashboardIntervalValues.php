@@ -47,7 +47,7 @@ trait WithDashboardIntervalValues
                     $data['formatted_value'] = Number::percentage($rawValue, Arr::get($options, 'percentage'));
                     break;
                 case DashboardDataType::DELTA_LAST_YEAR:
-                    $lyValue                 = ($interval->value != 'all' ? $intervalsModel->{$field.'_'.$interval->value.'_ly'} : $intervalsModel->{$field.'_'.$interval->value}) ?? 0;
+                    $lyValue                 = ($interval->value != 'all' ? $intervalsModel?->{$field.'_'.$interval->value.'_ly'} : $intervalsModel?->{$field.'_'.$interval->value}) ?? 0;
                     $data['formatted_value'] = Number::delta($rawValue, $lyValue);
                     $data['raw_value']       = Number::rawDelta($rawValue, $lyValue);
                     if ($interval->value != 'all') {

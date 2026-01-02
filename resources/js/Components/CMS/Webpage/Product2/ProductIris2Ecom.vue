@@ -153,7 +153,7 @@ const groupedAttachments = computed(() => {
                             </div>
 
                             <!-- REMIND ME -->
-                            <button v-if="product.stock <= 0 && layout?.app?.environment === 'local'" @click="
+                            <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'" @click="
                                 product.is_back_in_stock
                                     ? onUnselectBackInStock(product)
                                     : onAddBackInStock(product)

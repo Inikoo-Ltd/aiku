@@ -133,9 +133,46 @@ watch(
 
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full ">
             <!-- Section: Main title -->
-            <div v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
+            <div v-if="layout.offer_data && isLoggedIn" class="text-center md:text-left">
+                <span>
+                    {{ trans("Hello") }}, <LinkIris href="/app/dashboard" :type="'internal'" class="inline-flex items-center justify-center hover:underline">
+                        <span class="font-bold">{{ layout.iris_variables?.name }}</span>
+                    </LinkIris>!
+                </span>
+                <span v-if="layout.offer_data?.type === 'gr'" class="text-yellow-500 inline-flex items-center gap-x-1">
+                    {{ layout.offer_data?.label }}
+                    <GoldReward>
+                        <template #default>
+                            <div>
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width aria-hidden="true" />
+                                <div class="ml-1 inline-block align-middle w-20 text-xxs rounded-sm h-3 mt-1.5 bg-gray-200 relative overflow-hidden mb-2">
+                                    <div class="absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
+                                        :class="true ? 'xshimmer bg-green-500' : 'bg-green-500'"
+                                        :style="{
+                                            width: true ? layout.offer_data?.meter?.[0]/layout.offer_data?.meter?.[1] * 100 + '%' : '100%'
+                                        }"
+                                    />
+                                    
+                                    <div class="absolute inset-0 flex items-center justify-center text-xxs font-medium text-black">
+                                        {{ Number(layout.offer_data?.meter?.[0]).toFixed(0) }} / {{ Number(layout.offer_data?.meter?.[1]).toFixed(0) }} days
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </template>
+                    </GoldReward>
+                </span>
+                <span v-if="layout.offer_data?.type === 'fob'" class="text-yellow-500">
+                    {{ layout.offer_data?.label }}
+                    <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
+                </span>
+
+                
+            </div>
+            <div v-else-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
                 class="text-center flex items-center"
-                v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)" />
+                v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
+            />
         </div>
 
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
@@ -143,20 +180,23 @@ watch(
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
             <!-- Section: Profile -->
-            <LinkIris href="/app/dashboard" :type="'internal'">
+            <LinkIris v-if="false" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
-                    v-tooltip="trans('Profile')"
+                    
                     icon="fal fa-user"
                     type="transparent"
                     class="button min-w-max"
                 >
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
+                        <span v-tooltip="trans('Profile')">
+                            <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
+                        </span>
                     </template>
                     <template #label>
-                        <span class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-                        <GoldReward v-if="false" />
+                        <!-- <span v-tooltip="trans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" /> -->
+                        <span v-tooltip="trans('Profile')" class="button">{{ trans("Profile") }}</span>
+                        <!-- <GoldReward v-if="layout.offer_data?.type === 'gr'" /> -->
                     </template>
                 </Button>
             </LinkIris>

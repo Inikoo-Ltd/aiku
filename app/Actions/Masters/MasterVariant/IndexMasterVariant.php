@@ -16,7 +16,6 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterVariant;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Closure;
 
@@ -102,21 +101,11 @@ class IndexMasterVariant extends OrgAction
                 ->withGlobalSearch();
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'leader_product_name', label: __('Leader'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_minions', label: __('Minions'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_used_slots', label: __('Amount Used'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_used_slots_for_sale', label: __('Amount Used For Sale'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'number_minions', label: __('Number of Minions'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'number_dimensions', label: __('Number of Dimensions'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'number_used_slots', label: __('Slot being used'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'number_used_slots_for_sale', label: __('Slot being used (For Sale enabled)'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
         };
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterVariant
-    {
-        $this->initialisationFromGroup($masterProductCategory->group, $request);
-
-        return $this->handle($masterProductCategory, $this->validatedData);
     }
 }

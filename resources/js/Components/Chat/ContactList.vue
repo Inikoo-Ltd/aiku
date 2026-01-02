@@ -10,6 +10,7 @@ import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faUser, faUserAlien } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Image from "../Image.vue"
 
 const layout: any = inject("layout", {})
 
@@ -60,7 +61,7 @@ const reloadContacts = async () => {
 				id: s.id,
 				ulid: s.ulid,
 				name: s.contact_name || s.guest_identifier || "",
-				avatar: null,
+				avatar: s.image,
 				lastMessage: s.last_message?.message ?? "",
 				lastMessageTime: s.last_message?.created_at
 					? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
@@ -307,7 +308,7 @@ const tabClass = (tab: string) => {
 							<!-- Avatar -->
 							<div
 								class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
-								<img v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
+								<Image v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
 
 								<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
 							</div>

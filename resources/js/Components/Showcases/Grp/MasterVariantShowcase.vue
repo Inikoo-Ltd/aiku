@@ -141,12 +141,17 @@ console.log(selectedProduct.value,props);
 
         <!-- CENTER : PRODUCT DETAIL -->
         <div class="lg:col-span-2 pt-4">
-            <div class="mb-3 grid grid-cols-2">
+            <div v-if="selectedProduct?.name" class="mb-3 grid grid-cols-2">
                 <span class="text-xl font-medium pl-5 text-gray-500">
                     {{ trans('Product Name:') }}
                 </span>
                 <span class="text-xl font-medium pr-5 text-right">
-                    {{ selectedProduct?.name ?? '-' }}
+                    {{ selectedProduct?.name }}
+                </span>
+            </div>
+            <div v-else class="mb-3">
+                <span class="text-xl font-medium pl-5 text-gray-500">
+                    {{ trans('No product is selected yet for this variant') }}
                 </span>
             </div>
 

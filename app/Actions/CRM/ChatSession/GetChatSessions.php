@@ -52,6 +52,7 @@ class GetChatSessions
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },
             'webUser',
+            'shop',
             'assignments.chatAgent.user'
         ])
             ->whereHas('messages')

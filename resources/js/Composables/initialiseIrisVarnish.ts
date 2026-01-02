@@ -85,8 +85,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
             }
 
             // Data: Gold Reward
-            if (varnish?.gr_data) {
-                layout.gr_data = varnish.gr_data
+            if (varnish?.offer_data) {
+                layout.offer_data = varnish.offer_data
             }
 
             if (varnish?.offer_meters) {

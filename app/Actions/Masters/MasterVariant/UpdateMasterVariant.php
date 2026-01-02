@@ -8,10 +8,12 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterVariant;
 use App\Models\Masters\MasterAsset;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterVariant extends OrgAction
@@ -22,18 +24,24 @@ class UpdateMasterVariant extends OrgAction
 
     public function handle(MasterVariant $masterVariant, array $modelData): MasterVariant
     {
-        $masterVariant->update($modelData);
+        return DB::transaction(function () use ($modelData, $masterVariant) {
 
-        // TODO Hydrate Child
+            $masterVariant->update($modelData);
+            $masterVariant->refresh();
 
-        return $masterVariant;
+            foreach ($masterVariant->variants as $variant) {
+                UpdateVariant::make()->action($variant, $modelData);
+            }
+
+            return $masterVariant;
+        });
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->number_minions = array_reduce(data_get($this->variant['variants'], '*.options'), function ($carry, $item) {
             return $carry * count($item);
-        }, 1);
+        }, 1) - 1; // Minus one to exclude the leader product
 
         $this->number_dimensions = count($this->variant['variants']);
         $this->number_used_slots = count($this->variant['products']);

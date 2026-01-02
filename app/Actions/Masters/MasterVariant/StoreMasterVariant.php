@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterAsset;
@@ -16,6 +17,7 @@ use App\Models\Masters\MasterVariant;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,6 +50,23 @@ class StoreMasterVariant extends OrgAction
 
             $masterVariant->refresh();
 
+            foreach ($masterVariant->masterFamily->productCategories as $productCategory) {
+                if (!$productCategory->shop) {
+                    continue;
+                }
+                StoreVariantFromMaster::make()->action(
+                    masterVariant: $masterVariant,
+                    shop: $productCategory->shop,
+                    modelData: Arr::except($modelData, [
+                        'master_family_id',
+                        'master_sub_department_id',
+                        'master_department_id',
+                        'group_id',
+                        'master_shop_id'
+                    ])
+                );
+            }
+
             return $masterVariant;
         });
 
@@ -58,7 +77,7 @@ class StoreMasterVariant extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!collect($request->input('data_variants.products'))->where('is_leader', true)->count() > 0) {
+        if (!$request->input('data_variants.products') || !collect($request->input('data_variants.products'))->where('is_leader', true)->count() > 0) {
             throw ValidationException::withMessages([
                 'leader_id' => __('A leader product must first be selected before being able to generate this variant.')
             ]);
@@ -68,13 +87,13 @@ class StoreMasterVariant extends OrgAction
 
         $code = MasterAsset::find($this->leader_id)->code . '-var-' . now()->format('His');
         $this->set('code', $code);
+
         $this->number_minions = array_reduce(data_get($this->data_variants['variants'], '*.options'), function ($carry, $item) {
             return $carry * count($item);
-        }, 1);
+        }, 1) - 1; // Minus one to exclude the leader product
         $this->number_dimensions = count($this->data_variants['variants']);
         $this->number_used_slots = count($this->data_variants['products']);
-        $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->data_variants['products']))->select('is_for_sale', true)->count();
-
+        $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->data_variants['products']))->select('is_for_sale')->count();
 
         if ($this->data_variants) {
             $this->set('data', $this->data_variants);
@@ -97,10 +116,10 @@ class StoreMasterVariant extends OrgAction
                                                         ]
                                                     ),
                                                 ],
-            'number_minions'                =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
-            'number_dimensions'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
-            'number_used_slots'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
-            'number_used_slots_for_sale'    =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
+            'number_minions'                =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
+            'number_dimensions'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
+            'number_used_slots'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
+            'number_used_slots_for_sale'    =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
             'data'                          =>  ['required', 'array'],
             'data.variants'                 =>  ['sometimes', 'array'],
             'data.groupBy'                  =>  ['sometimes', 'string'],
@@ -112,8 +131,9 @@ class StoreMasterVariant extends OrgAction
     {
         return [
             'data.groupBy'          => __('A grouping criteria must be selected'),
-            'data.products.min'     => __('At least one product must be present in the variant'),
+            'data.products'     => __('At least one product must be present in the variant'),
         ];
+
     }
 
     /**
@@ -137,10 +157,10 @@ class StoreMasterVariant extends OrgAction
 
         $masterVariant = $this->handle($masterProductCategory, $this->validatedData);
 
-        return $this->redirectSuccess($masterVariant, $request);
+        return $this->redirectSuccess($masterVariant);
     }
 
-    public function redirectSuccess(MasterVariant $masterVariant, ActionRequest $request): RedirectResponse
+    public function redirectSuccess(MasterVariant $masterVariant): RedirectResponse
     {
         return redirect()
             ->route('grp.masters.master_shops.show.master_families.show', [
@@ -156,6 +176,6 @@ class StoreMasterVariant extends OrgAction
                     'description' => __('Master Variant :_masterVarCode has been created successfully.', ['_masterVarCode' => $masterVariant->code]),
                 ]
             )
-            ->setStatusCode(303); // important for inertia POST redirects
+            ->setStatusCode(303);
     }
 }

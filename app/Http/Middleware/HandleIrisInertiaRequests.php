@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 
 class HandleIrisInertiaRequests extends Middleware
 {
@@ -23,9 +24,18 @@ class HandleIrisInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-
-
         $website = $request->get('website');
+        $outBoxes = $website?->shop?->outboxes()
+            ?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])
+            ->select('id', 'code', 'state')
+            ->get()
+            ->mapWithKeys(fn ($item) => [
+                $item->code->value => [
+                    'id'    => $item->id,
+                    'state' => $item->state,
+                ],
+            ])
+            ->toArray() ?? [];
 
 
         $firstLoadOnlyProps = [];
@@ -52,6 +62,7 @@ class HandleIrisInertiaRequests extends Middleware
                 "layout" => [
                     "app_theme" => Arr::get($websiteTheme, 'color'),
                 ],
+                'outboxes' => $outBoxes
             ];
 
 

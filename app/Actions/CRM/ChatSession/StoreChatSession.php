@@ -26,12 +26,16 @@ class StoreChatSession
             'language_id'      => ['required', 'exists:languages,id'],
             'guest_identifier' => ['nullable', 'string', 'max:255'],
             'ai_model_version' => ['nullable', 'string', 'max:50'],
+            'shop_id'          => ['required', 'exists:shops,id'],
             'priority'         => ['required', Rule::enum(ChatPriorityEnum::class)],
             'ulid'             => ['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid'],
         ];
     }
 
 
+    /**
+     * @throws \Exception|\Throwable
+     */
     public function asController(ActionRequest $request): ChatSession
     {
         $validated = $request->validated();
@@ -40,6 +44,10 @@ class StoreChatSession
     }
 
 
+    /**
+     * @throws \Throwable
+     * @throws \Random\RandomException
+     */
     public function handle(array $modelData): ChatSession
     {
         DB::beginTransaction();
@@ -48,17 +56,18 @@ class StoreChatSession
             $isGuest = empty($modelData['web_user_id']);
 
             $guestIdentifier = $isGuest
-                ? ($modelData['guest_identifier'] ?? 'guest_' . random_int(10000, 99999))
+                ? ($modelData['guest_identifier'] ?? 'guest_'.random_int(10000, 99999))
                 : null;
 
             $chatSessionData = [
-                'ulid'            => $modelData['ulid'] ?? Str::ulid(),
-                'web_user_id'     => $modelData['web_user_id'] ?? null,
-                'status'          => ChatSessionStatusEnum::WAITING->value,
+                'ulid'             => $modelData['ulid'] ?? Str::ulid(),
+                'web_user_id'      => $modelData['web_user_id'] ?? null,
+                'status'           => ChatSessionStatusEnum::WAITING->value,
                 'guest_identifier' => $guestIdentifier,
-                'language_id'     => $modelData['language_id'],
-                'priority'        => $modelData['priority'],
+                'language_id'      => $modelData['language_id'],
+                'priority'         => $modelData['priority'],
                 'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
+                'shop_id'          => $modelData['shop_id'] ?? null,
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ];
@@ -68,6 +77,7 @@ class StoreChatSession
             $this->logSessionOpen($chatSession, $modelData, $isGuest, $guestIdentifier);
 
             DB::commit();
+
             return $chatSession;
         } catch (Exception $e) {
             DB::rollBack();
@@ -99,12 +109,12 @@ class StoreChatSession
             $actorId   = $isGuest ? null : $data['web_user_id'];
 
             $eventPayload = [
-                'ip_address'          => request()->ip(),
-                'user_agent'          => request()->userAgent(),
-                'guest_identifier'    => $guestIdentifier,
-                'language_id'         => $data['language_id'],
-                'priority'            => $data['priority'],
-                'is_guest'            => $isGuest,
+                'ip_address'       => request()->ip(),
+                'user_agent'       => request()->userAgent(),
+                'guest_identifier' => $guestIdentifier,
+                'language_id'      => $data['language_id'],
+                'priority'         => $data['priority'],
+                'is_guest'         => $isGuest,
             ];
 
             StoreChatEvent::make()->openSession($chatSession, $actorType, $actorId, $eventPayload);
