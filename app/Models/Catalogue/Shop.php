@@ -262,7 +262,6 @@ class Shop extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasImage;
     use WithFaireShopApiCollection;
-    use WithShopifyShopApiCollection;
 
     protected $casts = [
         'data'                         => 'array',

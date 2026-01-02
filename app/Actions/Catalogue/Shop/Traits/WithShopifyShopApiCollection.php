@@ -7,8 +7,6 @@ use Illuminate\Support\Facades\Http;
 
 trait WithShopifyShopApiCollection
 {
-    protected string $baseShopifyUrl;
-    protected array $defaultShopifyHeaders = [];
     protected array $graphqlQueries = [
         'products' => '
             query ($first: Int!) {
@@ -55,26 +53,26 @@ trait WithShopifyShopApiCollection
                 }
             }
         ',
+        'shop' => '
+            query {
+                shop {
+                    name
+                    primaryDomain {
+                        url
+                    }
+                    billingAddress {
+                        address1
+                        address2
+                        city
+                        provinceCode
+                        zip
+                        countryCodeV2
+                    }
+                }
+            }
+        ',
         // Add other GraphQL queries as needed
     ];
-
-    /**
-     * Initialize the API configuration
-     *
-     * @return void
-     */
-    protected function initializeShopifyApi(): void
-    {
-        $shopDomain = Arr::get($this->settings, 'shopify.shop_domain');
-        $this->baseShopifyUrl = "https://{$shopDomain}/admin/api/2025-07/graphql.json";
-
-        $headers = [
-            'Content-Type' => 'application/json',
-            'X-Shopify-Access-Token' => Arr::get($this->settings, 'shopify.access_token')
-        ];
-
-        $this->defaultShopifyHeaders = $headers;
-    }
 
     /**
      * Execute a GraphQL query
@@ -85,24 +83,17 @@ trait WithShopifyShopApiCollection
      */
     protected function executeGraphQLQuery(string $queryName, array $variables = []): array
     {
-        $this->initializeShopifyApi();
-
+        $shopifyClient = $this->getShopifyClient(true);
         $query = $this->graphqlQueries[$queryName] ?? '';
 
-        $response = Http::withHeaders($this->defaultShopifyHeaders)
-            ->post($this->baseShopifyUrl, [
-                'query' => $query,
-                'variables' => $variables
-            ]);
+        $response = $shopifyClient->request($query,$variables);
 
-        if ($response->successful()) {
-            return $response->json();
+        if (!empty($response['errors']) || !isset($response['body'])) {
+            data_set($result, 'error', true);
+            return $result;
         }
 
-        return [
-            'success' => false,
-            'error' => $response->json()
-        ];
+        return $response['body']->toArray();
     }
 
     /**
@@ -125,5 +116,15 @@ trait WithShopifyShopApiCollection
     public function getShopifyOrders(array $variables = ['first' => 10]): array
     {
         return $this->executeGraphQLQuery('orders', $variables);
+    }
+
+    /**
+     * Get shop information
+     *
+     * @return array
+     */
+    public function getShopifyShop(): array
+    {
+        return $this->executeGraphQLQuery('shop');
     }
 }

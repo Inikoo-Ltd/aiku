@@ -103,10 +103,12 @@ class GetRetinaDropshippingNavigation
 
         $platforms_navigation = [];
 
-
         /** @var CustomerSalesChannel $customerSalesChannels */
         foreach (
-            $customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannels
+            $customer->customerSalesChannels()
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+                ->whereNull('closed_at')
+                ->get() as $customerSalesChannels
         ) {
             $reference = $customerSalesChannels->name ?? 'n/a';
 
