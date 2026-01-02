@@ -83,22 +83,33 @@ class StoreExternalShop extends OrgAction
         $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
 
         if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
-            $this->settings = [
-                'faire' => [
-                    'access_token' => Arr::get($modelData, 'access_token')
-                ]
-            ];
-
-            $faireBrand = $this->getFaireBrand();
-
-            if(! Arr::has($faireBrand, 'name')) {
-                throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
-            }
-
-            data_set($modelData, 'name', $faireBrand['name']);
+            $modelData = $this->handleFaireShop($modelData);
         }
 
         return StoreShop::make()->action($organisation, $modelData);
+    }
+
+    public function handleFaireShop(array $modelData): array
+    {
+        $this->settings = [
+            'faire' => [
+                'access_token' => Arr::get($modelData, 'access_token')
+            ]
+        ];
+
+        $faireBrand = $this->getFaireBrand();
+
+        if(! Arr::has($faireBrand, 'name')) {
+            throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
+        }
+
+        data_set($modelData, 'code', $faireBrand['brand_id']);
+        data_set($modelData, 'name', $faireBrand['name']);
+        data_set($modelData, 'settings.faire', array_merge($this->settings['faire'], [
+            'brand' => $faireBrand['name']
+        ]));
+
+        return $modelData;
     }
 
     public function rules(): array
@@ -106,6 +117,10 @@ class StoreExternalShop extends OrgAction
         return [
             'access_token'   => ['sometimes', 'string', 'max:255'],
             'shop_url'       => ['sometimes', 'string', 'max:255'],
+            'country_id'     => ['sometimes', 'exists:countries,id'],
+            'currency_id'    => ['sometimes', 'exists:currencies,id'],
+            'language_id'    => ['sometimes', 'exists:languages,id'],
+            'timezone_id'    => ['sometimes', 'exists:timezones,id'],
             'engine'         => ['required', Rule::in(ShopEngineEnum::values())]
         ];
     }
