@@ -8,16 +8,22 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Facades\Config;
 
-uses()->group('integration');
+use function Pest\Laravel\actingAs;
 
 
 beforeAll(function () {
@@ -25,7 +31,37 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    \Tests\Helpers\setupDropshippingTest($this);
+    $this->organisation = createOrganisation();
+    $this->group = $this->organisation->group;
+    $this->user = createAdminGuest($this->group)->getUser();
+
+    $shop = Shop::first();
+    if (!$shop) {
+        $storeData = Shop::factory()->definition();
+        data_set($storeData, 'type', ShopTypeEnum::DROPSHIPPING);
+
+        $shop = StoreShop::make()->action(
+            $this->organisation,
+            $storeData
+        );
+    }
+    $this->shop = $shop;
+
+    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
+
+    $this->customer = createCustomer($this->shop);
+
+    list(
+        $this->tradeUnit,
+        $this->product
+        ) = createProduct($this->shop);
+
+    Config::set(
+        'inertia.testing.page_paths',
+        [resource_path('js/Pages/Grp')]
+    );
+
+    actingAs($this->user);
 });
 
 
@@ -49,7 +85,6 @@ test('create shopify channel', function () {
 
     return $customerSalesChannel;
 });
-
 
 test('create customer client', function (CustomerSalesChannel $customerSalesChannel) {
     $customerClient = StoreCustomerClient::make()->action($customerSalesChannel, CustomerClient::factory()->definition());

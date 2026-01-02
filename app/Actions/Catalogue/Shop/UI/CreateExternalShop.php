@@ -14,7 +14,6 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;

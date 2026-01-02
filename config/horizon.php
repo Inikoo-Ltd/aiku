@@ -278,7 +278,7 @@ return [
         ],
         'dropshipping'     => [
             'connection'          => 'redis',
-            'queue'               => ['shopify', 'woo', 'ebay'],
+            'queue'               => ['shopify', 'woo', 'ebay', 'ds'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -391,7 +391,7 @@ return [
             'low-priority' => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
             ],
-            'dropshipping'     => [
+            'dropshipping' => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
             ],
             'long-running' => [

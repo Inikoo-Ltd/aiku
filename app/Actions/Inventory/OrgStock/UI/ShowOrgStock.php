@@ -104,16 +104,16 @@ class ShowOrgStock extends OrgAction
 
 
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
-                    fn() => GetOrgStockShowcase::run($this->warehouse, $orgStock)
-                    : Inertia::lazy(fn() => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
+                    fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
+                    : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
 
                 OrgStockTabsEnum::TRADE_UNITS->value => $this->tab == OrgStockTabsEnum::TRADE_UNITS->value ?
-                    fn() => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))
-                    : Inertia::lazy(fn() => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
 
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($orgStock))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($orgStock)))
+                    fn () => HistoryResource::collection(IndexHistory::run($orgStock))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStock)))
 
             ]
         )

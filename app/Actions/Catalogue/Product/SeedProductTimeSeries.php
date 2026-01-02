@@ -20,7 +20,7 @@ class SeedProductTimeSeries
 {
     use AsAction;
 
-    public string $commandSignature = 'product:seed-time-series {--frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)}';
+    public string $commandSignature = 'seed:product-time-series {--frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)}';
 
     public function asCommand(Command $command): void
     {
@@ -42,6 +42,8 @@ class SeedProductTimeSeries
                 $totalDispatched += $dispatched;
             }
         }
+
+        $command->info("Dispatched {$totalDispatched} time series seed jobs for products.");
     }
 
     public function handle(Product $product, TimeSeriesFrequencyEnum $frequency): void
@@ -63,6 +65,9 @@ class SeedProductTimeSeries
         $from = Carbon::now('UTC')->subYear()->startOfYear();
         $to = Carbon::now('UTC')->endOfDay();
 
-        ProductHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to);
+        ProductHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)
+            ->WithoutOverlapping()
+            ->delay(now()->addMinute())
+            ->onQueue('low-priority');
     }
 }

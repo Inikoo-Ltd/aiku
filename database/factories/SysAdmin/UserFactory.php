@@ -8,6 +8,7 @@
 
 namespace Database\Factories\SysAdmin;
 
+use App\Models\SysAdmin\Group;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class UserFactory extends Factory
@@ -15,11 +16,11 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'username'   => 'hello',
+            'group_id'   => Group::factory(),
+            'username'   => fake()->unique()->userName,
             'password'   => 'password',
             'email'      => fake()->email,
             'language_id' => 1,
-            'timezone_id' => 1
         ];
     }
 }
