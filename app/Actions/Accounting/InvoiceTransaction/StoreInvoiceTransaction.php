@@ -13,6 +13,9 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateTimeSeriesRecords;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTimeSeriesRecords;
+use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
@@ -99,6 +102,53 @@ class StoreInvoiceTransaction extends OrgAction
             AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
             AssetHydrateInvoicesCustomersStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
             AssetHydrateInvoicesStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
+
+            $asset = $invoiceTransaction->asset;
+            if ($asset && $asset->model_type == 'Product') {
+                /** @var Product $product */
+                $product = $asset->model;
+
+                if ($product) {
+                    ProductHydrateTimeSeriesRecords::dispatch(
+                        $product->asset_id,
+                        $invoiceTransaction->date->copy()->subYear(),
+                        $invoiceTransaction->date
+                    )->delay(1800);
+
+                    $collections = $product->containedByCollections;
+                    foreach ($collections as $collection) {
+                        CollectionHydrateTimeSeriesRecords::dispatch(
+                            $collection->id,
+                            $invoiceTransaction->date->copy()->subYear(),
+                            $invoiceTransaction->date
+                        )->delay(1800);
+                    }
+                }
+            }
+        }
+
+        if ($invoiceTransaction->family_id) {
+            ProductCategoryHydrateTimeSeriesRecords::dispatch(
+                $invoiceTransaction->family_id,
+                $invoiceTransaction->date->copy()->subYear(),
+                $invoiceTransaction->date
+            )->delay(1800);
+        }
+
+        if ($invoiceTransaction->department_id) {
+            ProductCategoryHydrateTimeSeriesRecords::dispatch(
+                $invoiceTransaction->department_id,
+                $invoiceTransaction->date->copy()->subYear(),
+                $invoiceTransaction->date
+            )->delay(1800);
+        }
+
+        if ($invoiceTransaction->sub_department_id) {
+            ProductCategoryHydrateTimeSeriesRecords::dispatch(
+                $invoiceTransaction->sub_department_id,
+                $invoiceTransaction->date->copy()->subYear(),
+                $invoiceTransaction->date
+            )->delay(1800);
         }
 
         return $invoiceTransaction;
