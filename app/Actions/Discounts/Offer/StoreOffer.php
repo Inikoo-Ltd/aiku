@@ -67,7 +67,6 @@ class StoreOffer extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request)
     {
-        dd($offerCampaign);
         $this->initialisationFromShop($shop, $request);
 
         return $this->action(
