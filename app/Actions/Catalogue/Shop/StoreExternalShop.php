@@ -10,9 +10,11 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireBrand;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
+use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
 use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
@@ -52,6 +54,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -59,6 +62,9 @@ class StoreExternalShop extends OrgAction
 {
     use WithStoreShopRules;
     use WithModelAddressActions;
+    use WithFaireShopApiCollection;
+
+    public array $settings;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -75,6 +81,23 @@ class StoreExternalShop extends OrgAction
     public function handle(Organisation $organisation, array $modelData): Shop
     {
         $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
+
+        if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+            $this->settings = [
+                'faire' => [
+                    'access_token' => Arr::get($modelData, 'access_token')
+                ]
+            ];
+
+            $faireBrand = $this->getFaireBrand();
+
+            if(! Arr::has($faireBrand, 'name')) {
+                throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
+            }
+
+            data_set($modelData, 'name', $faireBrand['name']);
+        }
+
         return StoreShop::make()->action($organisation, $modelData);
     }
 
