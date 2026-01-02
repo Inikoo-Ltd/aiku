@@ -248,32 +248,7 @@ onMounted(() => {
 
 				<div v-for="m in group" :key="m.id"
 					:class="['flex', isUserMessage(m) ? 'justify-end' : 'justify-start']">
-
 					<BubbleChat :message="m" viewerType="user" />
-
-					<!-- <div :class="[
-						'bubble',
-						isUserMessage(m)
-							? 'bubble-user'
-							: m.sender_type === 'agent'
-								? 'bubble-agent'
-								: 'bubble-system',
-					]">
-						<div class="bubble-text">
-							{{ m.message_text }}
-						</div>
-
-						<div class="bubble-meta">
-							<span class="bubble-time-text">
-								{{ formatTime(m.created_at) }}
-							</span>
-
-							<span v-if="isUserMessage(m)" class="bubble-check">
-								{{ m.is_read ? "✓✓" : "✓" }}
-							</span>
-						</div>
-					</div> -->
-
 				</div>
 			</template>
 
@@ -320,7 +295,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-
 .chat-header {
 	@apply flex justify-between items-center px-3 py-2 border-b text-sm font-semibold;
 }

@@ -268,6 +268,35 @@ const handleClickOutside = (e: MouseEvent) => {
 				@click="onViewMessageDetails">
 				{{ session?.guest_identifier || session?.contact_name }}
 			</span>
+
+				<div class="relative" ref="menuRef">
+				<button @click.stop="isMenuOpen = !isMenuOpen">
+					<FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
+				</button>
+
+				<div v-if="isMenuOpen && !isClosed"
+					class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
+
+					<ModalConfirmationDelete :routeDelete="{
+						name: 'grp.org.crm.agents.sessions.close',
+						parameters: [session.organisation.id, session?.ulid],
+						method: 'patch',
+					}" :title="trans('Are you sure you want to close this session?')" @success="$emit('close-session')">
+
+						<template #default="{ changeModel }">
+							<button @click="changeModel" class="menu-item text-red-600">
+								<FontAwesomeIcon :icon="faTimesCircle" />
+								{{ trans('Close Chat Session') }}
+							</button>
+						</template>
+					</ModalConfirmationDelete>
+
+
+					<button class="menu-item" @click="onViewMessageDetails">
+						<FontAwesomeIcon :icon="faMessage" /> {{ trans('Message Details') }}
+					</button>
+				</div>
+			</div>
 		</header>
 
 		<!-- Messages -->
@@ -305,10 +334,10 @@ const handleClickOutside = (e: MouseEvent) => {
 		<footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
 
 			<!-- Attachment -->
-			<button @click="fileInput?.click()"
+			<!-- <button @click="fileInput?.click()"
 				class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 shrink-0">
 				<FontAwesomeIcon :icon="faPaperclip" />
-			</button>
+			</button> -->
 
 			<!-- Message Input -->
 			<textarea ref="messageInput" v-model="newMessage" @input="autoResize"
@@ -321,8 +350,20 @@ const handleClickOutside = (e: MouseEvent) => {
 	</div>
 </template>
 
-
 <style scoped>
+.menu-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	width: 100%;
+	font-size: 14px;
+}
+
+.menu-item:hover {
+	background: #f3f4f6;
+}
+
 ::-webkit-scrollbar {
 	width: 5px;
 }

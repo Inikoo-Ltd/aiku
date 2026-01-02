@@ -72,6 +72,8 @@ const reloadContacts = async () => {
 				priority: s.priority,
 				guest_profile: s.guest_profile,
 				agent: s.assigned_agent,
+				shop : s.shop,
+				organisation : s.organisation
 			})
 		)
 	} catch (e) {
@@ -142,6 +144,8 @@ const openChat = (c: Contact) => {
 		web_user: c.webUser,
 		guest_profile: c.guest_profile,
 		assigned_agent: c.agent,
+		shop : c.shop,
+		organisation : c.organisation
 	} as SessionAPI
 	messages.value = c.messages ?? []
 }
@@ -207,6 +211,7 @@ const assignToSelf = async (ulid: string) => {
 }
 
 const handleClickContact = async (c: Contact) => {
+	console.log(c)
 	errorPerContact.value[c.ulid] = ""
 
 	if (activeTab.value === "waiting") {
