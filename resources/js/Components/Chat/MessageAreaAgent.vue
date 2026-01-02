@@ -20,6 +20,7 @@ import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import { faUser } from "@far"
+import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -212,16 +213,6 @@ const initSocket = () => {
 	})
 }
 
-const onViewHistory = () => {
-	isMenuOpen.value = false
-	emit("view-history")
-}
-
-const onViewUserProfile = () => {
-	isMenuOpen.value = false
-	const slug = chatSession.value?.web_user?.slug || null
-	emit("view-user-profile", slug)
-}
 
 const onViewMessageDetails = () => {
 	isMenuOpen.value = false
@@ -277,71 +268,34 @@ const handleClickOutside = (e: MouseEvent) => {
 				@click="onViewMessageDetails">
 				{{ session?.guest_identifier || session?.contact_name }}
 			</span>
-
-
-			<!-- <div class="relative" ref="menuRef">
-				<button @click.stop="isMenuOpen = !isMenuOpen">
-					<FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
-				</button>
-
-				<div v-if="isMenuOpen && !isClosed"
-					class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
-
-					<ModalConfirmationDelete :routeDelete="{
-						name: 'grp.org.crm.agents.sessions.close',
-						parameters: [route().params.organisation, session?.ulid],
-						method: 'patch',
-					}" :title="trans('Are you sure you want to close this session?')" @success="$emit('close-session')">
-
-						<template #default="{ changeModel }">
-							<button @click="changeModel" class="menu-item text-red-600">
-								<FontAwesomeIcon :icon="faTimesCircle" />
-								{{ trans('Close Chat Session') }}
-							</button>
-						</template>
-					</ModalConfirmationDelete>
-
-					<button class="menu-item" @click="onViewHistory">
-						<FontAwesomeIcon :icon="faHistory" /> {{ trans('History chat') }}
-					</button>
-
-					<button class="menu-item" @click="onViewUserProfile">
-						<FontAwesomeIcon :icon="faAddressCard" /> {{ trans('Detail User Profile') }}
-					</button>
-
-					<button class="menu-item" @click="onViewMessageDetails">
-						<FontAwesomeIcon :icon="faMessage" /> {{ trans('Message Details') }}
-					</button>
-				</div>
-			</div> -->
-
 		</header>
 
 		<!-- Messages -->
-		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3">
+		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
 			<template v-for="(msgs, date) in groupedMessages" :key="date">
 				<div class="text-center text-xs text-gray-400">{{ date }}</div>
 
 				<div v-for="msg in msgs" :key="msg.id" class="flex"
 					:class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
 
-					<div class="px-3 py-2 rounded-lg max-w-[75%] text-sm flex items-center gap-2 cursor-default" :class="msg.sender_type === 'agent'
+
+					<BubbleChat :message="msg" viewerType="agent" />
+
+					<!-- 	<div class="px-3 py-2 rounded-lg max-w-[75%] text-sm flex items-center gap-2 cursor-default" :class="msg.sender_type === 'agent'
 						? 'bubble-chat text-white'
 						: 'bg-gray-200'">
 						<span>{{ msg.message_text }}</span>
 
-						<!-- loading -->
 						<span v-if="msg._status === 'sending'" class="text-xs opacity-70 animate-pulse">
 							<LoadingIcon />
 						</span>
 
-						<!-- failed → klik untuk resend -->
+
 						<button v-if="msg._status === 'failed'" @click="resendMessage(msg)"
 							class="text-xs text-red-300 hover:text-red-500" title="Click to resend">
 							<FontAwesomeIcon :icon="faExclamation" />
 						</button>
-					</div>
-
+					</div> -->
 
 				</div>
 			</template>
@@ -369,26 +323,6 @@ const handleClickOutside = (e: MouseEvent) => {
 
 
 <style scoped>
-.bubble-chat,
-.bubble-primary {
-	background: v-bind("layout?.app?.theme[4]");
-	color: v-bind("layout?.app?.theme[5]");
-	padding: 8px 14px;
-}
-
-.menu-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 10px 16px;
-	width: 100%;
-	font-size: 14px;
-}
-
-.menu-item:hover {
-	background: #f3f4f6;
-}
-
 ::-webkit-scrollbar {
 	width: 5px;
 }
