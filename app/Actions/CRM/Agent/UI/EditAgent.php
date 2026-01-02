@@ -2,53 +2,23 @@
 
 namespace App\Actions\CRM\Agent\UI;
 
-use App\Actions\OrgAction;
-use App\Models\CRM\Livechat\ChatAgent;
-use App\Models\SysAdmin\Organisation;
-use App\Models\HumanResources\Employee;
-use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\OrgAction;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\CRM\Livechat\ChatAgent;
+use App\Actions\Helpers\Shop\UI\GetShopOptions;
+use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
+use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 
 class EditAgent extends OrgAction
 {
     /**
      * Load model
      */
-    public function handle(ChatAgent $agent): ChatAgent
+    public function handle(Organisation $organisation, ChatAgent $agent, ActionRequest $request): Response
     {
-        return $agent;
-    }
-
-    /**
-     * Controller endpoint
-     */
-    public function asController(Organisation $organisation, $agentId, ActionRequest $request)
-    {
-        $agent = ChatAgent::findOrFail($agentId);
-
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($agent);
-    }
-
-    /**
-     * Inertia response
-     */
-    public function htmlResponse(ChatAgent $agent, ActionRequest $request): Response
-    {
-
-        $employees = Employee::whereNotNull('user_id')
-            ->orderBy('contact_name')
-            ->get()
-            ->map(fn ($employee) => [
-                'label' => $employee->contact_name ?? $employee->alias ?? 'Unnamed',
-                'value' => $employee->user_id,
-            ])
-            ->values()
-            ->toArray();
-
 
         return Inertia::render(
             'EditModel',
@@ -56,7 +26,7 @@ class EditAgent extends OrgAction
                 'title' => __('Edit CRM Agent'),
 
                 'pageHead' => [
-                    'title' => __('Edit '). $agent->user->contact_name ?? __('Agent'),
+                    'title' => __('Edit ') . $agent->user->contact_name ?? __('Agent'),
                     'icon'  => [
                         'title' => __('CRM Agent'),
                         'icon'  => 'fal fa-headset',
@@ -129,6 +99,25 @@ class EditAgent extends OrgAction
                             ],
                         ],
 
+                        [
+                            'label'  => __('Organisation & Shop'),
+                            'title'  => __('Edit Organisation & Shop'),
+                            'fields' => [
+                                'organisation_id' => [
+                                    'type'  => 'select',
+                                    'label' => __('Organisation'),
+                                    'options'  => GetOrganisationOptions::make()->filter($organisation->slug),
+                                    'value' => $agent->organisations->pluck('id')->toArray() ?? null,
+                                ],
+                                'shop_id' => [
+                                    'type'  => 'select',
+                                    'label' => __('Shop'),
+                                    'options'     => GetShopOptions::run($organisation->slug),
+                                    'value' => $agent->shops->pluck('id')->toArray() ?? null,
+                                ],
+                            ],
+                        ],
+
                     ],
 
                     'args' => [
@@ -144,5 +133,15 @@ class EditAgent extends OrgAction
 
             ]
         );
+    }
+
+    /**
+     * Controller endpoint
+     */
+    public function asController(Organisation $organisation,  $agentId, ActionRequest $request): Response
+    {
+        $this->initialisation($organisation, $request);
+        $agent = ChatAgent::findOrFail($agentId);
+        return $this->handle($organisation, $agent, $request);
     }
 }

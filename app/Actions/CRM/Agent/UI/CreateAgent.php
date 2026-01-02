@@ -8,7 +8,9 @@ use App\Actions\OrgAction;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\HumanResources\Employee;
+use App\Actions\Helpers\Shop\UI\GetShopOptions;
 use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
+use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 
 class CreateAgent extends OrgAction
 {
@@ -28,15 +30,18 @@ class CreateAgent extends OrgAction
             ]
         ];
 
-        $employees = Employee::whereNotNull('user_id')
-         ->orderBy('contact_name')
-         ->get()
-         ->map(fn ($employee) => [
-             'label' => $employee->contact_name ?? $employee->alias ?? 'Unnamed',
-             'value' => $employee->user_id,
-         ])
-         ->values()
-         ->toArray();
+        $employees = Employee::query()
+            ->whereNotNull('user_id')
+            ->orderBy('contact_name')
+            ->get()
+            ->map(fn($employee) => [
+                'label' => "{$employee->organisation->code} | {$employee->contact_name}"
+                    ?? $employee->alias
+                    ?? 'Unnamed',
+                'value' => $employee->user_id,
+            ])
+            ->values()
+            ->toArray();
 
         return Inertia::render(
             'CreateModel',
@@ -69,6 +74,28 @@ class CreateAgent extends OrgAction
                             'title'  => __('CRM Agent Information'),
 
                             'fields' => [
+                                'organisation_id' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Organisation'),
+                                    'placeholder' => __('Select one option'),
+                                    'options'     => GetOrganisationOptions::make()->filter($organisation->slug),
+                                    'required'    => true,
+                                    'mode'        => 'single',
+                                    'searchable'  => true,
+                                    'key'         => 'organisation_select'
+                                ],
+
+                                'shop_id' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Shop'),
+                                    'placeholder' => __('Select one option'),
+                                    'options'     => GetShopOptions::run($organisation->slug),
+                                    'required'    => false,
+                                    'mode'        => 'single',
+                                    'searchable'  => true,
+                                    'key'         => 'shop_select'
+                                ],
+
                                 'user_id' => [
                                     'type'        => 'select',
                                     'label'       => __('Agent'),
@@ -95,6 +122,7 @@ class CreateAgent extends OrgAction
                                 'auto_accept' => [
                                     'type'  => 'toggle',
                                     'label' => __('Auto Accept'),
+                                    'value'  => true,
                                 ],
                             ],
                         ],

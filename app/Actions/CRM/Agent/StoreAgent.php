@@ -4,6 +4,7 @@ namespace App\Actions\CRM\Agent;
 
 use Exception;
 use App\Actions\OrgAction;
+use Illuminate\Support\Facades\DB;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
@@ -13,27 +14,9 @@ class StoreAgent extends OrgAction
 {
     public function asController(Organisation $organisation, ActionRequest $request): ?ChatAgent
     {
+
         $this->initialisation($organisation, $request);
-
-        try {
-            return $this->handle($this->validatedData);
-        } catch (ValidationException $e) {
-            request()->session()->flash('notification', [
-                'status'      => 'error',
-                'title'       => __('Error!'),
-                'description' => $e->getMessage(),
-            ]);
-
-            return null;
-        } catch (Exception $e) {
-            request()->session()->flash('notification', [
-                'status'      => 'error',
-                'title'       => __('Error!'),
-                'description' => __('Error Backhend'),
-            ]);
-
-            return null;
-        }
+        return $this->handle($this->validatedData);
     }
 
 
@@ -49,29 +32,57 @@ class StoreAgent extends OrgAction
 
     public function handle(array $modelData): ChatAgent
     {
-        $exists = ChatAgent::where('user_id', $modelData['user_id'])
-            ->whereNull('deleted_at')
-            ->exists();
+        return DB::transaction(function () use ($modelData) {
 
-        if ($exists) {
-            throw ValidationException::withMessages([
-                'user_id' => __('User already has an active chat agent profile.'),
+            $exists = ChatAgent::query()
+                ->where('user_id', $modelData['user_id'])
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if ($exists) {
+                session()->flash('notification', [
+                    'status'      => 'error',
+                    'title'       => __('Error'),
+                    'description' => __('User already has an active chat agent profile.'),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'user_id' => __('User already has an active chat agent profile.'),
+                ]);
+            }
+
+            $agent = ChatAgent::create([
+                'user_id'               => $modelData['user_id'],
+                'max_concurrent_chats'  => $modelData['max_concurrent_chats'],
+                'specialization'        => $modelData['specialization'] ?? null,
+                'auto_accept'           => $modelData['auto_accept'] ?? true,
+                'is_online'             => false,
+                'is_available'          => false,
+                'current_chat_count'    => 0,
             ]);
-        }
 
+            AssignChatAgentToScope::run($modelData, $agent);
 
-        $modelData['is_online']          ??= false;
-        $modelData['is_available']       ??= false;
-        $modelData['auto_accept']        ??= true;
-        $modelData['current_chat_count'] ??= 0;
-
-        return ChatAgent::create($modelData);
+            return $agent;
+        });
     }
 
 
     public function rules(): array
     {
         return [
+            'organisation_id' => [
+                'required',
+                'integer',
+                'exists:organisations,id',
+            ],
+
+            'shop_id' => [
+                'nullable',
+                'integer',
+                'exists:shops,id',
+            ],
+
             'user_id' => [
                 'required',
                 'integer',
