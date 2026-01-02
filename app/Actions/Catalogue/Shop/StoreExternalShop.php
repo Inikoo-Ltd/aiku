@@ -87,15 +87,15 @@ class StoreExternalShop extends OrgAction
         if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
             $modelData = $this->handleFaireShop($modelData);
         } else if($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
-            $modelData = $this->handleShopifyShop();
+            $modelData = $this->handleShopifyShop($modelData);
         }
 
         return StoreShop::make()->action($organisation, $modelData);
     }
 
-    public function handleShopifyShop()
+    public function handleShopifyShop(array $modelData): array
     {
-
+        return [];
     }
 
     public function handleFaireShop(array $modelData): array
