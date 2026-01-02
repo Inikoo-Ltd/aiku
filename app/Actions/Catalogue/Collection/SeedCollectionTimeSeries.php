@@ -25,9 +25,10 @@ class SeedCollectionTimeSeries
     public function asCommand(Command $command): void
     {
         $frequencyOption = $command->option('frequency');
-        $collections = Collection::whereNotIn('state', [CollectionStateEnum::IN_PROCESS])->get();
+        $collections     = Collection::whereNotIn('state', [
+            CollectionStateEnum::IN_PROCESS
+        ])->get();
 
-        $frequencies = [];
         if ($frequencyOption === 'all') {
             $frequencies = TimeSeriesFrequencyEnum::cases();
         } else {
@@ -43,7 +44,7 @@ class SeedCollectionTimeSeries
             }
         }
 
-        $command->info("Dispatched {$totalDispatched} time series seed jobs for collections.");
+        $command->info("Dispatched $totalDispatched time series seed jobs for collections.");
     }
 
     public function handle(Collection $collection, TimeSeriesFrequencyEnum $frequency): void
@@ -59,11 +60,9 @@ class SeedCollectionTimeSeries
         }
 
         $from = Carbon::now('UTC')->subYear()->startOfYear();
-        $to = Carbon::now('UTC')->endOfDay();
+        $to   = Carbon::now('UTC')->endOfDay();
 
         CollectionHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)
-            ->WithoutOverlapping()
-            ->delay(now()->addMinute())
             ->onQueue('low-priority');
     }
 }
