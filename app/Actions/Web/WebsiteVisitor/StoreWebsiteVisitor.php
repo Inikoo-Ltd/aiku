@@ -23,7 +23,7 @@ class StoreWebsiteVisitor
 
     protected function getLocationWithFallback(string $ip): array
     {
-        $cacheKey = "location:ip:{$ip}";
+        $cacheKey = "location:ip:$ip";
 
         return Cache::remember($cacheKey, 86400, function () use ($ip) {
             try {
@@ -125,7 +125,7 @@ class StoreWebsiteVisitor
             'is_new_visitor'   => $isNewVisitor,
         ]);
 
-        $cacheKey = "visitor:session:{$sessionId}:{$website->id}";
+        $cacheKey = "visitor:session:$sessionId:$website->id";
         Cache::put($cacheKey, $visitor, 1800);
 
         return $visitor;
