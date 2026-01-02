@@ -118,7 +118,7 @@ class Variant extends Model implements Auditable, HasMedia
 
     public function subDepartment(): BelongsTo
     {
-        return $this->belongsTo(ProductCategory::class, 'sub_deparment_id');
+        return $this->belongsTo(ProductCategory::class, 'sub_department_id');
     }
 
     public function family(): BelongsTo
