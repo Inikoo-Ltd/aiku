@@ -29,6 +29,7 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $timeSeriesId, Carbon $from, Carbon $to): int
     {
+        return 0;
         $timeSeries = ProductCategoryTimeSeries::find($timeSeriesId);
 
         if (!$timeSeries) {
