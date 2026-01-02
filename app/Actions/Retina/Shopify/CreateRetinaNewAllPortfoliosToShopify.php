@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Shopify;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,8 +24,16 @@ class CreateRetinaNewAllPortfoliosToShopify extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
+        // Bulk upload portfolio item will now ignore based on condition set below
         $portfolios = $customerSalesChannel
             ->portfolios()
+            ->whereExists(function ($q) {
+                $q->selectRaw(1)
+                    ->from('products as p')
+                    ->whereColumn('p.id', 'portfolios.item_id')
+                    ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
+                    ->where('p.is_for_sale', true);
+            })
             ->where('status', true)
             ->where('platform_status', false)
             ->pluck('id');

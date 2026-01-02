@@ -118,6 +118,53 @@ class CreateExternalShop extends OrgAction
                             'value'    => '',
                         ]
                     ]
+                ],
+                [
+                    'title'  => __('localization'),
+                    'icon'   => 'fa-light fa-phone',
+                    'fields' => [
+                        'country_id'  => [
+                            'type'        => 'select',
+                            'label'       => __('country'),
+                            'placeholder' => __('Select a country'),
+                            'options'     => GetCountriesOptions::run(),
+                            'value'       => $this->organisation->country_id,
+                            'required'    => true,
+                            'mode'        => 'single',
+                            'searchable'  => true
+                        ],
+                        'language_id' => [
+                            'type'        => 'select',
+                            'label'       => __('language'),
+                            'placeholder' => __('Select a language'),
+                            'options'     => GetLanguagesOptions::make()->all(),
+                            'value'       => $this->organisation->language_id,
+                            'required'    => true,
+                            'mode'        => 'single',
+                            'searchable'  => true
+                        ],
+                        'currency_id' => [
+                            'type'        => 'select',
+                            'label'       => __('currency'),
+                            'placeholder' => __('Select a currency'),
+                            'options'     => GetCurrenciesOptions::run(),
+                            'value'       => $this->organisation->currency_id,
+                            'required'    => true,
+                            'mode'        => 'single',
+                            'searchable'  => true
+                        ],
+                        'timezone_id' => [
+                            'type'        => 'select',
+                            'label'       => __('timezone'),
+                            'placeholder' => __('Select a timezone'),
+                            'options'     => GetTimeZonesOptions::run(),
+                            'value'       => $this->organisation->timezone_id,
+                            'required'    => true,
+                            'mode'        => 'single',
+                            'searchable'  => true
+                        ],
+
+                    ]
                 ]
             ],
             default => []

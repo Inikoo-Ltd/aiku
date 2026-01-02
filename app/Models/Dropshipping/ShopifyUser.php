@@ -8,6 +8,7 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Actions\Catalogue\Shop\Traits\WithShopifyShopApiCollection;
 use App\Actions\Dropshipping\ShopifyUser\Traits\WithInitShopifyClient;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
@@ -114,6 +115,7 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     use ShopModel;
     use SoftDeletes;
     use WithInitShopifyClient;
+    use WithShopifyShopApiCollection;
 
     protected $casts = [
         'data'      => 'array',
@@ -174,5 +176,10 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     public function customerSalesChannel(): BelongsTo
     {
         return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
+    public function externalShop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'external_shop_id');
     }
 }

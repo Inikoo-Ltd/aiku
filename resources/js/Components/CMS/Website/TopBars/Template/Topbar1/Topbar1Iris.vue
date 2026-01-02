@@ -180,7 +180,7 @@ watch(
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
             <!-- Section: Profile -->
-            <LinkIris v-if="false" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
+            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
                     

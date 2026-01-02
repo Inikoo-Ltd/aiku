@@ -77,12 +77,12 @@ const screenModeOptions = [
 ]
 
 // Section: Button reindex website search
-const isAbleReindex = computed(() => {
-  const lastReindexed30Minutes = new Date(props.data?.luigi_data.last_reindexed)
-  lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
+// const isAbleReindex = computed(() => {
+//   const lastReindexed30Minutes = new Date(props.data?.luigi_data.last_reindexed)
+//   lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
 
-  return lastReindexed30Minutes < new Date()
-})
+//   return lastReindexed30Minutes < new Date()
+// })
 </script>
 
 <template>
@@ -156,9 +156,7 @@ const isAbleReindex = computed(() => {
               </template>
             </ModalConfirmationDelete>
 
-            <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id" s
-              xv-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
-              xdisabled="!isAbleReindex"
+            <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"
               :routeTarget="{
                 name: 'grp.models.webpage_luigi.reindex',
                 parameters: {
@@ -171,16 +169,7 @@ const isAbleReindex = computed(() => {
                   {{ trans('Reindex Webpage Search') }}
                 </span>
               </template>
-              <template v-if="isAbleReindex" #iconRight>
-                <!-- <div v-if="data?.luigi_data?.luigisbox_private_key"
-                  v-tooltip="trans('This will reindexing the product that will appear in the search feature')"
-                  class="text-gray-400 hover:text-gray-700">
-                  <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
-                </div>
-                <div v-else v-tooltip="trans('Please input Luigi Private Key do start reindexing')"
-                  class="text-amber-500">
-                  <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-                </div> -->
+              <template #iconRight>
                 <div v-if="!data?.luigi_data?.luigisbox_private_key" v-tooltip="trans('Please input Luigi Private Key do start reindexing')"
                   class="text-amber-500">
                   <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
