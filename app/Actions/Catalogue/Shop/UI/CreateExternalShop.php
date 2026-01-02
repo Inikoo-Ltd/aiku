@@ -14,6 +14,7 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -32,9 +33,9 @@ class CreateExternalShop extends OrgAction
      */
     public function htmlResponse(ActionRequest $request): Response
     {
-        $type = $request->route()->parameter('type');
+        $engine = $request->route()->parameter('engine');
 
-        $externalShopBlueprint = match ($type) {
+        $externalShopBlueprint = match ($engine) {
             ShopEngineEnum::FAIRE->value => [
                 [
                     'title'  => __('detail'),
@@ -133,27 +134,30 @@ class CreateExternalShop extends OrgAction
                 'formData'    => [
                     'blueprint' => $externalShopBlueprint,
                     'route'     => [
-                        'name' => 'grp.models.shop.store',
+                        'name' => 'grp.models.org.shop.external.store',
+                        'parameters' => [
+                            'organisation' => $this->organisation->id,
+                            'engine'       => $engine
+                        ]
                     ]
                 ],
-
             ]
         );
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $this->set('type', $request->route()->parameter('type'));
+        $this->set('engine', $request->route()->parameter('engine'));
     }
 
     public function rules(): array
     {
         return [
-            'type' => ['required', Rule::enum(ShopEngineEnum::class)]
+            'engine' => ['required', Rule::in(ShopEngineEnum::values())]
         ];
     }
 
-    public function asController(Organisation $organisation, string $type, ActionRequest $request): ActionRequest
+    public function asController(Organisation $organisation, string $engine, ActionRequest $request): ActionRequest
     {
         $this->initialisation($organisation, $request);
 

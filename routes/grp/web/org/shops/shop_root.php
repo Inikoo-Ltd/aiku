@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexShops::class)->name('index');
 Route::get('create', CreateShop::class)->name('create');
-Route::get('external/{type}/create', CreateExternalShop::class)->name('create');
+Route::get('external/{engine}/create', CreateExternalShop::class)->name('create');
 Route::get('{shop}', ShowShop::class)->name('show');
 
 Route::get('{shop}', function ($organisation, $shop) {
