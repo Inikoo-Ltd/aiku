@@ -36,9 +36,9 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
         }
 
         $productCategory = $timeSeries->productCategory;
-        $frequency = $timeSeries->frequency;
+        $frequency       = $timeSeries->frequency;
 
-        $periods = $this->generatePeriods($from, $to, $frequency);
+        $periods        = $this->generatePeriods($from, $to, $frequency);
         $recordsCreated = 0;
 
         foreach ($periods as $period) {
@@ -51,7 +51,7 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
             $record = $timeSeries->records()->updateOrCreate(
                 [
                     'from' => $period['from'],
-                    'to' => $period['to'],
+                    'to'   => $period['to'],
                 ],
                 $data
             );
@@ -144,13 +144,13 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
             ->count('customer_id');
 
         return [
-            'sales' => $salesData->sales ?? 0,
+            'sales'              => $salesData->sales ?? 0,
             'sales_org_currency' => $salesData->sales_org_currency ?? 0,
             'sales_grp_currency' => $salesData->sales_grp_currency ?? 0,
-            'invoices' => $invoicesCount,
-            'refunds' => $refundsCount,
-            'orders' => $ordersCount,
-            'delivery_notes' => $deliveryNotesCount,
+            'invoices'           => $invoicesCount,
+            'refunds'            => $refundsCount,
+            'orders'             => $ordersCount,
+            'delivery_notes'     => $deliveryNotesCount,
             'customers_invoiced' => $customersInvoicedCount,
         ];
     }
