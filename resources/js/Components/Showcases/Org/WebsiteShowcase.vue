@@ -67,16 +67,16 @@ const links = computed(() => {
 })
 
 // Section: Button reindex website search
-const isAbleReindex = computed(() => {
-    const lastReindexed30Minutes = new Date(props.luigi_data.last_reindexed)
-    lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
+// const isAbleReindex = computed(() => {
+//     const lastReindexed30Minutes = new Date(props.luigi_data.last_reindexed)
+//     lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
 
-    return lastReindexed30Minutes < new Date()
-})
-const dateAdd30MinutesLastReindex = computed(() => {
-    const dateLastReindex = new Date(props.luigi_data.last_reindexed)
-    return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30)
-})
+//     return lastReindexed30Minutes < new Date()
+// })
+// const dateAdd30MinutesLastReindex = computed(() => {
+//     const dateLastReindex = new Date(props.luigi_data.last_reindexed)
+//     return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30)
+// })
 
 
 </script>
@@ -153,21 +153,24 @@ const dateAdd30MinutesLastReindex = computed(() => {
                             </template>
                         </ModalConfirmationDelete>
 
-                        <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id" s
-                            xv-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
-                            xdisabled="!isAbleReindex" :routeTarget="{
+                        <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id"
+                            :routeTarget="{
                                 name: 'grp.models.website_luigi.reindex',
                                 parameters: {
                                     website: data?.id
                                 }
-                            }" icon="fal fa-search" method="post"
-                            :type="!isAbleReindex || luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
+                            }"
+                            icon="fal fa-search"
+                            method="post"
+                            :type="luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
+                            full
+                        >
                             <template #label>
                                 <span class="text-xs">
                                     {{ trans('Reindex Website Search') }}
                                 </span>
                             </template>
-                            <template v-if="isAbleReindex" #iconRight>
+                            <template #iconRight>
                                 <div v-if="luigi_data?.luigisbox_private_key"
                                     v-tooltip="trans('This will reindexing the product that will appear in the search feature')"
                                     class="text-gray-400 hover:text-gray-700">
