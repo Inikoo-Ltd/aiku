@@ -13,7 +13,7 @@ import {inject, onMounted, ref, computed} from "vue"
 import {trans} from "laravel-vue-i18n"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
+import {FontAwesomeIcon, FontAwesomeLayers} from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import {debounce, get, set} from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
@@ -31,7 +31,11 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle, faHandPointer, faHandshakeSlash, faHandshake, faTimes
+    faRecycle, faHandPointer, faHandshakeSlash, faHandshake, faTimes,
+    faSkullCrossbones,
+    faBan,
+    faDollarSign,
+    faCube
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -387,8 +391,13 @@ const onCheckedAll = ({data, allChecked}) => {
 }
 
 const onDisableCheckbox = (item) => {
-    if (item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
+    if ((item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) || disableButtons(item)) return true
     return false
+}
+
+
+const disableButtons = (item) => {
+    return item.product_state == 'discontinued' || !item.is_for_sale;
 }
 
 
@@ -455,7 +464,7 @@ const calculateVat = (price: number) => {
 </script>
 
 <template>
-        <Message v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0" severity="error"
+    <Message v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0" severity="error"
              class="relative m-4 pr-10">
         <!-- Close Button -->
         <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
@@ -472,16 +481,20 @@ const calculateVat = (price: number) => {
         </ul>
     </Message>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true"
-           @onChecked="(item) => onChangeCheked(true, item)"
-           @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
-           checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)"
-           :disabledCheckbox="(item)=>onDisableCheckbox(item)" :rowColorFunction="(item) => {
-			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
-				return 'bg-yellow-50'
-			} else {
-				return ''
-			}
-		}" :isParentLoading="!!isLoadingTable">
+        @onChecked="(item) => onChangeCheked(true, item)"
+        @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
+        checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)"
+        :disabledCheckbox="(item)=>onDisableCheckbox(item)" 
+        :rowColorFunction="(item) => {
+            if (disableButtons(item)) {
+                return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
+            }else if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
+                return 'bg-yellow-50'
+            } else {
+                return ''
+            }
+        }" 
+        :isParentLoading="!!isLoadingTable">
 
         <template #header-checkbox="data">
             <div></div>
@@ -587,23 +600,6 @@ const calculateVat = (price: number) => {
                     {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, (product.customer_price)) }}
                 </div>
             </div>
-
-            <!-- Section: is code exist in platform -->
-            <div v-if="product.is_code_exist_in_platform" class="text-xs text-amber-500">
-                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true"/>
-                <span class="pr-2">{{
-                        trans("We found same product in your shop, do you want to create new or use existing?")
-                    }}</span>
-                <Button v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
-                        label="Create new" icon="fal fa-plus" type="tertiary" size="xxs"/>
-                <span class="px-2 text-gray-500">or</span>
-                <Button
-                    v-tooltip="trans('Will sync the product and prioritize our product', {platform: props.platform_data.name})"
-                    label="Use Existing" icon="fal fa-sync-alt"
-                    :disabled="data?.product_availability?.options === 'use_existing'"
-                    :type="data?.product_availability?.options === 'use_existing' ? 'primary' : 'tertiary'"
-                    size="xxs"/>
-            </div>
         </template>
 
         <!-- Column: Status (repair) -->
@@ -624,22 +620,48 @@ const calculateVat = (price: number) => {
                 <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
                                  fixed-width aria-hidden="true"/>
             </div>
-
-
         </template>
 
         <template #cell(message)="{item}">
-            <div v-if="item.message">
-                <FontAwesomeIcon v-tooltip="item.message" v-if="item.message === 'OK'" icon='fal fa-check-circle' class="text-green-500 text-xl" fixed-width aria-hidden='true' />
-                <FontAwesomeIcon v-tooltip="item.message" v-else icon='fal fa-exclamation-circle' class="text-red-500 text-xl" fixed-width aria-hidden='true' />
+            <div class="whitespace min-w-[50px] text-left font-medium italic whitespace-break-spaces text-red-500" v-if="disableButtons(item)">
+                <FontAwesomeLayers v-if="item.product_state == 'discontinued'"
+                    v-tooltip="trans('This product line has been discontinued. Please remove this item')"
+                    class="flex h-full w-full"
+                >
+                    <FontAwesomeIcon
+                        :icon="faBan"
+                        class="text-2xl"
+                    />
+                    <FontAwesomeIcon
+                        :icon="faCube"
+                        class="text-md text-center"
+                    />
+                </FontAwesomeLayers>
+                <FontAwesomeLayers v-else
+                    v-tooltip="trans('This product line is currently not for sale')"
+                    class="flex h-full w-full"
+                >
+                    <FontAwesomeIcon
+                        :icon="faBan"
+                        class="text-2xl"
+                    />
+                    <FontAwesomeIcon
+                        :icon="faDollarSign"
+                        class="text-lg text-center"
+                    />
+                </FontAwesomeLayers>
             </div>
+            <div class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full" v-else-if="item.message">
+                <FontAwesomeIcon v-tooltip="item.message" v-if="item.message === 'OK'" icon='fal fa-check-circle' class="text-green-500 text-xl" style="width:100% !important;" fixed-width aria-hidden='true' />
+                <FontAwesomeIcon v-tooltip="item.message" v-else icon='fal fa-exclamation-circle' class="text-red-500 text-xl" style="width:100% !important;" fixed-width aria-hidden='true' />
+            </div>
+            <div v-else />
         </template>
 
         <!-- Column: Actions (connect) -->
         <template #cell(matches)="{ item }">
             <template v-if="item.customer_sales_channel_platform_status">
                 <template v-if="!item.platform_status">
-
                     <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
                          :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
@@ -651,39 +673,51 @@ const calculateVat = (price: number) => {
                                 <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0] }}</span>
                             </div>
                         </div>
-
-
-                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches && !disabled"
-                                        v-tooltip="trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
+                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches && !disabled && item.is_for_sale"
+                            v-tooltip="item.is_for_sale ? trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'}) : trans('This product line is currently not for sale')"
+                            :routeTarget="item.is_for_sale ? {
                                 method: 'post',
                                 name: props.routes.single_match.name,
                                 parameters: {
                                     portfolio: item.id,
                                     platform_product_id: item.platform_possible_matches.raw_data?.[0]?.id
                                 }
-                            }" :bindToLink="{
-                                preserveScroll: true,
-                            }" type="primary" :label="trans('Match with this product')" size="xxs"
-                                        icon="fal fa-hand-pointer"/>
-
+                            } : {}"
+                            :bindToLink="{ preserveScroll: true}" 
+                            type="primary" 
+                            :label="trans('Match with this product')" 
+                            size="xxs"
+                            icon="fal fa-hand-pointer"
+                            :disabled="disableButtons(item)"
+                        />
                     </div>
 
                     <div v-if="!disabled">
-                          <Button v-if="item.platform_possible_matches?.number_matches"
-                            @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                            :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
-                            type="tertiary"/>
-                    <Button v-else @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                            :label="trans('Match it with an existing product in your shop')" :capitalize="false"
+                        <Button v-if="item.platform_possible_matches?.number_matches"
+                            @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
+                            v-tooltip="item.is_for_sale ? trans('Choose another product from your shop') : trans('This product line is currently not for sale')"
+                            :label="trans('Choose another product from your shop')" 
+                            :capitalize="false" 
                             size="xxs"
-                            type="tertiary"/>
-
+                            type="tertiary"
+                            :style="'white-w-outline'"
+                            :disabled="disableButtons(item)"
+                        />
+                        <Button v-else 
+                            @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
+                            v-tooltip="item.is_for_sale ? trans('Match it with an existing product in your shop') : trans('This product line is currently not for sale')"
+                            :label="trans('Match it with an existing product in your shop')" 
+                            :capitalize="false"
+                            size="xxs"
+                            type="tertiary"
+                            :style="'white-w-outline'"
+                            :disabled="disableButtons(item)"
+                        />
                     </div>
 
                 </template>
 
                 <template v-else>
-
                     <template v-if="item.platform_product_data?.name">
                         <div class="flex gap-x-2 items-center">
                             <div v-if="item.platform_product_data?.images?.[0]?.src"
@@ -696,13 +730,18 @@ const calculateVat = (price: number) => {
                             </div>
                         </div>
                     </template>
-
-
-                    <Button v-if="!disabled" class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                            :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle"
-                            size="xxs"
-                            type="tertiary"/>
-
+                    <Button v-if="!disabled" 
+                        class="mt-2" 
+                        @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
+                        v-tooltip="item.is_for_sale ? trans('Connect with other product') : trans('This product line is currently not for sale')"
+                        :label="trans('Connect with other product')" 
+                        :capitalize="false" 
+                        :icon="faRecycle"
+                        size="xxs"
+                        type="tertiary"
+                        :style="'white-w-outline'"
+                        :disabled="disableButtons(item)"
+                    />
                 </template>
             </template>
 
@@ -750,6 +789,7 @@ const calculateVat = (price: number) => {
                                     preserveScroll: true,
                                 }"
                                 type="tertiary"
+                                :style="'white-w-outline'"
                                 :label="trans('Repair')"
                                 size="xxs"
                                 icon="fal fa-tools"
@@ -761,6 +801,7 @@ const calculateVat = (price: number) => {
                                 :label="trans('Open match list')"
                                 size="xxs"
                                 type="tertiary"
+                                :style="'white-w-outline'"
                             />
                         </div>
                     </div>
@@ -773,22 +814,23 @@ const calculateVat = (price: number) => {
         <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(create_new)="{ item }" v-if="!disabled">
             <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
-            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
-                 class="flex gap-x-2 items-center">
+            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status"
+                class="flex gap-x-2 items-center">
                 <ButtonWithLink
-                    v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
-                    :routeTarget="{
-                    method: 'post',
+                    v-tooltip="item.is_for_sale ? trans('Will create new product in :platform', {platform: props.platform_data.name}) : trans('This product line is currently not for sale')"
+                    :routeTarget="item.is_for_sale ? {
+                        method: 'post',
                         name: props.routes.single_create_new.name,
                         parameters: {
                             portfolio: item.id
                         },
-                    }"
+                    } : {}"
                     isWithError
                     icon=""
                     :label="trans('Create new product')"
                     size="xxs"
                     type="tertiary"
+                    :style="'white-w-outline'"
                     :bindToLink="{
                         preserveScroll: true,
                     }"
@@ -803,6 +845,7 @@ const calculateVat = (price: number) => {
                         }
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
+                    :disabled="disableButtons(item)"
                 />
             </div>
         </template>
@@ -810,17 +853,25 @@ const calculateVat = (price: number) => {
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }"  v-if=!disabled>
             <div class="flex gap-2">
-                <Button v-if="! item.platform_status"
-                        v-tooltip="trans('Edit detail of the product')"
-                        type="tertiary"
-                        size="xs"
-                        icon="fal fa-pencil"
-                @click="openEditModal(item)"/>
-
-            <ButtonWithLink v-tooltip="trans('Unselect product. This will remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
-                            :routeTarget="item.delete_portfolio" :method="'delete'" size="xs" :bindToLink="{
-						preserveScroll: true,
-					}"/>
+                <Button 
+                v-if="!item.platform_status && !(disableButtons(item))"
+                    v-tooltip="trans('Edit detail of the product')"
+                    type="tertiary"
+                    :style="'white-w-outline'"
+                    size="xs"
+                    icon="fal fa-pencil"
+                    @click="openEditModal(item)"
+                />
+                <ButtonWithLink 
+                    v-tooltip="trans('Unselect product. This will remove the product from :platform', {platform: props.platform_data.name})" 
+                    type="negative"
+                    icon="fal fa-skull"
+                    :routeTarget="item.delete_portfolio" 
+                    :method="'delete'" 
+                    size="xs" 
+                    :style="'white-r-outline'"
+                    :bindToLink="{preserveScroll: true}"
+                />
             </div>
         </template>
     </Table>
@@ -967,6 +1018,7 @@ const calculateVat = (price: number) => {
                         :label="`+${percent}%`"
                         size="xs"
                         type="tertiary"
+                        :style="'white-w-outline'"
                     />
                     <Button
                         v-for="amount in [2, 4, 6, 8, 10]"
@@ -975,6 +1027,7 @@ const calculateVat = (price: number) => {
                         :label="`+${amount}`"
                         size="xs"
                         type="tertiary"
+                        :style="'white-w-outline'"
                     />
                 </div>
             </div>
@@ -1010,6 +1063,7 @@ const calculateVat = (price: number) => {
             <div class="mt-3 flex gap-2">
                 <Button
                     type="tertiary"
+                    :style="'white-w-outline'"
                     @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
                     :label="trans('Save as Draft')"
                     full
