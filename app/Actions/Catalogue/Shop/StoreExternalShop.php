@@ -8,54 +8,25 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
-use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
-use App\Actions\Catalogue\Shop\External\Faire\GetFaireBrand;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
-use App\Actions\CRM\TrafficSource\SeedTrafficSources;
-use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
-use App\Actions\Helpers\Colour\GetRandomColour;
-use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
-use App\Actions\Helpers\Query\Seeders\ProspectQuerySeeder;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
-use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
-use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
-use App\Actions\SysAdmin\Organisation\SetIconAsShopLogo;
-use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
-use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Platform;
-use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
-use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\Role;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreExternalShop extends OrgAction
@@ -82,7 +53,7 @@ class StoreExternalShop extends OrgAction
     {
         $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
 
-        if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+        if ($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
             $this->settings = [
                 'faire' => [
                     'access_token' => Arr::get($modelData, 'access_token')
@@ -91,7 +62,7 @@ class StoreExternalShop extends OrgAction
 
             $faireBrand = $this->getFaireBrand();
 
-            if(! Arr::has($faireBrand, 'name')) {
+            if (! Arr::has($faireBrand, 'name')) {
                 throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
             }
 

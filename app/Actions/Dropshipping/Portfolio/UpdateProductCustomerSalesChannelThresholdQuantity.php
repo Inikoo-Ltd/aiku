@@ -26,7 +26,7 @@ class UpdateProductCustomerSalesChannelThresholdQuantity implements ShouldBeUniq
 
     public function getJobUniqueId(int|null $productId): string
     {
-        return $productId??'empty';
+        return $productId ?? 'empty';
     }
 
     public function handle(int|null $productId): void
