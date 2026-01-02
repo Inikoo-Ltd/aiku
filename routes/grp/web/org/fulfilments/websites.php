@@ -108,4 +108,5 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('', [ShowWebsiteAnalyticsDashboard::class,'inFulfilment'])->name('dashboard');
     Route::get('web-user-requests', [IndexWebUserRequests::class,'inFulfilment'])->name('web_user_requests.index');
+    Route::get('visitors', [\App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors::class, 'inFulfilment'])->name('visitors.index');
 });

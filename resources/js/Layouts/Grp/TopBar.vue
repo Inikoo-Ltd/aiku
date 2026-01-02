@@ -5,11 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { reactive, inject } from "vue"
 import MenuPopoverList from "@/Layouts/Grp/MenuPopoverList.vue"
 import TopBarSelectButton from "@/Layouts/Grp/TopBarSelectButton.vue"
-import { Menu, MenuButton, MenuItems, Disclosure } from "@headlessui/vue"
+import { Menu, MenuButton, MenuItems, Disclosure, MenuItem } from "@headlessui/vue"
 import { trans } from "laravel-vue-i18n"
 import Image from "@/Components/Image.vue"
 import { faChevronDown } from "@far"
@@ -59,7 +59,7 @@ import {
     faSign,
     faClipboardListCheck,
     faClipboardList,
-    faPiggyBank, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faAppleCrate
+    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faAppleCrate
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import MenuTopRight from "@/Layouts/Grp/MenuTopRight.vue"
@@ -73,7 +73,7 @@ import { useTruncate } from "@/Composables/useTruncate"
 library.add(faChevronDown, faTerminal, faUserAlien, faCog, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
     faBox, faBoxesAlt, faMoneyCheckAlt, faCashRegister, faCoins, faFileInvoiceDollar, faReceipt, faPersonDolly, faPeopleArrows, faStream, faAppleCrate,
     faConciergeBell, faGarage, faHamsa, faCodeMerge, faSortShapesDownAlt, faHatChef, faTags, faCommentDollar, faNewspaper, faMailBulk, faBell, faLaptopHouse, faHandHoldingBox,
-    faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle
+    faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle
 )
 
 defineProps<{
@@ -188,39 +188,43 @@ const label = {
                             <MenuItems
                                 class="px-1 py-1 space-y-2.5 min-w-24 w-fit max-w-96 absolute left-0 mt-2 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                                 <!-- Dropdown: Group -->
-                                <TopBarDropdownScope v-if="layoutStore.group" class=""
-                                                     :menuItems="[{
-                            label: layoutStore.group?.label,
-                        }]"
-                                                     menuKey="group"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('corporates')"
-                                                     icon="fal fa-user-tie"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.group"
+                                    class=""
+                                    :menuItems="[{
+                                        label: layoutStore.group?.label,
+                                    }]"
+                                    menuKey="group"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('Corporates')"
+                                    icon="fal fa-user-tie"
                                 />
 
                                 <!-- Dropdown: Organisation -->
-                                <TopBarDropdownScope v-if="layoutStore.organisations.data?.length"
-                                                     :menuItems="layoutStore.organisations.data"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('E-commerce')"
-                                                     icon="fal fa-cash-register"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.organisations.data?.length"
+                                    :menuItems="layoutStore.organisations.data"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('E-Commerce')"
+                                    icon="fal fa-cash-register"
                                 />
 
-
                                 <!-- Dropdown: Agents -->
-                                <TopBarDropdownScope v-if="layoutStore.agents?.data?.length"
-                                                     :menuItems="layoutStore.agents?.data"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('agents')"
-                                                     icon="fal fa-people-arrows"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.agents?.data?.length"
+                                    :menuItems="layoutStore.agents?.data"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('Agents')"
+                                    icon="fal fa-people-arrows"
                                 />
 
                                 <!-- Dropdown: Digital Agency -->
-                                <TopBarDropdownScope v-if="layoutStore.digital_agency?.data?.length"
-                                                     :menuItems="layoutStore.digital_agency?.data"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('digital agency')"
-                                                     icon="fal fa-laptop-house"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.digital_agency?.data?.length"
+                                    :menuItems="layoutStore.digital_agency?.data"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('Digital Agency')"
+                                    icon="fal fa-laptop-house"
                                 />
                             </MenuItems>
                         </transition>
@@ -278,6 +282,19 @@ const label = {
 
                                 <transition>
                                     <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y-0 divide-gray-400 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                        <MenuItem v-slot="{ active }" as="div"
+                                                @click="() => router.visit(route('grp.org.shops.index', {
+                                                    organisation: layoutStore.currentParams.organisation
+                                                }))"
+                                                class="group cursor-pointer flex gap-x-2 w-full border-b border-gray-300 justify-between items-center px-2 py-1 mt-0.5 text-xs"
+                                                :class="layoutStore.currentRoute === 'grp.org.shops.index' ? 'bg-indigo-100 font-semibold text-gray-700' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'"
+                                            >
+                                                <div class="w-full text-center">
+                                                    {{ trans("Show all shops") }}
+                                                    <FontAwesomeIcon icon="fal fa-long-arrow-right" class="group-hover:translate-x-1 transition-all" fixed-width aria-hidden="true" />
+                                                </div>
+                                        </MenuItem>
+
                                         <MenuPopoverList
                                             v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length"
                                             icon="fal fa-store-alt"

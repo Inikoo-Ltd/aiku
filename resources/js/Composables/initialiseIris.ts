@@ -75,6 +75,8 @@ export const initialiseIrisApp = () => {
         layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
         layout.log_user = () => initialiseLogUser(layout)
 
+        layout.outboxes = usePage().props.outboxes
+
 
         // Set data of Locale (Language)
         // if (usePage().props.localeData) {

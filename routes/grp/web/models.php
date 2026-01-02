@@ -55,6 +55,7 @@ use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
@@ -65,7 +66,6 @@ use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Outbox\PublishOutbox;
-use App\Actions\Comms\Outbox\ToggleOutbox;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
@@ -505,6 +505,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('clocking-machine', [StoreClockingMachine::class, 'inOrganisation'])->name('clocking-machine.store');
 
     Route::post('shop', StoreShop::class)->name('shop.store');
+    Route::post('shop-external/{engine}', StoreExternalShop::class)->name('shop.external.store');
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');
 
@@ -753,7 +754,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     });
 
     Route::name('outboxes.')->prefix('outboxes/{outbox:id}')->group(function () {
-        Route::patch('toggle', ToggleOutbox::class)->name('toggle')->withoutScopedBindings();
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('update', [UpdateOutbox::class,'inShop'])->name('update')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
@@ -771,7 +771,6 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
 
     Route::name('outboxes.')->prefix('outboxes/{outbox:id}')->group(function () {
         Route::patch('/', UpdateOutbox::class)->name('update')->withoutScopedBindings();
-        Route::patch('toggle', ToggleOutbox::class)->name('toggle')->withoutScopedBindings();
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
@@ -1087,6 +1086,7 @@ Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->n
 
 
 require __DIR__.'/models/inventory/warehouse.php';
+require __DIR__.'/models/goods_in/return.php';
 require __DIR__.'/models/inventory/location_org_stock.php';
 require __DIR__.'/models/inventory/warehouse_area.php';
 require __DIR__.'/models/inventory/location.php';

@@ -239,7 +239,7 @@ const getActionIcon = (icon: any) => {
   }
 
   &:disabled {
-    background-color: color-mix(in srgb, var(--theme-color-4) 50%, grey) !important;
+    background-color: color-mix(in srgb, var(--theme-color-4) 30%, 30% grey) !important;
   }
 }
 </style>

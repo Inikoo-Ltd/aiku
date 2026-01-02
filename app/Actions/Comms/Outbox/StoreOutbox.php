@@ -18,6 +18,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
+use App\Enums\Comms\Outbox\OutboxSubTypeEnum;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
@@ -50,6 +51,14 @@ class StoreOutbox extends OrgAction
         } elseif ($parent instanceof Fulfilment) {
             data_set($modelData, 'shop_id', $parent->shop_id);
             data_set($modelData, 'fulfilment_id', $parent->id);
+        }
+
+        if (in_array($modelData['code'], [
+            OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD
+        ])) {
+            $modelData['sub_type'] = OutboxSubTypeEnum::REORDER_REMINDER;
         }
 
 

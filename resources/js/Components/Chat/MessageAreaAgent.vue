@@ -5,21 +5,17 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faPaperPlane,
-	faPaperclip,
 	faArrowLeft,
 	faEllipsisVertical,
 	faTimesCircle,
-	faHistory,
-	faAddressCard,
 	faMessage,
-	faExclamation,
 } from "@fortawesome/free-solid-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import { faUser } from "@far"
+import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -212,16 +208,6 @@ const initSocket = () => {
 	})
 }
 
-const onViewHistory = () => {
-	isMenuOpen.value = false
-	emit("view-history")
-}
-
-const onViewUserProfile = () => {
-	isMenuOpen.value = false
-	const slug = chatSession.value?.web_user?.slug || null
-	emit("view-user-profile", slug)
-}
 
 const onViewMessageDetails = () => {
 	isMenuOpen.value = false
@@ -278,8 +264,7 @@ const handleClickOutside = (e: MouseEvent) => {
 				{{ session?.guest_identifier || session?.contact_name }}
 			</span>
 
-
-			<!-- <div class="relative" ref="menuRef">
+				<div class="relative" ref="menuRef">
 				<button @click.stop="isMenuOpen = !isMenuOpen">
 					<FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
 				</button>
@@ -289,7 +274,7 @@ const handleClickOutside = (e: MouseEvent) => {
 
 					<ModalConfirmationDelete :routeDelete="{
 						name: 'grp.org.crm.agents.sessions.close',
-						parameters: [route().params.organisation, session?.ulid],
+						parameters: [session.organisation.id, session?.ulid],
 						method: 'patch',
 					}" :title="trans('Are you sure you want to close this session?')" @success="$emit('close-session')">
 
@@ -301,47 +286,40 @@ const handleClickOutside = (e: MouseEvent) => {
 						</template>
 					</ModalConfirmationDelete>
 
-					<button class="menu-item" @click="onViewHistory">
-						<FontAwesomeIcon :icon="faHistory" /> {{ trans('History chat') }}
-					</button>
-
-					<button class="menu-item" @click="onViewUserProfile">
-						<FontAwesomeIcon :icon="faAddressCard" /> {{ trans('Detail User Profile') }}
-					</button>
 
 					<button class="menu-item" @click="onViewMessageDetails">
 						<FontAwesomeIcon :icon="faMessage" /> {{ trans('Message Details') }}
 					</button>
 				</div>
-			</div> -->
-
+			</div>
 		</header>
 
 		<!-- Messages -->
-		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3">
+		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
 			<template v-for="(msgs, date) in groupedMessages" :key="date">
 				<div class="text-center text-xs text-gray-400">{{ date }}</div>
 
 				<div v-for="msg in msgs" :key="msg.id" class="flex"
 					:class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
 
-					<div class="px-3 py-2 rounded-lg max-w-[75%] text-sm flex items-center gap-2 cursor-default" :class="msg.sender_type === 'agent'
+
+					<BubbleChat :message="msg" viewerType="agent" />
+
+					<!-- 	<div class="px-3 py-2 rounded-lg max-w-[75%] text-sm flex items-center gap-2 cursor-default" :class="msg.sender_type === 'agent'
 						? 'bubble-chat text-white'
 						: 'bg-gray-200'">
 						<span>{{ msg.message_text }}</span>
 
-						<!-- loading -->
 						<span v-if="msg._status === 'sending'" class="text-xs opacity-70 animate-pulse">
 							<LoadingIcon />
 						</span>
 
-						<!-- failed → klik untuk resend -->
+
 						<button v-if="msg._status === 'failed'" @click="resendMessage(msg)"
 							class="text-xs text-red-300 hover:text-red-500" title="Click to resend">
 							<FontAwesomeIcon :icon="faExclamation" />
 						</button>
-					</div>
-
+					</div> -->
 
 				</div>
 			</template>
@@ -351,10 +329,10 @@ const handleClickOutside = (e: MouseEvent) => {
 		<footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
 
 			<!-- Attachment -->
-			<button @click="fileInput?.click()"
+			<!-- <button @click="fileInput?.click()"
 				class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 shrink-0">
 				<FontAwesomeIcon :icon="faPaperclip" />
-			</button>
+			</button> -->
 
 			<!-- Message Input -->
 			<textarea ref="messageInput" v-model="newMessage" @input="autoResize"
@@ -367,15 +345,7 @@ const handleClickOutside = (e: MouseEvent) => {
 	</div>
 </template>
 
-
 <style scoped>
-.bubble-chat,
-.bubble-primary {
-	background: v-bind("layout?.app?.theme[4]");
-	color: v-bind("layout?.app?.theme[5]");
-	padding: 8px 14px;
-}
-
 .menu-item {
 	display: flex;
 	align-items: center;

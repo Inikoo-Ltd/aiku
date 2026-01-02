@@ -35,7 +35,7 @@ import { faSearch, faBell, faPlus } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import ChatButton from '@/Components/Chat/ChatButton.vue'
+import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 
 library.add(faMedal, fasMedal, fadMedal)
 library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)

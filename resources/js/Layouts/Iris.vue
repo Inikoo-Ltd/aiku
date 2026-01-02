@@ -28,7 +28,7 @@ import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-import ChatButton from '@/Components/Chat/ChatButton.vue'
+import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 
 library.add(faHome, faImage, faSparkles, faExclamationTriangle, faMedal, fasMedal, fadMedal, faWhatsapp)
@@ -43,7 +43,7 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 const propsAnnouncementsTopbar = ref([])
 const propsAnnouncementsBottomMenu =  ref([])
 const propsAnnouncementsTopFooter =  ref([])
-
+console.log('usePage',usePage().props)
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer

@@ -137,10 +137,7 @@
   "autoload-dev": {
     "psr-4": {
       "Tests\\": "tests/"
-    },
-    "files": [
-      "tests/Helpers/DropshippingTestHelpers.php"
-    ]
+    }
   },
   "scripts": {
     "post-autoload-dump": [

@@ -27,6 +27,20 @@ class StoreBackInStockReminder extends OrgAction
         data_set($modelData, 'sub_department_id', $product->sub_department_id);
         data_set($modelData, 'family_id', $product->family_id);
 
+        // Check if back in stock reminder already exists for the same customer and product
+        $existingReminder = $customer->backInStockReminder()
+            ->where('group_id', $customer->group_id)
+            ->where('organisation_id', $customer->organisation_id)
+            ->where('shop_id', $customer->shop_id)
+            ->where('product_id', $product->id)
+            ->where('department_id', $product->department_id)
+            ->where('sub_department_id', $product->sub_department_id)
+            ->where('family_id', $product->family_id)
+            ->first();
+
+        if ($existingReminder) {
+            return $existingReminder;
+        }
 
         /** @var BackInStockReminder $reminder */
         $reminder = $customer->backInStockReminder()->create($modelData);
@@ -63,6 +77,4 @@ class StoreBackInStockReminder extends OrgAction
 
         return $this->handle($customer, $product, $this->validatedData);
     }
-
-
 }

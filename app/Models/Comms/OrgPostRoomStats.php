@@ -78,6 +78,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_outboxes_type_pallet_delivery_deleted
  * @property int $number_outboxes_type_pallet_return_deleted
  * @property int $number_outboxes_type_pallet_deleted
+ * @property int $number_outboxes_type_reorder_reminder_2nd
+ * @property int $number_outboxes_type_reorder_reminder_3rd
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats query()

@@ -8,9 +8,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Helpers\NaturalLanguage;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
+use App\Actions\Masters\MasterAsset\UI\GetMasterProductTimeSeriesData;
 use Illuminate\Support\Facades\DB;
 use App\Models\Goods\TradeUnit;
-use App\Actions\Masters\MasterAsset\GetMasterProductSalesData;
 
 class MasterProductVariantResource extends JsonResource
 {
@@ -87,7 +87,7 @@ class MasterProductVariantResource extends JsonResource
             'trade_units'                   => $dataTradeUnits,
             'gpsr'                          => $gpsr,
             'properties'                    => $properties,
-            'salesData'                     => GetMasterProductSalesData::run($masterProduct->resource),
+            'salesData'                     => GetMasterProductTimeSeriesData::run($masterProduct->resource),
             'attachment_box'                => [
                 'public'  => [],
                 'private' => []

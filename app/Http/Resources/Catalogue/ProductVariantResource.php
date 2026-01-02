@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Actions\Catalogue\Product\UI\GetProductTimeSeriesData;
 use App\Actions\Traits\HasBucketImages;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,7 +18,6 @@ use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use Illuminate\Support\Facades\DB;
 use App\Models\Goods\TradeUnit;
-use App\Actions\Masters\MasterAsset\GetMasterProductSalesData;
 
 class ProductVariantResource extends JsonResource
 {
@@ -94,7 +94,7 @@ class ProductVariantResource extends JsonResource
             'trade_units'                   => $dataTradeUnits,
             'gpsr'                          => $gpsr,
             'properties'                    => $properties,
-            // 'salesData'                     => GetMasterProductSalesData::run($product->resource),
+            'salesData'                     => GetProductTimeSeriesData::run($product->resource),
             'attachment_box'                => [
                 'public'  => [],
                 'private' => []

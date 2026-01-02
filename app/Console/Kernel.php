@@ -9,6 +9,7 @@
 namespace App\Console;
 
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -28,7 +29,6 @@ use App\Actions\Helpers\TimeSeries\ResetYearlyTimeSeries;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
-use App\Actions\Comms\Outbox\ReorderRemainder\Hydrators\CustomersHydrateReorderRemainderEmails;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -324,14 +324,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->command('faire:orders')->hourly()->sentryMonitor(
-                monitorSlug: 'GetFaireOrders',
-            ),
-            name: 'GetFaireOrders',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
+        //        $this->logSchedule(
+        //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
+        //                monitorSlug: 'GetFaireOrders',
+        //            ),
+        //            name: 'GetFaireOrders',
+        //            type: 'command',
+        //            scheduledAt: now()->format('H:i')
+        //        );
 
         $this->logSchedule(
             $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
@@ -406,10 +406,10 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'CustomersHydrateReorderRemainderEmails',
+            $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'SendReorderRemainderEmails',
             ),
-            name: 'CustomersHydrateReorderRemainderEmails',
+            name: 'SendReorderRemainderEmails',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
@@ -439,8 +439,7 @@ class Kernel extends ConsoleKernel
 
             $schedule->command($command)
                 ->everyMinute()
-                ->timezone('UTC')
-                ->sentryMonitor(monitorSlug: $config['slug']);
+                ->timezone('UTC');
         }
 
 

@@ -1086,6 +1086,6 @@ test('org stock families  hydrator', function () {
     HydrateOrgStockFamily::run($orgStockFamily);
 });
 
-test('inventory  hydrator', function () {
+test('inventory hydrator', function () {
     $this->artisan('hydrate -s inv')->assertExitCode(0);
 });
