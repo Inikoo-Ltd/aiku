@@ -6,48 +6,24 @@
  *  Copyright (c) 2022, Raul A Perusquia F
  */
 
-namespace App\Actions\Catalogue\Shop;
+namespace App\Actions\Catalogue\Shop\External;
 
-use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
-use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
-use App\Actions\Catalogue\Shop\External\Faire\GetFaireBrand;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
+use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
+use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
-use App\Actions\CRM\TrafficSource\SeedTrafficSources;
-use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
-use App\Actions\Helpers\Colour\GetRandomColour;
-use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
-use App\Actions\Helpers\Query\Seeders\ProspectQuerySeeder;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
-use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
-use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
-use App\Actions\SysAdmin\Organisation\SetIconAsShopLogo;
-use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
-use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Platform;
-use App\Models\Helpers\Address;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
-use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\Role;
 use App\Rules\IUnique;
 use Exception;
 use Illuminate\Console\Command;
@@ -57,7 +33,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreExternalShop extends OrgAction
@@ -82,20 +57,36 @@ class StoreExternalShop extends OrgAction
      */
     public function handle(Organisation $organisation, array $modelData): Shop
     {
-        $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
+        return DB::transaction(function () use ($organisation, $modelData) {
+            $modelData['state'] = ShopStateEnum::OPEN;
+            $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
 
-        if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
-            $modelData = $this->handleFaireShop($modelData);
-        } else if($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
-            $modelData = $this->handleShopifyShop($modelData);
-        }
+            if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+                $modelData = $this->handleFaireShop($modelData);
+            } else if($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
+                data_set($modelData, 'name', Arr::get($modelData, 'shop_url'));
 
-        return StoreShop::make()->action($organisation, $modelData);
+                $shopifyUser = $this->handleShopifyShop($organisation, $modelData);
+                data_set($modelData, 'settings.shopify.auth_url', route('pupil.authenticate', [
+                    'shop' => $shopifyUser->name
+                ]));
+            }
+
+            $shop = StoreShop::make()->action($organisation, $modelData);
+
+            if(isset($shopifyUser) && $modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
+                $shopifyUser->update([
+                    'external_shop_id' => $shop->id
+                ]);
+            }
+
+            return $shop;
+        });
     }
 
-    public function handleShopifyShop(array $modelData): array
+    public function handleShopifyShop(Organisation $organisation, array $modelData): ShopifyUser
     {
-        return [];
+        return StoreShopifyUserExternalShop::make()->action($organisation, $modelData);
     }
 
     public function handleFaireShop(array $modelData): array
@@ -112,7 +103,6 @@ class StoreExternalShop extends OrgAction
             throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
         }
 
-        data_set($modelData, 'state', ShopStateEnum::OPEN);
         data_set($modelData, 'name', $faireBrand['name']);
         data_set($modelData, 'settings.faire', array_merge($this->settings['faire'], [
             'brand' => $faireBrand['name']
