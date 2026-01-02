@@ -20,6 +20,7 @@ use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -61,22 +62,22 @@ class ShowOrgStockFamily extends OrgAction
                     'next'     => $this->getNext($orgStockFamily, $request),
                 ],
                 'pageHead'    => [
-                   // 'model'   => __('stock family'),
-                    'icon'    =>
+                    // 'model'   => __('stock family'),
+                    'icon'       =>
                         [
                             'icon'  => ['fal', 'fa-boxes-alt'],
                             'title' => __('Stock family')
                         ],
-                    'title'       => $orgStockFamily->name,
-                   'afterTitle'   => [
-                       'label'     => $orgStockFamily->code,
-                       'tooltip'   => __('Reference')
-                   ],
-                    'meta'    => [
+                    'title'      => $orgStockFamily->name,
+                    'afterTitle' => [
+                        'label'   => $orgStockFamily->code,
+                        'tooltip' => __('Reference')
+                    ],
+                    'meta'       => [
                         [
                             'name'     => trans_choice('stock | stocks', $orgStockFamily->stats->number_org_stocks),
                             'number'   => $orgStockFamily->stats->number_org_stocks,
-                            'route'     => [
+                            'route'    => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
                                 'parameters' => $request->route()->originalParameters()
                             ],
@@ -93,10 +94,10 @@ class ShowOrgStockFamily extends OrgAction
 
                 ],
 
-                OrgStockFamilyTabsEnum::SHOWCASE->value => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
+                OrgStockFamilyTabsEnum::SHOWCASE->value   => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)
                     : Inertia::lazy(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
-                OrgStockFamilyTabsEnum::ORG_STOCKS->value   => $this->tab == OrgStockFamilyTabsEnum::ORG_STOCKS->value
+                OrgStockFamilyTabsEnum::ORG_STOCKS->value => $this->tab == OrgStockFamilyTabsEnum::ORG_STOCKS->value
                     ?
                     fn () => OrgStocksResource::collection(
                         IndexOrgStocks::run(
@@ -112,7 +113,7 @@ class ShowOrgStockFamily extends OrgAction
                             bucket: 'all'
                         )
                     )),
-                OrgStockFamilyTabsEnum::HISTORY->value  => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
+                OrgStockFamilyTabsEnum::HISTORY->value    => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily)))
             ]
@@ -144,7 +145,7 @@ class ShowOrgStockFamily extends OrgAction
                         'index' => [
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
-                                'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                                'parameters' => Arr::except($routeParameters, ['orgStockFamily'])
                             ],
                             'label' => __('SKUs families'),
                             'icon'  => 'fal fa-bars'
@@ -152,7 +153,7 @@ class ShowOrgStockFamily extends OrgAction
                         'model' => [
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
-                                'parameters' => [$this->organisation->slug, $this->warehouse->slug, $orgStockFamily->slug]
+                                'parameters' => $routeParameters
                             ],
                             'label' => $orgStockFamily->code,
                             'icon'  => 'fal fa-bars'

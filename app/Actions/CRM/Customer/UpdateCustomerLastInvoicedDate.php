@@ -42,7 +42,7 @@ class UpdateCustomerLastInvoicedDate
 
         if ($customer->wasChanged('last_invoiced_at')) {
             foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
-                CalculateOrderTotalAmounts::run($order, true, true, false, true);
+                CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
             }
 
         }

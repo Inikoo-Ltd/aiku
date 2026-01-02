@@ -26,22 +26,22 @@ class PublishOutbox extends OrgAction
 
     public function handle(Outbox $outbox, array $modelData): Outbox
     {
-        $email = $outbox->emailOngoingRun->email;
+        $email               = $outbox->emailOngoingRun->email;
         $unpublishedSnapshot = $email->unpublishedSnapshot;
 
         /** @var Snapshot $snapshot */
         $snapshot = StoreEmailSnapshot::run(
             $email,
             [
-                'builder' => $unpublishedSnapshot->builder,
-                'state'          => SnapshotStateEnum::LIVE,
-                'published_at'   => now(),
-                'layout'         => Arr::get($modelData, 'layout'),
+                'builder'         => $unpublishedSnapshot->builder,
+                'state'           => SnapshotStateEnum::LIVE,
+                'published_at'    => now(),
+                'layout'          => Arr::get($modelData, 'layout'),
                 'compiled_layout' => Arr::get($modelData, 'compiled_layout'),
-                'first_commit'   => false,
-                'comment'        => Arr::get($modelData, 'comment'),
-                'publisher_id'   => Arr::get($modelData, 'publisher_id'),
-                'publisher_type' => Arr::get($modelData, 'publisher_type'),
+                'first_commit'    => false,
+                'comment'         => Arr::get($modelData, 'comment'),
+                'publisher_id'    => Arr::get($modelData, 'publisher_id'),
+                'publisher_type'  => Arr::get($modelData, 'publisher_type'),
             ]
         );
 
@@ -62,7 +62,7 @@ class PublishOutbox extends OrgAction
         );
 
         $updateData = [
-            'live_snapshot_id'          => $snapshot->id
+            'live_snapshot_id' => $snapshot->id
         ];
 
         $this->update($email, $updateData);
@@ -75,11 +75,21 @@ class PublishOutbox extends OrgAction
     public function rules(): array
     {
         return [
-            'comment' => ['sometimes', 'nullable', 'string'],
-            'layout' => ['required'],
+            'comment'         => ['sometimes', 'nullable', 'string'],
+            'layout'          => ['required'],
             'compiled_layout' => ['required', 'string']
         ];
     }
+
+    public function action(Outbox $outbox, array $modelData, int $hydratorsDelay = 0): Outbox
+    {
+        $this->asAction       = true;
+        $this->hydratorsDelay = $hydratorsDelay;
+        $this->initialisationFromShop($outbox->shop, $modelData);
+
+        return $this->handle($outbox, $this->validatedData);
+    }
+
 
     public function asController(Shop $shop, Outbox $outbox, ActionRequest $request): Outbox
     {

@@ -8,9 +8,11 @@ const layout = inject('layout', retinaLayoutStructure)
 
 <template>
     <VTooltip class="w-fit">
-        <div class="w-fit inline">
-            <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width aria-hidden="true" />
-        </div>
+        <slot>
+            <div class="w-fit inline">
+                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width aria-hidden="true" />
+            </div>
+        </slot>
 
         <template #popper>
             <div class="text-xs tabular-nums">

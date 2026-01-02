@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 use Tighten\Ziggy\Ziggy;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 
 class HandleRetinaInertiaRequests extends Middleware
 {
@@ -70,6 +71,22 @@ class HandleRetinaInertiaRequests extends Middleware
                 ];
             }
         }
+
+
+        $outBoxes = $website?->shop?->outboxes()
+            ?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])
+            ->select('id', 'code', 'state')
+            ->get()
+            ->mapWithKeys(fn ($item) => [
+                $item->code->value => [
+                    'id'    => $item->id,
+                    'state' => $item->state,
+                ],
+            ])
+            ->toArray() ?? [];
+
+
+
         return array_merge(
             $firstLoadOnlyProps,
             [
@@ -103,6 +120,7 @@ class HandleRetinaInertiaRequests extends Middleware
                 ],
                 'iris'        => $this->getIrisData($website, $webUser),
                 'use_chat'    => $website->settings['enable_chat'] ?? false,
+                'outboxes' => $outBoxes
             ],
             parent::share($request),
         );

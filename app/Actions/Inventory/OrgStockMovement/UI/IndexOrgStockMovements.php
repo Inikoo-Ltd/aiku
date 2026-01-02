@@ -127,6 +127,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.name as org_stock_name',
             ])
+            ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
             ->leftJoin('warehouses', 'warehouses.id', 'org_stock_movements.warehouse_id')
             ->leftJoin('locations', 'locations.id', 'org_stock_movements.location_id')
@@ -162,18 +163,18 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true);
+                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm');
 
             if (!($parent instanceof OrgStock)) {
-                $table->column(key: 'org_stock_name', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'org_stock_name', label: __('Stock'), sortable: true);
             }
 
-            $table->column(key: 'flow', label: __('Flow'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'class', label: __('Class'), canBeHidden: true, sortable: true, searchable: true)
-                ->column(key: 'location_code', label: __('Location'), canBeHidden: true, sortable: false)
-                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true)
-                ->column(key: 'org_amount', label: __('Amount'), canBeHidden: true, sortable: true);
+            $table->column(key: 'flow', label: __('Flow'), sortable: true)
+                ->column(key: 'type', label: __('Type'), sortable: true)
+                ->column(key: 'class', label: __('Class'), sortable: true)
+                ->column(key: 'location_code', label: __('Location'))
+                ->column(key: 'quantity', label: __('Quantity'), sortable: true, align: 'right')
+                ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
         };
     }
 

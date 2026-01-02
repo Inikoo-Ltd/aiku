@@ -96,7 +96,10 @@ trait WithHydrateCommand
         $query = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
         if ($command->hasOption('shop') && $command->option('shop')) {
-            $shop = Shop::where('slug', $command->option('shop'))->first();
+            $shopOption = $command->option('shop');
+            $shop       = is_numeric($shopOption)
+                ? Shop::find($shopOption)
+                : Shop::where('slug', $shopOption)->first();
             if ($shop) {
                 $query->where('shop_id', $shop->id);
             }

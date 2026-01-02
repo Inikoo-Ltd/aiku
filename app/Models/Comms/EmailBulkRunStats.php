@@ -40,6 +40,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivered_open_success
  * @property int $number_opened_interact_failure
  * @property int $number_opened_interact_success
+ * @property int $number_error_emails
+ * @property int $number_rejected_emails
+ * @property int $number_sent_emails
+ * @property int $number_delivered_emails
+ * @property int $number_hard_bounced_emails
+ * @property int $number_soft_bounced_emails
+ * @property int $number_opened_emails
+ * @property int $number_clicked_emails
+ * @property int $number_spam_emails
+ * @property int $number_unsubscribed_emails
  * @property-read \App\Models\Comms\EmailBulkRun|null $emailBulkRun
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRunStats newQuery()

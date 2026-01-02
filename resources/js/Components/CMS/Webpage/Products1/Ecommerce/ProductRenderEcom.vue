@@ -136,7 +136,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" 
                         :buttonStyle="buttonStyle" 
                     />
-                    <button v-else-if="layout?.app?.environment === 'local' && !product.stock"
+                    <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">

@@ -20,7 +20,7 @@ trait WithGenerateEmailBulkRuns
     /**
      * Trait to generate EmailBulkRuns for outboxes
      */
-    protected function generateEmailBulkRuns(
+    protected function upsertEmailBulkRuns(
         Customer $customer,
         OutboxCodeEnum $code,
         ?string $date = null,
@@ -38,12 +38,11 @@ trait WithGenerateEmailBulkRuns
             return $emailBulkRun;
         }
 
-        $emailBulkRun = StoreEmailBulkRun::run($outbox->emailOngoingRun, [
+        return StoreEmailBulkRun::run($outbox->emailOngoingRun, [
             'scheduled_at' => $date,
             'subject'      => now()->format('Y.m.d'),
-            'state'        => EmailBulkRunStateEnum::SENDING, // note: make sure this conditions
+            'state'        => EmailBulkRunStateEnum::SENDING, // note: make sure this condition
         ]);
 
-        return $emailBulkRun;
     }
 }

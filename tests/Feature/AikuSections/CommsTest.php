@@ -11,13 +11,20 @@
 namespace Tests\Feature;
 
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
 use App\Actions\Comms\Email\StoreEmail;
+use App\Actions\Comms\EmailBulkRun\HydrateEmailBulkRuns;
 use App\Actions\Comms\Mailshot\HydrateMailshots;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
+use App\Actions\Comms\Outbox\HydrateOutbox;
+use App\Actions\Comms\Outbox\PublishOutbox;
+use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\Comms\Outbox\StoreOutbox;
+use App\Actions\Comms\Outbox\UpdateOutbox;
+use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
@@ -27,7 +34,9 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
+use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -210,6 +219,8 @@ test('test post room hydrator', function ($shop) {
 })->depends('outbox seeded when shop created');
 
 
+
+
 test('test send email reset password', function () {
     StoreWebsite::make()->action($this->shop, [
         'code'   => 'test1',
@@ -219,16 +230,72 @@ test('test send email reset password', function () {
 
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
 
+    $outbox = $webUser->shop->outboxes()->where('code', 'password_reminder')->first();
 
+    $outbox = PublishOutbox::make()->action(
+        $outbox,
+        [
+        'comment' => 'comment',
+        'layout' => '{}',
+        'compiled_layout' => '<div>test</div>',
+    ]
+    );
+
+    expect($outbox->state)->toBe(OutboxStateEnum::ACTIVE)
+        ->and($outbox->emailOngoingRun)->toBeInstanceOf(EmailOngoingRun::class)
+        ->and($outbox->emailOngoingRun->email)->toBeInstanceOf(Email::class)
+        ->and($outbox->emailOngoingRun->email->liveSnapshot)->toBeInstanceOf(Snapshot::class)
+        ->and($outbox->emailOngoingRun->email->liveSnapshot->compiled_layout)->toBe('<div>test</div>');
 
     $dispatchedEmail = SendResetPasswordEmail::run($webUser, [
         'url' => 'https://test.com'
     ]);
 
-    expect($dispatchedEmail)->toBeNull();
+    expect($dispatchedEmail)->toBeInstanceOf(DispatchedEmail::class);
+
 
     return $this->customer;
 })->depends('outbox seeded when shop created');
+
+test('send reorder reminder email', function () {
+
+    $outbox = $this->shop->outboxes()->where('code', OutboxCodeEnum::REORDER_REMINDER->value)->first();
+
+    $outbox = UpdateOutbox::make()->action($outbox, [
+        'days_after' => 14
+    ]);
+
+    expect($outbox->days_after)->toBe(14)
+        ->and($outbox->state)->toBe(OutboxStateEnum::IN_PROCESS);
+
+    $outbox = PublishOutbox::make()->action(
+        $outbox,
+        [
+            'layout' => '{}',
+            'compiled_layout' => '<div>test</div>',
+        ]
+    );
+
+
+    expect($outbox->state)->toBe(OutboxStateEnum::ACTIVE);
+
+    UpdateCustomerLastInvoicedDate::run(
+        $this->customer,
+        now()->subDays(14),
+    );
+    $this->customer->refresh();
+
+    expect($outbox->intervals->runs_all)->toBe(0);
+
+
+    SendReorderRemainderEmails::run();
+    $outbox->refresh();
+
+    expect($outbox->intervals->runs_all)->toBe(1);
+
+
+});
+
 
 test('UI comms dashboard', function () {
     $response = $this->get(route('grp.org.shops.show.dashboard.comms.dashboard', [$this->organisation->slug, $this->shop->slug]));
@@ -681,3 +748,25 @@ test('mailshot hydrate', function (Mailshot $mailShot) {
     $this->artisan('hydrate:mailshots --slugs '.$mailShot->slug)->assertExitCode(0);
     expect($mailShot->stats->number_dispatched_emails)->toBe(0);
 })->depends('update mailshot');
+
+test('dispatched emails hydrate', function () {
+    $dispatchedEmail = DispatchedEmail::first();
+    HydrateDispatchedEmails::run($dispatchedEmail);
+    $this->artisan('hydrate:dispatched_emails --slugs '.$dispatchedEmail->id)->assertExitCode(0);
+});
+
+test('outbox hydrate', function () {
+    $outbox = Outbox::first();
+    HydrateOutbox::run($outbox);
+    $this->artisan('hydrate:outboxes --slugs '.$outbox->slug)->assertExitCode(0);
+});
+
+test('email bulk runs', function () {
+    $emailBulkRun = EmailBulkRun::first();
+    HydrateEmailBulkRuns::run($emailBulkRun);
+    $this->artisan('hydrate:email_bulk_runs --slugs '.$emailBulkRun->id)->assertExitCode(0);
+});
+
+test('comms hydrator', function () {
+    $this->artisan('hydrate -s comms')->assertExitCode(0);
+});
