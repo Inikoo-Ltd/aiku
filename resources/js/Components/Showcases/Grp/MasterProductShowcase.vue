@@ -215,7 +215,7 @@ const isModalProductForSale = ref(false)
 				{{ data.masterProduct.name }}
 			</span>
 		</div>
-		
+
 		<div v-if="data.availability_status || data.trade_units.length > 0" class="text-md text-gray-800 whitespace-pre-wrap justify-self-end self-center items-center flex">
 			<LabelSKU
 				:product="data.masterProduct"
@@ -287,7 +287,7 @@ const isModalProductForSale = ref(false)
 		</div>
 
         <!-- Sales Analytics - right sidebar -->
-        <div v-if="salesData">
+        <div v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0">
             <SalesAnalyticsCompact :salesData="salesData" class="mr-2" />
         </div>
 
@@ -301,7 +301,7 @@ const isModalProductForSale = ref(false)
 		<div class="grid grid-cols-2 font-bold mb-4">
 			<div class="text-left text-lg">
 				{{ trans('Product For Sale Statuses') }}
-			</div>	
+			</div>
 			<div class="justify-self-end text-lg">
 				<FontAwesomeIcon
 					icon="fal fa-edit"
@@ -326,7 +326,7 @@ const isModalProductForSale = ref(false)
 				Code
 			</div>
 			<div class="text-right">
-			</div>	
+			</div>
 		</div>
 		<div v-for="item in data.availability_status.product" :key="item.id" class="grid grid-cols-3 mt-3 text-sm min-h-8">
 			<div class="text-left">
@@ -343,10 +343,10 @@ const isModalProductForSale = ref(false)
 				v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
 				:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
-					{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }} 
+					{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
 					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
 				</span>
-			</div>	
+			</div>
 		</div>
 	</Modal>
 </template>
