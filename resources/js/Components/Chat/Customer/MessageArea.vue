@@ -5,7 +5,7 @@ import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar, faPlus, faSpinner, faPaperPlane } from "@fortawesome/free-solid-svg-icons"
-import GuestProfileForm from "@/Components/Chat/GuestProfileForm.vue"
+import GuestProfileForm from "@/Components/Chat/Customer/GuestProfileForm.vue"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 
 const props = defineProps({
@@ -182,7 +182,7 @@ onMounted(() => {
 			v-if="messages.length"
 			ref="messagesContainer"
 			@scroll="onScroll"
-			class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth"
+			class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)]  scroll-smooth"
 		>
 			<template v-for="(group, date) in groupedMessages" :key="date">
 				<div class="mx-auto text-xs text-gray-400 flex justify-center">
