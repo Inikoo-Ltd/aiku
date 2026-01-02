@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $sessions
  * @property int $page_views
  * @property int $avg_session_duration
- * @property string $bounce_rate
- * @property string $pages_per_session
+ * @property numeric $bounce_rate
+ * @property numeric $pages_per_session
  * @property int $new_visitors
  * @property int $returning_visitors
  * @property int $visitors_desktop

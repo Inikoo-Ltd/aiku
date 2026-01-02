@@ -34,23 +34,27 @@ class EmailBulkRunHydrateCumulativeDispatchedEmails implements ShouldBeUnique
         }
 
         /** @noinspection PhpUncoveredEnumCasesInspection */
-        $count = DB::table('dispatched_emails')
-            ->where('emailBulkRun_id', $emailBulkRun->id)->where('is_test', false)
-            ->where(
-                match ($state) {
-                    DispatchedEmailStateEnum::ERROR => 'is_error',
-                    DispatchedEmailStateEnum::REJECTED_BY_PROVIDER => 'is_rejected',
-                    DispatchedEmailStateEnum::SENT => 'is_sent',
-                    DispatchedEmailStateEnum::DELIVERED => 'is_delivered',
-                    DispatchedEmailStateEnum::HARD_BOUNCE => 'is_hard_bounced',
-                    DispatchedEmailStateEnum::SOFT_BOUNCE => 'is_soft_bounced',
-                    DispatchedEmailStateEnum::OPENED => 'is_opened',
-                    DispatchedEmailStateEnum::CLICKED => 'is_clicked',
-                    DispatchedEmailStateEnum::SPAM => 'is_spam',
-                    DispatchedEmailStateEnum::UNSUBSCRIBED => 'is_unsubscribed',
-                },
-                true
-            )->count();
+        $query = DB::table('dispatched_emails')
+            ->where('parent_type', 'EmailBulkRun')
+            ->where('parent_id', $emailBulkRun->id)
+            ->where('is_test', false);
+
+
+
+
+        if ($state == DispatchedEmailStateEnum::SENT) {
+            $query->whereNotNull('sent_at');
+        } elseif ($state == DispatchedEmailStateEnum::OPENED) {
+            $query->where('number_reads' > 0);
+        } elseif ($state == DispatchedEmailStateEnum::CLICKED) {
+            $query->where('number_clicks' > 0);
+        } else {
+            // not supported DispatchedEmailStateEnum
+            return;
+        }
+
+
+        $count = $query->count();
 
 
         /** @noinspection PhpUncoveredEnumCasesInspection */

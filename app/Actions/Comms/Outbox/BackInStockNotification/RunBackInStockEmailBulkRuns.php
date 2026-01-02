@@ -97,7 +97,7 @@ class RunBackInStockEmailBulkRuns
 
                 // running code for sending email
                 if ($lastCustomerId !== $customer->id) {
-                    $bulkRun = $this->generateEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
+                    $bulkRun = $this->upsertEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
                         'products' => $this->generateProductLinks($productData),
                     ];
@@ -131,7 +131,7 @@ class RunBackInStockEmailBulkRuns
 
                 if ($processedCount === $totalCustomers) {
                     // Process the last batch
-                    $bulkRun = $this->generateEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
+                    $bulkRun = $this->upsertEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
                     $additionalData = [
                         'products' => $this->generateProductLinks($productData),
                     ];

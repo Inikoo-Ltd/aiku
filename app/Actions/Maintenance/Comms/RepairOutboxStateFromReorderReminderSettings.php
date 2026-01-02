@@ -6,17 +6,17 @@
  * Copyright (c) 2024, Eka Yudinata
  */
 
-namespace App\Actions\Comms\Outbox\ReorderRemainder\Hydrators;
+namespace App\Actions\Maintenance\Comms;
 
-use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxSubTypeEnum;
 use App\Models\Comms\Outbox;
-use App\Enums\Comms\Outbox\OutboxStateEnum;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class HydrateInActiveOutBoxReorderReminder
+class RepairOutboxStateFromReorderReminderSettings
 {
     use AsAction;
-    public string $commandSignature = 'hydrate:in-active-outbox-reorder-reminder';
+    public string $commandSignature = 'repair:in-active-outbox-reorder-reminder';
 
 
     public function handle(): void

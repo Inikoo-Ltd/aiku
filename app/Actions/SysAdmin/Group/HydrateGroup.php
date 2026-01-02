@@ -184,7 +184,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateOrgPostRooms::run($group);
         GroupHydrateOutboxes::run($group);
         GroupHydrateDispatchedEmails::run($group);
-        GroupHydrateEmailsBulkRuns::run($group);
+        GroupHydrateEmailsBulkRuns::run($group->id);
         GroupHydrateSupplierProducts::run($group);
         GroupHydrateMailshots::run($group);
         GroupHydrateEmailAddresses::run($group);

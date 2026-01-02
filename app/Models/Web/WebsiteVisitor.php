@@ -44,8 +44,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read Shop $shop
- * @property-read Website $website
  * @property-read WebUser|null $webUser
+ * @property-read \App\Models\Web\Website $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteVisitor newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteVisitor newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteVisitor query()

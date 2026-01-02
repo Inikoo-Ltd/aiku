@@ -11,11 +11,13 @@ namespace App\Enums\Discounts\OfferAllowance;
 enum OfferAllowanceType: string
 {
     case PERCENTAGE_OFF = 'percentage_off';
+    case UNKNOWN = 'unknown'; // user for aurora migrations
 
     public function label(): string
     {
         return match ($this) {
             OfferAllowanceType::PERCENTAGE_OFF => __('Percentage Off'),
+            OfferAllowanceType::UNKNOWN => __('Unknown'),
         };
     }
 
@@ -23,6 +25,7 @@ enum OfferAllowanceType: string
     {
         return match ($this) {
             OfferAllowanceType::PERCENTAGE_OFF => 'off',
+            OfferAllowanceType::UNKNOWN => 'au',
         };
     }
 

@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\WebsiteTimeSeriesRecord> $records
+ * @property-read \App\Models\Web\Website $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeries query()

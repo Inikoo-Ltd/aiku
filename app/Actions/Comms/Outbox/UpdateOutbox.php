@@ -32,16 +32,14 @@ class UpdateOutbox extends OrgAction
         }
 
         if ($send_time = Arr::pull($modelData, 'send_time')) {
-
-            $timezone = $outbox->shop->timezone;
+            $timezone       = $outbox->shop->timezone;
             $timezoneOffset = trim(str_replace('GMT', '', $timezone->formatOffset()));
 
             if ($timezoneOffset == '00:00') {
                 $timezoneOffset = '+00:00';
             }
-            $sendTimeWithTimezone = $send_time . $timezoneOffset;
+            $sendTimeWithTimezone   = $send_time.$timezoneOffset;
             $modelData['send_time'] = $sendTimeWithTimezone;
-
         }
 
         return $this->update($outbox, $modelData, ['data']);
@@ -50,16 +48,17 @@ class UpdateOutbox extends OrgAction
     public function rules(): array
     {
         return [
-            'name'    => ['sometimes', 'required', 'string'],
-            'subject' => ['sometimes', 'required', 'string'],
-            'days_after' => ['sometimes', 'required', 'integer','gt:0'],
-            'send_time' => ['sometimes', 'required', 'date_format:H:i:s']
+            'name'       => ['sometimes', 'required', 'string'],
+            'subject'    => ['sometimes', 'required', 'string'],
+            'days_after' => ['sometimes', 'required', 'integer', 'gt:0'],
+            'send_time'  => ['sometimes', 'required', 'date_format:H:i:s']
         ];
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Shop $shop, Outbox $outbox, ActionRequest $request): Outbox
     {
-        $this->initialisation($outbox->organisation, $request);
+        $this->initialisationFromShop($outbox->shop, $request);
 
         return $this->handle($outbox, $this->validatedData);
     }
