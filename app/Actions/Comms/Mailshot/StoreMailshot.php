@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -31,6 +32,7 @@ class StoreMailshot extends OrgAction
     use HasUIMailshots;
     use WithCatalogueAuthorisation;
     use WithNoStrictRules;
+    use WithOutboxBuilder;
 
     /**
      * @throws \Throwable
@@ -56,6 +58,8 @@ class StoreMailshot extends OrgAction
         OutboxHydrateMailshots::dispatch($outbox)->delay($this->hydratorsDelay);
         ShopHydrateMailshots::dispatch($outbox->shop)->delay($this->hydratorsDelay);
 
+        // create email
+        $this->createMailShotEmail($outbox->shop, OutboxCodeEnum::NEWSLETTER, $mailshot, $outbox);
 
         return $mailshot;
     }

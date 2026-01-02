@@ -419,5 +419,16 @@
     "arguments": [
       "customer"
     ]
+  },
+  {
+    "outboxes": [
+      "newsletter"
+    ],
+    "name": "Newsletter",
+    "content": "beefree_newsletter.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
   }
 ]

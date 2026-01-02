@@ -11,6 +11,7 @@ namespace App\Actions\Traits;
 use App\Actions\Comms\Email\StoreEmail;
 use App\Actions\Comms\EmailOngoingRun\StoreEmailOngoingRun;
 use App\Actions\Comms\EmailOngoingRun\UpdateEmailOngoingRun;
+use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Helpers\Snapshot\StoreEmailSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
@@ -25,6 +26,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Outbox;
+use App\Models\Comms\Mailshot;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
@@ -196,6 +198,51 @@ trait WithOutboxBuilder
         );
 
         return $emailOngoingRun;
+    }
+
+    /**
+     * @throws \Throwable
+     * NOTE: Make sure the model parameters
+     */
+    protected function createMailShotEmail(Organisation|Shop|Fulfilment|Website $model, OutboxCodeEnum $case, Mailshot $mailshot, Outbox $outbox): void
+    {
+
+        $emailTemplate = EmailTemplate::where('state', EmailTemplateStateEnum::ACTIVE)
+                ->whereJsonContains('data->outboxes', $outbox->code)->first();
+
+        if ($emailTemplate) {
+            $email = StoreEmail::make()->action(
+                $mailshot,
+                $emailTemplate,
+                modelData: [
+                'subject'               => $case->label(),
+                'snapshot_state'        => SnapshotStateEnum::LIVE,
+                'snapshot_published_at' => $model->created_at,
+                'snapshot_recyclable'   => false,
+                'snapshot_first_commit' => true,
+                'builder'               => match ($this->getDefaultBuilder($case, $model)) {
+                    OutboxBuilderEnum::BEEFREE => EmailBuilderEnum::BEEFREE,
+                    OutboxBuilderEnum::BLADE => EmailBuilderEnum::BLADE,
+                    default => null
+                }
+            ],
+                strict: false
+            );
+
+            UpdateMailshot::make()->action(
+                $mailshot,
+                [
+                    'email_id' => $email->id,
+                ]
+            );
+
+            UpdateOutbox::make()->action(
+                $outbox,
+                [
+                    'state'    => OutboxStateEnum::ACTIVE
+                ]
+            );
+        }
     }
 
 
