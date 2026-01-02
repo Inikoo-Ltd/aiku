@@ -28,6 +28,7 @@ class ProductHydrateTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $timeSeriesId, Carbon $from, Carbon $to): int
     {
+        return 0;
         $timeSeries = AssetTimeSeries::find($timeSeriesId);
 
         if (!$timeSeries) {
