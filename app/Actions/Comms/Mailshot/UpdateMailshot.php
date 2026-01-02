@@ -40,7 +40,6 @@ class UpdateMailshot extends OrgAction
         }
 
         return $mailshot;
-
     }
 
 
@@ -50,7 +49,7 @@ class UpdateMailshot extends OrgAction
         $rules = [
             'subject'           => ['sometimes', 'string', 'max:255'],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
-            'recipients_recipe' => ['present', 'array']
+            'recipients_recipe' => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {

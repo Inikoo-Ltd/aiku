@@ -97,7 +97,7 @@ class ShowMailshot extends OrgAction
                             'label' => __('Edit'),
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
-                                'name'       => "grp.org.shops.show.marketing.newsletters.edit",
+                                'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.edit" : "grp.org.shops.show.marketing.newsletters.edit",
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
