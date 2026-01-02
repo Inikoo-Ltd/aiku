@@ -67,6 +67,8 @@ class PortfoliosResource extends JsonResource
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
+            'product_state'             => $this->product_state ?? null,
+            'is_for_sale'               => $this->is_for_sale ?? null,
         ];
     }
 }
