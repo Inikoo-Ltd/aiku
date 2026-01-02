@@ -26,7 +26,7 @@ class SeedMasterAssetTimeSeries
         $frequencyOption = $command->option('frequency');
         $masterAssets = MasterAsset::where('status', true)->get();
 
-        $frequencies = [];
+
         if ($frequencyOption === 'all') {
             $frequencies = TimeSeriesFrequencyEnum::cases();
         } else {
@@ -42,10 +42,10 @@ class SeedMasterAssetTimeSeries
             }
         }
 
-        $command->info("Dispatched {$totalDispatched} time series seed jobs for master assets.");
+        $command->info("Dispatched $totalDispatched time series seed jobs for master assets.");
     }
 
-    public function handle(MasterAsset $masterAsset, TimeSeriesFrequencyEnum $frequency): void
+    public function handle(MasterAsset $masterAsset, TimeSeriesFrequencyEnum $frequency): bool
     {
         EnsureTimeSeries::run($masterAsset);
 
@@ -54,15 +54,13 @@ class SeedMasterAssetTimeSeries
             ->first();
 
         if (!$timeSeries) {
-            return;
+            return false;
         }
 
         $from = Carbon::now('UTC')->subYear()->startOfYear();
         $to = Carbon::now('UTC')->endOfDay();
 
-        MasterAssetHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)
-            ->WithoutOverlapping()
-            ->delay(now()->addMinute())
-            ->onQueue('low-priority');
+        MasterAssetHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)->onQueue('low-priority');
+        return true;
     }
 }

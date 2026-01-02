@@ -27,7 +27,7 @@ class SeedProductTimeSeries
         $frequencyOption = $command->option('frequency');
         $products = Product::whereNotNull('asset_id')->whereNotIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])->get();
 
-        $frequencies = [];
+
         if ($frequencyOption === 'all') {
             $frequencies = TimeSeriesFrequencyEnum::cases();
         } else {
@@ -43,13 +43,13 @@ class SeedProductTimeSeries
             }
         }
 
-        $command->info("Dispatched {$totalDispatched} time series seed jobs for products.");
+        $command->info("Dispatched $totalDispatched time series seed jobs for products.");
     }
 
-    public function handle(Product $product, TimeSeriesFrequencyEnum $frequency): void
+    public function handle(Product $product, TimeSeriesFrequencyEnum $frequency): bool
     {
         if (!$product->asset) {
-            return;
+            return false;
         }
 
         EnsureTimeSeries::run($product->asset);
@@ -59,15 +59,14 @@ class SeedProductTimeSeries
             ->first();
 
         if (!$timeSeries) {
-            return;
+            return false;
         }
 
         $from = Carbon::now('UTC')->subYear()->startOfYear();
         $to = Carbon::now('UTC')->endOfDay();
 
-        ProductHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)
-            ->WithoutOverlapping()
-            ->delay(now()->addMinute())
-            ->onQueue('low-priority');
+        ProductHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)->onQueue('low-priority');
+
+        return true;
     }
 }
