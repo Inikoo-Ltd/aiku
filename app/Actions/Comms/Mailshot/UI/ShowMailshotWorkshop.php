@@ -14,17 +14,26 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\WithOutboxBuilder;
 
 class ShowMailshotWorkshop extends OrgAction
 {
     use WithActionButtons;
+    use WithOutboxBuilder;
 
     public function handle(Mailshot $mailshot): Mailshot
     {
+        $email = $mailshot->email;
+        // generate email if not exist
+        if (!$email) {
+            $this->createMailShotEmail($mailshot->shop, OutboxCodeEnum::NEWSLETTER, $mailshot, $mailshot->outbox);
+            $mailshot->refresh();
+        }
         return $mailshot;
     }
 
@@ -155,7 +164,4 @@ class ShowMailshotWorkshop extends OrgAction
             default => []
         };
     }
-
-
-
 }
