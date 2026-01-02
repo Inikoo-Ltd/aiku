@@ -73,8 +73,8 @@ class ShowOrgStockStockHistory extends OrgAction
                 ] : null,
 
                 OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value => $this->tab == OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value ?
-                    fn() => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))
-                    : Inertia::lazy(fn() => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))),
+                    fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))
+                    : Inertia::lazy(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))),
 
             ]
         )

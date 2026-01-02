@@ -15,7 +15,7 @@ class RepairProductCategoryTimeSeries
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'product-category:repair-time-series {organisations?*} {--S|shop= : Shop slug}';
+    public string $commandSignature = 'repair:product-category-time-series {organisations?*} {--S|shop= : Shop slug}';
 
     public function __construct()
     {

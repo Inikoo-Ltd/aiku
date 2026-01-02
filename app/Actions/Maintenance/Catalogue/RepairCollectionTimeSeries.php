@@ -15,7 +15,7 @@ class RepairCollectionTimeSeries
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'collection:repair-time-series {organisations?*} {--S|shop= : Shop slug}';
+    public string $commandSignature = 'repair:collection-time-series {organisations?*} {--S|shop= : Shop slug}';
 
     public function __construct()
     {

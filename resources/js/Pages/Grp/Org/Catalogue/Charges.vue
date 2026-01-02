@@ -9,10 +9,9 @@
   import PageHeading from '@/Components/Headings/PageHeading.vue'
   import { capitalize } from "@/Composables/capitalize"
   import { PageHeadingTypes } from '@/types/PageHeading'
-  import Table from '@/Components/Table/Table.vue'
   import TableCharges from '@/Components/Tables/Grp/Org/Catalogue/TableCharges.vue'
   
-  const props = defineProps<{
+defineProps<{
       data: {}
       title: string
       pageHead: PageHeadingTypes

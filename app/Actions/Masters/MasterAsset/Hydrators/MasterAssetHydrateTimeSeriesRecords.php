@@ -5,45 +5,44 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\ProductCategory\Hydrators;
+namespace App\Actions\Masters\MasterAsset\Hydrators;
 
 use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\Catalogue\ProductCategoryTimeSeries;
+use App\Models\Masters\MasterAssetTimeSeries;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
+class MasterAssetHydrateTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use WithTimeSeriesRecordsGeneration;
 
     public function getJobUniqueId(int $timeSeriesId, string $from, string $to): string
     {
-        return "hydrate-product-category-time-series-records:{$timeSeriesId}:{$from}:{$to}";
+        return "hydrate-master-asset-time-series-records:{$timeSeriesId}:{$from}:{$to}";
     }
 
     public function handle(int $timeSeriesId, Carbon $from, Carbon $to): int
     {
-        $timeSeries = ProductCategoryTimeSeries::find($timeSeriesId);
+        $timeSeries = MasterAssetTimeSeries::find($timeSeriesId);
 
         if (!$timeSeries) {
             return 0;
         }
 
-        $productCategory = $timeSeries->productCategory;
-        $frequency       = $timeSeries->frequency;
+        $masterAsset = $timeSeries->masterAsset;
+        $frequency = $timeSeries->frequency;
 
-        $periods        = $this->generatePeriods($from, $to, $frequency);
+        $periods = $this->generatePeriods($from, $to, $frequency);
         $recordsCreated = 0;
 
         foreach ($periods as $period) {
             $data = $this->aggregateDataForPeriod(
-                $productCategory,
+                $masterAsset,
                 $period['from'],
                 $period['to']
             );
@@ -51,7 +50,7 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
             $record = $timeSeries->records()->updateOrCreate(
                 [
                     'from' => $period['from'],
-                    'to'   => $period['to'],
+                    'to' => $period['to'],
                 ],
                 $data
             );
@@ -62,35 +61,32 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
         }
 
         if ($recordsCreated > 0) {
-            ProductCategoryHydrateTimeSeriesNumberRecords::dispatch($timeSeries->id);
+            MasterAssetHydrateTimeSeriesNumberRecords::dispatch($timeSeries->id);
         }
 
         return $recordsCreated;
     }
 
-    protected function aggregateDataForPeriod($productCategory, Carbon $from, Carbon $to): array
+    protected function aggregateDataForPeriod($masterAsset, Carbon $from, Carbon $to): array
     {
-        $categoryColumn = match ($productCategory->type) {
-            ProductCategoryTypeEnum::DEPARTMENT => 'department_id',
-            ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department_id',
-            ProductCategoryTypeEnum::FAMILY => 'family_id',
-        };
+        $assetIds = $masterAsset->assets()->pluck('id');
 
-        $invoiceIdsQuery = DB::table('invoice_transactions')
-            ->where($categoryColumn, $productCategory->id)
-            ->whereBetween('date', [$from, $to])
-            ->select('invoice_id')
-            ->distinct();
-
-        $salesData = Invoice::query()
-            ->whereIn('id', $invoiceIdsQuery)
+        $salesData = DB::table('invoice_transactions')
+            ->whereIn('asset_id', $assetIds)
             ->where('in_process', false)
+            ->whereBetween('date', [$from, $to])
             ->select(
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency')
             )
             ->first();
+
+        $invoiceIdsQuery = DB::table('invoice_transactions')
+            ->whereIn('asset_id', $assetIds)
+            ->whereBetween('date', [$from, $to])
+            ->select('invoice_id')
+            ->distinct();
 
         $invoicesCount = Invoice::query()
             ->whereIn('id', $invoiceIdsQuery)
@@ -106,51 +102,33 @@ class ProductCategoryHydrateTimeSeriesRecords implements ShouldBeUnique
 
         $ordersCount = DB::table('transactions')
             ->whereNull('deleted_at')
-            ->whereIn('asset_id', function ($query) use ($categoryColumn, $productCategory, $from, $to) {
-                $query->select('asset_id')
-                    ->from('invoice_transactions')
-                    ->where($categoryColumn, $productCategory->id)
-                    ->whereBetween('date', [$from, $to])
-                    ->distinct();
-            })
+            ->whereIn('asset_id', $assetIds)
             ->whereBetween('date', [$from, $to])
             ->distinct()
             ->count('order_id');
 
         $deliveryNotesCount = DB::table('delivery_note_items')
             ->join('transactions', 'delivery_note_items.transaction_id', '=', 'transactions.id')
-            ->whereIn('transactions.asset_id', function ($query) use ($categoryColumn, $productCategory, $from, $to) {
-                $query->select('asset_id')
-                    ->from('invoice_transactions')
-                    ->where($categoryColumn, $productCategory->id)
-                    ->whereBetween('date', [$from, $to])
-                    ->distinct();
-            })
+            ->whereIn('transactions.asset_id', $assetIds)
             ->whereBetween('delivery_note_items.date', [$from, $to])
             ->distinct()
             ->count('delivery_note_id');
 
         $customersInvoicedCount = DB::table('transactions')
             ->whereNull('deleted_at')
-            ->whereIn('asset_id', function ($query) use ($categoryColumn, $productCategory, $from, $to) {
-                $query->select('asset_id')
-                    ->from('invoice_transactions')
-                    ->where($categoryColumn, $productCategory->id)
-                    ->whereBetween('date', [$from, $to])
-                    ->distinct();
-            })
+            ->whereIn('asset_id', $assetIds)
             ->whereBetween('date', [$from, $to])
             ->distinct()
             ->count('customer_id');
 
         return [
-            'sales'              => $salesData->sales ?? 0,
+            'sales' => $salesData->sales ?? 0,
             'sales_org_currency' => $salesData->sales_org_currency ?? 0,
             'sales_grp_currency' => $salesData->sales_grp_currency ?? 0,
-            'invoices'           => $invoicesCount,
-            'refunds'            => $refundsCount,
-            'orders'             => $ordersCount,
-            'delivery_notes'     => $deliveryNotesCount,
+            'invoices' => $invoicesCount,
+            'refunds' => $refundsCount,
+            'orders' => $ordersCount,
+            'delivery_notes' => $deliveryNotesCount,
             'customers_invoiced' => $customersInvoicedCount,
         ];
     }

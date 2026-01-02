@@ -46,8 +46,7 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         if ($orgStock->wasChanged('quantity_available')) {
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);
-
-                UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id);
+                UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
             }
         }
 

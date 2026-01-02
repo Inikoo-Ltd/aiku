@@ -15,6 +15,7 @@ use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,13 +32,19 @@ class CreateExternalShop extends OrgAction
      */
     public function htmlResponse(ActionRequest $request): Response
     {
-        $type = $request->route()->parameter('type');
+        $engine = $request->route()->parameter('engine');
 
-        $externalShopBlueprint = match ($type) {
-            ShopEngineEnum::FAIRE => [
+        $externalShopBlueprint = match ($engine) {
+            ShopEngineEnum::FAIRE->value => [
                 [
                     'title'  => __('detail'),
                     'fields' => [
+                        'code' => [
+                            'type'     => 'input',
+                            'label'    => __('Code'),
+                            'required' => true,
+                            'value'    => '',
+                        ],
                         'access_token' => [
                             'type'     => 'input',
                             'label'    => __('Access Token'),
@@ -94,10 +101,16 @@ class CreateExternalShop extends OrgAction
                     ]
                 ]
             ],
-            ShopEngineEnum::SHOPIFY => [
+            ShopEngineEnum::SHOPIFY->value => [
                 [
                     'title'  => __('detail'),
                     'fields' => [
+                        'code' => [
+                            'type'     => 'input',
+                            'label'    => __('Code'),
+                            'required' => true,
+                            'value'    => '',
+                        ],
                         'shop_url' => [
                             'type'     => 'input',
                             'label'    => __('Shop Url'),
@@ -132,16 +145,30 @@ class CreateExternalShop extends OrgAction
                 'formData'    => [
                     'blueprint' => $externalShopBlueprint,
                     'route'     => [
-                        'name' => 'grp.models.shop.store',
+                        'name' => 'grp.models.org.shop.external.store',
+                        'parameters' => [
+                            'organisation' => $this->organisation->id,
+                            'engine'       => $engine
+                        ]
                     ]
                 ],
-
             ]
         );
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $this->set('engine', $request->route()->parameter('engine'));
+    }
 
-    public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
+    public function rules(): array
+    {
+        return [
+            'engine' => ['required', Rule::in(ShopEngineEnum::values())]
+        ];
+    }
+
+    public function asController(Organisation $organisation, string $engine, ActionRequest $request): ActionRequest
     {
         $this->initialisation($organisation, $request);
 
