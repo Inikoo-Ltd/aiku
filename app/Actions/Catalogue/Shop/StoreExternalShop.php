@@ -47,6 +47,7 @@ use App\Models\Helpers\Timezone;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
+use App\Rules\IUnique;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
@@ -103,7 +104,6 @@ class StoreExternalShop extends OrgAction
             throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
         }
 
-        data_set($modelData, 'code', $faireBrand['brand_id']);
         data_set($modelData, 'name', $faireBrand['name']);
         data_set($modelData, 'settings.faire', array_merge($this->settings['faire'], [
             'brand' => $faireBrand['name']
@@ -115,6 +115,17 @@ class StoreExternalShop extends OrgAction
     public function rules(): array
     {
         return [
+            'code'            => [
+                'required',
+                'max:8',
+                'alpha_dash',
+                new IUnique(
+                    table: 'shops',
+                    extraConditions: [
+                        ['column' => 'group_id', 'value' => $this->organisation->group_id],
+                    ]
+                ),
+            ],
             'access_token'   => ['sometimes', 'string', 'max:255'],
             'shop_url'       => ['sometimes', 'string', 'max:255'],
             'country_id'     => ['sometimes', 'exists:countries,id'],

@@ -39,6 +39,12 @@ class CreateExternalShop extends OrgAction
                 [
                     'title'  => __('detail'),
                     'fields' => [
+                        'code' => [
+                            'type'     => 'input',
+                            'label'    => __('Code'),
+                            'required' => true,
+                            'value'    => '',
+                        ],
                         'access_token' => [
                             'type'     => 'input',
                             'label'    => __('Access Token'),
@@ -99,6 +105,12 @@ class CreateExternalShop extends OrgAction
                 [
                     'title'  => __('detail'),
                     'fields' => [
+                        'code' => [
+                            'type'     => 'input',
+                            'label'    => __('Code'),
+                            'required' => true,
+                            'value'    => '',
+                        ],
                         'shop_url' => [
                             'type'     => 'input',
                             'label'    => __('Shop Url'),
