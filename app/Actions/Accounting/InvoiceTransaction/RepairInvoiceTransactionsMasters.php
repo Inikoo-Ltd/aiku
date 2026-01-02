@@ -21,9 +21,7 @@ class RepairInvoiceTransactionsMasters
 
     public function handle(Command $command): void
     {
-        $query = InvoiceTransaction::query()
-            ->whereNotNull('asset_id')
-            ->orderBy('date', 'desc');
+        $query = InvoiceTransaction::whereNotNull('asset_id');
 
         $total = $query->count();
 
