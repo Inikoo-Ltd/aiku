@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, inject } from "vue"
 import axios from "axios"
-import Button from "../Elements/Buttons/Button.vue"
+import Button from "../Elements/Buttons/Button.vue";
+
 
 const props = defineProps<{ sessionUlid: string }>()
 const emit = defineEmits<{
@@ -86,10 +87,12 @@ const submit = async () => {
 		<div class="flex flex-col items-center justify-between gap-2">
 			<div v-if="error" class="text-xs text-red-600">{{ error }}</div>
 			<Button
-				class="px-4 w-full items-center justify-center"
 				:loading="loading"
 				@click="submit"
-				>Submit</Button
+				:label="'Submit'"
+				:full="true"
+				>
+			</Button
 			>
 		</div>
 	</div>

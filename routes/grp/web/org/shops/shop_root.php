@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Shop\UI\CreateExternalShop;
 use App\Actions\Catalogue\Shop\UI\CreateShop;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexShops::class)->name('index');
 Route::get('create', CreateShop::class)->name('create');
+Route::get('external/{type}/create', CreateExternalShop::class)->name('create');
 Route::get('{shop}', ShowShop::class)->name('show');
 
 Route::get('{shop}', function ($organisation, $shop) {
