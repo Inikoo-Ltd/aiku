@@ -55,6 +55,7 @@ use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\Shop\External\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
@@ -65,9 +66,9 @@ use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Outbox\PublishOutbox;
+use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
-use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
@@ -233,8 +234,8 @@ use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
-use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
+use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -265,8 +266,8 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
-use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
+use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
@@ -342,13 +343,13 @@ use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
 use App\Actions\Web\Website\Luigi\ReindexWebsiteLuigiAsync;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
-use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
 
@@ -504,6 +505,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('clocking-machine', [StoreClockingMachine::class, 'inOrganisation'])->name('clocking-machine.store');
 
     Route::post('shop', StoreShop::class)->name('shop.store');
+    Route::post('shop-external/{engine}', StoreExternalShop::class)->name('shop.external.store');
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');
 
@@ -1084,6 +1086,7 @@ Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->n
 
 
 require __DIR__.'/models/inventory/warehouse.php';
+require __DIR__.'/models/goods_in/return.php';
 require __DIR__.'/models/inventory/location_org_stock.php';
 require __DIR__.'/models/inventory/warehouse_area.php';
 require __DIR__.'/models/inventory/location.php';

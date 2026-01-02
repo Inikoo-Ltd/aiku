@@ -74,6 +74,9 @@ else if (props.style == "red_outline" || props.type == "red_outline") styleClass
 else if (props.style == "disabled" || props.type == "disabled") styleClass = "cursor-not-allowed border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-200/70 disabled:cursor-not-allowed disabled:opacity-70";
 else styleClass = `buttonPrimary`;
 
+if(props.style == 'white-w-outline') {styleClass = "bg-white hover:bg-gray-200/70 border border-gray-300  text-gray-600 disabled:bg-gray-300 disabled:border-gray-400"}
+if(props.style == 'white-r-outline') {styleClass = "bg-white hover:bg-red-200 border border-red-300 text-red-500 hover:text-red-600  disabled:border-red-200 disabled:bg-gray-300 disabled:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 "}
+
 // Styling depends on the 'size' props
 switch (props.size) {
   case "xxs":
@@ -239,7 +242,7 @@ const getActionIcon = (icon: any) => {
   }
 
   &:disabled {
-    background-color: color-mix(in srgb, var(--theme-color-4) 50%, grey) !important;
+    background-color: color-mix(in srgb, var(--theme-color-4) 30%, 30% grey) !important;
   }
 }
 </style>

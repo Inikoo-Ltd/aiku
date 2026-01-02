@@ -9,6 +9,8 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Analytics\GetSectionRoute;
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
@@ -19,10 +21,13 @@ use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\SaveModelImages;
 use App\Actions\SysAdmin\Group\CreateAccessToken;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\ImgProxy\Image;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -31,9 +36,11 @@ use App\Models\Dropshipping\PlatformStats;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
+use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 
 beforeAll(function () {
@@ -41,7 +48,37 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    \Tests\Helpers\setupDropshippingTest($this);
+    $this->organisation = createOrganisation();
+    $this->group = $this->organisation->group;
+    $this->user = createAdminGuest($this->group)->getUser();
+
+    $shop = Shop::first();
+    if (!$shop) {
+        $storeData = Shop::factory()->definition();
+        data_set($storeData, 'type', ShopTypeEnum::DROPSHIPPING);
+
+        $shop = StoreShop::make()->action(
+            $this->organisation,
+            $storeData
+        );
+    }
+    $this->shop = $shop;
+
+    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
+
+    $this->customer = createCustomer($this->shop);
+
+    list(
+        $this->tradeUnit,
+        $this->product
+        ) = createProduct($this->shop);
+
+    Config::set(
+        'inertia.testing.page_paths',
+        [resource_path('js/Pages/Grp')]
+    );
+
+    actingAs($this->user);
 });
 
 

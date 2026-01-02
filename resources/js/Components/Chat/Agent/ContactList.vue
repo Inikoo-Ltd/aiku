@@ -4,13 +4,13 @@ import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
 import { Contact, SessionAPI, ChatMessage } from "@/types/Chat/chat"
-import MessageAreaAgent from "@/Components/Chat/MessageAreaAgent.vue"
+import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
 import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faUser, faUserAlien } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import Image from "../Image.vue"
+import Image from "@/Components/Image.vue"
 
 const layout: any = inject("layout", {})
 
@@ -72,6 +72,8 @@ const reloadContacts = async () => {
 				priority: s.priority,
 				guest_profile: s.guest_profile,
 				agent: s.assigned_agent,
+				shop : s.shop,
+				organisation : s.organisation
 			})
 		)
 	} catch (e) {
@@ -142,6 +144,8 @@ const openChat = (c: Contact) => {
 		web_user: c.webUser,
 		guest_profile: c.guest_profile,
 		assigned_agent: c.agent,
+		shop : c.shop,
+		organisation : c.organisation
 	} as SessionAPI
 	messages.value = c.messages ?? []
 }
@@ -207,6 +211,7 @@ const assignToSelf = async (ulid: string) => {
 }
 
 const handleClickContact = async (c: Contact) => {
+	console.log(c)
 	errorPerContact.value[c.ulid] = ""
 
 	if (activeTab.value === "waiting") {
@@ -266,13 +271,13 @@ const tabClass = (tab: string) => {
 		<!-- Tabs -->
 		<div class="flex border-b text-xs">
 			<div class="tabItem" :class="tabClass('waiting')" @click="activeTab = 'waiting'">
-				Waiting
+				{{ trans('Waiting') }}
 			</div>
 			<div class="tabItem" :class="tabClass('active')" @click="activeTab = 'active'">
-				Active
+				{{ trans('Active') }}
 			</div>
 			<div class="tabItem" :class="tabClass('closed')" @click="activeTab = 'closed'">
-				Closed
+				{{ trans('Closed') }}
 			</div>
 		</div>
 

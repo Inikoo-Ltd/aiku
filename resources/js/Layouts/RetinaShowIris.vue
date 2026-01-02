@@ -21,7 +21,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { initialiseRetinaApp } from '@/Composables/initialiseRetinaApp'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
-import ChatButton from '@/Components/Chat/ChatButton.vue'
+import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 library.add(faExclamationTriangle)
 

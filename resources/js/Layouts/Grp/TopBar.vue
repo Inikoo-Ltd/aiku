@@ -188,39 +188,43 @@ const label = {
                             <MenuItems
                                 class="px-1 py-1 space-y-2.5 min-w-24 w-fit max-w-96 absolute left-0 mt-2 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                                 <!-- Dropdown: Group -->
-                                <TopBarDropdownScope v-if="layoutStore.group" class=""
-                                                     :menuItems="[{
-                            label: layoutStore.group?.label,
-                        }]"
-                                                     menuKey="group"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('corporates')"
-                                                     icon="fal fa-user-tie"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.group"
+                                    class=""
+                                    :menuItems="[{
+                                        label: layoutStore.group?.label,
+                                    }]"
+                                    menuKey="group"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('Corporates')"
+                                    icon="fal fa-user-tie"
                                 />
 
                                 <!-- Dropdown: Organisation -->
-                                <TopBarDropdownScope v-if="layoutStore.organisations.data?.length"
-                                                     :menuItems="layoutStore.organisations.data"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('E-commerce')"
-                                                     icon="fal fa-cash-register"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.organisations.data?.length"
+                                    :menuItems="layoutStore.organisations.data"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('E-Commerce')"
+                                    icon="fal fa-cash-register"
                                 />
 
-
                                 <!-- Dropdown: Agents -->
-                                <TopBarDropdownScope v-if="layoutStore.agents?.data?.length"
-                                                     :menuItems="layoutStore.agents?.data"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('agents')"
-                                                     icon="fal fa-people-arrows"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.agents?.data?.length"
+                                    :menuItems="layoutStore.agents?.data"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('Agents')"
+                                    icon="fal fa-people-arrows"
                                 />
 
                                 <!-- Dropdown: Digital Agency -->
-                                <TopBarDropdownScope v-if="layoutStore.digital_agency?.data?.length"
-                                                     :menuItems="layoutStore.digital_agency?.data"
-                                                     :imageSkeleton="imageSkeleton"
-                                                     :label="trans('digital agency')"
-                                                     icon="fal fa-laptop-house"
+                                <TopBarDropdownScope
+                                    v-if="layoutStore.digital_agency?.data?.length"
+                                    :menuItems="layoutStore.digital_agency?.data"
+                                    :imageSkeleton="imageSkeleton"
+                                    :label="trans('Digital Agency')"
+                                    icon="fal fa-laptop-house"
                                 />
                             </MenuItems>
                         </transition>

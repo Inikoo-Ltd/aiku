@@ -20,14 +20,15 @@ class SeedCollectionTimeSeries
 {
     use AsAction;
 
-    public string $commandSignature = 'collection:seed-time-series {--frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)}';
+    public string $commandSignature = 'seed:collection-time-series {--frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)}';
 
     public function asCommand(Command $command): void
     {
         $frequencyOption = $command->option('frequency');
-        $collections = Collection::whereNotIn('state', [CollectionStateEnum::IN_PROCESS])->get();
+        $collections     = Collection::whereNotIn('state', [
+            CollectionStateEnum::IN_PROCESS
+        ])->get();
 
-        $frequencies = [];
         if ($frequencyOption === 'all') {
             $frequencies = TimeSeriesFrequencyEnum::cases();
         } else {
@@ -43,7 +44,7 @@ class SeedCollectionTimeSeries
             }
         }
 
-        $command->info("Dispatched {$totalDispatched} time series seed jobs for collections.");
+        $command->info("Dispatched $totalDispatched time series seed jobs for collections.");
     }
 
     public function handle(Collection $collection, TimeSeriesFrequencyEnum $frequency): void
@@ -59,8 +60,9 @@ class SeedCollectionTimeSeries
         }
 
         $from = Carbon::now('UTC')->subYear()->startOfYear();
-        $to = Carbon::now('UTC')->endOfDay();
+        $to   = Carbon::now('UTC')->endOfDay();
 
-        CollectionHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to);
+        CollectionHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)
+            ->onQueue('low-priority');
     }
 }

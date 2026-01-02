@@ -13,10 +13,10 @@ import { inject, onMounted, ref, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
-import { faConciergeBell, faGarage, faExclamationTriangle, faSyncAlt, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle, faClone, faLink} from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faSyncAlt, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle, faClone, faLink, faBan, faCube, faDollarSign} from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
@@ -101,6 +101,10 @@ const debReloadPage = debounce(() => {
 	})
 }, 1200)
 
+const disableButtons = (item) => {
+    return item.product_state == 'discontinued' || !item.is_for_sale;
+}
+
 onMounted(() => {
     props.data?.data?.forEach(porto => {
 		if (selectSocketiBasedPlatform(porto)) {
@@ -161,19 +165,26 @@ const onClickFilterOutOfStock = (query: string) => {
 </script>
 
 <template>
-	<Table :resource="data" :name="tab" class="mt-5" xxisCheckBox
+	<Table 
+		:resource="data" 
+		:name="tab" 
+		class="mt-5" 
+		xxisCheckBox
 		xxdisabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'" @onChecked="(item) => {
 			console.log('onChecked', item)
 			props.selectedData.products.push(item.id)
-		}" @onUnchecked="(item) => {
-			onUnchecked(item.id)
-		}" :isChecked="(item) => props.selectedData.products.includes(item.id)" :rowColorFunction="(item) => {
-			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
-				return 'bg-yellow-50'
-			} else {
-				return ''
-			}
-		}" :isParentLoading="!!isLoadingTable">
+		}" 
+		@onUnchecked="(item) => onUnchecked(item.id)" 
+		:isChecked="(item) => props.selectedData.products.includes(item.id)" 
+		:isParentLoading="!!isLoadingTable"
+        :rowColorFunction="(item) => {
+            if (disableButtons(item)) {
+                return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
+            } else {
+                return ''
+            }
+        }" >
+	>
 		<template #add-on-button >
 			<Button @click="onClickFilterOutOfStock('out-of-stock')"
 				v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
@@ -247,15 +258,49 @@ const onClickFilterOutOfStock = (query: string) => {
 			</div>
 		</template>
 
-
+		<template #cell(product_state)="{ item }"> 
+            <div class="whitespace min-w-[100px] text-left font-medium italic whitespace-break-spaces text-red-500" v-if="disableButtons(item)">
+                <FontAwesomeLayers v-if="item.product_state == 'discontinued'"
+                    v-tooltip="trans('This product line has been discontinued. Please remove this item')"
+                    class="flex h-full w-full"
+                >
+                    <FontAwesomeIcon
+                        :icon="faBan"
+                        class="text-2xl"
+                    />
+                    <FontAwesomeIcon
+                        :icon="faCube"
+                        class="text-md text-center"
+                    />
+                </FontAwesomeLayers>
+                <FontAwesomeLayers v-else
+                    v-tooltip="trans('This product line is currently not for sale')"
+                    class="flex h-full w-full"
+                >
+                    <FontAwesomeIcon
+                        :icon="faBan"
+                        class="text-2xl"
+                    />
+                    <FontAwesomeIcon
+                        :icon="faDollarSign"
+                        class="text-lg text-center"
+                    />
+                </FontAwesomeLayers>
+            </div>
+            <div v-else />
+		</template>
 
 		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }" v-if="!disabled">
 			<div class="mx-auto flex flex-wrap justify-center gap-2">
-				<ButtonWithLink v-tooltip="trans('Remove product from list')" type="negative" icon="fal fa-times"
-					:routeTarget="item.update_portfolio" :body="{
-						'status': false,
-					}" size="xs" :bindToLink="{
+				<ButtonWithLink v-tooltip="trans('Remove product from list')" 
+					type="negative" 
+					icon="fal fa-times"
+					:routeTarget="item.update_portfolio" 
+					:body="{'status': false}" 
+					size="xs" 
+					:style="'white-r-outline'"
+					:bindToLink="{
 						preserveScroll: true,
 					}" />
 			</div>

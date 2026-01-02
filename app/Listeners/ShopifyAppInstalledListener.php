@@ -2,11 +2,15 @@
 
 namespace App\Listeners;
 
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyStore;
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Webhook\CreateShopifyWebhooks;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Helpers\Country;
+use Illuminate\Support\Arr;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
 use Sentry;
 
@@ -36,7 +40,6 @@ class ShopifyAppInstalledListener
             return;
         }
 
-
         CreateShopifyWebhooks::run($shopifyUser);
 
         if ($shopifyUser->customerSalesChannel) {
@@ -44,6 +47,14 @@ class ShopifyAppInstalledListener
             CheckShopifyChannel::run($shopifyUser->customerSalesChannel);
             StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
 
+        } else if($shopifyUser->external_shop_id) {
+            $store = GetShopifyStore::run($shopifyUser);
+
+            $country = Country::where('code', Arr::get($store, 'data.shop.billingAddress.countryCodeV2'))->first();
+            UpdateShop::make()->action($shopifyUser->externalShop, [
+                'name' => Arr::get($store, 'data.shop.name'),
+                'country_id' => $country->id
+            ]);
         }
 
     }

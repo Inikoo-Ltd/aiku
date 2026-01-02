@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -79,8 +80,13 @@ class IndexRetinaPortfolios extends RetinaAction
         }
         $query->with(['item']);
 
-        $query->where('item_type', class_basename(Product::class));
-
+        $query->where('portfolios.item_type', class_basename(Product::class))
+            ->leftJoin('products', 'products.id', 'portfolios.item_id')
+            ->select(
+                'portfolios.*',
+                'products.state as product_state',
+                'products.is_for_sale',
+            );
 
         return $query->defaultSort('-portfolios.id')
             ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter()])
@@ -101,7 +107,8 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getPlatformStatusFilter(): AllowedFilter
     {
         return AllowedFilter::callback('platform_status', function ($query, $value) {
-            $query->where('platform_status', $value);
+            $query->where('platform_status', $value)
+                ->orWhere('product_state', $value);
         });
     }
 
@@ -231,6 +238,14 @@ class IndexRetinaPortfolios extends RetinaAction
             $countProductsNotSync = 0;
         } else {
             $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)
+                // Don't count products that are being discontinued or not for sale
+                ->whereExists(function ($q) {
+                    $q->selectRaw(1)
+                        ->from('products as p')
+                        ->whereColumn('p.id', 'portfolios.item_id')
+                        ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
+                        ->where('p.is_for_sale', true);
+                })
                 ->where('platform_status', false)
                 ->count();
         }
@@ -444,6 +459,10 @@ class IndexRetinaPortfolios extends RetinaAction
 
             $table->column(key: 'image', label:'', canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+                $table->column(key: 'product_state', label: '', canBeHidden: false);
+            }
 
             if ($this->customerSalesChannel->status !== CustomerSalesChannelStatusEnum::CLOSED) {
                 $table->column(key: 'actions', label: '', canBeHidden: false);

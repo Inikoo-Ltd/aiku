@@ -22,7 +22,6 @@
   } from '@fal';
   import { computed, defineAsyncComponent, ref } from "vue";
   import { useTabChange } from "@/Composables/tab-change";
-//   import ModelDetails from "@/Components/ModelDetails.vue";
   import Tabs from "@/Components/Navigation/Tabs.vue";
   import { capitalize } from "@/Composables/capitalize"
   import ChargeShowcase from '@/Components/Showcases/Grp/ChargeShowcase.vue';

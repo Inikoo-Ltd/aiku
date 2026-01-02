@@ -12,6 +12,7 @@ namespace App\Actions\Iris\Portfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\IrisAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
@@ -36,8 +37,10 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
             ->whereIn('id', Arr::get($modelData, 'customer_sales_channel_ids'))
             ->get();
 
+        // Changed to only get Active Products; If is_for_sale is false / status is discontinued, will be ignored
         $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))
             ->where('is_for_sale', true)
+            ->where('state', '!=', ProductStateEnum::DISCONTINUED->value)
             ->get();
 
         $existingPortfolios = $channels->flatMap(function ($channel) use ($items) {
