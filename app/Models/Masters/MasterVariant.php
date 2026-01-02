@@ -115,7 +115,7 @@ class MasterVariant extends Model implements Auditable, HasMedia
 
     public function masterSubDepartment(): BelongsTo
     {
-        return $this->belongsTo(MasterProductCategory::class, 'master_sub_deparment_id');
+        return $this->belongsTo(MasterProductCategory::class, 'master_sub_department_id');
     }
 
     public function masterFamily(): BelongsTo

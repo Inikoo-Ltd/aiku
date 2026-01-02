@@ -43,13 +43,12 @@ trait WithVariantDataPreparation
 
         $products = collect(data_get($this->data, 'products'))
             ->mapWithKeys(function ($variant) use ($masterProductList) {
-
                 $product = $masterProductList[data_get($variant, 'product.id')]
                     ->products()
                     ->where('shop_id', $this->shop->id)
                     ->first();
 
-                if (! $product) {
+                if (!$product || !$product->is_for_sale) {
                     return [];
                 }
 
@@ -67,7 +66,7 @@ trait WithVariantDataPreparation
 
         $this->leader_id = data_get($this->leadItem, 'product.id');
 
-        $this->number_minions = array_reduce(
+        $this->number_minions             = array_reduce(
             data_get($this->data['variants'], '*.options'),
             fn ($carry, $item) => $carry * count($item),
             1
@@ -102,15 +101,15 @@ trait WithVariantDataPreparation
             : null;
 
         $this->organisation_id = $this->shop->organisation_id;
-        $this->group_id = $this->shop->group->id;
-        $this->shop_id  = $this->shop->id;
+        $this->group_id        = $this->shop->group->id;
+        $this->shop_id         = $this->shop->id;
 
         $this->master_variant_id = $this->parent->id;
     }
 
     private function prepareCodeSlug(): void
     {
-        $code = data_get($this->leadItem, 'product.code') . '-var-' . now()->format('His');
+        $code = data_get($this->leadItem, 'product.code').'-var-'.now()->format('His');
         $this->set('code', $code);
         $this->set('slug', strtolower($code));
     }

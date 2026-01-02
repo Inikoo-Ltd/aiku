@@ -15,7 +15,6 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterVariant;
 use App\Rules\AlphaDashDot;
-use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -85,14 +84,14 @@ class StoreMasterVariant extends OrgAction
 
         $this->leader_id = data_get(collect($request->input('data_variants.products'))->where('is_leader', true)->first(), 'product.id');
 
-        $code = MasterAsset::find($this->leader_id)->code . '-var-' . now()->format('His');
+        $code = MasterAsset::find($this->leader_id)->code;
         $this->set('code', $code);
 
-        $this->number_minions = array_reduce(data_get($this->data_variants['variants'], '*.options'), function ($carry, $item) {
+        $this->number_minions             = array_reduce(data_get($this->data_variants['variants'], '*.options'), function ($carry, $item) {
             return $carry * count($item);
         }, 1) - 1; // Minus one to exclude the leader product
-        $this->number_dimensions = count($this->data_variants['variants']);
-        $this->number_used_slots = count($this->data_variants['products']);
+        $this->number_dimensions          = count($this->data_variants['variants']);
+        $this->number_used_slots          = count($this->data_variants['products']);
         $this->number_used_slots_for_sale = MasterAsset::whereIn('id', array_keys($this->data_variants['products']))->select('is_for_sale')->count();
 
         if ($this->data_variants) {
@@ -103,37 +102,30 @@ class StoreMasterVariant extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                     =>  ['required', 'exists:master_assets,id'],
-            'code'                          =>  [
-                                                    'required',
-                                                    'max:32',
-                                                    new AlphaDashDot(),
-                                                    new IUnique(
-                                                        table: 'master_variants',
-                                                        extraConditions: [
-                                                            ['column' => 'master_shop_id', 'value' => $this->masterShop->id ?? null],
-                                                            ['column' => 'deleted_at', 'operator' => 'null'],
-                                                        ]
-                                                    ),
-                                                ],
-            'number_minions'                =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
-            'number_dimensions'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
-            'number_used_slots'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
-            'number_used_slots_for_sale'    =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
-            'data'                          =>  ['required', 'array'],
-            'data.variants'                 =>  ['sometimes', 'array'],
-            'data.groupBy'                  =>  ['sometimes', 'string'],
-            'data.products'                 =>  ['sometimes', 'array', 'min:1'],
+            'leader_id'                  => ['required', 'exists:master_assets,id'],
+            'code'                       => [
+                'required',
+                'max:32',
+                new AlphaDashDot(),
+
+            ],
+            'number_minions'             => ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
+            'number_dimensions'          => ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
+            'number_used_slots'          => ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
+            'number_used_slots_for_sale' => ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm sometimes using to ignore errorBag
+            'data'                       => ['required', 'array'],
+            'data.variants'              => ['sometimes', 'array'],
+            'data.groupBy'               => ['sometimes', 'string'],
+            'data.products'              => ['sometimes', 'array', 'min:1'],
         ];
     }
 
     public function getValidationMessages(): array
     {
         return [
-            'data.groupBy'          => __('A grouping criteria must be selected'),
-            'data.products'     => __('At least one product must be present in the variant'),
+            'data.groupBy'  => __('A grouping criteria must be selected'),
+            'data.products' => __('At least one product must be present in the variant'),
         ];
-
     }
 
     /**
@@ -165,14 +157,14 @@ class StoreMasterVariant extends OrgAction
         return redirect()
             ->route('grp.masters.master_shops.show.master_families.show', [
                 'tab'          => 'variants',
-                'masterShop'    => $masterVariant->masterShop->slug,
-                'masterFamily'  => $masterVariant->masterFamily->slug,
+                'masterShop'   => $masterVariant->masterShop->slug,
+                'masterFamily' => $masterVariant->masterFamily->slug,
             ])
             ->with(
                 'notification',
                 [
-                    'status'  => 'success',
-                    'title'   => __('Success!'),
+                    'status'      => 'success',
+                    'title'       => __('Success!'),
                     'description' => __('Master Variant :_masterVarCode has been created successfully.', ['_masterVarCode' => $masterVariant->code]),
                 ]
             )
