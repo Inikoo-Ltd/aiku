@@ -32,6 +32,8 @@ class ProductCategoryHydrateTimeSeriesNumberRecords implements ShouldBeUnique
 
         $timeSeries->update([
             'number_records' => $count,
+            'from' => $timeSeries->records()->min('from'),
+            'to' => $timeSeries->records()->max('to'),
         ]);
     }
 }

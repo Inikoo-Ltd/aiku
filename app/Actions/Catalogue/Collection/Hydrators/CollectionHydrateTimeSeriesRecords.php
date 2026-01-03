@@ -8,8 +8,6 @@
 namespace App\Actions\Catalogue\Collection\Hydrators;
 
 use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\CollectionTimeSeries;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -93,40 +91,20 @@ class CollectionHydrateTimeSeriesRecords implements ShouldBeUnique
             ];
         }
 
-        $invoiceIdsQuery = DB::table('invoice_transactions')
+        $data = DB::table('invoice_transactions')
             ->whereIn('asset_id', $assetIds)
-            ->whereBetween('date', [$from, $to])
-            ->select('invoice_id')
-            ->distinct();
-
-        $salesData = Invoice::query()
-            ->whereIn('id', $invoiceIdsQuery)
             ->where('in_process', false)
+            ->whereBetween('date', [$from, $to])
             ->select(
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency')
+                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
+                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN invoice_id END) as invoices'),
+                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN invoice_id END) as refunds'),
+                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
+                DB::raw('COUNT(DISTINCT order_id) as orders'),
             )
             ->first();
-
-        $invoicesCount = Invoice::query()
-            ->whereIn('id', $invoiceIdsQuery)
-            ->where('in_process', false)
-            ->where('type', InvoiceTypeEnum::INVOICE)
-            ->count();
-
-        $refundsCount = Invoice::query()
-            ->whereIn('id', $invoiceIdsQuery)
-            ->where('in_process', false)
-            ->where('type', InvoiceTypeEnum::REFUND)
-            ->count();
-
-        $ordersCount = DB::table('transactions')
-            ->whereNull('deleted_at')
-            ->whereIn('asset_id', $assetIds)
-            ->whereBetween('date', [$from, $to])
-            ->distinct()
-            ->count('order_id');
 
         $deliveryNotesCount = DB::table('delivery_note_items')
             ->join('transactions', 'delivery_note_items.transaction_id', '=', 'transactions.id')
@@ -135,22 +113,15 @@ class CollectionHydrateTimeSeriesRecords implements ShouldBeUnique
             ->distinct()
             ->count('delivery_note_id');
 
-        $customersInvoicedCount = DB::table('transactions')
-            ->whereNull('deleted_at')
-            ->whereIn('asset_id', $assetIds)
-            ->whereBetween('date', [$from, $to])
-            ->distinct()
-            ->count('customer_id');
-
         return [
-            'sales' => $salesData->sales ?? 0,
-            'sales_org_currency' => $salesData->sales_org_currency ?? 0,
-            'sales_grp_currency' => $salesData->sales_grp_currency ?? 0,
-            'invoices' => $invoicesCount,
-            'refunds' => $refundsCount,
-            'orders' => $ordersCount,
+            'sales' => $data->sales ?? 0,
+            'sales_org_currency' => $data->sales_org_currency ?? 0,
+            'sales_grp_currency' => $data->sales_grp_currency ?? 0,
+            'invoices' => $data->invoices ?? 0,
+            'refunds' => $data->refunds ?? 0,
+            'orders' => $data->orders ?? 0,
             'delivery_notes' => $deliveryNotesCount,
-            'customers_invoiced' => $customersInvoicedCount,
+            'customers_invoiced' => $data->customers_invoiced ?? 0,
         ];
     }
 }

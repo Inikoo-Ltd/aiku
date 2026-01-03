@@ -12,15 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
+ * @property string $type
+ * @property string $frequency
+ * @property string $period
  * @property int $product_category_time_series_id
- * @property string $sales
- * @property string $sales_org_currency
- * @property string $sales_grp_currency
- * @property int $invoices
- * @property int $refunds
- * @property int $orders
- * @property int $delivery_notes
- * @property int $customers_invoiced
+ * @property string|null $sales
+ * @property string|null $sales_org_currency
+ * @property string|null $sales_grp_currency
+ * @property int|null $invoices
+ * @property int|null $refunds
+ * @property int|null $orders
+ * @property int|null $delivery_notes
+ * @property int|null $customers_invoiced
  * @property \Illuminate\Support\Carbon|null $from
  * @property \Illuminate\Support\Carbon|null $to
  * @property \Illuminate\Support\Carbon|null $created_at

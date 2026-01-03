@@ -22,6 +22,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Billables\Service;
@@ -136,28 +137,57 @@ class StoreInvoiceTransaction extends OrgAction
             }
         }
 
-        if ($invoiceTransaction->family_id) {
-            ProductCategoryHydrateTimeSeriesRecords::dispatch(
-                $invoiceTransaction->family_id,
-                $invoiceTransaction->date->copy()->subYear(),
-                $invoiceTransaction->date
-            )->delay(1800);
-        }
+        if ($this->strict) {
+            if ($invoiceTransaction->family_id) {
+                foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                    ProductCategoryHydrateTimeSeriesRecords::dispatch(
+                        $invoiceTransaction->family_id,
+                        $frequency,
+                        match($frequency) {
+                            TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                            TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                            TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                            TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                            TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                        },
+                        now()->toDateString()
+                    )->delay(1800);
+                }
+            }
 
-        if ($invoiceTransaction->department_id) {
-            ProductCategoryHydrateTimeSeriesRecords::dispatch(
-                $invoiceTransaction->department_id,
-                $invoiceTransaction->date->copy()->subYear(),
-                $invoiceTransaction->date
-            )->delay(1800);
-        }
+            if ($invoiceTransaction->department_id) {
+                foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                    ProductCategoryHydrateTimeSeriesRecords::dispatch(
+                        $invoiceTransaction->department_id,
+                        $frequency,
+                        match($frequency) {
+                            TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                            TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                            TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                            TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                            TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                        },
+                        now()->toDateString()
+                    )->delay(1800);
+                }
+            }
 
-        if ($invoiceTransaction->sub_department_id) {
-            ProductCategoryHydrateTimeSeriesRecords::dispatch(
-                $invoiceTransaction->sub_department_id,
-                $invoiceTransaction->date->copy()->subYear(),
-                $invoiceTransaction->date
-            )->delay(1800);
+            if ($invoiceTransaction->sub_department_id) {
+                foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                    ProductCategoryHydrateTimeSeriesRecords::dispatch(
+                        $invoiceTransaction->sub_department_id,
+                        $frequency,
+                        match($frequency) {
+                            TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                            TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                            TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                            TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                            TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                        },
+                        now()->toDateString()
+                    )->delay(1800);
+                }
+            }
         }
 
         return $invoiceTransaction;
