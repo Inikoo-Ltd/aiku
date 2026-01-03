@@ -60,9 +60,9 @@ class GetChatActivity
             'event_type' => $event->event_type->value,
             'event_label' => ChatEventTypeEnum::labels()[$event->event_type->value] ?? $event->event_type->value,
             'event_icon' => ChatEventTypeEnum::stateIcon()[$event->event_type->value] ?? [],
-            'created_at' => $event->created_at->addHours(8),
-            'created_at_formatted' => $event->created_at->addHours(8)->format('Y-m-d H:i:s'),
-            'created_at_relative' => $event->created_at->addHours(8)->diffForHumans(),
+            'created_at' => $event->created_at,
+            'created_at_formatted' => $event->created_at->format('Y-m-d H:i:s'),
+            'created_at_relative' => $event->created_at->diffForHumans(),
             'actor' => null,
             'details' => [],
         ];

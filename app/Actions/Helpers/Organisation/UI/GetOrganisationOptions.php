@@ -25,11 +25,30 @@ class GetOrganisationOptions
 
             $selectOptions[$org->slug] =
                 [
-                    'label'   => $org->code.' | '.$org->name,
+                    'label'   => $org->code . ' | ' . $org->name,
                 ];
         }
 
         return $selectOptions;
+    }
 
+    public function filter(?string $organisationSlug = null): array
+    {
+        $query = Organisation::query();
+
+        if ($organisationSlug) {
+            $query->where('slug', $organisationSlug);
+        }
+
+        $selectOptions = [];
+
+        foreach ($query->get() as $org) {
+            $selectOptions[$org->id] = [
+                'label' => $org->code . ' | ' . $org->name,
+                'value' => $org->id,
+            ];
+        }
+
+        return $selectOptions;
     }
 }
