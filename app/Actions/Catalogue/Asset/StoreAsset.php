@@ -34,7 +34,6 @@ class StoreAsset extends OrgAction
                 $status = true;
             }
             data_set($modelData, 'master_asset_id', $parent->master_product_id);
-
         } else {
             $status = $parent->status;
         }
@@ -64,7 +63,12 @@ class StoreAsset extends OrgAction
         $asset->salesIntervals()->create();
         $asset->orderingStats()->create();
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-            $asset->timeSeries()->create(['frequency' => $frequency]);
+            $asset->timeSeries()->create(
+                [
+                    'frequency' => $frequency,
+                    'shop_id'   => $asset->shop_id
+                ]
+            );
         }
 
 

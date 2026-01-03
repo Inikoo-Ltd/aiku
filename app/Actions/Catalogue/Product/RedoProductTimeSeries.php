@@ -1,82 +1,78 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 03 Jan 2026 23:41:42 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
+ * Author: stewicca <stewicalf@gmail.com>
+ * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Traits\Catalogue\ProductCategory;
+namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
-trait WithRedoProductCategoryTimeSeries
+class RedoProductTimeSeries
 {
-    public function handle(ProductCategory $productCategory, array $frequencies, Command $command = null, bool $async = true): void
+    use WithHydrateCommand;
+
+
+    public string $commandSignature = 'products:redo_time_series  {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+
+    public function __construct()
     {
-        $type = ProductCategoryTypeEnum::from($this->restriction);
+        $this->model       = Product::class;
+    }
 
-        if ($productCategory->type !== $type) {
-            $command?->error("Can only process {$type->value}s, $productCategory->name is a $productCategory->type");
-
-            return;
-        }
-
+    public function handle(Product $product, array $frequencies, Command $command = null, bool $async = true): void
+    {
 
         $from = null;
+        $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->min('date');
 
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction}_id", $productCategory->id)->min('date');
-
-
-
-        if ($firstInvoicedDate && ($firstInvoicedDate < $productCategory->created_at)) {
-            $productCategory->update(['created_at' => $firstInvoicedDate]);
+        if ($firstInvoicedDate && ($firstInvoicedDate < $product->created_at)) {
+            $product->update(['created_at' => $firstInvoicedDate]);
         }
 
 
-        if ($productCategory->created_at) {
-            $from = $productCategory->created_at->toDateString();
+        if ($product->created_at) {
+            $from = $product->created_at->toDateString();
         }
 
-        if ($productCategory->state == ProductCategoryStateEnum::IN_PROCESS) {
+        if ($product->state == ProductStateEnum::IN_PROCESS) {
             return;
         }
 
-        if ($productCategory->state == ProductCategoryStateEnum::ACTIVE || $productCategory->state == ProductCategoryStateEnum::DISCONTINUING) {
+        if ($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) {
             $to = now()->toDateString();
-        } elseif ($productCategory->state == ProductCategoryStateEnum::DISCONTINUED) {
-            $to = $productCategory->discontinued_at;
+        } elseif ($product->state == ProductStateEnum::DISCONTINUED) {
+            $to = $product->discontinued_at;
             $lastInvoicedDate = DB::table('invoice_transactions')
-                ->where("{$this->restriction}_id", $productCategory->id)
+                ->where('asset_id', $product->id)
                 ->max('date');
             if ($lastInvoicedDate && (!$to || $lastInvoicedDate > $to)) {
                 $to = $lastInvoicedDate;
-                $productCategory->update(['discontinued_at' => $to]);
+                $product->update(['discontinued_at' => $to]);
             }
         } else {
             $to = DB::table('invoice_transactions')
-                ->where("{$this->restriction}_id", $productCategory->id)
+                ->where('asset_id', $product->id)
                 ->max('date');
             if (!$to) {
                 return;
             }
         }
 
-
         if ($from != null && $to != null) {
             foreach ($frequencies as $frequency) {
                 if ($async) {
-                    ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('low-priority');
+                    ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('low-priority');
                 } else {
-                    ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
+                    ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
                 }
             }
         }
@@ -110,7 +106,7 @@ trait WithRedoProductCategoryTimeSeries
 
         $query->chunk(
             1000,
-            function (Collection $modelsData) use ($bar, $command, $frequencies) {
+            function (\Illuminate\Support\Collection $modelsData) use ($bar, $command, $frequencies) {
                 foreach ($modelsData as $modelId) {
                     if ($this->modelAsHandleArg) {
                         $model = (new $this->model());
@@ -138,4 +134,7 @@ trait WithRedoProductCategoryTimeSeries
 
         return 0;
     }
+
+
+
 }

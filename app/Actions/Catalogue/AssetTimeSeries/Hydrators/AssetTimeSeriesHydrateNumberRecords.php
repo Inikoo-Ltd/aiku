@@ -5,13 +5,13 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\ProductCategory\Hydrators;
+namespace App\Actions\Catalogue\AssetTimeSeries\Hydrators;
 
-use App\Models\Catalogue\ProductCategoryTimeSeries;
+use App\Models\Catalogue\AssetTimeSeries;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductCategoryHydrateTimeSeriesNumberRecords implements ShouldBeUnique
+class AssetTimeSeriesHydrateNumberRecords implements ShouldBeUnique
 {
     use AsAction;
 
@@ -22,7 +22,7 @@ class ProductCategoryHydrateTimeSeriesNumberRecords implements ShouldBeUnique
 
     public function handle(int $timeSeriesId): void
     {
-        $timeSeries = ProductCategoryTimeSeries::find($timeSeriesId);
+        $timeSeries = AssetTimeSeries::find($timeSeriesId);
 
         if (!$timeSeries) {
             return;
