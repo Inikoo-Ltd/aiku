@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -53,13 +54,28 @@ trait WithRedoProductCategoryTimeSeries
             $to = now()->toDateString();
         } elseif ($productCategory->state == ProductCategoryStateEnum::DISCONTINUED) {
             $to = $productCategory->discontinued_at;
+
             $lastInvoicedDate = DB::table('invoice_transactions')
                 ->where("{$this->restriction}_id", $productCategory->id)
                 ->max('date');
-            if ($lastInvoicedDate && (!$to || $lastInvoicedDate > $to)) {
+
+            if (!$to && !$lastInvoicedDate) {
+                return;
+            }
+
+            if ($lastInvoicedDate) {
+                $lastInvoicedDate = Carbon::parse($lastInvoicedDate);
+            }
+
+            if ($lastInvoicedDate && (!$to || $lastInvoicedDate->greaterThan($to))) {
                 $to = $lastInvoicedDate;
                 $productCategory->update(['discontinued_at' => $to]);
             }
+
+            if (!$to) {
+                return;
+            }
+
             $to = $to->toDateString();
         } else {
             $to = DB::table('invoice_transactions')
@@ -68,6 +84,7 @@ trait WithRedoProductCategoryTimeSeries
             if (!$to) {
                 return;
             }
+            $to = Carbon::parse($to);
             $to = $to->toDateString();
         }
 

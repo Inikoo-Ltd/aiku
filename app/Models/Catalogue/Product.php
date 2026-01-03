@@ -268,6 +268,8 @@ class Product extends Model implements Auditable, HasMedia
         'fetched_at'                    => 'datetime',
         'last_fetched_at'               => 'datetime',
         'available_quantity_updated_at' => 'datetime',
+        'discontinued_at'               => 'datetime',
+        'mark_for_discontinued_at'      => 'datetime',
         'cpnp_number'                   => 'string',
         'ufi_number'                    => 'string',
         'scpn_number'                   => 'string',
@@ -363,6 +365,7 @@ class Product extends Model implements Auditable, HasMedia
     {
         /** @var Brand $brand */
         $brand = $this->brands()->first();
+
         return $brand;
     }
 

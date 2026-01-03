@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -25,13 +26,12 @@ class RedoProductTimeSeries
 
     public function __construct()
     {
-        $this->model       = Product::class;
+        $this->model = Product::class;
     }
 
     public function handle(Product $product, array $frequencies, Command $command = null, bool $async = true): void
     {
-
-        $from = null;
+        $from              = null;
         $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $product->created_at)) {
@@ -50,22 +50,39 @@ class RedoProductTimeSeries
         if ($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) {
             $to = now()->toDateString();
         } elseif ($product->state == ProductStateEnum::DISCONTINUED) {
-            $to = $product->discontinued_at;
+            $to               = $product->discontinued_at;
+
             $lastInvoicedDate = DB::table('invoice_transactions')
-                ->where('asset_id', $product->id)
+                ->where('asset_id', $product->asset_id)
                 ->max('date');
-            if ($lastInvoicedDate && (!$to || $lastInvoicedDate > $to)) {
+
+            if (!$to && !$lastInvoicedDate) {
+                return;
+            }
+
+            if ($lastInvoicedDate) {
+                $lastInvoicedDate = Carbon::parse($lastInvoicedDate);
+            }
+
+            if ($lastInvoicedDate && (!$to || $lastInvoicedDate->greaterThan($to))) {
                 $to = $lastInvoicedDate;
                 $product->update(['discontinued_at' => $to]);
             }
+
+            if (!$to) {
+                return;
+            }
+
             $to = $to->toDateString();
         } else {
             $to = DB::table('invoice_transactions')
-                ->where('asset_id', $product->id)
+                ->where('asset_id', $product->asset_id)
                 ->max('date');
             if (!$to) {
                 return;
             }
+            $to = Carbon::parse($to);
+
             $to = $to->toDateString();
         }
 
@@ -136,7 +153,6 @@ class RedoProductTimeSeries
 
         return 0;
     }
-
 
 
 }
