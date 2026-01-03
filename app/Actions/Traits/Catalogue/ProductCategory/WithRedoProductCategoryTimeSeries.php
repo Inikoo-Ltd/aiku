@@ -34,7 +34,12 @@ trait WithRedoProductCategoryTimeSeries
         $from = null;
 
         $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction}_id", $productCategory->id)->min('date');
-        if (!$productCategory->created_at || $firstInvoicedDate < $productCategory->created_at) {
+
+        if (!$firstInvoicedDate) {
+            return;
+        }
+
+        if ($firstInvoicedDate < $productCategory->created_at) {
             $productCategory->update(['created_at' => $firstInvoicedDate]);
         }
 
@@ -54,7 +59,7 @@ trait WithRedoProductCategoryTimeSeries
             $lastInvoicedDate = DB::table('invoice_transactions')
                 ->where("{$this->restriction}_id", $productCategory->id)
                 ->max('date');
-            if (!$to || $lastInvoicedDate > $to) {
+            if (!$to || ($lastInvoicedDate && ($lastInvoicedDate > $to))) {
                 $to = $lastInvoicedDate;
                 $productCategory->update(['discontinued_at' => $to]);
             }
