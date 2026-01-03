@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTimeSeriesRecords;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateTimeSeriesRecords;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
@@ -51,6 +52,7 @@ class StoreInvoiceTransaction extends OrgAction
         $modelData['customer_id']     = $invoice->customer_id;
         $modelData['group_id']        = $invoice->group_id;
         $modelData['organisation_id'] = $invoice->organisation_id;
+        $modelData['is_refund']       = $invoice->type === InvoiceTypeEnum::REFUND;
 
 
         $modelData = $this->processExchanges($modelData, $invoice->shop);
@@ -82,14 +84,11 @@ class StoreInvoiceTransaction extends OrgAction
                 $modelData['sub_department_id'] = $product->sub_department_id;
 
                 if ($masterProduct = $product->masterProduct) {
-                    $modelData['master_shop_id'] = $masterProduct->master_shop_id;
-                    $modelData['master_department_id'] = $masterProduct->master_department_id;
+                    $modelData['master_shop_id']           = $masterProduct->master_shop_id;
+                    $modelData['master_department_id']     = $masterProduct->master_department_id;
                     $modelData['master_sub_department_id'] = $masterProduct->master_sub_department_id;
-                    $modelData['master_family_id'] = $masterProduct->master_family_id;
+                    $modelData['master_family_id']         = $masterProduct->master_family_id;
                 }
-
-
-
             } elseif ($historicAsset->model_type == 'Service' && $invoice->shop->type == ShopTypeEnum::FULFILMENT) {
                 $modelData = $this->processFulfilmentService($historicAsset->model, $modelData);
             }

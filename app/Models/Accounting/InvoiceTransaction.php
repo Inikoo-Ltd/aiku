@@ -72,6 +72,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $master_sub_department_id
  * @property int|null $master_family_id
  * @property int|null $master_shop_id
+ * @property bool $is_refund
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer
@@ -117,6 +118,7 @@ class InvoiceTransaction extends Model
         'grp_net_amount' => 'decimal:2',
         'org_net_amount' => 'decimal:2',
         'offers_data'    => 'array',
+        'is_refund'      => 'boolean',
     ];
 
     protected $attributes = [
