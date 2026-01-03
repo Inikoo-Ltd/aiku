@@ -58,6 +58,7 @@ class RedoProductTimeSeries
                 $to = $lastInvoicedDate;
                 $product->update(['discontinued_at' => $to]);
             }
+            $to = $to->toDateString();
         } else {
             $to = DB::table('invoice_transactions')
                 ->where('asset_id', $product->id)
@@ -65,6 +66,7 @@ class RedoProductTimeSeries
             if (!$to) {
                 return;
             }
+            $to = $to->toDateString();
         }
 
         if ($from != null && $to != null) {
