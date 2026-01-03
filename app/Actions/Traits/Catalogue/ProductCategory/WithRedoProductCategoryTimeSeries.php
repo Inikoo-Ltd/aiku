@@ -59,7 +59,7 @@ trait WithRedoProductCategoryTimeSeries
             $lastInvoicedDate = DB::table('invoice_transactions')
                 ->where("{$this->restriction}_id", $productCategory->id)
                 ->max('date');
-            if (!$to || ($lastInvoicedDate && ($lastInvoicedDate > $to))) {
+            if ($lastInvoicedDate && (!$to || $lastInvoicedDate > $to)) {
                 $to = $lastInvoicedDate;
                 $productCategory->update(['discontinued_at' => $to]);
             }
