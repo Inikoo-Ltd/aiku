@@ -64,7 +64,7 @@ return new class () extends Migration {
         }
 
 
-        DB::statement('CREATE UNIQUE INDEX master_product_category_time_series_records_series_id_period_unique ON master_product_category_time_series_records (master_product_category_time_series_id, "period","type","frequency")');
+        DB::statement('CREATE UNIQUE INDEX mpts_records_series_id_period_unique ON master_product_category_time_series_records (master_product_category_time_series_id, "period","type","frequency")');
         DB::statement('CREATE INDEX master_product_category_time_series_records_series_id_index ON master_product_category_time_series_records (master_product_category_time_series_id)');
     }
 
