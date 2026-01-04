@@ -77,7 +77,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $in_process
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
- * @property string|null $discontinued_at
+ * @property \Illuminate\Support\Carbon|null $discontinued_at
  * @property string|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
@@ -212,6 +212,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'variant_is_visible'   => 'boolean',
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
+        'discontinued_at'      => 'datetime',
         'stocks_status'        => MasterAssetStocksStatusEnum::class,
         'products_status'      => MasterAssetProductsStatusEnum::class,
         'offers_data'          => 'array',
@@ -220,9 +221,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'offers_data' => '{}',
-        'web_images'  => '{}',
+        'data'         => '{}',
+        'offers_data'  => '{}',
+        'web_images'   => '{}',
         'tax_category' => '{}',
     ];
 

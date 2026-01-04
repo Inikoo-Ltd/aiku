@@ -1,63 +1,61 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 04 Jan 2026 01:43:12 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
+ * Author: stewicca <stewicalf@gmail.com>
+ * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\AssetTimeSeries;
+namespace App\Actions\Masters\MasterAssetTimeSeries;
 
-use App\Actions\Catalogue\AssetTimeSeries\Hydrators\AssetTimeSeriesHydrateNumberRecords;
+use App\Actions\Masters\MasterAssetTimeSeries\Hydrators\MasterAssetTimeSeriesHydrateNumberRecords;
 use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Catalogue\Asset;
-use App\Models\Catalogue\AssetTimeSeries;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterAssetTimeSeries;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
+class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use WithTimeSeriesRecordsGeneration;
 
-    public function getJobUniqueId(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
+    public function getJobUniqueId(int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
-        return "$assetId:$frequency->value:$from:$to";
+        return "$masterAssetId:$frequency->value:$from:$to";
     }
 
-    public function handle(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
+    public function handle(int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 
-        $asset = Asset::find($assetId);
-        if (!$asset) {
+        $masterAsset = MasterAsset::find($masterAssetId);
+        if (!$masterAsset) {
             return;
         }
 
-        $timeSeries = AssetTimeSeries::where('asset_id', $asset->id)
+        $timeSeries = MasterAssetTimeSeries::where('master_asset_id', $masterAsset->id)
             ->where('frequency', $frequency->value)->first();
         if (!$timeSeries) {
-            $timeSeries = $asset->timeSeries()->create([
+            $timeSeries = $masterAsset->timeSeries()->create([
                 'frequency' => $frequency,
-                'shop_id'   => $asset->shop_id
             ]);
         }
 
-        $this->processTimeSeries($timeSeries, $from, $to, $asset->shop_id);
+        $this->processTimeSeries($timeSeries, $from, $to);
 
-        AssetTimeSeriesHydrateNumberRecords::run($timeSeries->id);
+        MasterAssetTimeSeriesHydrateNumberRecords::run($timeSeries->id);
     }
 
-    protected function processTimeSeries(AssetTimeSeries $timeSeries, string $from, string $to, ?int $shopId): void
+    protected function processTimeSeries(MasterAssetTimeSeries $timeSeries, string $from, string $to): void
     {
         $results = DB::table('invoice_transactions')
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
-            ->where('asset_id', $timeSeries->asset_id);
+            ->where('master_asset_id', $timeSeries->master_asset_id);
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
@@ -148,9 +146,9 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
             $timeSeries->records()->updateOrCreate(
                 [
-                    'asset_time_series_id' => $timeSeries->id,
-                    'period'               => $period,
-                    'frequency'            => $timeSeries->frequency->singleLetter()
+                    'master_asset_time_series_id' => $timeSeries->id,
+                    'period'                      => $period,
+                    'frequency'                   => $timeSeries->frequency->singleLetter()
                 ],
                 [
                     'from'               => $periodFrom,
