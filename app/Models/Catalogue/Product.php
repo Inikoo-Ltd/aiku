@@ -144,8 +144,8 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property bool $is_single_trade_unit Indicates if the product has a single trade unit
  * @property int|null $master_product_id
- * @property string|null $mark_for_discontinued_at
- * @property string|null $discontinued_at
+ * @property \Illuminate\Support\Carbon|null $mark_for_discontinued_at
+ * @property \Illuminate\Support\Carbon|null $discontinued_at
  * @property string|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets

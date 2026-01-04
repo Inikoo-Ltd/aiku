@@ -14,7 +14,7 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
-use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateTimeSeriesRecords;
+use App\Actions\Catalogue\CollectionTimeSeries\PreprocessCollectionTimeSeries;
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -112,35 +112,19 @@ class StoreInvoiceTransaction extends OrgAction
             AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
             AssetHydrateInvoicesCustomersStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
             AssetHydrateInvoicesStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
-
-            $asset = $invoiceTransaction->asset;
-            if ($asset && $asset->model_type == 'Product') {
-                /** @var Product $product */
-                $product = $asset->model;
-
-                if ($product) {
-
-                    //todo refactor this
-//                    $collections = $product->containedByCollections;
-//                    foreach ($collections as $collection) {
-//                        CollectionHydrateTimeSeriesRecords::dispatch(
-//                            $collection->id,
-//                            $invoiceTransaction->date->copy()->subYear(),
-//                            $invoiceTransaction->date
-//                        )->delay(1800);
-//                    }
-                }
-            }
         }
 
         if ($this->strict) {
-
             if ($invoiceTransaction->asset_id) {
+
+
+                PreprocessCollectionTimeSeries::dispatch($invoiceTransaction->asset_id)->delay(30);
+
                 foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                     ProcessAssetTimeSeriesRecords::dispatch(
                         $invoiceTransaction->asset_id,
                         $frequency,
-                        match($frequency) {
+                        match ($frequency) {
                             TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
                             TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
                             TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
@@ -158,7 +142,7 @@ class StoreInvoiceTransaction extends OrgAction
                     ProcessProductCategoryTimeSeriesRecords::dispatch(
                         $invoiceTransaction->family_id,
                         $frequency,
-                        match($frequency) {
+                        match ($frequency) {
                             TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
                             TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
                             TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
@@ -175,7 +159,7 @@ class StoreInvoiceTransaction extends OrgAction
                     ProcessProductCategoryTimeSeriesRecords::dispatch(
                         $invoiceTransaction->department_id,
                         $frequency,
-                        match($frequency) {
+                        match ($frequency) {
                             TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
                             TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
                             TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
@@ -192,7 +176,7 @@ class StoreInvoiceTransaction extends OrgAction
                     ProcessProductCategoryTimeSeriesRecords::dispatch(
                         $invoiceTransaction->sub_department_id,
                         $frequency,
-                        match($frequency) {
+                        match ($frequency) {
                             TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
                             TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
                             TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),

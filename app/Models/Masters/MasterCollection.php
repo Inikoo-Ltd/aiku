@@ -50,6 +50,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $status
  * @property array<array-key, mixed>|null $offers_data
  * @property array<array-key, mixed>|null $web_images
+ * @property \Illuminate\Support\Carbon|null $inactivated_at
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, Collection> $childrenCollections
  * @property-read Group $group
@@ -101,6 +102,7 @@ class MasterCollection extends Model implements Auditable, HasMedia
         'products_status' => MasterCollectionProductStatusEnum::class,
         'web_images'     => 'array',
         'offers_data'     => 'array',
+        'inactivated_at'  => 'datetime',
     ];
 
     protected $attributes = [

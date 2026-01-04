@@ -22,7 +22,7 @@ class RedoProductTimeSeries
     use WithHydrateCommand;
 
 
-    public string $commandSignature = 'products:redo_time_series  {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $commandSignature = 'products:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
 
     public function __construct()
     {

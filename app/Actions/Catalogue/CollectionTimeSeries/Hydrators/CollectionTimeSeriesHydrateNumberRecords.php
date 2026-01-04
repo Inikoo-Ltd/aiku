@@ -5,13 +5,13 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\Collection\Hydrators;
+namespace App\Actions\Catalogue\CollectionTimeSeries\Hydrators;
 
 use App\Models\Catalogue\CollectionTimeSeries;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CollectionHydrateTimeSeriesNumberRecords implements ShouldBeUnique
+class CollectionTimeSeriesHydrateNumberRecords implements ShouldBeUnique
 {
     use AsAction;
 
@@ -32,6 +32,8 @@ class CollectionHydrateTimeSeriesNumberRecords implements ShouldBeUnique
 
         $timeSeries->update([
             'number_records' => $count,
+            'from'           => $timeSeries->records()->min('from'),
+            'to'             => $timeSeries->records()->max('to'),
         ]);
     }
 }
