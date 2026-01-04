@@ -1,60 +1,64 @@
 <?php
 
 /*
- * Author: stewicca <stewicalf@gmail.com>
- * Copyright (c) 2025, Steven Wicca Alfredo
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 05 Jan 2026 01:53:32 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\ProductCategoryTimeSeries;
+namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
-use App\Actions\Catalogue\ProductCategoryTimeSeries\Hydrators\ProductCategoryTimeSeriesHydrateNumberRecords;
+use App\Actions\Masters\MasterProductCategoryTimeSeries\Hydrators\MasterProductCategoryTimeSeriesHydrateNumberRecords;
 use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\ProductCategoryTimeSeries;
+use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterProductCategoryTimeSeries;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
+class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use WithTimeSeriesRecordsGeneration;
 
-    public function getJobUniqueId(int $productCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
+    public function getJobUniqueId(int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
-        return "hydrate-product-category-time-series-records:$productCategoryId:$frequency->value:$from:$to";
+        return "$masterProductCategoryId:$frequency->value:$from:$to";
     }
 
-    public function handle(int $productCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
+    public function handle(int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
 
         $from .= ' 00:00:00';
         $to .= ' 23:59:59';
 
-        $productCategory = ProductCategory::find($productCategoryId);
+        $masterProductCategory = MasterProductCategory::find($masterProductCategoryId);
+        if (!$masterProductCategory) {
+            return;
+        }
 
-        $timeSeries = ProductCategoryTimeSeries::where('product_category_id', $productCategoryId)
+        $timeSeries = MasterProductCategoryTimeSeries::where('master_product_category_id', $masterProductCategoryId)
             ->where('frequency', $frequency->value)->first();
         if (!$timeSeries) {
-            $timeSeries = $productCategory->timeSeries()->create([
+            $timeSeries = $masterProductCategory->timeSeries()->create([
                 'frequency' => $frequency,
-                'type'      => $productCategory->type->value
+                'type'      => $masterProductCategory->type->value
             ]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to);
 
-        ProductCategoryTimeSeriesHydrateNumberRecords::run($timeSeries->id);
+        MasterProductCategoryTimeSeriesHydrateNumberRecords::run($timeSeries->id);
     }
 
-    protected function processTimeSeries(ProductCategoryTimeSeries $timeSeries, string $from, string $to): void
+    protected function processTimeSeries(MasterProductCategoryTimeSeries $timeSeries, string $from, string $to): void
     {
         $categoryColumn = match ($timeSeries->type) {
-            'department' => 'department_id',
-            'sub_department' => 'sub_department_id',
-            'family' => 'family_id',
+            'department' => 'master_department_id',
+            'sub_department' => 'master_sub_department_id',
+            'family' => 'master_family_id',
         };
 
         $results = DB::table('invoice_transactions')
@@ -151,7 +155,7 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
 
             $timeSeries->records()->updateOrCreate(
                 [
-                    'product_category_time_series_id' => $timeSeries->id,
+                    'master_product_category_time_series_id' => $timeSeries->id,
                     'period'                          => $period,
                     'type'                            => match ($timeSeries->type) {
                         'department' => 'D',
