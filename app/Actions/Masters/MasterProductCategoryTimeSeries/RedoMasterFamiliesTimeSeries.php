@@ -18,7 +18,7 @@ class RedoMasterFamiliesTimeSeries
         WithRedoMasterProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $commandSignature = 'master_families:redo_type_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $commandSignature = 'master_families:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
 
     public function __construct()
     {

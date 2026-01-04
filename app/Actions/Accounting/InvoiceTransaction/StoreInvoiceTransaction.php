@@ -17,6 +17,7 @@ use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Catalogue\CollectionTimeSeries\PreprocessCollectionTimeSeries;
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Actions\Masters\MasterAssetTimeSeries\ProcessMasterAssetTimeSeriesRecords;
+use App\Actions\Masters\MasterCollectionTimeSeries\PreprocessMasterCollectionTimeSeries;
 use App\Actions\Masters\MasterProductCategoryTimeSeries\ProcessMasterProductCategoryTimeSeriesRecords;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -188,6 +189,8 @@ class StoreInvoiceTransaction extends OrgAction
         }
 
         if ($invoiceTransaction->master_asset_id) {
+            PreprocessMasterCollectionTimeSeries::dispatch($invoiceTransaction->master_asset_id)->delay(30);
+
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 ProcessMasterAssetTimeSeriesRecords::dispatch(
                     $invoiceTransaction->master_asset_id,

@@ -69,6 +69,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterCollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollectionTimeSeries> $timeSeries
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
@@ -206,5 +207,10 @@ class MasterCollection extends Model implements Auditable, HasMedia
     public function childrenCollections(): HasMany
     {
         return $this->hasMany(Collection::class, 'master_collection_id');
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(MasterCollectionTimeSeries::class);
     }
 }

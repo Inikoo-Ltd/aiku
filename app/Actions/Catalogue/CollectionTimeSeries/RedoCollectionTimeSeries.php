@@ -5,9 +5,8 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Catalogue\Collection;
+namespace App\Actions\Catalogue\CollectionTimeSeries;
 
-use App\Actions\Catalogue\CollectionTimeSeries\ProcessCollectionTimeSeriesRecords;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
