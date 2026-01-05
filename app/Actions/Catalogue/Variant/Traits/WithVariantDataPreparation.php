@@ -109,7 +109,7 @@ trait WithVariantDataPreparation
 
     private function prepareCodeSlug(): void
     {
-        $code = data_get($this->leadItem, 'product.code').'-var-'.now()->format('His');
+        $code = data_get($this->leadItem, 'product.code');
         $this->set('code', $code);
         $this->set('slug', strtolower($code));
     }

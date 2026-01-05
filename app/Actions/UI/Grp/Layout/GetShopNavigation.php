@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -33,7 +34,7 @@ class GetShopNavigation
 
             'topMenu' => [
                 'subSections' => [
-                     $shop->engine !== ShopEngineEnum::FAIRE ? [
+                     $shop->type !== ShopTypeEnum::EXTERNAL ? [
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
                         "icon"    => ["fal", "fa-satellite-dish"],
@@ -42,7 +43,7 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ] : null,
-                    $shop->engine !== ShopEngineEnum::FAIRE ? [
+                    $shop->type !== ShopTypeEnum::EXTERNAL ? [
                         "tooltip" => __("Payments"),
                         "label"   => __("Payments"),
                         "icon"    => ["fal", "fa-coins"],
@@ -129,7 +130,7 @@ class GetShopNavigation
                 ],
             ];
 
-            if ($shop->engine !== ShopEngineEnum::FAIRE) {
+            if ($shop->type !== ShopTypeEnum::EXTERNAL) {
                 $navigation["billables"] = [
                     "root" => "grp.org.shops.show.billables.",
                     "icon" => ["fal", "fa-ballot"],
@@ -185,7 +186,7 @@ class GetShopNavigation
             }
         }
 
-        if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->engine !== ShopEngineEnum::FAIRE) {
+        if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",
                 "icon"    => ["fal", "fa-badge-percent"],
@@ -230,7 +231,7 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->hasPermissionTo("marketing.$shop->id.view") && $shop->engine !== ShopEngineEnum::FAIRE) {
+        if ($user->hasPermissionTo("marketing.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL) {
             $navigation["marketing"] = [
                 "root"    => "grp.org.shops.show.marketing.",
                 "icon"    => ["fal", "fa-bullhorn"],
@@ -373,7 +374,7 @@ class GetShopNavigation
                     ],
                 ];
             } else {
-                if ($shop->engine !== ShopEngineEnum::FAIRE) {
+                if ($shop->type !== ShopTypeEnum::EXTERNAL) {
                     $navigation["web"] = [
                         "scope" => "websites",
                         "icon"  => ["fal", "fa-globe"],

@@ -111,7 +111,7 @@ class CreateExternalShop extends OrgAction
                             'required' => true,
                             'value'    => '',
                         ],
-                        'shop_url' => [
+                        'name' => [
                             'type'     => 'input',
                             'label'    => __('Shop Url'),
                             'required' => true,

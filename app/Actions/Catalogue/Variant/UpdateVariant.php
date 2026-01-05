@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Variant;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
 use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
 
@@ -29,6 +30,24 @@ class UpdateVariant extends OrgAction
     {
         $variant->update($modelData);
         $variant->refresh();
+
+        $products = $variant->allProduct();
+        $productIds = $products->pluck('id');
+
+        Product::where('variant_id', $variant->id)
+            ->whereNotIn('id', $productIds)
+            ->update([
+                'variant_id' => null,
+                'is_variant_leader' => false,
+            ]);
+
+        Product::whereIn('id', $productIds)->update([
+            'variant_id' => $variant->id,
+            'is_variant_leader' => false,
+        ]);
+
+        Product::where('id', $variant->leader_id)
+            ->update(['is_variant_leader' => true]);
 
         return $variant;
     }

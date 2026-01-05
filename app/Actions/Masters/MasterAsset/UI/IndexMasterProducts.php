@@ -27,7 +27,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -133,10 +133,10 @@ class IndexMasterProducts extends GrpAction
                 'master_assets.master_family_id'
             )
             ->leftJoin(
-                'variants as variant',
-                'variant.leader_id',
+                'master_variants as master_variant',
+                'master_variant.id',
                 '=',
-                'master_assets.id'
+                'master_assets.master_variant_id'
             );
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -179,10 +179,8 @@ class IndexMasterProducts extends GrpAction
             'families.name as master_family_name',
 
             //variants
-            'variant.leader_id as variant_leader_id',
-            'variant.code as variant_code',
-            'variant.data as variant_data',
-            'variant.slug as variant_slug',
+            'master_variant.slug as variant_slug',
+            'master_assets.is_variant_leader as is_variant_leader',
         ]);
 
         // PARENT FILTER ONLY
@@ -273,7 +271,13 @@ class IndexMasterProducts extends GrpAction
             $table
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+
+            if($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY){
+                $table->column(key: 'variant_slug', label: '', canBeHidden: false, searchable: true, type: 'icon');
+            }
+
+            $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'master_department_code', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false)
@@ -391,10 +395,11 @@ class IndexMasterProducts extends GrpAction
                         ],
                     ] : [],
                 ],
-                'data'                  => MasterProductsResource::collection($masterAssets),
-                'masterProductCategoryId' => $this->parent->id,
-                'editable_table'        => false,
-                'shopsData'             => $shopsData,
+                'data'                      => MasterProductsResource::collection($masterAssets),
+                'variantSlugs'              => $isFamily ?  $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
+                'masterProductCategoryId'   => $this->parent->id,
+                'editable_table'            => false,
+                'shopsData'                 => $shopsData,
 
             ]
         )->table($this->tableStructure($this->parent));

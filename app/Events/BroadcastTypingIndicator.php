@@ -16,19 +16,18 @@ class BroadcastTypingIndicator implements ShouldBroadcastNow
 
     public string $userName;
     public bool $isTyping;
-    public string $sessionUid;
+    public string $session_ulid;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(string $userName, bool $isTyping, string $sessionUid)
+    public function __construct(string $userName, bool $isTyping, string $sessionUlid)
     {
-
         $this->userName = $userName;
         $this->isTyping = $isTyping;
-        $this->sessionUid = $sessionUid;
+        $this->session_ulid = $sessionUlid;
     }
 
     /**
@@ -39,7 +38,7 @@ class BroadcastTypingIndicator implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new Channel("chat-session.{ $this->sessionUid}"),
+            new Channel("chat-session.{$this->session_ulid}"),
         ];
     }
 
@@ -54,8 +53,7 @@ class BroadcastTypingIndicator implements ShouldBroadcastNow
         return [
             'user_name' => $this->userName,
             'is_typing' => $this->isTyping,
-            'session_uid' => $this->sessionUid,
-            'timestamp' => now()->toISOString(),
+            'session_ulid' => $this->session_ulid,
             'event_type' => 'typing_indicator'
         ];
     }
