@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::create('shop_has_chat_agents', function (Blueprint $table) {
-            $table->id();
+            $table->smallIncrements('id');
             $table->unsignedSmallInteger('organisation_id')->index();
             $table->foreign('organisation_id')->references('id')->on('organisations')->onUpdate('cascade')->onDelete('cascade');
 
