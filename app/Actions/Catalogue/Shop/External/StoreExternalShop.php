@@ -272,7 +272,10 @@ class StoreExternalShop extends OrgAction
     public function htmlResponse(Shop $shop): RedirectResponse
     {
         if($redirectUri = Arr::get($shop->settings, 'shopify.auth_url')) {
-            return Redirect::to($redirectUri);
+            request()->session()->flash('redirect', [
+                'url'  => $redirectUri,
+                'target'  => '_blank',
+            ]);
         }
 
         return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug]);
