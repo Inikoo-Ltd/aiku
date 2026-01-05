@@ -40,6 +40,7 @@ class MasterVariantsResource extends JsonResource
             'number_used_slots'             => $this->number_used_slots,
             'number_used_slots_for_sale'    => $this->number_used_slots_for_sale,
             'data'                          => $this->data,
+            'options'                       => data_get($this->data, 'variants') ? collect(data_get($this->data, 'variants'))->mapWithKeys(fn ($variant) => [$variant['label'] => json_encode($variant['options'])]) : [],
             'leader_product_id'             => $this->leader_product_id,
             'leader_product_name'           => $this->leader_product_name,
             'leader_product_code'           => $this->leader_product_code,
