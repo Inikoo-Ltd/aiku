@@ -282,21 +282,33 @@ function getClassColorIcon(varSlug: string) {
         </template>
 
         <template #cell(code)="{ item: masterProduct }">
-            <Link v-if="masterProduct.variant_leader" :href="(masterVarinatRoute(masterProduct) as string)" v-tooltip="trans('Go to Variants')" class="mr-1" :class="[masterProduct.variant_leader ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                <FontAwesomeIcon :icon="faShapes" color="#4B0082" />
-            </Link>
             <Link v-if="masterProduct.code" v-tooltip="masterProduct.code" :href="(masterProductRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["code"] }}
             </Link>
         </template>
 
         <template #cell(variant_slug)="{ item: masterProduct }">
-            <FontAwesomeLayers v-if="masterProduct['variant_slug']" class="text-lg">
-                <FontAwesomeIcon :icon="faShapes" :style="getClassColorIcon(masterProduct['variant_slug'])"/>
-                <FontAwesomeIcon v-if="masterProduct['is_variant_leader']" :icon="faStar" class="text-yellow-500 text-xs top-0 right-0 translate-x-[10px] translate-y-[-10px]"/>
-            </FontAwesomeLayers>
+            <Link v-if="masterProduct.variant_slug" :href="masterVarinatRoute(masterProduct) as string"
+                class="inline-block" v-tooltip="masterProduct.is_variant_leader
+                    ? trans('Leader product of ') + masterProduct.variant_code
+                    : trans('Follower product of ') + masterProduct.variant_code">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150" :class="masterProduct.is_variant_leader
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-gray-50 border-gray-200'">
+                    <!-- ICON -->
+                    <FontAwesomeIcon :icon="masterProduct.is_variant_leader ? faStar : faShapes" class="shrink-0"
+                        :style="{ ...getClassColorIcon(masterProduct.variant_slug), fontSize: '0.7rem' }" />
+
+                    <!-- CODE -->
+                    <span class="leading-none truncate" :style="{ ...getClassColorIcon(masterProduct.variant_slug) }">
+                        {{ masterProduct.variant_code }}
+                    </span>
+                </span>
+            </Link>
         </template>
-        
+
         <template #cell(name)="{ item: masterProduct }">
             <div>
                 <ProductUnitLabel

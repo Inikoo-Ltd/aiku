@@ -372,6 +372,23 @@ function getClassColorIcon(varSlug: string) {
     return color ? { color: `${color} !important` } : {};
 }
 
+function variantRoute(product: MasterProduct): string {
+    if (!product.variant_slug) return "#"
+
+    const params = route().params as RouteParams
+
+    return route(
+        "grp.org.shops.show.catalogue.families.show.variants.show",
+        {
+            organisation: params.organisation,
+            shop: params.shop,
+            subDepartment: params.subDepartment,
+            family: params.family,
+            variant: product.variant_slug,
+        }
+    )
+}
+
 </script>
 
 <template>
@@ -589,13 +606,27 @@ function getClassColorIcon(varSlug: string) {
             </div>
         </template>
 
-        <template #cell(variant_slug)="{ item: masterProduct }">
-            <FontAwesomeLayers v-if="masterProduct['variant_slug']" class="text-lg">
-                <FontAwesomeIcon :icon="faShapes" :style="getClassColorIcon(masterProduct['variant_slug'])"/>
-                <FontAwesomeIcon v-if="masterProduct['is_variant_leader']" :icon="faStar" class="text-yellow-500 text-xs top-0 right-0 translate-x-[10px] translate-y-[-10px]"/>
-            </FontAwesomeLayers>
+        <template #cell(variant_slug)="{ item: product }">
+            <Link v-if="product.variant_slug" :href="variantRoute(product) as string"
+                class="inline-block" v-tooltip="product.is_variant_leader
+                    ? trans('Leader product of ') + product.variant_code
+                    : trans('Follower product of ') + product.variant_code">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150" :class="product.is_variant_leader
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-gray-50 border-gray-200'">
+                    <!-- ICON -->
+                    <FontAwesomeIcon :icon="product.is_variant_leader ? faStar : faShapes" class="shrink-0"
+                        :style="{ ...getClassColorIcon(product.variant_slug), fontSize: '0.7rem' }" />
+
+                    <!-- CODE -->
+                    <span class="leading-none truncate" :style="{ ...getClassColorIcon(product.variant_slug) }">
+                        {{ product.variant_code }}
+                    </span>
+                </span>
+            </Link>
         </template>
-        
 
         <template #cell(shop_code)="{ item: product }">
             <Link v-if="product['shop_slug']" :href="(shopRoute(product) as string)" class="secondaryLink">

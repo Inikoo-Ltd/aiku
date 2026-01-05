@@ -533,7 +533,20 @@ const noLeader = computed(() => {
                               </div>
                             </div>
                           </div>
-
+                        </template>
+                         <template #option="{ isSelected, isPointed, option }">
+                          <div class="flex items-center gap-3 p-2">
+                            <Image v-if="option.image_thumbnail" :src="option.image_thumbnail.main.original"
+                              class="w-12 h-12 rounded object-cover" />
+                            <div>
+                              <div class="font-medium leading-none">{{ option.code }}</div>
+                              <div class="flex justify-beetween mt-1 gap-5">
+                                <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                  <span>{{ option.name || '-' }}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </template>
                       </PureMultiselectInfiniteScroll>
                     </td>
@@ -577,7 +590,21 @@ const noLeader = computed(() => {
                               </div>
                             </div>
                           </div>
+                        </template>
 
+                        <template #option="{ isSelected, isPointed, option }">
+                          <div class="flex items-center gap-3 p-2">
+                            <Image v-if="option.image_thumbnail" :src="option.image_thumbnail.main.original"
+                              class="w-12 h-12 rounded object-cover" />
+                            <div>
+                              <div class="font-medium leading-none">{{ option.code }}</div>
+                              <div class="flex justify-beetween mt-1 gap-5">
+                                <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                  <span>{{ option.name || '-' }}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </template>
                       </PureMultiselectInfiniteScroll>
                     </td>
