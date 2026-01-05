@@ -125,10 +125,11 @@ class EditMasterVariant extends OrgAction
                                     'required' => true,
                                     'full'     => true,
                                     'master_assets_route' => [
-                                        'name' => 'grp.masters.master_shops.show.master_families.master_products.index',
+                                        'name' => 'grp.masters.master_shops.show.master_families.master_products.index.filter_in_variant',
                                         'parameters' => [
                                             'masterShop'    => $masterVariant->masterShop->slug,
-                                            'masterFamily'  => $masterVariant->masterFamily->slug
+                                            'masterFamily'  => $masterVariant->masterFamily->slug,
+                                            'filterInVariant'   => $masterVariant->id
                                         ]
                                     ],
                                 ],

@@ -40,6 +40,14 @@ const getLeaderProductRoute = (item: any) => {
   });
 }
 
+const formatOptions = (value) => {
+  try {
+    return JSON.parse(value).join(', ')
+  } catch (e) {
+    return ''
+  }
+}
+
 </script>
 
 <template>
@@ -53,6 +61,17 @@ const getLeaderProductRoute = (item: any) => {
         <Link :href="getLeaderProductRoute(item)" class="primaryLink">
           {{ item.leader_product_name }}
         </Link>
+      </template>
+      <template #cell(number_dimensions)="{ item }"> 
+        <div v-for="(value, key) in item.options" :key="key">
+          <span class="font-semibold">{{ key }}</span>: [&nbsp;<span class="italic">{{ formatOptions(value) }}</span>&nbsp;]
+        </div>
+      </template> 
+      <template #cell(number_used_slots)="{ item }"> 
+        {{ trans(':_used_slot out of :_max_slot slots has been filled', {_used_slot: item.number_used_slots, _max_slot: String(Number(item.number_minions) + 1)}) }}
+      </template> 
+      <template #cell(number_used_slots_for_sale)="{ item }"> 
+        {{ trans(':_used_slot products is set for sale', {_used_slot: item.number_used_slots_for_sale}) }}
       </template>
     </Table>
 </template>
