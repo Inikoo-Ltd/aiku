@@ -12,8 +12,7 @@ class GetShopifyStore extends OrgAction
 
     public function handle(ShopifyUser $shopifyUser): array
     {
-        $res = $shopifyUser->getShopifyShop();
-        dd($res);
+        return $shopifyUser->getShopifyShop();
     }
 
     public function asCommand(Command $command)
