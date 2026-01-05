@@ -22,7 +22,7 @@ class ShopHydrateOrdersDispatchedToday implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(int $shopId): int
+    public function getJobUniqueId(int $shopId): string
     {
         return 'dispatched_today_'.$shopId;
     }
