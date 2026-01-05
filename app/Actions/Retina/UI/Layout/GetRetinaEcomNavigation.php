@@ -193,7 +193,7 @@ class GetRetinaEcomNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('email'),
+                        'label' => __('Email'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'retina.email.settings.',
                         'route' => [

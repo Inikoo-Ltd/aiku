@@ -59,7 +59,7 @@ class CreateExternalShop extends OrgAction
                     'fields' => [
                         'country_id'  => [
                             'type'        => 'select',
-                            'label'       => __('country'),
+                            'label'       => __('Country'),
                             'placeholder' => __('Select a country'),
                             'options'     => GetCountriesOptions::run(),
                             'value'       => $this->organisation->country_id,
@@ -69,7 +69,7 @@ class CreateExternalShop extends OrgAction
                         ],
                         'language_id' => [
                             'type'        => 'select',
-                            'label'       => __('language'),
+                            'label'       => __('Language'),
                             'placeholder' => __('Select a language'),
                             'options'     => GetLanguagesOptions::make()->all(),
                             'value'       => $this->organisation->language_id,
@@ -79,7 +79,7 @@ class CreateExternalShop extends OrgAction
                         ],
                         'currency_id' => [
                             'type'        => 'select',
-                            'label'       => __('currency'),
+                            'label'       => __('Currency'),
                             'placeholder' => __('Select a currency'),
                             'options'     => GetCurrenciesOptions::run(),
                             'value'       => $this->organisation->currency_id,
@@ -125,7 +125,7 @@ class CreateExternalShop extends OrgAction
                     'fields' => [
                         'country_id'  => [
                             'type'        => 'select',
-                            'label'       => __('country'),
+                            'label'       => __('Country'),
                             'placeholder' => __('Select a country'),
                             'options'     => GetCountriesOptions::run(),
                             'value'       => $this->organisation->country_id,
@@ -135,7 +135,7 @@ class CreateExternalShop extends OrgAction
                         ],
                         'language_id' => [
                             'type'        => 'select',
-                            'label'       => __('language'),
+                            'label'       => __('Language'),
                             'placeholder' => __('Select a language'),
                             'options'     => GetLanguagesOptions::make()->all(),
                             'value'       => $this->organisation->language_id,
@@ -145,7 +145,7 @@ class CreateExternalShop extends OrgAction
                         ],
                         'currency_id' => [
                             'type'        => 'select',
-                            'label'       => __('currency'),
+                            'label'       => __('Currency'),
                             'placeholder' => __('Select a currency'),
                             'options'     => GetCurrenciesOptions::run(),
                             'value'       => $this->organisation->currency_id,

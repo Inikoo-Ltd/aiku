@@ -59,7 +59,7 @@ class CreateCustomerClient extends OrgAction
                     'blueprint' =>
                         [
                             [
-                                'title'  => __('contact'),
+                                'title'  => __('Contact'),
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
@@ -67,11 +67,11 @@ class CreateCustomerClient extends OrgAction
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('contact name')
+                                        'label' => __('Contact name')
                                     ],
                                     'email'        => [
                                         'type'  => 'input',
-                                        'label' => __('email')
+                                        'label' => __('Email')
                                     ],
                                     'phone'        => [
                                         'type'  => 'input',

@@ -71,7 +71,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-        ) = createProduct($this->shop);
+    ) = createProduct($this->shop);
 
     Config::set(
         'inertia.testing.page_paths',

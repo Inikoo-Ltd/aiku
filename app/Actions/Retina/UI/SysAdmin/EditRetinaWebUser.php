@@ -70,19 +70,19 @@ class EditRetinaWebUser extends RetinaAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('properties'),
-                            'label'   => __('properties'),
+                            'title'   => __('Properties'),
+                            'label'   => __('Properties'),
                             'icon'    => 'fa-light fa-key',
                             'current' => true,
                             'fields'  => array_merge([
                                 'contact_name' => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $webUser->contact_name
                                 ],
                                 'email' => [
                                     'type'  => 'input',
-                                    'label' => __('email'),
+                                    'label' => __('Email'),
                                     'value' => $webUser->email
                                 ],
                                 'username' => [

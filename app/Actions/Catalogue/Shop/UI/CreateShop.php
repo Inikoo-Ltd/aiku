@@ -27,11 +27,6 @@ class CreateShop extends OrgAction
         return $request->user()->authTo('org-admin.'.$this->organisation->id);
     }
 
-    public function handle()
-    {
-
-    }
-
     /**
      * @throws \Exception
      */
@@ -91,7 +86,7 @@ class CreateShop extends OrgAction
                             'fields' => [
                                 'country_id'  => [
                                     'type'        => 'select',
-                                    'label'       => __('country'),
+                                    'label'       => __('Country'),
                                     'placeholder' => __('Select a country'),
                                     'options'     => GetCountriesOptions::run(),
                                     'value'       => $this->organisation->country_id,
@@ -101,7 +96,7 @@ class CreateShop extends OrgAction
                                 ],
                                 'language_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('language'),
+                                    'label'       => __('Language'),
                                     'placeholder' => __('Select a language'),
                                     'options'     => GetLanguagesOptions::make()->all(),
                                     'value'       => $this->organisation->language_id,
@@ -111,7 +106,7 @@ class CreateShop extends OrgAction
                                 ],
                                 'currency_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('currency'),
+                                    'label'       => __('Currency'),
                                     'placeholder' => __('Select a currency'),
                                     'options'     => GetCurrenciesOptions::run(),
                                     'value'       => $this->organisation->currency_id,
@@ -133,21 +128,21 @@ class CreateShop extends OrgAction
                             ]
                         ],
                         [
-                            'title'  => __('contact/details'),
+                            'title'  => __('Contact/details'),
                             'fields' => [
                                 'contact_name' => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => '',
                                 ],
                                 'company_name' => [
                                     'type'  => 'input',
-                                    'label' => __('company name'),
+                                    'label' => __('Company name'),
                                     'value' => '',
                                 ],
                                 'email'        => [
                                     'type'    => 'input',
-                                    'label'   => __('email'),
+                                    'label'   => __('Email'),
                                     'value'   => '',
                                     'options' => [
                                         'inputType' => 'email'
@@ -155,7 +150,7 @@ class CreateShop extends OrgAction
                                 ],
                                 'phone'        => [
                                     'type'  => 'phone',
-                                    'label' => __('telephone'),
+                                    'label' => __('Telephone'),
                                     'value' => ''
                                 ],
                             ]

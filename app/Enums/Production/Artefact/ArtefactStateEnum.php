@@ -37,7 +37,7 @@ enum ArtefactStateEnum: string
                 'class'   => 'text-indigo-500'
             ],
             'active'    => [
-                'tooltip' => __('contacted'),
+                'tooltip' => __('Contacted'),
                 'icon'    => 'fal fa-chair',
                 'class'   => 'text-green-500'
             ],

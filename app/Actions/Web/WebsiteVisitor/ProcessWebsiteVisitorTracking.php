@@ -38,7 +38,7 @@ class ProcessWebsiteVisitorTracking
         $ipHash = hash('sha256', $ip . config('app.key'));
         $visitorHash = hash('sha256', $ipHash . $userAgent);
 
-        $cacheKey = "visitor:session:{$sessionId}:{$website->id}";
+        $cacheKey = "visitor:session:$sessionId:$website->id";
         $visitor = Cache::remember($cacheKey, 1800, function () use ($sessionId, $website) {
             return WebsiteVisitor::where('session_id', $sessionId)
                 ->where('website_id', $website->id)

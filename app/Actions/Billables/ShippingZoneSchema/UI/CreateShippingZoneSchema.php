@@ -52,7 +52,7 @@ class CreateShippingZoneSchema extends OrgAction
                     'blueprint' =>
                         [
                             [
-                                'title'  => __('contact'),
+                                'title'  => __('Contact'),
                                 'fields' => [
                                     'name' => [
                                         'type'  => 'input',

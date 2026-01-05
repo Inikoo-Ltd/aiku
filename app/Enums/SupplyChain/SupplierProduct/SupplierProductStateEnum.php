@@ -36,22 +36,22 @@ enum SupplierProductStateEnum: string
     {
         return [
             'in_process'    => [
-                'tooltip' => __('in process'),
+                'tooltip' => __('In process'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-indigo-500'
             ],
             'active'        => [
-                'tooltip' => __('contacted'),
+                'tooltip' => __('Contacted'),
                 'icon'    => 'fal fa-chair',
                 'class'   => 'text-green-500'
             ],
             'discontinuing' => [
-                'tooltip' => __('discontinuing'),
+                'tooltip' => __('Discontinuing'),
                 'icon'    => 'fal fa-exclamation-triangle',
                 'class'   => 'text-orange-500'
             ],
             'discontinued'  => [
-                'tooltip' => __('discontinued'),
+                'tooltip' => __('Discontinued'),
                 'icon'    => 'fal fa-laugh',
                 'class'   => 'text-red-500'
             ]

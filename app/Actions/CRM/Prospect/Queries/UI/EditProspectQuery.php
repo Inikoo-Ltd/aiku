@@ -56,7 +56,7 @@ class EditProspectQuery extends InertiaAction
                     'blueprint' =>
                          [
                              'properties' => [
-                                'label'  => __('properties'),
+                                'label'  => __('Properties'),
                                 'fields' => [
                                     'name'          => [
                                         'type'  => 'input',

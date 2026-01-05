@@ -117,7 +117,7 @@ class EditGuest extends GrpAction
                                 ],
                                 'email' => [
                                     'type'  => 'input',
-                                    'label' => __('email'),
+                                    'label' => __('Email'),
                                     'value' => $guest->email
                                 ],
                                 'phone' => [

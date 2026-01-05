@@ -82,7 +82,7 @@ class IndexOrgPartners extends OrgAction
                 )
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
 
                 ->defaultSort('code');
         };

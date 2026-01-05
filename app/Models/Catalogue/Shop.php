@@ -9,7 +9,6 @@
 namespace App\Models\Catalogue;
 
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
-use App\Actions\Catalogue\Shop\Traits\WithShopifyShopApiCollection;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;

@@ -61,7 +61,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $in_process
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
- * @property string|null $discontinued_at
+ * @property \Illuminate\Support\Carbon|null $discontinued_at
  * @property string|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
@@ -121,8 +121,10 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         'data'            => 'array',
         'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
+        'status'          => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
+        'discontinued_at' => 'datetime',
         'offers_data'     => 'array',
     ];
 

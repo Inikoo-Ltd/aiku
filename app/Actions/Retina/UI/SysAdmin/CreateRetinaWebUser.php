@@ -54,13 +54,13 @@ class CreateRetinaWebUser extends RetinaAction
                                 'fields' => [
                                     'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('contact name'),
+                                        'label' => __('Contact name'),
                                         'value' => ''
                                     ],
                                     'email' => [
                                         'required' => true,
                                         'type'  => 'input',
-                                        'label' => __('email'),
+                                        'label' => __('Email'),
                                         'value' => $this->customer->hasUsers() ? '' : $this->customer->email
                                     ],
                                     'username' => [
