@@ -4,11 +4,12 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTrashAlt } from "@far"
+import { faTimes, faTrashAlt } from "@far"
 import { faPlus } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import Image from "@/Components/Image.vue"
 
 
 type Variant = {
@@ -249,38 +250,38 @@ const isVariantValid = (v: Variant) => {
 
 const toggleActive = (i: number) => {
 
-	model.value.variants = model.value.variants.filter(
-		v => v.label && v.label.trim() !== ""
-	)
+  model.value.variants = model.value.variants.filter(
+    v => v.label && v.label.trim() !== ""
+  )
 
 
-	model.value.variants.forEach(variant => {
-		if (Array.isArray(variant.options)) {
-			variant.options = variant.options.filter(o => o?.trim())
-		}
-	})
+  model.value.variants.forEach(variant => {
+    if (Array.isArray(variant.options)) {
+      variant.options = variant.options.filter(o => o?.trim())
+    }
+  })
 
 
-	const v = model.value.variants[i]
-	if (!v) return
+  const v = model.value.variants[i]
+  if (!v) return
 
 
-	if (!v.active) {
-		if (!isVariantValid(v)) {
-			alert("Variant name and at least one option are required")
-			return
-		}
-	}
+  if (!v.active) {
+    if (!isVariantValid(v)) {
+      alert("Variant name and at least one option are required")
+      return
+    }
+  }
 
 
-	model.value.variants.forEach((variant, idx) => {
-		variant.active = idx === i ? !variant.active : false
-	})
+  model.value.variants.forEach((variant, idx) => {
+    variant.active = idx === i ? !variant.active : false
+  })
 
 
-	if (model.value.variants.length === 1) {
-		model.value.groupBy = model.value.variants[0].label
-	}
+  if (model.value.variants.length === 1) {
+    model.value.groupBy = model.value.variants[0].label
+  }
 }
 
 
@@ -403,19 +404,14 @@ const noLeader = computed(() => {
               </label>
 
               <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
-                <PureInput 
-                  v-model="v.options[oi]" 
-                  class="flex-1"    
-                  @keydown.tab.prevent="oi === v.options.length - 1 && v.options[oi].trim() ? addOption(vi): null"
-                  :placeholder="trans('e.g. blue, red or S, M, L, XL')"  
-                  @keydown.enter.prevent="toggleActive(vi)"  
-                  :ref="el => {
-                        if (!optionRefs[vi]) optionRefs[vi] = []
-                        optionRefs[vi][oi] = el
-                      }"
-                    />
+                <PureInput v-model="v.options[oi]" class="flex-1"
+                  @keydown.tab.prevent="oi === v.options.length - 1 && v.options[oi].trim() ? addOption(vi) : null"
+                  :placeholder="trans('e.g. blue, red or S, M, L, XL')" @keydown.enter.prevent="toggleActive(vi)" :ref="el => {
+                    if (!optionRefs[vi]) optionRefs[vi] = []
+                    optionRefs[vi][oi] = el
+                  }" />
                 <button class="text-red-500" @click="removeOption(vi, oi)">
-                  <FontAwesomeIcon :icon="faTrashAlt" />
+                  <FontAwesomeIcon :icon="faTimes" />
                 </button>
               </div>
             </div>
@@ -475,8 +471,7 @@ const noLeader = computed(() => {
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-4 py-3 w-[40px]">
-                    <div
-                      class="w-5 h-5 border rounded bg-gray-100 flex items-center justify-center text-sm font-medium"
+                    <div class="w-5 h-5 border rounded bg-gray-100 flex items-center justify-center text-sm font-medium"
                       @click="isAllExpanded ? collapseAll() : expandAll()">
                       {{ isAllExpanded ? "−" : "+" }}
                     </div>
@@ -524,7 +519,23 @@ const noLeader = computed(() => {
                       <PureMultiselectInfiniteScroll v-if="!node.children" :model-value="node.product"
                         @update:model-value="val => setProduct(node, val)" :fetchRoute="master_assets_route"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
-                        :placeholder="trans('Select Product')" />
+                        :placeholder="trans('Select Product')">
+                        <template #singlelabel="{ value }">
+                          <div class="flex items-center gap-3 p-2">
+                            <Image v-if="value.image_thumbnail" :src="value.image_thumbnail.main.original"
+                              class="w-12 h-12 rounded object-cover" />
+                            <div>
+                              <div class="font-medium leading-none">{{ value.code }}</div>
+                              <div class="flex justify-beetween mt-1 gap-5">
+                                <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                  <span>{{ value.name || '-' }}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </template>
+                      </PureMultiselectInfiniteScroll>
                     </td>
                   </tr>
 
@@ -552,7 +563,23 @@ const noLeader = computed(() => {
                       <PureMultiselectInfiniteScroll :model-value="child.product"
                         @update:model-value="val => setProduct(child, val)" :fetchRoute="master_assets_route"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
-                        :placeholder="trans('Select Product')" />
+                        :placeholder="trans('Select Product')">
+                        <template #singlelabel="{ value }">
+                          <div class="flex items-center gap-3 p-2">
+                            <Image v-if="value.image_thumbnail" :src="value.image_thumbnail.main.original"
+                              class="w-12 h-12 rounded object-cover" />
+                            <div>
+                              <div class="font-medium leading-none">{{ value.code }}</div>
+                              <div class="flex justify-beetween mt-1 gap-5">
+                                <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                  <span>{{ value.name || '-' }}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </template>
+                      </PureMultiselectInfiniteScroll>
                     </td>
                   </tr>
 
