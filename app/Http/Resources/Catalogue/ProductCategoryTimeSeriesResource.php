@@ -30,7 +30,6 @@ class ProductCategoryTimeSeriesResource extends JsonResource
             'invoices' => (int) $this->invoices,
             'refunds' => (int) $this->refunds,
             'orders' => (int) $this->orders,
-            'delivery_notes' => (int) $this->delivery_notes,
             'customers_invoiced' => (int) $this->customers_invoiced,
         ];
     }

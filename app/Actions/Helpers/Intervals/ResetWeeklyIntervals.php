@@ -16,7 +16,7 @@ class ResetWeeklyIntervals
 
     public string $commandSignature = 'intervals:reset-week';
     public string $commandDescription = 'Reset weekly intervals';
-
+    public int $jobTries = 1;
     public function __construct()
     {
         $this->intervals = [

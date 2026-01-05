@@ -52,7 +52,7 @@ class CreateRetinaCustomerClient extends RetinaAction
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
-                                        'label' => __('company')
+                                        'label' => __('Company')
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',

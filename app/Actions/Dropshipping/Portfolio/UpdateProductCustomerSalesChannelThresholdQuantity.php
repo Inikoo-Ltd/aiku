@@ -31,6 +31,8 @@ class UpdateProductCustomerSalesChannelThresholdQuantity implements ShouldBeUniq
 
     public function handle(int|null $productId): void
     {
+        return;
+
         if (!$productId) {
             return;
         }

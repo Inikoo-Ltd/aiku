@@ -33,6 +33,8 @@ class AssetHydrateOrderIntervals implements ShouldBeUnique
 
     public function handle(int $assetID, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
+        //todo commented, 1s to slow
+        return;
         $asset = Asset::find($assetID);
         if (!$asset) {
             return;

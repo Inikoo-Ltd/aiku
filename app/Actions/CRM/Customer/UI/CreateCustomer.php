@@ -62,12 +62,20 @@ class CreateCustomer extends OrgAction
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
-                                        'label' => __('company')
+                                        'label' => __('Company')
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',
                                         'label' => __('Contact name'),
                                         'required' => true
+                                    ],
+                                    'email'                    => [
+                                        'type'  => 'input',
+                                        'label' => __('Email'),
+                                    ],
+                                    'phone'                    => [
+                                        'type'  => 'phone',
+                                        'label' => __('Phone'),
                                     ],
                                     'contact_address'      => [
                                         'type'    => 'address',

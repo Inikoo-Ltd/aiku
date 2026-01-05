@@ -83,7 +83,10 @@ onMounted(() => {
 })
 
 defineExpose({
-    _inputRef
+    _inputRef,
+    focus() {
+        _inputRef.value?.focus()
+    }
 })
 
 // Method: On recently copied
@@ -101,6 +104,7 @@ const checkNumber = (event: KeyboardEvent) => {
         event.preventDefault();
     }
 }
+
 
 </script>
 

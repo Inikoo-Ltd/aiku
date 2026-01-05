@@ -29,6 +29,24 @@ class UpdateMasterVariant extends OrgAction
             $masterVariant->update($modelData);
             $masterVariant->refresh();
 
+            $masterProducts = $masterVariant->allProduct();
+            $masterProductIds = $masterProducts->pluck('id');
+
+            MasterAsset::where('master_variant_id', $masterVariant->id)
+                ->whereNotIn('id', $masterProductIds)
+                ->update([
+                    'master_variant_id' => null,
+                    'is_variant_leader' => false,
+                ]);
+
+            MasterAsset::whereIn('id', $masterProductIds)->update([
+                'master_variant_id' => $masterVariant->id,
+                'is_variant_leader' => false,
+            ]);
+
+            MasterAsset::where('id', $masterVariant->leader_id)
+                ->update(['is_variant_leader' => true]);
+
             foreach ($masterVariant->variants as $variant) {
                 UpdateVariant::make()->action($variant, $modelData);
             }
