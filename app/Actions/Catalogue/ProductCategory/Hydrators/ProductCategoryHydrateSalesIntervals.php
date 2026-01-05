@@ -30,6 +30,8 @@ class ProductCategoryHydrateSalesIntervals implements ShouldBeUnique
 
     public function handle(int $productCategoryId, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
+        //todo review this is takin 1s to complete
+        return;
         $productCategory = ProductCategory::find($productCategoryId);
 
         if (!$productCategory) {

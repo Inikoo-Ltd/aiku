@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cf7af814b28a7784adcd1c4cdc6e4bea",
+    "content-hash": "ef6d6194d9527a95254fe94057c37cae",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -10019,6 +10019,68 @@
                 "source": "https://github.com/patrickschur/language-detection/tree/v5.3.1"
             },
             "time": "2025-03-25T22:47:08+00:00"
+        },
+        {
+            "name": "pdmfc/redis-queue-inspector",
+            "version": "v0.1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pdmfc/redis-queue-inspector.git",
+                "reference": "bcdf876ca6c25c07c5fbaf5e8b5d438f23da9014"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pdmfc/redis-queue-inspector/zipball/bcdf876ca6c25c07c5fbaf5e8b5d438f23da9014",
+                "reference": "bcdf876ca6c25c07c5fbaf5e8b5d438f23da9014",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.2.0",
+                "orchestra/testbench": "^8.36",
+                "pestphp/pest": "^2.36",
+                "pestphp/pest-plugin-laravel": "^2.4",
+                "phpstan/phpstan": "^1.8.6"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Pdmfc\\RedisQueueInspector\\Providers\\RedisQueueInspectorServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Pdmfc\\RedisQueueInspector\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mário Souto",
+                    "email": "mario.souto@pdmfc.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A simple cli command to inspect Laravel Redis queues.",
+            "keywords": [
+                "inspector",
+                "laravel",
+                "php",
+                "queue",
+                "redis"
+            ],
+            "support": {
+                "issues": "https://github.com/pdmfc/redis-queue-inspector/issues",
+                "source": "https://github.com/pdmfc/redis-queue-inspector/tree/v0.1.4"
+            },
+            "time": "2025-06-11T15:42:00+00:00"
         },
         {
             "name": "pgvector/pgvector",
@@ -23930,6 +23992,7 @@
         "ext-bcmath": "*",
         "ext-curl": "*",
         "ext-gd": "*",
+        "ext-gettext": "*",
         "ext-iconv": "*",
         "ext-intl": "*",
         "ext-mbstring": "*",
@@ -23937,8 +24000,8 @@
         "ext-pgsql": "*",
         "ext-simplexml": "*",
         "ext-soap": "*",
-        "ext-zlib": "*",
-        "ext-zip": "*"
+        "ext-zip": "*",
+        "ext-zlib": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"
