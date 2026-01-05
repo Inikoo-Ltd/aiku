@@ -1,17 +1,15 @@
 <?php
 
 
-use App\Events\BroadcastRealtimeChat;
 use Illuminate\Support\Facades\Route;
-use App\Models\CRM\Livechat\ChatMessage;
 use App\Actions\CRM\ChatSession\GetChatAgents;
 use App\Actions\CRM\ChatSession\StoreChatAgent;
 use App\Actions\CRM\ChatSession\GetChatActivity;
 use App\Actions\CRM\ChatSession\GetChatMessages;
 use App\Actions\CRM\ChatSession\GetChatSessions;
-use App\Actions\CRM\ChatSession\HandleChatTyping;
 use App\Actions\CRM\ChatSession\SendChatMessage;
 use App\Actions\CRM\ChatSession\UpdateChatAgent;
+use App\Actions\CRM\ChatSession\HandleChatTyping;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\StoreGuestProfile;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
@@ -47,9 +45,5 @@ Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
 Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.update')
     ->name('agents.update');
 
-
-
-Route::get('/test-broadcast', function () {
-    $chatMessage = ChatMessage::first();
-    BroadcastRealtimeChat::dispatch($chatMessage);
-});
+Route::post('/typing', HandleChatTyping::class, 'typing')
+    ->name('typing');
