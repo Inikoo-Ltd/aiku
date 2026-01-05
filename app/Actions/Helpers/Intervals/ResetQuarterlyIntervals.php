@@ -16,7 +16,7 @@ class ResetQuarterlyIntervals
 
     public string $commandSignature = 'intervals:reset-quarter';
     public string $commandDescription = 'Reset quarter intervals';
-
+    public int $jobTries = 1;
 
     public function __construct()
     {

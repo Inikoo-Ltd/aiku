@@ -5,7 +5,6 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import PureVariantField from "@/Components/Pure/PureVariantField.vue"
@@ -81,7 +80,7 @@ const save = () => {
     <Head :title="capitalize(props.title)" />
     <PageHeading :data="props.pageHead" />
     <div class="flex justify-center mt-6">
-        <div class="w-full max-w-2xl p-4 bg-white rounded-lg shadow space-y-4">
+        <div class="w-full max-w-6xl p-4 bg-white rounded-lg shadow space-y-4">
             <div>
                 <PureVariantField v-model="form.data_variants" :master_assets_route="master_assets_route" :master_asset="master_asset" />
             </div>

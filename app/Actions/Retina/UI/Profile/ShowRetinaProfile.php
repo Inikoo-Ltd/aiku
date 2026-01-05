@@ -91,7 +91,7 @@ class ShowRetinaProfile extends RetinaAction
                 "fields" => [
                     'company_name'    => [
                         'type'  => 'input',
-                        'label' => __('company'),
+                        'label' => __('Company'),
                         'value' => $customer->company_name
                     ],
                     'email'           => [

@@ -31,7 +31,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -90,6 +90,7 @@ class IndexProductsInProductCategory extends OrgAction
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
+        $queryBuilder->leftJoin('variants as variant', 'variant.id', '=', 'products.variant_id');
 
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
@@ -134,6 +135,8 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.units',
                 'customers_invoiced_all',
                 'currencies.code as currency_code',
+                'variant.slug as variant_slug',
+                'products.is_variant_leader as is_variant_leader',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
@@ -171,6 +174,7 @@ class IndexProductsInProductCategory extends OrgAction
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'variant_slug', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -288,6 +292,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'shop_id'                      => $this->shop->id,
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
+                'variantSlugs'                 => $products->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,

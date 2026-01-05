@@ -366,33 +366,33 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $urlsToHit = [
-            [
-                'url' => 'https://www.aw-dropship.es/',
-                'inertia' => true,
-                'xmlhttp' => true,
-                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true',
-            ],
-            [
-                'url' => 'https://www.aw-dropship.es/',
-                'inertia' => false,
-                'xmlhttp' => false,
-                'slug' => 'Hit https://www.aw-dropship.es/',
-            ],
-        ];
+        // $urlsToHit = [
+        //     [
+        //         'url' => 'https://www.aw-dropship.es/',
+        //         'inertia' => true,
+        //         'xmlhttp' => true,
+        //         'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true',
+        //     ],
+        //     [
+        //         'url' => 'https://www.aw-dropship.es/',
+        //         'inertia' => false,
+        //         'xmlhttp' => false,
+        //         'slug' => 'Hit https://www.aw-dropship.es/',
+        //     ],
+        // ];
 
-        foreach ($urlsToHit as $config) {
-            $command = sprintf(
-                'iris:hit-url %s --inertia=%s --xmlhttp=%s',
-                $config['url'],
-                $config['inertia'] ? 'true' : 'false',
-                $config['xmlhttp'] ? 'true' : 'false'
-            );
+        // foreach ($urlsToHit as $config) {
+        //     $command = sprintf(
+        //         'iris:hit-url %s --inertia=%s --xmlhttp=%s',
+        //         $config['url'],
+        //         $config['inertia'] ? 'true' : 'false',
+        //         $config['xmlhttp'] ? 'true' : 'false'
+        //     );
 
-            $schedule->command($command)
-                ->everyMinute()
-                ->timezone('UTC');
-        }
+        //     $schedule->command($command)
+        //         ->everyMinute()
+        //         ->timezone('UTC');
+        // }
 
 
         $this->logSchedule(
@@ -401,6 +401,15 @@ class Kernel extends ConsoleKernel
             ),
             name: 'BackToStockHydrateEmailBulkRuns',
             type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('process-websites-daily-time-series')->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessDailyWebsiteTimeSeries',
+            ),
+            name: 'ProcessDailyWebsiteTimeSeries',
+            type: 'command',
             scheduledAt: now()->format('H:i')
         );
     }

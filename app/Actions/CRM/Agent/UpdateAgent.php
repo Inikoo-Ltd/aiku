@@ -3,9 +3,10 @@
 namespace App\Actions\CRM\Agent;
 
 use App\Actions\OrgAction;
+use Illuminate\Support\Facades\DB;
 use App\Models\SysAdmin\Organisation;
-use App\Models\CRM\Livechat\ChatAgent;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\CRM\Livechat\ChatAgent;
 use Illuminate\Validation\ValidationException;
 
 class UpdateAgent extends OrgAction
@@ -14,31 +15,13 @@ class UpdateAgent extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        try {
-            return $this->handle($agent, $this->validatedData);
-        } catch (ValidationException $e) {
-            request()->session()->flash('notification', [
-                'status'      => 'error',
-                'title'       => __('Error!'),
-                'description' => $e->getMessage(),
-            ]);
-
-            return null;
-        } catch (\Exception $e) {
-            request()->session()->flash('notification', [
-                'status'      => 'error',
-                'title'       => __('Error!'),
-                'description' => __('Backend error occurred.'),
-            ]);
-
-            return null;
-        }
+        return $this->handle($organisation, $agent, $this->validatedData);
     }
 
 
-    public function htmlResponse(ChatAgent $agent = null): void
+    public function htmlResponse(ChatAgent $agent): void
     {
-        if (is_null($agent)) {
+        if (! $agent) {
             return;
         }
 
@@ -49,21 +32,86 @@ class UpdateAgent extends OrgAction
         ]);
     }
 
-    /**
-     * Update logic
-     */
-    public function handle(ChatAgent $agent, array $modelData): ChatAgent
-    {
-        $agent->fill($modelData);
-        $agent->save();
 
-        return $agent;
+    public function handle(Organisation $organisation, ChatAgent $agent, array $modelData): ChatAgent
+    {
+        return DB::transaction(function () use ($organisation, $agent, $modelData) {
+
+            $fillable = [
+                'user_id',
+                'max_concurrent_chats',
+                'specialization',
+                'auto_accept',
+                'is_online',
+                'is_available',
+                'current_chat_count',
+            ];
+
+            $updateData = array_intersect_key(
+                $modelData,
+                array_flip($fillable)
+            );
+
+            if (! empty($updateData)) {
+
+                if (
+                    isset($updateData['user_id']) &&
+                    $updateData['user_id'] !== $agent->user_id
+                ) {
+                    $exists = ChatAgent::query()
+                        ->where('user_id', $updateData['user_id'])
+                        ->whereNull('deleted_at')
+                        ->exists();
+
+                    if ($exists) {
+                        session()->flash('notification', [
+                            'status'      => 'error',
+                            'title'       => __('Error'),
+                            'description' => __('User already has an active chat agent profile.'),
+                        ]);
+
+                        throw ValidationException::withMessages([
+                            'user_id' => __('User already has an active chat agent profile.'),
+                        ]);
+                    }
+                }
+
+                $agent->update($updateData);
+            }
+
+
+            if (array_key_exists('shop_id', $modelData)) {
+                AssignChatAgentToScope::make()->update([
+                    'organisation_id' => $organisation->id,
+                    'shop_id'         => $modelData['shop_id'],
+                ], $agent);
+            }
+
+            return $agent;
+        });
     }
 
 
     public function rules(): array
     {
         return [
+            'shop_id' => [
+                'sometimes',
+                'nullable',
+                'array',
+            ],
+            'shop_id.*' => [
+                'integer',
+                'exists:shops,id',
+            ],
+
+            'organisation_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                'exists:organisations,id',
+            ],
+
             'user_id' => [
                 'sometimes',
                 'integer',
@@ -144,5 +192,4 @@ class UpdateAgent extends OrgAction
 
         return $agent;
     }
-
 }

@@ -74,10 +74,24 @@ class GetChatSessions
 
             $currentAgent = $this->getCurrentAgent($userId);
 
-            if ($currentAgent) {
-                $query->whereHas('assignments', function ($q) use ($currentAgent, $filters) {
-                    $q->where('chat_agent_id', $currentAgent->id);
-                });
+            if (!empty($filters['assigned_to_me'])) {
+
+                $userId = (int) $filters['assigned_to_me'];
+
+                $currentAgent = $this->getCurrentAgent($userId);
+
+                if ($currentAgent) {
+                    $shopIds = $currentAgent->shops()->pluck('shops.id');
+                    $query->where(function ($q) use ($currentAgent, $shopIds) {
+                        $q->where(function ($sub) use ($shopIds) {
+                            $sub->whereIn('shop_id', $shopIds)
+                                ->where('status', ChatSessionStatusEnum::WAITING);
+                        })
+                            ->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent) {
+                                $assignmentQ->where('chat_agent_id', $currentAgent->id);
+                            });
+                    });
+                }
             }
         }
 

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { router, Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableShops from "@/Components/Tables/Grp/Org/Catalogue/TableShops.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -19,6 +19,10 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import { useTabChange } from "@/Composables/tab-change"
 import { faCube, faFolder, faFolderTree } from '@fal'
 import { PageHeadingTypes } from "@/types/PageHeading"
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
+import Modal from "@/Components/Utils/Modal.vue";
+import { trans } from "laravel-vue-i18n";
 
 library.add( faCube, faFolder, faFolderTree )
 
@@ -36,6 +40,8 @@ const props = defineProps<{
 
 }>()
 
+const isCreateShopModal = ref(false)
+const engines = ref([])
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -51,11 +57,50 @@ const component = computed(() => {
 
 })
 
+const redirectToTarget = (engine: string) => {
+    switch (engine) {
+        case 'aiku':
+            router.visit(route('grp.org.shops.create', route().params))
+            break
+        default:
+            router.visit(route('grp.org.shops.external.create', {...route().params, engine: engine}))
+    }
+}
+
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+
+        <template #button-shop="{action}">
+            <Button
+                type="primary"
+                :style="'create'"
+                label="Shop"
+                @click="() => {
+                    isCreateShopModal = true
+                    engines = action?.options
+                }"
+            />
+        </template>
+
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]" />
+
+
+    <Modal :isOpen="isCreateShopModal" @onClose="isCreateShopModal = false" width="w-full max-w-[500px]">
+        <div class="text-center font-semibold text-lg mb-4">
+            {{ trans("Select shop type to create:") }}
+        </div>
+
+        <div class="flex justify-center gap-2">
+            <Button v-for="engine in engines" :key="engine"
+                    :label="capitalize(trans(engine))"
+                    type="tertiary"
+                    @click="redirectToTarget(engine)"
+            />
+        </div>
+    </Modal>
 </template>

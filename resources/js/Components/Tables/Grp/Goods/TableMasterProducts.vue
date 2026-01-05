@@ -10,7 +10,7 @@ import Table from "@/Components/Table/Table.vue"
 import { remove as loRemove, cloneDeep} from "lodash-es"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
 import InputNumber from "primevue/inputnumber"
@@ -20,12 +20,14 @@ import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
+import { faShapes, faStar } from "@fas"
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
     editable_table?: boolean
     isCheckBox?: boolean
+    variantSlugs?: Record<string, string>;
 }>()
 
 const emits = defineEmits<{
@@ -123,6 +125,20 @@ function masterShopRoute(masterProduct: MasterProduct) {
     )
 }
 
+
+function masterVarinatRoute(masterProduct: MasterProduct) {
+    if(masterProduct.variant_slug)
+    return route("grp.masters.master_shops.show.master_families.master_variants.show",
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterFamily: masterProduct.master_family_slug,
+            masterVariant: masterProduct.variant_slug
+        }
+    )
+
+    return "#"
+}
+
 const editingValues = shallowRef<Record<number, { price: number; rrp: number, unit : string }>>({})
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
@@ -214,6 +230,12 @@ function onCancel(item) {
     delete editingValues.value[item.id]
 }
 
+function getClassColorIcon(varSlug: string) {
+    if (!props.variantSlugs) return {};
+
+    const color = props.variantSlugs[varSlug];
+    return color ? { color: `${color} !important` } : {};
+}
 
 </script>
 
@@ -260,10 +282,21 @@ function onCancel(item) {
         </template>
 
         <template #cell(code)="{ item: masterProduct }">
+            <Link v-if="masterProduct.variant_leader" :href="(masterVarinatRoute(masterProduct) as string)" v-tooltip="trans('Go to Variants')" class="mr-1" :class="[masterProduct.variant_leader ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon :icon="faShapes" color="#4B0082" />
+            </Link>
             <Link v-if="masterProduct.code" v-tooltip="masterProduct.code" :href="(masterProductRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["code"] }}
             </Link>
         </template>
+
+        <template #cell(variant_slug)="{ item: masterProduct }">
+            <FontAwesomeLayers v-if="masterProduct['variant_slug']" class="text-lg">
+                <FontAwesomeIcon :icon="faShapes" :style="getClassColorIcon(masterProduct['variant_slug'])"/>
+                <FontAwesomeIcon v-if="masterProduct['is_variant_leader']" :icon="faStar" class="text-yellow-500 text-xs top-0 right-0 translate-x-[10px] translate-y-[-10px]"/>
+            </FontAwesomeLayers>
+        </template>
+        
         <template #cell(name)="{ item: masterProduct }">
             <div>
                 <ProductUnitLabel

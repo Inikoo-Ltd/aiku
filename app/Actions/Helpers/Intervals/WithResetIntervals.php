@@ -93,10 +93,10 @@ trait WithResetIntervals
     private function intervalValues(): array
     {
         return array_map(static function ($interval) {
-
             if ($interval instanceof DateIntervalEnum) {
                 return $interval->value;
             }
+
             return $interval;
         }, $this->intervals);
     }
@@ -104,7 +104,6 @@ trait WithResetIntervals
     protected function resetGroups(): void
     {
         foreach (Group::all() as $group) {
-
             if (array_intersect($this->intervalValues(), [
                 DateIntervalEnum::YESTERDAY->value,
                 DateIntervalEnum::TODAY->value
@@ -152,7 +151,6 @@ trait WithResetIntervals
     {
         /** @var Organisation $organisation */
         foreach (Organisation::whereNot('type', OrganisationTypeEnum::AGENT)->get() as $organisation) {
-
             if (array_intersect($this->intervalValues(), [
                 DateIntervalEnum::YESTERDAY->value,
                 DateIntervalEnum::TODAY->value
@@ -202,7 +200,6 @@ trait WithResetIntervals
     protected function resetMasterShops(): void
     {
         foreach (MasterShop::all() as $masterShop) {
-
             MasterShopHydrateSalesIntervals::dispatch(
                 masterShopID: $masterShop->id,
                 intervals: $this->intervals,
@@ -244,7 +241,6 @@ trait WithResetIntervals
                 ShopStateEnum::CLOSING_DOWN
             ])->get() as $shop
         ) {
-
             if (array_intersect($this->intervalValues(), [
                 DateIntervalEnum::YESTERDAY->value,
                 DateIntervalEnum::TODAY->value
@@ -409,31 +405,31 @@ trait WithResetIntervals
             Product::whereNot('state', ProductCategoryStateEnum::DISCONTINUED)->get() as $product
         ) {
             AssetHydrateSalesIntervals::dispatch(
-                assetID: $product->id,
+                assetID: $product->asset_id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
 
             AssetHydrateOrderIntervals::dispatch(
-                assetID: $product->id,
+                assetID: $product->asset_id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
 
             AssetHydrateDeliveryNotesIntervals::dispatch(
-                assetID: $product->id,
+                assetID: $product->asset_id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
 
             AssetHydrateInvoiceIntervals::dispatch(
-                assetID: $product->id,
+                assetID: $product->asset_id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
 
             AssetHydrateInvoicedCustomersIntervals::dispatch(
-                assetID: $product->id,
+                assetID: $product->asset_id,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
@@ -696,6 +692,7 @@ trait WithResetIntervals
 
     public function handle(): void
     {
+        return;
         $this->resetGroups();
         $this->resetOrganisations();
         $this->resetMasterShops();
