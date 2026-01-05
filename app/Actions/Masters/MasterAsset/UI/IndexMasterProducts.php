@@ -131,6 +131,12 @@ class IndexMasterProducts extends GrpAction
                 'families.id',
                 '=',
                 'master_assets.master_family_id'
+            )
+            ->leftJoin(
+                'variants as variant',
+                'variant.leader_id',
+                '=',
+                'master_assets.id'
             );
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -171,6 +177,12 @@ class IndexMasterProducts extends GrpAction
             'families.slug as master_family_slug',
             'families.code as master_family_code',
             'families.name as master_family_name',
+
+            //variants
+            'variant.leader_id as variant_leader_id',
+            'variant.code as variant_code',
+            'variant.data as variant_data',
+            'variant.slug as variant_slug',
         ]);
 
         // PARENT FILTER ONLY
