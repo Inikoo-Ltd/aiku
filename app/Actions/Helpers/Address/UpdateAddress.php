@@ -10,6 +10,8 @@
 namespace App\Actions\Helpers\Address;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithAddressAuditing;
+use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
@@ -17,9 +19,15 @@ use Illuminate\Support\Arr;
 class UpdateAddress
 {
     use WithActionUpdate;
+    use WithAddressAuditing;
 
-    public function handle(Address $address, array $modelData): Address
+    public function handle(Address $address, array $modelData, Customer $parent = null, $addressLabel = ''): Address
     {
+        $oldAddressFields = [];
+        if ($parent) {
+            $oldAddressFields = Arr::except($address->getFields(), 'country_id');
+        }
+
         $country = Country::find(Arr::get($modelData, 'country_id'));
         if ($country) {
             data_set($modelData, 'country_code', $country->code);
@@ -27,6 +35,11 @@ class UpdateAddress
         $checksum = $address->getChecksum();
         data_set($modelData, 'checksum', $checksum);
 
-        return $this->update($address, $modelData);
+        $address = $this->update($address, $modelData);
+        if ($parent) {
+            $this->auditAddressChange($parent, $address, $oldAddressFields, $addressLabel, false);
+        }
+
+        return $address;
     }
 }
