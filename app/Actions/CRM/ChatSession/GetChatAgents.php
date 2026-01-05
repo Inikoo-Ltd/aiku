@@ -3,8 +3,8 @@
 namespace App\Actions\CRM\ChatSession;
 
 use Illuminate\Http\JsonResponse;
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Livechat\ChatAgent;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetChatAgents
 {
@@ -12,19 +12,37 @@ class GetChatAgents
 
     public function handle(): array
     {
-        return ChatAgent::with('user')
+        return ChatAgent::with(['user', 'shopAssignments.shop', 'shopAssignments.organisation'])
+            ->has('shopAssignments')
             ->get()
             ->map(function (ChatAgent $agent) {
+
+                $isAvailable = $agent->isAvailableForChat();
+
+                if (!$isAvailable) {
+                    return null;
+                }
+
                 $user = $agent->user;
                 $name = $user->contact_name ?? $user->username ?? 'Unknown';
 
+                $shopDetails = $agent->shopAssignments->map(function ($assignment) {
+                    $orgCode = $assignment->organisation->code ?? '-';
+                    $shopName = $assignment->shop->name ?? '-';
+                    return "{$orgCode} | {$shopName}";
+                })->implode(', ');
+
                 return [
-                    'label' => $name,
-                    'name'  => $name,
-                    'agent_id'    => $agent->id,
-                    'image' => $user->imageSources(48, 48)
+                    'label'        => $name,
+                    'name'         => $name,
+                    'agent_id'     => $agent->id,
+                    'image'        => $user->imageSources(48, 48),
+                    'shop_names'   => $shopDetails,
+                    'is_available' => true,
                 ];
             })
+            ->filter()
+            ->values()
             ->all();
     }
 
