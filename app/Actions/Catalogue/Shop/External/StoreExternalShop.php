@@ -64,12 +64,11 @@ class StoreExternalShop extends OrgAction
             if ($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
                 $modelData = $this->handleFaireShop($modelData);
             } elseif ($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
-                data_set($modelData, 'name', Arr::get($modelData, 'shop_url'));
-
                 $shopifyUser = $this->handleShopifyShop($organisation, $modelData);
                 data_set($modelData, 'settings.shopify.auth_url', route('pupil.authenticate', [
                     'shop' => $shopifyUser->name
                 ]));
+                data_set($modelData, 'settings.shopify.shop_url', $shopifyUser->name);
             }
 
             $shop = StoreShop::make()->action($organisation, $modelData);
@@ -126,7 +125,7 @@ class StoreExternalShop extends OrgAction
                 ),
             ],
             'access_token'   => ['sometimes', 'string', 'max:255'],
-            'shop_url'       => ['sometimes', 'string', 'max:255'],
+            'name'       => ['sometimes', 'string', 'max:255'],
             'country_id'     => ['sometimes', 'exists:countries,id'],
             'currency_id'    => ['sometimes', 'exists:currencies,id'],
             'language_id'    => ['sometimes', 'exists:languages,id'],
@@ -272,6 +271,10 @@ class StoreExternalShop extends OrgAction
 
     public function htmlResponse(Shop $shop): RedirectResponse
     {
+        if($redirectUri = Arr::get($shop->settings, 'shopify.auth_url')) {
+            return Redirect::to($redirectUri);
+        }
+
         return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug]);
     }
 }
