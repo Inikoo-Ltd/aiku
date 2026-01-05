@@ -129,6 +129,14 @@ class ShowMailshot extends OrgAction
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
                         )
                     )),
+                    'sendMailshotRoute' => [
+                        'name' => 'grp.models.shop.outboxes.mailshot.send',
+                        'parameters' => [
+                            'shop' => $this->shop->id,
+                            'outbox' => $mailshot->outbox->id,
+                            'mailshot' => $mailshot->id
+                        ],
+                    ],
 
             ]
         )->table(

@@ -18,6 +18,7 @@ import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import axios from "axios"
 import { notify } from '@kyvg/vue3-notification'
+import { routeType } from "@/types/route";
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane,faBullhorn);
 
@@ -29,28 +30,26 @@ const props = defineProps<{
     showcase?: string
     email_preview?: Object
     dispatched_emails?: {}
+    sendMailshotRoute?: routeType
 }>();
 
 
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
-// grp.models.shop.outboxes.send.test
-// parameters
-// shop
-// outbox
-
-// parameters
-//  emails
 const handleSendNow = async () => {
     // TODO: implement send now, now for testing
 
-    await axios.post(route('grp.models.shop.outboxes.send.test', {
-        shop: 42,
-        outbox: 825
-    }), {
-        emails: ["testing-the-new-emails-again-lol@gmail.com", "b.damakov@gmail.com", "trying-to-register-and-not-time-out-lol@gmail.com"]
-    })
+    if (!props.sendMailshotRoute) {
+        notify({
+            type: 'error',
+            title: 'Error',
+            text: 'Mailshot route not configured',
+        })
+        return;
+    }
+
+    await axios.post(route(props.sendMailshotRoute.name, props.sendMailshotRoute.parameters))
         .then((response) => {
             if (response.data) {
                 notify({

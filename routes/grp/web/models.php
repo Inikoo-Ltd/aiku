@@ -66,6 +66,7 @@ use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
+use App\Actions\Comms\Mailshot\SendMailshot;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
@@ -761,6 +762,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
+        Route::post('mailshot/{mailshot:id}/send', SendMailshot::class)->name('mailshot.send')->withoutScopedBindings();
     });
 
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
@@ -781,6 +783,7 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
+        Route::post('mailshot/{mailshot:id}/send', SendMailshot::class)->name('mailshot.send')->withoutScopedBindings();
     });
 });
 
