@@ -35,6 +35,11 @@ class UpdateAddress
         $checksum = $address->getChecksum();
         data_set($modelData, 'checksum', $checksum);
 
+        if (Arr::exists($modelData, 'additional_name')) {
+            Arr::forget($modelData, 'additional_name');
+        }
+
+
         $address = $this->update($address, $modelData);
         if ($parent) {
             $this->auditAddressChange($parent, $address, $oldAddressFields, $addressLabel, false);

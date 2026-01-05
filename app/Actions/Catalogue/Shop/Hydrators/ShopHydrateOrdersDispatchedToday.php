@@ -35,7 +35,7 @@ class ShopHydrateOrdersDispatchedToday implements ShouldBeUnique
         }
         $stats = [
 
-            'number_orders_dispatched_today' => $shop->orders()->whereDate('dispatched_at', Carbon::Today())->count(),
+            'number_orders_dispatched_today'              => $shop->orders()->whereDate('dispatched_at', Carbon::Today())->count(),
             'orders_dispatched_today_amount'              => $shop->orders()->whereDate('dispatched_at', Carbon::Today())->sum('net_amount'),
             'orders_dispatched_today_amount_org_currency' => $shop->orders()->whereDate('dispatched_at', Carbon::Today())->sum('org_net_amount'),
             'orders_dispatched_today_amount_grp_currency' => $shop->orders()->whereDate('dispatched_at', Carbon::Today())->sum('grp_net_amount'),
