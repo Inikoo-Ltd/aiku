@@ -152,11 +152,6 @@ trait WithWooCommerceApiRequest
         $url      = $this->getWooCommerceApiUrl().'/'.$endpoint;
         $cacheKey = 'woocommerce_'.md5($method.$url.serialize($params));
 
-        // Use cache for GET requests if enabled
-        if ($method === 'GET' && $useCache && Cache::has($cacheKey)) {
-            return Cache::get($cacheKey);
-        }
-
         try {
             $response = Http::timeout($this->timeOut)
                 ->withHeaders([

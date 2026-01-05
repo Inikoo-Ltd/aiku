@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
-use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -35,13 +34,13 @@ class DestroyTransaction extends OrgAction
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order);
             OrderHydrateTransactions::dispatch($order);
+            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+            AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
+
         }
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-        AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
 
-        OrderRecordSearch::dispatch($order);
 
         return $transaction;
     }

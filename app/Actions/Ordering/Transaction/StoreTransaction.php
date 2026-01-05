@@ -106,13 +106,17 @@ class StoreTransaction extends OrgAction
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
+
+            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+            AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
+
         }
 
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
-        AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
+
+
         if ($transaction->submitted_at && $transaction->asset) {
             $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
         }
