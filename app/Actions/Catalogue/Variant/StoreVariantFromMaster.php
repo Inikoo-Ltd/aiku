@@ -45,6 +45,13 @@ class StoreVariantFromMaster extends OrgAction
                 $variant->timeSeries()->create(['frequency' => $frequency]);
             }
 
+            foreach ($variant->allProduct() as $product) {
+                $product->updateQuietly([
+                    'variant_id' => $variant->id,
+                    'is_variant_leader' => $variant->leader_id == $product->id,
+                ]);
+            }
+
             $variant->refresh();
 
             return $variant;

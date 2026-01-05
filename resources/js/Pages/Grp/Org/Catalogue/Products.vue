@@ -45,6 +45,7 @@ const props = defineProps<{
     is_orphan_products?: boolean
     attachments?: Record<string, any>
     shop_id?: number
+    variantSlugs?: Record<string, string>;
 }>()
 
 const layout = inject<string>('layout')

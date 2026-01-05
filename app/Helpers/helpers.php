@@ -28,6 +28,63 @@ if (!function_exists('getFieldWebpageData')) {
     }
 }
 
+if(!function_exists('splitAlphaNumeric')) {
+    function splitAlphaNumeric(string $text): array
+    {
+        preg_match('/^([a-zA-Z]+).*?(\d+)/', $text, $matches);
+    
+        return [
+            'prefix' => $matches[1] ?? '',
+            'number' => isset($matches[2]) ? (int) $matches[2] : 0,
+        ];
+    }
+}
+
+if(!function_exists('hslToHex')) {
+    function hslToHex(float $h, float $s, float $l): string
+    {
+        $s /= 100;
+        $l /= 100;
+
+        $c = (1 - abs(2 * $l - 1)) * $s;
+        $x = $c * (1 - abs(fmod($h / 60, 2) - 1));
+        $m = $l - $c / 2;
+
+        if ($h < 60) {
+            [$r, $g, $b] = [$c, $x, 0];
+        } elseif ($h < 120) {
+            [$r, $g, $b] = [$x, $c, 0];
+        } elseif ($h < 180) {
+            [$r, $g, $b] = [0, $c, $x];
+        } elseif ($h < 240) {
+            [$r, $g, $b] = [0, $x, $c];
+        } elseif ($h < 300) {
+            [$r, $g, $b] = [$x, 0, $c];
+        } else {
+            [$r, $g, $b] = [$c, 0, $x];
+        }
+
+        $r = (int) round(($r + $m) * 255);
+        $g = (int) round(($g + $m) * 255);
+        $b = (int) round(($b + $m) * 255);
+
+        return sprintf('#%02X%02X%02X', $r, $g, $b);
+    }
+}
+
+
+if(!function_exists('productCodeToHexCode')) {
+    function productCodeToHexCode(string $code): string
+    {
+        ['prefix' => $prefix, 'number' => $num] = splitAlphaNumeric($code);
+
+        $baseHue = crc32($prefix) % 360;
+        $hue = ($baseHue + ($num * 35)) % 360;
+
+        return hslToHex($hue, 65, 55);
+    }
+}
+
 if (!function_exists('cleanUtf8')) {
     /**
      * Normalize arbitrary input to valid UTF-8.

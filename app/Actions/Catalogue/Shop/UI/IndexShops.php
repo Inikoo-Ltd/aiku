@@ -14,6 +14,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ShopsTabsEnum;
@@ -180,6 +181,7 @@ class IndexShops extends OrgAction
                             'style'   => 'create',
                             'tooltip' => __('New shop'),
                             'label'   => __('Shop'),
+                            'options' => ShopEngineEnum::values(),
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',
                                 'parameters' => $request->route()->originalParameters()

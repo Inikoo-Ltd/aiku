@@ -84,7 +84,7 @@ class EditCustomer extends OrgAction
                                 ],
                                 'company_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => $customer->company_name
                                 ],
                                 'phone'                    => [

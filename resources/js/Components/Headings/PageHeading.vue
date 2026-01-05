@@ -293,7 +293,7 @@ const setError = (e) => {
                                             </span>
                                             <!-- Button -->
                                             <Action v-if="action.type == 'button'" :action="action" :dataToSubmit="dataToSubmit" />
-                                            
+
                                             <!-- ButtonGroup -->
                                             <div v-if="action.type == 'buttonGroup' && action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
                                                 (action.button?.length || 0) > 1 ? '' : '',

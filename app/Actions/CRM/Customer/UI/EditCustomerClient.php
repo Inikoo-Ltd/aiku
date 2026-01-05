@@ -66,7 +66,7 @@ class EditCustomerClient extends OrgAction
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
-                                        'label' => __('company'),
+                                        'label' => __('Company'),
                                         'value' => $customerClient->company_name
                                     ],
                                     'contact_name' => [
