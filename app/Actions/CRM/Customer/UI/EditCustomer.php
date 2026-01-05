@@ -79,7 +79,7 @@ class EditCustomer extends OrgAction
                             'fields' => [
                                 'contact_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $customer->contact_name
                                 ],
                                 'company_name'             => [

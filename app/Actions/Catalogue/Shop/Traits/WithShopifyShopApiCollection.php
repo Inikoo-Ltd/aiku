@@ -2,9 +2,6 @@
 
 namespace App\Actions\Catalogue\Shop\Traits;
 
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
-
 trait WithShopifyShopApiCollection
 {
     protected array $graphqlQueries = [
@@ -86,7 +83,7 @@ trait WithShopifyShopApiCollection
         $shopifyClient = $this->getShopifyClient(true);
         $query = $this->graphqlQueries[$queryName] ?? '';
 
-        $response = $shopifyClient->request($query,$variables);
+        $response = $shopifyClient->request($query, $variables);
 
         if (!empty($response['errors']) || !isset($response['body'])) {
             data_set($result, 'error', true);

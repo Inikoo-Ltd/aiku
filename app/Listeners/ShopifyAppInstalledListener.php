@@ -47,7 +47,7 @@ class ShopifyAppInstalledListener
             CheckShopifyChannel::run($shopifyUser->customerSalesChannel);
             StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
 
-        } else if($shopifyUser->external_shop_id) {
+        } elseif ($shopifyUser->external_shop_id) {
             $store = GetShopifyStore::run($shopifyUser);
 
             $country = Country::where('code', Arr::get($store, 'data.shop.billingAddress.countryCodeV2'))->first();

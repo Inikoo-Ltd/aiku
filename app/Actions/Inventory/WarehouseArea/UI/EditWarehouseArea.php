@@ -68,7 +68,7 @@ class EditWarehouseArea extends OrgAction
                 'formData'    => [
                     'blueprint' => [
                         "properties" => [
-                            'label' => __('properties'),
+                            'label' => __('Properties'),
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',

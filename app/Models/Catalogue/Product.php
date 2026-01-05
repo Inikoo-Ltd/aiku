@@ -144,8 +144,8 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property bool $is_single_trade_unit Indicates if the product has a single trade unit
  * @property int|null $master_product_id
- * @property string|null $mark_for_discontinued_at
- * @property string|null $discontinued_at
+ * @property \Illuminate\Support\Carbon|null $mark_for_discontinued_at
+ * @property \Illuminate\Support\Carbon|null $discontinued_at
  * @property string|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
@@ -170,6 +170,8 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $not_for_sale_from_master
  * @property bool $not_for_sale_from_trade_unit
  * @property bool|null $is_unit_reviewed
+ * @property int|null $variant_id
+ * @property bool $is_variant_leader
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -266,6 +268,8 @@ class Product extends Model implements Auditable, HasMedia
         'fetched_at'                    => 'datetime',
         'last_fetched_at'               => 'datetime',
         'available_quantity_updated_at' => 'datetime',
+        'discontinued_at'               => 'datetime',
+        'mark_for_discontinued_at'      => 'datetime',
         'cpnp_number'                   => 'string',
         'ufi_number'                    => 'string',
         'scpn_number'                   => 'string',
@@ -361,6 +365,7 @@ class Product extends Model implements Auditable, HasMedia
     {
         /** @var Brand $brand */
         $brand = $this->brands()->first();
+
         return $brand;
     }
 

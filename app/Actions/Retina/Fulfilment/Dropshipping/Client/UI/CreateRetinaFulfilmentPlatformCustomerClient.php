@@ -24,7 +24,6 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
         return Inertia::render(
             'CreateModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('New client'),
                 'pageHead'    => [
                     'title'   => __('New client'),
@@ -48,7 +47,7 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                     'blueprint' =>
                         [
                             [
-                                'title'  => __('contact'),
+                                'title'  => __('Contact'),
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
@@ -56,11 +55,11 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('contact name')
+                                        'label' => __('Contact name')
                                     ],
                                     'email'        => [
                                         'type'  => 'input',
-                                        'label' => __('email')
+                                        'label' => __('Email')
                                     ],
                                     'phone'        => [
                                         'type'  => 'input',

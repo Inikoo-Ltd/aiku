@@ -97,7 +97,7 @@ class IndexFulfilmentCustomersPendingApproval extends OrgAction
                 )
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('location'), canBeHidden: false, searchable: true)
                 ->column(key: 'registered_at', label: ['type' => 'text', 'data' => __('Date'), 'tooltip' => __('Registered at')], canBeHidden: false, sortable: true, align:'right')

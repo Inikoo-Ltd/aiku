@@ -44,7 +44,7 @@ enum ProspectStateEnum: string
             ],
             'contacted'    => [
 
-                'tooltip' => __('contacted'),
+                'tooltip' => __('Contacted'),
                 'icon'    => 'fal fa-chair',
             ],
             'fail'         => [

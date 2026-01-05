@@ -105,7 +105,10 @@ trait WithLuigis
             print('Found some errors: ');
             print_r($response->body());
         } else {
-            print('Request to Luigi finish. No errors found.'."\n");
+            print('Request to Luigi (' . $endPoint . ') finish. No errors found. ');
+            print_r($response->body());
+            print("\n");
+            logger()->info($response->body());
         }
     }
 

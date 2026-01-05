@@ -194,7 +194,7 @@ class EditDepartment extends OrgAction
                                             'bind'        => [
                                                 'maxFractionDigits' => 3
                                             ],
-                                            'label'       => __('pricing ratio'),
+                                            'label'       => __('Pricing ratio'),
                                             'placeholder' => __('Cost price ratio'),
                                             'required'    => true,
                                             'value'       => $department->cost_price_ratio,

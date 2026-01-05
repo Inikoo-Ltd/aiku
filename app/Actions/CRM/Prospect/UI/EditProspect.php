@@ -67,7 +67,7 @@ class EditProspect extends OrgAction
                             'fields' => [
                                 'contact_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $prospect->contact_name
                                 ],
                                 'company_name'             => [

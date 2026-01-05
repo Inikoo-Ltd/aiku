@@ -80,7 +80,7 @@ trait HasPaymentServiceProviderFields
             'cond' => [
                 'countries' => [
                     'type'     => 'multi_select',
-                    'label'    => __('country'),
+                    'label'    => __('Country'),
                     'required' => true,
                     'options'  => Options::forModels(Country::class),
                     'value'    => Arr::get($data, 'countries')

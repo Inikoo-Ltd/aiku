@@ -7,60 +7,33 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Helpers\TimeSeries\EnsureTimeSeries;
-use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateTimeSeriesRecords;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Masters\MasterAsset;
-use Carbon\Carbon;
-use Illuminate\Console\Command;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class SeedMasterAssetTimeSeries
 {
-    use AsAction;
+    use WithHydrateCommand;
+
 
     public string $commandSignature = 'seed:master-asset-time-series {--frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)}';
 
-    public function asCommand(Command $command): void
+    public function __construct()
     {
-        $frequencyOption = $command->option('frequency');
-        $masterAssets = MasterAsset::where('status', true)->get();
+        $this->model = MasterAsset::class;
+    }
 
-
-        if ($frequencyOption === 'all') {
-            $frequencies = TimeSeriesFrequencyEnum::cases();
+    public function handle(MasterAsset $masterAsset): void
+    {
+        $from = $masterAsset->created_at->toDate();
+        if ($masterAsset->status) {
+            $to = now()->toDate();
+        } elseif ($masterAsset->discontinued_at) {
+            $to = $masterAsset->discontinued_at->toDate();
         } else {
-            $frequencies = [TimeSeriesFrequencyEnum::from($frequencyOption)];
+            $to = now()->toDate();
         }
 
-        $totalDispatched = 0;
 
-        foreach ($masterAssets as $masterAsset) {
-            foreach ($frequencies as $frequency) {
-                $dispatched = $this->handle($masterAsset, $frequency);
-                $totalDispatched += $dispatched;
-            }
-        }
-
-        $command->info("Dispatched $totalDispatched time series seed jobs for master assets.");
     }
 
-    public function handle(MasterAsset $masterAsset, TimeSeriesFrequencyEnum $frequency): bool
-    {
-        EnsureTimeSeries::run($masterAsset);
-
-        $timeSeries = $masterAsset->timeSeries()
-            ->where('frequency', $frequency)
-            ->first();
-
-        if (!$timeSeries) {
-            return false;
-        }
-
-        $from = Carbon::now('UTC')->subYear()->startOfYear();
-        $to = Carbon::now('UTC')->endOfDay();
-
-        MasterAssetHydrateTimeSeriesRecords::dispatch($timeSeries->id, $from, $to)->onQueue('low-priority');
-        return true;
-    }
 }
