@@ -118,6 +118,8 @@ class OrgStock extends Model implements Auditable
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',
+        'quantity_in_locations'            => 'decimal:3',
+        'quantity_available'               => 'decimal:3',
     ];
 
     protected $attributes = [
