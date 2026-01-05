@@ -422,10 +422,13 @@
   },
   {
     "outboxes": [
-      "newsletter"
+      "newsletter",
+      "marketing",
+      "invite",
+      "abandoned_cart"
     ],
     "name": "Newsletter",
-    "content": "beefree_newsletter.json",
+    "content": "beefree_mailshot.json",
     "builder": "beefree",
     "arguments": [
       "customer"
