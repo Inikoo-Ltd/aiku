@@ -180,6 +180,7 @@ class IndexMasterProducts extends GrpAction
 
             //variants
             'master_variant.slug as variant_slug',
+            'master_variant.slug as variant_code',
             'master_assets.is_variant_leader as is_variant_leader',
         ]);
 
@@ -274,7 +275,7 @@ class IndexMasterProducts extends GrpAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
             if($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY){
-                $table->column(key: 'variant_slug', label: '', canBeHidden: false, searchable: true, type: 'icon');
+                $table->column(key: 'variant_slug', label: 'Variant', canBeHidden: false, searchable: true);
             }
 
             $table
