@@ -44,6 +44,7 @@ const props = defineProps<{
     shopsData?: any
     masterProductCategoryId?: number
     currency?: any
+    variantSlugs?: Record<string, string>;
 }>()
 
 // dialog state
@@ -102,6 +103,7 @@ const onVisit = () => {
     <!-- Products Table -->
     <TableMasterProducts
         :data="data"
+        :variant-slugs="variantSlugs"
         isCheckBox
         :key="key"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"

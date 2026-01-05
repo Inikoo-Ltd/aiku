@@ -95,7 +95,9 @@ class ProductsResource extends JsonResource
             'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
             'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
-            'master_product_id'         => $this->master_product_id
+            'master_product_id'         => $this->master_product_id,
+            'variant_slug'              => $this->variant_slug,
+            'is_variant_leader'         => $this->is_variant_leader,
         ];
     }
 

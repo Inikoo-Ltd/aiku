@@ -16,7 +16,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Invoice } from "@/types/invoice"
 import { RouteParams } from "@/types/route-params"
@@ -27,14 +27,14 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
-import { faTriangle, faEquals, faMinus} from "@fas"
+import { faTriangle, faEquals, faMinus, faShapes, faStar} from "@fas"
 
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil)
 
 
-defineProps<{
+const props = defineProps<{
     data: {}
     editable_table: boolean
     tab?: string,
@@ -46,6 +46,7 @@ defineProps<{
     isCheckboxProducts?: boolean
     master?: boolean
     selectedProductsId?: {}
+    variantSlugs?: Record<string, string>;
 }>()
 
 const emits = defineEmits<{
@@ -364,10 +365,18 @@ const getIntervalStateColor = (isPositive: boolean) => {
     }
 }
 
+function getClassColorIcon(varSlug: string) {
+    if (!props.variantSlugs) return {};
+
+    const color = props.variantSlugs[varSlug];
+    return color ? { color: `${color} !important` } : {};
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
+        
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -379,6 +388,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             {{ refund["organisation_code"] }}
             </Link>
         </template>
+
         <template #cell(state)="{ item: product }">
             <Icon :data="product.state"></Icon>
         </template>
@@ -435,13 +445,9 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         <FontAwesomeIcon :icon="faMinus" />
                     </template>
                 </InputNumber>
-
                 <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
-
             </div>
-
         </template>
-
 
         <template #cell(margin)="{ item }">
             <span :class="{
@@ -582,6 +588,14 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 </Link>
             </div>
         </template>
+
+        <template #cell(variant_slug)="{ item: masterProduct }">
+            <FontAwesomeLayers v-if="masterProduct['variant_slug']" class="text-lg">
+                <FontAwesomeIcon :icon="faShapes" :style="getClassColorIcon(masterProduct['variant_slug'])"/>
+                <FontAwesomeIcon v-if="masterProduct['is_variant_leader']" :icon="faStar" class="text-yellow-500 text-xs top-0 right-0 translate-x-[10px] translate-y-[-10px]"/>
+            </FontAwesomeLayers>
+        </template>
+        
 
         <template #cell(shop_code)="{ item: product }">
             <Link v-if="product['shop_slug']" :href="(shopRoute(product) as string)" class="secondaryLink">

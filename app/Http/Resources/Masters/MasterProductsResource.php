@@ -75,9 +75,8 @@ class MasterProductsResource extends JsonResource
                 'icon'    => 'fas fa-times-circle',
                 'class'   => 'text-red-400'
             ],
-            'variant_leader'    => $this->variant_leader_id,
-            'variant_code'      => $this->variant_code,
-            'variant_slug'      => $this->variant_slug
+            'variant_slug'           => $this->variant_slug,
+            'is_variant_leader'      => $this->is_variant_leader,
         ];
     }
 }
