@@ -19,7 +19,7 @@ class ProcessWebsiteVisitorTracking
 {
     use AsAction;
 
-    public string $queue = 'analytics';
+    public string $jobQueue = 'analytics';
 
     public function handle(
         string $sessionId,
