@@ -20,6 +20,7 @@ import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
+import { faShapes } from "@fas"
 
 defineProps<{
     data: {}
@@ -121,6 +122,20 @@ function masterShopRoute(masterProduct: MasterProduct) {
             masterShop: masterProduct.master_shop_slug
         }
     )
+}
+
+
+function masterVarinatRoute(masterProduct: MasterProduct) {
+    if(masterProduct.variant_slug)
+    return route("grp.masters.master_shops.show.master_families.master_variants.show",
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterFamily: masterProduct.master_family_slug,
+            masterVariant: masterProduct.variant_slug
+        }
+    )
+
+    return "#"
 }
 
 const editingValues = shallowRef<Record<number, { price: number; rrp: number, unit : string }>>({})
@@ -260,6 +275,9 @@ function onCancel(item) {
         </template>
 
         <template #cell(code)="{ item: masterProduct }">
+            <Link v-if="masterProduct.variant_leader" :href="(masterVarinatRoute(masterProduct) as string)" v-tooltip="trans('Go to Variants')" class="mr-1" :class="[masterProduct.variant_leader ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon :icon="faShapes" color="#4B0082" />
+            </Link>
             <Link v-if="masterProduct.code" v-tooltip="masterProduct.code" :href="(masterProductRoute(masterProduct) as string)" class="secondaryLink">
                 {{ masterProduct["code"] }}
             </Link>
