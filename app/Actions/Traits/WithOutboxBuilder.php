@@ -11,12 +11,12 @@ namespace App\Actions\Traits;
 use App\Actions\Comms\Email\StoreEmail;
 use App\Actions\Comms\EmailOngoingRun\StoreEmailOngoingRun;
 use App\Actions\Comms\EmailOngoingRun\UpdateEmailOngoingRun;
-use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Helpers\Snapshot\StoreEmailSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Enums\Comms\Email\EmailBuilderEnum;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunStatusEnum;
+use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -208,10 +208,11 @@ trait WithOutboxBuilder
     {
 
         $emailTemplate = EmailTemplate::where('state', EmailTemplateStateEnum::ACTIVE)
-                ->whereJsonContains('data->outboxes', $outbox->code)->first();
+        ->where('builder', EmailTemplateBuilderEnum::BEEFREE)
+        ->whereJsonContains('data->outboxes', $outbox->code)->first();
 
         if ($emailTemplate) {
-            $email = StoreEmail::make()->action(
+            StoreEmail::make()->action(
                 $mailshot,
                 $emailTemplate,
                 modelData: [
@@ -227,13 +228,6 @@ trait WithOutboxBuilder
                 }
             ],
                 strict: false
-            );
-
-            UpdateMailshot::make()->action(
-                $mailshot,
-                [
-                    'email_id' => $email->id,
-                ]
             );
 
             UpdateOutbox::make()->action(

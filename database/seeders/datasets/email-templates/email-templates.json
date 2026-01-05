@@ -427,7 +427,7 @@
       "invite",
       "abandoned_cart"
     ],
-    "name": "Newsletter",
+    "name": "Mailshot",
     "content": "beefree_mailshot.json",
     "builder": "beefree",
     "arguments": [

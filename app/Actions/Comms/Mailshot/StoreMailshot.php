@@ -58,8 +58,16 @@ class StoreMailshot extends OrgAction
         OutboxHydrateMailshots::dispatch($outbox)->delay($this->hydratorsDelay);
         ShopHydrateMailshots::dispatch($outbox->shop)->delay($this->hydratorsDelay);
 
+        $outboxCode = match ($mailshot->type) {
+            MailshotTypeEnum::MARKETING => OutboxCodeEnum::MARKETING,
+            MailshotTypeEnum::NEWSLETTER => OutboxCodeEnum::NEWSLETTER,
+            MailshotTypeEnum::INVITE => OutboxCodeEnum::INVITE,
+            MailshotTypeEnum::ABANDONED_CART => OutboxCodeEnum::ABANDONED_CART,
+            default => OutboxCodeEnum::NEWSLETTER,
+        };
+
         // create email
-        $this->createMailShotEmail($outbox->shop, OutboxCodeEnum::NEWSLETTER, $mailshot, $outbox);
+        $this->createMailShotEmail($outbox->shop, $outboxCode, $mailshot, $outbox);
 
         return $mailshot;
     }
