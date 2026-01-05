@@ -380,7 +380,7 @@ watch(() => model.value, (newValue) => {
 									</div>
 								</template>
 								
-								<template #empty> No Product found. </template>
+								<template #empty> {{ trans("No Product found") }}. </template>
 
 								<!-- Loading Icon -->
 								<template #loading>

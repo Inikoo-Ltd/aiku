@@ -34,7 +34,8 @@ class DisableCollection extends OrgAction
     public function handle(Collection $collection, array $modelData): Collection
     {
         $collection->update([
-            'state' => CollectionStateEnum::INACTIVE->value,
+            'state'          => CollectionStateEnum::INACTIVE->value,
+            'inactivated_at' => now(),
         ]);
 
         CloseWebpage::run(

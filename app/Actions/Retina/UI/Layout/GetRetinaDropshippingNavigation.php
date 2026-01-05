@@ -103,10 +103,12 @@ class GetRetinaDropshippingNavigation
 
         $platforms_navigation = [];
 
-
         /** @var CustomerSalesChannel $customerSalesChannels */
         foreach (
-            $customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannels
+            $customer->customerSalesChannels()
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+                ->whereNull('closed_at')
+                ->get() as $customerSalesChannels
         ) {
             $reference = $customerSalesChannels->name ?? 'n/a';
 
@@ -247,7 +249,7 @@ class GetRetinaDropshippingNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('email'),
+                        'label' => __('Email'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'retina.email.settings.',
                         'route' => [

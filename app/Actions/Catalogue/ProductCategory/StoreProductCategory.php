@@ -57,7 +57,7 @@ class StoreProductCategory extends OrgAction
             }
         } else {
             $modelData['shop_id'] = $parent->id;
-            $shop = $parent;
+            $shop                 = $parent;
         }
 
         if ($shop->language->code == 'en') {
@@ -75,7 +75,12 @@ class StoreProductCategory extends OrgAction
             $productCategory->salesIntervals()->create();
             $productCategory->orderingStats()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                $productCategory->timeSeries()->create(['frequency' => $frequency]);
+                $productCategory->timeSeries()->create(
+                    [
+                        'frequency' => $frequency,
+                        'type'      => $productCategory->type->value
+                    ]
+                );
             }
 
             $productCategory->refresh();
@@ -97,8 +102,8 @@ class StoreProductCategory extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'type'        => ['required', Rule::enum(ProductCategoryTypeEnum::class)],
-            'code'        => [
+            'type'                       => ['required', Rule::enum(ProductCategoryTypeEnum::class)],
+            'code'                       => [
                 'required',
                 $this->strict ? 'max:32' : 'max:255',
                 new AlphaDashDot(),
@@ -110,16 +115,16 @@ class StoreProductCategory extends OrgAction
                     ]
                 ),
             ],
-            'name'        => ['required', 'max:250', 'string'],
-            'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
-            'image'       => [
+            'name'                       => ['required', 'max:250', 'string'],
+            'image_id'                   => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image'                      => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'state'       => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
-            'description' => ['sometimes', 'max:65500'],
+            'state'                      => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
+            'description'                => ['sometimes', 'max:65500'],
             'master_product_category_id' => ['sometimes', Rule::exists('master_product_categories', 'id')->where('group_id', $this->organisation->group_id)]
 
         ];
@@ -198,11 +203,11 @@ class StoreProductCategory extends OrgAction
             ]);
         } elseif (class_basename($productCategory->parent) == 'ProductCategory' && $productCategory->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             return Redirect::route('grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show', [
-                'organisation' => $productCategory->organisation->slug,
-                'shop'         => $productCategory->shop->slug,
-                'department'   => $productCategory->parent->parent->slug,
+                'organisation'  => $productCategory->organisation->slug,
+                'shop'          => $productCategory->shop->slug,
+                'department'    => $productCategory->parent->parent->slug,
                 'subDepartment' => $productCategory->parent->slug,
-                'family'       => $productCategory->slug,
+                'family'        => $productCategory->slug,
             ]);
         } else {
             return Redirect::route('grp.org.shops.show.catalogue.departments.show', [

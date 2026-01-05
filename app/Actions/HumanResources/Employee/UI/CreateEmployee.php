@@ -71,7 +71,7 @@ class CreateEmployee extends OrgAction
                                 ],
                                 'phone'         => [
                                     'type'  => 'input',
-                                    'label' => __('contact number'),
+                                    'label' => __('Contact number'),
                                     'value' => ''
                                 ],
                                 'contact_address'      => [

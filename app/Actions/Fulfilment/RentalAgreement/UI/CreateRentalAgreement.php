@@ -33,7 +33,7 @@ class CreateRentalAgreement extends OrgAction
         $createWebUserFields = !$fulfilmentCustomer->customer->webUsers()->exists() ? [
             'email' => [
                 'type'        => 'input',
-                'label'       => __('email'),
+                'label'       => __('Email'),
                 'required'    => true
             ],
             'username' => [

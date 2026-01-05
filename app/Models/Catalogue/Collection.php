@@ -56,6 +56,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_extra
  * @property CollectionProductsStatusEnum $products_status
  * @property array<array-key, mixed>|null $offers_data
+ * @property \Illuminate\Support\Carbon|null $inactivated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -98,17 +99,18 @@ class Collection extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'data'              => 'array',
-        'web_images'        => 'array',
-        'state'             => CollectionStateEnum::class,
-        'products_status'   => CollectionProductsStatusEnum::class,
-        'offers_data'       => 'array',
+        'data'            => 'array',
+        'web_images'      => 'array',
+        'state'           => CollectionStateEnum::class,
+        'products_status' => CollectionProductsStatusEnum::class,
+        'offers_data'     => 'array',
+        'inactivated_at'  => 'datetime',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'web_images'    => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'web_images'  => '{}',
+        'offers_data' => '{}',
     ];
 
     public function getRouteKeyName(): string

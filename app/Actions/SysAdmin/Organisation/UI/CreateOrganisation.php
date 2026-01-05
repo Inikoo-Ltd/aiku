@@ -61,25 +61,25 @@ class CreateOrganisation extends InertiaAction
                                 ],
                                 'email'        => [
                                     'type'     => 'input',
-                                    'label'    => __('email'),
+                                    'label'    => __('Email'),
                                     'required' => true
                                 ],
                                 'currency_id'  => [
-                                    'label'    => __('currency'),
+                                    'label'    => __('Currency'),
                                     'type'     => 'select',
                                     'required' => true,
                                     'value'    => null,
                                     'options'  => Options::forModels(Currency::all())
                                 ],
                                 'country_id'   => [
-                                    'label'    => __('country'),
+                                    'label'    => __('Country'),
                                     'type'     => 'select',
                                     'required' => true,
                                     'value'    => null,
                                     'options'  => Options::forModels(Country::all())
                                 ],
                                 'language_id'  => [
-                                    'label'    => __('language'),
+                                    'label'    => __('Language'),
                                     'type'     => 'select',
                                     'required' => true,
                                     'value'    => null,

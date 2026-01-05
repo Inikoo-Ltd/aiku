@@ -74,7 +74,7 @@ class CreatePayment extends OrgAction
                                 ],
                                 'currency_id' => [
                                     'type'    => 'currency',
-                                    'label'   => __('currency'),
+                                    'label'   => __('Currency'),
                                     'value'   => '',
                                     'options' => Currency::get()->pluck('code')
                                 ],
@@ -93,14 +93,6 @@ class CreatePayment extends OrgAction
             ]
         );
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        // TODO: fix the auhtorization (in test can't pass)
-        // return $request->user()->authTo('accounting.edit');
-        return true;
-    }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): Response
     {

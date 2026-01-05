@@ -75,7 +75,8 @@ class GetEcomOrderActions
                 OrderStateEnum::SUBMITTED => [
                     [
                         'type'    => 'button',
-                        'style'   => 'create',
+                        'style'   => 'secondary',
+                        'icon'    => 'fas fa-plus',
                         'tooltip' => __('Add a product'),
                         'label'   => __('Add a product'),
                         'key'     => 'add-product',

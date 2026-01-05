@@ -22,9 +22,9 @@ trait HasTimeSeriesRecords
 
     public function getTimeSeriesRecordsSalesField(Blueprint $table): Blueprint
     {
-        $table->decimal('sales',16)->default(0);
-        $table->decimal('sales_org_currency',16)->default(0);
-        $table->decimal('sales_grp_currency',16)->default(0);
+        $table->decimal('sales', 16)->default(0);
+        $table->decimal('sales_org_currency', 16)->default(0);
+        $table->decimal('sales_grp_currency', 16)->default(0);
 
         return $table;
     }

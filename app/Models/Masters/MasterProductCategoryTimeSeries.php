@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $number_records
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterProductCategoryTimeSeriesRecord> $records
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeries newQuery()

@@ -57,7 +57,7 @@ class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                         [
                             [
                                 "label"  => __("Profile"),
-                                'title'  => __('contact'),
+                                'title'  => __('Contact'),
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
@@ -66,12 +66,12 @@ class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',
-                                        'label' => __('contact name'),
+                                        'label' => __('Contact name'),
                                         'value' => $customerClient->contact_name
                                     ],
                                     'email' => [
                                         'type'  => 'input',
-                                        'label' => __('email'),
+                                        'label' => __('Email'),
                                         'value' => $customerClient->email
                                     ],
                                     'phone' => [

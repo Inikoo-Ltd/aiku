@@ -93,7 +93,7 @@ class CreateWebUser extends OrgAction
                                     ],
                                     'email' => [
                                         'type'  => 'input',
-                                        'label' => __('email'),
+                                        'label' => __('Email'),
                                         'placeholder' => __('example@email.com'),
                                         'value' => $this->customer->hasUsers() ? '' : $this->customer->email
                                     ],
