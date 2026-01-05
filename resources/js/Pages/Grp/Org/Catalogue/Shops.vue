@@ -97,7 +97,7 @@ const redirectToTarget = (engine: string) => {
 
         <div class="flex justify-center gap-2">
             <Button v-for="engine in engines" :key="engine"
-                :label="trans(engine)"
+                    :label="capitalize(trans(engine))"
                     type="tertiary"
                     @click="redirectToTarget(engine)"
             />
