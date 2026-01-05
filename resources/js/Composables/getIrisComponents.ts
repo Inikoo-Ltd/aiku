@@ -34,10 +34,10 @@ import CTA3Iris from "@/Components/CMS/Webpage/Cta3/Cta3Iris.vue" */
 // import DisclosureIris from "@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue"
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 
-// import ListProductsIris from "@/Components/CMS/Webpage/Products/Dropshipping/ListProductsIris.vue"
+import ListProductsIris from "@/Components/CMS/Webpage/Products/Dropshipping/ListProductsIris.vue"
 import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
-// import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
+import ListProductsEcomIris from "@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"
 
 // import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/Dropshipping/ProductIris1.vue'
@@ -66,8 +66,8 @@ import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Pro
 import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
 import AnnouncementInformation2TransitionText from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue'
 import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
-// import RenderDropshippingProduct from "@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"
-// import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"
+import RenderDropshippingProduct from "@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"
+import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 // import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
@@ -122,17 +122,17 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		//product
 		"product-1": shop_type === "b2b"
-		? async(() => import("@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"))
-		: async(() => import("@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue")),
+		? RenderEcommerceProduct
+		: RenderDropshippingProduct,
 
-		"product-2": async(() => import("@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue")),
+		"product-2": RenderEcommerceProduct,
 
 		//product list
 		"products-1": shop_type === "b2b"
-		? async(() => import("@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue"))
-		: async(() => import("@/Components/CMS/Webpage/Products/Dropshipping/ListProductsIris.vue")),
+		? ListProductsEcomIris
+		: ListProductsIris,
 
-		"products-2": async(() => import("@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomIris.vue")),
+		"products-2": ListProductsEcomIris,
 
 
 		//see-also
