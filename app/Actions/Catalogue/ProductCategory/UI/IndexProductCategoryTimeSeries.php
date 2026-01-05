@@ -48,7 +48,6 @@ class IndexProductCategoryTimeSeries extends OrgAction
                 'invoices',
                 'refunds',
                 'orders',
-                'delivery_notes',
                 'customers_invoiced',
             ])
             ->defaultSort('-from')
