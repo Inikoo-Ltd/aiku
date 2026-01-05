@@ -3,6 +3,7 @@ import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Image as ImageTS } from "@/types/Image"
+import { getProductRenderB2bComponent } from "@/Composables/getIrisComponents"
 import { ref, inject, onMounted, computed, watch, onUnmounted } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -295,5 +296,21 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div></div>
+    <component 
+        :is="getProductRenderB2bComponent(code)" 
+        :fieldValue 
+        :webpageData 
+        :blockData 
+        :isLoadingFavourite
+        :isLoadingRemindBackInStock
+        :product
+        :customerData
+        :validImages
+        :videoSetup
+        :screenType
+        @setFavorite="onAddFavourite"
+        @unsetFavorite="onUnselectFavourite"
+        @setBackInStock="onAddBackInStock"
+        @unsetBackInStock="onUnselectBackInStock"
+    />
 </template>
