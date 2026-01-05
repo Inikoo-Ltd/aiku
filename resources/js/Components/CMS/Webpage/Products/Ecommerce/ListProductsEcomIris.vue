@@ -18,7 +18,6 @@ import { faSearch } from "@fal"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
-import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
 
 
