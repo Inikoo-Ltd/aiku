@@ -21,6 +21,8 @@ class ProductCategoryHydrateSales implements ShouldBeUnique
     use WithIntervalsAggregators;
 
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(ProductCategory $productCategory): string
     {
         return $productCategory->id;
