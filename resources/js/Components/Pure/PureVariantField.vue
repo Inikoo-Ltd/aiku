@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, watchEffect } from "vue"
+import { ref, computed, watch, watchEffect, nextTick } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
@@ -8,10 +8,8 @@ import { faTrashAlt } from "@far"
 import { faPlus } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
-import Image from "@/Components/Image.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-/* ---------------- types ---------------- */
 
 type Variant = {
   label: string
@@ -32,7 +30,6 @@ type DataVariants = {
   products: Record<string, any>
 }
 
-/* ---------------- props ---------------- */
 
 defineProps<{
   pageHead: PageHeadingTypes
@@ -40,7 +37,6 @@ defineProps<{
   master_assets_route: routeType
 }>()
 
-/* ---------------- model ---------------- */
 
 const model = defineModel<DataVariants>({ required: true })
 
@@ -50,7 +46,7 @@ const createEmptyModel = (): DataVariants => ({
   products: {}
 })
 
-/* ✅ INIT SAAT MODEL NULL */
+
 watchEffect(() => {
   if (!model.value) {
     model.value = createEmptyModel()
@@ -62,11 +58,10 @@ watchEffect(() => {
   model.value.products ??= {}
 })
 
-/* ---------------- state ---------------- */
 
+const optionRefs = ref<HTMLInputElement[][]>([])
 const expanded = ref<Record<string, boolean>>({})
 
-/* ---------------- helpers ---------------- */
 
 const normalizeKey = (k: Record<string, string>) =>
   Object.keys(k)
@@ -81,7 +76,6 @@ const toggleExpand = (k: string) => {
   expanded.value[k] = !expanded.value[k]
 }
 
-/* ---------------- variants ---------------- */
 
 const validVariants = computed(() =>
   model.value.variants
@@ -103,7 +97,6 @@ const getCombinations = (list: { label: string; options: string[] }[]) => {
   return recur(0, {})
 }
 
-/* ---------------- sync products ---------------- */
 
 const validCombinationKeys = computed<Set<string>>(() => {
   if (!validVariants.value.length) return new Set()
@@ -113,13 +106,15 @@ const validCombinationKeys = computed<Set<string>>(() => {
 })
 
 const syncProducts = () => {
+  if (hasActiveVariant.value) return
+
   const validKeys = validCombinationKeys.value
 
   Object.keys(model.value.products).forEach(id => {
     const stored = model.value.products[id]
 
     const keyOnly = Object.fromEntries(
-      Object.entries(stored).filter(([k]) => k !== "product")
+      Object.entries(stored).filter(([k]) => k !== "product" && k !== "is_leader")
     )
 
     if (!validKeys.has(normalizeKey(keyOnly))) {
@@ -128,10 +123,10 @@ const syncProducts = () => {
   })
 }
 
+
 watch(() => model.value.variants, syncProducts, { deep: true })
 watch(() => model.value.groupBy, syncProducts)
 
-/* ---------------- build nodes ---------------- */
 
 const isLeaderByKey = (keyObj: Record<string, string>) => {
   return Object.values(model.value.products).some(
@@ -151,7 +146,6 @@ const buildNodes = computed<Node[]>(() => {
       Object.keys(keyObj).every(k => p[k] === keyObj[k])
     )?.product ?? null
 
-  // ===== 1 VARIANT =====
   if (variants.length === 1) {
     const v = variants[0]
 
@@ -167,7 +161,6 @@ const buildNodes = computed<Node[]>(() => {
     })
   }
 
-  // ===== MULTI VARIANT =====
   const base = variants.find(v => v.label === model.value.groupBy)
   if (!base) return []
 
@@ -202,14 +195,14 @@ const buildNodes = computed<Node[]>(() => {
 })
 
 
-/* ---------------- actions ---------------- */
+
 
 const setProduct = (node: Node, val: any | null) => {
   const entryId = Object.keys(model.value.products).find(id =>
     Object.keys(node.key).every(k => model.value.products[id][k] === node.key[k])
   )
 
-  // ❌ PRODUCT DI-CLEAR
+
   if (!val) {
     if (!entryId) return
 
@@ -217,7 +210,6 @@ const setProduct = (node: Node, val: any | null) => {
     return
   }
 
-  // ✅ PRODUCT DISET
   model.value.products[val.id] = {
     ...node.key,
     product: {
@@ -231,15 +223,6 @@ const setProduct = (node: Node, val: any | null) => {
   }
 }
 
-
-
-const isLeader = (node: Node) => {
-  return Object.values(model.value.products).some(
-    p =>
-      p.is_leader &&
-      Object.keys(node.key).every(k => p[k] === node.key[k])
-  )
-}
 
 const setLeader = (node: Node, checked: boolean) => {
   Object.values(model.value.products).forEach(p => {
@@ -301,7 +284,6 @@ const toggleActive = (i: number) => {
 }
 
 
-
 const addVariant = () => {
   model.value.variants.forEach(v => (v.active = false))
 
@@ -310,14 +292,45 @@ const addVariant = () => {
     options: [""],
     active: true
   })
-
- 
-
-}
-const addOption = (i: number) => {
-  model.value.variants[i].options.push("")
 }
 
+const hasActiveVariant = computed(() =>
+  model.value.variants.some(v => v.active)
+)
+
+const expandAll = () => {
+  const map: Record<string, boolean> = {}
+  buildNodes.value.forEach(node => {
+    if (node.children?.length) {
+      map[keyToString(node.key)] = true
+    }
+  })
+  expanded.value = map
+}
+
+const collapseAll = () => {
+  expanded.value = {}
+}
+
+watch(
+  buildNodes,
+  () => {
+    expandAll()
+  },
+  { immediate: true }
+)
+
+
+const addOption = async (vi: number) => {
+  model.value.variants[vi].options.push("")
+
+  await nextTick()
+
+
+  const inputs = optionRefs.value[vi]
+  console.log('inputs', inputs)
+  inputs?.[inputs.length - 1]?.focus()
+}
 const removeOption = (vi: number, oi: number) => {
   model.value.variants[vi].options.splice(oi, 1)
   syncProducts()
@@ -336,6 +349,13 @@ const deleteVariant = (i: number) => {
   syncProducts()
 }
 
+const isAllExpanded = computed(() =>
+  buildNodes.value.every(
+    n => !n.children || expanded.value[keyToString(n.key)]
+  )
+)
+
+
 const noLeader = computed(() => {
   return !Object.values(model.value.products).some(p => p.is_leader)
 })
@@ -345,14 +365,15 @@ const noLeader = computed(() => {
 
 <template>
   <div class="flex justify-center mt-6">
-    <div class="w-full max-w-2xl p-4 bg-white rounded-lg shadow space-y-4">
+    <div class="w-full max-w-6xl p-4 bg-white rounded-lg shadow space-y-4">
 
       <!-- VARIANTS -->
       <div>
         <label class="text-xs font-medium block">
           {{ trans('Variant Options') }} <span class="text-red-500">*</span>
         </label>
-        <span v-if="model.variants.length < 1" class="text-xs text-gray-500 font-medium italic w-full block text-red-500">
+        <span v-if="model.variants.length < 1"
+          class="text-xs text-gray-500 font-medium italic w-full block text-red-500">
           {{ trans('Variant option must be present') }}
         </span>
 
@@ -382,7 +403,17 @@ const noLeader = computed(() => {
               </label>
 
               <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
-                <PureInput v-model="v.options[oi]" class="flex-1" :placeholder="trans('e.g. blue, red or S, M, L, XL')" />
+                <PureInput 
+                  v-model="v.options[oi]" 
+                  class="flex-1"    
+                  @keydown.tab.prevent="oi === v.options.length - 1 && v.options[oi].trim() ? addOption(vi): null"
+                  :placeholder="trans('e.g. blue, red or S, M, L, XL')"  
+                  @keydown.enter.prevent="toggleActive(vi)"  
+                  :ref="el => {
+                        if (!optionRefs[vi]) optionRefs[vi] = []
+                        optionRefs[vi][oi] = el
+                      }"
+                    />
                 <button class="text-red-500" @click="removeOption(vi, oi)">
                   <FontAwesomeIcon :icon="faTrashAlt" />
                 </button>
@@ -400,7 +431,7 @@ const noLeader = computed(() => {
                 </Button>
                 <Button size="xs" :class="!isVariantValid(v) && 'opacity-50 cursor-not-allowed'"
                   :disabled="!isVariantValid(v)" @click="toggleActive(vi)">
-                      {{ trans('done') }}
+                  {{ trans('Done') }}
                 </Button>
               </div>
             </div>
@@ -433,18 +464,28 @@ const noLeader = computed(() => {
             {{ trans('List of Variants') }} <span class="text-red-500">*</span>
           </label>
           <span v-if="noLeader" class="text-xs text-gray-500 font-medium italic w-full block text-red-500">
-            {{trans('One of the products must be leader, it will show as default in webpage')}}
+            {{ trans('One of the products must be leader, it will show as default in webpage') }}
           </span>
-          
+
+
+
           <!-- TABLE -->
           <div class="border rounded mt-4 overflow-visible">
             <table class="min-w-full table-fixed divide-y">
               <thead class="bg-gray-50">
                 <tr>
+                  <th class="px-4 py-3 w-[40px]">
+                    <div
+                      class="w-5 h-5 border rounded bg-gray-100 flex items-center justify-center text-sm font-medium"
+                      @click="isAllExpanded ? collapseAll() : expandAll()">
+                      {{ isAllExpanded ? "−" : "+" }}
+                    </div>
+                  </th>
+
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2 text-start">
                     {{ trans('Variant') }}
                   </th>
-                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
+                  <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
                     {{ trans('Leader') }}
                   </th>
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
@@ -457,88 +498,64 @@ const noLeader = computed(() => {
                 <template v-for="node in buildNodes" :key="keyToString(node.key)">
                   <!-- PARENT -->
                   <tr class="hover:bg-gray-50 h-[70px]">
-                  
-
+                    <!-- Expand -->
                     <td class="px-4">
-                      <div class="flex items-center">
-                        <div v-if="node.children"
-                          class="w-5 h-5 mr-2 border rounded bg-gray-100 flex items-center justify-center text-sm font-medium"
-                          @click="toggleExpand(keyToString(node.key))">
-                          {{ expanded[keyToString(node.key)] ? "−" : "+" }}
-                        </div>
-
-                        <span class="truncate">{{ node.label }}</span>
+                      <div v-if="node.children"
+                        class="w-5 h-5 border rounded bg-gray-100 flex items-center justify-center text-sm font-medium cursor-pointer"
+                        @click="toggleExpand(keyToString(node.key))">
+                        {{ expanded[keyToString(node.key)] ? "−" : "+" }}
                       </div>
                     </td>
 
+                    <!-- Variant -->
+                    <td class="px-4">
+                      <span class="truncate font-medium">{{ node.label }}</span>
+                    </td>
+
+                    <!-- Leader -->
                     <td class="px-4 text-center">
                       <input v-if="!node.children" type="checkbox" :disabled="!node.product" :checked="node.is_leader"
                         @change="setLeader(node, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
-                    <td v-if="!node.children" class="px-4">
-                      <PureMultiselectInfiniteScroll :model-value="node.product"
+                    <!-- Product -->
+                    <td class="px-4">
+                      <PureMultiselectInfiniteScroll v-if="!node.children" :model-value="node.product"
                         @update:model-value="val => setProduct(node, val)" :fetchRoute="master_assets_route"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
-                        :placeholder="trans('Select Product')">
-                        <template #singlelabel="{ value }">
-                          <div class="flex items-center gap-3 p-2">
-                            <Image v-if="value.image_thumbnail" :src="value.image_thumbnail.main.original"
-                              class="w-12 h-12 rounded object-cover" />
-                            <div>
-                              <div class="font-medium leading-none">{{ value.name }}</div>
-                              <div class="flex justify-beetween mt-1 gap-5">
-                                <div class="flex justify-between mt-1 text-xs text-gray-500">
-                                  <span>{{ value.code || '-' }}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                        </template>
-
-                      </PureMultiselectInfiniteScroll>
+                        :placeholder="trans('Select Product')" />
                     </td>
-                    <td v-else />
                   </tr>
 
+
                   <!-- CHILD -->
-                  <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]" :key="keyToString(child.key)"
-                    class="hover:bg-gray-50 h-[70px]">
-                    <td class="px-8 text-sm text-gray-700">
+                  <tr v-for="child in node.children" v-if="expanded[keyToString(node.key)]"
+                    :key="keyToString(child.key)" class="hover:bg-gray-50 h-[70px]">
+                    <!-- Empty expand column -->
+                    <td class="px-4"></td>
+
+                    <!-- Variant -->
+                    <td class="px-4 text-sm text-gray-700 pl-10">
                       ↳ {{ child.label }}
                     </td>
 
-                     <td class="px-4 text-center">
+                    <!-- Leader -->
+                    <td class="px-4 text-center">
                       <input type="checkbox" :disabled="!child.product" :checked="child.is_leader"
                         @change="setLeader(child, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
-                    <td class="p-4">
+                    <!-- Product -->
+                    <td class="px-4">
                       <PureMultiselectInfiniteScroll :model-value="child.product"
                         @update:model-value="val => setProduct(child, val)" :fetchRoute="master_assets_route"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
-                        :placeholder="trans('Select Product')">
-                        <template #singlelabel="{ value }">
-                          <div class="flex items-center gap-3 p-2">
-                            <Image v-if="value.image_thumbnail" :src="value.image_thumbnail.main.original"
-                              class="w-12 h-12 rounded object-cover" />
-                            <div>
-                              <div class="font-medium leading-none">{{ value.name }}</div>
-                              <div class="flex justify-beetween mt-1 gap-5">
-                                <div class="flex justify-between mt-1 text-xs text-gray-500">
-                                  <span>{{ value.code || '-' }}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                        </template>
-                      </PureMultiselectInfiniteScroll>
+                        :placeholder="trans('Select Product')" />
                     </td>
                   </tr>
+
                 </template>
               </tbody>
             </table>
