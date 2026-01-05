@@ -16,6 +16,7 @@ class ResetDailyIntervals
 
     public string $commandSignature = 'intervals:reset-day';
     public string $commandDescription = 'Reset day intervals';
+    public int $jobTries = 1;
 
     public function __construct()
     {
