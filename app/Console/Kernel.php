@@ -403,6 +403,15 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
+
+        $this->logSchedule(
+            $schedule->command('process-websites-daily-time-series')->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessDailyWebsiteTimeSeries',
+            ),
+            name: 'ProcessDailyWebsiteTimeSeries',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void
