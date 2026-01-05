@@ -72,7 +72,7 @@ class EditProspect extends OrgAction
                                 ],
                                 'company_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => $prospect->company_name
                                 ],
                                 'phone'                    => [

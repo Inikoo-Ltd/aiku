@@ -100,7 +100,7 @@ class EditOrgSupplier extends OrgAction
                                 ],
                                 'company_name' => [
                                     'type' => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => $supplier->company_name,
                                 ],
                                 'contact_name' => [

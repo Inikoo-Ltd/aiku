@@ -61,7 +61,7 @@ class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
-                                        'label' => __('company'),
+                                        'label' => __('Company'),
                                         'value' => $customerClient->company_name
                                     ],
                                     'contact_name' => [

@@ -60,6 +60,7 @@ class StoreCustomer extends OrgAction
 
     protected Shop $shop;
 
+
     /**
      * @throws \Throwable
      */
@@ -212,8 +213,6 @@ class StoreCustomer extends OrgAction
 
     public function rules(): array
     {
-        $requirePhoneNumber = Arr::get($this->shop->settings, 'registration.require_phone_number', false);
-
         $rules = [
             'reference'                => [
                 'sometimes',
@@ -230,12 +229,16 @@ class StoreCustomer extends OrgAction
             'status'                   => ['sometimes', Rule::enum(CustomerStatusEnum::class)],
             'contact_name'             => ['nullable', 'string', 'max:255'],
             'company_name'             => ['nullable', 'string', 'max:255'],
-            'external_id'              => ['nullable', 'string', new IUnique(
-                table: 'customers',
-                extraConditions: [
-                    ['column' => 'shop_id', 'value' => $this->shop->id],
-                ]
-            )],
+            'external_id'              => [
+                'nullable',
+                'string',
+                new IUnique(
+                    table: 'customers',
+                    extraConditions: [
+                        ['column' => 'shop_id', 'value' => $this->shop->id],
+                    ]
+                )
+            ],
             'email'                    => [
                 'nullable',
                 $this->strict ? 'email' : 'string:500',
@@ -248,7 +251,7 @@ class StoreCustomer extends OrgAction
                 ),
             ],
             'phone'                    => [
-                $requirePhoneNumber ? 'required' : 'nullable',
+                'nullable',
                 'string:32'
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
