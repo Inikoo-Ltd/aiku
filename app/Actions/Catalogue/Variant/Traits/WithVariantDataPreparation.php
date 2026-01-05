@@ -87,17 +87,17 @@ trait WithVariantDataPreparation
             ->id;
 
         $this->department_id = $this->parent->masterDepartment
-            ? $this->parent->masterDepartment->productCategories
+            ? $this->parent->masterDepartment->productCategories()
                 ->where('shop_id', $this->shop->id)
-                ->firstOrFail()
-                ->id
+                ->first()
+                ?->id
             : null;
 
         $this->sub_department_id = $this->parent->masterSubDepartment
-            ? $this->parent->masterSubDepartment->productCategories
+            ? $this->parent->masterSubDepartment->productCategories()
                 ->where('shop_id', $this->shop->id)
-                ->firstOrFail()
-                ->id
+                ->first()
+                ?->id
             : null;
 
         $this->organisation_id = $this->shop->organisation_id;
