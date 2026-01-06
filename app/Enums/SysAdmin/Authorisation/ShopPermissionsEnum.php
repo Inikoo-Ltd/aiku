@@ -76,10 +76,7 @@ enum ShopPermissionsEnum: string
 
     private static function allowedForShop(Shop $shop): array
     {
-        return match ($shop->engine->value) {
-            ShopEngineEnum::FAIRE->value => self::permissionsForFaireShop(),
-            default => self::cases(),
-        };
+        return self::cases();
     }
 
     private static function permissionsForFaireShop(): array
@@ -91,12 +88,17 @@ enum ShopPermissionsEnum: string
             self::PRODUCTS_EDIT,
             self::PRODUCTS_VIEW,
 
+            self::ORDERS,
             self::ORDERS_VIEW,
             self::ORDERS_EDIT,
+
+            self::CRM,
             self::CRM_VIEW,
+            self::CRM_EDIT,
             self::CRM_PROSPECTS_VIEW,
 
             self::SUPERVISOR_PRODUCTS,
+            self::SUPERVISOR_ORDERS,
         ];
     }
 }
