@@ -100,16 +100,7 @@ trait WithLuigis
         if ($response->failed()) {
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
         }
-
-//        if ((isset($response['errors_count']) && $response['errors_count'] > 0)) {
-//            print('Found some errors: ');
-//            print_r($response->body());
-//        } else {
-//            print('Request to Luigi (' . $endPoint . ') finish. No errors found. ');
-//            print_r($response->body());
-//            print("\n");
-//            logger()->info($response->body());
-//        }
+        
     }
 
 

@@ -9,7 +9,6 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 

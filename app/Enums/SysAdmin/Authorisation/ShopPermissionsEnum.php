@@ -9,7 +9,6 @@
 namespace App\Enums\SysAdmin\Authorisation;
 
 use App\Models\Catalogue\Shop;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 enum ShopPermissionsEnum: string
 {
