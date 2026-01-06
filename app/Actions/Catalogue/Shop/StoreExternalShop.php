@@ -6,11 +6,10 @@
  *  Copyright (c) 2022, Raul A Perusquia F
  */
 
-namespace App\Actions\Catalogue\Shop\External;
+namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
-use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreShopRules;

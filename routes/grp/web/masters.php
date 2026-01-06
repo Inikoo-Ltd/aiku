@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -110,7 +111,7 @@ Route::name("master_shops")->prefix('master-shops')
 
             Route::prefix('/shop')->as('.shop')->group(function () {
                 Route::get('/create', CreateShopFromMaster::class)->name('.create');
-                Route::post('/store/{organisation}', [StoreShop::class, 'inMaster'])->name('.store');
+                Route::post('/store/{organisation}', [StoreShopFromMaster::class])->name('.store');
             });
 
 
