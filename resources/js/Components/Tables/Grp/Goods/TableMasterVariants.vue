@@ -67,8 +67,8 @@ const formatOptions = (value) => {
           <span class="font-semibold">{{ key }}</span>: [&nbsp;<span class="italic">{{ formatOptions(value) }}</span>&nbsp;]
         </div>
       </template> 
-      <template #cell(number_used_slots)="{ item }"> 
-        {{ trans(':_used_slot out of :_max_slot slots has been filled', {_used_slot: item.number_used_slots, _max_slot: String(Number(item.number_minions) + 1)}) }}
+      <template #cell(number_used_slots)="{ item }">
+        {{ trans(':_used_slot out of :_max_slot slots has been filled', {_used_slot: item.number_used_slots, _max_slot: item.number_max_slots}) }}
       </template> 
       <template #cell(number_used_slots_for_sale)="{ item }"> 
         {{ trans(':_used_slot products is set for sale', {_used_slot: item.number_used_slots_for_sale}) }}
