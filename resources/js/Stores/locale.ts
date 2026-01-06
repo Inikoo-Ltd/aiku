@@ -44,6 +44,14 @@ export const useLocaleStore = defineStore("locale", () => {
 		return formatter.format(num);
 	};
 
+	const numberShort = (number: number) => {
+		return new Intl.NumberFormat(locale_iso.value || language.value.code, {
+			notation: "compact",
+			compactDisplay: "short",
+			maximumFractionDigits: 1,
+		}).format(number)
+	}
+
 
 	const currencySymbol = (currencyCode: string) => {
 		if(!currencyCode) return '-'
@@ -72,5 +80,5 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	}
 
-	return { language, locale_iso, languageOptions, number, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
+	return { language, locale_iso, languageOptions, number, numberShort, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

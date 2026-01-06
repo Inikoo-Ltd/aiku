@@ -239,7 +239,7 @@ const getDeltaIndicator = (delta: number) => {
                         class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
                         <div class="text-xs font-semibold text-gray-700">
-                            {{ locale.number(year.total_invoices) }}
+                            {{ locale.numberShort(year.total_invoices) }}
                         </div>
                         <div
                             :class="getDeltaIndicator(year.invoices_delta).color"
@@ -296,7 +296,7 @@ const getDeltaIndicator = (delta: number) => {
                         class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
                         <div class="text-xs font-semibold text-gray-700">
-                            {{ locale.number(quarter.total_invoices) }}
+                            {{ locale.numberShort(quarter.total_invoices) }}
                         </div>
                         <div
                             :class="getDeltaIndicator(quarter.invoices_delta).color"
