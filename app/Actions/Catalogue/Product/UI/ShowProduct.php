@@ -306,7 +306,7 @@ class ShowProduct extends OrgAction
                         ]
                     ]
                 ];
-        } else if(!$product->is_minion_variant) {
+        } elseif (!$product->is_minion_variant) {
             $actions[] =
                 [
                     'type'  => 'button',

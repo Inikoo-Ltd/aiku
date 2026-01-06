@@ -50,7 +50,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
-        data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant['data'] );
+        data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant['data']);
 
         return $webBlock;
     }

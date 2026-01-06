@@ -99,7 +99,7 @@ class StoreProductFromMasterProduct extends GrpAction
                     $product->refresh();
 
                     // Don't create Webpage if it's marked as is_minion
-                    if(!$isMinion){
+                    if (!$isMinion) {
                         $webpage = StoreProductWebpage::run($product);
                         PublishWebpage::make()->action($webpage, [
                             'comment' => 'first publish'
