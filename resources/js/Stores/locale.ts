@@ -47,7 +47,7 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	const currencySymbol = (currencyCode: string) => {
 		if(!currencyCode) return '-'
-		
+
 		return new Intl.NumberFormat('en', {
 			style: 'currency',
 			currency: currencyCode,
@@ -63,11 +63,11 @@ export const useLocaleStore = defineStore("locale", () => {
 				style: "currency",
 				currency: currencyCode,
 			}).format(number);
-	
+
 			formattedNumber = formattedNumber.replace(/(\d)([KMGTPE])/g, (match, p1, p2) => {
-				return `${p1} ${p2.toLowerCase()}`;
+				return `${p1}${p2}`;
 			});
-	
+
 			return formattedNumber;
 
 	}

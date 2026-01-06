@@ -13,11 +13,15 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
@@ -43,21 +47,33 @@ class StoreShopFromMaster extends OrgAction
      */
     public function handle(Organisation $organisation, array $modelData): Shop
     {
-        data_set($modelData, 'master_shop_id', $this->masterShop->id);
-        data_set($modelData, 'type', $this->masterShop->type);
-        data_set($modelData, 'is_aiku', true);
+        return DB::transaction(function () use ($organisation, $modelData) {
 
+            data_set($modelData, 'is_aiku', true);
+            data_set($modelData, 'state', ShopStateEnum::OPEN);
 
-        $domain = Arr::pull($modelData, 'domain');
-        $shop = StoreShop::make()->action($organisation, $modelData);
+            $domain = Arr::pull($modelData, 'domain');
+            $shop = StoreShop::make()->action($organisation, $modelData);
 
-        StoreWebsite::make()->action($shop, ['domain' => $domain]);//todo check
+            StoreWebsite::make()->action($shop, [
+                'code' => $shop->code,
+                'name' => $shop->name,
+                'domain' => $domain,
+                'status' => true,
+                'state' => WebsiteStateEnum::LIVE
+            ]);
 
-        CloneCatalogueStructure::dispatch($this->masterShop, $shop);
+            CloneCatalogueStructure::dispatch($this->masterShop, $shop);
 
+            return $shop;
+        });
+    }
 
-        return $shop;
-
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $this->set('master_shop_id', $this->masterShop->id);
+        $this->set('type', $this->masterShop->type);
+        $this->set('timezone_id', $this->organisation->timezone_id);
     }
 
     public function rules(): array
