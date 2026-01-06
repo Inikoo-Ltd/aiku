@@ -25,23 +25,8 @@ class GetFaireProducts extends OrgAction
 
         foreach (Arr::get($products, 'products', []) as $product) {
             foreach ($product['variants'] as $variant) {
-                $masterAsset = MasterAsset::where('code', 'ILIKE', '%' . $variant['sku'] . '%')->first();
-
-                if (! $masterAsset) {
-                    continue;
-                }
-
                 if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
                     continue;
-                }
-
-                $tradeUnits = [];
-
-                foreach ($masterAsset->tradeUnits as $tradeUnit) {
-                    $tradeUnits[$tradeUnit->id] = [
-                        'id'       => $tradeUnit->id,
-                        'quantity' => $tradeUnit->pivot->quantity,
-                    ];
                 }
 
                 $product = StoreProduct::make()->action($shop, [
@@ -50,9 +35,7 @@ class GetFaireProducts extends OrgAction
                     'description' => $product['description'],
                     'rrp' => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
                     'price' => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
-                    'is_main' => true,
-                    'unit' => $masterAsset->unit,
-                    'trade_units' => $tradeUnits
+                    'is_main' => true
                 ]);
 
                 StoreHistoricAsset::run($product, []);
