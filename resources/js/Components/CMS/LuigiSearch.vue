@@ -70,14 +70,25 @@ const LBInitAutocompleteNew = async () => {
                     defaultFilters: {
                         availability: 1,  // Filter out of stock products
                     },
+                    recommend: {
+                        heroName: trans('Top product'),
+                        name: trans('Top products'),
+                    }
                 },
                 {
-                    name: trans("Queries"),
                     type: "query",
+                    name: trans("Queries"),
+                    recommend: {
+                        name: trans('Top searches'),
+                        size: 2,
+                    }
                 },
                 {
-                    name: trans("Categories"),
                     type: "category",
+                    name: trans("Categories"),
+                    recommend: {
+                        name: trans('Top categories'),
+                    }
                 },
                 {
                     name: trans("Articles"),
