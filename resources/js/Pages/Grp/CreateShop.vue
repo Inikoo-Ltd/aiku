@@ -105,7 +105,7 @@ const onSelectSubmitChange = (value) => {
     ButtonActive.value = value
 }
 
-const baseEngineOpts = props.formData.blueprint[0].fields.engine.options;
+const baseEngineOpts = props.formData.blueprint[0].fields?.engine?.options;
 
 watch(form, () => {
     if (form.type.toLowerCase() === 'external') {
@@ -167,7 +167,7 @@ watch(form, () => {
                             leave-to-class="transform scale-95 opacity-0">
                             <MenuItems
                                 class="absolute z-50 right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/10 focus:outline-none"
-                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'"    
+                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'"
                             >
                                 <div class="px-1 py-1">
                                     <div v-for="(item, index) in formData.route">
@@ -257,7 +257,7 @@ watch(form, () => {
                                                 class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
                                         </div>
                                     </dt>
-                                    
+
                                     <!-- Field (Full: to full the component field i.e create Prospects Mailshot) -->
                                     <dd :class="fieldData.full ? 'sm:col-span-3' : 'sm:col-span-2'">
                                         <div class="mt-1 flex text-sm text-gray-700 sm:mt-0">

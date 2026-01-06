@@ -58,7 +58,8 @@ trait WithStoreShopRules
             'warehouses'               => ['sometimes', 'array'],
             'warehouses.*'             => [Rule::Exists('warehouses', 'id')->where('organisation_id', $this->organisation->id)],
             'address'                  => ['sometimes', 'required', new ValidAddress()],
-            'engine'                   => ['sometimes', Rule::enum(ShopEngineEnum::class)]
+            'engine'                   => ['sometimes', Rule::enum(ShopEngineEnum::class)],
+            'domain'                   => ['sometimes', 'string']
 
         ];
 

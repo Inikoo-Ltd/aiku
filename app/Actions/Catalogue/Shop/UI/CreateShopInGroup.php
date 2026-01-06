@@ -92,26 +92,12 @@ class CreateShopInGroup extends GrpAction
                                     'required' => true,
                                     'value'    => '',
                                 ],
-                                'type' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Type'),
-                                    'placeholder' => __('Select one option'),
-                                    'options'     => Options::forEnum(ShopTypeEnum::class),
-                                    'required'    => true,
-                                    'mode'        => 'single',
-                                    'searchable'  => true,
-                                    'key'         => 'shop_type_select',
-                                ],
-                                'engine' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Engine'),
-                                    'placeholder' => __('Select one option'),
-                                    'options'     => Options::forEnum(ShopEngineEnum::class),
-                                    'required'    => true,
-                                    'value'       => ShopEngineEnum::AIKU,
-                                    'mode'        => 'single',
-                                    'searchable'  => true,
-                                    'key'         => 'engine_type_select',
+                                'domain' => [
+                                    'type'     => 'input',
+                                    'label'    => __('Domain'),
+                                    'required' => true,
+                                    'value'    => '',
+                                    'placeholder' => 'myshop.com'
                                 ],
                             ]
                         ],
@@ -125,6 +111,7 @@ class CreateShopInGroup extends GrpAction
                                     'placeholder' => __('Select a country'),
                                     'options'     => GetCountriesOptions::run(),
                                     'required'    => true,
+                                    'searchable'  => true,
                                     'mode'        => 'single'
                                 ],
                                 'language_id' => [
@@ -133,6 +120,7 @@ class CreateShopInGroup extends GrpAction
                                     'placeholder' => __('Select a language'),
                                     'options'     => GetLanguagesOptions::make()->all(),
                                     'required'    => true,
+                                    'searchable'  => true,
                                     'mode'        => 'single'
                                 ],
                                 'currency_id' => [
@@ -141,17 +129,9 @@ class CreateShopInGroup extends GrpAction
                                     'placeholder' => __('Select a currency'),
                                     'options'     => GetCurrenciesOptions::run(),
                                     'required'    => true,
+                                    'searchable'  => true,
                                     'mode'        => 'single'
                                 ],
-                                'timezone_id' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Timezone'),
-                                    'placeholder' => __('Select a timezone'),
-                                    'options'     => GetTimeZonesOptions::run(),
-                                    'required'    => true,
-                                    'mode'        => 'single'
-                                ],
-
                             ]
                         ],
                         [
