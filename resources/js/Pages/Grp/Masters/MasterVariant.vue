@@ -12,6 +12,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage } from "@far"
 import MasterVariantShowcase from "@/Components/Showcases/Grp/MasterVariantShowcase.vue"
 import { useTabChange } from "@/Composables/tab-change"
+import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
+import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
 
 library.add(faImage)
 
@@ -49,16 +51,19 @@ const props = defineProps<{
         navigation: {}
     }
     showcase?: {}
+    variants?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
 console.log(currentTab.value);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug) => {useTabChange(tabSlug, currentTab); console.log(tabSlug)}
 
 
 const component = computed(() => {
     const components: Record<string, any> ={
         showcase: MasterVariantShowcase,
+        products: TableMasterProducts,
+        variants: TableVariants,
     }
     return components[currentTab.value]
 })

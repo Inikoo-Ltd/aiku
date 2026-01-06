@@ -9,10 +9,13 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Variant\IndexVariantInMasterVariant;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterVariant;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterVariantTabsEnum;
+use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\Masters\MasterProductVariantResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -82,7 +85,6 @@ class ShowMasterVariant extends GrpAction
     public function handle(MasterVariant $masterVariant): Response
     {
         $masterProductInVariant = MasterProductVariantResource::collection(MasterAsset::whereIn('id', data_get($masterVariant->data, 'products.*.product.id', []))->get());
-
         return Inertia::render(
             'Masters/MasterVariant',
             [
@@ -122,8 +124,15 @@ class ShowMasterVariant extends GrpAction
                         'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant,
                     ]),
+                // MasterVariantTabsEnum::PRODUCTS->value => 
+                //     $this->tab === MasterVariantTabsEnum::PRODUCTS->value ? IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value)
+                //     : Inertia::lazy(fn () => IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value)),
+                MasterVariantTabsEnum::VARIANTS->value => 
+                    $this->tab === MasterVariantTabsEnum::VARIANTS->value ? VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))
+                    : Inertia::lazy(fn () => VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))),
             ]
-        );
+        )
+        ->table(IndexVariantInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::VARIANTS->value));
     }
 
 
