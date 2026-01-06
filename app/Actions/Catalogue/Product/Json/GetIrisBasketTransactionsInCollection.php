@@ -49,9 +49,6 @@ class GetIrisBasketTransactionsInCollection extends IrisAction
                 'quantity_ordered_new' => 0
             ];
         }
-        ds($basket);
-        ds($productsData);
-
         return $productsData;
     }
 
