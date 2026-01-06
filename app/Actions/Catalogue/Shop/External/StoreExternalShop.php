@@ -137,6 +137,10 @@ class StoreExternalShop extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('engine', $request->route()->parameter('engine'));
+        $this->set('country_id', $this->organisation->country_id);
+        $this->set('currency_id', $this->organisation->currency_id);
+        $this->set('language_id', $this->organisation->language_id);
+        $this->set('timezone_id', $this->organisation->timezone_id);
     }
 
     /**
