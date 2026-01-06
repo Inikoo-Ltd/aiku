@@ -78,7 +78,7 @@ class IndexProductsInVariant extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(Variant $variant, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {

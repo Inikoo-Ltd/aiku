@@ -36,6 +36,13 @@ class IndexMasterProductsInMasterVariant extends OrgAction
         $queryBuilder = QueryBuilder::for(MasterAsset::class);
         $queryBuilder->where('master_variant_id', $masterVariant->id);
         $queryBuilder->leftJoin('master_variants', 'master_variants.id', 'master_assets.master_variant_id');
+        $queryBuilder->leftJoin(
+                'master_asset_stats',
+                'master_assets.id',
+                '=',
+                'master_asset_stats.master_asset_id'
+        );
+
 
 
         $queryBuilder
@@ -51,7 +58,11 @@ class IndexMasterProductsInMasterVariant extends OrgAction
                 'master_assets.slug',
                 'master_assets.web_images',
                 'master_assets.is_variant_leader',
-                'master_variants.slug as variant_slug'
+                'master_variants.slug as variant_slug',
+                'master_assets.unit',
+                'master_assets.units',
+
+                'master_asset_stats.number_current_assets as used_in',
             ]);
 
         return $queryBuilder->allowedSorts(['code', 'name'])
@@ -60,7 +71,7 @@ class IndexMasterProductsInMasterVariant extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(MasterVariant $masterVariant,$prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
@@ -76,9 +87,15 @@ class IndexMasterProductsInMasterVariant extends OrgAction
                         'title' => __("There is no master products"),
                     ]
                 );
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'is_variant_leader', label: ['fal', 'fa-star-half-alt'], type: 'icon')
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+         $table
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+          $table
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), canBeHidden: false, sortable: true, searchable: true)
+                ->defaultSort('code');
         };
     }
 }
