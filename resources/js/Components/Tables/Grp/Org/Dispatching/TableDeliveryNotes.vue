@@ -248,7 +248,7 @@ const generateRouteDeliveryNote = (id: string) => {
 					:title="deliveryNote.shipping_data?.[0]?.shipper_label"
 					v-tooltip="deliveryNote.shipping_data?.[0]?.shipper_label"
 				/>
-				<div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
+				<div class="group w-fit whitespace-nowrap max-w-96 truncate group-hover:max-w-max">
 					<template v-if="deliveryNote.shipping_data?.[0].trackings?.[0]">
 						{{ deliveryNote.shipping_data?.[0].shipper_slug }}:
 						<a
