@@ -48,6 +48,11 @@ class FixAuroraOffersStatus
                 $auroraStatus               = $auroraDealData->{'Deal Status'};
                 $expirationAuroraParsedDate = null;
                 $expirationAuroraDate       = $auroraDealData->{'Deal Expiration Date'};
+
+                if($expirationAuroraDate == '0000-00-00 00:00:00'){
+                    $expirationAuroraDate = null;
+                }
+
                 if ($expirationAuroraDate) {
                     $expirationAuroraParsedDate = Carbon::parse($auroraDealData->{'Deal Expiration Date'});
                 }
