@@ -148,7 +148,7 @@ class MasterVariant extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterVariantTimeSeries::class);
     }
 
-    public function allProduct(): \Illuminate\Database\Eloquent\Collection
+    public function allProduct(): HasMany
     {
         return $this->hasMany(MasterAsset::class, 'master_variant_id');
     }
@@ -158,7 +158,7 @@ class MasterVariant extends Model implements Auditable, HasMedia
         return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
     }
 
-    public function minionProduct(): \Illuminate\Database\Eloquent\Collection
+    public function minionProduct(): HasMany
     {        
         return $this->hasMany(MasterAsset::class, 'master_variant_id')
             ->where('is_variant_leader', false);
