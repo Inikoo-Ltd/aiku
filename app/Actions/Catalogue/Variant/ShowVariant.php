@@ -88,14 +88,14 @@ class ShowVariant extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => VariantTabsEnum::navigation()
                 ],
-                'masterRoute'        => [
+                /* 'masterRoute'        => [
                     'name'      => 'grp.masters.master_shops.show.master_families.master_variants.show',
                     'parameters' => [
                         'masterShop'      => $variant->masterVariant->masterShop->slug,
                         'masterFamily'    => $variant->masterVariant->masterFamily->slug,
                         'masterVariant'   => $variant->masterVariant->slug,
                     ],
-                ],
+                ], */
                 VariantTabsEnum::SHOWCASE->value =>
                     $this->tab === VariantTabsEnum::SHOWCASE->value ? $variantData : Inertia::lazy(fn () => $variantData),
             ]
