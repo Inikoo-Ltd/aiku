@@ -21,14 +21,13 @@ trait WithStoreShopRules
     {
         $rules = [
             'registration_needs_approval' => ['sometimes', 'boolean'],
-            'master_shop_id' => [
+            'master_shop_id'              => [
                 'sometimes',
                 'nullable',
                 Rule::Exists('master_shops', 'id')->where('group_id', $this->organisation->group_id)
 
             ],
-
-            'code'                     => [
+            'code'                        => [
                 'required',
                 'max:8',
                 'alpha_dash',
@@ -41,25 +40,26 @@ trait WithStoreShopRules
 
 
             ],
-            'name'                     => ['required', 'string', 'max:255'],
-            'contact_name'             => ['nullable', 'string', 'max:255'],
-            'company_name'             => ['nullable', 'string', 'max:255'],
-            'email'                    => ['nullable', 'email'],
-            'phone'                    => 'nullable',
-            'identity_document_number' => ['nullable', 'string'],
-            'identity_document_type'   => ['nullable', 'string'],
-            'state'                    => ['sometimes', 'required', Rule::enum(ShopStateEnum::class)],
-            'type'                     => ['required', Rule::enum(ShopTypeEnum::class)],
-            'country_id'               => ['required', 'exists:countries,id'],
-            'currency_id'              => ['required', 'exists:currencies,id'],
-            'language_id'              => ['required', 'exists:languages,id'],
-            'timezone_id'              => ['required', 'exists:timezones,id'],
-            'settings'                 => ['sometimes', 'array'],
-            'warehouses'               => ['sometimes', 'array'],
-            'warehouses.*'             => [Rule::Exists('warehouses', 'id')->where('organisation_id', $this->organisation->id)],
-            'address'                  => ['sometimes', 'required', new ValidAddress()],
-            'engine'                   => ['sometimes', Rule::enum(ShopEngineEnum::class)],
-            'domain'                   => ['sometimes', 'string']
+            'name'                        => ['required', 'string', 'max:255'],
+            'contact_name'                => ['nullable', 'string', 'max:255'],
+            'company_name'                => ['nullable', 'string', 'max:255'],
+            'email'                       => ['nullable', 'email'],
+            'phone'                       => 'nullable',
+            'identity_document_number'    => ['nullable', 'string'],
+            'identity_document_type'      => ['nullable', 'string'],
+            'state'                       => ['sometimes', 'required', Rule::enum(ShopStateEnum::class)],
+            'type'                        => ['required', Rule::enum(ShopTypeEnum::class)],
+            'country_id'                  => ['required', 'exists:countries,id'],
+            'currency_id'                 => ['required', 'exists:currencies,id'],
+            'language_id'                 => ['required', 'exists:languages,id'],
+            'timezone_id'                 => ['required', 'exists:timezones,id'],
+            'settings'                    => ['sometimes', 'array'],
+            'warehouses'                  => ['sometimes', 'array'],
+            'warehouses.*'                => [Rule::Exists('warehouses', 'id')->where('organisation_id', $this->organisation->id)],
+            'address'                     => ['sometimes', 'required', new ValidAddress()],
+            'engine'                      => ['sometimes', Rule::enum(ShopEngineEnum::class)],
+            'is_aiku'                     => ['sometimes', 'boolean']
+
 
         ];
 

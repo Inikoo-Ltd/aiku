@@ -8,17 +8,17 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-
+use App\Actions\Catalogue\CloneCatalogueStructure;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\Web\Website\StoreWebsite;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
@@ -45,21 +45,31 @@ class StoreShopFromMaster extends OrgAction
     {
         data_set($modelData, 'master_shop_id', $this->masterShop->id);
         data_set($modelData, 'type', $this->masterShop->type);
+        data_set($modelData, 'is_aiku', true);
 
-        return StoreShop::make()->action($organisation, $modelData);
+
+        $domain = Arr::pull($modelData, 'domain');
+        $shop = StoreShop::make()->action($organisation, $modelData);
+
+        StoreWebsite::make()->action($shop, ['domain' => $domain]);//todo check
+
+        CloneCatalogueStructure::dispatch($this->masterShop, $shop);
+
+
+        return $shop;
+
     }
 
     public function rules(): array
     {
-        return $this->getStoreShopRules();
+        $rules = $this->getStoreShopRules();
+
+        $rules['domain'] = ['required', 'string'];
+
+        return $rules;
+
     }
 
-    public function afterValidator(Validator $validator): void
-    {
-        if ($this->get('type') == ShopTypeEnum::FULFILMENT->value && !$this->get('warehouses')) {
-            $validator->errors()->add('warehouses', 'warehouse required');
-        }
-    }
 
     /**
      * @throws Throwable
@@ -74,6 +84,9 @@ class StoreShopFromMaster extends OrgAction
 
     public function htmlResponse(Shop $shop): RedirectResponse
     {
-        return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug]);
+        return Redirect::route('grp.org.shops.show.catalogue.dashboard', [
+            $this->organisation->slug,
+            $shop->slug
+        ]);
     }
 }

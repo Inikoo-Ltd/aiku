@@ -13,15 +13,11 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
-use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\GrpAction;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 
 class CreateShopFromMaster extends GrpAction
@@ -46,7 +42,7 @@ class CreateShopFromMaster extends GrpAction
         return Inertia::render(
             'CreateShop',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('New shop in master').' '.$this->masterShop->code,
                 'pageHead'    => [
                     'title'   => __('New shop in master').' '.$this->masterShop->name,
@@ -97,7 +93,7 @@ class CreateShopFromMaster extends GrpAction
                                     'label'    => __('Domain'),
                                     'required' => true,
                                     'value'    => '',
-                                    'placeholder' => 'myshop.com'
+                                    'placeholder' => 'my-shop.com'
                                 ],
                             ]
                         ],
@@ -176,7 +172,7 @@ class CreateShopFromMaster extends GrpAction
         );
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(): array
     {
         return array_merge(
             ShowMasterShop::make()->getBreadcrumbs($this->masterShop),
