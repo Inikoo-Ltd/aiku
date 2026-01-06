@@ -111,9 +111,8 @@ Route::name("master_shops")->prefix('master-shops')
 
             Route::prefix('/shop')->as('.shop')->group(function () {
                 Route::get('/create', CreateShopFromMaster::class)->name('.create');
-                Route::post('/store/{organisation}', [StoreShopFromMaster::class])->name('.store');
+                Route::post('/store/{organisation}', StoreShopFromMaster::class)->name('.store');
             });
-
 
             Route::prefix('master-departments')->as('.master_departments.')->group(function () {
                 Route::get('', IndexMasterDepartments::class)->name('index');
