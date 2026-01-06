@@ -150,9 +150,7 @@ class MasterVariant extends Model implements Auditable, HasMedia
 
     public function allProduct(): \Illuminate\Database\Eloquent\Collection
     {
-        $key = collect(data_get($this->data, 'products'))->keys();
-
-        return MasterAsset::whereIn('id', $key)->get();
+        return $this->hasMany(MasterAsset::class, 'master_variant_id');
     }
 
     public function leaderProduct(): HasOne
@@ -161,10 +159,9 @@ class MasterVariant extends Model implements Auditable, HasMedia
     }
 
     public function minionProduct(): \Illuminate\Database\Eloquent\Collection
-    {
-        $key = collect(data_get($this->data, 'products'))->where('is_leader', false)->keys();
-
-        return MasterAsset::whereIn('id', $key)->get();
+    {        
+        return $this->hasMany(MasterAsset::class, 'master_variant_id')
+            ->where('is_variant_leader', false);
     }
 
     public function variants(): HasMany
