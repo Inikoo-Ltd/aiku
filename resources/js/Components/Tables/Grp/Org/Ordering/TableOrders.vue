@@ -21,6 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 
 library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
 
@@ -213,8 +214,8 @@ const generateRouteDeliveryNote = (id: string) => {
                 {{ trans("For Collection") }}
             </div>
             
-            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 group pr-2 py-1.5">
-                <div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
+            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex gap-2 pr-2 py-1.5">
+                <div v-tooltip="order.shipping_data?.[0].trackings?.[0]" class="group w-fit whitespace-nowrap max-w-96 truncate">
                     <!-- Delivery Note -->
                     <template v-if="order.shipping_data?.[0].delivery_note_reference">
                         <Link
@@ -236,7 +237,7 @@ const generateRouteDeliveryNote = (id: string) => {
                                         : null
                                 "
                                 :alt="order.shipping_data?.[0].shipper_label"
-                                class="ml-1 h-4 w-4 object-contain inline-block"
+                                class="ml-1 h-5 w-5 object-contain inline-block"
                                 :title="order.shipping_data?.[0].shipper_label"
                                 v-tooltip="order.shipping_data?.[0].shipper_label"
                             />
@@ -257,6 +258,10 @@ const generateRouteDeliveryNote = (id: string) => {
                         </span>
                     </template>
                 </div>
+                <CopyButton
+                    v-if="order.shipping_data?.[0].trackings?.[0]"
+                    :text="order.shipping_data?.[0].trackings?.[0]"
+                />
             </div>
             <div v-else>
 

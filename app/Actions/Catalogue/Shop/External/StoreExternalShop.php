@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\External;
 
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
@@ -79,6 +80,10 @@ class StoreExternalShop extends OrgAction
                 ]);
             }
 
+            if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+                GetFaireProducts::dispatch($shop);
+            }
+
             return $shop;
         });
     }
@@ -137,6 +142,10 @@ class StoreExternalShop extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('engine', $request->route()->parameter('engine'));
+        $this->set('country_id', $this->organisation->country_id);
+        $this->set('currency_id', $this->organisation->currency_id);
+        $this->set('language_id', $this->organisation->language_id);
+        $this->set('timezone_id', $this->organisation->timezone_id);
     }
 
     /**

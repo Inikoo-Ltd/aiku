@@ -87,7 +87,12 @@ enum ShopPermissionsEnum: string
         return [
             self::SHOP_ADMIN,
 
+            self::PRODUCTS,
+            self::PRODUCTS_EDIT,
+            self::PRODUCTS_VIEW,
+
             self::ORDERS_VIEW,
+            self::ORDERS_EDIT,
             self::CRM_VIEW,
             self::CRM_PROSPECTS_VIEW,
 

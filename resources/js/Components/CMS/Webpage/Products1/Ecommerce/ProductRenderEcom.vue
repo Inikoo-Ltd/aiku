@@ -106,7 +106,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width aria-hidden="true" />
                 </slot>
 
-                <template v-if="layout?.iris?.is_logged_in">
+                <template v-if="layout?.iris?.is_logged_in && basketButton">
                     <div v-if="isLoadingFavourite" class="absolute bottom-2 left-2 text-gray-500 text-xl z-10">
                         <LoadingIcon />
                     </div>
@@ -136,7 +136,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" 
                         :buttonStyle="buttonStyle" 
                     />
-                    <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
+                    <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
