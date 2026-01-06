@@ -91,8 +91,10 @@ enum ShopPermissionsEnum: string
             self::PRODUCTS_EDIT,
             self::PRODUCTS_VIEW,
 
+            self::ORDERS,
             self::ORDERS_VIEW,
             self::ORDERS_EDIT,
+
             self::CRM_VIEW,
             self::CRM_PROSPECTS_VIEW,
 
