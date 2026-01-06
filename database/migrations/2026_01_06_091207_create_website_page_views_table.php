@@ -2,7 +2,7 @@
 
 /*
  * Author: stewicca <stewicalf@gmail.com>
- * Copyright (c) 2025, Steven Wicca Alfredo
+ * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
