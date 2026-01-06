@@ -130,7 +130,7 @@ class ShowMailshot extends OrgAction
                         )
                     )),
                     'sendMailshotRoute' => [
-                        'name' => 'grp.models.shop.outboxes.mailshot.send',
+                        'name' => 'grp.models.shop.outboxes.newsletter.send',
                         'parameters' => [
                             'shop' => $this->shop->id,
                             'outbox' => $mailshot->outbox->id,
