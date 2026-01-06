@@ -13,7 +13,9 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
@@ -48,6 +50,7 @@ class StoreShopFromMaster extends OrgAction
         return DB::transaction(function () use ($organisation, $modelData) {
 
             data_set($modelData, 'is_aiku', true);
+            data_set($modelData, 'state', ShopStateEnum::OPEN);
 
             $domain = Arr::pull($modelData, 'domain');
             $shop = StoreShop::make()->action($organisation, $modelData);
@@ -57,7 +60,7 @@ class StoreShopFromMaster extends OrgAction
                 'name' => $shop->name,
                 'domain' => $domain,
                 'status' => true,
-                'state' => WebpageStateEnum::LIVE
+                'state' => WebsiteStateEnum::LIVE
             ]);
 
             CloneCatalogueStructure::dispatch($this->masterShop, $shop);
