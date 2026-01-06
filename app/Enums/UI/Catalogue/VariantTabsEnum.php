@@ -18,6 +18,7 @@ enum VariantTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case PRODUCTS = 'products';
 
     public function blueprint(): array
     {
@@ -25,6 +26,10 @@ enum VariantTabsEnum: string
             VariantTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            VariantTabsEnum::PRODUCTS => [
+                'title' => __('Products'),
+                'icon'  => 'fal fa-cube',
             ],
         };
     }

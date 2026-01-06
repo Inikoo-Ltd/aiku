@@ -174,12 +174,12 @@ class IndexProductsInProductCategory extends OrgAction
                     ]
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'code',label: __('Code'),canBeHidden: false,sortable: true,searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
-                if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
-                    $table->column( key: 'variant_slug',label: __('Variant'),canBeHidden: false, searchable: true);
-                }
-                 $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+            if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
+                $table->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, searchable: true);
+            }
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

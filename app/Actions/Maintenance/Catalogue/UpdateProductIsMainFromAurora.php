@@ -57,9 +57,19 @@ class UpdateProductIsMainFromAurora
                 $product = Product::find($productData->id);
                 if ($product) {
                     UpdateProduct::make()->action($product, [
+                        'is_minion_variant' => true,
                         'is_main' => false,
                         'is_for_sale' => false,
                     ]);
+
+
+                    $masterProduct = $product->masterProduct;
+                    if ($masterProduct) {
+                        $masterProduct->update([
+                            'is_minion_variant' => true
+                        ]);
+                    }
+
                 }
             }
             $progressBar->advance();

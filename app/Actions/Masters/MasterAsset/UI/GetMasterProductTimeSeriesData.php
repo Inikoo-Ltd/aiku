@@ -9,7 +9,6 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Traits\WithTimeSeriesData;
 use App\Models\Masters\MasterAsset;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetMasterProductTimeSeriesData
@@ -31,30 +30,14 @@ class GetMasterProductTimeSeriesData
 
         $totalSalesData = $this->getTotalSalesData($masterAsset);
 
-        $customerMetrics = $this->getCustomerMetrics($masterAsset, function ($masterAsset) {
-            $productIds = $masterAsset->products()->pluck('id')->toArray();
-
-            if (empty($productIds)) {
-                return 0;
-            }
-
-            return DB::table('invoice_transactions')
-                ->join('invoices', 'invoice_transactions.invoice_id', '=', 'invoices.id')
-                ->where('invoice_transactions.model_type', 'Product')
-                ->whereIn('invoice_transactions.model_id', $productIds)
-                ->where('invoices.in_process', false)
-                ->select('invoices.customer_id')
-                ->groupBy('invoices.customer_id')
-                ->havingRaw('COUNT(DISTINCT invoices.id) > 1')
-                ->get()
-                ->count();
-        });
+        // Get total customers from time series (customers_invoiced)
+        $totalCustomers = $this->getTotalCustomersFromTimeSeries($masterAsset, $timeSeriesRecordsTable);
 
         return [
             'all_sales_since' => $totalSalesData['all_sales_since'],
             'total_sales' => $totalSalesData['total_sales'],
             'total_invoices' => $totalSalesData['total_invoices'],
-            'customer_metrics' => $customerMetrics,
+            'total_customers' => $totalCustomers,
             'yearly_sales' => $yearlySales,
             'quarterly_sales' => $quarterlySales,
             'currency' => $currency,

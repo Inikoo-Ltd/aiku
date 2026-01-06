@@ -28,11 +28,11 @@ if (!function_exists('getFieldWebpageData')) {
     }
 }
 
-if(!function_exists('splitAlphaNumeric')) {
+if (!function_exists('splitAlphaNumeric')) {
     function splitAlphaNumeric(string $text): array
     {
         preg_match('/^([a-zA-Z]+).*?(\d+)/', $text, $matches);
-    
+
         return [
             'prefix' => $matches[1] ?? '',
             'number' => isset($matches[2]) ? (int) $matches[2] : 0,
@@ -40,7 +40,7 @@ if(!function_exists('splitAlphaNumeric')) {
     }
 }
 
-if(!function_exists('hslToHex')) {
+if (!function_exists('hslToHex')) {
     function hslToHex(float $h, float $s, float $l): string
     {
         $s /= 100;
@@ -73,7 +73,7 @@ if(!function_exists('hslToHex')) {
 }
 
 
-if(!function_exists('productCodeToHexCode')) {
+if (!function_exists('productCodeToHexCode')) {
     function productCodeToHexCode(string $code): string
     {
         ['prefix' => $prefix, 'number' => $num] = splitAlphaNumeric($code);
