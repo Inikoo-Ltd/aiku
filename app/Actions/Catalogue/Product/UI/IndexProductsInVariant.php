@@ -22,7 +22,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexProductsInVariant extends OrgAction
 {
-
     public function handle(Variant $variant, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -78,7 +77,7 @@ class IndexProductsInVariant extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(Variant $variant, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {

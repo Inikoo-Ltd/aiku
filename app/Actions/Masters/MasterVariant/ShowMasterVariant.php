@@ -24,6 +24,7 @@ use App\Models\Masters\MasterVariant;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Masters\MasterProductsResource;
 
 class ShowMasterVariant extends GrpAction
 {
@@ -124,15 +125,16 @@ class ShowMasterVariant extends GrpAction
                         'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant,
                     ]),
-                // MasterVariantTabsEnum::PRODUCTS->value => 
-                //     $this->tab === MasterVariantTabsEnum::PRODUCTS->value ? IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value)
-                //     : Inertia::lazy(fn () => IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value)),
-                MasterVariantTabsEnum::VARIANTS->value => 
+                MasterVariantTabsEnum::PRODUCTS->value =>
+                    $this->tab === MasterVariantTabsEnum::PRODUCTS->value ? MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))),
+                MasterVariantTabsEnum::VARIANTS->value =>
                     $this->tab === MasterVariantTabsEnum::VARIANTS->value ? VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))
                     : Inertia::lazy(fn () => VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))),
             ]
         )
-        ->table(IndexVariantInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::VARIANTS->value));
+        ->table(IndexVariantInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::VARIANTS->value))
+        ->table(IndexMasterProductsInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::PRODUCTS->value));
     }
 
 

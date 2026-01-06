@@ -13,23 +13,23 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @property int $id
  * @property int $website_time_series_id
- * @property int $visitors
- * @property int $sessions
- * @property int $page_views
- * @property int $avg_session_duration
- * @property numeric $bounce_rate
- * @property numeric $pages_per_session
- * @property int $new_visitors
- * @property int $returning_visitors
- * @property int $visitors_desktop
- * @property int $visitors_mobile
- * @property int $visitors_tablet
+ * @property string $frequency
+ * @property int|null $visitors
+ * @property int|null $sessions
+ * @property int|null $page_views
+ * @property int|null $avg_session_duration
+ * @property numeric|null $bounce_rate
+ * @property numeric|null $pages_per_session
+ * @property int|null $new_visitors
+ * @property int|null $returning_visitors
+ * @property int|null $visitors_desktop
+ * @property int|null $visitors_mobile
+ * @property int|null $visitors_tablet
  * @property \Illuminate\Support\Carbon|null $from
  * @property \Illuminate\Support\Carbon|null $to
+ * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $period
- * @property string $frequency
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeriesRecord query()

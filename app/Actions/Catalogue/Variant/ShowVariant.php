@@ -101,10 +101,11 @@ class ShowVariant extends OrgAction
                 'variantSlugs'   => [$variant->slug => productCodeToHexCode($variant->slug)],
                 VariantTabsEnum::SHOWCASE->value =>
                     $this->tab === VariantTabsEnum::SHOWCASE->value ? $variantData : Inertia::lazy(fn () => $variantData),
-                // VariantTabsEnum::PRODUCTS->value => 
-                //     $this->tab === VariantTabsEnum::PRODUCTS->value ? ProductsResource::collection(IndexProductsInVariant::run($variant)) : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInVariant::run($variant))),
+                VariantTabsEnum::PRODUCTS->value =>
+                    $this->tab === VariantTabsEnum::PRODUCTS->value ? ProductsResource::collection(IndexProductsInVariant::run($variant)) : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInVariant::run($variant))),
             ]
-        );
+        )
+                ->table(IndexProductsInVariant::make()->tableStructure(variant:$variant, prefix: VariantTabsEnum::PRODUCTS->value));
     }
 
     /**

@@ -6,6 +6,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 
 import { capitalize } from "@/Composables/capitalize"
 import { useLayoutStore } from "@/Stores/layout"
+import TableProductsInVariant from "@/Components/Tables/Grp/Goods/TableProductsInVariant.vue"
 
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -52,6 +53,7 @@ const props = defineProps<{
     }
     showcase?: {}
     variants?: {}
+    products?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
