@@ -128,7 +128,7 @@ const navigateTo = () => {
             </div>
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
                 <!-- Sales Analytics Compact -->
-                <SalesAnalyticsCompact v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0" :salesData="salesData" />
+                <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
 
                 <!-- Review Content -->
                 <ReviewContent v-if="!isMaster" :data="data.family.data"  />

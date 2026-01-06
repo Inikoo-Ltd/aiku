@@ -176,7 +176,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
       </div>
 
       <!-- Sales Analytics - right sidebar -->
-      <div v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0">
+      <div v-if="salesData">
         <SalesAnalyticsCompact :salesData="salesData" />
       </div>
     </div>
