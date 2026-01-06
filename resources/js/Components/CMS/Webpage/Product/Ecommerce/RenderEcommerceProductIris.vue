@@ -131,6 +131,7 @@ const onAddBackInStock = (productData: ProductResource) => {
             },
             onSuccess: () => {
                 set(product.value, "is_back_in_stock", true)
+                set(customerData.value, "back_in_stock", true)
                 layout.reload_handle()
             },
             onError: errors => {
@@ -161,6 +162,7 @@ const onUnselectBackInStock = (productData: ProductResource) => {
             },
             onSuccess: () => {
                 set(product.value, "is_back_in_stock", false)
+                set(customerData.value, "back_in_stock", false)
                 layout.reload_handle()
             },
             onError: errors => {

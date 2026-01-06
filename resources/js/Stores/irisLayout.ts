@@ -67,7 +67,7 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 	const currentRoute = ref<string | undefined>("iris.login") // Define value to avoid route null at the first load
 	const currentParams = ref<{ [key: string]: string }>({})
 	const currentQuery = ref<{ [key: string]: string }>({})
-
+	const outboxes = ref(null)
 	const isSidebarLoaded = ref(false)
 
 	return {
@@ -80,6 +80,7 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 		iris_variables,
 		offer_meters,
 		iris,
-		isSidebarLoaded
+		isSidebarLoaded,
+		outboxes
 	}
 })
