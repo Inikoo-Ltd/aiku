@@ -19,14 +19,8 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Helpers\Country;
-use App\Models\Helpers\Currency;
-use App\Models\Helpers\Language;
-use App\Models\Helpers\Timezone;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
-use Exception;
-use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -79,7 +73,7 @@ class StoreExternalShop extends OrgAction
                 ]);
             }
 
-            if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+            if ($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
                 GetFaireProducts::dispatch($shop);
             }
 
@@ -159,7 +153,7 @@ class StoreExternalShop extends OrgAction
 
     public function htmlResponse(Shop $shop): RedirectResponse
     {
-        if($redirectUri = Arr::get($shop->settings, 'shopify.auth_url')) {
+        if ($redirectUri = Arr::get($shop->settings, 'shopify.auth_url')) {
             request()->session()->flash('redirect', [
                 'url'  => $redirectUri,
                 'target'  => '_blank',

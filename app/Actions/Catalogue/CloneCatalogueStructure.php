@@ -19,7 +19,7 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Maintenance\Masters\AddMissingFamiliesToMaster;
 use App\Actions\Maintenance\Masters\AddMissingMasterAssetsFromSeederShops;
-use App\Actions\Maintenance\Masters\AddMissingProductsFromMaster;
+use App\Actions\Masters\CloneProductsFromMaster;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
@@ -65,6 +65,8 @@ class CloneCatalogueStructure
 
         $this->attachFamiliesToDepartments($fromShop, $shop);
         $this->attachFamiliesToSubDepartments($fromShop, $shop);
+
+
     }
 
     public function attachFamiliesToSubDepartments(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
@@ -166,7 +168,7 @@ class CloneCatalogueStructure
             foreach ($fromShop->masterAssets()->where('type', MasterAssetTypeEnum::PRODUCT)->get() as $masterProduct) {
                 if ($masterProduct->status) {
                     if ($shop instanceof Shop) {
-                        AddMissingProductsFromMaster::make()->upsertProduct($shop, $masterProduct);
+                        CloneProductsFromMaster::make()->upsertProduct($shop, $masterProduct);
                     } else {
                         dd('todo A');
                     }

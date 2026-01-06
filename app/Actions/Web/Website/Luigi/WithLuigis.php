@@ -100,7 +100,7 @@ trait WithLuigis
         if ($response->failed()) {
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
         }
-        
+
     }
 
 

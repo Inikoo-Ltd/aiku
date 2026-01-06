@@ -5,21 +5,15 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
+return new class () extends Migration {
+    public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_minion_variant')->nullable();
+            $table->boolean('is_minion_variant')->nullable()->index()->default(false);
         });
 
         Schema::table('master_assets', function (Blueprint $table) {
-            $table->boolean('is_minion_variant')->nullable();
+            $table->boolean('is_minion_variant')->nullable()->index()->default(false);
         });
 
         DB::table('products')
@@ -39,12 +33,8 @@ return new class extends Migration
             ->update(['is_minion_variant' => true]);
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
+
+    public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
             $table->dropColumn('is_minion_variant');
