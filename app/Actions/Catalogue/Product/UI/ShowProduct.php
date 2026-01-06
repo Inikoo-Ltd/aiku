@@ -289,7 +289,6 @@ class ShowProduct extends OrgAction
             ];
         }
 
-
         if ($product->webpage) {
             $actions[] =
                 [
@@ -307,7 +306,7 @@ class ShowProduct extends OrgAction
                         ]
                     ]
                 ];
-        } else {
+        } else if(!$product->is_minion_variant) {
             $actions[] =
                 [
                     'type'  => 'button',

@@ -76,7 +76,6 @@ class CloneProductsFromMaster
                     } else {
                         print "Adding product $masterProduct->code to shop $shop->slug \n";
 
-
                         StoreProductFromMasterProduct::make()->action(
                             $masterProduct,
                             [
@@ -87,7 +86,8 @@ class CloneProductsFromMaster
                                         'create_webpage' => $createWebpage,
                                         'create_in_shop' => 'Yes'
                                     ]
-                                ]
+                                ],
+                                'is_minion_variant' => $masterProduct->is_minion_variant,
                             ]
                         );
                     }
