@@ -133,7 +133,7 @@ class EditCustomer extends OrgAction
                                 ],
                                 'identity_document_number' => [
                                     'type'  => 'input',
-                                    'label' => __('identity document number'),
+                                    'label' => __('Identity document number'),
                                     'value' => $customer->identity_document_number
                                 ],
                             ]

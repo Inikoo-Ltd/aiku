@@ -410,7 +410,18 @@ watch(() => model.value, (newValue) => {
 									</template>
 								</Column>
 								<Column field="code" header="Code"></Column>
-								<Column field="name" header="Description"></Column>
+								<Column field="name" header="Name">
+									<template #body="slotProps">
+										<div>
+											<div>
+												{{ slotProps.data?.name }}
+											</div>
+											<div class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
+												{{ trans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
+											</div>
+										</div>
+									</template>
+								</Column>
 								<Column header="" style="width: 8%">
 									<template #body="slotProps">
 											<NumberWithButtonSave
@@ -423,6 +434,10 @@ watch(() => model.value, (newValue) => {
 												@update:modelValue="(e) => (debSubmitProducts(action, slotProps))"
 												noUndoButton
 												noSaveButton
+												:bindToTarget="{
+													max: slotProps.data?.available_quantity,
+												}"
+												:readonly="!slotProps.data?.available_quantity"
 											/>
 									</template>
 								</Column>

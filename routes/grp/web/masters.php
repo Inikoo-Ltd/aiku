@@ -200,6 +200,7 @@ Route::name("master_shops")->prefix('master-shops')
 
                 Route::prefix('{masterFamily}/master-products')->as('master_products.')->group(function () {
                     Route::get('', [IndexMasterProducts::class, 'inMasterFamilyInMasterShop'])->name('index');
+                    Route::get('/inVariant/{filterInVariant}', [IndexMasterProducts::class, 'inMasterFamilyInMasterShopFilterInVariant'])->name('index.filter_in_variant');
                     Route::get('create', [CreateMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('create');
                     Route::get('{masterProduct}', [ShowMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('show');
                     Route::get('{masterProduct}/edit', [EditMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('edit');

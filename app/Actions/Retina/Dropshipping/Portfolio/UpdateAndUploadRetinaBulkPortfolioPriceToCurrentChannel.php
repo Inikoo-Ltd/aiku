@@ -32,6 +32,10 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
                         ->where('p.is_for_sale', true);
                 });
 
+            if(! $portfolio) {
+                continue;
+            }
+
             if (Arr::get($modelData, 'type') === 'fixed') {
                 $newPrice = Arr::get($modelData, 'amount') + $portfolio->customer_price;
             } elseif (Arr::get($modelData, 'type') === 'percent') {

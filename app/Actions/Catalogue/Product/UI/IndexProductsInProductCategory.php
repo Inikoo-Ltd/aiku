@@ -136,6 +136,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'customers_invoiced_all',
                 'currencies.code as currency_code',
                 'variant.slug as variant_slug',
+                'variant.code as variant_code',
                 'products.is_variant_leader as is_variant_leader',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
@@ -173,9 +174,12 @@ class IndexProductsInProductCategory extends OrgAction
                     ]
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'variant_slug', label: '', canBeHidden: false, searchable: true, type: 'icon')
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'code',label: __('Code'),canBeHidden: false,sortable: true,searchable: true);
+
+                if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
+                    $table->column( key: 'variant_slug',label: __('Variant'),canBeHidden: false, searchable: true);
+                }
+                 $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

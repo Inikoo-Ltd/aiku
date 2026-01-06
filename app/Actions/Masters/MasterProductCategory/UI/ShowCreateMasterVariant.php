@@ -92,10 +92,11 @@ class ShowCreateMasterVariant extends OrgAction
                 ],
                 'master_family' => MasterProductCategoryResource::make($masterFamily),
                 'master_assets_route' => [
-                    'name' => 'grp.masters.master_shops.show.master_families.master_products.index',
+                    'name' => 'grp.masters.master_shops.show.master_families.master_products.index.filter_in_variant',
                     'parameters' => [
-                        'masterShop'    => $masterFamily->masterShop->slug,
-                        'masterFamily'  => $masterFamily->slug
+                        'masterShop'        => $masterFamily->masterShop->slug,
+                        'masterFamily'      => $masterFamily->slug,
+                        'filterInVariant'   => 'none'
                     ]
                 ],
                 'save_route' => [

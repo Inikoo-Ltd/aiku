@@ -160,6 +160,7 @@ const onCancelEditBulkProduct = () => {
         :editable_table="props.editable_table"
         :selectedProductsId="selectedProductsId"
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
+        :variantSlugs="variantSlugs"
     />
 
     <!-- MODAL -->

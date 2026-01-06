@@ -692,7 +692,6 @@ trait WithResetIntervals
 
     public function handle(): void
     {
-        return;
         $this->resetGroups();
         $this->resetOrganisations();
         $this->resetMasterShops();

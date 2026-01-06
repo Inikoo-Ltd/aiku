@@ -196,6 +196,24 @@ watch(
 	}
 )
 
+
+// Section: Redirect
+watch(
+	() => usePage().props?.flash?.redirect,
+	(redirect: { url: string; target?: string }) => {
+		if (!redirect?.url) return
+
+		if (redirect.target === '_blank') {
+			window.open(redirect.url, '_blank')
+		} else {
+			window.location.href = redirect.url
+		}
+	},
+	{
+		immediate: true,
+	}
+)
+
 // Section: Modal
 interface Modal {
 	title: string
