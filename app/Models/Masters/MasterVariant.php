@@ -108,6 +108,11 @@ class MasterVariant extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
+    public function masterShop(): BelongsTo
+    {
+        return $this->belongsTo(MasterShop::class, 'master_shop_id');
+    }
+
     public function masterDepartment(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_department_id');
@@ -166,7 +171,6 @@ class MasterVariant extends Model implements Auditable, HasMedia
 
         return MasterAsset::whereIn('id', $key)->get();
     }
-
 
     public function variants(): HasMany
     {
