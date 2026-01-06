@@ -104,10 +104,10 @@ class IndexVariant extends OrgAction
                 ->withGlobalSearch();
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_used_slots', label: __('No. of Slots'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'number_used_slots_for_sale', label: __('No. of Slots Used (For Sale enabled)'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'number_used_slots', label: __('No. of Slots'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'number_used_slots_for_sale', label: __('No. of Slots Used (For Sale enabled)'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 }

@@ -75,6 +75,7 @@ const props = defineProps<{
     images?:object
     mini_breadcrumbs?: any[]
     variants?:object
+    isPerfectFamily: boolean
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
@@ -121,6 +122,12 @@ const showDialog = ref(false);
                     color="#4B0082"
                 />
             </Link>
+            </div>
+        </template>
+        
+        <template #button-variants>
+            <div v-if="!isPerfectFamily">
+                <Button :style="'create'" :label="trans('Variants')" :tooltip="trans('Unable to create new variant. Please fix data that are related to this Master Family')" :disabled="true"/>
             </div>
         </template>
 

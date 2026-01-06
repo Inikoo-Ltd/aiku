@@ -69,7 +69,7 @@ class StoreVariantFromMaster extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                  => ['required', 'exists:products,id'],
+            'leader_id'                  => ['required', Rule::exists('products', 'id')->whereNull('variant_id')],
             'family_id'                  => ['required', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)],
             'department_id'              => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::DEPARTMENT)],
             'sub_department_id'          => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)],

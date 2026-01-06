@@ -195,7 +195,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterProductCategoryTimeSeries::class);
     }
 
-
     public function masterProductCategories(): HasMany
     {
         return $this->hasMany(MasterProductCategory::class);
@@ -230,7 +229,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
-
 
     public function masterAssets(): HasMany|null
     {

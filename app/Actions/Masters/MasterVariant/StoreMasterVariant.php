@@ -18,6 +18,7 @@ use App\Rules\AlphaDashDot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -109,7 +110,7 @@ class StoreMasterVariant extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                  => ['required', 'exists:master_assets,id'],
+            'leader_id'                  => ['required', Rule::exists('master_assets', 'id')->whereNull('master_variant_id')],
             'code'                       => [
                 'required',
                 'max:32',
