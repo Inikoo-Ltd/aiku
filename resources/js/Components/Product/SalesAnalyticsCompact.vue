@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUsers } from '@fal'
+import { faUsers, faEquals } from '@fal'
+import { faTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure';
 
-library.add(faUsers)
+library.add(faUsers, faTriangle, faEquals)
 
 interface CustomerMetrics {
     total_customers: number
@@ -53,7 +55,85 @@ const props = defineProps<{
     salesData: SalesData
 }>()
 
-const locale = inject("locale", {});
+const locale = inject("locale", aikuLocaleStructure);
+
+// Helper: Generate 5 latest years (descending)
+function getLastNYears(n: number, fromYear?: number): number[] {
+    const currentYear = fromYear ?? new Date().getFullYear();
+    return Array.from({ length: n }, (_, i) => currentYear - i);
+}
+
+// Helper: Generate 5 latest quarters (descending) for each year
+function getLastNQuarters(n: number, fromYear?: number): { year: number, quarter: number }[] {
+    const now = new Date();
+    let year = fromYear ?? now.getFullYear();
+    let quarter = Math.floor((now.getMonth()) / 3) + 1;
+    const quarters: { year: number, quarter: number }[] = [];
+    for (let i = 0; i < n; i++) {
+        quarters.push({ year, quarter });
+        quarter--;
+        if (quarter === 0) {
+            quarter = 4;
+            year--;
+        }
+    }
+    return quarters;
+}
+
+// Compose 5 years data for grid (descending, fill 0 if not exist)
+const yearlySalesGrid = computed<YearlySales[]>(() => {
+    const backend = props.salesData.yearly_sales || [];
+    // Find the latest year from backend, fallback to current year
+    const latestYear = backend.length > 0 ? Math.max(...backend.map(y => y.year)) : new Date().getFullYear();
+    const years = getLastNYears(5, latestYear);
+    return years.map(year => {
+        const found = backend.find(y => y.year === year);
+        return found ?? {
+            year,
+            total_sales: 0,
+            total_invoices: 0,
+            sales_delta: 0,
+            sales_delta_percentage: 0,
+            previous_year_sales: 0,
+            invoices_delta: 0,
+            invoices_delta_percentage: 0,
+            previous_year_invoices: 0,
+        };
+    });
+});
+
+// Compose 5 quarters data for grid (descending, fill 0 if not exist)
+const quarterlySalesGrid = computed<QuarterlySales[]>(() => {
+    const backend = props.salesData.quarterly_sales || [];
+    // Find the latest year/quarter from backend, fallback to current
+    let latestYear = new Date().getFullYear();
+    let latestQuarter = Math.floor((new Date().getMonth()) / 3) + 1;
+    if (backend.length > 0) {
+        // Find the latest by year, then quarter
+        const sorted = [...backend].sort((a, b) => (b.year - a.year) || (b.quarter_number - a.quarter_number));
+        latestYear = sorted[0].year;
+        latestQuarter = sorted[0].quarter_number;
+    }
+    const quarters = getLastNQuarters(5, latestYear);
+    return quarters.map(({ year, quarter }) => {
+        const found = backend.find(q => q.year === year && q.quarter_number === quarter);
+        // Compose quarter string as in backend: Q{quarter} {year.toString().slice(-2)}
+        const quarterStr = `Q${quarter} ${year.toString().slice(-2)}`;
+        return found ?? {
+            quarter: quarterStr,
+            quarter_number: quarter,
+            year,
+            total_sales: 0,
+            total_invoices: 0,
+            sales_delta: 0,
+            sales_delta_percentage: 0,
+            previous_year_sales: 0,
+            invoices_delta: 0,
+            invoices_delta_percentage: 0,
+            previous_year_invoices: 0,
+        };
+    });
+});
 
 const formattedSalesSince = computed(() => useFormatTime(props.salesData.all_sales_since))
 const formattedTotalSales = computed(() => locale.currencyFormat(props.salesData.currency, props.salesData.total_sales))
@@ -73,61 +153,57 @@ const getInvoicesTooltip = (item: YearlySales | QuarterlySales) => {
     return `Invoices: ${locale.number(item.total_invoices)}\nPrevious: ${locale.number(item.previous_year_invoices)}\nChange: ${item.invoices_delta_percentage.toFixed(1)}%`
 }
 
-const getDeltaIndicator = (delta: number): { icon: string; color: string } => {
+const getDeltaIndicator = (delta: number) => {
     if (delta > 0) {
         return {
-            icon: '▲',
-            color: 'text-green-600'
+            icon: faTriangle,
+            color: 'text-green-600',
+            class: ''
         }
     } else if (delta < 0) {
         return {
-            icon: '▼',
-            color: 'text-red-600'
+            icon: faTriangle,
+            color: 'text-red-600',
+            class: 'rotate-180'
         }
     } else {
         return {
-            icon: '─',
-            color: 'text-gray-400'
+            icon: faEquals,
+            color: 'text-gray-400',
+            class: ''
         }
     }
 }
 </script>
 
 <template>
-    <div class="bg-white border border-gray-200 rounded-lg shadow-sm h-fit sticky top-4">
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full h-fit">
         <!-- Header -->
         <div class="p-4 border-b border-gray-200">
             <h3 class="text-sm font-semibold text-gray-900">Sales Analytics</h3>
             <div class="text-xs text-gray-500 mt-1">Since {{ formattedSalesSince }}</div>
         </div>
 
-        <!-- Summary Stats -->
-        <div class="p-4 space-y-3 border-b border-gray-200">
-            <!-- Total Sales -->
-            <div class="flex justify-between items-center">
-                <span class="text-xs text-gray-600">Total Sales</span>
-                <span class="text-sm font-bold text-gray-900">{{ formattedTotalSales }}</span>
-            </div>
-
-            <!-- Total Invoices -->
-            <div class="flex justify-between items-center">
-                <span class="text-xs text-gray-600">Invoices</span>
-                <span class="text-sm font-bold text-gray-900">{{ formattedTotalInvoices }}</span>
-            </div>
-
-            <!-- Customers -->
-            <div class="flex justify-between items-center">
-                <span class="text-xs text-gray-600 flex justify-center items-center gap-1">
-                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500" />
-                    Customers
-                </span>
-                <span class="text-sm font-bold text-gray-900">{{ customerMetrics.total }}</span>
-            </div>
-
-            <!-- Repeat Rate -->
-            <div class="flex justify-between items-center">
-                <span class="text-xs text-gray-600">Repeat Rate</span>
-                <span class="text-sm font-semibold text-blue-600">{{ customerMetrics.percentage }}</span>
+        <!-- Summary Stats as 4-column grid, no labels, customer with icon, all right aligned -->
+        <div class="p-4 border-b border-gray-200">
+            <div class="grid grid-cols-4 gap-0">
+                <!-- Total Sales -->
+                <div class="flex items-center justify-end text-right">
+                    <span class="text-sm font-bold text-gray-900 w-full">{{ formattedTotalSales }}</span>
+                </div>
+                <!-- Total Invoices -->
+                <div class="flex items-center justify-end text-right">
+                    <span class="text-sm font-bold text-gray-900 w-full">{{ formattedTotalInvoices }}</span>
+                </div>
+                <!-- Customers with icon -->
+                <div class="flex items-center justify-end text-right">
+                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500 mr-1" />
+                    <span class="text-sm font-bold text-gray-900">{{ customerMetrics.total }}</span>
+                </div>
+                <!-- Repeat Rate -->
+                <div class="flex items-center justify-end text-right">
+                    <span class="text-sm font-semibold text-blue-600 w-full">{{ customerMetrics.percentage }}</span>
+                </div>
             </div>
         </div>
 
@@ -136,52 +212,52 @@ const getDeltaIndicator = (delta: number): { icon: string; color: string } => {
             <div class="text-xs font-semibold text-gray-700 mb-3">Yearly Performance</div>
             <div class="overflow-x-auto">
                 <!-- Headers -->
-                <div class="grid grid-cols-5 gap-1 mb-2 min-w-max">
+                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-t">
                     <div
-                        v-for="year in salesData.yearly_sales"
+                        v-for="year in yearlySalesGrid"
                         :key="year.year"
-                        class="text-center text-xs font-semibold text-gray-900 p-1"
+                        class="text-right text-xs font-semibold text-gray-900 p-1 bg-gray-50"
                     >
                         {{ year.year }}
                     </div>
                 </div>
 
                 <!-- Sales Row -->
-                <div class="grid grid-cols-5 gap-1 mb-2 min-w-max">
+                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border-l border-r border-gray-200">
                     <div
-                        v-for="year in salesData.yearly_sales"
+                        v-for="year in yearlySalesGrid"
                         :key="`sales-${year.year}`"
-                        class="flex justify-center items-center gap-1 text-center p-1"
+                        v-tooltip="getSalesTooltip(year)"
+                        class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
                         <div class="text-xs font-semibold text-gray-900">
-                            {{ locale.currencyFormat(salesData.currency, year.total_sales) }}
+                            {{ locale.CurrencyShort(props.salesData.currency, year.total_sales) }}
                         </div>
                         <div
-                            v-tooltip="getSalesTooltip(year)"
                             :class="getDeltaIndicator(year.sales_delta).color"
-                            class="text-sm font-bold cursor-help"
+                            class="text-sm font-bold"
                         >
-                            {{ getDeltaIndicator(year.sales_delta).icon }}
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.sales_delta).icon" :class="getDeltaIndicator(year.sales_delta).class" />
                         </div>
                     </div>
                 </div>
 
                 <!-- Invoices Row -->
-                <div class="grid grid-cols-5 gap-1 min-w-max">
+                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-b">
                     <div
-                        v-for="year in salesData.yearly_sales"
+                        v-for="year in yearlySalesGrid"
                         :key="`inv-${year.year}`"
-                        class="flex justify-center items-center gap-1 text-center p-1"
+                        v-tooltip="getInvoicesTooltip(year)"
+                        class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
                         <div class="text-xs font-semibold text-gray-700">
                             {{ locale.number(year.total_invoices) }}
                         </div>
                         <div
-                            v-tooltip="getInvoicesTooltip(year)"
                             :class="getDeltaIndicator(year.invoices_delta).color"
-                            class="text-sm font-bold cursor-help"
+                            class="text-sm font-bold"
                         >
-                            {{ getDeltaIndicator(year.invoices_delta).icon }}
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.invoices_delta).icon" :class="getDeltaIndicator(year.invoices_delta).class" />
                         </div>
                     </div>
                 </div>
@@ -193,52 +269,52 @@ const getDeltaIndicator = (delta: number): { icon: string; color: string } => {
             <div class="text-xs font-semibold text-gray-700 mb-3">Quarterly Performance</div>
             <div class="overflow-x-auto">
                 <!-- Headers -->
-                <div class="grid grid-cols-5 gap-1 mb-2 min-w-max">
+                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-t">
                     <div
-                        v-for="quarter in salesData.quarterly_sales"
+                        v-for="quarter in quarterlySalesGrid"
                         :key="quarter.quarter"
-                        class="text-center text-xs font-semibold text-gray-900 p-1"
+                        class="text-right text-xs font-semibold text-gray-900 p-1 bg-gray-50"
                     >
                         {{ quarter.quarter }}
                     </div>
                 </div>
 
                 <!-- Sales Row -->
-                <div class="grid grid-cols-5 gap-1 mb-2 min-w-max">
+                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border-l border-r border-gray-200">
                     <div
-                        v-for="quarter in salesData.quarterly_sales"
+                        v-for="quarter in quarterlySalesGrid"
                         :key="`sales-${quarter.quarter}`"
-                        class="flex justify-center items-center gap-1 text-center p-1"
+                        v-tooltip="getSalesTooltip(quarter)"
+                        class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
                         <div class="text-xs font-semibold text-gray-900">
-                            {{ locale.currencyFormat(salesData.currency, quarter.total_sales) }}
+                            {{ locale.CurrencyShort(props.salesData.currency, quarter.total_sales) }}
                         </div>
                         <div
-                            v-tooltip="getSalesTooltip(quarter)"
                             :class="getDeltaIndicator(quarter.sales_delta).color"
-                            class="text-sm font-bold cursor-help"
+                            class="text-sm font-bold"
                         >
-                            {{ getDeltaIndicator(quarter.sales_delta).icon }}
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.sales_delta).icon" :class="getDeltaIndicator(quarter.sales_delta).class" />
                         </div>
                     </div>
                 </div>
 
                 <!-- Invoices Row -->
-                <div class="grid grid-cols-5 gap-1 min-w-max">
+                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-b">
                     <div
-                        v-for="quarter in salesData.quarterly_sales"
+                        v-for="quarter in quarterlySalesGrid"
                         :key="`inv-${quarter.quarter}`"
-                        class="flex justify-center items-center gap-1 text-center p-1"
+                        v-tooltip="getInvoicesTooltip(quarter)"
+                        class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
                         <div class="text-xs font-semibold text-gray-700">
                             {{ locale.number(quarter.total_invoices) }}
                         </div>
                         <div
-                            v-tooltip="getInvoicesTooltip(quarter)"
                             :class="getDeltaIndicator(quarter.invoices_delta).color"
-                            class="text-sm font-bold cursor-help"
+                            class="text-sm font-bold"
                         >
-                            {{ getDeltaIndicator(quarter.invoices_delta).icon }}
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.invoices_delta).icon" :class="getDeltaIndicator(quarter.invoices_delta).class" />
                         </div>
                     </div>
                 </div>
@@ -246,9 +322,3 @@ const getDeltaIndicator = (delta: number): { icon: string; color: string } => {
         </div>
     </div>
 </template>
-
-<style scoped>
-.cursor-help {
-    cursor: help;
-}
-</style>
