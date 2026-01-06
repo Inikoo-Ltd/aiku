@@ -9,12 +9,6 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure';
 
 library.add(faUsers, faTriangle, faEquals)
 
-interface CustomerMetrics {
-    total_customers: number
-    repeat_customers: number
-    repeat_customers_percentage: number
-}
-
 interface YearlySales {
     year: number
     total_sales: number
@@ -45,7 +39,7 @@ interface SalesData {
     all_sales_since: string | null
     total_sales: number
     total_invoices: number
-    customer_metrics: CustomerMetrics
+    total_customers: number
     yearly_sales: YearlySales[]
     quarterly_sales: QuarterlySales[]
     currency: string
@@ -138,11 +132,7 @@ const quarterlySalesGrid = computed<QuarterlySales[]>(() => {
 const formattedSalesSince = computed(() => useFormatTime(props.salesData.all_sales_since))
 const formattedTotalSales = computed(() => locale.currencyFormat(props.salesData.currency, props.salesData.total_sales))
 const formattedTotalInvoices = computed(() => locale.number(props.salesData.total_invoices))
-
-const customerMetrics = computed(() => ({
-    total: locale.number(props.salesData.customer_metrics.total_customers),
-    percentage: `${props.salesData.customer_metrics.repeat_customers_percentage.toFixed(1)}%`
-}))
+const formattedTotalCustomers = computed(() => locale.number(props.salesData.total_customers))
 
 // Helper to get tooltip text
 const getSalesTooltip = (item: YearlySales | QuarterlySales) => {
@@ -184,25 +174,23 @@ const getDeltaIndicator = (delta: number) => {
             <div class="text-xs text-gray-500 mt-1">Since {{ formattedSalesSince }}</div>
         </div>
 
-        <!-- Summary Stats as 4-column grid, no labels, customer with icon, all right aligned -->
+        <!-- Summary Stats as 3-column grid, align center, with tooltip for each column -->
         <div class="p-4 border-b border-gray-200">
-            <div class="grid grid-cols-4 gap-0">
+            <div class="grid grid-cols-3 gap-0 text-center">
                 <!-- Total Sales -->
-                <div class="flex items-center justify-end text-right">
+                <div class="flex flex-col items-center justify-center cursor-pointer" v-tooltip="'Total Sales'">
                     <span class="text-sm font-bold text-gray-900 w-full">{{ formattedTotalSales }}</span>
                 </div>
                 <!-- Total Invoices -->
-                <div class="flex items-center justify-end text-right">
+                <div class="flex flex-col items-center justify-center cursor-pointer" v-tooltip="'Total Invoices'">
                     <span class="text-sm font-bold text-gray-900 w-full">{{ formattedTotalInvoices }}</span>
                 </div>
                 <!-- Customers with icon -->
-                <div class="flex items-center justify-end text-right">
-                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500 mr-1" />
-                    <span class="text-sm font-bold text-gray-900">{{ customerMetrics.total }}</span>
-                </div>
-                <!-- Repeat Rate -->
-                <div class="flex items-center justify-end text-right">
-                    <span class="text-sm font-semibold text-blue-600 w-full">{{ customerMetrics.percentage }}</span>
+                <div class="flex flex-col items-center justify-center cursor-pointer" v-tooltip="'Customers'">
+                    <span>
+                        <FontAwesomeIcon :icon="faUsers" class="text-gray-500 mr-1" />
+                        <span class="text-sm font-bold text-gray-900">{{ formattedTotalCustomers }}</span>
+                    </span>
                 </div>
             </div>
         </div>
