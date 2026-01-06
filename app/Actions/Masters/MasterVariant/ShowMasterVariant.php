@@ -125,10 +125,10 @@ class ShowMasterVariant extends GrpAction
                         'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant,
                     ]),
-                MasterVariantTabsEnum::PRODUCTS->value => 
+                MasterVariantTabsEnum::PRODUCTS->value =>
                     $this->tab === MasterVariantTabsEnum::PRODUCTS->value ? MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))
                     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))),
-                MasterVariantTabsEnum::VARIANTS->value => 
+                MasterVariantTabsEnum::VARIANTS->value =>
                     $this->tab === MasterVariantTabsEnum::VARIANTS->value ? VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))
                     : Inertia::lazy(fn () => VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))),
             ]

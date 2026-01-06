@@ -11,7 +11,6 @@ namespace App\Actions\Catalogue\Variant;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
 use App\Services\QueryBuilder;
@@ -95,12 +94,12 @@ class IndexVariantInMasterVariant extends OrgAction
                 ->withLabelRecord([__('variant'),__('variants')])
                 ->withGlobalSearch();
 
-                $table->column(key: 'shop_id', label: __('Shop'), canBeHidden: false, sortable: false, searchable: false)
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: true)
-                ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false)
-                ->column(key: 'number_used_slots', label: __('No. of Slots'), canBeHidden: false, sortable: false, searchable: false)
-                ->column(key: 'number_used_slots_for_sale', label: __('No. of Slots Used (For Sale enabled)'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'shop_id', label: __('Shop'), canBeHidden: false, sortable: false, searchable: false)
+            ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: true)
+            ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false)
+            ->column(key: 'number_used_slots', label: __('No. of Slots'), canBeHidden: false, sortable: false, searchable: false)
+            ->column(key: 'number_used_slots_for_sale', label: __('No. of Slots Used (For Sale enabled)'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 }

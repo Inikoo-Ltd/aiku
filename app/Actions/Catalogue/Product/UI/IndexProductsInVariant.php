@@ -22,7 +22,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexProductsInVariant extends OrgAction
 {
-
     public function handle(Variant $variant, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
