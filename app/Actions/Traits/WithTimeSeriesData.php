@@ -108,7 +108,7 @@ trait WithTimeSeriesData
                     : 0;
 
                 return [
-                    'quarter' => "Q{$quarter} {$year}",
+                    'quarter' => "Q{$quarter} " . substr((string)$year, -2),
                     'quarter_number' => $quarter,
                     'year' => $year,
                     'total_sales' => (float) $record->sales_grp_currency,
