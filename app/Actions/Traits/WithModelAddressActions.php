@@ -11,6 +11,7 @@ namespace App\Actions\Traits;
 use App\Actions\Helpers\Address\Hydrators\AddressHydrateUsage;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Arr;
 
 trait WithModelAddressActions
 {
@@ -75,6 +76,9 @@ trait WithModelAddressActions
 
 
         data_forget($addressData, 'id');
+        if (Arr::exists($addressData, 'additional_name')) {
+            Arr::forget($addressData, 'additional_name');
+        }
 
         $address = Address::create($addressData);
 
@@ -121,6 +125,10 @@ trait WithModelAddressActions
             $groupId = $model->id;
         }
         data_set($addressData, 'group_id', $groupId);
+        if (Arr::exists($addressData, 'additional_name')) {
+            Arr::forget($addressData, 'additional_name');
+        }
+
 
         $address = Address::create($addressData);
 

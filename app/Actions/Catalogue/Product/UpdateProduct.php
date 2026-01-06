@@ -308,7 +308,7 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'available_quantity_updated_at' => now()
             ]);
-            if($product->shop->type == ShopTypeEnum::DROPSHIPPING){
+            if ($product->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
             }
         }
@@ -435,6 +435,7 @@ class UpdateProduct extends OrgAction
             'webpage_breadcrumb_label'     => ['sometimes', 'string', 'max:40'],
 
             // Sale Status & Webpage
+            'is_main'                      => ['sometimes', 'boolean'],
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],

@@ -85,7 +85,7 @@ class IndexMasterProducts extends GrpAction
         ];
     }
 
-    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null, $filterInVariant = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -226,6 +226,15 @@ class IndexMasterProducts extends GrpAction
             };
         } else {
             abort(419);
+        }
+        
+        if($filterInVariant) {
+            if($filterInVariant == 'none') {
+                $queryBuilder->whereNull('master_assets.master_variant_id');
+            }else{
+                $queryBuilder->whereNull('master_assets.master_variant_id')->orWhere('master_assets.master_variant_id', $filterInVariant);
+            }
+            $queryBuilder->where('master_assets.status', true); // Only fetch MasterAssets that are used as a material for Variant
         }
 
         return $queryBuilder
@@ -539,6 +548,17 @@ class IndexMasterProducts extends GrpAction
         $this->initialisation($group, $request);
 
         return $this->handle($masterFamily);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterFamilyInMasterShopFilterInVariant(MasterShop $masterShop, MasterProductCategory $masterFamily, String $filterInVariant, ActionRequest $request): LengthAwarePaginator
+    {
+        $group = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+
+        return $this->handle(parent: $masterFamily,  filterInVariant: $filterInVariant);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
