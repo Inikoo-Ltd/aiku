@@ -28,18 +28,18 @@ console.log(route().params);
 
 const getVariantRoute = (item: any) => {
   return route('grp.org.shops.show.catalogue.families.show.variants.show', {
-    organisation: route().params.organisation,
-    shop: route().params.shop,
-    family: route().params.family,
+    organisation: item.organisation_slug,
+    shop: item.shop_slug,
+    family: item.family_slug,
     variant: item.slug,
   });
 }
 
 const getLeaderProductRoute = (item: any) => {
   return route('grp.org.shops.show.catalogue.families.show.products.show', {
-    organisation: route().params.organisation,
-    shop: route().params.shop,
-    family: route().params.family,
+    organisation: item.organisation_slug,
+    shop: item.shop_slug,
+    family: item.family_slug,
     product: item.leader_product_slug,
   });
 }
@@ -60,6 +60,9 @@ const formatOptions = (value) => {
         <Link :href="getVariantRoute(item)" class="primaryLink">
           {{ item.code }}
         </Link>
+      </template>
+      <template #cell(shop_id)="{ item }">
+        {{ item.shop_code }}
       </template>
       <template #cell(leader_product_name)="{ item }">
         <Link :href="getLeaderProductRoute(item)" class="primaryLink">
