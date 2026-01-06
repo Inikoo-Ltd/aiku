@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\External;
 
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
@@ -77,6 +78,10 @@ class StoreExternalShop extends OrgAction
                 $shopifyUser->update([
                     'external_shop_id' => $shop->id
                 ]);
+            }
+
+            if($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+                GetFaireProducts::dispatch($shop);
             }
 
             return $shop;
