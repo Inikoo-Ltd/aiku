@@ -24,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 
-class CreateShopInGroup extends GrpAction
+class CreateShopFromMaster extends GrpAction
 {
     // TODO master authorisation to create shop (?)
     private MasterShop $masterShop;
@@ -47,9 +47,9 @@ class CreateShopInGroup extends GrpAction
             'CreateShop',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('New shop'),
+                'title'       => __('New shop in master').' '.$this->masterShop->code,
                 'pageHead'    => [
-                    'title'   => __('New shop'),
+                    'title'   => __('New shop in master').' '.$this->masterShop->name,
                     'actions' => [
                         [
                             'type'  => 'button',
