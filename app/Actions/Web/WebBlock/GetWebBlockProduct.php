@@ -43,14 +43,15 @@ class GetWebBlockProduct
             ->get();
         $variant = Variant::where('leader_id', $product->id)->first();
 
-
-
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
-        data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant['data']);
+
+        if ($variant) {
+            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant['data']);
+        }
 
         return $webBlock;
     }
