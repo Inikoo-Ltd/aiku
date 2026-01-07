@@ -216,7 +216,7 @@ trait WithOutboxBuilder
                 $mailshot,
                 $emailTemplate,
                 modelData: [
-                'subject'               => $case->label(),
+                'subject'               => $mailshot->subject ?? $case->label(),
                 'snapshot_state'        => SnapshotStateEnum::LIVE,
                 'snapshot_published_at' => $model->created_at,
                 'snapshot_recyclable'   => false,

@@ -72,7 +72,12 @@ class PublishMailShot extends OrgAction
         $this->update($outbox, [
             'state' => OutboxStateEnum::ACTIVE
         ]);
-        SetMailshotAsReady::run($mailshot, []);
+
+        $modelData = [
+            'ready_at' => now(),
+        ];
+
+        SetMailshotAsReady::run($mailshot, $modelData);
 
         return $mailshot;
     }

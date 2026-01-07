@@ -41,7 +41,11 @@ class RunNewsletterScheduled
 
         foreach ($newsletterQuery->cursor() as $newsletter) {
             ProcessSendNewsletter::dispatch($newsletter);
-            //TODO: update the mailshot state to SENT
+            //TODO: update the mailshot state to Sending
+            $newsletter->update([
+                'state' => MailshotStateEnum::SENDING,
+                'start_sending_at' => Carbon::now()->utc(), // maybe need to convert to local timezone
+            ]);
         }
     }
 
