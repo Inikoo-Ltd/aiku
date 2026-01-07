@@ -360,7 +360,7 @@ onMounted(() => {
         <!-- <KeepAlive>
             <div v-if="step.current === 1">
                 <div class="relative px-4 min-h-[200px] max-h-[600px] mt-4 overflow-y-auto mb-4">
-                    <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
+                    <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white/50 text-7xl">
                         <LoadingIcon />
                     </div>
                     <PortfoliosStepEdit
@@ -424,7 +424,7 @@ onMounted(() => {
                         </div>
                     </Message>
 
-                    <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 text-7xl">
+                    <div v-if="stepLoading" class="absolute inset-0 flex items-center justify-center bg-white/50 text-7xl">
                         <LoadingIcon />
                     </div>
                     

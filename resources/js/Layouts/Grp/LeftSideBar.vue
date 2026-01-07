@@ -104,7 +104,7 @@ const onLogoutAuth = () => {
 					target="_blank">
 					<FontAwesomeIcon
 						aria-hidden="true"
-						class="flex-shrink-0 h-4 w-4"
+						class="shrink-0 h-4 w-4"
 						fixed-width
 						:icon="helpData.icon" />
 

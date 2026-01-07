@@ -55,11 +55,11 @@ onUnmounted(() => {
 			content: capitalize(nav.tooltip),
 			delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 },
 		}">
-		<LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />
+		<LoadingIcon v-if="isLoading" class="shrink-0 h-4 w-4" />
 		<FontAwesomeIcon
 			v-else-if="nav.icon"
 			aria-hidden="true"
-			class="flex-shrink-0 h-4 w-4"
+			class="shrink-0 h-4 w-4"
 			fixed-width
 			:icon="nav.icon" />
 

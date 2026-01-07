@@ -79,8 +79,8 @@ const isSomeSubnavActive = (nav: {}) => {
                     astart="() => isLoading = true"
                     afinish="() => isLoading = false"
                 >
-                    <!-- <LoadingIcon v-if="'isLoading'" class="flex-shrink-0" /> -->
-                    <FontAwesomeIcon xv-else-if="grpNav.icon" aria-hidden="true" :rotation="grpNav.before_horizontal?.subNavigation?.[0].icon_rotation" class="flex-shrink-0" fixed-width :icon="grpNav.before_horizontal?.subNavigation?.[0].icon" />
+                    <!-- <LoadingIcon v-if="'isLoading'" class="shrink-0" /> -->
+                    <FontAwesomeIcon xv-else-if="grpNav.icon" aria-hidden="true" :rotation="grpNav.before_horizontal?.subNavigation?.[0].icon_rotation" class="shrink-0" fixed-width :icon="grpNav.before_horizontal?.subNavigation?.[0].icon" />
                     <FontAwesomeIcon icon="fal fa-chevron-right" class="text-xxs absolute top-1/2 -translate-y-1/2 right-1.5 transition-all" fixed-width aria-hidden="true"
                         :class="selectedNav == grpNav && _op.visible ? 'rotate-90' : '-rotate-90'"
                     />

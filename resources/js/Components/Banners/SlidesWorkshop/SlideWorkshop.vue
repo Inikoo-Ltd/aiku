@@ -73,7 +73,7 @@ defineExpose({
                         ]"
                         :aria-current="key === current ? 'page' : undefined"
                     >
-                        <FontAwesomeIcon v-if="item.icon" aria-hidden="true" class="flex-shrink-0 sm:-ml-1 sm:mr-3 h-6 w-6 text-gray-500 sm:text-gray-400 sm:group-hover:text-gray-500" :icon="item.icon" />
+                        <FontAwesomeIcon v-if="item.icon" aria-hidden="true" class="shrink-0 sm:-ml-1 sm:mr-3 h-6 w-6 text-gray-500 sm:text-gray-400 sm:group-hover:text-gray-500" :icon="item.icon" />
                         <span class="hidden sm:inline truncate">{{trans(item.title)}}</span>
                     </li>
                 </ul>

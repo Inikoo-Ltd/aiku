@@ -139,7 +139,7 @@ const onChangeLocation = (closeModal?: Function) => {
                         />
                         
                        <!--  <div class="flex gap-x-1 items-center mt-2 pl-0.5">
-                            <input v-model="isPalletDamaged" type="checkbox" id="checkboxLocation" class="rounded border-gray-300 text-red-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <input v-model="isPalletDamaged" type="checkbox" id="checkboxLocation" class="rounded border-gray-300 text-red-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/50">
                             <label for="checkboxLocation" class="select-none cursor-pointer text-gray-500">Set as damaged</label>
                         </div> -->
 

@@ -147,7 +147,7 @@ const isLoadingMeta = ref<string | null>(null)
                         background: `color-mix(in srgb, ${layout?.app?.theme[0]} 10%, white)`
                     }"
                 >
-                    <div class="aspect-square h-1/2 lg:h-full w-fit flex-shrink-0 rounded-md overflow-hidden">
+                    <div class="aspect-square h-1/2 lg:h-full w-fit shrink-0 rounded-md overflow-hidden">
                         <Image :src="top_selling.product.value?.images?.data?.[0]?.source" />
                     </div>
 

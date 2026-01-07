@@ -98,7 +98,7 @@
                               key === current
                                   ? 'text-orange-500 group-hover:text-orange-500'
                                   : 'text-gray-400 group-hover:text-gray-500',
-                              'flex-shrink-0 -ml-1 mr-3 h-6 w-6',
+                              'shrink-0 -ml-1 mr-3 h-6 w-6',
                           ]"
                           :icon="item.icon" />
                           <span class="capitalize truncate">{{ item.title }}</span>

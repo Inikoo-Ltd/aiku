@@ -298,7 +298,7 @@ const handleReasonBlur = () => {
 
 <template>
     <!-- Refund Modal -->
-    <div v-if="isVisible" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
+    <div v-if="isVisible" class="fixed inset-0 bg-gray-600/50 flex items-center justify-center z-50"
         :style="dynamicStyles">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <!-- Modal Header -->

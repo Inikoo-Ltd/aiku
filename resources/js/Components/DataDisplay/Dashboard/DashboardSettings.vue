@@ -192,7 +192,7 @@ onMounted(() => {
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
                         ]"
                         v-tooltip="interval.label"
-                        class="relative flex-grow flex-shrink-0 rounded py-1 md:py-1.5 px-2 sm:px-3 md:px-4 text-center text-xs sm:text-sm cursor-pointer select-none whitespace-nowrap">
+                        class="relative flex-grow shrink-0 rounded py-1 md:py-1.5 px-2 sm:px-3 md:px-4 text-center text-xs sm:text-sm cursor-pointer select-none whitespace-nowrap">
                         <span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
                             {{ interval.label }}
                         </span>
@@ -209,7 +209,7 @@ onMounted(() => {
             <div
                 v-tooltip="trans('Open advanced settings')"
                 @click="isSectionVisible = !isSectionVisible"
-                class="cursor-pointer p-2 rounded border flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
+                class="cursor-pointer p-2 rounded border flex items-center justify-center shrink-0 self-start sm:self-auto"
                 :class="isSectionVisible ? 'bg-indigo-200 text-indigo-500 border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
                 <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-xl sm:text-2xl" />
             </div>
@@ -221,7 +221,7 @@ onMounted(() => {
                 <div class="flex items-center gap-x-2 sm:gap-x-4 text-xs sm:text-sm md:text-base overflow-x-auto">
                     <!-- Toggle: model_state -->
                     <Transition name="slide-to-right">
-                        <div v-if="settings.model_state_type && currentTab === 'shops'" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
+                        <div v-if="settings.model_state_type && currentTab === 'shops'" class="flex items-center gap-x-2 sm:gap-x-4 shrink-0">
                             <p v-tooltip="settings.model_state_type.options[0].tooltip" class="leading-none whitespace-nowrap" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
                                 {{ settings.model_state_type.options[0].label }}
                             </p>
@@ -241,7 +241,7 @@ onMounted(() => {
 
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-x-4 lg:gap-x-8 text-xs sm:text-sm md:text-base">
                     <!-- Toggle: data_display_type (minified, full) -->
-                    <div v-if="settings.data_display_type" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
+                    <div v-if="settings.data_display_type" class="flex items-center gap-x-2 sm:gap-x-4 shrink-0">
                         <p v-tooltip="settings.data_display_type.options[0].tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
                             {{ settings.data_display_type.options[0].label }}
                         </p>

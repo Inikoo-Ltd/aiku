@@ -689,7 +689,7 @@ const isModalUploadFileOpen = ref(false)
                 'text-orange-600': pallet_limits?.status === 'limit',
                 'text-red-600': pallet_limits?.status === 'exceeded',
             }">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                     <font-awesome-icon :icon="['fad', 'exclamation-triangle']" class="text-lg"
                         aria-hidden="true"
                         

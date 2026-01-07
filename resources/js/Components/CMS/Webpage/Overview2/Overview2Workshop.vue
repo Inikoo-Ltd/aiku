@@ -66,7 +66,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 			<!-- Section 2: Content -->
 			<div @click="() => { sendMessageToParent('activeBlock', indexBlock) }"
-				class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white bg-opacity-90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20">
+				class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white/90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20">
 				<Editor v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" />
 			</div>
 		</div>

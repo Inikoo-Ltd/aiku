@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
                                 'color': `color-mix(in srgb, ${layout?.app?.theme[3]} 40%, black)`,
                             } : {}]"
                         >
-                            <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" class="flex-shrink-0 -ml-1 mr-2 h-4 w-4"
+                            <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" class="shrink-0 -ml-1 mr-2 h-4 w-4"
                                 :class="[
                                     tabActive[key]
                                         ? 'text-gray-400 group-hover:text-gray-500'
@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
                 >
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
                         <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
-                            class="flex-shrink-0 mr-3 h-5 w-5"
+                            class="shrink-0 mr-3 h-5 w-5"
                             :class="[
                                 key === currentTab ? 'text-gray-400' : 'text-gray-500',
                             ]"/>

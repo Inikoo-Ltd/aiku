@@ -225,7 +225,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         :alt="channel.platform"
                                         v-tooltip="channel.platform"
                                     />
-                                    <div class="w-full xflex-shrink-0 justify-between flex items-center">
+                                    <div class="w-full xshrink-0 justify-between flex items-center">
                                         <div class="min-w-0">
                                             <p class="text-sm/6 font-semibold">
                                                 {{ channel.name }}

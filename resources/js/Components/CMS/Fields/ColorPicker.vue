@@ -51,7 +51,7 @@ const emits = defineEmits<{
         </PopoverButton>
 
         <PopoverPanel class="absolute left-8 top-0 z-10 mt-3">
-            <div class="overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5">
+            <div class="overflow-hidden rounded-lg shadow-lg ring-1 ring-black/5">
                 <div class="relative  bg-white p-2.5">
                     <ColorPicker style="width: 220px;" theme="dark" :color="color" :sucker-hide="true"
                         @changeColor="(e) => emits('changeColor', e)" />

@@ -313,8 +313,8 @@ onMounted(() => {
 
                             <!-- Label slide -->
                             <div
-                                class="hidden lg:inline-flex overflow-hidden whitespace-nowrap overflow-ellipsis pl-2 leading-tight flex-auto items-center">
-                                <div class="overflow-hidden whitespace-nowrap overflow-ellipsis lg:text-xs xl:text-sm">
+                                class="hidden lg:inline-flex overflow-hidden whitespace-nowrap text-ellipsis pl-2 leading-tight flex-auto items-center">
+                                <div class="overflow-hidden whitespace-nowrap text-ellipsis lg:text-xs xl:text-sm">
                                     {{ slide?.layout?.imageAlt ?? "Image " + slide.id }}
                                 </div>
                             </div>

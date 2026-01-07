@@ -69,7 +69,7 @@ const stateBgColor = computed(() => {
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
+                        <div class="shrink-0">
                             <FontAwesomeIcon :icon="faTag" class="w-8 h-8 text-blue-600" />
                         </div>
                         <div>

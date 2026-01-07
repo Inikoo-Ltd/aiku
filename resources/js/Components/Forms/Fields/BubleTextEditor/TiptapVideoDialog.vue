@@ -53,7 +53,7 @@ function onSubmit() {
         </button>
         <button
           type="submit"
-          class="rounded-md bg-blue-700 px-4 py-3 text-sm font-medium text-white hover:bg-opacity-80"
+          class="rounded-md bg-blue-700 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700/80"
         >
           {{ trans("Add") }}
         </button>

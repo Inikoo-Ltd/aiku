@@ -58,7 +58,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
         class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition duration-200 p-3 flex items-start gap-3"
       >
         <!-- Thumbnail -->
-        <div class="w-10 h-10 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0">
+        <div class="w-10 h-10 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center shrink-0">
           <Image
             v-if="collection.image?.[0]"
             :src="collection.image[0]"

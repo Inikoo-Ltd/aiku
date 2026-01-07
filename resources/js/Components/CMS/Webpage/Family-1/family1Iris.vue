@@ -99,7 +99,7 @@ const promoData = computed(() => {
         </p>
       </div>
 
-      <a href="#list-products-ecom-iris" class="flex-shrink-0">
+      <a href="#list-products-ecom-iris" class="shrink-0">
         <Button :label="promoData.cta">
         </Button>
       </a>

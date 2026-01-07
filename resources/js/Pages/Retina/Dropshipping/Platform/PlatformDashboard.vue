@@ -241,7 +241,7 @@ const layout = inject('layout', layoutStructure)
                 <div v-if="ebay_warehouse_policy_msg.show_msg" class="flex justify-between mt-5">
                     <div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
                         <div class="flex flex-col sm:flex-row sm:items-start">
-                            <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
+                            <div class="flex items-center mb-2 sm:mb-0 sm:shrink-0">
                                 <svg class="h-5 w-5 text-red-500 mr-2 sm:mr-0 sm:mt-0.5" fill="currentColor"
                                      viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
@@ -276,7 +276,7 @@ const layout = inject('layout', layoutStructure)
                 <div v-if="platform.type == 'ebay'" class="flex justify-between mt-5">
                     <div class="w-full border-2 border-yellow-500 rounded-lg p-4 bg-yellow-50">
                         <div class="flex flex-col sm:flex-row sm:items-start">
-                            <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
+                            <div class="flex items-center mb-2 sm:mb-0 sm:shrink-0">
                                 <svg class="h-5 w-5 text-yellow-500 mr-2 sm:mr-0 sm:mt-0.5" fill="currentColor"
                                      viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"

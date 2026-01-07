@@ -204,7 +204,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
                         }"
                         target="_blank"
                     >
-                        <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0" fixed-width icon="fal fa-life-ring" />
+                        <FontAwesomeIcon aria-hidden="true" class="shrink-0" fixed-width icon="fal fa-life-ring" />
 
                         <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-80 absolute right-0 top-0 text-xxs text-[var(--theme-color-1)]" fixed-width aria-hidden="true" />
                     </a>

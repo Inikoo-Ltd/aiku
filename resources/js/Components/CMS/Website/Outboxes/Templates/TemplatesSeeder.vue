@@ -110,7 +110,7 @@
                   </div>
   
                   <div
-                      class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg opacity-0 hover:opacity-100 transition duration-300">
+                      class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 hover:opacity-100 transition duration-300">
                       <div class="text-white text-center">
                           <Button :label="trans('Use Template')" @click="selectTemplate(template)" />
                       </div>

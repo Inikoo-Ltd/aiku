@@ -154,7 +154,7 @@ const handleSubmit = () => {
       <PureVariantField v-model="form[fieldName]" v-bind="fieldData" />
     </div>
 
-    <span class="flex-shrink-0">
+    <span class="shrink-0">
       <div
         v-if="!fieldData?.verification"
         type="button"

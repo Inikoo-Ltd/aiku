@@ -215,7 +215,7 @@ const toggleFull = () => {
                 <div v-if="detailsVisible" class="mt-4">
                     <div class="flex flex-col md:flex-row gap-6">
                         <!-- Kolom kiri: Gambar -->
-                        <div class="flex-shrink-0 flex justify-center md:justify-start">
+                        <div class="shrink-0 flex justify-center md:justify-start">
                             <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-sm"
                                 @click="(e) => chooseImage(e)">
                                 <!-- Gambar baru (upload preview) -->

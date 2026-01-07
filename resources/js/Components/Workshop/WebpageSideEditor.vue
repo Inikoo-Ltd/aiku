@@ -425,7 +425,7 @@ const cancelRename = () => {
 													"
 													v-tooltip="trans('Duplicate this block')"
 													@click.stop.prevent="duplicateBlock(element)"
-													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
 													<FontAwesomeIcon :icon="faCopy" fixed-width />
 												</button>
 
@@ -443,7 +443,7 @@ const cancelRename = () => {
 													@click.stop.prevent="
 														setShowBlock($event, element)
 													"
-													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
 													<FontAwesomeIcon
 														:icon="
 															element.show
@@ -460,7 +460,7 @@ const cancelRename = () => {
 														)
 													"
 													@click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
-													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
 													<LoadingIcon
 														v-if="
 															isLoadingDeleteBlock === element.id

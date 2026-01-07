@@ -48,8 +48,8 @@ onUnmounted(() => {
         @start="() => isLoading = true"
         @finish="() => isLoading = false"
     >
-        <LoadingIcon v-if="isLoading" class="flex-shrink-0" />
-        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" :rotation="nav.icon_rotation" class="flex-shrink-0" fixed-width :icon="nav.icon" />
+        <LoadingIcon v-if="isLoading" class="shrink-0" />
+        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" :rotation="nav.icon_rotation" class="shrink-0" fixed-width :icon="nav.icon" />
     </Link>
 
     <!-- If this Navigation is active, then teleport the SubSections to #RetinaTopBarSubsections in <AppTopBar> -->

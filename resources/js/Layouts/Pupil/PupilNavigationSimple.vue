@@ -60,8 +60,8 @@ onUnmounted(() => {
         :aria-current="navKey === layout.currentModule ? 'page' : undefined"
         v-tooltip="layout.leftSidebar.show ? false : capitalize(nav.label)"
     >
-        <LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />
-        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
+        <LoadingIcon v-if="isLoading" class="shrink-0 h-4 w-4" />
+        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" class="shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
         <Transition name="slide-to-left">
             <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block"
                 :class="[layout.leftSidebar.show ? '' : 'block md:hidden']">

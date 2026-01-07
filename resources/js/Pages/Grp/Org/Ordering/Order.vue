@@ -1011,7 +1011,7 @@ const setShippingToAuto = () => {
                             box_stats?.customer.email
                             }}</a>
                         <button @click="copyToClipboard(box_stats?.customer.email, 'Email')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                            class="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                             v-tooltip="trans('Copy to clipboard')">
                             <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                         </button>
@@ -1115,7 +1115,7 @@ const setShippingToAuto = () => {
                             </dd>
                             <button
                                 @click="copyToClipboard(box_stats?.customer.addresses.delivery.formatted_address.replace(/<[^>]*>/g, ''), 'Address')"
-                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 pt-2"
+                                class="text-gray-400 hover:text-gray-600 transition-colors shrink-0 pt-2"
                                 v-tooltip="trans('Copy to clipboard')">
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
