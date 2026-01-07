@@ -32,14 +32,6 @@ class StoreShopFromMaster extends OrgAction
 
     public MasterShop $masterShop;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("org-admin.{$this->organisation->id}");
-    }
 
     /**
      * @throws Throwable
@@ -54,7 +46,7 @@ class StoreShopFromMaster extends OrgAction
             $domain = Arr::pull($modelData, 'domain');
             $shop = StoreShop::make()->action($organisation, $modelData);
 
-            StoreWebsite::make()->action($shop, [
+            StoreWebsite::make()->dispatch($shop, [
                 'code' => $shop->code,
                 'name' => $shop->name,
                 'domain' => $domain,
