@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, watch, computed } from "vue"
+import { ref, inject, onMounted, watch, computed, onUnmounted } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
@@ -28,7 +28,7 @@ const props = defineProps({
 	isLoggedIn: Boolean,
 })
 
-console.log("🚀 MessageArea props:", props.messages)
+// console.log("🚀 MessageArea props:", props.messages)
 
 const emit = defineEmits(["send-message", "reload", "mounted", "new-session"])
 
@@ -40,6 +40,9 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const selectedRating = ref<number | null>(null)
 const starPop = ref<number | null>(null)
 
+const userName = computed(() => {
+	return layout?.user?.username ?? "Customer"
+})
 const localMessages = ref<any[]>([])
 
 watch(
@@ -49,6 +52,16 @@ watch(
 	},
 	{ immediate: true, deep: true }
 )
+
+const chatSession = computed(() => props.session)
+
+const isTyping = ref<boolean>(false)
+let typingTimeout: ReturnType<typeof setTimeout> | null = null
+
+const agentTypingUser = ref<string | null>(null)
+let agentTypingTimeout: ReturnType<typeof setTimeout> | null = null
+
+let chatChannel: any = null
 
 const getGuestProfileSubmitted = (): boolean => {
 	try {
@@ -115,6 +128,16 @@ const sendMessage = async () => {
 	isSending.value = true
 	input.value = ""
 
+	if (typingTimeout) {
+		clearTimeout(typingTimeout)
+		typingTimeout = null
+	}
+
+	if (isTyping.value) {
+		isTyping.value = false
+		sendTypingStatus(false)
+	}
+
 	try {
 		emit("send-message", text)
 	} catch (error) {
@@ -172,9 +195,83 @@ watch(
 	{ deep: true }
 )
 
-onMounted(() => {
+const sendTypingStatus = async (status: boolean) => {
+	if (!chatSession.value?.ulid) return
+
+	try {
+		await axios.post(`${baseUrl}/app/api/chats/typing`, {
+			session_ulid: chatSession.value.ulid,
+			user_name: userName.value,
+			is_typing: status,
+		})
+	} catch (e) {
+		console.error("Typing status error", e)
+	}
+}
+
+const handleTyping = () => {
+	if (!isTyping.value) {
+		isTyping.value = true
+		sendTypingStatus(true)
+	}
+
+	if (typingTimeout) clearTimeout(typingTimeout)
+
+	typingTimeout = setTimeout(() => {
+		isTyping.value = false
+		sendTypingStatus(false)
+	}, 2000)
+}
+
+const initSocket = () => {
+	if (!chatSession.value?.ulid || !window.Echo) return
+
+	if (chatChannel) {
+		chatChannel.stopListening(".typing")
+	}
+
+	chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
+
+	chatChannel.listen(".typing", (payload: any) => {
+		if (payload.user_name === userName.value) return
+
+		if (payload.is_typing) {
+			agentTypingUser.value = `Agent ${payload.user_name}`
+
+			if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
+
+			agentTypingTimeout = setTimeout(() => {
+				agentTypingUser.value = null
+			}, 1500)
+
+			return
+		}
+
+		if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
+
+		agentTypingTimeout = setTimeout(() => {
+			agentTypingUser.value = null
+		}, 800)
+	})
+}
+
+watch(
+	() => chatSession.value?.ulid,
+	async () => {
+		agentTypingUser.value = null
+		if (chatChannel) chatChannel.stopListening(".typing")
+		initSocket()
+	}
+)
+
+onMounted(async () => {
+	initSocket()
 	emit("mounted")
 	scrollToBottom()
+})
+
+onUnmounted(() => {
+	if (chatChannel) chatChannel.stopListening(".typing")
 })
 </script>
 
@@ -206,11 +303,14 @@ onMounted(() => {
 					:style="{ borderTopColor: layout.app.theme[4] }" />
 			</div>
 		</div>
+		<div v-if="agentTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
+			{{ agentTypingUser }} {{ trans("is typing...") }}
+		</div>
 
 		<!-- Empty -->
 		<div
 			v-if="!messages.length && isLoggedIn"
-			class="flex-1 grid place-content-center text-gray-400 text-sm">
+			class="flex-1 grid place-content-center text-gray-400 text-sm min-h-[350px] max-h-[calc(100vh-400px)]">
 			{{ trans("Start the conversation") }}
 		</div>
 
@@ -251,6 +351,11 @@ onMounted(() => {
 				<textarea
 					v-model="input"
 					rows="1"
+					@input="
+						() => {
+							handleTyping()
+						}
+					"
 					@keydown="handleKeyDown"
 					placeholder="Type a message..."
 					class="flex-1 resize-none px-3 py-2 rounded-lg text-sm outline-none border"

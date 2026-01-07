@@ -70,7 +70,8 @@ class DepartmentResource extends JsonResource
             'is_name_reviewed' => $department->is_name_reviewed,
             'is_description_title_reviewed' => $department->is_description_title_reviewed,
             'is_description_reviewed' => $department->is_description_reviewed,
-            'is_description_extra_reviewed' => $department->is_description_extra_reviewed
+            'is_description_extra_reviewed' => $department->is_description_extra_reviewed,
+            'stats' => $department->stats
         ];
     }
 }

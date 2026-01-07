@@ -27,6 +27,7 @@ type LocalChatMessage = ChatMessage & {
 const props = defineProps<{
 	messages: ChatMessage[]
 	session: SessionAPI | null
+	userName: string
 }>()
 
 const emit = defineEmits([
@@ -57,6 +58,14 @@ const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const menuRef = ref<HTMLElement | null>(null)
 
+const isTyping = ref(false)
+let typingTimeout: ReturnType<typeof setTimeout> | null = null
+
+const remoteTypingUser = ref<string | null>(null)
+let remoteTypingTimeout: ReturnType<typeof setTimeout> | null = null
+
+const typingUser = ref<string | null>(null)
+
 const scrollBottom = () =>
 	nextTick(() => {
 		if (messagesContainer.value) {
@@ -72,6 +81,9 @@ const autoResize = () => {
 
 const sendMessage = async () => {
 	if (!newMessage.value.trim()) return
+
+	sendTypingStatus(false)
+	isTyping.value = false
 
 	const tempId = `tmp-${Date.now()}`
 
@@ -90,7 +102,7 @@ const sendMessage = async () => {
 	const text = newMessage.value
 	newMessage.value = ""
 	autoResize()
-
+	typingUser.value = null
 	try {
 		await emit("send-message", text)
 		const msg = messagesLocal.value.find((m) => m._tempId === tempId)
@@ -177,15 +189,18 @@ let chatChannel: any = null
 
 const stopSocket = () => {
 	chatChannel?.stopListening(".message")
+	chatChannel?.stopListening(".typing")
+	chatChannel?.stopListening(".messages.read")
 	chatChannel = null
 }
 
 const initSocket = () => {
 	if (!chatSession.value?.ulid || !window.Echo) return
+
 	stopSocket()
 
 	chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
-
+	// Message
 	chatChannel.listen(".message", ({ message }: any) => {
 		const index = messagesLocal.value.findIndex(
 			(m) =>
@@ -215,6 +230,28 @@ const initSocket = () => {
 			})
 		}
 	})
+
+	chatChannel.listen(".typing", (payload: any) => {
+		if (payload.user_name === props.userName) return
+
+		if (payload.is_typing) {
+			remoteTypingUser.value = payload.user_name
+
+			if (remoteTypingTimeout) clearTimeout(remoteTypingTimeout)
+
+			remoteTypingTimeout = setTimeout(() => {
+				remoteTypingUser.value = null
+			}, 1500)
+
+			return
+		}
+
+		if (remoteTypingTimeout) clearTimeout(remoteTypingTimeout)
+
+		remoteTypingTimeout = setTimeout(() => {
+			remoteTypingUser.value = null
+		}, 800)
+	})
 }
 
 const markAsRead = async () => {
@@ -238,12 +275,43 @@ const onViewMessageDetails = () => {
 watch(
 	() => chatSession.value?.ulid,
 	async () => {
+		typingUser.value = null
 		stopSocket()
 		messagesLocal.value = []
 		await getMessages()
 		initSocket()
 	}
 )
+
+const sendTypingStatus = async (status: boolean) => {
+	if (!chatSession.value?.ulid) return
+
+	try {
+		await axios.post(`${baseUrl}/app/api/chats/typing`, {
+			session_ulid: chatSession.value.ulid,
+			user_name: props.userName,
+			is_typing: status,
+		})
+	} catch (e) {
+		console.error("Typing status error", e)
+	}
+}
+
+const handleTyping = () => {
+	if (!isTyping.value) {
+		isTyping.value = true
+		sendTypingStatus(true)
+	}
+
+	if (typingTimeout) clearTimeout(typingTimeout)
+
+	typingTimeout = setTimeout(() => {
+		isTyping.value = false
+		sendTypingStatus(false)
+	}, 500)
+
+	typingUser.value = props.userName
+}
 
 onMounted(async () => {
 	await getMessages()
@@ -351,6 +419,9 @@ const handleClickOutside = (e: MouseEvent) => {
 			</template>
 		</div>
 
+		<div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
+			{{ remoteTypingUser }} {{ trans("is typing...") }}
+		</div>
 		<!-- Footer -->
 		<footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
 			<!-- Attachment -->
@@ -363,7 +434,18 @@ const handleClickOutside = (e: MouseEvent) => {
 			<textarea
 				ref="messageInput"
 				v-model="newMessage"
-				@input="autoResize"
+				@input="
+					() => {
+						autoResize()
+						handleTyping()
+					}
+				"
+				@blur="
+					() => {
+						isTyping.value = false
+						sendTypingStatus(false)
+					}
+				"
 				@keydown.enter.exact.prevent="sendMessage"
 				rows="1"
 				placeholder="Type message..."
