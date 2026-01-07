@@ -129,8 +129,19 @@ class SendChatMessage
         ];
     }
 
-    public function asController(Request $request, string $ulid, ?string $organisation = null): array
+    public function asController(Request $request): array
     {
+        /** @var Organisation|null $organisation */
+        $organisation = $request->route('organisation');
+
+        /** @var ChatSession|string $chatSession */
+        $chatSession = $request->route('chatSession');
+
+        $ulid = is_string($chatSession)
+            ? $chatSession
+            : $chatSession->ulid;
+
+
         $this->validateUlid($ulid);
 
         $validated = $request->validate($this->rules());

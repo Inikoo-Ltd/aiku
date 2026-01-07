@@ -41,8 +41,17 @@ const selectedRating = ref<number | null>(null)
 const starPop = ref<number | null>(null)
 
 const userName = computed(() => {
-	return layout?.user?.username
+	return layout?.user?.username ?? "Customer"
 })
+const localMessages = ref<any[]>([])
+
+watch(
+	() => props.messages,
+	(newVal) => {
+		localMessages.value = [...newVal]
+	},
+	{ immediate: true, deep: true }
+)
 
 const chatSession = computed(() => props.session)
 
@@ -92,9 +101,9 @@ const updateRating = async (r: number) => {
 }
 
 const groupedMessages = computed(() => {
-	const groups: Record<string, LocalChatMessage[]> = {}
+	const groups: Record<string, any[]> = {}
 
-	props.messages
+	localMessages.value
 		.slice()
 		.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
 		.forEach((msg) => {
@@ -227,7 +236,7 @@ const initSocket = () => {
 		if (payload.user_name === userName.value) return
 
 		if (payload.is_typing) {
-			agentTypingUser.value = payload.user_name
+			agentTypingUser.value = `Agent ${payload.user_name}`
 
 			if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
 
