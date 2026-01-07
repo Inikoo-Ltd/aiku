@@ -6,6 +6,7 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class UpdateFaireInventoryQuantity extends OrgAction
 {
@@ -15,6 +16,7 @@ class UpdateFaireInventoryQuantity extends OrgAction
     {
         return $shop->updateInventoryQuantity([
             'sku' => $product->code,
+            'product_variant_id' => Arr::get($product->data, 'faire.id'),
             'quantity' => $product->available_quantity
         ]);
     }
