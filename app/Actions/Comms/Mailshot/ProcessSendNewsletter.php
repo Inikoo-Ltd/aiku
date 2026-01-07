@@ -54,7 +54,6 @@ class ProcessSendNewsletter
             foreach ($chunk as $model) {
                 if (filter_var($model->email, FILTER_VALIDATE_EMAIL)) {
                     SendNewsletterToCustomerEmail::dispatch($model, [], $mailshot);
-                    // TODO: store the mailshot recipient
                 }
             }
         });
