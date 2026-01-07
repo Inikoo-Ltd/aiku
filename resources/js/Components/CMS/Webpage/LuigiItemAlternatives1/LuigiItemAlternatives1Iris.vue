@@ -127,7 +127,7 @@ onMounted(() => {
                     autoHeight
                 >
                     <div v-if="isLoadingFetch" class="grid grid-cols-5 gap-x-4">
-                        <div v-for="xx in 5" class="skeleton w-full h-64 rounded">
+                        <div v-for="xx in 5" class="skeleton w-full h-64 rounded-sm">
                         </div>
                     </div>
 

@@ -115,19 +115,19 @@ const updateFormValue = (newValue) => {
 
         <!--  -->
         <div class="flex gap-x-1 items-center" v-if="colorSuggestions">
-            <div class="bg-gray-700 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+            <div class="bg-gray-700 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                 @click="() => changeColor({ rgba: { r: 55, g: 65, b: 81, a: 1 } })" />
-            <div class="bg-white border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+            <div class="bg-white border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                 @click="() => changeColor({ rgba: { r: 255, g: 255, b: 255, a: 255 } })" />
-            <div class="bg-yellow-300 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+            <div class="bg-yellow-300 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                 @click="() => changeColor({ rgba: { r: 253, g: 224, b: 71, a: 255 } })" />
-            <div class="bg-emerald-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+            <div class="bg-emerald-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                 @click="() => changeColor({ rgba: { r: 16, g: 185, b: 129, a: 255 } })" />
-            <div class="bg-sky-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+            <div class="bg-sky-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                 @click="() => changeColor({ rgba: { r: 14, g: 165, b: 233, a: 255 } })" />
-            <div class="bg-indigo-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+            <div class="bg-indigo-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                 @click="() => changeColor({ rgba: { r: 99, g: 102, b: 241, a: 255 } })" />
-            <div class="bg-rose-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+            <div class="bg-rose-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                 @click="() => changeColor({ rgba: { r: 244, g: 63, b: 94, a: 255 } })" />
         </div>
     </div>
@@ -151,19 +151,19 @@ const updateFormValue = (newValue) => {
                         class="absolute bottom-full left-1/2 z-10 mb-3 -translate-x-1/2 transform px-4 sm:px-0"
                         :style="stylePanel">
                         <div class="flex gap-x-1 items-center flex-wrap"  style="width: 225px;">
-                            <div class="bg-gray-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+                            <div class="bg-gray-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                                 @click="() => changeScheme('gray')" />
-                            <div class="bg-white border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+                            <div class="bg-white border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                                 @click="() => changeScheme('white')" />
-                            <div class="bg-yellow-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+                            <div class="bg-yellow-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                                 @click="() => changeScheme('yellow')" />
-                            <div class="bg-green-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+                            <div class="bg-green-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                                 @click="() => changeScheme('green')" />
-                            <div class="bg-blue-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+                            <div class="bg-blue-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                                 @click="() => changeScheme('blue')" />
-                            <div class="bg-fuchsia-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+                            <div class="bg-fuchsia-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                                 @click="() => changeScheme('fuchsia')" />
-                            <div class="bg-red-500 border border-slate-300 rounded w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
+                            <div class="bg-red-500 border border-slate-300 rounded-sm w-6 h-6 shadow-sm cursor-pointer hover:scale-110 transition-transform duration-100 ease-in-out"
                                 @click="() => changeScheme('red')" />
                         </div>
                     </PopoverPanel>

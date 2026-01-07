@@ -61,7 +61,7 @@ const throttledValue = throttle((newValue) => {
 
 <template>
     <div :class="selectedEchopersonal?.isShowProgress ? 'bottom-16':'-bottom-24' "
-        class="backdrop-blur-sm bg-white/60 ring-1 ring-gray-300 rounded-md px-4 py-2 z-[100] fixed right-1/2 translate-x-1/2 transition-all duration-200 ease-in-out flex gap-x-6 tabular-nums">
+        class="backdrop-blur-xs bg-white/60 ring-1 ring-gray-300 rounded-md px-4 py-2 z-[100] fixed right-1/2 translate-x-1/2 transition-all duration-200 ease-in-out flex gap-x-6 tabular-nums">
         <!-- <pre>{{ selectedEchopersonal?.isShowProgress }}</pre> -->
         <template v-if="Object.keys(selectedEchopersonal?.progressBars?.Upload ?? {}).length > 0">
             <TransitionGroup name="progressbar">

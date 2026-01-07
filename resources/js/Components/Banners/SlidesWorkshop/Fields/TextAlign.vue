@@ -87,7 +87,7 @@ const updateLocalFormValue = (newValue) => {
     <div class="py-1">
     <!-- <pre>{{ data.common }}</pre> -->
         <div class="flex gap-x-2">
-            <div v-for="option in props.fieldData?.options " @click="value = option.value" class="flex items-center justify-center bg-gray-100 rounded p-2 ring-1 ring-gray-300 cursor-pointer"
+            <div v-for="option in props.fieldData?.options " @click="value = option.value" class="flex items-center justify-center bg-gray-100 rounded-sm p-2 ring-1 ring-gray-300 cursor-pointer"
                 :class="[ value == option.value ? 'bg-gray-300' : 'hover:bg-gray-200']"
             >
                 <FontAwesomeIcon :icon='option.icon' class='' aria-hidden='true' />

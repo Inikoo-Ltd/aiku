@@ -194,7 +194,7 @@ const submitCheckStock = () => {
             <div class="text-center">Move stock</div>
             
             <!-- Move Stock Section -->
-            <div v-if="moveStock.isActive" class="border border-gray-200 rounded p-3 bg-gray-50 relative">
+            <div v-if="moveStock.isActive" class="border border-gray-200 rounded-sm p-3 bg-gray-50 relative">
                 <button 
                     @click="closeMoveStock"
                     class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"

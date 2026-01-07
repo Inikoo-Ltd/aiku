@@ -60,7 +60,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
             type="text"
             name="global"
             @input="(e) => (querySearch = e?.target?.value, onChange(e?.target?.value))"
-            class="border border-gray-300 rounded appearance-none inline pl-[60px] lg:pl-[103px] w-0 text-sm leading-none transition-[width] placeholder:text-gray-400 placeholder:italic ring-0 ring-transparent focus:ring-0 focus:ring-transparent cursor-text"
+            class="border border-gray-300 rounded-sm appearance-none inline pl-[60px] lg:pl-[103px] w-0 text-sm leading-none transition-[width] placeholder:text-gray-400 placeholder:italic ring-0 ring-transparent focus:ring-0 focus:ring-transparent cursor-text"
             :class="[querySearch ? 'bg-gray-500 focus:border-gray-500 text-gray-500 w-full pr-8' : 'pr-4 group-focus-within:w-full group-focus-within:pr-4 focus:border-gray-300']"
             :style="{
                 backgroundColor: querySearch ? layout?.app?.theme[4] + '33' : '#fff',
@@ -72,9 +72,9 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
             <FontAwesomeIcon icon="far fa-search-minus" class="h-4 w-4" aria-hidden="true"
                 :class="[querySearch ? 'text-gray-500' : 'text-gray-400']" 
             />
-            <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none py-0 text-base rounded">⌥</span>
-            <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded leading-none">Alt</span>
-            <span class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0 text-xs rounded">/</span>
+            <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none py-0 text-base rounded-sm">⌥</span>
+            <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded-sm leading-none">Alt</span>
+            <span class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0 text-xs rounded-sm">/</span>
         </div>
 
         <!-- Button: Reset -->

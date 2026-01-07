@@ -14,7 +14,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div class="rounded overflow-hidden ring-1 ring-gray-400 flex">
+    <div class="rounded-sm overflow-hidden ring-1 ring-gray-400 flex">
         <template v-for="(button, index) in data">
             <Link
                 :href="`${route(button.route.name, button.route.parameters)}`" class=""

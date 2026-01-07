@@ -395,7 +395,7 @@ const compToolTip = computed(() => {
                                         </div>
 
                                         <div v-if="data.selected_action === 'manual'" class="mb-2">
-                                            <div :class="usePage().props.errors?.reference ? 'errorShake' : ''" class="w-fit rounded">
+                                            <div :class="usePage().props.errors?.reference ? 'errorShake' : ''" class="w-fit rounded-sm">
                                                 <InputText
                                                     :modelValue="get(data, 'manual_refund_reference', '')"
                                                     @input="(e) => set(data, 'manual_refund_reference', e.target?.value)"

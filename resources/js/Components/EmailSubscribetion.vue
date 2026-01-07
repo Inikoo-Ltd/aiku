@@ -157,7 +157,7 @@ defineExpose({
                 v-if="showEditButton && editable"
                 @click="toggleEditEmailSubscriptions"
                 :style="{ color: layout?.app?.theme?.[0] || '#6366f1' }"
-                class="p-1 rounded transition-colors duration-200 hover:bg-gray-100"
+                class="p-1 rounded-sm transition-colors duration-200 hover:bg-gray-100"
                 v-tooltip="isEditingEmailSubscriptions ? trans('Cancel Edit') : trans('Edit Email Subscriptions')"
             >
                 <FontAwesomeIcon 
@@ -179,7 +179,7 @@ defineExpose({
             <div 
                 v-for="(subscription, key) in emailSubscriptions.subscriptions" 
                 :key="key"
-                class="flex items-center justify-between hover:bg-gray-50 rounded p-1"
+                class="flex items-center justify-between hover:bg-gray-50 rounded-sm p-1"
             >
                 <span class="text-sm text-gray-700">{{ subscription.label }}</span>
 
@@ -214,7 +214,7 @@ defineExpose({
         </div>
 
         <!-- Message when suspended -->
-        <div v-if="localIsSuspended" class="mt-3 p-2 bg-red-50 rounded text-center">
+        <div v-if="localIsSuspended" class="mt-3 p-2 bg-red-50 rounded-sm text-center">
             <span class="text-xs text-red-600">{{ trans('All email communications are suspended') }}</span>
         </div>
     </div>

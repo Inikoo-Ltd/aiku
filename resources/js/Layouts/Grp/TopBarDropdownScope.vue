@@ -114,7 +114,7 @@ const onClickOrg = async (slug?: string) => {
                 <MenuItem v-slot="{ active }">
                 <div @click="() => router.visit(route('grp.dashboard.show'))" :class="[
                     sortedMenuItems[0].slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
-                    'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
+                    'group flex gap-x-2 w-full justify-start items-center rounded-sm pl-2 pr-4 py-2 text-sm cursor-pointer',
                 ]">
                     <FontAwesomeIcon icon="fal fa-city" class="" ariaa-hidden="true" />
                     <div class="space-x-1 whitespace-nowrap">
@@ -129,7 +129,7 @@ const onClickOrg = async (slug?: string) => {
                 <MenuItem v-for="(item, index) in sortedMenuItems" :key="item.slug || index" v-slot="{ active }">
                 <div @click="() => onClickOrg(item.slug)" :class="[
                     item.slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
-                    'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
+                    'group flex gap-x-2 w-full justify-start items-center rounded-sm pl-2 pr-4 py-2 text-sm cursor-pointer',
                 ]">
                     <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50">
                         <Image v-show="!imageSkeleton[item.slug]" :src="item.logo"

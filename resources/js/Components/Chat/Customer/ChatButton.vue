@@ -390,7 +390,7 @@ defineExpose({
 
 					<div v-if="isLoggedIn" class="flex gap-1 capitalize">
 						<button v-for="m in ['chat', 'history']" :key="m" @click="activeMenu = m"
-							class="px-2 py-1 rounded text-xs transition"
+							class="px-2 py-1 rounded-sm text-xs transition"
 							:class="activeMenu === m ? 'text-white' : 'bg-gray-100 text-gray-600'" :style="activeMenu === m ? {
 								backgroundColor: layout.app.theme[4],
 								color: layout.app.theme[5]

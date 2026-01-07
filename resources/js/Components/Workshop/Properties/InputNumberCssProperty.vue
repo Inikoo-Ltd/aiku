@@ -60,7 +60,7 @@ function updateModel<K extends keyof CssProperty>(key: K, newValue: CssProperty[
                       leave-from-class="translate-y-0 opacity-100"
                       leave-to-class="translate-y-1 opacity-0">
             <PopoverPanel v-slot="{ close }"
-                          class="bg-white shadow-sm mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
+                          class="bg-white shadow-sm mt-3 absolute top-full right-0 z-10 w-32 transform rounded-sm overflow-hidden">
                 <div v-if="unit_option?.length">
                     <div v-for="option in unit_option"
                         @click="() => { updateModel('unit', option.value); close() }"

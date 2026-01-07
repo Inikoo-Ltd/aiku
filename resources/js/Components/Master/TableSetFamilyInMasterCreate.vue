@@ -73,7 +73,7 @@ const toggleCheckAll = (value: boolean) => {
             </table>
         </div>
 
-        <div v-else class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded">
+        <div v-else class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded-sm">
             {{ trans("No data available") }}
         </div>
     </div>

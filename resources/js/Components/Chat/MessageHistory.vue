@@ -199,7 +199,7 @@ onMounted(async () => {
 				<button
 					v-if="canLoadMore && messages.length && !isLoadingMore"
 					@click="getMessages(true)"
-					class="px-2 py-1 text-xs border rounded">
+					class="px-2 py-1 text-xs border rounded-sm">
 					Load more
 				</button>
 				<span v-if="isLoadingMore" class="text-xs text-gray-500 ml-2">

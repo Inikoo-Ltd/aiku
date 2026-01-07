@@ -80,14 +80,14 @@ if(props.style == 'white-r-outline') {styleClass = "bg-white hover:bg-red-200 bo
 // Styling depends on the 'size' props
 switch (props.size) {
   case "xxs":
-    sizeClass = "rounded-sm px-1 py-0.5 md:px-2 md:py-1 text-xxs";
+    sizeClass = "rounded-xs px-1 py-0.5 md:px-2 md:py-1 text-xxs";
     break;
   case "xs":
-    sizeClass = "rounded-sm px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
+    sizeClass = "rounded-xs px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
     break;
   case "sm":
   case "s":
-    sizeClass = "rounded px-2 md:px-3 py-[5px] md:py-[7px] text-sm";
+    sizeClass = "rounded-sm px-2 md:px-3 py-[5px] md:py-[7px] text-sm";
     break;
   case "m":
   case "md":

@@ -21,7 +21,7 @@ defineProps<{
         <div class="border-t border-gray-200 pt-4">
             <dt class="font-medium">{{ trans("Location") }}</dt>
             <dd class="mt-2 text-sm text-gray-500 text-justify">
-                <div v-html="data.workplace.address.formatted_address" class="p-3 border border-gray-300 rounded w-fit">
+                <div v-html="data.workplace.address.formatted_address" class="p-3 border border-gray-300 rounded-sm w-fit">
 
                 </div>
             </dd>

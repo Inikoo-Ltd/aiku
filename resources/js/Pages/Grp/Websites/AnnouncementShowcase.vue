@@ -111,7 +111,7 @@ const onCopyUlid = async (text: string) => {
                         <!-- Last Published message -->
                         <div v-if="data.published_message" class="flex flex-col items-start justify-between">
                             <dt class="text-sm font-medium text-gray-600">{{ trans('Last Published message') }}</dt>
-                            <dd class="text-sm border border-gray-300 bg-gray-700/5 italic text-gray-500 px-3 py-2 mt-1 w-full rounded">
+                            <dd class="text-sm border border-gray-300 bg-gray-700/5 italic text-gray-500 px-3 py-2 mt-1 w-full rounded-sm">
                                 {{ data.published_message ?? '-'}}
                             </dd>
                         </div>

@@ -96,7 +96,7 @@ watch(isOpenModalCrop, (value) => {
                     imageClass="w-full h-full"
                     :auto-zoom="true"
                 />
-                <div @click="() => numbKey++" class="select-none px-2 py-1 cursor-pointer absolute top-2 text-white right-2 border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded">
+                <div @click="() => numbKey++" class="select-none px-2 py-1 cursor-pointer absolute top-2 text-white right-2 border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded-sm">
                     <FontAwesomeIcon icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
                     {{ trans("Refresh") }}
                 </div>
@@ -113,8 +113,8 @@ watch(isOpenModalCrop, (value) => {
         </Modal>
 
         <!-- Avatar Button: Large view -->
-        <div class="bg-gray-100 relative overflow-hidden h-40 min-w-32 w-auto aspect-ratio rounded lg:inline-block ring-1 ring-gray-500 shadow-sm">
-            <Image class="h-full rounded" :src="imgAfterCrop" alt="" />
+        <div class="bg-gray-100 relative overflow-hidden h-40 min-w-32 w-auto aspect-ratio rounded-sm lg:inline-block ring-1 ring-gray-500 shadow-sm">
+            <Image class="h-full rounded-sm" :src="imgAfterCrop" alt="" />
             <label id="input-avatar-large-mask" for="input-avatar-large"
                    class="absolute inset-0 flex h-full w-full items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 hover:opacity-100">
                 <span>{{ trans("Change") }}</span>

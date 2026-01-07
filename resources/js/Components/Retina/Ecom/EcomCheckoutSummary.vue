@@ -147,7 +147,7 @@ const updateCollection = (value: boolean) => {
                     </dl>
                 </template>
                 
-                <div v-else-if="get(props.order, ['is_collection'], false)" class="bg-gray-50 w-full text-center py-2 border border-gray-300 rounded">
+                <div v-else-if="get(props.order, ['is_collection'], false)" class="bg-gray-50 w-full text-center py-2 border border-gray-300 rounded-sm">
                     <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
                     {{ trans("This order is for collection only") }}.
                 </div>
@@ -264,7 +264,7 @@ const updateCollection = (value: boolean) => {
                 </dl>
             </div>
 
-            <div class="border border-gray-200 p-2 rounded">
+            <div class="border border-gray-200 p-2 rounded-sm">
                 <OrderSummary
                     :order_summary="summary.order_summary"
                     :currency_code="layout?.iris?.currency?.code"

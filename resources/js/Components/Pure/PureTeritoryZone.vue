@@ -107,7 +107,7 @@ function getCountryLabel(code: string): string {
     <div
       v-for="(item, index) in items"
       :key="index"
-      class="p-3 rounded border border-gray-300 bg-white shadow-xs space-y-2"
+      class="p-3 rounded-sm border border-gray-300 bg-white shadow-xs space-y-2"
     >
       <!-- Country Code -->
       <div class="flex justify-between items-center">
@@ -142,7 +142,7 @@ function getCountryLabel(code: string): string {
       <!-- Included Postal Codes -->
       <div v-if="item.included_postal_codes">
         <div class="text-gray-500 mb-1">Included Postal Codes</div>
-        <div class="bg-gray-50 text-xs p-2 rounded text-black whitespace-pre-wrap break-words">
+        <div class="bg-gray-50 text-xs p-2 rounded-sm text-black whitespace-pre-wrap break-words">
           {{ item.included_postal_codes }}
         </div>
       </div>
@@ -150,7 +150,7 @@ function getCountryLabel(code: string): string {
       <!-- Excluded Postal Codes -->
       <div v-if="item.excluded_postal_codes">
         <div class="text-gray-500 mb-1">Excluded Postal Codes</div>
-        <div class="bg-gray-50 text-xs p-2 rounded text-black whitespace-pre-wrap break-words">
+        <div class="bg-gray-50 text-xs p-2 rounded-sm text-black whitespace-pre-wrap break-words">
           {{ item.excluded_postal_codes }}
         </div>
       </div>
@@ -179,7 +179,7 @@ function getCountryLabel(code: string): string {
     <!-- Edit mode -->
     <div v-else>
       <label class="block mb-1 text-gray-600">Country</label>
-      <div class="flex items-center font-medium text-black bg-gray-50 p-2 rounded">
+      <div class="flex items-center font-medium text-black bg-gray-50 p-2 rounded-sm">
         <img
           class="inline pr-1 pl-1 h-[1em]"
           :src="'/flags/' + editCountryCode.toLowerCase() + '.png'"

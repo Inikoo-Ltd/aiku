@@ -615,7 +615,7 @@ onMounted(() => {
 					<div
 						v-if="isLoadingData === 'addTrackingNumber'"
 						v-for="sip in 3"
-						class="skeleton w-full max-w-52 h-20 rounded"></div>
+						class="skeleton w-full max-w-52 h-20 rounded-sm"></div>
 					<div
 						v-else
 						v-for="(shipment, index) in optionShippingList.filter(
@@ -719,7 +719,7 @@ onMounted(() => {
 				<!-- Field: Address -->
 				<div
 					v-if="formTrackingNumber?.errors?.address"
-					class="my-3 p-2 rounded bg-gray-100"
+					class="my-3 p-2 rounded-sm bg-gray-100"
 					:class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
 					<PureAddress v-model="xxxCopyAddress" :options="address.options" xfieldLabel />
 				</div>

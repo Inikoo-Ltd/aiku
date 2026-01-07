@@ -87,7 +87,7 @@ const stats = [
         <!-- Revenue -->
         <div v-if="false" class="pt-8 p-4 md:col-span-3">
             <h3 class="text-base font-semibold leading-6">All sales since: Mon 20 August 2007</h3>
-            <dl class="mt-5 grid grid-cols-1 overflow-hidden rounded bg-white md:grid-cols-3 md:gap-x-2 md:gap-y-4">
+            <dl class="mt-5 grid grid-cols-1 overflow-hidden rounded-sm bg-white md:grid-cols-3 md:gap-x-2 md:gap-y-4">
                 <div v-for="item in stats" :key="item.name" class="px-4 py-5 sm:p-6 border border-gray-200 rounded-md">
                     <dt class="text-base font-normal">{{ item.name }}</dt>
                     <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">

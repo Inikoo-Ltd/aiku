@@ -723,7 +723,7 @@ provide("listError", listError.value)
 			<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
 				<div v-if="isLoadingData === 'addTrackingNumber'"
 					v-for="sip in 3"
-					class="skeleton w-full max-w-52 h-20 rounded"
+					class="skeleton w-full max-w-52 h-20 rounded-sm"
 				>
 				</div>
 				<div v-else

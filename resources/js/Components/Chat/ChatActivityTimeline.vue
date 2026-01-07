@@ -107,9 +107,9 @@ watch(
 
 <template>
 	<div v-if="loading" class="space-y-3">
-		<div class="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-		<div class="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
-		<div class="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+		<div class="h-4 bg-gray-200 rounded-sm animate-pulse w-1/3"></div>
+		<div class="h-4 bg-gray-200 rounded-sm animate-pulse w-2/3"></div>
+		<div class="h-4 bg-gray-200 rounded-sm animate-pulse w-1/2"></div>
 	</div>
 
 	<div v-else-if="error" class="text-red-600 text-sm">
@@ -185,7 +185,7 @@ watch(
 							class="mt-2 flex items-center gap-1">
 							<div
 								v-if="activity?.details?.priority_previous"
-								class="px-2 py-1 text-xs font-medium border rounded"
+								class="px-2 py-1 text-xs font-medium border rounded-sm"
 								:class="'bg-gray-50 text-gray-700 border-gray-50'">
 								{{ activity.details.priority_previous }}
 							</div>
@@ -204,7 +204,7 @@ watch(
 									activity?.details?.priority_current ||
 									activity?.details?.priority
 								"
-								class="px-2 py-1 text-xs font-medium border rounded"
+								class="px-2 py-1 text-xs font-medium border rounded-sm"
 								:class="
 									priorityClass(
 										activity?.details?.priority_current ||

@@ -32,7 +32,7 @@ const layout = inject('layout', retinaLayoutStructure)
 
                 <!-- <pre>{{ layout.offer_data }}</pre> -->
 
-                <div class="w-full rounded-sm h-4 bg-gray-200 relative overflow-hidden mb-2">
+                <div class="w-full rounded-xs h-4 bg-gray-200 relative overflow-hidden mb-2">
                     <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
                         :class="true ? 'xshimmer bg-green-500' : 'bg-green-500'"
                         :style="{

@@ -153,7 +153,7 @@ defineExpose({
 
 <template>
     <!-- <pre>{{ options }}</pre> -->
-    <!-- <div class="relative w-full text-gray-600 rounded-sm"> -->
+    <!-- <div class="relative w-full text-gray-600 rounded-xs"> -->
         <!-- {{ model }} -->
         <!-- <pre>{{ optionsList.length ? optionsList : (initOptions || []) }}</pre> -->
     <Multiselect ref="_multiselectRef"

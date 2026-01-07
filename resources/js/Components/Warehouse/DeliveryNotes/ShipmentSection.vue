@@ -391,7 +391,7 @@ const onCopyDataCustomer = (field: string) => {
 				<li
 					v-for="(shipment, shipmentIdx) in shipments"
 					:key="shipmentIdx"
-					class="px-2.5 py-2 rounded bg-gray-50 border border-gray-200 tabular-nums">
+					class="px-2.5 py-2 rounded-sm bg-gray-50 border border-gray-200 tabular-nums">
 					<div class="flex flex-col justify-between gap-x-2 relative">
 						<!-- <pre>{{ shipment }}</pre> -->
 						<div class="font-semibold text-sm flex items-center gap-2">
@@ -572,7 +572,7 @@ const onCopyDataCustomer = (field: string) => {
 							<div
 								v-if="isLoadingData === 'addTrackingNumber'"
 								v-for="sip in 3"
-								class="skeleton w-full max-w-52 h-20 rounded"></div>
+								class="skeleton w-full max-w-52 h-20 rounded-sm"></div>
 							<div
 								v-else
 								v-for="(shipment, index) in optionShippingList.filter(
@@ -621,7 +621,7 @@ const onCopyDataCustomer = (field: string) => {
 
 						<!-- Field: Address -->
 						<!-- <template v-if="formTrackingNumber?.errors?.address">
-                            <div class="relative my-3 p-2 rounded bg-gray-100"
+                            <div class="relative my-3 p-2 rounded-sm bg-gray-100"
                                 :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
                                 <PureAddress v-model="copyDeliveryAddress" :options="address?.options" xfieldLabel />
                                 <div v-if="isLoadingButton"
@@ -762,7 +762,7 @@ const onCopyDataCustomer = (field: string) => {
 
 			<div
 				v-if="shipmentErrorMessage"
-				class="bg-red-100 border border-red-300 text-red-500 rounded px-4 py-2">
+				class="bg-red-100 border border-red-300 text-red-500 rounded-sm px-4 py-2">
 				{{ shipmentErrorMessage }}
 			</div>
 
@@ -770,7 +770,7 @@ const onCopyDataCustomer = (field: string) => {
 			<div class="w-full mt-3">
 				<!-- Field: Address -->
 				<div
-					class="relative my-3 p-2 pr-4 rounded bg-gray-100 max-h-[450px] overflow-y-auto"
+					class="relative my-3 p-2 pr-4 rounded-sm bg-gray-100 max-h-[450px] overflow-y-auto"
 					:class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
 					<!-- <div class="flex justify-center mb-2">
                         <Button @click="() => onCopyDataCustomer()" type="tertiary" size="xxs" key="1" icon="fal fa-user" :label="'Use customer data'">

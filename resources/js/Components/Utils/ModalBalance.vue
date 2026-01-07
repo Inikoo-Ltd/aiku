@@ -127,14 +127,14 @@ const onSubmit = () => {
 				<div class="mt-8 flex justify-end space-x-4">
 					<button
 						@click="closeModal"
-						class="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+						class="px-6 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition">
 						Cancel
 					</button>
 					<Button
 						type="button"
 						@click="onSubmit"
 						:disabled=" !amount || amount <= 0 || !increaseBalance"
-						class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+						class="px-6 py-2 bg-indigo-600 text-white rounded-sm hover:bg-indigo-700 transition">
 						Save
 					</Button>
 				</div>
@@ -181,14 +181,14 @@ const onSubmit = () => {
 				<div class="mt-8 flex justify-end space-x-4">
 					<button
 						@click="closeModal"
-						class="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+						class="px-6 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition">
 						Cancel
 					</button>
 					<Button
 						type="button"
 						@click="onSubmit"
 						:disabled=" !amount || amount <= 0 || !decreaseBalance"
-						class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+						class="px-6 py-2 bg-indigo-600 text-white rounded-sm hover:bg-indigo-700 transition">
 						Save
 					</Button>
 				</div>

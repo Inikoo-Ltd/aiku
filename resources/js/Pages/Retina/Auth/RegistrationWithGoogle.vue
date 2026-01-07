@@ -181,7 +181,7 @@ provide('registrationWarning', registrationWarning)
 						<!-- Warning: only tax_number -->
 						<div
 							v-if="form?.errors && form.errors.tax_number"
-							class="mb-4 bg-amber-100 rounded text-amber-700 border border-amber-300 px-4 py-2"
+							class="mb-4 bg-amber-100 rounded-sm text-amber-700 border border-amber-300 px-4 py-2"
 							>
 							<span class="font-bold">{{ trans('Warning') }}:</span>
 							<ul class="list-disc list-inside">

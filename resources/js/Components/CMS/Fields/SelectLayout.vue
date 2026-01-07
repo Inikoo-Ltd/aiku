@@ -52,7 +52,7 @@ const onSubmitLayout = (layoutType: string) => {
     <button @click="isModalOpen = true" class="relative flex w-full items-center justify-center p-4 border rounded-md">
       <div v-if="selectedLayout" class="w-full">
         <div v-if="selectedLayout.grid" :class="'grid gap-2 ' + selectedLayout.grid" class="h-14">
-          <div v-for="(i, indexI) in selectedLayout.images" :key="i" class="text-2xl flex items-center justify-center font-bold text-gray-400 bg-gray-200 h-15 w-full border border-dashed rounded">
+          <div v-for="(i, indexI) in selectedLayout.images" :key="i" class="text-2xl flex items-center justify-center font-bold text-gray-400 bg-gray-200 h-15 w-full border border-dashed rounded-sm">
             {{ indexI+1 }}
           </div>
         </div>

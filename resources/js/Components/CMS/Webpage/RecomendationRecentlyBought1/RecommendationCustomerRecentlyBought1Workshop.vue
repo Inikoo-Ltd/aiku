@@ -110,14 +110,14 @@ onMounted(()=> {
                 autoHeight
             >
                 <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                    <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
+                    <div v-for="xx in 4" class="skeleton w-full h-64 rounded-sm">
                     </div>
                 </div>
                 <template v-else-if="listProducts?.length">
                     <SwiperSlide
                         v-for="(product, index) in listProducts"
                         :key="index"
-                        class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded !grid h-full min-h-full"
+                        class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded-sm !grid h-full min-h-full"
                     >
                         <RecommendationSlideWorkshop
                             :product

@@ -48,8 +48,8 @@ const compIndexCurrent = computed(() => {
                         <!-- Step: Tail -->
                         <div v-if="stepIndex != 0"
                             class="z-10 px-1 w-full absolute flex align-center items-center align-middle content-center -translate-x-1/2 top-1/2 -translate-y-1/2">
-                            <div class="w-full rounded items-center align-middle align-center flex-1 px-3">
-                                <div class="w-full py-[2px] rounded"
+                            <div class="w-full rounded-sm items-center align-middle align-center flex-1 px-3">
+                                <div class="w-full py-[2px] rounded-sm"
                                     :style="{
                                         backgroundColor: step.current ? color : `color-mix(in srgb, ${color}, 75% white)`
                                     }"

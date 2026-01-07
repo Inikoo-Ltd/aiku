@@ -91,16 +91,16 @@ onMounted(()=> {
             spaceBetween="12"
         >
             <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
+                <div v-for="xx in 4" class="skeleton w-full h-64 rounded-sm">
 
                 </div>
             </div>
 
             <template v-else-if="listProducts?.length">
                 <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full h-full">
-                    <div class="relative border border-gray-300 hover:border-gray-700 px-4 py-3 rounded flex flex-col justify-between h-full">
+                    <div class="relative border border-gray-300 hover:border-gray-700 px-4 py-3 rounded-sm flex flex-col justify-between h-full">
                         <!-- Product Image -->
-                        <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded aspect-[5/4] w-full overflow-hidden">
+                        <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded-sm aspect-[5/4] w-full overflow-hidden">
                             <img
                                 :src="image.attributes.image_link"
                                 :alt="image.attributes.title"

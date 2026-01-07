@@ -165,7 +165,7 @@ const showAll = () => {
                         <tr>
                             <th  v-if="blueprint.checkbox" scope="col" class="px-3 py-4  pr-3 text-left text-sm font-semibold flex justify-center">
                                 <input type="checkbox"
-                                    class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600"
+                                    class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600"
                                     :checked="form[fieldName][blueprint.key].length && (bulkData.length == form[fieldName][blueprint.key].length)"
                                     @change="onSelectAllRows" />
                             </th>
@@ -182,7 +182,7 @@ const showAll = () => {
                             <!-- Column: Selector -->
                             <td  v-if="blueprint.checkbox" class="whitespace-nowrap px-3 py-4 text-sm  text-center w-20">
                                 <input type="checkbox" :id="itemData.id" :value="itemData.id" v-model="bulkData"
-                                    class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600" />
+                                    class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600" />
                             </td>
                             <td v-for="column in props.blueprint.column" :key="column.key"
                                 :class="`whitespace-nowrap px-3 py-4 text-sm ${column.class}`">

@@ -118,7 +118,7 @@ function ShopDashboard(shop: any) {
 				</div> -->
 <!-- 
 				<div class="mt-4 block">
-					<nav class="isolate flex rounded border-b border-gray-300" aria-label="Tabs">
+					<nav class="isolate flex rounded-sm border-b border-gray-300" aria-label="Tabs">
 						<div
 							v-for="(interval, idxInterval) in interval_options"
 							:key="idxInterval"

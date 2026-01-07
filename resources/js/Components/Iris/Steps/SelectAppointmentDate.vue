@@ -64,7 +64,7 @@ const meetOptions = [
 
 <template>
     <div class="mt-4 space-y-4">
-        <!-- <div class="bg-white rounded text-center text-gray-500">
+        <!-- <div class="bg-white rounded-sm text-center text-gray-500">
             Select date & time
         </div> -->
         
@@ -79,7 +79,7 @@ const meetOptions = [
                 <div>Select hour on {{ useFormatTime(modelValue) }}:</div>
                 <div v-if="modelValue" class="h-fit grid grid-cols-5 justify-center gap-x-1.5 gap-y-2 mt-1">
                     <template v-if="isLoading">
-                        <div v-for="_ in 7" class="w-full h-9 rounded skeleton" />
+                        <div v-for="_ in 7" class="w-full h-9 rounded-sm skeleton" />
                     </template>
         
                     <template v-else>

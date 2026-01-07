@@ -10,7 +10,7 @@ const ignoredLabel = ['piece', "Piece"]
 </script>
 
 <template>
-    <span class="inline-flex items-center border border-gray-300 rounded px-2 py-0.5">
+    <span class="inline-flex items-center border border-gray-300 rounded-sm px-2 py-0.5">
         <span>{{ Number(units) }}</span>
         <span v-if="unit" class="ml-0.5 lowercase">x
             <span v-if="!ignoredLabel.includes(unit || 'xxxxxx')" v-tooltip="trans('Unit label')" class="text-[0.85em]">

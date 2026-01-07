@@ -158,7 +158,7 @@ const debUpdateQuantity = debounce((newVal?: number) => {
                 }"
             />
             
-            <div v-if="status === 'loading'" class="inset-0 absolute flex items-center justify-center rounded bg-black/50 text-white text-lg">
+            <div v-if="status === 'loading'" class="inset-0 absolute flex items-center justify-center rounded-sm bg-black/50 text-white text-lg">
                 <ConditionIcon :state="'loading'" />
             </div>
         </div>

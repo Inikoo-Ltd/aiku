@@ -26,7 +26,7 @@ const toggleVisibility = (key: 'in' | 'out') => {
                     id="loggedIn" 
                     :checked="modelValue.in" 
                     @change="toggleVisibility('in')" 
-                    class="form-checkbox h-5 w-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500" 
+                    class="form-checkbox h-5 w-5 text-indigo-500 border-gray-300 rounded-sm focus:ring-indigo-500" 
                 />
                 <label for="loggedIn" class="ml-2 text-gray-700 cursor-pointer hover:text-indigo-600 text-xs">{{ trans('Logged In') }}</label>
             </div>
@@ -36,7 +36,7 @@ const toggleVisibility = (key: 'in' | 'out') => {
                     id="loggedOut" 
                     :checked="modelValue.out" 
                     @change="toggleVisibility('out')" 
-                    class="form-checkbox h-5 w-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500" 
+                    class="form-checkbox h-5 w-5 text-indigo-500 border-gray-300 rounded-sm focus:ring-indigo-500" 
                 />
                 <label for="loggedOut" class="ml-2 text-gray-700 cursor-pointer hover:text-indigo-600 text-xs">{{ trans('Logged Out') }}</label>
             </div>

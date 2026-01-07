@@ -32,12 +32,12 @@ const onHeadingClick = (index: number) => {
 <template>
 
     <div v-if="action.key == 'heading'" class="group relative inline-block">
-        <div class="text-xs min-w-16 p-1 appearance-none rounded cursor-pointer border border-gray-200"
+        <div class="text-xs min-w-16 p-1 appearance-none rounded-sm cursor-pointer border border-gray-200"
             :class="{ 'bg-slate-700 text-white font-bold': editor?.isActive('heading') }">
             Heading <span id="headingIndex"></span>
         </div>
         <div
-            class="cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
+            class="cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded-sm bg-white z-[1]">
             <div v-for="index in 6" class="block py-1.5 px-3 text-center cursor-pointer hover:bg-gray-300"
                 :class="{ 'bg-slate-700 text-white hover:bg-slate-700': editor?.isActive('heading', { level: index }) }"
                 :style="{ fontSize: (20 - index) + 'px' }" role="button" @click="onHeadingClick(index)">
@@ -49,7 +49,7 @@ const onHeadingClick = (index: number) => {
 
 
     <div v-else-if="action.key == 'fontSize'" class="group relative inline-block">
-        <div class="flex items-center text-xs min-w-10 py-1 pl-1.5 pr-0 appearance-none rounded cursor-pointer border border-gray-500"
+        <div class="flex items-center text-xs min-w-10 py-1 pl-1.5 pr-0 appearance-none rounded-sm cursor-pointer border border-gray-500"
             :class="{ 'bg-slate-700 text-white font-bold': editor?.getAttributes('textStyle').fontSize }">
             <div id="tiptapfontsize" class="pr-1.5">
                 <span class="hidden last:inline">Text size</span>
@@ -60,7 +60,7 @@ const onHeadingClick = (index: number) => {
             </div>
         </div>
         <div
-            class="w-min h-48 overflow-y-auto cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
+            class="w-min h-48 overflow-y-auto cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded-sm bg-white z-[1]">
             <div v-for="fontsize in ['8', '9', '12', '14', '16', '20', '24', '28', '36', '44', '52', '64']"
                 class="w-full block py-1.5 px-3 leading-none text-left cursor-pointer hover:bg-gray-300"
                 :class="{ 'bg-slate-700 text-white hover:bg-slate-700': parseInt(editor?.getAttributes('textStyle').fontSize, 10) == fontsize }"
@@ -75,7 +75,7 @@ const onHeadingClick = (index: number) => {
 
     <ColorPicker v-else-if="action.key == 'highlight'" :color="editor?.getAttributes('highlight').color"
         @changeColor="(color) => editor?.chain().setHighlight({ color: color.hex }).run()"
-        class="flex items-center justify-center w-6 aspect-square rounded cursor-pointer border border-gray-700"
+        class="flex items-center justify-center w-6 aspect-square rounded-sm cursor-pointer border border-gray-700"
         :style="{ backgroundColor: editor?.getAttributes('highlight').color }">
         <FontAwesomeIcon icon='fal fa-paint-brush-alt' class='text-gray-500' fixed-width aria-hidden='true' />
     </ColorPicker>
@@ -83,7 +83,7 @@ const onHeadingClick = (index: number) => {
 
     <ColorPicker v-else-if="action.key == 'color'" :color="editor?.getAttributes('textStyle').color"
         @changeColor="(color) => editor?.chain().setColor(color.hex).run()"
-        class="flex items-center justify-center w-6 aspect-square rounded cursor-pointer border border-gray-700">
+        class="flex items-center justify-center w-6 aspect-square rounded-sm cursor-pointer border border-gray-700">
         <FontAwesomeIcon icon='far fa-text' fixed-width aria-hidden='true'
             :style="{ color: editor?.getAttributes('textStyle').color || '#010101' }" />
     </ColorPicker>

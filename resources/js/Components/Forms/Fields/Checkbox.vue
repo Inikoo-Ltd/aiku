@@ -36,7 +36,7 @@ const props = defineProps<{
                     <input v-model="option.value" :id="`item-${index}`"
                         :name="`item-${index}`" type="checkbox"
                         :titles="`I'm Interested in ${option.label}`"
-                        class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-gray-500 text-gray-600 focus:ring-gray-600" />
+                        class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-gray-500 text-gray-600 focus:ring-gray-600" />
                 </td>
             </tr>
         </tbody>

@@ -176,7 +176,7 @@ onMounted(() => {
                 <nav
                     ref="navElement"
                     @scroll="checkOverflow"
-                    class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
+                    class="isolate rounded-sm border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
                     <div>
                         <DashboardCustomDateRange :intervals="intervals" />
@@ -192,7 +192,7 @@ onMounted(() => {
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
                         ]"
                         v-tooltip="interval.label"
-                        class="relative flex-grow shrink-0 rounded py-1 md:py-1.5 px-2 sm:px-3 md:px-4 text-center text-xs sm:text-sm cursor-pointer select-none whitespace-nowrap">
+                        class="relative flex-grow shrink-0 rounded-sm py-1 md:py-1.5 px-2 sm:px-3 md:px-4 text-center text-xs sm:text-sm cursor-pointer select-none whitespace-nowrap">
                         <span :class="isLoadingInterval === interval.value ? 'opacity-0' : ''">
                             {{ interval.label }}
                         </span>
@@ -209,7 +209,7 @@ onMounted(() => {
             <div
                 v-tooltip="trans('Open advanced settings')"
                 @click="isSectionVisible = !isSectionVisible"
-                class="cursor-pointer p-2 rounded border flex items-center justify-center shrink-0 self-start sm:self-auto"
+                class="cursor-pointer p-2 rounded-sm border flex items-center justify-center shrink-0 self-start sm:self-auto"
                 :class="isSectionVisible ? 'bg-indigo-200 text-indigo-500 border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
                 <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-xl sm:text-2xl" />
             </div>

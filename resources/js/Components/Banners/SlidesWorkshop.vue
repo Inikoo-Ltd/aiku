@@ -256,7 +256,7 @@ onMounted(() => {
 <template>
     <!-- <pre>{{ commonEditActive }}</pre> -->
     <div class="flex flex-grow gap-2.5">
-        <div class="p-2.5 border rounded h-fit shadow-sm w-1/4" v-if="data.components" @dragover="dragover"
+        <div class="p-2.5 border rounded-sm h-fit shadow-sm w-1/4" v-if="data.components" @dragover="dragover"
             @dragleave="dragleave" @drop="drop">
             <!-- Common Properties -->
             <div :class="[

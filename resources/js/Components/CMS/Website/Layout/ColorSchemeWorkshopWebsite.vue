@@ -49,10 +49,10 @@ const props = defineProps<{
         :style="{ backgroundColor: theme?.color?.[0], color: theme?.color?.[1] }"
         target="_blank"
       >
-        <div class="bg-gray-100 text-black border border-gray-400 px-0.5 aspect-square rounded-sm flex items-center text-[12px]">Logo</div>
+        <div class="bg-gray-100 text-black border border-gray-400 px-0.5 aspect-square rounded-xs flex items-center text-[12px]">Logo</div>
 
         <div class="flex justify-center gap-x-2">
-          <div class="w-[200px] bg-white rounded-sm px-2 text-[15px] text-gray-500">Search</div>
+          <div class="w-[200px] bg-white rounded-xs px-2 text-[15px] text-gray-500">Search</div>
         </div>
 
         <div class="text-xs flex gap-x-1.5">
@@ -112,7 +112,7 @@ const props = defineProps<{
               <div class="text-sm">Basic</div>
               <div class="text-2xl font-black">$74<span class="text-xs font-normal">/month</span></div>
               <div class="text-xs mt-2">Ideal for small businesses or startups with moderate storage needs.</div>
-              <div class="mt-3 rounded w-fit px-4 text-sm" :style="{ color: theme?.color?.[5], backgroundColor: theme?.color?.[4] }">Buy</div>
+              <div class="mt-3 rounded-sm w-fit px-4 text-sm" :style="{ color: theme?.color?.[5], backgroundColor: theme?.color?.[4] }">Buy</div>
             </div>
 
             <!-- Pro Plan -->
@@ -120,7 +120,7 @@ const props = defineProps<{
               <div class="text-sm">Pro</div>
               <div class="text-2xl font-black">$279<span class="text-xs font-normal">/month</span></div>
               <div class="text-xs mt-2">Perfect for growing businesses with increased storage demands.</div>
-              <div class="mt-3 text-white rounded w-fit px-4 text-sm" :style="{ backgroundColor: theme?.color?.[3], color: theme?.color?.[2] }">Buy</div>
+              <div class="mt-3 text-white rounded-sm w-fit px-4 text-sm" :style="{ backgroundColor: theme?.color?.[3], color: theme?.color?.[2] }">Buy</div>
             </div>
           </div>
 
@@ -155,7 +155,7 @@ const props = defineProps<{
           </div>
 
           <div class="flex justify-end">
-            <div class="bg-gray-100 text-black border border-gray-400 px-0.5 aspect-square rounded-sm flex items-center text-[14px]">Logo</div>
+            <div class="bg-gray-100 text-black border border-gray-400 px-0.5 aspect-square rounded-xs flex items-center text-[14px]">Logo</div>
           </div>
         </div>
 

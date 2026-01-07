@@ -404,7 +404,7 @@ watch(() => model.value, (newValue) => {
 
 								<Column header="Image">
 									<template #body="slotProps">
-										<div class="w-16 h-16 rounded">
+										<div class="w-16 h-16 rounded-sm">
 											<Image :src="slotProps.data.image_thumbnail" />
 										</div>
 									</template>

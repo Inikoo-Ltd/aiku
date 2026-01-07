@@ -251,7 +251,7 @@ const isLoading = ref(false)
                                         <span class="text-xs px-1 my-2">{{ trans('Date') }}: </span>
                                         <div
                                             xxv-tooltip="'useDaysLeftFromToday(dataPalletDelivery.estimated_delivery_date)'"
-                                            class="text-left border border-gray-300 py-2 text-sm rounded px-3 cursor-pointer"
+                                            class="text-left border border-gray-300 py-2 text-sm rounded-sm px-3 cursor-pointer"
                                             :class="formAddService.handle_date ? '' : 'text-gray-400 '"
                                         >
                                             <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-base" fixed-width aria-hidden="true" />

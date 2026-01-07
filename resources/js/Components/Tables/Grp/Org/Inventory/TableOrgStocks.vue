@@ -116,7 +116,7 @@ function stockFamilyRoute(stock: Stock) {
         <template #cell(name)="{ item: stock }">
             <div class="flex gap-3">
                 {{ stock["name"] }} <span v-if="stock?.is_on_demand"
-												class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700">
+												class="text-[10px] px-1.5 rounded-sm bg-amber-100 text-amber-700">
 												On Demand
 											</span>
             </div>

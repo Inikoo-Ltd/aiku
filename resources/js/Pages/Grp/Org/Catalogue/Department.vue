@@ -115,7 +115,7 @@ const component = computed(() => {
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
-                    <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                    <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-xs">
                         <Button type="delete"/>
                     </div>
                 </template>

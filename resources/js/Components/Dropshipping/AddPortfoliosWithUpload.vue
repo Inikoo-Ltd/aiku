@@ -346,7 +346,7 @@ onMounted(() => {
                     <div class="flex gap-2 text-sm font-semibold text-gray-500 mt-2 max-w-sm">
                         <div v-for="list in filterList"
                             @click="selectedList = list"
-                            class="whitespace-nowrap py-2 px-3 cursor-pointer rounded border "
+                            class="whitespace-nowrap py-2 px-3 cursor-pointer rounded-sm border "
                             :class="selectedList.value === list.value ? 'bg-gray-700 text-white border-gray-400' : 'border-gray-300 hover:bg-gray-200'"
                         >
                             {{ list.label}}

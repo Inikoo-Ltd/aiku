@@ -257,7 +257,7 @@ function onCancel(item) {
                     v-if="masterProduct?.units"
                     :units="masterProduct?.units"
                     :unit="masterProduct?.unit"
-                    class="!py-0 !px-1 !rounded-sm !text-sm mr-1"
+                    class="!py-0 !px-1 !rounded-xs !text-sm mr-1"
                 />
 
                 {{ masterProduct["name"] }}

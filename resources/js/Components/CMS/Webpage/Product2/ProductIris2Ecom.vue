@@ -228,7 +228,7 @@ const groupedAttachments = computed(() => {
                     </div>
 
                     <LinkIris v-else :href="urlLoginWithRedirect()"
-                        class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
+                        class="w-full block text-center border text-sm px-3 py-2 rounded-sm text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>

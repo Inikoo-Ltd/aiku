@@ -326,12 +326,12 @@ const tabClass = (tab: string) => {
 										{{ capitalize(c.name) }}
 									</span>
 
-									<span class="text-[10px] px-1.5 py-0.5 rounded border"
+									<span class="text-[10px] px-1.5 py-0.5 rounded-sm border"
 										:class="priorityClass(c.priority)">
 										{{ capitalize(c.priority) }}
 									</span>
 
-									<span class="text-[10px] px-1.5 py-0.5 rounded" :class="c.webUser?.id
+									<span class="text-[10px] px-1.5 py-0.5 rounded-sm" :class="c.webUser?.id
 										? 'bg-green-100 text-green-700'
 										: 'bg-blue-100 text-blue-700'">
 										{{ c.webUser?.id ? trans('Customer') : trans('Guest') }}

@@ -513,7 +513,7 @@ onMounted(() => {
                             <template v-if="resultOfFetchShopifyProduct?.length">
                                 <div v-for="(item, index) in resultOfFetchShopifyProduct":key="index"
                                     @click="() => {selectedVariant = item}"
-                                    class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                    class="relative h-fit rounded-sm cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                     :class="[
                                         selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
                                     ]">
@@ -528,7 +528,7 @@ onMounted(() => {
                                         <!-- <Image v-if="item.image" :src="item.image?.[0]?.src"
                                             class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                             :alt="item.name"/> -->
-                                        <div class="min-h-9 h-auto max-h-12 min-w-12 w-auto max-w-12 flex items-center justify-center border border-gray-300 rounded">
+                                        <div class="min-h-9 h-auto max-h-12 min-w-12 w-auto max-w-12 flex items-center justify-center border border-gray-300 rounded-sm">
                                             <img v-if="item.images?.[0]?.src" :src="item.images?.[0]?.src" class="shadow-sm" />
                                             <FontAwesomeIcon v-else
                                                 v-tooltip="trans('No image available')"

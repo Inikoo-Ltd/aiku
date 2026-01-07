@@ -215,7 +215,7 @@ onUnmounted(() => {
                     <div class="flex flex-wrap justify-around gap-2">
                         <div
                             v-for="option in optionsList"
-                            class="relative min-h-10 h-20 max-h-24 min-w-20 w-auto border rounded cursor-pointer transition-all"
+                            class="relative min-h-10 h-20 max-h-24 min-w-20 w-auto border rounded-sm cursor-pointer transition-all"
                             @click="() => toggleImageSelection(option.id)"
                             :class="selectedIdImages.includes(option.id) ? 'border-blue-400 scale-[97%]' : 'border-gray-300'"
                         >
@@ -240,10 +240,10 @@ onUnmounted(() => {
                 </div>
 
                 <div v-else class="flex gap-x-2">
-                    <div class="h-16 w-full rounded skeleton"></div>
-                    <div class="h-16 w-full rounded skeleton"></div>
-                    <div class="h-16 w-full rounded skeleton"></div>
-                    <div class="h-16 w-full rounded skeleton"></div>
+                    <div class="h-16 w-full rounded-sm skeleton"></div>
+                    <div class="h-16 w-full rounded-sm skeleton"></div>
+                    <div class="h-16 w-full rounded-sm skeleton"></div>
+                    <div class="h-16 w-full rounded-sm skeleton"></div>
                 </div>
             </div>
         <!-- </template> -->

@@ -222,23 +222,23 @@ const onPickImage = (res) => {
                         </Button>
                         <Button :style="`tertiary`" icon="fal fa-photo-video" label="Gallery" size="xs" class="relative" @click="isOpen = !isOpen" />
                         
-                        <div v-if="bannerType === 'landscape'" class="overflow-hidden h-7 rounded shadow-md"
+                        <div v-if="bannerType === 'landscape'" class="overflow-hidden h-7 rounded-sm shadow-md"
                             :class="[get(data, ['layout', 'backgroundType', screenView || 'desktop'], 'image') == 'image' ? 'ring-2 ring-offset-2 ring-gray-600' : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-400', `aspect-[${ratio.w}/${ratio.h}]`]">
                             <Image
                                 :src="get(data, ['image', screenView || 'desktop', 'thumbnail'])"
                                 :alt="data.image?.name" :imageCover="true"
                                 @click="data.layout.backgroundType[screenView || 'desktop'] = 'image'"
-                                class="h-auto cursor-pointer rounded overflow-hidden"
+                                class="h-auto cursor-pointer rounded-sm overflow-hidden"
                             />
                         </div>
-                        <div v-else class="ml-1 h-10 aspect-square overflow-hidden rounded shadow-md cursor-pointer"
+                        <div v-else class="ml-1 h-10 aspect-square overflow-hidden rounded-sm shadow-md cursor-pointer"
                             :class="[get(data, ['layout', 'backgroundType', 'desktop'], 'image') == 'image' ? 'ring-2 ring-offset-2 ring-gray-600' : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-400']"
                             @click="data.layout.backgroundType['desktop'] = 'image'"
                         >
                             <Image
                                 :src="get(data, ['image', 'desktop', 'thumbnail'])"
                                 :alt="data.image?.name" :imageCover="true"
-                                class="rounded h-full"
+                                class="rounded-sm h-full"
                             />
                         </div>
                     </div>
@@ -255,7 +255,7 @@ const onPickImage = (res) => {
                     <div class="h-8 flex items-center w-fit gap-x-1.5">
                         <div v-for="bgColor in backgroundColorList"
                             @click="onChangeBackgroundColor(bgColor)"
-                            class="w-full rounded h-full aspect-square shadow-sm cursor-pointer"
+                            class="w-full rounded-sm h-full aspect-square shadow-sm cursor-pointer"
                             :class="data?.background?.[screenView || 'desktop'] ===  bgColor && data?.layout.backgroundType?.[screenView || 'desktop'] === 'color' 
                                 ? 'ring-2 ring-offset-2 ring-gray-600'
                                 : 'hover:ring-2 hover:ring-offset-0 hover:ring-gray-500'"

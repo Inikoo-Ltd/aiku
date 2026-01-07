@@ -207,7 +207,7 @@ const onSelectSubmitChange = (value) => {
                 @submit.prevent="handleFormSubmit">
 
                 <Transition name="spin-to-down">
-                    <div v-if="usePage().props?.errors?.error_in_models" class="max-w-3xl mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
+                    <div v-if="usePage().props?.errors?.error_in_models" class="max-w-3xl mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded-sm">
                         <FontAwesomeIcon v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'" icon='far fa-ban' class='text-lg' fixed-width aria-hidden='true' />
                         <div class="">{{ usePage().props.errors.error_in_models }}</div>
                     </div>

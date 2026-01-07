@@ -405,7 +405,7 @@ const generateShowOrderRoute = () => {
                 </dt>
 
                 <dd class="text-base text-gray-500 w-full">
-                    <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+                    <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded-sm px-2 py-1">
                         <div v-html="invoice.address.formatted_address"/>
                     </div>
 
@@ -502,7 +502,7 @@ const generateShowOrderRoute = () => {
                             <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">
                                 #{{ note?.reference }}
                             </Link>
-                            <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
                                 <Icon :data="note?.state"/>
                             </span>
                         </div>

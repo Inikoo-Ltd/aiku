@@ -558,7 +558,7 @@ onMounted(async () => {
 
                                     <!-- Dropdown -->
                                     <div
-                                        class="w-min h-48 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
+                                        class="w-min h-48 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded-sm bg-white z-[1]">
                                         <div v-for="fontsize in ['8', '9', '12', '14', '16', '18', '20', '24', '28', '36', '44', '52', '64']"
                                             :key="fontsize"
                                             class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center"
@@ -616,7 +616,7 @@ onMounted(async () => {
                                         @input="editorInstance?.chain().focus().setColor($event.target.value).run()"
                                         :value="editorInstance.getAttributes('textStyle').color" />
                                     <!-- Icon -->
-                                    <div class="flex items-center justify-center w-full h-full rounded"
+                                    <div class="flex items-center justify-center w-full h-full rounded-sm"
                                         :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
                                         <FontAwesomeIcon :icon="faTint" class="text-sm" />
                                     </div>
@@ -630,7 +630,7 @@ onMounted(async () => {
                                         @input="editorInstance.chain().focus().setHighlight({ color: $event.target.value }).run()"
                                         :value="editorInstance.getAttributes('highlight').color" />
                                     <!-- Icon -->
-                                    <div class="flex items-center justify-center w-full h-full  rounded"
+                                    <div class="flex items-center justify-center w-full h-full  rounded-sm"
                                         :style="{ backgroundColor: editorInstance?.getAttributes('highlight').color }">
                                         <FontAwesomeIcon :icon="faPaintBrushAlt" class="text-sm" />
                                     </div>
@@ -729,7 +729,7 @@ onMounted(async () => {
                             ]" type="button" v-tooltip="'font Family'" :aria-label="'font family'">
                                 <div class="group relative">
                                     <div
-                                        class="text-sm py-1 px-2 cursor-pointer hover:border-gray-400 flex items-center justify-between transition h-8 bg-white border rounded">
+                                        class="text-sm py-1 px-2 cursor-pointer hover:border-gray-400 flex items-center justify-between transition h-8 bg-white border rounded-sm">
                                         <div v-if="!editorInstance?.getAttributes('textStyle').fontFamily"
                                             id="tiptapfontsize" class="text-gray-600 text-sm font-semibold h-5">
                                             Font Family
@@ -743,7 +743,7 @@ onMounted(async () => {
                                             aria-hidden="true" />
                                     </div>
                                     <div
-                                        class="w-min h-56 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
+                                        class="w-min h-56 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded-sm bg-white z-[1]">
                                         <div v-for="font in useFontFamilyList" :key="font.value"
                                             class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100"
                                             @click="editorInstance?.chain().focus().setFontFamily(font.value).run()">
@@ -773,7 +773,7 @@ onMounted(async () => {
                                             editorInstance?.chain().focus().setCellAttribute('backgroundColor', newColor.hex).run()
                                         }" closeButton>
                                         <template #button>
-                                            <div class="group relative h-7 w-7 overflow-hidden rounded flex justify-center items-center"
+                                            <div class="group relative h-7 w-7 overflow-hidden rounded-sm flex justify-center items-center"
                                                 :style="{
                                                     backgroundColor: editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor
                                                 }">
@@ -806,7 +806,7 @@ onMounted(async () => {
                                         </template>
 
                                         <template #button>
-                                            <div class="group relative h-7 w-7 overflow-hidden rounded flex justify-center items-center"
+                                            <div class="group relative h-7 w-7 overflow-hidden rounded-sm flex justify-center items-center"
                                                 :style="{
                                                     color: editorInstance.getAttributes('tableCell')?.borderColor,
                                                     background: editorInstance.getAttributes('tableCell')?.borderWidth && editorInstance.getAttributes('tableCell')?.borderWidth != '0px' ? '#d1d5db' : 'none'

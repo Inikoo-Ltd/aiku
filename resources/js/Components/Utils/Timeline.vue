@@ -134,8 +134,8 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                         <!-- Step: Tail -->
                         <div v-if="stepIndex != 0"
                             class="z-10 px-1 w-full absolute flex align-center items-center align-middle content-center -translate-x-1/2 top-1/2 -translate-y-1/2">
-                            <div class="w-full rounded items-center align-middle align-center flex-1">
-                                <div class="w-full py-[1px] rounded ml-[1px]"
+                            <div class="w-full rounded-sm items-center align-middle align-center flex-1">
+                                <div class="w-full py-[1px] rounded-sm ml-[1px]"
                                     :class="setupState(step) ? 'bg-[#66dc71]' : 'bg-gray-300'" />
                             </div>
                         </div>

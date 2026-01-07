@@ -153,7 +153,7 @@ const label = {
                     <!-- Dropdown: TopBars -->
                     <Menu v-if="layoutStore.group || (layoutStore.organisations.data?.length > 1)" as="div" class="ml-2 relative text-left">
                         <MenuButton v-slot="{ open }"
-                                    class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 text-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                                    class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 text-ellipsis rounded-sm border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
                                     :class="[!!(layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)) || !!layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation) ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'hover:bg-slate-200 text-slate-600']">
                             <div class="flex items-center gap-x-1 w-full truncate text-ellipsis line-clamp-2">
                                 <FontAwesomeIcon :icon="layoutStore.currentParams?.organisation
@@ -248,7 +248,7 @@ const label = {
                         )
                     || (layoutStore.navigation.org?.[layoutStore.currentParams.organisation]?.warehouses_navigation && (route(layoutStore.currentRoute, layoutStore.currentParams)).includes('warehouse'))
                 "
-                            class="flex border border-gray-300 rounded"
+                            class="flex border border-gray-300 rounded-sm"
                         >
 
 
@@ -281,7 +281,7 @@ const label = {
                                 />
 
                                 <transition>
-                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y-0 divide-gray-400 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y-0 divide-gray-400 rounded-sm bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                                         <MenuItem v-slot="{ active }" as="div"
                                                 @click="() => router.visit(route('grp.org.shops.index', {
                                                     organisation: layoutStore.currentParams.organisation
@@ -332,7 +332,7 @@ const label = {
                                 />
 
                                 <transition>
-                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-sm bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                                         <MenuPopoverList icon="fal fa-warehouse-alt" :navKey="'warehouse'" :closeMenu="closeMenu" />
                                     </MenuItems>
                                 </transition>

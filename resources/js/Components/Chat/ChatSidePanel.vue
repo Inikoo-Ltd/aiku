@@ -357,19 +357,19 @@ onMounted(async () => {
 							</div>
 
 							<span v-if="props.session?.web_user"
-								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-green-100 text-green-800">
+								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-xs text-[11px] font-medium bg-green-100 text-green-800">
 								{{ trans("Customer") }}
 							</span>
 
 							<span v-else
-								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-blue-100 text-blue-800">
+								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-xs text-[11px] font-medium bg-blue-100 text-blue-800">
 								{{ trans("Guest") }}
 							</span>
 						</div>
 					</div>
 
 					<div class="w-10 flex justify-end">
-						<button class="px-2 py-1 rounded hover:bg-gray-100" @click="emit('close')">
+						<button class="px-2 py-1 rounded-sm hover:bg-gray-100" @click="emit('close')">
 							<FontAwesomeIcon :icon="faClose" class="text-base text-gray-400" />
 						</button>
 					</div>
@@ -470,9 +470,9 @@ onMounted(async () => {
 					<div v-if="!props.session?.web_user && props.session?.guest_identifier" class="pt-2 space-y-2">
 						<div class="text-xs text-gray-500">{{ trans("Sync by email (optional)") }}</div>
 						<input type="email" v-model="syncEmail" disabled placeholder="guest@example.com"
-							class="w-full px-3 py-2 border rounded" />
+							class="w-full px-3 py-2 border rounded-sm" />
 						<button
-							class="w-full px-3 py-2 buttonPrimary rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+							class="w-full px-3 py-2 buttonPrimary rounded-sm bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
 							:disabled="isSyncing || !syncEmail" @click="onSyncByEmail">
 							<FontAwesomeIcon :icon="faSync" class="text-base text-white" />
 							{{ isSyncing ? trans("Syncing...") : trans("Sync by email") }}
@@ -509,12 +509,12 @@ onMounted(async () => {
 						</div>
 						<div v-else class="flex flex-wrap items-center gap-2">
 							<button v-for="opt in priorityOptions" :key="opt" :disabled="isUpdatingPriority"
-								class="items-center justify-center border px-2 py-0.5 rounded-sm text-[11px]"
+								class="items-center justify-center border px-2 py-0.5 rounded-xs text-[11px]"
 								:class="priorityClass(opt)" @click="updatePriority(opt)">
 								<FontAwesomeIcon :icon="priorityIcon(opt)" class="mr-1 text-xs" />
 								{{ capitalize(opt) }}
 							</button>
-							<button class="px-2 py-1 text-xs border rounded" :disabled="isUpdatingPriority"
+							<button class="px-2 py-1 text-xs border rounded-sm" :disabled="isUpdatingPriority"
 								@click="isEditingPriority = false">
 								{{ trans("Cancel") }}
 							</button>
@@ -553,7 +553,7 @@ onMounted(async () => {
 							</SelectQuery>
 
 							<div class="flex items-center gap-2 mt-2">
-								<button class="px-2 py-1 text-xs border rounded" :disabled="isAssigningAgent"
+								<button class="px-2 py-1 text-xs border rounded-sm" :disabled="isAssigningAgent"
 									@click="isEditingAgent = false">
 									{{ trans("Cancel") }}
 								</button>

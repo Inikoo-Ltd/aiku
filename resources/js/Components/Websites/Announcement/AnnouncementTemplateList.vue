@@ -200,7 +200,7 @@ onMounted(() => {
                                         v-if="announcement.code === announcementData?.template_code">(active)</span>
                                 </h3>
                             </div>
-                            <div class="group relative min-h-16 max-h-20 w-full aspect-[4/1] overflow-hidden flex items-center bg-gray-100 justify-center rounded cursor-pointer"
+                            <div class="group relative min-h-16 max-h-20 w-full aspect-[4/1] overflow-hidden flex items-center bg-gray-100 justify-center rounded-sm cursor-pointer"
                                 :class="[
                                     announcement.code == selectedTemplate?.code ? 'border-4 border-indigo-500' : 'border-4 border-gray-300 hover:border-indigo-500'
                                 ]">
@@ -212,7 +212,7 @@ onMounted(() => {
                                 <!-- Checkbox: Full template -->
                                 <div v-if="selectedTemplate?.code === announcement.code"
                                     @click="() => (isSelectFullTemplate = !isSelectFullTemplate)"
-                                    class="z-40 group-hover:bg-black/10 py-1 px-2 rounded text-gray-400 group-hover:text-gray-700 items-center gap-x-3 absolute top-1.5 right-3"
+                                    class="z-40 group-hover:bg-black/10 py-1 px-2 rounded-sm text-gray-400 group-hover:text-gray-700 items-center gap-x-3 absolute top-1.5 right-3"
                                     :class="isSelectFullTemplate ? 'flex' : 'hidden group-hover:flex'">
                                     <input type="checkbox" id="selectFullTemplate" name="selectFullTemplate"
                                         v-model="isSelectFullTemplate"

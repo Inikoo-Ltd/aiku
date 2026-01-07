@@ -138,7 +138,7 @@ const xxxx = [
 <template>
     <div class="relative">
         <!-- Preview -->
-        <div class="group relative h-12 w-full overflow-hidden rounded shadow-sm" :style="{
+        <div class="group relative h-12 w-full overflow-hidden rounded-sm shadow-sm" :style="{
             background: compGradient || 'linear-gradient(0deg, rgb(20, 20, 20), rgb(240, 240, 240))'
         }" />
 
@@ -216,13 +216,13 @@ const xxxx = [
                     />
                 </template>
                 <template #button>
-                    <div class="group relative h-7 w-7 overflow-hidden rounded shadow-sm cursor-pointer" :style="{
+                    <div class="group relative h-7 w-7 overflow-hidden rounded-sm shadow-sm cursor-pointer" :style="{
                         backgroundColor: props.data?.colors[index]
                     }" />
                 </template>
             </ColorPicker>
 
-            <div @click="() => props.data?.colors.push('rgba(0, 40, 35, 1)')" class="group relative h-7 w-7 overflow-hidden hover:bg-gray-300/40 cursor-pointer rounded border border-gray-300 border-dashed flex items-center justify-center">
+            <div @click="() => props.data?.colors.push('rgba(0, 40, 35, 1)')" class="group relative h-7 w-7 overflow-hidden hover:bg-gray-300/40 cursor-pointer rounded-sm border border-gray-300 border-dashed flex items-center justify-center">
                 <FontAwesomeIcon icon='fal fa-plus' class='text-gray-500' fixed-width aria-hidden='true' />
             </div>
         </div>
@@ -243,7 +243,7 @@ const xxxx = [
                         set(props.data, 'angle', stock.angle),
                         set(props.data, 'colors', stock.colors)
                     }"
-                    class="group relative h-7 w-full max-w-11 overflow-hidden rounded shadow-sm cursor-pointer"
+                    class="group relative h-7 w-full max-w-11 overflow-hidden rounded-sm shadow-sm cursor-pointer"
                     :style="{
                         background: stock.value
                     }"

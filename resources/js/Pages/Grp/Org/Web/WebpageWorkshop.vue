@@ -711,7 +711,7 @@ console.log('props_workshop',props)
         </div>
 
         <div v-if="compUsersEditThisPage?.length > 1"
-          class="flex items-center gap-2 px-2 bg-yellow-300 text-yellow-700 rounded">
+          class="flex items-center gap-2 px-2 bg-yellow-300 text-yellow-700 rounded-sm">
           <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
           <span>
             {{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}

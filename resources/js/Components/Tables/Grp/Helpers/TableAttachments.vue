@@ -115,7 +115,7 @@ const confirmDelete = (event, media_id: number, id: number) => {
 
                 <ConfirmPopup group="headless">
                     <template #container="{ message, acceptCallback, rejectCallback }">
-                        <div class="rounded p-4">
+                        <div class="rounded-sm p-4">
                             <span>{{ message.message }}</span>
                             <div class="flex items-center gap-2 mt-4">
                                 <Button label="Cancel" :style="'tertiary'" full @click="rejectCallback" />

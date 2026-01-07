@@ -70,13 +70,13 @@ const onSaveRecurringBills = (updateAll: boolean) => {
                             <div
                                 v-for="option in fieldData.options"
                                 @click="() => onSelectOption(option)"
-                                class="px-3 py-2 flex items-center justify-center rounded border border-gray-300 cursor-pointer select-none"
+                                class="px-3 py-2 flex items-center justify-center rounded-sm border border-gray-300 cursor-pointer select-none"
                                 :class="option == form[fieldName].date ? 'bg-indigo-600 text-white' : 'bg-white hover:bg-gray-100'"
                             >
                                 {{ option }}
                             </div>
                             <div @click="() => onSelectOption('last_day')"
-                                class="col-span-3 px-3 py-2 flex items-center justify-center rounded border border-gray-300 cursor-pointer select-none"
+                                class="col-span-3 px-3 py-2 flex items-center justify-center rounded-sm border border-gray-300 cursor-pointer select-none"
                                 :class="form[fieldName].date == 'last_day'  ? 'bg-indigo-600 text-white' : 'bg-white hover:bg-gray-100'"
                             >
                                 Last day of month

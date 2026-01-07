@@ -29,7 +29,7 @@ const isPanelOpen = ref(isCurrentRouteActive.value || props.itemKey == layout.or
 
 <template>
     <Disclosure >
-        <div class="relative isolate ring-1 ring-white/20 rounded transition-all duration-200 ease-in-out"
+        <div class="relative isolate ring-1 ring-white/20 rounded-sm transition-all duration-200 ease-in-out"
             :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
             :style="{'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55`}"
         >
@@ -48,7 +48,7 @@ const isPanelOpen = ref(isCurrentRouteActive.value || props.itemKey == layout.or
                 </div>
                 <FontAwesomeIcon icon='fal fa-chevron-down' class='transition-all duration-200 ease-in-out'
                     :class="[isPanelOpen ? 'rotate-180' : '',
-                        layout.leftSidebar.show ? 'justify-self-end text-xs' : 'h-[4px] aspect-square p-[2px] text-white bg-indigo-700 rounded border border-gray-100/50 absolute bottom-0 translate-y-1/2 left-1/2 -translate-x-1/2 text-[4px]'
+                        layout.leftSidebar.show ? 'justify-self-end text-xs' : 'h-[4px] aspect-square p-[2px] text-white bg-indigo-700 rounded-sm border border-gray-100/50 absolute bottom-0 translate-y-1/2 left-1/2 -translate-x-1/2 text-[4px]'
                     ]" aria-hidden='true' />
             </DisclosureButton>
 
@@ -76,14 +76,14 @@ const isPanelOpen = ref(isCurrentRouteActive.value || props.itemKey == layout.or
                         />
 
                         <!-- <div v-if="(nav.route?.name ? isRouteSameAsCurrentUrl(route(nav.route.name, nav.route.parameters)) : false)"
-                            class="absolute inset-0 bg-black/20 rounded -z-10"
+                            class="absolute inset-0 bg-black/20 rounded-sm -z-10"
                         /> -->
                     </template>
                 </DisclosurePanel>
             </div>
 
             <div v-if="isCurrentRouteActive"
-                class="absolute inset-0 bg-black/20 rounded -z-10"
+                class="absolute inset-0 bg-black/20 rounded-sm -z-10"
             />
         </div>
     </Disclosure>

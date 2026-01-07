@@ -147,7 +147,7 @@ watch(
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 bg-gray-100 p-2 rounded" :key="`${sideKey}-${key}`">
+  <div class="flex flex-col gap-3 bg-gray-100 p-2 rounded-sm" :key="`${sideKey}-${key}`">
     <div class="flex items-center justify-between">
       <label class="font-medium text-xs">{{ trans('Responsive Text') }}</label>
       <ToggleSwitch v-model="normalized.use_responsive" />

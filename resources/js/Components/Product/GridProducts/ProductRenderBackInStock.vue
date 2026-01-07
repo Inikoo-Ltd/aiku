@@ -195,7 +195,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class=" text-gray-800 isolate">
             <div v-if="product?.top_seller"
-                class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded" :class="{
+                class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded-sm" :class="{
                     'text-[#FFD700] bg-[#584b015] border-[#FFD700]': product.top_seller == 1, // Gold
                     'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
                     'text-[#CD7F32] bg-[#CD7F3222] border-[#CD7F32]': product.top_seller === 3  // Bronze
@@ -208,7 +208,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
+                class="block w-full mb-1 rounded-sm sm:h-[305px] h-[180px] relative">
                 <Image :src="product?.image?.source" :alt="product.name" :style="{ objectFit: 'contain' }" />
 
                 <div xv-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">

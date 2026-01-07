@@ -425,7 +425,7 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
                                             <span class="text-xs px-1 my-2">{{ trans('Date') }}: </span>
                                             <div
                                                 xxv-tooltip="'useDaysLeftFromToday(dataPalletDelivery.estimated_delivery_date)'"
-                                                class="text-left border border-gray-300 py-2 text-sm rounded px-3 cursor-pointer"
+                                                class="text-left border border-gray-300 py-2 text-sm rounded-sm px-3 cursor-pointer"
                                                 :class="formAddService.handle_date ? '' : 'text-gray-400 '"
                                             >
                                                 <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-base" fixed-width aria-hidden="true" />
@@ -661,7 +661,7 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
                 </dt>
 
                 <dd class="text-base text-gray-500 w-full">
-                    <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+                    <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded-sm px-2 py-1">
                         <div v-html="invoice.address.formatted_address" />
                     </div>
 

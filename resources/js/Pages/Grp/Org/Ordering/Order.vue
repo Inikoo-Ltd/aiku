@@ -1039,7 +1039,7 @@ const setShippingToAuto = () => {
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
+                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm min-w-52"
                             v-html="box_stats?.customer.addresses.billing.formatted_address">
                         </dd>
                     </dl>
@@ -1084,7 +1084,7 @@ const setShippingToAuto = () => {
                                     aria-hidden="true" />
                             </dt>
                             <dd
-                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
+                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm min-w-52">
                                 <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
@@ -1105,7 +1105,7 @@ const setShippingToAuto = () => {
                                     aria-hidden="true" />
                             </dt>
                             <dd
-                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
                                 <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
@@ -1177,7 +1177,7 @@ const setShippingToAuto = () => {
                                     box_stats.products.payment.pay_amount > 0
                                     && box_stats.products.payment.pay_amount <= box_stats?.customer?.balance
                                     && props.data?.data?.state === 'submitted'
-                                " class="-ml-2 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded pl-4 pr-2">
+                                " class="-ml-2 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded-sm pl-4 pr-2">
                                     <div class="text-yellow-700">
                                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
                                         {{ trans("Order :xorder is not paid yet", { xorder: data?.data?.reference }) }}
@@ -1187,7 +1187,7 @@ const setShippingToAuto = () => {
                                         <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(currency.code, Number(box_stats.products.payment.pay_amount)) })" size="xxs" type="secondary" :loading="isLoadingPayWithBalance" />
                                     </div>
 
-                                    <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
+                                    <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded-sm">
                                         <LoadingIcon />
                                     </div>
                                 </div> -->
@@ -1280,7 +1280,7 @@ const setShippingToAuto = () => {
                                 note?.reference
                                 }}
                                 </Link>
-                                <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
                                     {{ trans(note?.state?.tooltip) }}
                                     <Icon :data="note?.state" />
                                 </span>
@@ -1395,7 +1395,7 @@ const setShippingToAuto = () => {
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                                     <span v-if="fieldSummary.data.engine === 'manual'">
                                         <span>{{ fieldSummary.label }}</span>
-                                        <span class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
+                                        <span class="px-1 py-0.5 w-fit font-medium border rounded-xs bg-blue-100 text-blue-600 text-xxs align-middle">
                                             {{ trans('Manual') }}
                                         </span>
                                     </span>
@@ -1454,7 +1454,7 @@ const setShippingToAuto = () => {
                                                             :disabled="get(fieldSummary, ['data', 'engine'], null) !== 'manual'"
                                                             :currency="currency.code"
                                                             locale="en-GB"
-                                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded-sm !text-right"
                                                             :min="0"
                                                         />
                                                         <span v-if="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
@@ -1473,7 +1473,7 @@ const setShippingToAuto = () => {
                                                 </div>
                                             </div>
 
-                                            <div v-if="isLoadingShippingManual" class="absolute inset-0 bg-black/50 text-white text-2xl flex items-center justify-center rounded">
+                                            <div v-if="isLoadingShippingManual" class="absolute inset-0 bg-black/50 text-white text-2xl flex items-center justify-center rounded-sm">
                                                 <LoadingIcon />
                                             </div>
                                         </div>
@@ -1500,7 +1500,7 @@ const setShippingToAuto = () => {
                                             mode="currency"
                                             :currency="currency.code"
                                             locale="en-GB"
-                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded-sm !text-right"
                                             :invalid="
                                                 get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null
                                             "

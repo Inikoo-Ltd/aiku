@@ -120,7 +120,7 @@ const toggleBackInStock = () =>
                                     py-1 sm:py-1
                                     text-center
                                     shadow-xs md:shadow-md
-                                    backdrop-blur-sm
+                                    backdrop-blur-xs
                                 "
                             >
                                 {{ trans("Out of Stock") }}

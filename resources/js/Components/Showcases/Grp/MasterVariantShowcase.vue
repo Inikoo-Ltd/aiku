@@ -210,7 +210,7 @@ watch(
                 : 'border-gray-200 hover:border-gray-300'" @click="selectProduct(index)">
                 <!-- ⭐ LEADER BADGE -->
                 <span v-if="product.is_leader" class="absolute top-1 right-1">
-                  <FontAwesomeIcon :icon="faStar" class="text-yellow-400 text-sm drop-shadow"
+                  <FontAwesomeIcon :icon="faStar" class="text-yellow-400 text-sm drop-shadow-sm"
                     v-tooltip="trans('Leader')" />
                 </span>
 
@@ -224,7 +224,7 @@ watch(
 
                 <!-- VARIANT LABEL -->
                 <span
-                  class="text-[11px] font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700 leading-tight text-center">
+                  class="text-[11px] font-medium px-2 py-0.5 rounded-sm bg-gray-100 text-gray-700 leading-tight text-center">
                   {{ getVariantLabel(index) }}
                 </span>
               </button>
@@ -240,7 +240,7 @@ watch(
             <ProductUnitLabel v-if="selectedProduct?.units" :units="selectedProduct.units" :unit="selectedProduct.unit"
               class="mr-2" />
             {{ selectedProduct?.name }}
-            <FontAwesomeIcon v-if="selectedProduct.is_leader" :icon="faStar" class="text-yellow-400 text-sm drop-shadow"
+            <FontAwesomeIcon v-if="selectedProduct.is_leader" :icon="faStar" class="text-yellow-400 text-sm drop-shadow-sm"
               v-tooltip="trans('Leader')" />
           </div>
 

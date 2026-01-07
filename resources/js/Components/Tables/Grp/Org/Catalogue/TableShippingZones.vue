@@ -153,12 +153,12 @@ onUnmounted(() => {
 							item.included_postal_codes || item.excluded_postal_codes
 								? ''
 								: ''
-						} flex items-center gap-1 font-medium rounded p-1 relative cursor-pointer select-none`" @click="
+						} flex items-center gap-1 font-medium rounded-sm p-1 relative cursor-pointer select-none`" @click="
 							item.included_postal_codes || item.excluded_postal_codes
 								? togglePostalInfo(`${territories.id}-${index}`)
 								: null
 						">
-						<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+						<img class="inline-block h-[14px] w-[20px] object-cover rounded-xs"
 							:src="'/flags/' + item.country_code.toLowerCase() + '.png'"
 							:alt="`Bendera ${item.country_code}`" loading="lazy" />
 						<span>{{ item.country_code }}</span>
@@ -166,7 +166,7 @@ onUnmounted(() => {
 						<!-- Exclamation Icon -->
 						<div v-if="item.included_postal_codes || item.excluded_postal_codes" class="flex items-center gap-1">
 							<div 
-								class=" bg-yellow-400 text-yellow-800 rounded w-5 h-5 flex items-center justify-center text-xs font-bold z-20">
+								class=" bg-yellow-400 text-yellow-800 rounded-sm w-5 h-5 flex items-center justify-center text-xs font-bold z-20">
 								<FontAwesomeIcon :icon="faBallotCheck" fixed-width />
 							</div>
 							<span class="font-semibold">postcodes</span>

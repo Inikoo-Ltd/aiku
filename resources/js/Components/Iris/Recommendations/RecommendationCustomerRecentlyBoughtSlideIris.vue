@@ -22,12 +22,12 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="flex w-full px-4 py-3 rounded border border-transparent hover:border-black/40">
+    <div class="flex w-full px-4 py-3 rounded-sm border border-transparent hover:border-black/40">
         <div class="w-full">
             <!-- Image -->
             <component :is="product.web_url?.[0] ? Link : 'div'"
                 :href="product.web_url?.[0]"
-                class="flex justify-center rounded aspect-[5/4] w-full overflow-hidden">
+                class="flex justify-center rounded-sm aspect-[5/4] w-full overflow-hidden">
                 <Image
                     :src="product.image"
                     :alt="product.name"

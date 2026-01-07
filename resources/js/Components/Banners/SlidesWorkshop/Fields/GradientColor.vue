@@ -75,7 +75,7 @@ const backgroundColorList = useBannerBackgroundColor() // Fetch color list from 
     <div class="flex gap-3">
         <div class="h-8 flex items-center w-fit gap-x-1.5">
             <div v-for="bgColor in backgroundColorList.filter((item)=>item.includes('linear-gradient'))" @click="valued = bgColor"
-                class="w-full rounded h-full aspect-square shadow-sm cursor-pointer" :class="data?.layout.background?.[screenView || 'desktop'] === bgColor && data?.layout.backgroundType?.[screenView || 'desktop'] === 'color'
+                class="w-full rounded-sm h-full aspect-square shadow-sm cursor-pointer" :class="data?.layout.background?.[screenView || 'desktop'] === bgColor && data?.layout.backgroundType?.[screenView || 'desktop'] === 'color'
                     ? 'ring-2 ring-offset-2 ring-gray-600'
                     : 'hover:ring-2 hover:ring-offset-0 hover:ring-gray-500'"
                 :style="{ background: bgColor }" />

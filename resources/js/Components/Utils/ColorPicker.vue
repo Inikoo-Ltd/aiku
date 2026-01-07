@@ -80,7 +80,7 @@ const opacityToHexCode = (opacity: number) => {
                         :sucker-hide="true"
                         @changeColor="(e) => {emits('changeColor', {...e, hex: e.hex + opacityToHexCode(e.rgba.a)})}"
                     />
-                    <div v-if="!isEditable" class="rounded absolute inset-0 bg-black/50" />
+                    <div v-if="!isEditable" class="rounded-sm absolute inset-0 bg-black/50" />
                 </div>
                 
                 <div @click="overlayPanel.hide()" class="absolute -top-5 -right-10 mt-1 mr-1">

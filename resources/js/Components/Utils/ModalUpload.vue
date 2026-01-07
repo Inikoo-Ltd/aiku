@@ -357,7 +357,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                                 <!-- <div v-if="additionalDataToSend?.includes('stored_items')" class="text-xxs flex items-center gap-x-1 text-gray-500 hover:text-gray-600 italic">
                                     <label for="include_stored_items" class="select-none cursor-pointer">Include stored items</label>
                                     <input v-model="isIncludeStoreItems" id="include_stored_items" type="checkbox"
-                                        class="h-3.5 w-3.5 rounded-sm text-indigo-600 focus:ring-0 cursor-pointer" />
+                                        class="h-3.5 w-3.5 rounded-xs text-indigo-600 focus:ring-0 cursor-pointer" />
                                 </div> -->
                             </div>
 
@@ -427,7 +427,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                                 class="relative isolate"
                             >
                                 <LoadingIcon v-if="isLoadingVisitHistory ? (isLoadingVisitHistory == history.id || isLoadingVisitHistory == history.action_id) : false" class="absolute top-3 right-2 z-10" />
-                                <div class="relative w-36 ring-1 ring-gray-300 rounded px-2 pt-2.5 pb-1 flex flex-col justify-start border-t-[3px] border-gray-500 "
+                                <div class="relative w-36 ring-1 ring-gray-300 rounded-sm px-2 pt-2.5 pb-1 flex flex-col justify-start border-t-[3px] border-gray-500 "
                                     :class="!history.id ? 'bg-white' : 'bg-gray-100 hover:bg-gray-200 cursor-pointer'"
                                     v-tooltip="!history.id ? 'Recently uploaded' : ''"
                                 >
@@ -456,7 +456,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                 </div>
 
                 <div v-else class="flex flex-wrap gap-x-2 gap-y-2">
-                    <div v-for="(history, index) in 4" :key="index" class="w-36 h-20 skeleton rounded" />
+                    <div v-for="(history, index) in 4" :key="index" class="w-36 h-20 skeleton rounded-sm" />
                 </div>
             </div>
         </div>

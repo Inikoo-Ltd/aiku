@@ -345,7 +345,7 @@ const toggleDescription = (event) => {
                 <!-- Column: Description -->
                 <Column v-if="selectedColumns.includes('description')" field="description" header="Description" style="min-width: 20rem">
                     <template #body="slotProps">
-                        <div @click="(e) => (toggleDescription(e), selectedRowToEdit = slotProps.data)" class="h-16 overflow-hidden rounded border border-gray-300 px-2 py-1 text-gray-600">
+                        <div @click="(e) => (toggleDescription(e), selectedRowToEdit = slotProps.data)" class="h-16 overflow-hidden rounded-sm border border-gray-300 px-2 py-1 text-gray-600">
                             <span v-if="slotProps.data.description" v-html="slotProps.data.description"></span>
                             <span v-else class="text-gray-400 italic">No description</span>
                         </div>

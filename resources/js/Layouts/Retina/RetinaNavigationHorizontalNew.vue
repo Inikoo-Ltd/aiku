@@ -90,12 +90,12 @@ const isLoadingVisitActiveHorizontal = ref(false)
 </script>
 
 <template>
-    <Fieldset class="relative isolate ring-1 ring-white/20 rounded transition-all "
+    <Fieldset class="relative isolate ring-1 ring-white/20 rounded-sm transition-all "
         unstyled
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
         <template v-if="nav.field_name" #legend>
-            <div class="ml-2 px-2 rounded mb-0.5 text-sm" :style="{ 'background-color': `${layout.app.theme[0]}` }">
+            <div class="ml-2 px-2 rounded-sm mb-0.5 text-sm" :style="{ 'background-color': `${layout.app.theme[0]}` }">
                 <Transition name="slide-to-left"><span v-if="layout.leftSidebar.show">{{ nav.field_name }}</span></Transition>
                 <FontAwesomeIcon v-if="nav.field_icon" :icon="nav.field_icon" class="opacity-70" fixed-width aria-hidden="true" />
             </div>
@@ -154,7 +154,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
                         :is="previousHorizontal?.route?.name ? Link : 'div'"
                         v-tooltip=""
                         :href="previousHorizontal?.route?.name ? route(previousHorizontal.route.name, previousHorizontal.route.parameters) : '#'"
-                        class="py-0.5 px-[1px] flex justify-center items-center rounded"
+                        class="py-0.5 px-[1px] flex justify-center items-center rounded-sm"
                         :class="previousHorizontal ? 'hover:bg-black/10' : 'text-white/40'"
                         @start="() => isLoadingNavigation = 'prevNav'"
                         @finish="() => onClickArrow(previousHorizontal?.key)"
@@ -167,7 +167,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
                         :key="nextHorizontal?.key"
                         :is="nextHorizontal?.route?.name ? Link : 'div'"
                         :href="nextHorizontal?.route?.name ? route(nextHorizontal.route.name, nextHorizontal.route.parameters) : '#'"
-                        class="py-0.5 px-[1px] flex justify-center items-center rounded"
+                        class="py-0.5 px-[1px] flex justify-center items-center rounded-sm"
                         :class="nextHorizontal ? 'hover:bg-black/10' : 'text-white/40'"
                         @start="() => isLoadingNavigation = 'nextNav'"
                         @finish="() => onClickArrow(nextHorizontal?.key)"
@@ -191,6 +191,6 @@ const isLoadingVisitActiveHorizontal = ref(false)
         next: {{ nextHorizontal?.key }} <br>
 
         <pre>{{ props.nav.horizontal_navigations.map(x => x.key).findIndex(x => x == currentActiveHorizontal.key) }}</pre> -->
-        <div v-if="isSomeSubnavActive()" class="absolute inset-0 bg-slate-50/10 rounded -z-10" />
+        <div v-if="isSomeSubnavActive()" class="absolute inset-0 bg-slate-50/10 rounded-sm -z-10" />
     </Fieldset>
 </template>

@@ -150,7 +150,7 @@ watch(
         <div :class="responsiveGridClass" class="grid gap-6 p-4">
           <div v-for="product in dummyProducts" :key="product.id"
             :style="getStyles(modelValue?.card_product?.properties, screenType)"
-            class="p-3 relative rounded  bg-white">
+            class="p-3 relative rounded-sm  bg-white">
             <component
               :is="getProductsRenderB2bComponent(code)" 
               :product="product" 

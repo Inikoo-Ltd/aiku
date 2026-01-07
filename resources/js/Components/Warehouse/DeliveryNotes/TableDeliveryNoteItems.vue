@@ -319,7 +319,7 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span
-                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded-sm px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
                                         <FractionDisplay
@@ -335,7 +335,7 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
                                             selectedItemValue = itemValue;
                                             selectedItemProxy = proxyItem;
                                         }" v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
-                                        class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
+                                        class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded-sm px-1">
                                         <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
                                             aria-hidden="true" />
                                         {{ itemValue.locations?.length - 1 }}
@@ -445,9 +445,9 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
 
         </div>
 
-        <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center divide-x divide-gray-300">
+        <div class="rounded-sm p-1 grid grid-cols-3 justify-between gap-x-6 items-center divide-x divide-gray-300">
             <div v-for="location in selectedItemValue?.locations"
-                class="bg-white rounded mb-3 w-full xeven:bg-black/5 flex gap-x-3 items-center px-2 py-1">
+                class="bg-white rounded-sm mb-3 w-full xeven:bg-black/5 flex gap-x-3 items-center px-2 py-1">
                 <label :for="location.location_code">
                     <span v-if="location.location_code"
                         v-tooltip="location.quantity <= 0 ? 'Location has no stock' : ''"
@@ -463,7 +463,7 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
 
                     <span
                         v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(location.quantity), location_code: location.location_code})"
-                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded-sm px-1">
                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="location.quantity_fractional"
                             :fractionData="location.quantity_fractional" />

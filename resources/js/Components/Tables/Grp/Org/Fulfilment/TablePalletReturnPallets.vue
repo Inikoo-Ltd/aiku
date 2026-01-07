@@ -376,7 +376,7 @@ const generateLinkPallet = (pallet: {}) => {
                     method="patch"
                     v-tooltip="trans(`Set as picked`)"
                 >
-                    <!-- <div class="border border-green-500 rounded py-2 px-6 hover:bg-green-500/10 cursor-pointer">
+                    <!-- <div class="border border-green-500 rounded-sm py-2 px-6 hover:bg-green-500/10 cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
                     </div> -->
                     <Button icon="fal fa-check" type="positive" :loading="isPickingLoading === pallet.id" class="py-0" />

@@ -106,7 +106,7 @@ const stateBgColor = computed(() => {
                                 </div> -->
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Slug:</span>
-                                    <span class="font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">{{
+                                    <span class="font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded-sm">{{
                                         data.charge.slug }}</span>
                                 </div>
                             </div>
@@ -161,7 +161,7 @@ const stateBgColor = computed(() => {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-white rounded-lg p-3 border border-gray-200">
                             <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Rules</div>
-                            <div class="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded min-h-6">
+                            <div class="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded-sm min-h-6">
                                 {{ data.charge.settings.rules }}
                             </div>
                         </div>

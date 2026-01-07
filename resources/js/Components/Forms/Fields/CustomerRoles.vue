@@ -108,7 +108,7 @@ watch([optionsRoles1, optionsRoles2, optionsRoles3], () => {
                                 :name="optionsRoles1.name" type="checkbox"
                                 :titles="`I'm Interested in ${optionsRoles1.label}`"
                                 :disabled="optionsRoles1.disabled"
-                                class="h-5 w-5 rounded cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
+                                class="h-5 w-5 rounded-sm cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
                             />
                         </td>
                     </tr>
@@ -127,7 +127,7 @@ watch([optionsRoles1, optionsRoles2, optionsRoles3], () => {
                                     :name="optionsRoles2.name" type="checkbox"
                                     :titles="`I'm Interested in ${optionsRoles2.label}`"
                                     :disabled="optionsRoles1.value"
-                                    class="h-5 w-5 rounded cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
+                                    class="h-5 w-5 rounded-sm cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
                                 />
                                 <FontAwesomeIcon v-if="optionsRoles1.value" icon='fal fa-lock' class='' aria-hidden='true' />
                             </div>
@@ -148,7 +148,7 @@ watch([optionsRoles1, optionsRoles2, optionsRoles3], () => {
                                     :name="option.name" type="checkbox"
                                     :titles="`I'm Interested in ${option.label}`"
                                     :disabled="optionsRoles2.value"
-                                    class="h-5 w-5 rounded cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
+                                    class="h-5 w-5 rounded-sm cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
                                 />
                                 <FontAwesomeIcon v-if="optionsRoles2.value" icon='fal fa-lock' class='' aria-hidden='true' />
                             </div>

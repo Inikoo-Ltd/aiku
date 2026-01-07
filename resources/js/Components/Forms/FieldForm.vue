@@ -138,7 +138,7 @@ defineExpose({
                 </div>
                 
                 <!-- Section: Warning -->
-                <div v-if="fieldData.warning" v-tooltip="fieldData.warning" class="my-2 text-xs border border-amber-500 rounded-sm bg-amber-100 py-1 px-2 text-balance text-amber-600">
+                <div v-if="fieldData.warning" v-tooltip="fieldData.warning" class="my-2 text-xs border border-amber-500 rounded-xs bg-amber-100 py-1 px-2 text-balance text-amber-600">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
                     {{ fieldData.warning }}
                 </div>

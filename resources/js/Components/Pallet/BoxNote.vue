@@ -82,7 +82,7 @@ const fallbackColor = '#374151'  // Color
 </script>
 
 <template>
-    <div class="relative w-full xpt-4 rounded overflow-hidden"  :style="{
+    <div class="relative w-full xpt-4 rounded-sm overflow-hidden"  :style="{
                 backgroundColor: useBasicColor(noteData.bgColor) + '11' || noteData.bgColor ? `${noteData.bgColor}11` : fallbackBgColor,
                 color: fallbackColor,
                 border:`1px solid ${useBasicColor(noteData.bgColor) ? `color-mix(in srgb, ${useBasicColor(noteData.bgColor)} 40%, white)` : noteData.bgColor || fallbackBgColor}`

@@ -121,11 +121,11 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 
 /* Navigation: Aiku */
 .navigationActive {
-    @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
+    @apply rounded-sm py-2 font-semibold transition-all duration-0 ease-out;
 }
 
 .navigation {
-    @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
+    @apply hover:bg-gray-300/40 py-2 rounded-sm font-semibold transition-all duration-0 ease-out;
 }
 
 .subNavActive {

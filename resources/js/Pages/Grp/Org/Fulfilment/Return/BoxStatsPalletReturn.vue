@@ -622,7 +622,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 				<div v-else class="w-full text-xs text-gray-500" :class="listError.box_stats_delivery_address ? 'errorShake' : ''">
 					Send to:
-					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+					<div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
 						<span v-html="boxStats?.fulfilment_customer?.address?.value?.formatted_address" />
 						<div
 							@click="() => (isDeliveryAddressManagementModal = true)"
@@ -763,7 +763,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 			<!-- Barcode -->
 			<div
-				class="mb-4 h-full w-full lg:max-w-72 mx-auto py-1 px-2 flex flex-col bg-gray-100 ring-1 ring-gray-300 rounded items-center">
+				class="mb-4 h-full w-full lg:max-w-72 mx-auto py-1 px-2 flex flex-col bg-gray-100 ring-1 ring-gray-300 rounded-sm items-center">
 				<svg id="palletReturnBarcode" class="w-full h-full"></svg>
 				<div class="text-xs text-gray-500">
 					{{ route().params.palletReturn }}
@@ -930,7 +930,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				<!-- Repeat for more rows -->
 				<div class=" grid grid-cols-12 mt-2">
 					<div></div>
-					<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+					<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded-sm">
 						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
 						{{ trans("Add another parcel") }}
 					</div>

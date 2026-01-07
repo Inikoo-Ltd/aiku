@@ -60,7 +60,7 @@ const isStaging = layout.app.environment === 'staging'
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >
-            <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">
+            <div class="bg-white shadow-lg rounded-sm h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">
                 <!-- Section: Breadcrumbs -->
                 <div class="mt-1">
                     <Breadcrumbs

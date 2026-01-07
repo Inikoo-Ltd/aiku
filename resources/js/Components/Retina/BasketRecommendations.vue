@@ -182,14 +182,14 @@ onBeforeUnmount(() => {
             <template v-if="listProducts?.length">
                 <SwiperSlide v-for="(product, index) in listProducts"
                     :key="index"
-                    class="w-full cursor-grab relative px-2 md:px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full"
+                    class="w-full cursor-grab relative px-2 md:px-4 py-3 rounded-sm !flex !flex-col !justify-between gap-y-4 min-h-full"
                     :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'hover:bg-gray-500/10' : 'opacity-75'"
                 >
                     <div class="">
                         <!-- Product Image - Always a link -->
                         <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
                             :href="product.attributes.web_url?.[0]"
-                            class="block rounded aspect-[5/4] w-full overflow-hidden">
+                            class="block rounded-sm aspect-[5/4] w-full overflow-hidden">
                             <img :src="product.attributes.image_link" :alt="product.attributes.title"
                                 class="w-full h-full object-contain">
                         </component>
@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
                 <SwiperSlide
                     v-if="isLoadingFetch"
                     v-for="xx in 4"
-                    class="w-full cursor-grab relative px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full skeleton"
+                    class="w-full cursor-grab relative px-4 py-3 rounded-sm !flex !flex-col !justify-between gap-y-4 min-h-full skeleton"
                 >
                 </SwiperSlide>
             </template>

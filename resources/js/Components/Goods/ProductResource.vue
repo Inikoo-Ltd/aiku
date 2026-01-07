@@ -246,7 +246,7 @@ const getIcon = (type?: string) => {
                             <dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
                             <dd class="font-medium">
                                 <div v-if="properties?.country_of_origin.code">
-                                    <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+                                    <img class="inline-block h-[14px] w-[20px] object-cover rounded-xs"
                                         :src="'/flags/' + properties?.country_of_origin.code.toLowerCase() + '.png'"
                                         loading="lazy" />
                                     <span class="ml-2">{{ properties.country_of_origin.name }}</span>
@@ -274,7 +274,7 @@ const getIcon = (type?: string) => {
                             <dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'"
                                 class="text-gray-500">{{
                                 trans("HTS US") }}
-                                <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+                                <img class="inline-block h-[14px] w-[20px] object-cover rounded-xs"
                                     :src="'/flags/' + 'us' + '.png'" :alt="`Flag ${'us'}`" loading="lazy" />
                             </dt>
                             <dd class="font-medium">
@@ -389,7 +389,7 @@ const getIcon = (type?: string) => {
                             </h5>
                             <div class="flex gap-2 overflow-x-auto pb-2">
                                 <div v-for="hazard in getActiveHazards()" :key="hazard.key"
-                                    class="shrink-0 w-10 h-10 bg-white rounded border-2 border-red-200 p-1.5 shadow-xs"
+                                    class="shrink-0 w-10 h-10 bg-white rounded-sm border-2 border-red-200 p-1.5 shadow-xs"
                                     v-tooltip="hazard.name">
                                     <img :src="getHazardIconPath(hazard.icon)" :alt="hazard.name"
                                         class="w-full h-full object-contain">

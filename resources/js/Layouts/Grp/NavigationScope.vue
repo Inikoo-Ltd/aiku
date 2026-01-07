@@ -19,7 +19,7 @@ const layout = inject('layout', layoutStructure)
 </script>
 
 <template>
-    <div class="flex flex-col relative isolate ring-1 ring-white/20 rounded"
+    <div class="flex flex-col relative isolate ring-1 ring-white/20 rounded-sm"
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
         <div class="w-full flex items-center pt-2 pl-2.5 pr-0.5 pb-2 gap-x-1.5"
@@ -42,7 +42,7 @@ const layout = inject('layout', layoutStructure)
         </div>
 
         <Transition name="slide-to-right">
-            <div v-if="layout.currentRoute.includes(root)" class="absolute inset-0 bg-black/20 rounded -z-10" />
+            <div v-if="layout.currentRoute.includes(root)" class="absolute inset-0 bg-black/20 rounded-sm -z-10" />
         </Transition>
     </div>
 </template>

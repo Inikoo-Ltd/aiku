@@ -45,7 +45,7 @@ const openDisclosureId = ref<number | null>(null)
          <div v-if="setting?.product_specs" class="relative">
             <div class="space-y-2">
                 <!-- Spec Item #1 -->
-                <div class="relative rounded transition">
+                <div class="relative rounded-sm transition">
                     <div @click="openDisclosureId = openDisclosureId === 'spec-1' ? null : 'spec-1'"  :style="getStyles(styleData?.title)"
                         class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer"
                         :class="'w-full'"
@@ -67,7 +67,7 @@ const openDisclosureId = ref<number | null>(null)
             <div v-if="faqContents.length > 0" class="text-sm text-gray-500 mb-1 font-semibold"  :style="getStyles(styleData?.title)">Frequently Asked Questions (FAQs)</div>
             <div class="space-y-2">
                 <template v-for="content in faqContents" :key="content.id">
-                    <div class="relative hover:bg-gray-50 rounded transition">
+                    <div class="relative hover:bg-gray-50 rounded-sm transition">
                         <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"  :style="getStyles(styleData?.title)"
                             class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer"  :class="'w-full'">
                             <div v-html="content.title"></div>

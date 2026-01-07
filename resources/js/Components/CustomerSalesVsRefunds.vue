@@ -73,11 +73,11 @@ const chartOptions = {
         <div class="text-xs text-gray-700 w-full">
             <div class="flex items-center gap-3 mb-2">
                 <div class="flex items-center gap-1">
-                    <span class="w-3 h-3 rounded-sm" :style="{ backgroundColor: chartColors[0] }"></span>
+                    <span class="w-3 h-3 rounded-xs" :style="{ backgroundColor: chartColors[0] }"></span>
                     <span>{{ trans('Total Sales') }}</span>
                 </div>
                 <div class="flex items-center gap-1">
-                    <span class="w-3 h-3 rounded-sm" :style="{ backgroundColor: chartColors[1] }"></span>
+                    <span class="w-3 h-3 rounded-xs" :style="{ backgroundColor: chartColors[1] }"></span>
                     <span>{{ trans('Refunds') }}</span>
                 </div>
             </div>

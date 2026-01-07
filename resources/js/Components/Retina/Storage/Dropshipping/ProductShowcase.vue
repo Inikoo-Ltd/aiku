@@ -116,7 +116,7 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
 <template>
     <div>
         <!-- Box: API URL -->
-        <!-- <div class="w-fit border border-gray-300 rounded overflow-hidden">
+        <!-- <div class="w-fit border border-gray-300 rounded-sm overflow-hidden">
             <div class="py-2 px-3 text-lg font-bold bg-gray-100 ">
                 <FontAwesomeIcon icon="fal fa-link" class="" fixed-width aria-hidden="true" />
                 API Url (no need password)
@@ -175,12 +175,12 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                     <div class="flex flex-col">
                         <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
                         <!-- <dd v-if="data?.product?.data?.description_title"
-                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow-sm"
+                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded-sm shadow-sm"
                             v-html="data?.product?.data?.description_title"></dd> -->
-                        <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow-sm"
+                        <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded-sm shadow-sm"
                             v-html="data?.product?.data?.description ?? '-'"></dd>
                         <dd v-if="data?.product?.data?.description_extra"
-                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow-sm"
+                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded-sm shadow-sm"
                             v-html="data?.product?.data?.description_extra ?? '-'"></dd>
                     </div>
                     <ProductContentsIris :product="props.data.product.data" :setting="{

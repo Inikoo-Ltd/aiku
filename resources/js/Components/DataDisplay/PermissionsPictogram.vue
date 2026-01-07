@@ -211,7 +211,7 @@ const organisationPositionCounts = ref<{
             >
                 <div
                     @click="selectedOrganisation?.slug == organisation.slug ? selectedOrganisation = null : selectedOrganisation = organisation"
-                    class="rounded cursor-pointer py-1 px-2 flex justify-between items-center"
+                    class="rounded-sm cursor-pointer py-1 px-2 flex justify-between items-center"
                     :class="organisation.slug === selectedOrganisation?.slug ? 'bg-indigo-100 text-indigo-500' : 'hover:bg-gray-200/70 '"
                 >
                     <div class="">{{ organisation.name }}

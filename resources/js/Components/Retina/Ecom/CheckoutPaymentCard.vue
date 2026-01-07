@@ -185,7 +185,7 @@ const onClickCopy = (textToCopy: string) => {
                 </div>
             </template>
 
-            <div v-else class="h-64 flex flex-col items-center justify-center gap-y-2 bg-gray-100 border border-gray-300 rounded">
+            <div v-else class="h-64 flex flex-col items-center justify-center gap-y-2 bg-gray-100 border border-gray-300 rounded-sm">
                 <FontAwesomeIcon icon="fal fa-check-circle" class="text-3xl ml-1 text-green-500" fixed-width aria-hidden="true" />
                 <div>{{ trans("Payment done. Waiting for confirmation...") }}</div>
             </div>
@@ -197,7 +197,7 @@ const onClickCopy = (textToCopy: string) => {
 
         <Transition name="fade">
             <div v-if="retryCount > 0"
-                class="absolute inset-0 xmt-4 px-4 py-2 rounded-lg bg-black/10 backdrop-blur-sm border border-black/50 text-yellow-600 text-lg font-medium flex items-center justify-center gap-2 xanimate-pulse">
+                class="absolute inset-0 xmt-4 px-4 py-2 rounded-lg bg-black/10 backdrop-blur-xs border border-black/50 text-yellow-600 text-lg font-medium flex items-center justify-center gap-2 xanimate-pulse">
                 <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
                 {{ trans("Retrying payment... Attempt :retryCount of :max_entries", { retryCount: retryCount, max_entries: MAX_RETRIES }) }}
             </div>

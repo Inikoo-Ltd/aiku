@@ -118,7 +118,7 @@ const component = computed(() => {
 
         <!-- If balance can't cover -->
         <div v-else-if="to_pay_data.by_other > 0" class="mt-10 md:mx-10 ">
-            <div v-if="to_pay_data.by_balance > 0" class="mx-auto text-center text-lg border border-gray-300 py-4 rounded">
+            <div v-if="to_pay_data.by_balance > 0" class="mx-auto text-center text-lg border border-gray-300 py-4 rounded-sm">
                 <div>
                     <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale.currencyFormat(currency_code, to_pay_data.by_balance) }} of {{ locale.currencyFormat(currency_code, to_pay_data.total) }}</span>
                     will paid with balance
@@ -171,7 +171,7 @@ const component = computed(() => {
         </div>
 
         <!-- If balance can cover totally -->
-        <div v-else-if="(to_pay_data.by_balance > 0) && (to_pay_data.by_balance >= to_pay_data.total)" class="ml-10 mr-4 py-5 flex items-center flex-col gap-y-2 border border-gray-300 rounded">
+        <div v-else-if="(to_pay_data.by_balance > 0) && (to_pay_data.by_balance >= to_pay_data.total)" class="ml-10 mr-4 py-5 flex items-center flex-col gap-y-2 border border-gray-300 rounded-sm">
             <div class="w-64">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"

@@ -278,7 +278,7 @@ defineExpose({
                         <slot name="info" :data="item" :key="item.id + '-'">
                             <div class="flex items-center gap-3">
                                 <Image v-if="item.image" :src="item.image.thumbnail"
-                                    class="w-12 h-12 rounded object-cover" />
+                                    class="w-12 h-12 rounded-sm object-cover" />
                                 <div>
                                     <div class="font-medium leading-none">{{ item.name }}</div>
                                     <div class="flex justify-beetween mt-1 gap-5">
@@ -408,7 +408,7 @@ defineExpose({
                                 <template v-if="!isLoadingFetch">
                                     <template v-if="list.length > 0">
                                         <div v-for="(item, index) in listData" :key="index" @click="selectProduct(item)"
-                                            class="relative h-full rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                            class="relative h-full rounded-sm cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                             :class="[
                                                 compSelectedProduct.includes(item.id)
                                                     ? 'bg-indigo-100 border-indigo-300'
@@ -421,7 +421,7 @@ defineExpose({
                                                 aria-hidden="true" />
 
                                             <slot name="product" :item="item">
-                                                <div class="w-16 h-16 border border-gray-500/20 rounded aspect-square overflow-y-clip text-xxs flex items-center justify-center">
+                                                <div class="w-16 h-16 border border-gray-500/20 rounded-sm aspect-square overflow-y-clip text-xxs flex items-center justify-center">
                                                     <Image
                                                         v-if="item.image"
                                                         :src="item.image?.thumbnail"
@@ -449,7 +449,7 @@ defineExpose({
                                                     </div>
 
                                                     
-                                                    <div v-tooltip="trans('Packed in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                                    <div v-tooltip="trans('Packed in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded-sm px-2 py-0.5 bg-teal-600 text-white">
                                                         <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
                                                         {{ item.packed_in }} [{{ item.type }}]
                                                     </div>
@@ -462,7 +462,7 @@ defineExpose({
                                     </div>
                                 </template>
                                 <div v-else v-for="(item, index) in 6" :key="index"
-                                    class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton" />
+                                    class="rounded-sm cursor-pointer w-full h-20 flex gap-x-2 border skeleton" />
                             </div>
                         </div>
 

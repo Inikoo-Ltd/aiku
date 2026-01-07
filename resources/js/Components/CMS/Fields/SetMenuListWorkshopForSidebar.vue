@@ -193,7 +193,7 @@ const autoSave = async (event?) => {
             :fallbackOnBody="true" :emptyInsertThreshold="100" @end="handleDragEnd">
             <template #item="{ element, index }">
                 <div @click="() => SetMenuActive(element, true)"
-                    class="group flex items-center bg-white border border-gray-200 rounded shadow-xs overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
+                    class="group flex items-center bg-white border border-gray-200 rounded-sm shadow-xs overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
                     <!-- Drag Handle -->
                     <div class="drag-handle cursor-move px-3 py-2 text-gray-500 hover:text-indigo-600"
                         title="Drag to reorder" @click.stop>
@@ -229,7 +229,7 @@ const autoSave = async (event?) => {
     <!-- Static Menu Separator -->
     <div class="flex items-center my-6">
         <!-- <div class="flex-grow border-t border-gray-300"></div> -->
-        <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-dashed border-gray-400 rounded">
+        <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-dashed border-gray-400 rounded-sm">
             {{ trans("Area reserved by system") }}
             <InformationIcon :information="trans('Automatically showed Departments list')" />
         </div>
@@ -248,7 +248,7 @@ const autoSave = async (event?) => {
             :fallbackOnBody="true" :emptyInsertThreshold="100" @end="handleDragEnd">
             <template #item="{ element, index }">
                 <div @click="() => SetMenuActive(element, false)"
-                    class="group flex items-center bg-white border border-gray-200 rounded shadow-xs overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
+                    class="group flex items-center bg-white border border-gray-200 rounded-sm shadow-xs overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
                     <!-- Drag Handle -->
                     <div class="drag-handle cursor-move px-3 py-2 text-gray-500 hover:text-indigo-600"
                         title="Drag to reorder" @click.stop>

@@ -68,7 +68,7 @@ const idxSlideLoading = ref<string | null>(null)
                 >
                     <template #default>
                         <Family1Render :data="item" />
-                        <div v-if="idxSlideLoading == `family${index}`" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl rounded">
+                        <div v-if="idxSlideLoading == `family${index}`" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl rounded-sm">
                             <LoadingIcon />
                         </div>
                     </template>
@@ -85,7 +85,7 @@ const idxSlideLoading = ref<string | null>(null)
                 >
                     <template #default>
                         <Family1Render :data="item" />
-                        <div v-if="idxSlideLoading == `collection${index}`" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl rounded">
+                        <div v-if="idxSlideLoading == `collection${index}`" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl rounded-sm">
                             <LoadingIcon />
                         </div>
                     </template>

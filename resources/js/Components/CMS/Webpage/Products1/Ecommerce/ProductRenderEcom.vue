@@ -98,7 +98,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
             <!-- Product Image -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
-                :type="typeOfLink" class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
+                :type="typeOfLink" class="block w-full mb-1 rounded-sm sm:h-[305px] h-[180px] relative"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
                 <slot name="image" :product="product">
                     <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery" :alt="product.name"

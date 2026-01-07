@@ -68,7 +68,7 @@ const allowMove = () => false
     :move="allowMove" :disabled="true">
     <template #item="{ element }">
       <div @click="() => onPick(element)" :class="[
-        'relative bg-white border rounded shadow-xs overflow-hidden cursor-pointer',
+        'relative bg-white border rounded-sm shadow-xs overflow-hidden cursor-pointer',
         selectedWeblock === element.code
           ? 'border-indigo-500 ring-2 ring-indigo-300'
           : 'border-gray-200'
@@ -76,7 +76,7 @@ const allowMove = () => false
 
         <!-- Label Beta Test -->
         <div v-if="element.is_in_test"
-          class="absolute top-2 left-2 bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded">
+          class="absolute top-2 left-2 bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded-sm">
           BETA TEST
         </div>
 

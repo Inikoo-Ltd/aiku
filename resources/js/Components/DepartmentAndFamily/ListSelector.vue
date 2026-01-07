@@ -155,7 +155,7 @@ watch(() => props.valueToRefetch, () => {
                   :key="index"
                   @click="toggleSelect(item)"
                   :class="[
-                    'relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border hover:bg-gray-50 transition',
+                    'relative h-fit rounded-sm cursor-pointer p-2 flex gap-x-2 border hover:bg-gray-50 transition',
                     selectedItems.some(i => i.id === item.id) ? 'border-green-500 bg-green-50' : ''
                   ]"
                 >
@@ -190,7 +190,7 @@ watch(() => props.valueToRefetch, () => {
               v-else
               v-for="(item, index) in 6"
               :key="index"
-              class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
+              class="rounded-sm cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
             />
           </div>
         </div>

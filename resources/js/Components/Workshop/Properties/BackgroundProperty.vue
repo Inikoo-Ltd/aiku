@@ -91,7 +91,7 @@ const sizeOptions = [
         <!-- === IMAGE BACKGROUND === -->
         <div class="relative flex items-center gap-x-2 py-1" v-tooltip="trans('Image background')">
             <div class="group rounded-md relative shadow-lg border border-gray-300">
-                <div class="relative h-12 w-12 cursor-pointer rounded overflow-hidden">
+                <div class="relative h-12 w-12 cursor-pointer rounded-sm overflow-hidden">
                     <Image v-if="model?.image?.source" :src="model?.image?.source" :alt="'background image'"
                         :imageCover="true" class="h-full" />
                     <div v-else class="h-full flex items-center justify-center">
@@ -120,7 +120,7 @@ const sizeOptions = [
                     emits('update:modelValue', model)
                 }" closeButton :isEditable="!model.color?.includes('var')">
                     <template #button>
-                        <div class="group relative h-12 w-12 overflow-hidden rounded"
+                        <div class="group relative h-12 w-12 overflow-hidden rounded-sm"
                             :style="{ backgroundColor: model.color }">
                             <div
                                 class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">

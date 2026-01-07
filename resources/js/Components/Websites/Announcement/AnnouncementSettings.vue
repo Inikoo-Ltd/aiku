@@ -291,7 +291,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 <!-- Section: Show URL list -->
                 <div>
                     <div>{{ trans("Show") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'show').length || 0 }}):</div>
-                    <TransitionGroup v-if="announcementDataSettings.target_pages.specific.length" name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded">
+                    <TransitionGroup v-if="announcementDataSettings.target_pages.specific.length" name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded-sm">
                         <template v-for="(spec, specIndex) in announcementDataSettings.target_pages.specific" :key="`${spec.will}${spec.when}${spec.url}`">
                             <li v-if="true || spec.will === 'show'" class="list-disc list-inside">
                                 <template v-if="spec.when === 'contain'">If <span class="italic">contain</span> <span class="font-bold">{{ spec.url }}</span> in the <Tag label="URL" /></template>
@@ -303,7 +303,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                         </template>
                     </TransitionGroup>
 
-                    <div v-else class="bg-slate-200 px-4 py-2 rounded text-gray-500 italic">
+                    <div v-else class="bg-slate-200 px-4 py-2 rounded-sm text-gray-500 italic">
                         <li class="list-none list-inside">
                             <!-- <template v-if="spec.when === 'contain'">If <span class="italic">contain</span> <span class="font-bold">{{ spec.url }}</span> in the <Tag label="URL" /></template>
                             <template v-if="spec.when === 'matches'">If <Tag label="URL" /><span class="italic">matches</span> in <span class="font-bold">{{ spec.url }}</span> </template>
@@ -319,7 +319,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 <!-- Section: Hide URL list -->
                 <div v-if="announcementDataSettings?.target_pages?.specific?.filter(item => item.will === 'hide').length">
                     <div>{{ trans("Hide") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'hide').length }}):</div>
-                    <TransitionGroup name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded">
+                    <TransitionGroup name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded-sm">
                         <template v-for="(spec, specIndex) in announcementDataSettings.target_pages.specific" :key="`${spec.will}${spec.when}${spec.url}`">
                             <li v-if="spec.will === 'hide'" class="list-disc list-inside">
                                 <template v-if="spec.when === 'contain'"><span class="italic">contain</span> <span class="font-bold">{{ spec.url }}</span> in the <Tag label="URL" /></template>
@@ -455,7 +455,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
             <!-- Section: Start date -->
             <fieldset class="">
                 <div class="text-sm/6 font-semibold ">{{ trans("Start date") }}</div>
-                <div class="bg-gray-50 rounded p-4 border border-gray-200 space-y-6">
+                <div class="bg-gray-50 rounded-sm p-4 border border-gray-200 space-y-6">
                     <div class="flex items-center gap-x-3">
                         <input
                             value="instant"
@@ -502,7 +502,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
             <!-- Section: Finish date -->
             <fieldset class="">
                 <div class="text-sm/6 font-semibold ">{{ trans("Finish date") }}</div>
-                <div class="bg-gray-50 rounded p-4 border border-gray-200 space-y-6">
+                <div class="bg-gray-50 rounded-sm p-4 border border-gray-200 space-y-6">
                     <div class="flex items-center gap-x-3">
                         <input
                             value="infinite"
@@ -557,7 +557,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
             </fieldset>
 
             <!-- Section: List active announcements -->
-            <div v-if="canPublish" class="relative text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2">
+            <div v-if="canPublish" class="relative text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded-sm px-3 py-2">
                 <FontAwesomeIcon v-tooltip="trans('Warning')" icon="fas fa-exclamation-triangle" class="text-amber-700/50 absolute top-3 right-3 text-lg" fixed-width aria-hidden="true" />
 
                 <div class="font-medium">

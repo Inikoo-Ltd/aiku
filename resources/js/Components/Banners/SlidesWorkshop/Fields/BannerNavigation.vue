@@ -45,14 +45,14 @@ const bottomNavOptions = [
 
 <template>
     <div class="mt-2">
-        <div class="ml-3 w-fit bg-gray-100 border border-gray-300 rounded px-2 py-2 space-y-2 mb-2">
+        <div class="ml-3 w-fit bg-gray-100 border border-gray-300 rounded-sm px-2 py-2 space-y-2 mb-2">
             <div class="leading-none text-xs text-gray-500">
                 Colors
             </div>
             <div class="flex gap-x-1">
                 <div v-for="color in useSolidColor" @click="() => data.navigation.colorNav = color"
                     :style="{ 'background-color': color }"
-                    class="relative h-5 aspect-square rounded overflow-hidden shadow-sm cursor-pointer transition-all duration-200 ease-in-out"
+                    class="relative h-5 aspect-square rounded-sm overflow-hidden shadow-sm cursor-pointer transition-all duration-200 ease-in-out"
                     :class="{ 'scale-110': data.navigation?.colorNav == color }"
                 >
                     <transition name="slide-bot-to-top">
@@ -70,7 +70,7 @@ const bottomNavOptions = [
                     <td class="whitespace-nowrap px-3 text-sm text-gray-500 text-center flex py-1.5">
                         <input v-model="data.navigation[option.name].value" :id="`item-${index}`" :name="`item-${index}`"
                             type="checkbox" :titles="`I'm Interested in ${option.label}`"
-                            class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-gray-500 text-gray-600 focus:ring-gray-600" />
+                            class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-gray-500 text-gray-600 focus:ring-gray-600" />
                     </td>
                     <td class="">
                         <label :for="`item-${index}`"

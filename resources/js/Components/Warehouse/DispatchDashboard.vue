@@ -55,7 +55,7 @@ const isLoadingSub = ref<null | string>(null)
                         :is="item.route?.name ? Link : 'div'"
                         :href="item.route?.name ? route(item.route.name, item.route.parameters) : '#'"
                         :key="item.key"
-                        class="flex items-center gap-2 px-2 py-1 lg:px-1 lg:py-0.5 rounded"
+                        class="flex items-center gap-2 px-2 py-1 lg:px-1 lg:py-0.5 rounded-sm"
                         :class="item.route?.name ? 'hover:bg-gray-200' : ''"
                         xv-tooltip="item.label"
                         @start="() => isLoadingSub = `${idxDash}${idx}`"

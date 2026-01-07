@@ -74,7 +74,7 @@ const dropdownCompanies = [
             </PopoverGroup> -->
 
             <!-- <div class="hidden lg:flex lg:flex-1 lg:justify-end">
-                <a :href="grpDomain" class="bg-indigo-600 px-3 py-2 rounded text-sm font-semibold leading-none text-white">
+                <a :href="grpDomain" class="bg-indigo-600 px-3 py-2 rounded-sm text-sm font-semibold leading-none text-white">
                     Log in
                 </a>
             </div> -->
@@ -105,7 +105,7 @@ const dropdownCompanies = [
                         
                         <div class="py-6">
                             <a :href="grpDomain"
-                                class="bg-indigo-600 rounded px-3 py-1.5 font-semibold leading-none text-white hover:bg-indigo-700">
+                                class="bg-indigo-600 rounded-sm px-3 py-1.5 font-semibold leading-none text-white hover:bg-indigo-700">
                                 {{ trans('Log in') }}
                             </a>
                         </div>

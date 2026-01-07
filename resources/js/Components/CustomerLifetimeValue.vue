@@ -376,7 +376,7 @@ const predictedStartPosition = computed(() => {
 
         <!-- Timeline -->
         <div class="relative mb-6">
-            <div class="h-8 bg-gray-100 rounded relative overflow-hidden" id="wrapper">
+            <div class="h-8 bg-gray-100 rounded-sm relative overflow-hidden" id="wrapper">
                 <!-- Background gray for predicted area -->
                 <div class="absolute top-0 h-full bg-gray-200" :style="{
                     left: predictedStartPosition + '%',
@@ -406,7 +406,7 @@ const predictedStartPosition = computed(() => {
 
             <!-- Tooltip -->
             <div v-if="hoveredOrder"
-                class="absolute -top-32 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-2 rounded shadow-lg z-20 whitespace-nowrap">
+                class="absolute -top-32 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-2 rounded-sm shadow-lg z-20 whitespace-nowrap">
                 <div class="font-semibold mb-1">{{ hoveredOrder.date }}</div>
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -439,7 +439,7 @@ const predictedStartPosition = computed(() => {
             <span class="text-xs text-gray-500">{{ trans('Churn Probability') }}:</span>
             <div class="flex items-center gap-1">
                 <span class="text-xs text-gray-500">{{ trans('Low') }}</span>
-                <div class="w-32 h-3 rounded"
+                <div class="w-32 h-3 rounded-sm"
                     style="background: linear-gradient(to right,  #A3FFC3, #EBE571,#FF8B42)" />
                 <span class="text-xs text-gray-500">{{ trans('High') }}</span>
             </div>

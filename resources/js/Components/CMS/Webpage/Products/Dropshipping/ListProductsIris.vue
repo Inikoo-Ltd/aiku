@@ -490,7 +490,7 @@ console.log('sdasd',props)
                 <div :class="responsiveGridClass" class="grid gap-6 p-4"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="loadingInitial">
-                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-xs bg-white">
+                        <div v-for="n in 10" :key="n" class="border p-3 rounded-sm shadow-xs bg-white">
                             <Skeleton height="200px" class="mb-3" />
                             <Skeleton width="80%" class="mb-2" />
                             <Skeleton width="60%" class="mb-2" />
@@ -501,7 +501,7 @@ console.log('sdasd',props)
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border p-3 relative rounded bg-white">
+                            class="border p-3 relative rounded-sm bg-white">
                              <component :is="getProductsRenderDropshippingComponent(code)" :product="product" :key="index" :bestSeller="fieldValue.bestseller"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :productHasPortfolio="productHasPortfolio.list[product.id]"

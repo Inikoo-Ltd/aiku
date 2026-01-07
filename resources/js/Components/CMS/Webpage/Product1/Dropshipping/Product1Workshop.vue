@@ -169,7 +169,7 @@ defineOptions({
                         :productHasPortfolio="productExistenceInChannels" :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
                         />
                     <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
-                        <div class="h-full w-full skeleton rounded" />
+                        <div class="h-full w-full skeleton rounded-sm" />
                     </div>
                 </div>
 

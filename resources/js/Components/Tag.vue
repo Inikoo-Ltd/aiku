@@ -49,7 +49,7 @@ const compTheme = () => {
 </script>
 
 <template>
-    <div class="inline-flex items-center gap-x-1 rounded select-none px-1.5 py-1 w-fit font-medium border"
+    <div class="inline-flex items-center gap-x-1 rounded-sm select-none px-1.5 py-1 w-fit font-medium border"
         :class="[
             `text-${size}`,
             stringToColor ? false : compTheme()  // If stringToColor false then take provided style
@@ -69,7 +69,7 @@ const compTheme = () => {
         <slot name="closeButton">
             <div v-if="closeButton"
                 @click="(event) => {emits('onClose', event)}"
-                class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-sm">
+                class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-xs">
                 <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
             </div>
         </slot>

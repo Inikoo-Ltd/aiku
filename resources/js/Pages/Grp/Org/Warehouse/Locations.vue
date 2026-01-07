@@ -126,7 +126,7 @@ const onExport = () => {
                             </div>
 
                             <div v-for="column in props.export.columns" @click="onClickColumnExport(column.value)"
-                                class="flex items-center justify-between rounded whitespace-nowrap px-3 py-1 cursor-pointer"
+                                class="flex items-center justify-between rounded-sm whitespace-nowrap px-3 py-1 cursor-pointer"
                                 :class="selectedColumnExport.includes(column.value) ? 'bg-indigo-100' : 'hover:bg-gray-200'"
                             >
                                 {{ column.label }}

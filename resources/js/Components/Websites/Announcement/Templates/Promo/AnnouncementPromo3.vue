@@ -390,7 +390,7 @@ defineExpose({ fieldSideEditor })
 
                     <div class="flex flex-col items-center" >
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none"  :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded-sm text-[10px] tabular-nums leading-none"  :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                             {{ days }}
                         </div>
                         <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">DAY</span>
@@ -398,7 +398,7 @@ defineExpose({ fieldSideEditor })
 
                     <div class="flex flex-col items-center">
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded-sm text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                             {{ hours }}
                         </div>
                         <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">HRS</span>
@@ -406,7 +406,7 @@ defineExpose({ fieldSideEditor })
 
                     <div class="flex flex-col items-center">
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded-sm text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)">
                             {{ minutes }}
                         </div>
                         <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">MINS</span>
@@ -414,7 +414,7 @@ defineExpose({ fieldSideEditor })
 
                     <div class="flex flex-col items-center">
                         <div
-                            class="px-1 py-[2px] bg-purple-700 text-white rounded text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)"> 
+                            class="px-1 py-[2px] bg-purple-700 text-white rounded-sm text-[10px] tabular-nums leading-none" :style="getStyles(announcementData?.fields?.countdown_style?.container?.properties)"> 
                             {{ seconds }}
                         </div>
                         <span class="text-[8px]   leading-none mt-[1px]  text-gray-100  text-countdown">SECS</span>

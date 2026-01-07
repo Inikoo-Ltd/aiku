@@ -156,7 +156,7 @@ const updateFieldValue = (value: any) => {
 									false
 								)
 							"
-							class="rounded text-yellow-500 bg-gray-500/80 absolute inset-0 w-[110%] h-[102%]
+							class="rounded-sm text-yellow-500 bg-gray-500/80 absolute inset-0 w-[110%] h-[102%]
 							top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2
 							flex flex-col items-center justify-center text-center"
 						>

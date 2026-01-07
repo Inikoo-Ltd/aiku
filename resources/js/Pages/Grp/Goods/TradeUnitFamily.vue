@@ -127,7 +127,7 @@ const attachTradeUnit = () => {
               <Image
                 v-if="item.image"
                 :src="item.image?.thumbnail"
-                class="w-16 h-16 rounded object-cover mx-auto md:mx-0"
+                class="w-16 h-16 rounded-sm object-cover mx-auto md:mx-0"
                 imageCover
                 :alt="item.name"
               />

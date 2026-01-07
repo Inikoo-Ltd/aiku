@@ -287,7 +287,7 @@ onMounted(() => {
 
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
                         <div v-if="findLocation(deliveryItem.locations, proxyItem.hehe)"
-                            class="rounded p-1 flex flex-col justify-between gap-x-6 items-center">
+                            class="rounded-sm p-1 flex flex-col justify-between gap-x-6 items-center">
                             <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
                                 <!-- Location Info -->
                                 <div>
@@ -304,7 +304,7 @@ onMounted(() => {
                                             </span>
 
                                             <span v-tooltip="trans('Total stock in this location')"
-                                                class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                                                class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded-sm px-1">
                                                 <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                                     aria-hidden="true" />
                                                 {{ findLocation(deliveryItem.locations, proxyItem.hehe).quantity }}
@@ -316,7 +316,7 @@ onMounted(() => {
                                                     selectedItemProxy = proxyItem;
                                                 }"
                                                 v-tooltip="trans(`Other :_count_location locations`, { _count_location: deliveryItem.locations.length - 1})"
-                                                class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-1.5 lg:py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
+                                                class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-1.5 lg:py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded-sm px-1">
                                                 <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
                                                     aria-hidden="true" />
                                                 {{ deliveryItem.locations.length - 1 }}
@@ -439,7 +439,7 @@ onMounted(() => {
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
-                    class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
+                    class="rounded-sm p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
                         <div class="">
@@ -456,7 +456,7 @@ onMounted(() => {
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span v-tooltip="trans('Total stock in this location')"
-                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded-sm px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
                                         {{ Number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity ?? 0) }}
@@ -467,7 +467,7 @@ onMounted(() => {
                                         selectedItemValue = itemValue;
                                         selectedItemProxy = proxyItem;
                                     }" v-tooltip="trans(`Other :_count_location locations`, { _count_location: itemValue.locations?.length - 1})"
-                                        class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap px-3 lg:px-1 py-2 lg:py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded">
+                                        class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap px-3 lg:px-1 py-2 lg:py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded-sm">
                                         <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
                                             aria-hidden="true" />
                                         {{ itemValue.locations?.length - 1 }}
@@ -602,9 +602,9 @@ onMounted(() => {
         </div>
 
         <div
-            class="rounded p-1 grid grid-cols-2 lg:grid-cols-3 justify-between gap-y-3 gap-x-3 lg:gap-x-6 items-center divide-x divide-gray-300">
+            class="rounded-sm p-1 grid grid-cols-2 lg:grid-cols-3 justify-between gap-y-3 gap-x-3 lg:gap-x-6 items-center divide-x divide-gray-300">
             <div v-for="location in selectedItemValue?.locations"
-                class="bg-white rounded w-full flex justify-between gap-x-3 items-center px-2 py-1">
+                class="bg-white rounded-sm w-full flex justify-between gap-x-3 items-center px-2 py-1">
                 <label :for="location.location_code">
                     <span v-if="location.location_code"
                         v-tooltip="location.quantity <= 0 ? 'Location has no stock' : ''"
@@ -618,7 +618,7 @@ onMounted(() => {
                         }})</span>
 
                     <span v-tooltip="trans('Total stock in this location')"
-                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded-sm px-1">
                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
                         {{ Number(location.quantity ?? 0) }}
                     </span>

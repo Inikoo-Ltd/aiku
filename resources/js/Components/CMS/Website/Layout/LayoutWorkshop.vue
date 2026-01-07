@@ -103,7 +103,7 @@ const onPublishTheme = () => {
       <!-- Scrollable Content -->
       <div class="overflow-y-auto p-4 space-y-6">
         <!-- Theme Colors -->
-        <div id="theme_colors" class="rounded pb-4 transition-all duration-1000" :class="fieldGroupAnimateSection">
+        <div id="theme_colors" class="rounded-sm pb-4 transition-all duration-1000" :class="fieldGroupAnimateSection">
           <div class="flex items-center gap-2 mb-4">
             <hr class="h-0.5 rounded-full w-full bg-gray-300" />
             <span class="whitespace-nowrap text-sm text-gray-600 font-semibold">{{ trans("Select Theme") }}</span>
@@ -180,7 +180,7 @@ const onPublishTheme = () => {
               />
               <div class="w-20 h-12 bg-gray-200 rounded-md flex items-center justify-center">
                 <div
-                  class="w-[60%] h-full rounded"
+                  class="w-[60%] h-full rounded-sm"
                   style="background: repeating-linear-gradient(45deg, #ebf8ff, #ebf8ff 10px, #bee3f8 10px, #bee3f8 20px);"
                 ></div>
               </div>

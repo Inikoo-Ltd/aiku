@@ -55,7 +55,7 @@ const isSubNavActive = (subNav: SubNav) => {
     ]"
 >
     <component :is="dataNavigation[0].route?.name ? Link : 'div'"
-        class="flex items-center py-1.5 px-3 rounded transition-all"
+        class="flex items-center py-1.5 px-3 rounded-sm transition-all"
         :href="dataNavigation[0].route.name ? route(dataNavigation[0].route.name, dataNavigation[0].route.parameters) : '#'"
         @start="() => isLoading = 'home'"
         @finish="() => isLoading = false"

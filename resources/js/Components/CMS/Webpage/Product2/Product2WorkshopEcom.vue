@@ -235,7 +235,7 @@ defineOptions({
                     </div>
 
                     <div v-else
-                        class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
+                        class="w-full block text-center border text-sm px-3 py-2 rounded-sm text-gray-600"
                         :style="getStyles(modelValue?.buttonLogin?.properties, screenType)">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </div>

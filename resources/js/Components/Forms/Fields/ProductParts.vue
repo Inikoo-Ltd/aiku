@@ -127,7 +127,7 @@ const onDeleteParcel = (index: number) => {
             <!-- Repeat for more rows -->
             <div class="mt-2">
                 <!-- <div></div> -->
-                <div @click="() => props.form[props.fieldName].push({ org_stock_id: null, quantity: 1, notes: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                <div @click="() => props.form[props.fieldName].push({ org_stock_id: null, quantity: 1, notes: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded-sm">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                     {{ trans("Add another Part") }}
                 </div>

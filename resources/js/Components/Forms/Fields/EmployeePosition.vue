@@ -772,7 +772,7 @@ watch(() => newForm, () => {
                                                     </template>
                                                 </div>
                                             </div>
-                                            <div v-if="jobGroup.optionsClosed?.length" class="px-2 bg-gray-400/20 py-2 rounded">
+                                            <div v-if="jobGroup.optionsClosed?.length" class="px-2 bg-gray-400/20 py-2 rounded-sm">
                                                 <div class="flex items-center gap-x-1">
                                                     <FontAwesomeIcon icon="fal fa-info-circle" class="h-3" fixed-width aria-hidden="true" />
                                                     These {{ jobGroup.optionsType }} can't be selected due closed:

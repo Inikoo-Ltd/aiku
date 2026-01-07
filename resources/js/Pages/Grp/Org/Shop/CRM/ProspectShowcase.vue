@@ -380,7 +380,7 @@ const contactPreferencesData = computed(() => {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="w-full text-gray-500">
-                                <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                                <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
                                     <span class=""
                                         v-html="data?.prospect?.customer?.data?.address?.formatted_address" />
 

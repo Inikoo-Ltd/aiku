@@ -158,7 +158,7 @@ const isModalShippingAddress = ref(false)
             </dl>
 
             <!-- Field: Collection Toggle -->
-            <div v-if="get(props.order, ['is_collection'], false)" class="mt-2 bg-gray-50 w-full text-center py-2 border border-gray-300 rounded text-sm">
+            <div v-if="get(props.order, ['is_collection'], false)" class="mt-2 bg-gray-50 w-full text-center py-2 border border-gray-300 rounded-sm text-sm">
                 <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
                 {{ trans("This order is for collection only") }}.
             </div>
@@ -168,7 +168,7 @@ const isModalShippingAddress = ref(false)
                 <div class="w-full text-xs text-gray-500"
                     :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
                     <dd
-                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
                     </dd>
                 </div>
@@ -189,7 +189,7 @@ const isModalShippingAddress = ref(false)
 
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                         <span>{{ note?.reference }}</span>
-                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
                             <Icon :data="note?.state"/>
                         </span>
                     </div>
@@ -249,7 +249,7 @@ const isModalShippingAddress = ref(false)
                             </div>
                         </Link>
                         <a :href="route(invoice?.routes?.download?.name, invoice?.routes?.download?.parameters)"
-                           target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded cursor-pointer"
+                           target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded-sm cursor-pointer"
                            v-tooltip="trans('Download invoice')">
                             <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
                         </a>
@@ -267,7 +267,7 @@ const isModalShippingAddress = ref(false)
                 </div>
             </div>
 
-            <div class="border border-gray-200 p-2 rounded">
+            <div class="border border-gray-200 p-2 rounded-sm">
                 <OrderSummary :order_summary="summary.order_summary"
                               :currency_code="summary.order_summary?.currency?.data?.code"/>
             </div>

@@ -206,11 +206,11 @@ const generateRouteDeliveryNote = (id: string) => {
             <div v-if="order.state === 'cancelled'">
                 
             </div>
-            <div v-else-if="order.shipping_data?.is_collection && order.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
+            <div v-else-if="order.shipping_data?.is_collection && order.state === 'dispatched'" class="border rounded-sm border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
                 {{ trans("Collected") }}
                 <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
             </div>
-            <div v-else-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
+            <div v-else-if="order.shipping_data?.is_collection" class="border rounded-sm border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
                 {{ trans("For Collection") }}
             </div>
             

@@ -188,7 +188,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
 </script>
 
 <template>
-    <div v-if="isShowHorizontal()" class="relative isolate ring-1 ring-white/20 rounded transition-all"
+    <div v-if="isShowHorizontal()" class="relative isolate ring-1 ring-white/20 rounded-sm transition-all"
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
         :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
         <span v-if="false" class="text-white">
@@ -240,7 +240,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                         :is="previousNavigation() ? Link : 'div'"
                         :href="routeArrow(previousNavigation())"
                         :class="previousNavigation() ? 'hover:bg-black/10' : 'text-white/40'"
-                        class="py-1.5 px-[3px] flex justify-center items-center rounded"
+                        class="py-1.5 px-[3px] flex justify-center items-center rounded-sm"
                         @start="() => isLoadingNavigation = 'prevNav'"
                         @finish="() => isLoadingNavigation = false"
                     >
@@ -251,7 +251,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                     <component
                         :is="nextNavigation() ? Link : 'div'"
                         :href="routeArrow(nextNavigation())"
-                        class="py-1.5 px-[3px] flex justify-center items-center rounded"
+                        class="py-1.5 px-[3px] flex justify-center items-center rounded-sm"
                         :class="nextNavigation() ? 'hover:bg-black/10' : 'text-white/40'"
                         @start="() => isLoadingNavigation = 'nextNav'"
                         @finish="() => isLoadingNavigation = false"
@@ -282,11 +282,11 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 <NavigationSimple :nav="nav" :navKey="navKey" />
 
                 <!-- <div v-if="(nav.route?.name ? isRouteSameAsCurrentUrl(route(nav.route.name, nav.route.parameters)) : false)"
-                        class="absolute inset-0 bg-black/20 rounded -z-10"
+                        class="absolute inset-0 bg-black/20 rounded-sm -z-10"
                     /> -->
             </template>
         </div>
 
-        <div v-if="isSomeSubnavActive()" class="absolute inset-0 bg-black/20 rounded -z-10" />
+        <div v-if="isSomeSubnavActive()" class="absolute inset-0 bg-black/20 rounded-sm -z-10" />
     </div>
 </template>

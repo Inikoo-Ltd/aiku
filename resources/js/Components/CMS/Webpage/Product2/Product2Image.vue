@@ -141,7 +141,7 @@ onMounted(async () => {
 
             <!-- Image Thumbnail Slides -->
             <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
-                class="cursor-pointer rounded overflow-hidden border border-gray-300">
+                class="cursor-pointer rounded-sm overflow-hidden border border-gray-300">
                 <div class="aspect-[4/3] w-full">
                     <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
                 </div>
@@ -149,10 +149,10 @@ onMounted(async () => {
 
             <!-- Video Thumbnail -->
             <SwiperSlide v-if="props.video" key="thumb-video"
-                class="cursor-pointer rounded overflow-hidden border border-gray-300" @click="openVideoModal">
+                class="cursor-pointer rounded-sm overflow-hidden border border-gray-300" @click="openVideoModal">
                 <div class="aspect-[4/3] w-full flex items-center justify-center bg-gray-200 relative">
                     <FontAwesomeIcon :icon="faVideo" class="text-3xl text-gray-600" />
-                    <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">Video</span>
+                    <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded-sm">Video</span>
                 </div>
             </SwiperSlide>
         </Swiper>
@@ -172,7 +172,7 @@ onMounted(async () => {
         </button> -->
 
                 <!-- Image Viewer -->
-                <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
+                <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded-sm">
                     <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
                         :style="{ objectFit: 'contain' }" :imageCover="true" />
                 </div>

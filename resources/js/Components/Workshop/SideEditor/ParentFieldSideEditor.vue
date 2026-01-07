@@ -87,7 +87,7 @@ const isFutureDatePassed = (futureDate: string) => {
 
                     <!-- Section: 'New' label -->
                     <div v-if="blueprint.show_new_until && !isFutureDatePassed(blueprint.show_new_until)"
-                        class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
+                        class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded-sm select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
                     >
                         <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
                         {{ trans("New") }}

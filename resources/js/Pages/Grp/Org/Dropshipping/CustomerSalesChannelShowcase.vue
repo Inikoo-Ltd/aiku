@@ -149,7 +149,7 @@ const isModalAddress = ref(false)
                                          aria-hidden="true"/>
                     </dt>
                     <dd class="w-full text-gray-500">
-                        <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                        <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
                             <span class="" v-html="data?.customer?.address.formatted_address"/>
                             <div v-if="data?.address_management.can_open_address_management"
                                  @click="() => isModalAddress = true"
@@ -164,7 +164,7 @@ const isModalAddress = ref(false)
 
         <div>
             <div class="h-fit flex gap-x-2 w-fit text-xs">
-                <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+                <div class="border border-gray-300 rounded-sm flex items-center gap-x-2 px-2 py-1 w-fit">
                     <FontAwesomeIcon v-if="data?.customer_sales_channel?.can_connect_to_platform" icon="fal fa-check"
                                      class="text-green-500" fixed-width aria-hidden="true"/>
                     <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>
@@ -172,14 +172,14 @@ const isModalAddress = ref(false)
                 </div>
                 <div
                     v-if="!data?.customer_sales_channel?.platform_status && data?.customer_sales_channel?.exist_in_platform"
-                    class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+                    class="border border-gray-300 rounded-sm flex items-center gap-x-2 px-2 py-1 w-fit">
                     <FontAwesomeIcon v-if="data?.customer_sales_channel?.exist_in_platform" icon="fal fa-check"
                                      class="text-green-500" fixed-width aria-hidden="true"/>
                     <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>
                     {{ trans('Found old installation') }}
                 </div>
                 <div v-if="data?.customer_sales_channel?.can_connect_to_platform"
-                     class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+                     class="border border-gray-300 rounded-sm flex items-center gap-x-2 px-2 py-1 w-fit">
                     <FontAwesomeIcon v-if="data?.customer_sales_channel?.platform_status" icon="fal fa-check"
                                      class="text-green-500" fixed-width aria-hidden="true"/>
                     <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>

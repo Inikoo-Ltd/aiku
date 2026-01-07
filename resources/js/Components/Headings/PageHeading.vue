@@ -78,7 +78,7 @@ const setError = (e) => {
                     <div v-if="data?.parentTag?.length" class="flex gap-x-2">
                         <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route" @error="setError">
                             <template #default="{ isLoadingVisit }">
-                                <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-sm select-none px-1 py-0.5 text-xxs w-fit font-medium border"
+                                <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-xs select-none px-1 py-0.5 text-xxs w-fit font-medium border"
                                      :class="`bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-500`"
                                 >
                                     <LoadingIcon v-if="isLoadingVisit" />

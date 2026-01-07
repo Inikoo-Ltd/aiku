@@ -186,7 +186,7 @@ function routePallet(storageData: any, key: string) {
                                     <div v-if="storageData.pallets.state?.damaged?.count || storageData.pallets.state?.lost?.count || storageData.pallets.state?.['other_incident'].count"
                                         class="">
                                         <div
-                                            class="text-sm text-red-400 border border-red-300 bg-red-50 rounded px-2 py-2 font-normal">
+                                            class="text-sm text-red-400 border border-red-300 bg-red-50 rounded-sm px-2 py-2 font-normal">
                                             <div v-if="!storageData.pallets.state?.damaged?.count">
                                                 <FontAwesomeIcon :icon='storageData.pallets.state?.damaged?.icon.icon'
                                                     :class='storageData.pallets.state?.damaged?.icon.class' fixed-width

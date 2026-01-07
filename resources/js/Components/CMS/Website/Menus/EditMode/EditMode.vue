@@ -184,7 +184,7 @@ watch(
 
         <div class="flex items-center gap-3">
           <button type="button"
-            class="border border-gray-300 rounded px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
+            class="border border-gray-300 rounded-sm px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
             <IconPicker :model-value="localNav.icon" @update:model-value="icon => commit({ icon })" />
           </button>
 
@@ -249,7 +249,7 @@ watch(
                   <DisclosurePanel class="p-3 border-t border-gray-200">
                     <draggable :list="element.links" ghost-class="ghost" group="link" itemKey="id" handle=".link-drag-handle" :animation="200" class="flex flex-col gap-y-2">
                       <template #item="{ element: link, index: linkIndex }">
-                        <div class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition">
+                        <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-sm hover:bg-gray-100 transition">
                           <FontAwesomeIcon icon="fas fa-bars" class="link-drag-handle cursor-move text-gray-400 pr-2"/>
                           <IconPicker v-model="link.icon"/>
                           <div class="flex justify-between items-center w-full">

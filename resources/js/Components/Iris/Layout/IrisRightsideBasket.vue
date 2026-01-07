@@ -344,7 +344,7 @@ const idxProductLoading = ref<number | null>(null)
                                 </LinkIris>
                                 
                                 <div v-if="idxProductLoading === idxProd"
-                                    class="absolute inset-0 grid justify-center rounded items-center bg-black/50 text-white text-2xl">
+                                    class="absolute inset-0 grid justify-center rounded-sm items-center bg-black/50 text-white text-2xl">
                                     <LoadingIcon />
                                 </div>
                             </div>

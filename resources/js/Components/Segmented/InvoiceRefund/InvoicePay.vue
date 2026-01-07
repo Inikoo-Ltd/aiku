@@ -212,7 +212,7 @@ const compTooltipTotalToPay = computed(() => {
             <!-- List Refunds -->
             <div>
                 <div class="px-2 text-xs py-1 tabular-nums">
-                    <table class="w-full xborder border-gray-300 rounded">
+                    <table class="w-full xborder border-gray-300 rounded-sm">
                         <tr class="font-bold ">
                             <td class="px-2 py-1">{{ trans("Reference") }}</td>
                             <td class="px-2 text-right">{{ trans("Total") }}</td>
@@ -250,7 +250,7 @@ const compTooltipTotalToPay = computed(() => {
                             <td class="text-right flex items-end flex-col">
                                 <div
                                     v-tooltip="compTooltipTotalToPay"
-                                    class="px-2 py-1 w-fit rounded-sm"
+                                    class="px-2 py-1 w-fit rounded-xs"
                                     :class="Number(compTotalToPay) < 0 ? 'bg-indigo-100 border border-dashed border-indigo-500' : ''"
                                 >
                                     {{ locale.currencyFormat(invoice_pay.currency_code, Number(compTotalToPay).toFixed(2)) }}

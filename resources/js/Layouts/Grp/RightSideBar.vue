@@ -45,7 +45,7 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 			<!-- Online Users -->
 			<li v-if="layout.rightSidebar.activeUsers.show" class="" key="1">
 				<div
-					class="pl-2 pr-1.5 bg-slate-300/80 text-slate-700 text-xs font-semibold rounded flex justify-between leading-none">
+					class="pl-2 pr-1.5 bg-slate-300/80 text-slate-700 text-xs font-semibold rounded-sm flex justify-between leading-none">
 					<span class="py-1">{{ trans("Active Users") }}</span>
 					<div
 						@click="onClickRemoveBar('activeUsers')"

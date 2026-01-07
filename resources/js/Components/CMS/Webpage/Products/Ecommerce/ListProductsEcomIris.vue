@@ -499,7 +499,7 @@ watch(
                <div :class="responsiveGridClass" class="grid gap-6 p-4"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="isLoadingInitial">
-                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-xs bg-white">
+                        <div v-for="n in 10" :key="n" class="border p-3 rounded-sm shadow-xs bg-white">
                             <Skeleton height="200px" class="mb-3" />
                             <Skeleton width="80%" class="mb-2" />
                             <Skeleton width="60%" class="mb-2" />
@@ -513,7 +513,7 @@ watch(
                       <div
                             v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border relative rounded flex md:flex-1 justify-center"
+                            class="border relative rounded-sm flex md:flex-1 justify-center"
                             :class="product.stock &&  code != 'products-1' ? '' : 'bg-red-100'"
                         >
                             <RenderProduct 

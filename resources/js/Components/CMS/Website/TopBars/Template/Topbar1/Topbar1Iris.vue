@@ -145,7 +145,7 @@ watch(
                         <template #default>
                             <div>
                                 <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width aria-hidden="true" />
-                                <div class="ml-1 inline-block align-middle w-20 text-xxs rounded-sm h-3 mt-1.5 bg-gray-200 relative overflow-hidden mb-2">
+                                <div class="ml-1 inline-block align-middle w-20 text-xxs rounded-xs h-3 mt-1.5 bg-gray-200 relative overflow-hidden mb-2">
                                     <div class="absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
                                         :class="true ? 'xshimmer bg-green-500' : 'bg-green-500'"
                                         :style="{

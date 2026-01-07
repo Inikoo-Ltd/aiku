@@ -338,7 +338,7 @@ onUnmounted(() => {
           <img
             :src="`https://primefaces.org/cdn/primevue/images/product/${slotProps.data.image}`"
             :alt="slotProps.data.image"
-            class="w-24 rounded" />
+            class="w-24 rounded-sm" />
         </template>
       </Column>
       <Column field="code" header="Code"></Column>

@@ -122,7 +122,7 @@ const component = computed(() => {
 	</PageHeading>
 	
 	<!-- Section: warning to add card -->
-	<div v-if="is_need_to_add_card" class="bg-yellow-100 border border-yellow-500 mx-4 my-2 px-4 py-1 rounded">
+	<div v-if="is_need_to_add_card" class="bg-yellow-100 border border-yellow-500 mx-4 my-2 px-4 py-1 rounded-sm">
         <div class="flex justify-between w-full">
 			<div class="flex items-center gap-x-2 text-yellow-700">
 				<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500 text-lg" fixed-width aria-hidden="true" />

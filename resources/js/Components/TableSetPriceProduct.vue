@@ -278,7 +278,7 @@ function roundDown2(num: number) {
                                     {{locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4))}}
                                 </span>
 
-                                <button class="px-2 py-1 text-[10px] rounded border bg-gray-50 hover:bg-gray-100"
+                                <button class="px-2 py-1 text-[10px] rounded-sm border bg-gray-50 hover:bg-gray-100"
                                     :disabled="!item.product.create_in_shop"
                                     @click="item.product.useCustomRrp = !item.product.useCustomRrp">
                                     {{ item.product?.useCustomRrp ? 'Auto' : 'Custom' }}
@@ -304,7 +304,7 @@ function roundDown2(num: number) {
             </table>
         </div>
 
-        <div v-else class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded">
+        <div v-else class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded-sm">
             {{ trans('No data available') }}
         </div>
     </div>

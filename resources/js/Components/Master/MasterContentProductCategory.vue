@@ -26,7 +26,7 @@ const current = ref(0)
     <div class="flex bg-white border overflow-hidden shadow-xs">
 
         <!-- Sidebar Compact -->
-        <aside class="flex flex-col w-14 py-4 border-r bg-gray-50/80 backdrop-blur-sm">
+        <aside class="flex flex-col w-14 py-4 border-r bg-gray-50/80 backdrop-blur-xs">
             <button
                 v-for="(tab, index) in tabs"
                 :key="tab.key"

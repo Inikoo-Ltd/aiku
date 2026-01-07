@@ -399,11 +399,11 @@ const isModalUploadStoredItemOpen = ref(false)
 
                 <transition name="headlessui2">
                     <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
-                        <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
+                        <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded-sm hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
                             {{ trans("Upload goods") }}
                         </div>
-                        <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
+                        <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded-sm hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
                             {{ trans("Upload Customer's SKU") }}
                         </div>
@@ -464,7 +464,7 @@ const isModalUploadStoredItemOpen = ref(false)
                                     <input type="checkbox" :id="typeData.value" :value="typeData.value"
                                         :checked="formMultiplePallet.type == typeData.value"
                                         @input="changePalletType(formMultiplePallet,'type',typeData.value)"
-                                        class="rounded border-gray-300 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
+                                        class="rounded-sm border-gray-300 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
                                         :style="{
                                             color: layout.app.theme[0]
                                         }"
@@ -525,7 +525,7 @@ const isModalUploadStoredItemOpen = ref(false)
                                         <input type="checkbox" :id="typeData.value" :value="typeData.value"
                                             :checked="formAddPallet.type == typeData.value"
                                             @input="changePalletType(formAddPallet, 'type', typeData.value)"
-                                            class="rounded border-gray-300 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
+                                            class="rounded-sm border-gray-300 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
                                             :style="{
                                                 color: layout.app.theme[0]
                                             }"    
@@ -582,7 +582,7 @@ const isModalUploadStoredItemOpen = ref(false)
                             :icon="action.icon"
                             :tooltip="action.tooltip"
                             :key="`ActionButton${action.label}${action.style}`"
-                            class="border-none rounded-sm"
+                            class="border-none rounded-xs"
                         />
                     </template>
 
@@ -750,7 +750,7 @@ const isModalUploadStoredItemOpen = ref(false)
     </PageHeading>
     
     <!-- Box: Public Notes -->
-    <div v-if="public_notes" class="bg-pink-500 text-white font-bold p-4 rounded flex justify-between items-center">
+    <div v-if="public_notes" class="bg-pink-500 text-white font-bold p-4 rounded-sm flex justify-between items-center">
         <span class="flex-grow">{{ public_notes || 'public Notes'}}</span>
     </div>
 

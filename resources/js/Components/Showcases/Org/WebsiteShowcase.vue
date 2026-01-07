@@ -89,7 +89,7 @@ const links = computed(() => {
             <div class="">
                 <div class="bg-white w-fit h-fit flex items-center gap-x-3 md:w-96">
                     <a :href="props.data.url" target="_blank" v-tooltip="trans('Go To Website')"
-                        class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
+                        class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded-sm overflow-hidden flex text-xxs md:text-base text-gray-500">
                         <div class="bg-gray-200 py-2 px-2">
                             <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
                         </div>

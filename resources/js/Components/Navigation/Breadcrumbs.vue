@@ -218,7 +218,7 @@ const isLoading = ref<string | boolean>(false)
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded-sm w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.previous?.label"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
@@ -232,7 +232,7 @@ const isLoading = ref<string | boolean>(false)
                 <Link v-if="props.navigation.next"
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded-sm w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.next?.label"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >

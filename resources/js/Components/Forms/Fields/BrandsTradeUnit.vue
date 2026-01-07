@@ -157,7 +157,7 @@ onMounted(()=>{
                             >
                                 <template #default="{ changeModel }">
                                     <div @click.stop="changeModel"
-                                        class="cursor-pointer px-1 text-red-400 hover:text-red-600 rounded-sm">
+                                        class="cursor-pointer px-1 text-red-400 hover:text-red-600 rounded-xs">
                                         <FontAwesomeIcon icon="fal fa-trash-alt" aria-hidden="true" />
                                     </div>
                                 </template>

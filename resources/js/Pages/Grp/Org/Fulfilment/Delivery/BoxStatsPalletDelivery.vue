@@ -226,7 +226,7 @@ const onUpdateCustomerReference = () => {
 
 			<!-- Barcode -->
 			<div
-				class="mb-4 h-full w-full py-1 px-2 flex flex-col bg-gray-100 ring-1 ring-gray-300 rounded items-center">
+				class="mb-4 h-full w-full py-1 px-2 flex flex-col bg-gray-100 ring-1 ring-gray-300 rounded-sm items-center">
 				<svg id="palletDeliveryBarcode" class="w-full h-full"></svg>
 				<div class="text-xxs text-gray-500">
 					{{ route().params.palletDelivery }}

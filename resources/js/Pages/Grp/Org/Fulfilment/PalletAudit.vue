@@ -291,7 +291,7 @@ const isModalOpened = ref(false)
                             />
                         </div>
 
-                        <div class="flex justify-center border border-gray-300 rounded gap-y-1">
+                        <div class="flex justify-center border border-gray-300 rounded-sm gap-y-1">
                             <!-- Button: Check -->
                             <Button v-if="data.type !== 'new_item' && data.audit_type !== 'no_change' && data.audit_type !== 'addition' && !get(data, ['is_edit'], false) && edit_block(data.audit_type, data.is_edit, !!get(isStoredItemEdited, [`id${data.stored_item_audit_delta_id?.toString()}`], false)) != 'edit'"
                                 @click="() => data.audit_type === 'no_change' ? null : onStoreStoredItem(data.stored_item_id, data.quantity, data.stored_item_audit_id)"
@@ -322,7 +322,7 @@ const isModalOpened = ref(false)
                                                         : debounceStoreStoredItem(data.stored_item_id, get(data, `new_quantity`, data.quantity), data.stored_item_audit_id)
                                                     
                                                 )"
-                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded-sm px-1 py-1.5 text-xs justify-self-center">
                                                 <FontAwesomeIcon icon='fas fa-minus' class='' fixed-width aria-hidden='true' />
                                             </div>
                                             
@@ -354,7 +354,7 @@ const isModalOpened = ref(false)
                                                     : debounceStoreStoredItem(data.stored_item_id, get(data, `new_quantity`, data.quantity), data.stored_item_audit_id)
                                             )"
                                                 type="tertiary" size="xs"
-                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded-sm px-1 py-1.5 text-xs justify-self-center">
                                                 <FontAwesomeIcon icon='fas fa-plus' class='' fixed-width
                                                     aria-hidden='true' />
                                             </div>

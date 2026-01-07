@@ -47,7 +47,7 @@ const statusClass = computed(() => {
 <template>
   <div class="w-72 text-sm text-gray-700 space-y-1 py-1 flex gap-2">
     <!-- Progress Bar with Centered Text -->
-    <div class="relative h-5 w-full bg-gray-200 rounded overflow-hidden ring-1 ring-gray-300 flex">
+    <div class="relative h-5 w-full bg-gray-200 rounded-sm overflow-hidden ring-1 ring-gray-300 flex">
       <!-- Success bar -->
       <div
         class="h-full bg-lime-500 transition-all duration-300"

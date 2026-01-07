@@ -140,7 +140,7 @@ function countModelTypes(data) {
                                 <button v-else as="button"
                                     @click="() => selectedTab = null"
                                     key="All"
-                                    class="min-w-28 w-min rounded py-2.5 px-2 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
+                                    class="min-w-28 w-min rounded-sm py-2.5 px-2 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
                                     :class="[
                                         !selectedTab
                                             ? 'bg-indigo-600 text-white'
@@ -153,7 +153,7 @@ function countModelTypes(data) {
                                     <button v-for="(tabCount, tabName, tabIdx) in countModelTypes(resultsSearch)" as="button"
                                         @click="() => selectedTab = tabName"
                                         :key="tabName+tabIdx"
-                                        class="w-fit w rounded py-2.5 pl-7 pr-8 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
+                                        class="w-fit w rounded-sm py-2.5 pl-7 pr-8 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
                                         :class="[
                                             tabName == selectedTab
                                                 ? 'bg-indigo-600 text-white'
@@ -178,11 +178,11 @@ function countModelTypes(data) {
                             <!-- Section: Skeleton -->
                             <div v-if="isLoadingSearch" class="border-t-2 border-slate-300">
                                 <div class="flex flex-auto flex-col justify-between gap-y-4 p-6">
-                                    <div v-for=" of 3" class="flex gap-x-2 h-11 rounded overflow-hidden">
+                                    <div v-for=" of 3" class="flex gap-x-2 h-11 rounded-sm overflow-hidden">
                                         <div class="skeleton h-full aspect-square rounded-md" />
                                         <div class="flex flex-col h-full w-full gap-y-1">
-                                            <div class="skeleton h-2/3 max-w-56 rounded" />
-                                            <div class="skeleton h-1/3 max-w-40 rounded" />
+                                            <div class="skeleton h-2/3 max-w-56 rounded-sm" />
+                                            <div class="skeleton h-1/3 max-w-40 rounded-sm" />
                                         </div>
                                     </div>
                                 </div>

@@ -526,7 +526,7 @@ onMounted(() => {
 				<div
 					class="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
 					<div class="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
-						<div class="w-64 h-64 overflow-hidden rounded">
+						<div class="w-64 h-64 overflow-hidden rounded-sm">
 							<Image :src="product.full_size_image || product.image" :alt="product.name"
 								class="w-full h-full object-cover" />
 						</div>
@@ -626,11 +626,11 @@ onMounted(() => {
         <template #cell(matches)="{ item }">
             <template v-if="item.customer_sales_channel_platform_status">
                 <template v-if="!item.platform_status">
-                    <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1 bg-white"
+                    <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded-sm p-1 bg-white"
                          :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
-                        <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
+                        <div class="flex gap-x-2 items-center border border-gray-300 rounded-sm p-1">
                             <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"
-                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm border border-gray-300 rounded">
+                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm border border-gray-300 rounded-sm">
                                 <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"/>
                             </div>
                             <div>
@@ -683,7 +683,7 @@ onMounted(() => {
                     <template v-if="item.shopify_product_data?.title">
                         <div class="flex gap-x-2 items-center">
                             <div v-if="item.shopify_product_data?.images?.edges?.[0]?.node?.src"
-                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm border border-gray-300 rounded">
+                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm border border-gray-300 rounded-sm">
                                 <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src"/>
                             </div>
 
@@ -809,7 +809,7 @@ onMounted(() => {
                             <template v-if="resultOfFetchShopifyProduct?.length">
                                 <div v-for="(item, index) in resultOfFetchShopifyProduct" :key="index"
                                      @click="() => {selectedVariant = item}"
-                                     class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                     class="relative h-fit rounded-sm cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                      :class="[
                                         selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
                                     ]">
@@ -824,7 +824,7 @@ onMounted(() => {
                                             class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                             :alt="item.name"/> -->
                                         <div
-                                            class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
+                                            class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded-sm">
                                             <img :src="item.images?.[0]?.src" class="shadow-sm"/>
                                         </div>
                                         <div class="flex flex-col justify-between">

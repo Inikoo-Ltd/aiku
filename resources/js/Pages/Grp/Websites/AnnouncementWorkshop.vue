@@ -311,7 +311,7 @@ const onSectionSetting = () => {
 
                 <!-- Button: Active & Inactive -->
                 <div v-if="routes_list.activated_route" class="flex items-center min-w-16">
-                    <div class="grid grid-cols-2 cursor-pointer rounded overflow-hidden select-none ring-1 ring-gray-400">
+                    <div class="grid grid-cols-2 cursor-pointer rounded-sm overflow-hidden select-none ring-1 ring-gray-400">
                         <div @click="onClickToggleActivate('inactive')"
                             class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
                             :class="[is_announcement_active == 'inactive' ? 'bg-red-600 text-gray-100' : 'bg-gray-100/70 text-red-400 hover:bg-red-200/70']">

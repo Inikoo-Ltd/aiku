@@ -112,17 +112,17 @@ onMounted(() => {
             :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]" class="w-full"
             xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)" spaceBetween="12">
             <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
+                <div v-for="xx in 4" class="skeleton w-full h-64 rounded-sm">
 
                 </div>
             </div>
 
             <template v-else>
-                <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between h-full">
+                <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded-sm flex flex-col justify-between h-full">
                     <!-- Product Image - Always a link -->
                     <component :is="image.attributes.web_url?.[0] ? Link : 'div'"
                         :href="image.attributes.web_url?.[0]"
-                        class="block rounded aspect-[5/4] w-full overflow-hidden">
+                        class="block rounded-sm aspect-[5/4] w-full overflow-hidden">
                         <img :src="image.attributes.image_link" :alt="image.attributes.title"
                             class="w-full h-full object-contain">
                     </component>

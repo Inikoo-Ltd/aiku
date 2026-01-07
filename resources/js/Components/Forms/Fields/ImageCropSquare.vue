@@ -103,7 +103,7 @@ watch(isOpenModalCrop, (val) => {
                 <Cropper :key="numbKey" ref="_cropper" class="w-full h-full" :src="tempImgToCrop"
                     :stencil-props="stencilProps" imageClass="w-full h-full" :auto-zoom="true" />
                 <div @click="() => numbKey++"
-                    class="select-none px-2 py-1 cursor-pointer absolute top-2 right-2 text-white border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded">
+                    class="select-none px-2 py-1 cursor-pointer absolute top-2 right-2 text-white border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded-sm">
                     <FontAwesomeIcon :icon="['fal', 'undo-alt']" fixed-width />
                     {{ trans("Refresh") }}
                 </div>
@@ -123,7 +123,7 @@ watch(isOpenModalCrop, (val) => {
         <div class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow-sm bg-gray-100"
             :class="form.errors[fieldName] ? 'errorShake' : ''">
             <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" alt="Preview"
-                class="h-full w-full object-cover rounded" />
+                class="h-full w-full object-cover rounded-sm" />
             <div v-else class="h-full w-full flex items-center justify-center text-gray-400 text-sm">
                 {{ trans("No Image") }}
             </div>

@@ -138,7 +138,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                     <div
                                         v-for="(item, index) in portfoliosList"
                                         :key="index"
-                                        class="relative h-fit rounded xcursor-pointer p-2 flex gap-x-2 border"
+                                        class="relative h-fit rounded-sm xcursor-pointer p-2 flex gap-x-2 border"
                                         :class="[
                                             typeof item.available_quantity !== 'undefined' && item.available_quantity < 1 ? 'bg-gray-200 border border-gray-300 opacity-40' : ''
                                         ]"
@@ -189,7 +189,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                 v-else
                                 v-for="(item, index) in 6"
                                 :key="index"
-                                class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
+                                class="rounded-sm cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
                             >
                             </div>
                         </div>

@@ -37,7 +37,7 @@ const getAlertBorder = (alert: string) => {
 </script>
 
 <template>
-    <div class="flex gap-x-3 p-4 rounded"
+    <div class="flex gap-x-3 p-4 rounded-sm"
         :class="getAlertColor(alert.status)"
         :style="{
             'border': `1px solid ${getAlertBorder(alert.status)}`

@@ -56,13 +56,13 @@ watch(props.form[props.fieldName], (newData) => {
                             </td>
                             <td class="px-3 py-1.5 text-sm text-gray-500 text-center">
                                 <input v-model="form[fieldName][index].show" :id="component.label + index" type="checkbox"
-                                    class="w-4 h-4 text-indigo-600 bg-gray-50 border-gray-300 rounded cursor-pointer focus:ring-indigo-500 focus:ring-1">
+                                    class="w-4 h-4 text-indigo-600 bg-gray-50 border-gray-300 rounded-sm cursor-pointer focus:ring-indigo-500 focus:ring-1">
                             </td>
                             <td class="px-3 py-1.5 text-sm text-gray-500 text-center">
                                 <input v-model="form[fieldName][index].required" :id="component.label + index"
                                     type="checkbox"
                                     :disabled="form[fieldName][index].show ? component.key == 'terms_and_conditions' ? true : false : true"
-                                    class="w-4 h-4 bg-white text-indigo-600 border-gray-300 rounded cursor-pointer focus:ring-indigo-500 focus:ring-1 disabled:bg-gray-300 disabled:text-gray-300">
+                                    class="w-4 h-4 bg-white text-indigo-600 border-gray-300 rounded-sm cursor-pointer focus:ring-indigo-500 focus:ring-1 disabled:bg-gray-300 disabled:text-gray-300">
                             </td>
                         </tr>
                     </tbody>

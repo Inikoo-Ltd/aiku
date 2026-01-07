@@ -201,7 +201,7 @@ const handleDateRangeSelected = (range) => {
 					@click="cardStates.totalClicks = !cardStates.totalClicks">
 					<input
 						type="checkbox"
-						class="absolute top-2 right-2 h-4 w-4 rounded border-gray-300 focus:ring-[#4285F4]"
+						class="absolute top-2 right-2 h-4 w-4 rounded-sm border-gray-300 focus:ring-[#4285F4]"
 						v-model="cardStates.totalClicks" />
 					<div>
 						<div class="text-xs">Total Clicks</div>
@@ -220,7 +220,7 @@ const handleDateRangeSelected = (range) => {
 					@click="cardStates.totalImpressions = !cardStates.totalImpressions">
 					<input
 						type="checkbox"
-						class="absolute top-2 right-2 h-4 w-4 rounded border-gray-300 focus:ring-[#5E35B1]"
+						class="absolute top-2 right-2 h-4 w-4 rounded-sm border-gray-300 focus:ring-[#5E35B1]"
 						v-model="cardStates.totalImpressions" />
 					<div>
 						<div class="text-xs">Total Impressions</div>

@@ -392,7 +392,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 						v-model="newExternalEmailInputs[index]"
 						@input="hasChanges = true"
 						placeholder="Enter External Email"
-						class="w-full border border-gray-300 rounded p-2" />
+						class="w-full border border-gray-300 rounded-sm p-2" />
 				</div>
 				<!-- Delete icon beside the external email input -->
 				<FontAwesomeIcon

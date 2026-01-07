@@ -28,8 +28,8 @@ const emits = defineEmits<{
                 <!-- Step: Tail -->
                 <div v-if="stepIndex != 0"
                     class="w-full px-7 absolute flex align-center items-center align-middle content-center -translate-x-1/2 top-1/2 -translate-y-1/2">
-                    <div class="w-full rounded items-center align-middle align-center flex-1">
-                        <div class="w-full py-1 rounded" :class="[
+                    <div class="w-full rounded-sm items-center align-middle align-center flex-1">
+                        <div class="w-full py-1 rounded-sm" :class="[
                             stepIndex <= currentStep ? 'bg-lime-300' : 'bg-gray-200',
                             stepIndex == currentStep ? 'shimmer' : ''
                         ]" />

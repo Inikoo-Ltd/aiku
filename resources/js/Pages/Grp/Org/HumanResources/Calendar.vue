@@ -58,7 +58,7 @@ const isDateSameDay = (date1: Date, date2: Date) => {
             <template #day-content="{ day, attributes }">
                 <!-- {{ console.log() }} -->
 
-                <div class="rounded h-20 px-1 py-0.5"
+                <div class="rounded-sm h-20 px-1 py-0.5"
                     :class="[
                         isDateSameDay(day.date, new Date()) ? 'bg-lime-100' : ' ',
                     ]"

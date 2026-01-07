@@ -669,7 +669,7 @@ const isLoading = ref<string | boolean>(false)
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
                     <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                         <!-- Result Number -->
-                        <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                        <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded-sm">
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                 <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                     <span class="font-semibold tabular-nums">

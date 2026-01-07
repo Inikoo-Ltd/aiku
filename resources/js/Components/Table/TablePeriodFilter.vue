@@ -172,7 +172,7 @@ onMounted(() => {
                 :enableTimePicker="false"
             >
                 <template #trigger>
-                    <div class="px-1 py-0.5 bg-gray-700 text-white rounded w-fit">
+                    <div class="px-1 py-0.5 bg-gray-700 text-white rounded-sm w-fit">
                         <FontAwesomeIcon icon='fal fa-calendar-alt' class='cursor-pointer hover:text-gray-600'
                             fixed-width aria-hidden='true' />
                     </div>

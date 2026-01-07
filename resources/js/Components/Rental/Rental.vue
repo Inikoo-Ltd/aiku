@@ -277,7 +277,7 @@ onMounted(() => {
                             <th scope="col"
                                 class="px-3 py-4  pr-3 text-left text-sm font-semibold  flex justify-center">
                                 <input type="checkbox"
-                                    class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600"
+                                    class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600"
                                     :checked="(bulkData.length === props.form[props.fieldName]?.length && props.form[props.fieldName]?.length > 0)"
                                     @change="onSelectAllRows" />
                             </th>
@@ -305,7 +305,7 @@ onMounted(() => {
                             <!-- Column: Selector -->
                             <td class="whitespace-nowrap px-3 py-4 text-sm  text-center">
                                 <input type="checkbox" :id="itemData.id" :value="itemData.id" v-model="bulkData"
-                                    class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600" />
+                                    class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-indigo-500 text-indigo-600 focus:ring-gray-600" />
                             </td>
 
                             <!-- Column: Rental name -->

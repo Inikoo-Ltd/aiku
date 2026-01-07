@@ -117,7 +117,7 @@ const mergedItems = computed(() => {
         <button
           v-for="item in mergedItems"
           :key="item?.code"
-          class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
+          class="flex items-center gap-3 border rounded-sm px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
           @click="openModal(item)"
            :style="getStyles(modelValue?.card?.container?.properties, screenType)"
         >

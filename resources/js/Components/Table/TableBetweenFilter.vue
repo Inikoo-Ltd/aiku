@@ -312,7 +312,7 @@ onBeforeMount(() => {
         <!-- Display selected date range when custom interval is active -->
         <transition name="slide-fade">
             <div v-if="hasBetweenQuery && dateFilterValue[0] && dateFilterValue[1]"
-                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
+                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-sm text-xs text-indigo-700 whitespace-nowrap">
                 <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
                 <span class="text-indigo-400">-</span>
                 <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
@@ -325,7 +325,7 @@ onBeforeMount(() => {
                 v-tooltip="trans('Filter by dates')"
                 class="group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
             >
-                <div class="h-9 w-9 rounded flex justify-center items-center"
+                <div class="h-9 w-9 rounded-sm flex justify-center items-center"
                     :class="true ? 'border border-gray-300 hover:bg-gray-300 text-gray-600 hover:text-xgray-200' : 'bg-gray-600 hover:bg-gray-700 text-white'"
                 >
                     <FontAwesomeIcon v-if="!isLoadingReload" icon='fal fa-calendar-alt' class='cursor-pointer'

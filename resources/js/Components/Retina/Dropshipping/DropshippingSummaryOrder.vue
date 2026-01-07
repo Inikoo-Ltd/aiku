@@ -175,7 +175,7 @@ const onPayWithBalance = () => {
             </dl>
 
             <!-- Field: Collection Toggle -->
-            <div v-if="get(props.order.data, ['is_collection'], false)" class="bg-gray-50 w-full text-center px-2 py-1 border border-gray-300 rounded text-sm mt-2">
+            <div v-if="get(props.order.data, ['is_collection'], false)" class="bg-gray-50 w-full text-center px-2 py-1 border border-gray-300 rounded-sm text-sm mt-2">
                 <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
                 {{ trans("This order is for collection only") }}.
             </div>
@@ -184,7 +184,7 @@ const onPayWithBalance = () => {
             <div v-else class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
                 <div class="w-full text-xs text-gray-500">
                     <dd
-                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
                     </dd>
                 </div>
@@ -195,7 +195,7 @@ const onPayWithBalance = () => {
                 summary.products.payment.pay_amount > 0
                 && summary.products.payment.pay_amount <= summary?.customer?.balance
                 && props.order?.data?.state === 'submitted'
-            " class="mt-1 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded px-2">
+            " class="mt-1 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded-sm px-2">
                 <div class="text-yellow-700">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
                     {{ trans("Order :xorder is not paid yet", { xorder: order?.data?.reference }) }}
@@ -205,7 +205,7 @@ const onPayWithBalance = () => {
                     <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(layout.iris?.currency?.code, Number(summary.products.payment.pay_amount)) })" size="xs" type="primary" :loading="isLoadingPayWithBalance" />
                 </div>
 
-                <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
+                <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded-sm">
                     <LoadingIcon />
                 </div>
             </div>
@@ -226,7 +226,7 @@ const onPayWithBalance = () => {
 
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                         <span>{{ note?.reference }}</span>
-                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
                             <Icon :data="note?.state" />
                         </span>
                     </div>
@@ -286,7 +286,7 @@ const onPayWithBalance = () => {
                         </div>
                         </Link>
                         <a :href="route(invoice?.routes?.download?.name, invoice?.routes?.download?.parameters)"
-                            target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded cursor-pointer"
+                            target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded-sm cursor-pointer"
                             v-tooltip="trans('Download invoice')">
                             <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                         </a>
@@ -296,7 +296,7 @@ const onPayWithBalance = () => {
         </div>
 
         <div class="col-span-2 md:col-span-3 pt-3 md:pt-0 md:pl-3">
-            <div class="p-2 rounded">
+            <div class="p-2 rounded-sm">
                 <OrderSummary :order_summary="summary.order_summary"
                     :currency_code="summary.order_summary?.currency?.data?.code" />
             </div>

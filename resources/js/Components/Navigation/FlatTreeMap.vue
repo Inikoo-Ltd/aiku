@@ -86,7 +86,7 @@ const isLoadingNode = ref<string | boolean>(false)
                             v-for="(subData, subIdx) in node.sub_data"
                             :is="subData.route?.name ? Link : 'div'"
                             :href="subData.route?.name ? route(subData.route.name, subData.route.parameters) : ''"
-                            class="group/sub px-2 flex gap-x-0.5 items-center font-normal rounded"
+                            class="group/sub px-2 flex gap-x-0.5 items-center font-normal rounded-sm"
                             v-tooltip="subData.icon?.tooltip"
                             :class="subData.route?.name ? 'hover:bg-gray-200 hover:ring-1 hover:ring-gray-300' : ''"    
                             @start="() => isLoadingNode = 'subLink' + subIdx"

@@ -111,8 +111,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 			<!-- Text: Press enter to submit -->
 			<div class="mt-2 text-sm text-gray-500">
-				{{ trans("Press") }} <span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded">Enter</span> {{ trans("to submit") }},
-				<span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded">Shift</span>+<span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded">Enter</span>
+				{{ trans("Press") }} <span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded-sm">Enter</span> {{ trans("to submit") }},
+				<span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded-sm">Shift</span>+<span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded-sm">Enter</span>
 				{{ trans("to add new line") }}
 			</div>
 			<!-- <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -134,7 +134,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 						<!-- <div
 							v-for="n in 1"
 							:key="n"
-							class="h-40 skeleton w-full rounded animate-pulse"></div> -->
+							class="h-40 skeleton w-full rounded-sm animate-pulse"></div> -->
 						<LoadingText />
 					</div>
 
@@ -205,7 +205,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 /* Styling code blocks (pre) */
 .markdown-container pre {
-	@apply bg-gray-800 text-gray-100 p-4 rounded overflow-x-auto font-mono mb-4;
+	@apply bg-gray-800 text-gray-100 p-4 rounded-sm overflow-x-auto font-mono mb-4;
 }
 
 /* Styling inline code (code) */

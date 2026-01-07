@@ -13,7 +13,7 @@ const props = defineProps<{
 
 <template>
     <!-- Box: API URL -->
-    <div class="mb-6 w-fit border border-gray-300 rounded overflow-hidden">
+    <div class="mb-6 w-fit border border-gray-300 rounded-sm overflow-hidden">
         <div class="py-1 px-3 text-base font-bold bg-gray-100 ">
             <FontAwesomeIcon icon="fal fa-file-csv" class="opacity-70" fixed-width aria-hidden="true" />
             {{ trans("Data feed Url") }}

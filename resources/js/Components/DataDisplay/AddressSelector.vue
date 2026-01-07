@@ -132,7 +132,7 @@ const xxxx = [
                             <!-- <Transition>
                                 <div v-if="address.id"
                                     v-tooltip="'Selected as pallet return address'"
-                                    class="bg-indigo-500/80 text-white cursor-default rounded px-1.5 py-1 leading-none text-xxs">
+                                    class="bg-indigo-500/80 text-white cursor-default rounded-sm px-1.5 py-1 leading-none text-xxs">
                                     Selected
                                 </div>
                                 <Button v-else @click="() => onSelectAddress(address)"

@@ -439,7 +439,7 @@ const getInvoiceRoute = () => {
         </dt>
 
         <dd class="text-base text-gray-500 w-full">
-          <div v-if="original_invoice?.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+          <div v-if="original_invoice?.address" class="relative bg-gray-50 border border-gray-300 rounded-sm px-2 py-1">
             <div v-html="original_invoice?.address.formatted_address" />
           </div>
 
@@ -541,7 +541,7 @@ const getInvoiceRoute = () => {
           <div class="mt-1 grid grid-cols-2 gap-x-3">
             <div @click="() => paymentData.payment_method = item.value" v-for="item in listPaymentRefund"
               :key="item.value"
-              class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
+              class="flex justify-center items-center border  px-3 py-2 rounded-sm text-center cursor-pointer"
               :class="paymentData.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'">
               {{ item.label }}
             </div>

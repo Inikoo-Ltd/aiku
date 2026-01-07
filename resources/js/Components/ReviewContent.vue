@@ -35,7 +35,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
 
 <template>
   <!-- Content Section -->
-  <div class="border rounded p-4 space-y-4 text-sm text-gray-700">
+  <div class="border rounded-sm p-4 space-y-4 text-sm text-gray-700">
     <!-- Status Row -->
     <div class="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
       <div class="flex-1 text-sm font-semibold text-gray-800 cursor-help">

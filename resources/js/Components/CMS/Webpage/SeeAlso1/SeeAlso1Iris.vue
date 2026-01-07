@@ -101,7 +101,7 @@ console.log('see also', props)
       <!-- <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
         :navigation="{ prevEl, nextEl }" class="w-full" :loop="true">
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug"
-          class="cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between"
+          class="cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded-sm flex flex-col justify-between"
           style="height: auto;">
           <div class="flex flex-col h-full">
             <div class="flex flex-col flex-1">

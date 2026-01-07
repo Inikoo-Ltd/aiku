@@ -299,7 +299,7 @@ const onClickGetStarted = () => {
                     <template #body="slotProps">
                         <div class="flex gap-x-1">
                             <Button type="edit" class="mr-2" @click="editProduct(slotProps.data)" />
-                            <Button type="delete" outlined rounded severity="danger" @click="confirmDeleteProduct(slotProps.data)" />
+                            <Button type="delete" outlined rounded-sm severity="danger" @click="confirmDeleteProduct(slotProps.data)" />
                         </div>
                     </template>
                 </Column> -->
@@ -319,15 +319,15 @@ const onClickGetStarted = () => {
                              :class="[isSelected(item.id) ? 'bg-stone-200 ring-1 ring-stone-500' : 'hover:bg-stone-100']"
                         >
                             <!-- == {{ isSelected(item.id) }} == -->
-                            <div class="relative flex justify-center rounded">
-                                <img class="rounded w-full" :src="`https://primefaces.org/cdn/primevue/images/product/gaming-set.jpg`" :alt="item.name" style="max-width: 300px"/>
+                            <div class="relative flex justify-center rounded-sm">
+                                <img class="rounded-sm w-full" :src="`https://primefaces.org/cdn/primevue/images/product/gaming-set.jpg`" :alt="item.name" style="max-width: 300px"/>
                                 <div class="absolute top-1.5 left-2">
-                                    <div class="capitalize text-xs inline-flex items-center gap-x-1 rounded select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500" :theme="13">
+                                    <div class="capitalize text-xs inline-flex items-center gap-x-1 rounded-sm select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500" :theme="13">
                                         {{ item.state }}
                                     </div>
                                 </div>
                                 <div class="absolute top-1.5 right-2">
-                                    <input :checked="isSelected(item.id)" name="checkboxProduct" type="checkbox" class="cursor-pointer h-5 w-5  rounded border-stone-300 text-stone-800 shadow-xs focus:ring-0 focus:outline-none">
+                                    <input :checked="isSelected(item.id)" name="checkboxProduct" type="checkbox" class="cursor-pointer h-5 w-5  rounded-sm border-stone-300 text-stone-800 shadow-xs focus:ring-0 focus:outline-none">
                                 </div>
                             </div>
                             <div class="py-4 px-6 h-full flex flex-col justify-between">

@@ -321,11 +321,11 @@ const isModalUploadFileOpen = ref(false)
 
                 <transition name="headlessui2">
                     <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
-                        <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
+                        <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded-sm hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
                             {{ trans("Upload pallet") }}
                         </div>
-                        <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
+                        <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded-sm hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
                             {{ trans("Upload Customer's SKU") }}
                         </div>
@@ -429,7 +429,7 @@ const isModalUploadFileOpen = ref(false)
                                 <input type="checkbox" :id="typeData.value" :value="typeData.value"
                                     :checked="formMultiplePallet.type == typeData.value"
                                     @input="changePalletType(formMultiplePallet,'type',typeData.value)"
-                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer">
+                                    class="rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer">
                                 <label :for="typeData.value" class="pl-2 cursor-pointer select-none">{{ typeData.label }}</label>
                             </div>
                         </div>
@@ -484,7 +484,7 @@ const isModalUploadFileOpen = ref(false)
                                     <input type="checkbox" :id="typeData.value" :value="typeData.value"
                                         :checked="formAddPallet.type == typeData.value"
                                         @input="changePalletType(formAddPallet,'type',typeData.value)"
-                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer">
+                                        class="rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer">
                                     <label :for="typeData.value" class="ml-2 cursor-pointer">
                                         {{ typeData.label }}
                                     </label>

@@ -64,7 +64,7 @@ onMounted(() => {
 
 		<template #cell(is_online)="{ item }">
 			<span
-				class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium"
+				class="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-medium"
 				:class="item.is_online ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
 				<span
 					class="w-1.5 h-1.5 rounded-full"
@@ -75,7 +75,7 @@ onMounted(() => {
 
 		<template #cell(is_available)="{ item }">
 			<span
-				class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium"
+				class="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-medium"
 				:class="
 					item.is_available
 						? 'bg-green-100 text-green-800'
@@ -90,7 +90,7 @@ onMounted(() => {
 
 		<template #cell(auto_accept)="{ item }">
 			<span
-				class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium"
+				class="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-medium"
 				:class="
 					item.auto_accept ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
 				">

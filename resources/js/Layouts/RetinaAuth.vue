@@ -39,7 +39,7 @@ const isStaging = useLayoutStore().app.environment === 'staging'
 
             <div class="grid grid-cols-7 mt-8 mx-auto md:w-full max-w-xl shadow-lg rounded-lg overflow-hidden">
                 <ScreenWarning v-if="isStaging" class="col-span-7 relative my-4" />
-                <div class="col-span-7 backdrop-blur-sm relative bg-white py-8 px-4 md:px-10">
+                <div class="col-span-7 backdrop-blur-xs relative bg-white py-8 px-4 md:px-10">
                     <slot />
                 </div>
             </div>

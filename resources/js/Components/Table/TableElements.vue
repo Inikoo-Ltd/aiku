@@ -122,7 +122,7 @@ onMounted(() => {
                         {{ element.label }}
                     </div>
                     <!-- List of element (checkbox) -->
-                    <div class="max-w-96 grid grid-cols-2 rounded overflow-hidden w-full flex-wrap justify-end gap-0.5 ">
+                    <div class="max-w-96 grid grid-cols-2 rounded-sm overflow-hidden w-full flex-wrap justify-end gap-0.5 ">
                         <div v-for="(value, elementKey) of element.elements"
                             :key="`${elementKey}${idxElement}`"
                             class="hover:bg-gray-100 flex items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
@@ -147,9 +147,9 @@ onMounted(() => {
     </Popover>
 
     <div v-if="!!selectedGroup" class="hidden md:flex items-center text-xs justify-end w-full">
-        <div class=" w-fit flex gap-x-1 lg:gap-x-0  border border-gray-200 rounded">
+        <div class=" w-fit flex gap-x-1 lg:gap-x-0  border border-gray-200 rounded-sm">
             <!-- List of element (checkbox) -->
-            <div class="w-fit rounded overflow-hidden flex flex-wrap justify-end gap-0.5 ">
+            <div class="w-fit rounded-sm overflow-hidden flex flex-wrap justify-end gap-0.5 ">
                 <div v-for="(value, element, index) of elements[selectedGroup]?.elements" :key="element"
                     class="hover:bg-gray-100 flex flex-auto items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
                     :class="[selectedElement[selectedGroup]?.includes(element) ? 'bg-gray-50' : 'bg-white']"
@@ -193,7 +193,7 @@ onMounted(() => {
                     leave-active-class="transition duration-75 ease-in" leave-from-class="transform scale-100 opacity-100"
                     leave-to-class="transform scale-95 opacity-0">
                     <MenuItems
-                        class="absolute right-0 mt-2 w-40 min-w-min origin-top-right divide-y overflow-hidden divide-gray-100 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
+                        class="absolute right-0 mt-2 w-40 min-w-min origin-top-right divide-y overflow-hidden divide-gray-100 rounded-sm bg-white shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
                         <div class="">
                             <MenuItem v-for="element in props.elements" v-slot="{ active }" @click="selectedGroup = element.key"
                                 :class="[selectedGroup == element.key ? 'bg-gray-200' : '']"

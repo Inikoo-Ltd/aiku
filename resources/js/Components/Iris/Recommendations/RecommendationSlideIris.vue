@@ -23,7 +23,7 @@ const isLoadingVisit = ref(false)
 </script>
 
 <template>
-    <div class="flex flex-col w-full px-4 py-3 rounded relative h-full">
+    <div class="flex flex-col w-full px-4 py-3 rounded-sm relative h-full">
 
         <div class="flex flex-col h-full">
 
@@ -31,7 +31,7 @@ const isLoadingVisit = ref(false)
         <component
             :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
             :href="product.attributes.web_url?.[0]"
-            class="block rounded aspect-[5/4] w-full overflow-hidden"
+            class="block rounded-sm aspect-[5/4] w-full overflow-hidden"
             @success="() => SelectItemCollector(product)"
             @start="() => isLoadingVisit = true"
             @finish="() => isLoadingVisit = false"

@@ -53,7 +53,7 @@ const onClickGetStarted = (domain: string) => {
 
         <div class="mt-10 flex items-center justify-center gap-x-6">
             <div v-for="shop in props.shops">
-                <div class="flex flex-col p-4 border-gray-300 border rounded">
+                <div class="flex flex-col p-4 border-gray-300 border rounded-sm">
                     <img class="w-72 h-48 object-cover text-center" v-if="shop.name === 'AW Fulfilment'" src="https://i.ibb.co.com/CxTbCRf/undraw-factory-4d61.png" :alt="`${shop.name}`">
                     <img class="w-72 h-48 object-cover text-center" v-else src="https://i.ibb.co.com/9k4B20qk/undraw-financial-data-r0vs.png" :alt="`${shop.name}`">
                     <Button @click="() => onClickGetStarted(shop.domain)" type="tertiary" size="l" :label="`Open ${shop.name}`" />

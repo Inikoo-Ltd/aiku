@@ -40,7 +40,7 @@ const sortedShowareList = computed(() => {
     <div class="px-1 py-1">
         <!-- Show All -->
         <!-- <div @click="() => (router.visit(route(layout.navigation.org[layout.currentParams.organisation][`${navKey}s_index`].route.name, layout.navigation.org[layout.currentParams.organisation][`${navKey}s_index`].route.parameters)), closeMenu())"
-            class="flex gap-x-2 items-center pl-2 py-1.5 rounded text-slate-600 hover:bg-slate-200/30 cursor-pointer">
+            class="flex gap-x-2 items-center pl-2 py-1.5 rounded-sm text-slate-600 hover:bg-slate-200/30 cursor-pointer">
             <FontAwesomeIcon v-if="icon" :icon='icon' class='text-xxs' aria-hidden='true' />
             <span class="text-[9px] leading-none font-semibold">Show all {{ navKey }}s</span>
         </div>
@@ -54,7 +54,7 @@ const sortedShowareList = computed(() => {
                     @click="() => router.visit(route(showare.route?.name, showare.route?.parameters))" :class="[
                         showare.slug == layout.organisationsState?.[layout.currentParams.organisation]?.[`current${capitalize(navKey)}`] && (navKey == layout.organisationsState?.[layout.currentParams.organisation]?.currentType)
                             ? 'navigationDropdownActive'
-                            : 'rounded text-slate-600 hover:bg-slate-200/30 cursor-pointer',
+                            : 'rounded-sm text-slate-600 hover:bg-slate-200/30 cursor-pointer',
                         'group flex gap-x-2 w-full justify-between items-center px-2 py-2 text-sm',
                     ]">
                 <!-- <div class="h-5 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50">

@@ -39,11 +39,11 @@ const resolvedModel = computed({
 <template>
   <div class="flex items-center gap-3 w-full">
     <div>
-      <IconPicker v-model="resolvedModel" v-bind="props"  class="border-2 rounded p-2 w-fit cursor-pointer hover:bg-gray-200"/>
+      <IconPicker v-model="resolvedModel" v-bind="props"  class="border-2 rounded-sm p-2 w-fit cursor-pointer hover:bg-gray-200"/>
     </div>
 
     <div
-      class="flex-1 px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-500 text-sm cursor-not-allowed select-none"
+      class="flex-1 px-3 py-2 border border-gray-300 rounded-sm bg-gray-100 text-gray-500 text-sm cursor-not-allowed select-none"
     >
       {{ resolvedModel?.[1] ?? 'No icon' }}
     </div>

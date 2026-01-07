@@ -11,7 +11,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <span class="bg-yellow-400/50 border border-yellow-400 text-yellow-700 px-3 rounded-sm rounded-tr-xl rounded-bl-xl">
+    <span class="bg-yellow-400/50 border border-yellow-400 text-yellow-700 px-3 rounded-xs rounded-tr-xl rounded-bl-xl">
         {{ product.status_label ?? trans("Coming soon") }}
     </span>
 </template>

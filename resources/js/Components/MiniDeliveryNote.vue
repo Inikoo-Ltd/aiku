@@ -221,10 +221,10 @@ onMounted(() => {
 
     <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 py-4">
         <div v-for="n in 2" :key="n" class="p-4 border border-gray-200 rounded-lg shadow-xs space-y-4">
-            <Skeleton height="1.25rem" width="60%" class="rounded" />
-            <Skeleton height="1.25rem" width="80%" class="rounded" />
-            <Skeleton height="1.25rem" width="80%" class="rounded" />
-            <Skeleton height="1.25rem" width="80%" class="rounded" />
+            <Skeleton height="1.25rem" width="60%" class="rounded-sm" />
+            <Skeleton height="1.25rem" width="80%" class="rounded-sm" />
+            <Skeleton height="1.25rem" width="80%" class="rounded-sm" />
+            <Skeleton height="1.25rem" width="80%" class="rounded-sm" />
         </div>
     </div>
 
@@ -378,7 +378,7 @@ onMounted(() => {
                 <div class=" grid grid-cols-12 mt-2">
                     <div></div>
                     <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
-                        class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                        class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded-sm">
                         <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                         {{ trans("Add another parcel") }}
                     </div>

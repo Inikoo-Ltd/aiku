@@ -365,7 +365,7 @@ const disableBeforeToday = (date: Date) => {
         </div>
         <div v-else class="w-full text-xs text-gray-500">
           Send to:
-          <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+          <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
             <span v-html="box_stats.fulfilment_customer?.address?.value?.formatted_address" />
             <div
               @click="() => (isDeliveryAddressManagementModal = true)"

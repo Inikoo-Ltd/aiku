@@ -156,7 +156,7 @@ const onSubmitDecrease = () => {
         </div>
 
         <!-- Section: Preview balance -->
-        <div v-if="balance" class="bg-indigo-50 py-1 px-3 mt-6 rounded text-gray-700 tabular-nums border border-indigo-300">
+        <div v-if="balance" class="bg-indigo-50 py-1 px-3 mt-6 rounded-sm text-gray-700 tabular-nums border border-indigo-300">
             {{ trans("Preview balance") }}:
             <span v-tooltip="trans('Current balance')">{{ locale.currencyFormat(currency.code, Number(balance)) }}</span>
             - <span v-tooltip="trans('Change')" class="text-red-500">{{ locale.currencyFormat(currency.code, amount) }}</span>

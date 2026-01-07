@@ -378,7 +378,7 @@ const noLeader = computed(() => {
           {{ trans('Variant option must be present') }}
         </span>
 
-        <div v-for="(v, vi) in model.variants" :key="vi" class="border rounded mt-2">
+        <div v-for="(v, vi) in model.variants" :key="vi" class="border rounded-sm mt-2">
           <!-- COLLAPSED -->
           <div v-if="!v.active" class="p-2 cursor-pointer" @click="toggleActive(vi)">
             <div class="text-sm font-medium">
@@ -447,7 +447,7 @@ const noLeader = computed(() => {
         <div class="border-t mt-6 pt-3" v-if="validVariants.length">
           <div class="flex items-center gap-2">
             <span class="text-sm"> {{ trans('Group by') }} </span>
-            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+            <select v-model="model.groupBy" class="border rounded-sm px-2 py-1 text-sm w-[90px]">
               <option v-for="v in validVariants" :key="v.label" :value="v.label">
                 {{ v.label }}
               </option>
@@ -466,12 +466,12 @@ const noLeader = computed(() => {
 
 
           <!-- TABLE -->
-          <div class="border rounded mt-4 overflow-visible">
+          <div class="border rounded-sm mt-4 overflow-visible">
             <table class="min-w-full table-fixed divide-y">
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-4 py-3 w-[40px]">
-                    <div class="w-5 h-5 border rounded bg-gray-100 flex items-center justify-center text-sm font-medium"
+                    <div class="w-5 h-5 border rounded-sm bg-gray-100 flex items-center justify-center text-sm font-medium"
                       @click="isAllExpanded ? collapseAll() : expandAll()">
                       {{ isAllExpanded ? "−" : "+" }}
                     </div>
@@ -496,7 +496,7 @@ const noLeader = computed(() => {
                     <!-- Expand -->
                     <td class="px-4">
                       <div v-if="node.children"
-                        class="w-5 h-5 border rounded bg-gray-100 flex items-center justify-center text-sm font-medium cursor-pointer"
+                        class="w-5 h-5 border rounded-sm bg-gray-100 flex items-center justify-center text-sm font-medium cursor-pointer"
                         @click="toggleExpand(keyToString(node.key))">
                         {{ expanded[keyToString(node.key)] ? "−" : "+" }}
                       </div>
@@ -523,7 +523,7 @@ const noLeader = computed(() => {
                         <template #singlelabel="{ value }">
                           <div class="flex items-center gap-3 p-2">
                             <Image v-if="value.image_thumbnail" :src="value.image_thumbnail.main.original"
-                              class="w-12 h-12 rounded object-cover" />
+                              class="w-12 h-12 rounded-sm object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ value.code }}</div>
                               <div class="flex justify-beetween mt-1 gap-5">
@@ -537,7 +537,7 @@ const noLeader = computed(() => {
                          <template #option="{ isSelected, isPointed, option }">
                           <div class="flex items-center gap-3 p-2">
                             <Image v-if="option.image_thumbnail" :src="option.image_thumbnail.main.original"
-                              class="w-12 h-12 rounded object-cover" />
+                              class="w-12 h-12 rounded-sm object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ option.code }}</div>
                               <div class="flex justify-beetween mt-1 gap-5">
@@ -580,7 +580,7 @@ const noLeader = computed(() => {
                         <template #singlelabel="{ value }">
                           <div class="flex items-center gap-3 p-2">
                             <Image v-if="value.image_thumbnail" :src="value.image_thumbnail.main.original"
-                              class="w-12 h-12 rounded object-cover" />
+                              class="w-12 h-12 rounded-sm object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ value.code }}</div>
                               <div class="flex justify-beetween mt-1 gap-5">
@@ -595,7 +595,7 @@ const noLeader = computed(() => {
                         <template #option="{ isSelected, isPointed, option }">
                           <div class="flex items-center gap-3 p-2">
                             <Image v-if="option.image_thumbnail" :src="option.image_thumbnail.main.original"
-                              class="w-12 h-12 rounded object-cover" />
+                              class="w-12 h-12 rounded-sm object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ option.code }}</div>
                               <div class="flex justify-beetween mt-1 gap-5">

@@ -129,7 +129,7 @@ const productRoute = (item) => {
                         v-if="item.total_last_refund != item.net_amount && item.net_amount - item.refund_net_amount - item.total_last_refund > 0"
                         @click="()=>setAllRefund(item.rowIndex, item.max_refundable_amount)"
                         :disabled="item.net_amount - item.refund_net_amount - item.total_last_refund <= 0"
-                        class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                        class="px-2 py-1 text-xs bg-gray-300 rounded-sm disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
                         {{ trans("Refundable") }}: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
                     </button>
                 </div>

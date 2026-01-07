@@ -289,7 +289,7 @@ const openModalAddPallet = ref(false)
     <PageHeading :data="pageHead">
         <template v-if="notes_data?.warehouse?.note" #afterSubNav>
             <div class="px-4">
-                <div class="mt-3 py-1 rounded mx-auto px-3 flex gap-x-2 text-sm"
+                <div class="mt-3 py-1 rounded-sm mx-auto px-3 flex gap-x-2 text-sm"
                     :style="{
                         backgroundColor: layout.app.theme[0],
                         color: layout.app.theme[1],

@@ -242,7 +242,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
             <div class="grid gap-y-1">
                 <template v-for="pallet_stored_item in value.pallet_stored_items" :key="pallet_stored_item.id">
                     <Teleport v-if="isMounted" :to="`#row-${value.id}`" :disabled="palletReturn.state == 'in_process' || pallet_stored_item.selected_quantity > 0">
-                        <div class="rounded p-1 flex justify-between gap-x-6 items-center">
+                        <div class="rounded-sm p-1 flex justify-between gap-x-6 items-center">
                             <!-- <Tag :label="pallet_stored_item.reference" stringToColor>
                                 <template #label>
                                     <div class="">

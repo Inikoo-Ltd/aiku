@@ -198,7 +198,7 @@ onBeforeUnmount(() => {
                 <div class="py-2 px-3 flex justify-end max-w-2xl" v-if="formData.blueprint?.[currentTab]?.button" :id="formData.title">
                     <component :is="formData.blueprint[currentTab].button.disable ? 'div' : 'a'"
                         :href="formData.blueprint[currentTab].button.route" target="_blank" rel="noopener noreferrer"
-                        class="px-3 py-1.5 rounded"
+                        class="px-3 py-1.5 rounded-sm"
                         :class="[formData.blueprint[currentTab].button.disable ? 'bg-orange-200 cursor-default text-white' : 'text-gray-100 bg-orange-500 hover:bg-orange-600']"
                     >
                         {{ formData.blueprint[currentTab].button.title }}

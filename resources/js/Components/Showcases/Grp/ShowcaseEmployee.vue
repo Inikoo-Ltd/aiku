@@ -181,7 +181,7 @@ const isVisitClockingMachine = ref(false)
                   <div
                     v-for="(value, index) in Array.from(data?.pin)"
                     :key="index"
-                    class="h-6 xl:h-8 aspect-square flex items-center justify-center text-sm xl:text-lg font-semibold border border-gray-300 rounded xl:rounded-md shadow-xs bg-gray-50"
+                    class="h-6 xl:h-8 aspect-square flex items-center justify-center text-sm xl:text-lg font-semibold border border-gray-300 rounded-sm xl:rounded-md shadow-xs bg-gray-50"
                   >
                 
                     <Transition name="spin-to-right">

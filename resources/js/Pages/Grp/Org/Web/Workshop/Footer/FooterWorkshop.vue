@@ -284,7 +284,7 @@ console.log(props)
                         <div class="flex items-center gap-2">
                             <div class="border-r border-gray-300 pr-2">
                                 <select v-model="selectedLang"
-                                    class="border border-gray-300 rounded px-2 py-1 text-xs focus:ring focus:ring-indigo-200 focus:border-indigo-400">
+                                    class="border border-gray-300 rounded-sm px-2 py-1 text-xs focus:ring focus:ring-indigo-200 focus:border-indigo-400">
                                     <!-- Null option -->
                                     <option :value="null">{{ trans('Master') }}</option>
 
@@ -340,7 +340,7 @@ console.log(props)
             :currentTopbar="usedTemplates">
             <template #image="{ block }">
                 <div @click="() => onPickTemplate(block)"
-                    class="min-h-16 w-full aspect-[2/1] overflow-hidden flex items-center bg-gray-100 justify-center border border-gray-300 hover:border-indigo-500 rounded cursor-pointer">
+                    class="min-h-16 w-full aspect-[2/1] overflow-hidden flex items-center bg-gray-100 justify-center border border-gray-300 hover:border-indigo-500 rounded-sm cursor-pointer">
                     <div class="w-auto shadow-md">
                         <Image :src="block.screenshot" class="object-contain" />
                     </div>

@@ -84,7 +84,7 @@ const getStatusText = (status: string, valid: boolean) => {
             <div class="font-medium">{{ tax_number.number }}</div>
             
             <!-- Validation Status Display -->
-            <div class="px-3 py-2 bg-gray-50 rounded border">
+            <div class="px-3 py-2 bg-gray-50 rounded-sm border">
                 <div class="flex items-start justify-between">
                     <div class="flex items-center space-x-2">
                         <FontAwesomeIcon 

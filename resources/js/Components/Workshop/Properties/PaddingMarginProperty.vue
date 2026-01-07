@@ -86,7 +86,7 @@ const changePaddingToSameValue = (newVal: number) => {
                         leave-from-class="translate-y-0 opacity-100"
                         leave-to-class="translate-y-1 opacity-0"
                     >
-                        <PopoverPanel v-slot="{ close }" class="bg-white shadow-sm mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
+                        <PopoverPanel v-slot="{ close }" class="bg-white shadow-sm mt-3 absolute top-full right-0 z-10 w-32 transform rounded-sm overflow-hidden">
                             <div @click="() => {set(model, 'unit','px'), close(), emits('update:modelValue', model)}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">px</div>
                             <div @click="() => {set(model, 'unit','%'), close(), emits('update:modelValue', model)}" class="px-4 py-1.5 cursor-pointer" :class="model?.unit == '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">%</div>
                         </PopoverPanel>

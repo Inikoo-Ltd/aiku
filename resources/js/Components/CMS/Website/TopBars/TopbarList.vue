@@ -73,7 +73,7 @@ const props = withDefaults(defineProps<{
                         <div v-for="topbar in topbarList"
                             :key="topbar.code"
                             @click="() => onSelectTopbar(topbar)"
-                            class="group flex items-center gap-x-2 relative border border-gray-300 px-3 py-2 rounded cursor-pointer hover:bg-gray-100"
+                            class="group flex items-center gap-x-2 relative border border-gray-300 px-3 py-2 rounded-sm cursor-pointer hover:bg-gray-100"
                         >
                             <div class="flex items-center justify-center">
                                 <img :src="topbar.image">

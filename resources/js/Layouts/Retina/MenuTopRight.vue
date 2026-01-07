@@ -40,9 +40,9 @@ console.log(layout)
                 <span class="sr-only">{{ trans("Search") }}</span>
                 <FontAwesomeIcon aria-hidden="true" size="sm" icon="fa-regular fa-search" />
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
-                    <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded">⌘</span>
-                    <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded">Ctrl</span>
-                    <span class="ring-1 ring-gray-400 bg-gray-100 px-1.5 py-0.5 text-xs rounded">K</span>
+                    <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded-sm">⌘</span>
+                    <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded-sm">Ctrl</span>
+                    <span class="ring-1 ring-gray-400 bg-gray-100 px-1.5 py-0.5 text-xs rounded-sm">K</span>
                 </div>
                 <SearchBar v-model="showSearchDialog" />
             </button>

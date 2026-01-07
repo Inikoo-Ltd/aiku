@@ -249,7 +249,7 @@ const _popover = ref(null);
     <div class="flex items-center gap-2 rounded-md">
         <div @click="(e) => _popover?.toggle(e)"  class="group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
             <div
-                class="h-7 w-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-700"
+                class="h-7 w-9 rounded-sm flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-700"
                 :class="[
                     intervals.value === 'ctm'
                         ? 'bg-indigo-500 text-white hover:text-gray-700 font-medium'
@@ -264,7 +264,7 @@ const _popover = ref(null);
         <!-- Display selected date range when custom interval is active -->
         <transition name="slide-fade">
             <div v-if="intervals.value === 'ctm' && dateFilterValue[0] && dateFilterValue[1]"
-                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
+                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-sm text-xs text-indigo-700 whitespace-nowrap">
                 <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
                 <span class="text-indigo-400">-</span>
                 <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>

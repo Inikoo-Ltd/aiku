@@ -365,7 +365,7 @@ const getSeverity = (type?: string) => {
                 <!-- Section: Error in models -->
                 <Transition name="spin-to-down">
                     <div v-if="usePage().props?.errors?.error_in_models"
-                        class="mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
+                        class="mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded-sm">
                         <FontAwesomeIcon v-if="
 								usePage().props?.errors?.error_in_models?.match(
 									/^(\d{3}):\s(.+)$/
@@ -420,7 +420,7 @@ const getSeverity = (type?: string) => {
 								formData.blueprint[currentTab].button.route.name,
 								formData.blueprint[currentTab].button.route.parameters
 							)
-						" class="px-3 py-1.5 rounded" :class="[
+						" class="px-3 py-1.5 rounded-sm" :class="[
 							formData.blueprint[currentTab].button.disable
 								? 'bg-orange-200 cursor-default text-white'
 								: 'text-gray-100 bg-green-500 hover:bg-green-600',

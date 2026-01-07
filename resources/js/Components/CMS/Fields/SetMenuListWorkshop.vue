@@ -143,7 +143,7 @@ const updateNavigationFromDrawer = (value: any) => {
 		<template #item="{ element, index }">
 			<div
 				@click="setMenuActive(index)"
-				class="group flex items-center bg-white border border-gray-200 rounded shadow-xs overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-indigo-400"
+				class="group flex items-center bg-white border border-gray-200 rounded-sm shadow-xs overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-indigo-400"
 				:class="element.hidden ? 'opacity-50 hover:opacity-100' : ''"
 			>
 				<div

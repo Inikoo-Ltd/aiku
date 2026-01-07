@@ -389,7 +389,7 @@ function tagColorClass(scope?: string) {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="w-full text-gray-500">
-                                <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                                <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
                                     <span class="" v-html="data?.customer?.address.formatted_address" />
 
                                     <div v-if="data.address_management.can_open_address_management"

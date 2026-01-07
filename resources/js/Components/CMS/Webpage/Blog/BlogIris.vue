@@ -105,7 +105,7 @@ const screenType = inject("screenType", "desktop")
             borderLeftColor: primaryColor,
             backgroundColor: `${primaryColor}15`
           } : {}" :class="[
-            'block px-3 py-1.5 border-l-2 rounded-sm transition-all duration-150',
+            'block px-3 py-1.5 border-l-2 rounded-xs transition-all duration-150',
             heading.level === 2 ? 'ml-3' : '',
             heading.level === 3 ? 'ml-6 text-[0.95rem]' : '',
             currentHeadingId === heading.id

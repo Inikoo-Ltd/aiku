@@ -289,9 +289,9 @@ const updateCollection = async (e: Event) => {
                     <!-- Field: Channel -->
                     <dl v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
                         <dt class="flex-none">
-                            <div class="block w-full rounded h-[18px]">
+                            <div class="block w-full rounded-sm h-[18px]">
                                 <img :src="boxStats?.platform?.logo" :alt="boxStats?.platform?.name"
-                                    class="w-full h-full object-contain rounded" />
+                                    class="w-full h-full object-contain rounded-sm" />
                             </div>
                         </dt>
                         <dt class="text-gray-500 hover:text-gray-700">
@@ -612,7 +612,7 @@ const updateCollection = async (e: Event) => {
                     <div class=" grid grid-cols-12 mt-2">
                         <div></div>
                         <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
-                            class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                            class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded-sm">
                             <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                             {{ trans("Add another parcel") }}
                         </div>

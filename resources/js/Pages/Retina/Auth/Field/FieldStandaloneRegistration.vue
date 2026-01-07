@@ -278,7 +278,7 @@ const toggleInterest = (interestValue: string) => {
                         type="checkbox"
                         :id="interest.value"
                         :value="interest.value"
-                        class="h-5 w-5 text-indigo-600 border-gray-300 rounded-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                        class="h-5 w-5 text-indigo-600 border-gray-300 rounded-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                         @click.stop
                     />
                     <label xfor="interest.value" class="select-none text-sm font-medium text-gray-900 cursor-pointer">

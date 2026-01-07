@@ -133,7 +133,7 @@ watch(isOpenModalCrop, (val) => {
           v-if="imgAfterCrop?.original"
           :src="imgAfterCrop.original"
           alt="Preview"
-          class="h-full w-full object-cover rounded"
+          class="h-full w-full object-cover rounded-sm"
         />
         <div
           v-else
@@ -214,7 +214,7 @@ watch(isOpenModalCrop, (val) => {
         />
         <div
           @click="() => numbKey++"
-          class="select-none px-2 py-1 cursor-pointer absolute top-2 right-2 text-white border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded"
+          class="select-none px-2 py-1 cursor-pointer absolute top-2 right-2 text-white border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded-sm"
         >
           <FontAwesomeIcon :icon="['fal', 'undo-alt']" fixed-width />
           {{ trans("Refresh") }}

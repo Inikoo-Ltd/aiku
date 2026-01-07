@@ -147,16 +147,16 @@ defineExpose({
             <thead class="sticky top-0 z-10 bg-gray-100">
                 <tr>
                     <th scope="col"
-                        class="border-b border-gray-300 py-3.5 pl-4 text-left text-sm font-semibold backdrop-blur backdrop-filter sm:pl-6 lg:pl-8">
+                        class="border-b border-gray-300 py-3.5 pl-4 text-left text-sm font-semibold backdrop-blur-xs backdrop-filter sm:pl-6 lg:pl-8">
                         <input type="checkbox" :checked="checkedAll" @change="onSelectAllPallets"
-                            class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-indigo-500 focus:ring-gray-600"
+                            class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-indigo-500 focus:ring-gray-600"
                             :style="{
                                 color: layout.app.theme[0]
                             }" />
                     </th>
 
                     <th v-for="(item, index) in descriptor.column" :key="`header-${item.key}`" scope="col"
-                        class="sticky top-0 z-10 border-b border-gray-300 px-3 py-3.5 text-left text-sm font-semibold backdrop-blur backdrop-filter sm:table-cell">
+                        class="sticky top-0 z-10 border-b border-gray-300 px-3 py-3.5 text-left text-sm font-semibold backdrop-blur-xs backdrop-filter sm:table-cell">
                         <slot :name="`head-${item.key}`" :data="{ headData: item, index: index }">
                             {{ item.label }}
                         </slot>
@@ -170,7 +170,7 @@ defineExpose({
                         :class="[index !== dataList.length - 1 ? 'border-b border-gray-200' : '', 'whitespace-nowrap py-4 pl-4 text-sm font-medium sm:pl-6 lg:pl-8']">
                         <input v-model="form[props.descriptor.key]" type="checkbox" :id="pallet.id" :value="pallet.id"
                             @change="onSelectPallet"
-                            class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-indigo-500 focus:ring-gray-600"
+                            class="h-6 w-6 rounded-sm cursor-pointer border-gray-300 hover:border-indigo-500 focus:ring-gray-600"
                             :style="{
                                 color: layout.app.theme[0]
                             }" />

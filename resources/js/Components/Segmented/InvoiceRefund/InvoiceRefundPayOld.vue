@@ -609,7 +609,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                 @click="() => !item.disable ? paymentRefund.payment_method = item.value : null"
                                 v-for="item in listPaymentRefund"
                                 :key="item.value"
-                                class="flex justify-center items-center border px-3 py-2 rounded text-center cursor-pointer transition"
+                                class="flex justify-center items-center border px-3 py-2 rounded-sm text-center cursor-pointer transition"
                                 :class="[
                                     paymentRefund.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300',
                                     item.disable ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-500' : 'hover:bg-indigo-100'
@@ -690,7 +690,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                         v-if="data.amount > -props.invoice_pay.total_need_to_refund_in_payment_method && props.invoice_pay.total_need_to_refund_in_payment_method !=0 "
                                         @click="()=>setRefundAllOutsideFulfilmentShop(props.invoice_pay.total_need_to_refund_in_payment_method,index)"
                                         :disabled="false"
-                                        class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                                        class="px-2 py-1 text-xs bg-gray-300 rounded-sm disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
                                         Pay {{
                                             locale.currencyFormat(invoice_pay.currency_code, props.invoice_pay.total_need_to_refund_in_payment_method)
                                         }}

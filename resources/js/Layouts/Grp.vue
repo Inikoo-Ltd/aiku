@@ -457,7 +457,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 <style lang="scss">
 /* Navigation: Aiku */
 .navigationActive {
-	@apply rounded py-2 font-semibold transition-all duration-0 ease-out;
+	@apply rounded-sm py-2 font-semibold transition-all duration-0 ease-out;
 	box-shadow: v-bind(
 		"`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`"
 	) !important;
@@ -466,7 +466,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 }
 
 .navigation {
-	@apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
+	@apply hover:bg-gray-300/40 py-2 rounded-sm font-semibold transition-all duration-0 ease-out;
 	color: v-bind("layout?.app?.theme[1]");
 }
 
@@ -548,7 +548,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 	color: v-bind("`${layout.app.theme[1]}`");
 	border: v-bind('`2px solid ${layout.app.theme[0] + "99"}`') !important;
 
-	@apply rounded overflow-hidden
+	@apply rounded-sm overflow-hidden
     cursor-pointer
     focus:ring-0 focus:outline-none
     bg-no-repeat [background-position:0%_100%]
@@ -569,7 +569,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 		color: v-bind("`${layout.app.theme[1]}`");
 	}
 
-	@apply rounded overflow-hidden
+	@apply rounded-sm overflow-hidden
     cursor-pointer
     focus:ring-0 focus:outline-none
     bg-no-repeat [background-position:0%_100%]

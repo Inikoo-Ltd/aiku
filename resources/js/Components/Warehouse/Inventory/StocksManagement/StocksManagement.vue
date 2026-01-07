@@ -217,7 +217,7 @@ const getQuestionTooltip = (locationId: number) => {
 
         <!-- Section: Summary Stats -->
         <div class="grid grid-cols-4 gap-2 text-center">
-            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded">
+            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded-sm">
                 <span>
                     <!-- <FontAwesomeIcon :icon="item.icon_state" class="text-gray-500" fixed-width aria-hidden="true" /> -->
                     <Icon :data="item.icon_state" />
@@ -286,7 +286,7 @@ const getQuestionTooltip = (locationId: number) => {
 
                 <div v-else>
                     <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
-                        class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200"
+                        class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded-sm transition-colors duration-200"
                         :class="{
                             'bg-blue-50 border border-blue-200': activePickingLocation === loc.id,
                             'hover:bg-gray-50': activePickingLocation !== loc.id

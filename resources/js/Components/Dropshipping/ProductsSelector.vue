@@ -174,7 +174,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                 </slot>
             </div>
             <div class="h-full md:h-[570px] text-base font-normal">
-                <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
+                <!-- <div class="overflow-y-auto bg-gray-200 rounded-sm h-full px-3 py-1">
                     <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
                 </div> -->
@@ -204,7 +204,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                 <template v-if="portfoliosList.length > 0">
                                     <div v-for="(item, index) in portfoliosList" :key="index"
                                         @click="() => selectProduct(item)"
-                                        class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                        class="relative h-fit rounded-sm cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                         :class="compSelectedProduct.includes(item.id)
                                             ? 'bg-indigo-100 border-indigo-300'
                                             : 'bg-white hover:bg-gray-200 border-gray-300'">
@@ -293,7 +293,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                 </div>
                             </template>
                             <div v-else v-for="(item, index) in 6" :key="index"
-                                class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton">
+                                class="rounded-sm cursor-pointer w-full h-20 flex gap-x-2 border skeleton">
                             </div>
                         </div>
 

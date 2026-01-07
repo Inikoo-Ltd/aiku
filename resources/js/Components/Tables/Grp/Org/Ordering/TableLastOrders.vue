@@ -102,7 +102,7 @@ function customerRoute(order: Order) {
 
 <template>
     <div class="p-4">
-        <div class="w-full space-y-8 p-2 border border-gray-300 rounded">
+        <div class="w-full space-y-8 p-2 border border-gray-300 rounded-sm">
             <div v-for="orderGroup in data">
                 <DataTable xv-if="orderGroup.data.length" :value="orderGroup.data" removableSort xtableStyle="min-width: 50rem">
                     <template #header>

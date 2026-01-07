@@ -42,7 +42,7 @@ const props = defineProps<{
         <div>
             <img :src="product.image" alt="" class="h-auto w-full rounded-t-full">
             <div class="place-self-start mx-4 mb-2 xl:mb-4">
-                <div class="min-h-12 mb-1 border border-gray-300 rounded text-gray-600 font-semibold py-2 px-2 text-center flex items-center justify-center">
+                <div class="min-h-12 mb-1 border border-gray-300 rounded-sm text-gray-600 font-semibold py-2 px-2 text-center flex items-center justify-center">
                     {{ product.title }}
                 </div>
                 <div class="flex justify-between text-xxs text-gray-500 mb-1">
@@ -59,7 +59,7 @@ const props = defineProps<{
             
                 <div class="grid grid-cols-2 xl:grid-cols-3 gap-x-2">
                     <div class="">
-                        <div class="rounded flex items-center text-sm w-fit px-1"
+                        <div class="rounded-sm flex items-center text-sm w-fit px-1"
                         :class="[product.discount.isApplied ? 'border border-green-500 bg-green-50 text-green-500' : 'border border-gray-500 bg-gray-200 text-gray-500']"
                     >
                         <FontAwesomeIcon :icon="product.discount.isApplied ? 'fas fa-star' : 'fas fa-star-half-alt'" class='' fixed-width aria-hidden='true' />

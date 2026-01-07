@@ -31,7 +31,7 @@ const formattedPercentage = computed(() => {
 </script>
 
 <template>
-    <div class="bg-green-500/20 px-1 py-0.5 text-xs border flex items-center border-green-500/50 rounded-sm w-fit text-green-700" >
+    <div class="bg-green-500/20 px-1 py-0.5 text-xs border flex items-center border-green-500/50 rounded-xs w-fit text-green-700" >
         <FontAwesomeIcon icon="fas fa-badge-percent" class="text-green-500 text-sm align-middle" fixed-width aria-hidden="true" />
         <span class="ml-0.5 font-bold mr-1">{{ formattedPercentage  }}</span> {{ offers_data?.o?.l }}
     </div>

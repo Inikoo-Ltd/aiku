@@ -133,7 +133,7 @@ onUnmounted(() => {
                                     v-for="(item, index) in portfoliosList"
                                     :key="index"
                                     @click.self="() => selectProduct(item)"
-                                    class="relative h-fit rounded cursor-pointer p-2 flex gap-x-2 border"
+                                    class="relative h-fit rounded-sm cursor-pointer p-2 flex gap-x-2 border"
                                     :class="compSelectedProduct.includes(item.id)
                                         ? 'bg-indigo-100 border-indigo-300'
                                         : 'bg-white hover:bg-gray-200 border-gray-300'"
@@ -174,7 +174,7 @@ onUnmounted(() => {
                             v-else
                             v-for="(item, index) in 6"
                             :key="index"
-                            class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
+                            class="rounded-sm cursor-pointer w-full h-20 flex gap-x-2 border skeleton"
                         >
                         </div>
                     </div>

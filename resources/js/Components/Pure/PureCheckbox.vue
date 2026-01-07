@@ -18,7 +18,7 @@ defineOptions({
             v-model="model"
             v-bind="$attrs"
             type="checkbox"
-            class="h-6 w-6 rounded cursor-pointer custom-checkbox" />
+            class="h-6 w-6 rounded-sm cursor-pointer custom-checkbox" />
     </div>
 </template>
 

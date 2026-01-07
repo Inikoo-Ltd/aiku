@@ -46,7 +46,7 @@ const currentTopbarCode = props.currentTopbar?.code
 
                         <slot name="image" :block="block">
                             <div
-                                class="group/template relative min-h-16 max-h-20 w-full aspect-[4/1] overflow-hidden flex items-center bg-gray-100 justify-center border border-gray-300 hover:border-indigo-500 rounded">
+                                class="group/template relative min-h-16 max-h-20 w-full aspect-[4/1] overflow-hidden flex items-center bg-gray-100 justify-center border border-gray-300 hover:border-indigo-500 rounded-sm">
                                 <div class="w-auto shadow-md">
                                     <Image :src="block.screenshot" class="object-contain" />
                                 </div>

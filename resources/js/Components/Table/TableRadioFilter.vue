@@ -73,7 +73,7 @@ onMounted(() => {
 <template>
     <div class="flex gap-1">
         <button v-for="radio in options" @click.prevent="(e) => onClickRadio(radio.value)"
-            class="text-xs w-full sm:text-sm flex flex-auto items-center text-left gap-x-1.5 sm:gap-x-2 rounded px-2 sm:px-2 py-0.5 select-none border border-gray-300 disabled:bg-gray-300"
+            class="text-xs w-full sm:text-sm flex flex-auto items-center text-left gap-x-1.5 sm:gap-x-2 rounded-sm px-2 sm:px-2 py-0.5 select-none border border-gray-300 disabled:bg-gray-300"
             :class="value === radio.value ? 'bgprimary cursor-auto' : ' disabled:cursor-default cursor-pointer hover:bg-slate-400/20 '"
             :disabled="false">
             <LoadingIcon v-if="isLoading === radio.value" />

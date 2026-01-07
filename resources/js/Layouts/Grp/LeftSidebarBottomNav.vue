@@ -96,7 +96,7 @@ const bottomNavigation = computed(() => [
                 </MenuButton>
                 
                 <transition>
-                    <MenuItems class="absolute bottom-full -translate-y-2 w-52 p-1 origin-bottom-left rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                    <MenuItems class="absolute bottom-full -translate-y-2 w-52 p-1 origin-bottom-left rounded-sm bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                         <div class="flex items-center gap-x-1.5 px-1 mb-1">
                             <FontAwesomeIcon :icon='bottomNav.icon' class='text-gray-400 text-xxs' aria-hidden='true' />
                             <span class="text-[9px] leading-none text-gray-400">{{ bottomNav.label }}</span>
@@ -106,7 +106,7 @@ const bottomNavigation = computed(() => [
                         <!-- Section: Show All -->
                         <template v-if="bottomNav.showAll">
                             <div @click="() => (router.visit(route(bottomNav.showAll.route.name, bottomNav.showAll.route.parameters)), closeMenu())"
-                                class="flex gap-x-2 items-center pl-3 py-1.5 text-xs cursor-pointer rounded text-slate-500 hover:bg-slate-200/75 hover:text-slate-600">
+                                class="flex gap-x-2 items-center pl-3 py-1.5 text-xs cursor-pointer rounded-sm text-slate-500 hover:bg-slate-200/75 hover:text-slate-600">
                                 <FontAwesomeIcon icon='fal fa-store-alt' class='' aria-hidden='true' />
                                 <span class="font-semibold">{{ bottomNav.showAll.label }}</span>
                             </div>
@@ -121,7 +121,7 @@ const bottomNavigation = computed(() => [
                                     @click="() => router.visit(route(showare.route?.name, showare.route?.parameters))"
                                     :class="[
                                         showare.state == 'closed' ? 'bg-slate-200 select-none' : showare.slug == bottomNav.activeState ? 'bg-slate-500 text-white' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
-                                        'group flex gap-x-2 w-full justify-start items-center rounded px-2 py-2 text-sm cursor-pointer',
+                                        'group flex gap-x-2 w-full justify-start items-center rounded-sm px-2 py-2 text-sm cursor-pointer',
                                     ]"
                                     v-tooltip="showare.state == 'closed' ? `This ${bottomNav.label.slice(0, -1)} is closed.` : false"
                                 >

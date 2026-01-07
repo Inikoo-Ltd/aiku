@@ -288,7 +288,7 @@ const setChartDataAndOptions = () => {
 	// Retrieve your timeseries data
 	const timeseriesData = props.data.localAnalytics?.timeSeries || []
 
-	// Determine the current time rounded down to the nearest 15 minutes.
+	// Determine the current time rounded-sm down to the nearest 15 minutes.
 	const now = new Date()
 	const roundedNow = new Date(now)
 	const currentMinutes = roundedNow.getMinutes()

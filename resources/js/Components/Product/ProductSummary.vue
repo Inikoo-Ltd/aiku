@@ -188,7 +188,7 @@ library.add(
 					<!-- Section: Picking -->
 					<div class="flex justify-between flex-wrap gap-0.5" v-if="!hide?.includes('picking')">
 						<dt class="text-gray-500">{{ trans("Picking") }}</dt>
-						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
+						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded-sm">
 							<template v-if="data?.picking_factor?.length">
 								<div v-for="pick in data.picking_factor" :key="pick.org_stock_id"
 									class="grid grid-cols-4 gap-2 py-1 text-sm">
@@ -205,7 +205,7 @@ library.add(
 											</span>
 
 											<span v-if="pick?.is_on_demand"
-												class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700">
+												class="text-[10px] px-1.5 rounded-sm bg-amber-100 text-amber-700">
 												On Demand
 											</span>
 										</div>

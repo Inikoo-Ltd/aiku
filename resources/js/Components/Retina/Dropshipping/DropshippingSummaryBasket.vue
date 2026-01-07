@@ -266,7 +266,7 @@ onMounted(() => {
                 <div class="w-full text-xs text-gray-500"
                     :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
                     <dd
-                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                        class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded-sm bg-gray-50">
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
                         <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
                             class="underline cursor-pointer hover:text-gray-700">
@@ -295,7 +295,7 @@ onMounted(() => {
 
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                         <span>{{ note?.reference }}</span>
-                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
                             <Icon :data="note?.state"/>
                         </span>
                     </div>
@@ -355,7 +355,7 @@ onMounted(() => {
                             </div>
                         </Link>
                         <a :href="route(invoice?.routes?.download?.name, invoice?.routes?.download?.parameters)"
-                           target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded cursor-pointer"
+                           target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded-sm cursor-pointer"
                            v-tooltip="trans('Download invoice')">
                             <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
                         </a>
@@ -367,7 +367,7 @@ onMounted(() => {
             <!--  <div v-if="summary.order_properties?.shipments?.length" class="flex itemcen gap-x-1 py-0.5">
                 <FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1'
                     fixed-width aria-hidden='true' />
-                <div class="group w-full overflow-x-auto border border-gray-200 rounded">
+                <div class="group w-full overflow-x-auto border border-gray-200 rounded-sm">
 
                     <table class="min-w-full divide-y divide-gray-200 ">
                         <thead class="bg-gray-50">
@@ -424,7 +424,7 @@ onMounted(() => {
                 </div>
             </div>
 
-            <div class="border border-gray-200 p-2 rounded">
+            <div class="border border-gray-200 p-2 rounded-sm">
                 <OrderSummary :order_summary="summary.order_summary"
                               :currency_code="summary.order_summary?.currency?.data?.code"/>
             </div>

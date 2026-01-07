@@ -91,7 +91,7 @@ function routePallet(storageData: any) {
 							"
 							class="">
 							<div
-								class="text-sm text-red-400 border border-red-300 bg-red-50 rounded px-2 py-2 font-normal">
+								class="text-sm text-red-400 border border-red-300 bg-red-50 rounded-sm px-2 py-2 font-normal">
 								<div v-if="stats.pallets.state?.damaged?.count">
 									<FontAwesomeIcon
 										:icon="stats.pallets.state?.damaged?.icon.icon"

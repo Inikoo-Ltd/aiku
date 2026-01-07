@@ -493,16 +493,16 @@ watch(
 								:key="index"
 								class="cursor-pointer h-full border rounded-lg flex flex-col col-span-12 sm:col-span-6 lg:col-span-3">
 								<!-- == {{ isSelected(item.id) }} == -->
-								<div class="relative flex justify-center rounded">
+								<div class="relative flex justify-center rounded-sm">
 									<Image
 										:src="item.source"
 										:imageCover="true"
-										class="rounded w-full"
+										class="rounded-sm w-full"
 										style="max-width: 300px"
 										:alt="'image alt'" />
 									<!-- 	<div class="absolute top-1.5 left-2">
 										<div
-											class="text-xs inline-flex items-center gap-x-1 rounded select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500"
+											class="text-xs inline-flex items-center gap-x-1 rounded-sm select-none px-1.5 py-0.5 w-fit font-medium bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-500"
 											:theme="13">xx
 											{{ item.state }}
 										</div>

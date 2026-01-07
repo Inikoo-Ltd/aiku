@@ -206,7 +206,7 @@ const onClickDelete = () => {
 												<textarea
 													v-model="confirmationRead"
 													placeholder="Please provide the reason why you want to delete this item..."
-													class="w-full p-2 border border-gray-300 rounded"
+													class="w-full p-2 border border-gray-300 rounded-sm"
 													rows="3"></textarea>
 											</div>
 

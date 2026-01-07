@@ -173,8 +173,8 @@ onUnmounted(() => {
         {{ trans('Do not close this page.') }}
       </p>
       
-      <div class="w-full bg-gray-200 h-2 rounded mt-2">
-        <div class="bg-blue-600 h-2 rounded" :style="{ width: progress + '%' }"></div>
+      <div class="w-full bg-gray-200 h-2 rounded-sm mt-2">
+        <div class="bg-blue-600 h-2 rounded-sm" :style="{ width: progress + '%' }"></div>
       </div>
     </div>
   </Dialog>

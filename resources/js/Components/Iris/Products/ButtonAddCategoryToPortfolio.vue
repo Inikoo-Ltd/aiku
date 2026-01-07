@@ -252,7 +252,7 @@ onMounted(() => {
                     />
                     
                     <div v-if="isLoadingFetchExistenceChannels" class="absolute inset-0">
-                        <div class="h-full w-full skeleton rounded" />
+                        <div class="h-full w-full skeleton rounded-sm" />
                     </div>
                 </div>
             </div>
@@ -263,7 +263,7 @@ onMounted(() => {
         </div>
     </div>
 
-    <a v-else :href="urlLoginWithRedirect()" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+    <a v-else :href="urlLoginWithRedirect()" class="text-center border border-gray-200 text-sm px-3 py-2 rounded-sm text-gray-600 w-full">
         {{ trans("Login / Register to Start") }}
     </a>
 

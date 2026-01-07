@@ -345,7 +345,7 @@ const cancelRename = () => {
 								<template #item="{ element, index }">
 									<div
 										v-if="showWebpage(element)"
-										class="bg-white border border-gray-200 rounded"
+										class="bg-white border border-gray-200 rounded-sm"
 										@contextmenu="(event: any) => openContextMenu(event, element)">
 										<div
 											class="flex justify-between items-center px-3 py-2"
@@ -384,7 +384,7 @@ const cancelRename = () => {
 														v-if="editingIndex === index"
 														v-model="renameValue"
 														:maxlength="MAX_RENAME_LENGTH"
-														class="text-sm font-medium border rounded px-1 py-0.5 w-full"
+														class="text-sm font-medium border rounded-sm px-1 py-0.5 w-full"
 														autofocus
 														@keydown.enter.prevent="saveRename(index)"
 														@keydown.esc.prevent="cancelRename"
@@ -425,7 +425,7 @@ const cancelRename = () => {
 													"
 													v-tooltip="trans('Duplicate this block')"
 													@click.stop.prevent="duplicateBlock(element)"
-													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
+													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded-sm">
 													<FontAwesomeIcon :icon="faCopy" fixed-width />
 												</button>
 
@@ -443,7 +443,7 @@ const cancelRename = () => {
 													@click.stop.prevent="
 														setShowBlock($event, element)
 													"
-													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
+													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded-sm">
 													<FontAwesomeIcon
 														:icon="
 															element.show
@@ -460,7 +460,7 @@ const cancelRename = () => {
 														)
 													"
 													@click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
-													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
+													class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded-sm">
 													<LoadingIcon
 														v-if="
 															isLoadingDeleteBlock === element.id
@@ -485,7 +485,7 @@ const cancelRename = () => {
 						</div>
 						<div
 							v-if="isAddBlockLoading"
-							class="mt-2 skeleton min-h-10 w-full rounded bg-red-500" />
+							class="mt-2 skeleton min-h-10 w-full rounded-sm bg-red-500" />
 					</div>
 				</TabPanel>
 
@@ -558,7 +558,7 @@ const cancelRename = () => {
 	<div
 		v-if="contextMenu.visible"
 		:style="{ top: `${contextMenu.top}px`, left: `${contextMenu.left}px` }"
-		class="fixed z-50 bg-white border border-gray-200 shadow-md rounded text-sm min-w-[140px] overflow-hidden">
+		class="fixed z-50 bg-white border border-gray-200 shadow-md rounded-sm text-sm min-w-[140px] overflow-hidden">
 		<ul>
 			<template v-if="contextMenu.block">
 				<!-- Toggle Visibility -->

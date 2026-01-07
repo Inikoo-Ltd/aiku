@@ -232,7 +232,7 @@ onMounted(() => {
                         noIcon="fal fa-trash-alt"
                     >
                         <template #default="{ changeModel }">
-                            <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                            <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-xs">
                                 <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
                             </div>
                         </template>
@@ -257,7 +257,7 @@ onMounted(() => {
                 :showClear="false"
             >
                 <template #footer="{ value, options }">
-                    <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
+                    <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded-sm flex justify-center items-center text-white text-4xl">
                         <LoadingIcon></LoadingIcon>
                     </div>
 

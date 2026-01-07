@@ -171,7 +171,7 @@ const isLoadingMeta = ref<string | null>(null)
             <!-- Top_selling: Department -->
             <div v-if="top_selling.department.value" class="bg-gray-50 border-gray-200 border rounded-md flex items-center p-6">
                 <div class="flex gap-x-2 items-center">
-                    <div class="p-3 rounded">
+                    <div class="p-3 rounded-sm">
                         <FontAwesomeIcon icon="fal fa-folder-tree" class="text-indigo-500 text-xl" v-tooltip="trans('Department')" fixed-width aria-hidden="true" />
                     </div>
                     <div class="">
@@ -194,7 +194,7 @@ const isLoadingMeta = ref<string | null>(null)
             <!-- Top_selling: Family -->
             <div v-if="top_selling.family.value" class="bg-gray-50 border-gray-200 border rounded-md flex items-center p-6">
                 <div class="flex gap-x-2 items-center">
-                    <div class="p-3 rounded">
+                    <div class="p-3 rounded-sm">
                         <FontAwesomeIcon :icon="top_selling.family.icon" class="text-indigo-500 text-xl" v-tooltip="trans('Family')" fixed-width aria-hidden="true" />
                     </div>
 

@@ -65,9 +65,9 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 <span class="sr-only">{{ trans("Search") }}</span>
                 <FontAwesomeIcon aria-hidden="true" size="sm" icon="fa-regular fa-search" />
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
-                    <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded">⌘</span>
-                    <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded">Ctrl</span>
-                    <span class="ring-1 ring-gray-400 bg-gray-100 px-1.5 py-0.5 text-xs rounded">K</span>
+                    <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded-sm">⌘</span>
+                    <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded-sm">Ctrl</span>
+                    <span class="ring-1 ring-gray-400 bg-gray-100 px-1.5 py-0.5 text-xs rounded-sm">K</span>
                 </div>
                 <SearchBar v-model="showSearchDialog" />
             </button>
@@ -84,10 +84,10 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 
                 <!-- <FontAwesomeIcon icon='fal fa-lamp-desk' size="sm" class='ml-1 text-gray-600' fixed-width aria-hidden='true' /> -->
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
-                    <span v-if="isUserMac" class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 leading-none text-xl rounded">⌘</span>
-                    <span v-else class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 py-0.5 text-xs rounded">Ctrl</span>
-                    <span class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 py-0.5 text-xs rounded">Shift</span>
-                    <span class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-1.5 py-0.5 text-xs rounded">K</span>
+                    <span v-if="isUserMac" class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 leading-none text-xl rounded-sm">⌘</span>
+                    <span v-else class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 py-0.5 text-xs rounded-sm">Ctrl</span>
+                    <span class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 py-0.5 text-xs rounded-sm">Shift</span>
+                    <span class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-1.5 py-0.5 text-xs rounded-sm">K</span>
                 </div>
                 <AskBot v-model="showAskBot" />
             </button>

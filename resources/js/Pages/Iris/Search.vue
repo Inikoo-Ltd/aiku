@@ -280,7 +280,7 @@ console.log("layout", layout)
 }
 
 .lb-quick-searches__heading {
-    @apply m-0 flex-grow text-center max-w-64 px-2 py-1 text-base rounded !important;
+    @apply m-0 flex-grow text-center max-w-64 px-2 py-1 text-base rounded-sm !important;
     border: 1px solid color-mix(in srgb, var(--iris-color-0) 40%, transparent) !important;
 }
 
