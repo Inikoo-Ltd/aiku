@@ -13,37 +13,40 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use App\Models\Comms\Mailshot;
+use Illuminate\Support\Carbon;
 
 class RunNewsletterScheduled
 {
     use AsAction;
     public string $jobQueue = 'default-long';
     public string $commandSignature = 'run-newsletter-scheduled';
-    public string $commandDescription = 'Run newsletter scheduled';
 
     public function handle(): void
     {
-        // TODO: Implement newsletter scheduled run logic
-        // use mailshot as main table
+        $currentDateTime = Carbon::now()->utc();
 
+        // use mailshot as main table
         $newsletterQuery = QueryBuilder::for(Mailshot::class);
         $newsletterQuery->where('type', MailshotTypeEnum::NEWSLETTER);
         $newsletterQuery->where('state', MailshotStateEnum::SCHEDULED);
+        $newsletterQuery->whereNull('deleted_at');
+        $newsletterQuery->whereNull('cancelled_at');
+        $newsletterQuery->whereNull('stopped_at');
         $newsletterQuery->whereNull('sent_at');
+        $newsletterQuery->whereNull('start_sending_at');
         $newsletterQuery->whereNull('source_id'); // to avoid resending newsletter that imported from Aurora
         $newsletterQuery->whereNull('source_alt_id'); // to avoid resending newsletter that imported from Aurora
         $newsletterQuery->whereNull('source_alt2_id'); // to avoid resending newsletter that imported from Aurora
-        $newsletterQuery->where('scheduled_at', '<=', now()); // Note: update this condition
+        $newsletterQuery->whereRaw("scheduled_at AT TIME ZONE 'UTC' <= ?", [$currentDateTime]); // make sure have save time zone before compare
 
         foreach ($newsletterQuery->cursor() as $newsletter) {
             ProcessSendNewsletter::dispatch($newsletter);
+            //TODO: update the mailshot state to SENT
         }
-
     }
 
     public function asCommand(): void
     {
         $this->run();
     }
-
 }
