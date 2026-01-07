@@ -56,12 +56,11 @@ class StoreProductFromMasterProduct extends GrpAction
                     }
 
                     $variant = null;
+                    $isMain=$masterAsset->is_main;
 
                     if ($masterAsset->masterVariant) {
-
-
+                        $isMain=false;
                         $variant = $masterAsset->masterVariant->variants()->where('shop_id', $shop->id)->first();
-
                         if (!$variant) {
                             $variant = StoreVariantFromMaster::make()->action(
                                 $masterAsset->masterVariant,
@@ -71,9 +70,6 @@ class StoreProductFromMasterProduct extends GrpAction
                            ]
                             );
                         }
-
-
-
                     }
 
 
@@ -92,7 +88,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
 
-                        'is_main'           => !$variant,
+                        'is_main'           => $isMain,
                         'is_for_sale'       => $masterAsset->status,
                         'is_minion_variant' => (bool)$variant,
                         'variant_id'        => $variant->id
