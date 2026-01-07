@@ -214,19 +214,7 @@ class StoreShop extends OrgAction
                 );
                 SeedAikuScopedSections::make()->seedFulfilmentAikuScopedSection($fulfilment);
             } else {
-                SeedShopPermissions::run($shop);
-                SeedAikuScopedSections::make()->seedShopAikuScopedSection($shop);
-
-
-                $orgAdmins = $organisation->group->users()->with('roles')->get()->filter(
-                    fn ($user) => $user->roles->where('name', "org-admin-$organisation->id")->toArray()
-                );
-
-                foreach ($orgAdmins as $orgAdmin) {
-                    UserAddRoles::run($orgAdmin, [
-                        Role::where('name', RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $shop))->first()
-                    ]);
-                }
+                AsyncShopPermissions::dispatch($organisation, $shop);
             }
 
 
