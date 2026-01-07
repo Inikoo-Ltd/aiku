@@ -94,7 +94,7 @@ const onSubmitSubscribe = async () => {
 									id="email-address"
 									autocomplete="email"
 									required
-									class="pl-9 text-gray-700 flex-1 w-full min-w-0 rounded-md bg-white px-3 py-1.5 text-base  outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+									class="pl-9 text-gray-700 flex-1 w-full min-w-0 rounded-md bg-white px-3 py-1.5 text-base  outline -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
 									:placeholder="fieldValue?.value?.input?.placeholder"
 									:disabled="isLoadingSubmit"
 								/>
@@ -102,7 +102,7 @@ const onSubmitSubscribe = async () => {
 							</div>
 							<div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
 								<button type="submit"
-									XXclass="flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+									XXclass="flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
 									class="relative rounded-lg w-full transition-all"
 									:style="getStyles(fieldValue?.button?.container?.properties, screenType)"
 								>
