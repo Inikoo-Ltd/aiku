@@ -54,27 +54,9 @@ class StoreProductFromMasterProduct extends GrpAction
                         ];
                     }
 
-                    $variant = null;
+
                     $isMain = $masterAsset->is_main;
-
-                    if ($masterAsset->masterVariant) {
-                        $isMain = false;
-
-                        $variant = $masterAsset->masterVariant->variants()->where('shop_id', $shop->id)->first();
-                        if (!$variant) {
-                            // Need to fetch leader product, otherwise won't work. So it would be better to place this 
-                            // Only need this, the other fields are handled by the trait function (WithVariantDataPreparation)
-                            $variant = StoreVariantFromMaster::make()->action(
-                                $masterAsset->masterVariant,
-                                $shop,
-                                [
-                                    'data'              => $masterAsset->masterVariant->data,
-                                ]
-                            );
-                        }
-                    }
-
-                    $data = [
+                    $data   = [
                         'code'              => $masterAsset->code,
                         'name'              => $masterAsset->name,
                         'description'       => $masterAsset->description,
@@ -90,8 +72,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         'status'            => ProductStatusEnum::FOR_SALE,
                         'is_main'           => $isMain,
                         'is_for_sale'       => $masterAsset->status,
-                        'is_minion_variant' => (bool)$variant,
-                        'variant_id'        => $variant->id
+                        'is_minion_variant' => !$isMain,
                     ];
 
                     if (count($tradeUnits) > 1) {
@@ -107,17 +88,9 @@ class StoreProductFromMasterProduct extends GrpAction
                         data_set($data, 'family_id', $productCategory->id);
                         data_set($data, 'trade_units', $tradeUnits);
 
-                        // Don't create Webpage if it's marked as is_minion
-                        $this->updateFoundProduct($product, $data, !$variant);
 
-                        $leader = $masterAsset->masterVariant->leaderMasterProduct->products()->where('shop_id', $shop->id)->first();
-                        if ($leader->id == $product->id) {
-                            $product->update([
-                                'is_main' => true,
-                                'is_minion_variant' => false,
-                                'is_variant_leader' => true,
-                            ]);
-                        }
+                        $this->updateFoundProduct($product, $data, $isMain);
+
 
                         continue;
                     }
@@ -128,23 +101,15 @@ class StoreProductFromMasterProduct extends GrpAction
                     CloneProductImagesFromTradeUnits::run($product);
                     $product->refresh();
 
-                    $leader = $masterAsset->masterVariant->leaderMasterProduct->products()->where('shop_id', $shop->id)->first();
-                    if ($leader->id == $product->id) {
-                        $product->update([
-                            'is_main' => true,
-                            'is_minion_variant' => false,
-                            'is_variant_leader' => true,
-                        ]);
-                    }
-
-
-                    // Don't create a Webpage if it's marked as is_minion
-                    if (!$variant) {
+                    if ($isMain) {
                         $webpage = StoreProductWebpage::run($product);
                         PublishWebpage::make()->action($webpage, [
                             'comment' => 'first publish'
                         ]);
                     }
+
+                    $product = $this->setVariantData($product, $masterAsset);
+
 
                     TranslateModel::dispatch(
                         model: $product,
@@ -162,11 +127,48 @@ class StoreProductFromMasterProduct extends GrpAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
+    public function setVariantData(Product $product, MasterAsset $masterAsset): Product
+    {
+        $masterVariant = $masterAsset->masterVariant;
+
+        if ($masterVariant) {
+            $variant = $masterAsset->masterVariant->variants()->where('shop_id', $product->shop->id)->first();
+            if (!$variant) {
+                $variant = StoreVariantFromMaster::make()->action(
+                    $masterAsset->masterVariant,
+                    $product->shop,
+                    [
+                        'data' => $masterAsset->masterVariant->data,
+                    ]
+                );
+            }
+            $product->update([
+                'variant_id' => $variant->id,
+            ]);
+            $leader = $masterAsset->masterVariant->leaderMasterProduct->products()->where('shop_id', $product->shop->id)->first();
+            if ($leader->id == $product->id) {
+                $product->update([
+                    'is_main'           => true,
+                    'is_minion_variant' => false,
+                    'is_variant_leader' => true,
+                ]);
+            }
+        }
+        return $product;
+    }
+
+
     public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage): void
     {
         $product = UpdateProduct::run($product, $modelData);
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
+        if ($product->masterProduct) {
+            $this->setVariantData($product, $product->masterProduct);
+        }
         if ($createWebpage && $product->webpage === null) {
             $webpage = StoreProductWebpage::run($product);
             PublishWebpage::make()->action($webpage, [
@@ -182,8 +184,8 @@ class StoreProductFromMasterProduct extends GrpAction
     public function rules(): array
     {
         return [
-            'shop_products' => ['sometimes', 'array'],
-            'is_minion_variant'      => ['sometimes', 'boolean'],
+            'shop_products'     => ['sometimes', 'array'],
+            'is_minion_variant' => ['sometimes', 'boolean'],
         ];
     }
 
