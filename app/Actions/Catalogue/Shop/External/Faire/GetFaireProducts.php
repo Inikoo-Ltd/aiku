@@ -45,6 +45,9 @@ class GetFaireProducts extends OrgAction
                     'trade_config' => ProductTradeConfigEnum::AUTO,
                     'status' => ProductStatusEnum::FOR_SALE,
                     'state' => ProductStateEnum::ACTIVE,
+                    'data' => [
+                        'faire' => $variant
+                    ]
                 ], strict: false);
 
                 StoreHistoricAsset::run($product, []);
