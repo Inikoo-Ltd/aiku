@@ -39,6 +39,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import { useLayoutStore } from "@/Stores/layout"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
   faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload
@@ -55,6 +57,11 @@ const props = defineProps<{
   showcase?: {}
   history?: {}
   shops?: {}
+  organisations_list: {
+    [key: string]: {
+      label: string
+    }
+  }
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -72,12 +79,36 @@ const component = computed(() => {
   return components[currentTab.value];
 });
 
+
+// Section: create shop
+function transformObjectToArray(obj) {
+  const result = [];
+
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      result.push({
+        label: obj[key].label,
+        value: key
+      });
+    }
+  }
+
+  return result;
+}
+const isLoadingVisit = ref(false)
 const createShop = () => {
   router.visit(route('grp.masters.master_shops.show.shop.create', {
-    masterShop: route().params['masterShop']
-  }))
+    masterShop: route().params['masterShop'],
+    organisation: selectedOrganisation.value,
+  }), {
+    onStart: () => {
+      isLoadingVisit.value = true
+    }
+  })
 }
-
+const organisationList = transformObjectToArray(props.organisations_list)
+const selectedOrganisation = ref(null)
+const isOpenModalAddShop = ref(false)
 </script>
 
 
@@ -86,7 +117,7 @@ const createShop = () => {
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
         <template #otherBefore>
-          <Button v-if="currentTab == 'shops' && layout.app.environment !== 'production'" :type="'edit'" v-on:click="createShop">
+          <Button v-if="currentTab == 'shops' && layout.app.environment !== 'production'" :type="'edit'" @click="isOpenModalAddShop = true">
             <FontAwesomeLayers class="me-2">
               <FontAwesomeIcon :icon="faStoreAlt"/>
               <FontAwesomeIcon :icon="faPlusCircle" style="left: unset; right: -12px; bottom: -22px; width: 75%;"/>
@@ -95,6 +126,40 @@ const createShop = () => {
           </Button>
         </template>
   </PageHeading>
+
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
   <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
+
+  <Modal :isOpen="isOpenModalAddShop" width="w-full max-w-lg" @close="isOpenModalAddShop = false">
+      <div>
+        <div class="font-bold text-2xl text-center mb-4">
+          {{ trans("Create Shop") }}
+        </div>
+
+        <div class="">
+          {{ trans("Select organisation for the new shop") }}:
+        </div>
+
+        <div>
+          <PureMultiselect
+            v-model="selectedOrganisation"
+            placeholder="Select one option"
+            :options="organisationList"
+            required
+          />
+        </div>
+
+        <div class="mt-6">
+          <Button
+            v-tooltip="selectedOrganisation ? '' : 'Select an organisation to create shop'"
+            :label="trans('Create shop')"
+            :loading="isLoadingVisit"
+            :disabled="!selectedOrganisation"
+            @click="() => createShop()"
+            iconRight="fal fa-arrow-right"
+            full
+          />
+        </div>
+      </div>
+  </Modal>
 </template>
