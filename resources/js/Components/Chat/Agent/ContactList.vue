@@ -151,6 +151,10 @@ const back = () => {
 	selectedSession.value = null
 }
 
+const userName = computed(() => {
+	return layout?.user?.username
+})
+
 const handleSendMessage = async (text: string) => {
 	if (!selectedSession.value?.ulid) return
 
@@ -160,7 +164,7 @@ const handleSendMessage = async (text: string) => {
 		const payload = {
 			message_text: text,
 			message_type: "text",
-			sender_type: "agent",
+			sender_type: userName.value,
 		}
 
 		const assignRoute: routeType = {
@@ -393,6 +397,7 @@ const tabClass = (tab: string) => {
 					<MessageAreaAgent
 						:messages="messages"
 						:session="selectedSession"
+						:user-name="userName"
 						@back="back"
 						@send-message="handleSendMessage"
 						@close-session="closeSession"
