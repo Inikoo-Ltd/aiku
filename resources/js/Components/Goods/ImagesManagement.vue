@@ -357,7 +357,7 @@ function onDeleteFilesInList(categoryBox: any) {
 
         <!-- Right: Image List -->
         <div
-            class="lg:col-span-1 flex flex-col p-5 bg-white rounded-xl shadow-sm border h-fit max-h-[600px] overflow-auto">
+            class="lg:col-span-1 flex flex-col p-5 bg-white rounded-xl shadow-xs border h-fit max-h-[600px] overflow-auto">
             <!-- Header -->
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-base font-semibold text-gray-700">

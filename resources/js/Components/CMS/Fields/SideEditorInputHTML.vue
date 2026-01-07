@@ -22,7 +22,7 @@ const model = defineModel<string | null>()
     <Editor v-model="model" :uploadImageRoute="props.uploadRoutes">
       <template #editor-content="{ editor }">
         <div
-          class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm transition-all duration-200 focus-within:border-blue-400"
+          class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-xs transition-all duration-200 focus-within:border-blue-400"
           :style="{ minHeight: `${props.rows * 24}px` }"
         >
           <EditorContent :editor="editor" class="editor-content" />

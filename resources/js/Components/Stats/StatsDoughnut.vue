@@ -36,7 +36,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div class="relative px-5 py-4 rounded-lg bg-white border border-indigo-100 shadow tabular-nums min-w-72">
+    <div class="relative px-5 py-4 rounded-lg bg-white border border-indigo-100 shadow-sm tabular-nums min-w-72">
         <div class="absolute right-4 h-10 aspect-square rounded-md text-white flex justify-center items-center" :class='stat.sticker.class'>
             <FontAwesomeIcon :icon='stat.sticker.icon' fixed-width aria-hidden='true' />
         </div>

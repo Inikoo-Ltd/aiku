@@ -220,7 +220,7 @@ onMounted(() => {
     </PageHeading>
 
     <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 py-4">
-        <div v-for="n in 2" :key="n" class="p-4 border border-gray-200 rounded-lg shadow-sm space-y-4">
+        <div v-for="n in 2" :key="n" class="p-4 border border-gray-200 rounded-lg shadow-xs space-y-4">
             <Skeleton height="1.25rem" width="60%" class="rounded" />
             <Skeleton height="1.25rem" width="80%" class="rounded" />
             <Skeleton height="1.25rem" width="80%" class="rounded" />
@@ -230,7 +230,7 @@ onMounted(() => {
 
     <div v-if="!isLoading && data" class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 pt-4">
         <!-- Box 1: Shipping -->
-        <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
+        <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-xs bg-white">
             <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Shipping") }}</h3>
 
             <div v-if="data.delivery_note?.delivery_address">
@@ -250,7 +250,7 @@ onMounted(() => {
         </BoxStatPallet>
 
         <!-- Box 2: Delivery Note -->
-        <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
+        <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-xs bg-white">
             <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Delivery Note") }}</h3>
 
             <div class="space-y-1 text-sm text-gray-700">

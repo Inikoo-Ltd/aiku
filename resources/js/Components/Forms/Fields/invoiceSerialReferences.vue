@@ -23,7 +23,7 @@ const props = defineProps<{
 
 <template>
   <div>
-    <div v-for="(option, index) in fieldData?.options" :key="index" class="rounded-2xl border shadow-sm mb-4 bg-white"
+    <div v-for="(option, index) in fieldData?.options" :key="index" class="rounded-2xl border shadow-xs mb-4 bg-white"
       :class="form[fieldName][option.type.key_value] ? 'p-4' : 'p-4'">
       <!-- Header -->
       <div class="flex items-center justify-between" id="custom-switch"

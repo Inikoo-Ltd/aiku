@@ -138,7 +138,7 @@ watch(
         </div>
 
         <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
-          <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+          <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-xs text-sm">
             <span class="text-gray-700 font-medium">
               Showing <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>
               of <span class="font-semibold text-gray-900">{{ dummyProducts.length }}</span>

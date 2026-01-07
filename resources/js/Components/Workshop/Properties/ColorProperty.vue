@@ -35,7 +35,7 @@ const handleColorChange = (newColor: any) => {
         <template #button>
           <div
             v-bind="$attrs"
-            class="overflow-hidden h-7 w-7 rounded-md border border-gray-300 shadow cursor-pointer flex justify-center items-center"
+            class="overflow-hidden h-7 w-7 rounded-md border border-gray-300 shadow-sm cursor-pointer flex justify-center items-center"
             :style="{ background: localColor }"
           />
         </template>

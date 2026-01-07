@@ -477,7 +477,7 @@ watch(
                 <!-- Section: Results  -->
                 <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
-                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-xs text-sm">
                         <span class="font-medium">
                             {{ trans("Showing") }}
                             <span :class="['font-semibold', `text-[--theme-color-0]`]">
@@ -499,7 +499,7 @@ watch(
                <div :class="responsiveGridClass" class="grid gap-6 p-4"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="isLoadingInitial">
-                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
+                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-xs bg-white">
                             <Skeleton height="200px" class="mb-3" />
                             <Skeleton width="80%" class="mb-2" />
                             <Skeleton width="60%" class="mb-2" />

@@ -62,8 +62,8 @@ async function toggle(index: number) {
    <div class="mx-auto">
     <ul class="space-y-3">
       <li v-for="(dept, index) in props.dataList.data" :key="dept.slug"
-        class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow" :class="[
-          'rounded-lg shadow-sm transition-shadow',
+        class="border border-gray-200 rounded-lg shadow-xs hover:shadow-md transition-shadow" :class="[
+          'rounded-lg shadow-xs transition-shadow',
           dept.slug === props.active
             ? 'border border-blue-500 ring-2 ring-blue-300 shadow-md'
             : 'border border-gray-200 hover:shadow-md hover:border-gray-300'

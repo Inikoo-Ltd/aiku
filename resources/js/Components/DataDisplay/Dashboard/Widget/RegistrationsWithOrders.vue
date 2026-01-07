@@ -56,7 +56,7 @@ const getYoYComparison = (metric: string) => {
 </script>
 
 <template>
-    <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
+    <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-xs rounded-lg">
         <div class="text-sm w-full">
             <p class="text-lg font-bold mb-1">{{ trans('Registrations with Orders') }}</p>
             <p class="flex flex-col">

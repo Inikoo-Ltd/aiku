@@ -286,7 +286,7 @@ const isLoadingVisit = ref<number | null>(null)
 		<!-- Customer Stats Card -->
 		<dl class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-3">
 			<div
-				class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums">
+				class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow-sm tabular-nums">
 				<dt class="text-base font-medium text-gray-400">
 					{{ customerStats.label }}
 				</dt>
@@ -349,7 +349,7 @@ const isLoadingVisit = ref<number | null>(null)
 		<!-- RFM Segments Cards -->
 		<div v-if="data.segments" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 			<!-- Recency Card -->
-			<div class="bg-white rounded-lg shadow p-6">
+			<div class="bg-white rounded-lg shadow-sm p-6">
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
 						<FontAwesomeIcon :icon="['fas', 'calendar-alt']" class="text-blue-500" />
@@ -367,7 +367,7 @@ const isLoadingVisit = ref<number | null>(null)
 			</div>
 
 			<!-- Frequency Card -->
-			<div class="bg-white rounded-lg shadow p-6">
+			<div class="bg-white rounded-lg shadow-sm p-6">
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
 						<FontAwesomeIcon :icon="['fas', 'sync-alt']" class="text-green-500" />
@@ -385,7 +385,7 @@ const isLoadingVisit = ref<number | null>(null)
 			</div>
 
 			<!-- Monetary Card -->
-			<div class="bg-white rounded-lg shadow p-6">
+			<div class="bg-white rounded-lg shadow-sm p-6">
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
 						<FontAwesomeIcon :icon="['fas', 'chart-line']" class="text-purple-500" />

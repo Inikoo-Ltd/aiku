@@ -116,7 +116,7 @@ const warehouseChange = (value) => {
                                     <div class="mt-1">
                                         <input v-model="webUserForm.username" id="username" name="username" type="text"
                                             autocomplete="email"
-                                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+                                            class="block w-full rounded-md border-gray-300 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
                                     </div>
                                 </div>
                             </div>

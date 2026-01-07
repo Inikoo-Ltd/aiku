@@ -366,7 +366,7 @@ const noLeader = computed(() => {
 
 <template>
   <div class="flex justify-center mt-6">
-    <div class="w-full max-w-6xl p-4 bg-white rounded-lg shadow space-y-4">
+    <div class="w-full max-w-6xl p-4 bg-white rounded-lg shadow-sm space-y-4">
 
       <!-- VARIANTS -->
       <div>

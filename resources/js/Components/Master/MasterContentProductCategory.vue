@@ -23,7 +23,7 @@ const current = ref(0)
 </script>
 
 <template>
-    <div class="flex bg-white border overflow-hidden shadow-sm">
+    <div class="flex bg-white border overflow-hidden shadow-xs">
 
         <!-- Sidebar Compact -->
         <aside class="flex flex-col w-14 py-4 border-r bg-gray-50/80 backdrop-blur-sm">
@@ -33,7 +33,7 @@ const current = ref(0)
                 @click="current = index"
                 class="relative group flex items-center justify-center mx-2 mb-2 p-3 rounded-xl transition-all"
                 :class="current === index
-                    ? 'buttonPrimary shadow-sm'
+                    ? 'buttonPrimary shadow-xs'
                     : 'text-gray-600 hover:bg-gray-100'
                 "
             >

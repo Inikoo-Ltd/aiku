@@ -55,7 +55,7 @@ const compSelectedTradeUnit = computed(() => {
 
 <template>
     <div>
-        <Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
+        <Fieldset class="bg-white rounded-xl shadow-xs w-full md:w-auto" legend="Trade units">
             <template #legend>
                 <div class="flex items-center gap-2 font-bold">
                     <FontAwesomeIcon icon="fal fa-atom" class="text-gray-400" fixed-width />

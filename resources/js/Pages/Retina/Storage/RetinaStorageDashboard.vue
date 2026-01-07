@@ -109,7 +109,7 @@ function routePallet(storageData: any, key: string) {
             <!-- Section: Profile box -->
             <div>
                <!--  <div
-                    class="h-fit bg-slate-50 border border-slate-200 text-retina-600 p-6 flex flex-col justify-between rounded-lg shadow overflow-hidden">
+                    class="h-fit bg-slate-50 border border-slate-200 text-retina-600 p-6 flex flex-col justify-between rounded-lg shadow-sm overflow-hidden">
                     <div class="w-full">
                         <h2 v-if="customer?.name" class="text-3xl font-bold"> {{ customer?.name }}</h2>
                         <h2 v-else class="text-3xl font-light italic brightness-75">{{ trans('No name') }}</h2>

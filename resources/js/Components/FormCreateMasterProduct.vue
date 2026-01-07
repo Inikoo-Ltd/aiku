@@ -410,7 +410,7 @@ const successEditTradeUnit = (data) => {
                     <template #info="{ data }">
                         <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
                             <!-- Product Image -->
-                            <div class="w-12 h-12 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">
+                            <div class="w-12 h-12 rounded-lg border border-gray-200 shadow-xs flex items-center justify-center ">
                                 <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image" object-cover />
                                 <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70" fixed-width aria-hidden="true" />
                             </div>
@@ -483,7 +483,7 @@ const successEditTradeUnit = (data) => {
                     <!-- Image Upload Box -->
 
                     <div class="flex">
-                        <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-sm"
+                        <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-xs"
                             @click="(e) => form.trade_units.length > 1 ? chooseImage(e) : null">
 
                             <!-- Gambar baru (upload preview) -->
@@ -503,7 +503,7 @@ const successEditTradeUnit = (data) => {
                             <!-- Tombol remove -->
                             <button v-if="previewUrl || form.image && form.trade_units.length > 1"
                                 @click.stop="resetImage"
-                                class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
+                                class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow-sm hover:text-red-500">
                                 <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
                             </button>
                         </div>

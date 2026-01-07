@@ -204,7 +204,7 @@ const valueTableFilter = ref({})
 
 <!--        <Column field="description" header="Description">-->
 <!--            <template #body="{ data }">-->
-<!--                <div v-if="data.description" v-html="data.description" class="h-fit max-h-32 overflow-y-auto shadow border border-gray-300 px-1 rounded">-->
+<!--                <div v-if="data.description" v-html="data.description" class="h-fit max-h-32 overflow-y-auto shadow-sm border border-gray-300 px-1 rounded">-->
 
 <!--                </div>-->
 <!--                <div v-else class="text-gray-400 italic text-sm">-->

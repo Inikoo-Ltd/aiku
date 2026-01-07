@@ -290,13 +290,13 @@ const contactPreferencesData = computed(() => {
         <!-- Section: Profile box -->
         <div>
 
-            <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5">
+            <div class="rounded-lg shadow-xs ring-1 ring-gray-900/5">
                 <!-- Status state section -->
                 <div v-if="layout?.app?.environment === 'local'" class="p-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
                     <div class="flex items-center gap-3">
                         <Tag :severity="prospectStateSeverity" :value="data.prospect.state_label" class="text-sm font-medium" />
                         <div v-if="data.prospect.state === 'success' || data.prospect.state === 'fail' || data.prospect.state === 'contacted'" 
-                             class="flex items-center gap-2 px-3 py-1 bg-white rounded-lg shadow-sm border border-gray-200">
+                             class="flex items-center gap-2 px-3 py-1 bg-white rounded-lg shadow-xs border border-gray-200">
                             <span class="text-sm text-gray-600">{{ trans('Status') }}:</span>
                             <span class="text-sm font-semibold text-gray-900">
                                 {{ data.prospect.state === 'success' ? data.prospect.success_status_label : 

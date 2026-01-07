@@ -333,12 +333,12 @@ defineExpose({
           <div v-if="editingIds.has(item.id)" class="">
             <!-- Original price tag -->
             <div
-              class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm whitespace-nowrap my-2">
+              class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-xs whitespace-nowrap my-2">
               orig: {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
             </div>
             <!-- Estimated price tag -->
             <div
-              class="bg-yellow-100 text-yellow-800 px-4 py-1.5 rounded-full text-sm font-medium shadow-sm whitespace-nowrap inline-flex items-center justify-center">
+              class="bg-yellow-100 text-yellow-800 px-4 py-1.5 rounded-full text-sm font-medium shadow-xs whitespace-nowrap inline-flex items-center justify-center">
               est: {{ locale.currencyFormat(item.currency_code, (item.price *
                 createNewQty[item.id].quantity_ordered).toFixed(2)) }}
             </div>

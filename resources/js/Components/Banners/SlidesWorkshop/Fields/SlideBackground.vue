@@ -182,7 +182,7 @@ const onPickImage = (res) => {
 
         <!-- Preview -->
         <div class="flex justify-center w-full">
-            <div class="w-fit max-h-20 lg:max-h-32 border border-gray-300 rounded-md overflow-hidden shadow transition-all duration-200 ease-in-out" :class="[
+            <div class="w-fit max-h-20 lg:max-h-32 border border-gray-300 rounded-md overflow-hidden shadow-sm transition-all duration-200 ease-in-out" :class="[
                 bannerType == 'square'
                     ? 'aspect-square'  // If banner is a square
                     : screenView
@@ -255,7 +255,7 @@ const onPickImage = (res) => {
                     <div class="h-8 flex items-center w-fit gap-x-1.5">
                         <div v-for="bgColor in backgroundColorList"
                             @click="onChangeBackgroundColor(bgColor)"
-                            class="w-full rounded h-full aspect-square shadow cursor-pointer"
+                            class="w-full rounded h-full aspect-square shadow-sm cursor-pointer"
                             :class="data?.background?.[screenView || 'desktop'] ===  bgColor && data?.layout.backgroundType?.[screenView || 'desktop'] === 'color' 
                                 ? 'ring-2 ring-offset-2 ring-gray-600'
                                 : 'hover:ring-2 hover:ring-offset-0 hover:ring-gray-500'"

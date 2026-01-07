@@ -62,7 +62,7 @@ defineProps({
             v-if="filter.type === 'select'"
             :name="filter.key"
             :value="filter.value"
-            class="block focus:ring-orange-500 focus:border-orange-500 w-full shadow-sm text-sm border-gray-300 rounded-md"
+            class="block focus:ring-orange-500 focus:border-orange-500 w-full shadow-xs text-sm border-gray-300 rounded-md"
             @change="onFilterChange(filter.key, $event.target.value)"
           >
             <option

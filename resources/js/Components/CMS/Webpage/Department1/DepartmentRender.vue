@@ -13,7 +13,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
+  <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition duration-300">
     <Image
       v-if="data.image"
       :src="data.image"

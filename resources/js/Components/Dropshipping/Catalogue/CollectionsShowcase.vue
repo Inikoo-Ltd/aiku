@@ -121,7 +121,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
       <!-- Department List -->
       <div class="space-y-6">
         <!-- Department Card -->
-        <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
               <h2 class="text-sm font-semibold text-gray-800">{{trans('Belongs to Department')}}</h2>
@@ -132,7 +132,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
 
           <div v-if="data.parent_departments?.length" class="space-y-1 max-h-64 overflow-auto">
             <div v-for="dept in data.parent_departments" :key="dept.id"
-              class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
+              class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-xs transition">
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
                 <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No name' }}</p>
@@ -148,7 +148,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         </div>
 
         <!-- Sub Department Card -->
-        <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
               <h2 class="text-sm font-semibold text-gray-800">{{trans('Belongs to Sub Department')}}</h2>
@@ -159,7 +159,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
 
           <div v-if="data.parent_subdepartments?.length" class="space-y-1 max-h-64 overflow-auto">
             <div v-for="dept in data.parent_subdepartments" :key="dept.id"
-              class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
+              class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-xs transition">
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
                 <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No Name' }}</p>

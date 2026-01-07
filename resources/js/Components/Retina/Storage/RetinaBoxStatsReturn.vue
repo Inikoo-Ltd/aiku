@@ -318,7 +318,7 @@ const disableBeforeToday = (date: Date) => {
 							<span
                 aria-hidden="true"
                 :class="[computedEnabled ? 'translate-x-5' : 'translate-x-0']"
-                class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow transition duration-200 ease-in-out" />
+                class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow-sm transition duration-200 ease-in-out" />
             </Switch>
             <SwitchLabel as="span" class="ml-3 text-sm font-medium text-gray-900">
               {{ trans("Collection") }}

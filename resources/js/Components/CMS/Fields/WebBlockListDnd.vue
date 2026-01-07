@@ -68,7 +68,7 @@ const allowMove = () => false
     :move="allowMove" :disabled="true">
     <template #item="{ element }">
       <div @click="() => onPick(element)" :class="[
-        'relative bg-white border rounded shadow-sm overflow-hidden cursor-pointer',
+        'relative bg-white border rounded shadow-xs overflow-hidden cursor-pointer',
         selectedWeblock === element.code
           ? 'border-indigo-500 ring-2 ring-indigo-300'
           : 'border-gray-200'

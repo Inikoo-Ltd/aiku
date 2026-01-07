@@ -228,7 +228,7 @@ const updateCollection = (value: boolean) => {
             <template v-else-if="summary?.products?.payment?.pay_status != 'no_need' && !isInBasket">
                 <div class="w-full mb-2.5">
                     <!-- Section: pay with balance (if order Submit without paid) -->
-                    <div class="w-full rounded-md shadow pxb-2 isolate border overflow-hidden"
+                    <div class="w-full rounded-md shadow-sm pxb-2 isolate border overflow-hidden"
                         :class="[
                             Number(summary.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
                         ]"

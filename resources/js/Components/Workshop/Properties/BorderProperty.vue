@@ -118,7 +118,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
                     closeButton
                 >
                     <template #button>
-                        <div v-bind="$attrs" class="overflow-hidden h-7 w-7 rounded-md border border-gray-300 shadow cursor-pointer flex justify-center items-center" :style="{
+                        <div v-bind="$attrs" class="overflow-hidden h-7 w-7 rounded-md border border-gray-300 shadow-sm cursor-pointer flex justify-center items-center" :style="{
                             border: `4px solid ${get(model, 'color', 'transparent')}`
                         }"
                             v-tooltip="!(get(model, 'top.value', 0) || get(model, 'right.value', 0) || get(model, 'bottom.value', 0) || get(model, 'left.value', 0)) ? trans('Will not show due have no border width') : undefined"

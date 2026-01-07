@@ -110,7 +110,7 @@ const typePallet = [
                 <label for="message" class="text-xs">{{ trans('Message') }}:</label>
                 <div class="mt-1">
                     <!-- <textarea v-model.trim="form.message" id="message" name="message" rows="3"
-                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" /> -->
+                        class="block w-full rounded-md border-gray-300 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" /> -->
                     <PureTextarea v-model.trim="form.message" name="message" placeholder="Add detail about the pallet's status" />
                 </div>
 

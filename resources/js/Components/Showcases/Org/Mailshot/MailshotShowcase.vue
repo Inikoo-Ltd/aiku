@@ -101,7 +101,7 @@ const dataSet = {
     <!-- Preview and chart -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
       <div class="h-auto mb-3">
-        <div class="bg-white p-4 rounded-lg shadow relative overflow-auto">
+        <div class="bg-white p-4 rounded-lg shadow-sm relative overflow-auto">
           <button @click="previewOpen = true"
             class="absolute top-4 right-3 bg-gray-300 text-white px-2 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
             <FontAwesomeIcon :icon="faExpand" />
@@ -112,7 +112,7 @@ const dataSet = {
       </div>
 
       <div class="h-auto mb-3">
-        <div class="bg-white p-4 rounded-lg shadow relative min-h-[28rem] flex justify-center items-center">
+        <div class="bg-white p-4 rounded-lg shadow-sm relative min-h-[28rem] flex justify-center items-center">
           <Pie :data="dataSet" :options="{ responsive: true, maintainAspectRatio: false }" />
           <div v-if="totalValue == 0"
             class="absolute inset-0 flex justify-center items-center bg-gray-100 rounded-lg">

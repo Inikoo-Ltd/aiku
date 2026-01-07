@@ -666,7 +666,7 @@ const calculateVat = (price: number) => {
                          :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
                             <div v-if="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"
-                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm border border-gray-300 rounded">
                                 <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"/>
                             </div>
                             <div>
@@ -721,7 +721,7 @@ const calculateVat = (price: number) => {
                     <template v-if="item.platform_product_data?.name">
                         <div class="flex gap-x-2 items-center">
                             <div v-if="item.platform_product_data?.images?.[0]?.src"
-                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm border border-gray-300 rounded">
                                 <img :src="item.platform_product_data?.images?.[0]?.src"/>
                             </div>
 
@@ -768,7 +768,7 @@ const calculateVat = (price: number) => {
 
                 <template v-else>
                     <div v-if="item.platform_possible_matches?.number_matches && (!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status)" class="w-full flex gap-2 items-center">
-                        <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow overflow-hidden">
+                        <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm overflow-hidden">
                             <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" :alt="item.platform_possible_matches?.matches_labels[0]" />
                         </div>
 
@@ -934,7 +934,7 @@ const calculateVat = (price: number) => {
                                                :alt="item.name"/>-->
                                         <div
                                             class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
-                                            <img :src="item.images?.[0]?.src" class="shadow"/>
+                                            <img :src="item.images?.[0]?.src" class="shadow-sm"/>
                                         </div>
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
@@ -1054,7 +1054,7 @@ const calculateVat = (price: number) => {
                     :placeholder="trans('Enter text')"
                 >
                     <template #editor-content="{ editor }">
-                        <div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
+                        <div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-xs focus-within:border-gray-400">
                             <EditorContent :editor="editor" class="focus:outline-none" />
                         </div>
                     </template>

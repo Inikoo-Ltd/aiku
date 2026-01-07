@@ -57,7 +57,7 @@ const props = defineProps({
                             <span aria-hidden="true" :class="{
                                 'translate-x-5': !column.hidden,
                                 'translate-x-0': column.hidden,
-                            }" class="inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200" />
+                            }" class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transform ring-0 transition ease-in-out duration-200" />
                         </button>
                     </li>
                 </ul>

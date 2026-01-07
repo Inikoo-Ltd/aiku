@@ -24,7 +24,7 @@ const customWidthEnabled = ref(false)
 <template>
   <div class="space-y-5 pt-1 pb-4">
     <!-- Section: Height -->
-    <div class="rounded-lg border border-gray-200 bg-white shadow-sm p-4">
+    <div class="rounded-lg border border-gray-200 bg-white shadow-xs p-4">
       <div class="flex justify-between items-center mb-3">
         <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">
           {{ trans('Height') }}
@@ -83,7 +83,7 @@ const customWidthEnabled = ref(false)
       >
         <span
           aria-hidden="true"
-          class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+          class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out"
           :class="customWidthEnabled ? 'translate-x-5' : 'translate-x-0'"
         />
       </Switch>
@@ -91,7 +91,7 @@ const customWidthEnabled = ref(false)
     </div>
 
     <!-- Section: Width -->
-    <div v-if="customWidthEnabled" class="rounded-lg border border-gray-200 bg-white shadow-sm p-4">
+    <div v-if="customWidthEnabled" class="rounded-lg border border-gray-200 bg-white shadow-xs p-4">
       <div class="flex justify-between items-center mb-3">
         <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">
           {{ trans('Width') }}

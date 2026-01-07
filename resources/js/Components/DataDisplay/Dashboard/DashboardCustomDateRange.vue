@@ -290,7 +290,7 @@ const _popover = ref(null);
                             class="px-3 py-2 text-xs rounded-md transition-colors font-medium flex flex-col items-center"
                             :class="[
                                 selectedQuarter === `${quarter}-${year}`
-                                    ? 'bg-indigo-500 text-white shadow-sm'
+                                    ? 'bg-indigo-500 text-white shadow-xs'
                                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                             ]"
                         >

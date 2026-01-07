@@ -38,7 +38,7 @@ const status = computed(() => ({
 
 <template>
   <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-    <div class="bg-white rounded-lg shadow mb-4 overflow-hidden">
+    <div class="bg-white rounded-lg shadow-sm mb-4 overflow-hidden">
       <slot name="image">
         <div class="w-full aspect-square" :class="props.data?.image ? '' : 'h-32'">
           <Image v-if="props.data?.image" :src="props.data.image"

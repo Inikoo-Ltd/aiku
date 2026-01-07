@@ -114,7 +114,7 @@ function connectToPlatform(routeName, parameters) {
 
 <template>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
-    <div class="rounded-lg shadow">
+    <div class="rounded-lg shadow-sm">
         <div class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
 
             <!-- Tab: Navigation -->

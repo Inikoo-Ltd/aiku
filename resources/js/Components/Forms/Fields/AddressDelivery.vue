@@ -140,7 +140,7 @@ const submitForm = () => {
                                     />
                                     <input v-else v-model="addressValues['administrative_area']" type="text" name="administrative_area"
                                         id="administrative_area"
-                                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
+                                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-xs sm:text-sm border-gray-300 rounded-md" />
                                 </div>
                                 <div v-else>
                                     <label :for="`${addressField}`" class="block text-xs font-medium text-gray-700">
@@ -149,7 +149,7 @@ const submitForm = () => {
                                     </label>
                                     <input @input="handleChange()" v-model="addressValues[addressField]" type="text"
                                         name="address_line_2" :id="`${addressField}`"
-                                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
+                                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-xs sm:text-sm border-gray-300 rounded-md" />
                                 </div>
                             </div>
                             <div class="w-5 self-end">

@@ -101,19 +101,19 @@ const getTooltip = (current: number, previous: number, delta: number, deltaPerce
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <!-- Total Sales Card -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-xs">
                 <div class="text-sm text-gray-600 mb-2">Total Sales</div>
                 <div class="text-3xl font-bold text-gray-900">{{ formattedTotalSales }}</div>
             </div>
 
             <!-- Total Invoices Card -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-xs">
                 <div class="text-sm text-gray-600 mb-2">Total Invoices</div>
                 <div class="text-3xl font-bold text-gray-900">{{ formattedTotalInvoices }}</div>
             </div>
 
             <!-- Customer Metrics Card -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-xs">
                 <div class="text-sm text-gray-600 mb-2 flex items-center gap-2">
                     <FontAwesomeIcon :icon="faUsers" class="text-gray-500" />
                     Customers
@@ -129,7 +129,7 @@ const getTooltip = (current: number, previous: number, delta: number, deltaPerce
         <!-- Yearly Breakdown -->
         <div class="mb-8">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Yearly Performance</h3>
-            <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-x-auto">
+            <div class="bg-white rounded-lg border border-gray-200 shadow-xs overflow-x-auto">
                 <div class="min-w-max">
                     <!-- Headers -->
                     <div class="grid grid-cols-5 border-b border-gray-200">
@@ -194,7 +194,7 @@ const getTooltip = (current: number, previous: number, delta: number, deltaPerce
         <!-- Quarterly Breakdown -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Quarterly Performance</h3>
-            <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-x-auto">
+            <div class="bg-white rounded-lg border border-gray-200 shadow-xs overflow-x-auto">
                 <div class="min-w-max">
                     <!-- Headers -->
                     <div class="grid grid-cols-5 border-b border-gray-200">

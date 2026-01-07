@@ -286,7 +286,7 @@ watch(currentView, (newVal) => {
 
   <div class="flex h-[calc(100vh-5rem)] bg-gray-100">
     <!-- Sidebar -->
-    <aside v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[380px] bg-white border-r p-4 shadow-sm space-y-4">
+    <aside v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[380px] bg-white border-r p-4 shadow-xs space-y-4">
       <h2 class="text-lg font-bold text-gray-700 border-b pb-2">{{ trans('Blog Settings') }}</h2>
       <div v-if="data?.layout?.web_blocks.length" class="h-[calc(100vh-4rem)] bg-gray-100 overflow-auto">
         <SideEditor v-model="data.layout.web_blocks[0].web_block.layout.data.fieldValue" :panelOpen="openedChildSideEditor"
@@ -300,7 +300,7 @@ watch(currentView, (newVal) => {
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col">
-      <div class="flex items-center justify-between bg-white border-b px-4 py-2 shadow-sm">
+      <div class="flex items-center justify-between bg-white border-b px-4 py-2 shadow-xs">
         <div class="flex items-center gap-3 text-gray-600">
           <ScreenView v-model="currentView" @screenView="(e) => (currentView = e)" />
           <FontAwesomeIcon :icon="faEye" fixed-width class="cursor-pointer hover:text-blue-600"

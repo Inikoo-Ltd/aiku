@@ -182,7 +182,7 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
         checkboxKey='id' :isChecked="(item) => selectedFamily.includes(item.id)" ref="_table">
         <template #cell(image_thumbnail)="{ item: collection }">
             <div class="flex justify-center">
-                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow-sm" />
             </div>
         </template>
         <template #add-on-button>

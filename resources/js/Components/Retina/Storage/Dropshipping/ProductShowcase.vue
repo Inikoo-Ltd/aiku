@@ -141,7 +141,7 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
 
         <div class="flex flex-col md:grid md:grid-cols-4 gap-x-4 gap-y-4 p-4">
             <div class="md:p-5 space-y-5 md:col-span-2">
-                <div class="h-auto w-full aspect-square rounded-lg shadow">
+                <div class="h-auto w-full aspect-square rounded-lg shadow-sm">
                     <ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images">
                         <template #image-thumbnail="{ image, index }">
                             <div class="aspect-square w-full overflow-hidden group relative">
@@ -175,12 +175,12 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                     <div class="flex flex-col">
                         <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
                         <!-- <dd v-if="data?.product?.data?.description_title"
-                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
+                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow-sm"
                             v-html="data?.product?.data?.description_title"></dd> -->
-                        <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
+                        <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow-sm"
                             v-html="data?.product?.data?.description ?? '-'"></dd>
                         <dd v-if="data?.product?.data?.description_extra"
-                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
+                            class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow-sm"
                             v-html="data?.product?.data?.description_extra ?? '-'"></dd>
                     </div>
                     <ProductContentsIris :product="props.data.product.data" :setting="{

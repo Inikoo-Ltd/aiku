@@ -164,7 +164,7 @@ const isLoadingVisit = ref<number | null>(null)
 <template>
 	<div>
 		<dl class="">
-			<div class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums">
+			<div class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow-sm tabular-nums">
 				<dt class="text-base font-medium text-gray-400">
 					{{ customerStats.label }}
 				</dt>

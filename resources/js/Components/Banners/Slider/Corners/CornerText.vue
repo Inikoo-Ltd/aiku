@@ -29,7 +29,7 @@ const props = defineProps<{
 <template>
     <component :is="data?.linkOfText ? 'a' : 'div'" v-if="data?.title || data?.subtitle" :href="`https://${useRemoveHttps(data?.linkOfText)}`" target="_top">
         <div v-if="data?.title" class="pb-1.5 text-gray-100 drop-shadow-md leading-none" :class="data?.fontSize?.fontTitle ?? 'text-[25px] lg:text-[44px]' " :style="`color: ${data?.color}`">{{ data?.title }}</div>
-        <div v-if="data?.subtitle" class="pb-1.5 text-gray-300 drop-shadow text-base italic tracking-widest" :class="data?.fontSize?.fontSubtitle" :style="`color: ${data?.color}`">{{ data?.subtitle }}</div>
+        <div v-if="data?.subtitle" class="pb-1.5 text-gray-300 drop-shadow-sm text-base italic tracking-widest" :class="data?.fontSize?.fontSubtitle" :style="`color: ${data?.color}`">{{ data?.subtitle }}</div>
     </component>
 </template>
 

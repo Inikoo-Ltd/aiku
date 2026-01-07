@@ -130,7 +130,7 @@ const handleDisclosureToggle = (index) => {
                                     <div>
                                         <span class="block text-xs font-semibold text-gray-500">Icon:</span>
                                         <Button type="dashed" @click="toggle" :full="true"
-                                            class="w-full mt-1 text-center bg-white border border-gray-300 rounded-lg shadow-sm">
+                                            class="w-full mt-1 text-center bg-white border border-gray-300 rounded-lg shadow-xs">
                                             <FontAwesomeIcon :icon="item.icon" />
                                         </Button>
                                         <Popover ref="op"

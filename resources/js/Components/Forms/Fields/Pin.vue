@@ -54,7 +54,7 @@ const generateNewPin = async () => {
     <div class="flex  gap-1 flex-wrap rounded-lg" :class="get(form, ['errors', `${fieldName}`]) ? 'errorShake' : ''">
         <template v-if="form[fieldName]">
             <div v-for="(value, index) in Array.from(form[fieldName])" :key="index"
-                class="relative w-10 h-10 flex items-center justify-center text-lg font-medium border border-gray-300 rounded-lg bg-white shadow-sm hover:bg-blue-50 transition duration-150">
+                class="relative w-10 h-10 flex items-center justify-center text-lg font-medium border border-gray-300 rounded-lg bg-white shadow-xs hover:bg-blue-50 transition duration-150">
                 <span>{{ value }}</span>
             </div>
         </template>

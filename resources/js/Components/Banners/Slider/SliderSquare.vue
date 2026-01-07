@@ -123,7 +123,7 @@ onMounted(() => {
 </script>
 
 <template>
- <div class="h-full w-auto relative shadow overflow-hidden mx-auto transition-all duration-200 ease-in-out" :style="{
+ <div class="h-full w-auto relative shadow-sm overflow-hidden mx-auto transition-all duration-200 ease-in-out" :style="{
         backgroundColor: props.data.common.spaceColor,
         aspectRatio:
             $props.view == 'mobile' ? '1/1'

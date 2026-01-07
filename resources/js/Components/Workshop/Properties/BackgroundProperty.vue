@@ -113,7 +113,7 @@ const sizeOptions = [
 
         <!-- === COLOR BACKGROUND === -->
         <div class="flex items-center gap-x-4 h-min" v-tooltip="trans('Color background')">
-            <div class="relative h-12 aspect-square rounded-md shadow">
+            <div class="relative h-12 aspect-square rounded-md shadow-sm">
                 <ColorPicker :color="model.color || '#111111'" @changeColor="(newColor) => {
                     model.color = `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`
                     model.type = 'color'

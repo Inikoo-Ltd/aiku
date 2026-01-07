@@ -69,7 +69,7 @@ const chartOptions = {
 </script>
 
 <template>
-    <div :class="['flex items-center gap-4 p-4 h-32 bg-white border shadow-sm rounded-xl', { hidden: data?.revenue_amount <= 0 }]">
+    <div :class="['flex items-center gap-4 p-4 h-32 bg-white border shadow-xs rounded-xl', { hidden: data?.revenue_amount <= 0 }]">
         <div class="text-xs text-gray-700 w-full">
             <div class="flex items-center gap-3 mb-2">
                 <div class="flex items-center gap-1">

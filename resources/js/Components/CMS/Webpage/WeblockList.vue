@@ -56,7 +56,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="h-[500px] flex flex-col bg-gray-50 border rounded-md shadow-sm overflow-hidden">
+	<div class="h-[500px] flex flex-col bg-gray-50 border rounded-md shadow-xs overflow-hidden">
 		<TabGroup as="div" class="flex flex-col h-full">
 
 			<!-- Tab Headers -->
@@ -98,13 +98,13 @@ onMounted(() => {
 						<div
 							v-for="block in filteredBlocks(tab === 'all' ? allData : categorizedData[tab])"
 							:key="block.id"
-							class="relative h-36 w-52 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md hover:scale-[1.02] transition-transform"
+							class="relative h-36 w-52 border rounded-xl cursor-pointer bg-white shadow-xs hover:shadow-md hover:scale-[1.02] transition-transform"
 							@click="onPickBlock(block)"
 						>
 							<!-- Beta Label -->
 							<div
 								v-if="block.is_in_test"
-								class="absolute top-1 right-1 bg-yellow-500 text-white text-[10px] px-2 py-1 rounded-md shadow"
+								class="absolute top-1 right-1 bg-yellow-500 text-white text-[10px] px-2 py-1 rounded-md shadow-sm"
 							>
 								Beta Test
 							</div>

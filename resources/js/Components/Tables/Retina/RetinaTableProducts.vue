@@ -46,7 +46,7 @@ console.log("RetinaTableProducts.vue", layout)
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: product }">
             <div class="flex justify-center">
-                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow-sm" />
             </div>
         </template>
 

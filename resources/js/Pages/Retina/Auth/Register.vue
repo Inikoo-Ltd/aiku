@@ -243,7 +243,7 @@ onMounted(async () => {
           <label for="shipments-per-week" class="capitalize block text-sm font-medium text-gray-700">{{trans("Shipments Sent PerWeek")}}</label>
           <div class="mt-2">
             <select v-model="form.shipments_per_week" id="shipments-per-week" name="shipments_per_week" 
-              class="block w-full mt-1 py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              class="block w-full mt-1 py-2 px-3 border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="" disabled selected>Select shipments per week</option>
               <option v-for="option in optionsSend" :key="option" :value="option">{{ option }}</option>
             </select>
@@ -319,7 +319,7 @@ onMounted(async () => {
     <!-- Submit Button -->
     <div class="flex justify-end">
       <button type="submit"
-        class="inline-flex items-center px-6 bg-[#C1A027] text-white py-3 border border-transparent text-sm font-medium rounded-md shadow-sm">
+        class="inline-flex items-center px-6 bg-[#C1A027] text-white py-3 border border-transparent text-sm font-medium rounded-md shadow-xs">
         <span v-if="isLoading" class="loader mr-2"></span>
         {{trans("Register")}}
       </button>

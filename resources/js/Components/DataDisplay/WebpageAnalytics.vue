@@ -187,7 +187,7 @@ const handleDateRangeSelected = (range) => {
 			</p>
 		</div>
 
-		<div class="p-8 rounded-lg shadow bg-white space-y-6">
+		<div class="p-8 rounded-lg shadow-sm bg-white space-y-6">
 			<!-- Cards Section -->
 			<div class="grid grid-cols-4 gap-6">
 				<!-- Card: Total Clicks -->
@@ -197,7 +197,7 @@ const handleDateRangeSelected = (range) => {
 							? 'bg-[#4285F4] text-white'
 							: 'bg-white text-[#4285F4] border border-[#4285F4]',
 					]"
-					class="relative p-5 rounded-lg shadow cursor-pointer flex items-center transition-colors duration-200"
+					class="relative p-5 rounded-lg shadow-sm cursor-pointer flex items-center transition-colors duration-200"
 					@click="cardStates.totalClicks = !cardStates.totalClicks">
 					<input
 						type="checkbox"
@@ -216,7 +216,7 @@ const handleDateRangeSelected = (range) => {
 							? 'bg-[#5E35B1] text-white'
 							: 'bg-white text-[#5E35B1] border border-[#5E35B1]',
 					]"
-					class="relative p-5 rounded-lg shadow cursor-pointer flex items-center transition-colors duration-200"
+					class="relative p-5 rounded-lg shadow-sm cursor-pointer flex items-center transition-colors duration-200"
 					@click="cardStates.totalImpressions = !cardStates.totalImpressions">
 					<input
 						type="checkbox"

@@ -33,7 +33,7 @@ const handleToggleLeftBar = () => {
         id="leftSidebar"
     >
 
-        <div class="shadow rounded-md flex flex-grow flex-col h-full overflow-y-auto custom-hide-scrollbar pb-4"
+        <div class="shadow-sm rounded-md flex flex-grow flex-col h-full overflow-y-auto custom-hide-scrollbar pb-4"
             :style="{
                 'background-color': layout.app.theme[0],
                 'color': layout.app.theme[1]

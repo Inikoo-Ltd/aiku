@@ -58,7 +58,7 @@ const activeUsers = useLiveUsers().liveUsers
     <!-- <pre>{{ props.data }}</pre> -->
     <div class="flex py-4 px-8 gap-x-8">
         <div class="">
-            <div class="h-40 aspect-square rounded-full overflow-hidden shadow m-5">
+            <div class="h-40 aspect-square rounded-full overflow-hidden shadow-sm m-5">
                 <Image :src="data?.data?.avatar" :alt="data?.data?.contact_name" />
             </div>
         </div>

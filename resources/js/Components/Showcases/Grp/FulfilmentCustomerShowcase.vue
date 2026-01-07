@@ -256,7 +256,7 @@ const isModalBalanceIncrease = ref(false)
         <!-- <Transition name="headlessui" mode="out-in"> -->
         <div class="col-span-2 grid">
           <div class="w-full">
-            <div class="rounded-lg shadow-sm ring-1 ring-gray-300">
+            <div class="rounded-lg shadow-xs ring-1 ring-gray-300">
               <dl class="flex flex-wrap">
                 <div class="flex flex-col gap-y-2 w-full py-6">
                   <!-- Field: Contact name -->
@@ -377,7 +377,7 @@ const isModalBalanceIncrease = ref(false)
                 <h2 class="text-xl font-semibold text-gray-900">Information</h2>
               </div>
               <div
-                class="relative px-5 py-2 ring-1 ring-gray-300 rounded-lg bg-gray-50 shadow-sm space-y-2">
+                class="relative px-5 py-2 ring-1 ring-gray-300 rounded-lg bg-gray-50 shadow-xs space-y-2">
                 <!-- Field: Product -->
                 <div class="text-gray-600">
                   <strong class="text-gray-500">Product:</strong>

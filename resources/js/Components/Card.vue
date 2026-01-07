@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{
 </script>
 
 <template>
-    <div class="w-fit rounded-lg shadow-sm ring-1 ring-gray-500/30 ">
+    <div class="w-fit rounded-lg shadow-xs ring-1 ring-gray-500/30 ">
         <dl class="w-fit flex flex-col divide-y divide-gray-900/5">
             <div class="flex justify-between items-end w-full px-6 py-6">
                 <div class="flex flex-col items-end">

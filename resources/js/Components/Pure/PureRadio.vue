@@ -65,7 +65,7 @@ const layout = inject('layout', layoutStructure)
                         <div class="flex gap-x-4 justify-around">
                             <RadioGroupOption as="template" v-for="(option, index) in options" :key="option.value" :value="option" v-slot="{ active, checked }">
                                 <div :class="[
-                                    'relative flex cursor-pointer rounded-lg border bg-white py-2 px-3 shadow-sm focus:outline-none',
+                                    'relative flex cursor-pointer rounded-lg border bg-white py-2 px-3 shadow-xs focus:outline-none',
                                     checked ? 'ring-2 ring-gray-600' : 'border-gray-300'
                                 ]">
                                     <span class="flex flex-1">

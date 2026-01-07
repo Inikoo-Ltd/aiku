@@ -237,7 +237,7 @@ const toggleFavorite = (product: Product) => {
 
 <template>
     <article @click="navigateToProduct"
-        class="bg-white py-2 px-4 border rounded hover:shadow transition-shadow relative cursor-pointer">
+        class="bg-white py-2 px-4 border rounded hover:shadow-sm transition-shadow relative cursor-pointer">
         
         <!-- Favorite Button -->
         <button :disabled="isLoadingFavorite" @click.stop="() => toggleFavorite(product)"

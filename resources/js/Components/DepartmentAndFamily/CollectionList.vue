@@ -55,7 +55,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
       <li
         v-for="collection in props.collections"
         :key="collection.id"
-        class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition duration-200 p-3 flex items-start gap-3"
+        class="bg-white border border-gray-200 rounded-lg shadow-xs hover:shadow-md transition duration-200 p-3 flex items-start gap-3"
       >
         <!-- Thumbnail -->
         <div class="w-10 h-10 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center shrink-0">

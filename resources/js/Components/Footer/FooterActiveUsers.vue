@@ -43,7 +43,7 @@ const layout = useLayoutStore()
                                     class="flex items-center py-1 px-2 gap-x-1.5 hover:bg-gray-300/10"
                                     :class="dataUser.id == layout.user.id ? 'text-[#FDD835]' : ''"
                                 >
-                                    <Image :src="dataUser.avatar_thumbnail" :alt="dataUser.username" class="h-5 rounded-full shadow overflow-hidden" />
+                                    <Image :src="dataUser.avatar_thumbnail" :alt="dataUser.username" class="h-5 rounded-full shadow-sm overflow-hidden" />
                                     <div class="flex flex-col items-start">
                                         <span class="text-xs">{{ dataUser?.username }}</span>
                                         <div class="relative">

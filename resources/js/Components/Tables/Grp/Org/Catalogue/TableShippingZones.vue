@@ -176,7 +176,7 @@ onUnmounted(() => {
 						<div v-if="
 								(item.included_postal_codes || item.excluded_postal_codes) &&
 								activePostalInfo === `${territories.id}-${index}`
-							" class="absolute left-1/2 top-[30px] transform -translate-x-1/2 bg-white p-2 rounded-md z-10 shadow border transition-all before:content-[''] before:absolute before:top-[-8px] before:left-1/2 before:transform before:-translate-x-1/2 before:border-l-8 before:border-r-8 before:border-b-8 before:border-l-transparent before:border-r-transparent before:border-b-white after:content-[''] after:absolute after:top-[-9px] after:left-1/2 after:transform after:-translate-x-1/2 after:border-l-8 after:border-r-8 after:border-b-8 after:border-l-transparent after:border-r-transparent after:border-b-gray-300">
+							" class="absolute left-1/2 top-[30px] transform -translate-x-1/2 bg-white p-2 rounded-md z-10 shadow-sm border transition-all before:content-[''] before:absolute before:top-[-8px] before:left-1/2 before:transform before:-translate-x-1/2 before:border-l-8 before:border-r-8 before:border-b-8 before:border-l-transparent before:border-r-transparent before:border-b-white after:content-[''] after:absolute after:top-[-9px] after:left-1/2 after:transform after:-translate-x-1/2 after:border-l-8 after:border-r-8 after:border-b-8 after:border-l-transparent after:border-r-transparent after:border-b-gray-300">
 							<!-- Close button -->
 
 							<!-- Included -->

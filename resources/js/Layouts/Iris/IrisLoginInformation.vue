@@ -118,7 +118,7 @@ const onClickLogin = () => {
                 </h2>
             </div>
 
-            <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px] bg-white px-6 py-12 border border-gray-100 shadow sm:rounded-lg sm:px-12">
+            <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px] bg-white px-6 py-12 border border-gray-100 shadow-sm sm:rounded-lg sm:px-12">
                 <form class="space-y-6" action="#" method="POST">
                     <div>
                         <label for="email" class="block text-sm font-medium leading-6">
@@ -126,7 +126,7 @@ const onClickLogin = () => {
                         </label>
                         <div class="mt-2">
                             <input id="email" name="email" type="email" autocomplete="email" required=""
-                                class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                class="block w-full rounded-md border-0 py-1.5 shadow-xs ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
                         </div>
                     </div>
 
@@ -139,7 +139,7 @@ const onClickLogin = () => {
                                 type="password"
                                 autocomplete="current-password"
                                 required=""
-                                class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                class="block w-full rounded-md border-0 py-1.5 shadow-xs ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
                         </div>
                     </div>
 
@@ -158,7 +158,7 @@ const onClickLogin = () => {
 
                     <div>
                         <button type="submit"
-                            class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign
+                            class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-xs hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign
                             in</button>
                     </div>
                 </form>
@@ -175,7 +175,7 @@ const onClickLogin = () => {
 
                     <div class="mt-2 gap-4">
                         <!-- <a href="#"
-                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
+                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
                             <svg class="h-5 w-5" aria-hidden="true" viewBox="0 0 24 24">
                                 <path
                                     d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z"
@@ -194,7 +194,7 @@ const onClickLogin = () => {
                         </a> -->
 
                         <div @click="() => sectionAuth = 'register'" href="#"
-                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white text-gray-600 px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
+                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white text-gray-600 px-3 py-2 text-sm font-semibold shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
                             Register
                         </div>
                     </div>
@@ -212,13 +212,13 @@ const onClickLogin = () => {
         <!-- Register -->
         <div v-if="sectionAuth === 'register'" class="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
             <h1 class="text-center text-2xl font-bold text-slate-800">Register</h1>
-            <form class="space-y-6 mt-10 sm:mx-auto sm:w-full sm:max-w-[480px] bg-white px-6 py-12 border border-gray-100 shadow sm:rounded-lg sm:px-12">
+            <form class="space-y-6 mt-10 sm:mx-auto sm:w-full sm:max-w-[480px] bg-white px-6 py-12 border border-gray-100 shadow-sm sm:rounded-lg sm:px-12">
                 <div>
                     <label for="login" class="block text-sm font-medium text-gray-700">{{ trans('Contact Name') }}</label>
                     <div class="mt-1">
                         <input ref="inputContactName" id="contact_name" name="contact_name" :autofocus="true"
                             autocomplete="contact_name" required
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                     </div>
                 </div>
 
@@ -227,32 +227,32 @@ const onClickLogin = () => {
                     <div class="mt-1">
                         <input ref="inputUsername" id="username" name="username" :autofocus="true"
                             autocomplete="username" required
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                     </div>
                 </div>
 
                 <!-- Section: Password -->
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700"> {{ trans('Password') }} </label>
-                    <div class="mt-1 flex flex-col rounded-md shadow-sm">
+                    <div class="mt-1 flex flex-col rounded-md shadow-xs">
                         <input type="password" autocomplete="off"
-                            placeholder="Enter password" class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
+                            placeholder="Enter password" class="text-gray-700 placeholder-gray-400 shadow-xs focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
                     </div>
                 </div>
 
                 <!-- Section: Password repeat -->
                 <div>
                     <label for="password_confirmation" class="block text-sm font-medium text-gray-700"> {{ trans('Repeat password') }} </label>
-                    <div class="mt-1 flex flex-col rounded-md shadow-sm">
+                    <div class="mt-1 flex flex-col rounded-md shadow-xs">
                         <input type="password" autocomplete="off"
-                            placeholder="Reenter password" class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
+                            placeholder="Reenter password" class="text-gray-700 placeholder-gray-400 shadow-xs focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
                     </div>
                     <!-- <p class="text-red-500 italic" :class="isPasswordRepeated ? 'invisible' : ''">*{{ trans("Password doesn't match") }}</p> -->
                 </div>
 
                 <div>
                             <button type="submit"
-                                class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                                class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-xs hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                                 Register
                             </button>
                         </div>
@@ -274,7 +274,7 @@ const onClickLogin = () => {
 
                     <div class="mt-2 gap-4">
                         <!-- <a href="#"
-                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
+                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
                             <svg class="h-5 w-5" aria-hidden="true" viewBox="0 0 24 24">
                                 <path
                                     d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z"
@@ -293,7 +293,7 @@ const onClickLogin = () => {
                         </a> -->
 
                         <div @click="() => sectionAuth = 'login'" href="#"
-                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white text-gray-600 px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
+                            class="flex w-full items-center justify-center gap-3 rounded-md bg-white text-gray-600 px-3 py-2 text-sm font-semibold shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-transparent">
                             Login
                         </div>
                     </div>

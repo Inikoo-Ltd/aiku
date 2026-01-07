@@ -59,7 +59,7 @@ const readIcon = computed(() =>
 
 <template>
 	<div
-		class="flex flex-col gap-0.5 text-sm leading-snug shadow-sm max-w-[78%] px-2.5 py-1.5 rounded-xl"
+		class="flex flex-col gap-0.5 text-sm leading-snug shadow-xs max-w-[78%] px-2.5 py-1.5 rounded-xl"
 		:class="bubbleClass"
 	>
 		<p class="whitespace-pre-wrap break-words">

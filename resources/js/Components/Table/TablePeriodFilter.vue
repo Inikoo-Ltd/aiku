@@ -151,7 +151,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="shadow border border-gray-300 flex rounded-md">
+    <div class="shadow-sm border border-gray-300 flex rounded-md">
         <div v-for="period, idxPeriod in periodList"
             :key="'datePickerPeriod' + idxPeriod"
             @click="() => onClickPeriodType(period)"

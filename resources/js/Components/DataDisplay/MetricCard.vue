@@ -32,7 +32,7 @@ defineProps({
 </script>
 
 <template>
-  <div class="stat-card p-4 border rounded-lg shadow-sm bg-white flex flex-col justify-between">
+  <div class="stat-card p-4 border rounded-lg shadow-xs bg-white flex flex-col justify-between">
     <div class="flex justify-between items-center mb-2">
       <div>
         <h4 class="text-sm font-medium">{{ title }}</h4>
@@ -60,7 +60,7 @@ defineProps({
 <style scoped>
 .stat-card {
   border: 1px solid #0078d4;
-  transition: box-shadow 0.2s ease-in-out;
+  transition: box-shadow-sm 0.2s ease-in-out;
 }
 .stat-card:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

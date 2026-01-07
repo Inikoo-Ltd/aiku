@@ -77,7 +77,7 @@ const onLogoutAuth = () => {
                 </div>
             </div>
 
-            <div class="shadow rounded-md flex flex-grow flex-col h-full overflow-y-auto custom-hide-scrollbar pb-4"
+            <div class="shadow-sm rounded-md flex flex-grow flex-col h-full overflow-y-auto custom-hide-scrollbar pb-4"
                 :style="{
                     'background-color': layout.app.theme[0],
                     'color': layout.app.theme[1]
@@ -108,7 +108,7 @@ const onLogoutAuth = () => {
                     </PopoverButton>
 
                     <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" >
-                        <PopoverPanel class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
+                        <PopoverPanel class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow-sm">
                             <div class="min-w-32 flex flex-col justify-center gap-y-2">
                                 <div class="whitespace-nowrap text-gray-500 text-xs">Are you sure want to logout?</div>
                                 <div class="mx-auto">

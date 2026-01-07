@@ -104,7 +104,7 @@ console.log(props.data)
 </script>
 
 <template>
-    <ul class="divide-y divide-gray-100 bg-white shadow-sm ring-1 ring-gray-900/5">
+    <ul class="divide-y divide-gray-100 bg-white shadow-xs ring-1 ring-gray-900/5">
         <Disclosure v-for="(location, index) in data?.locations?.data" :key="index" as="li" v-slot="{ open, close }">
             <div class="relative flex justify-between gap-x-6 px-4 py-4 hover:bg-gray-50 sm:px-6 w-full"
                 :class="open && 'bg-gray-100'">

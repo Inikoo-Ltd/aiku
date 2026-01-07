@@ -41,7 +41,7 @@ const onClickRemoveBar = (tabName: 'activeUsers') => {
 </script>
 
 <template>
-    <div class="text-xs h-[91%] border-l border-gray-200 space-y-4 bg-white rounded-md shadow">
+    <div class="text-xs h-[91%] border-l border-gray-200 space-y-4 bg-white rounded-md shadow-sm">
 
 
         <!-- Add new here -->

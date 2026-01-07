@@ -63,7 +63,7 @@ const model = defineModel()
                     :placeholder="trans('Enter text')"
                 >
                     <template #editor-content="{ editor }">
-                        <div class="bg-gray-200 editor-wrapper border-2 border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-blue-400">
+                        <div class="bg-gray-200 editor-wrapper border-2 border-gray-300 rounded-lg px-3 py-2 shadow-xs focus-within:border-blue-400">
                             <EditorContent :editor="editor" class="focus:outline-none" />
                         </div>
                     </template>
@@ -80,7 +80,7 @@ const model = defineModel()
 
 <style scoped>
 .editor-wrapper {
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow-sm 0.3s ease;
 }
 
 :deep(.editor-class) {

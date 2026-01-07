@@ -484,7 +484,7 @@ const generateShowOrderRoute = () => {
                 </div>
 
                 <div v-if="box_stats?.delivery_notes?.length"
-                     class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                     class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-xs">
                     <!-- Section Title -->
                     <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                         <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width/>

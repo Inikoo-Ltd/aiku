@@ -193,7 +193,7 @@ const autoSave = async (event?) => {
             :fallbackOnBody="true" :emptyInsertThreshold="100" @end="handleDragEnd">
             <template #item="{ element, index }">
                 <div @click="() => SetMenuActive(element, true)"
-                    class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
+                    class="group flex items-center bg-white border border-gray-200 rounded shadow-xs overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
                     <!-- Drag Handle -->
                     <div class="drag-handle cursor-move px-3 py-2 text-gray-500 hover:text-indigo-600"
                         title="Drag to reorder" @click.stop>
@@ -248,7 +248,7 @@ const autoSave = async (event?) => {
             :fallbackOnBody="true" :emptyInsertThreshold="100" @end="handleDragEnd">
             <template #item="{ element, index }">
                 <div @click="() => SetMenuActive(element, false)"
-                    class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
+                    class="group flex items-center bg-white border border-gray-200 rounded shadow-xs overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
                     <!-- Drag Handle -->
                     <div class="drag-handle cursor-move px-3 py-2 text-gray-500 hover:text-indigo-600"
                         title="Drag to reorder" @click.stop>

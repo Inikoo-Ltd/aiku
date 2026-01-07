@@ -35,13 +35,13 @@ defineExpose({
 </script>
 
 <template>
-    <div class="relative rounded-md shadow-sm"
+    <div class="relative rounded-md shadow-xs"
         :class="form.errors[fieldName] ? 'errorShake' : ''"
     >
         <div class="flex">
             <input @input="handleChange(form)" v-model="form[fieldName]" :type="showPassword ? 'password' : 'text'"
                 autocomplete="off" :placeholder="fieldData.placeholder"
-                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 w-full border-gray-300 rounded-l-md" />
+                class="shadow-xs focus:ring-indigo-500 focus:border-indigo-500 w-full border-gray-300 rounded-l-md" />
                 <div v-if="form.errors[fieldName] || form.recentlySuccessful"
             class="absolute inset-y-0 right-11 pr-3 flex items-center pointer-events-none">
             <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]" class="h-5 w-5 text-red-500"

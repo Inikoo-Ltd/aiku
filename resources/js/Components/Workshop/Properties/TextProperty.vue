@@ -76,14 +76,14 @@ const textTransformOptions = [
                 }" closeButton>
                     <template #button>
                         <div v-bind="$attrs"
-                            class="relative h-7 w-7 rounded-md border border-gray-300 shadow cursor-pointer flex justify-center items-center"
+                            class="relative h-7 w-7 rounded-md border border-gray-300 shadow-sm cursor-pointer flex justify-center items-center"
                             :style="{ background: localModel.color || 'transparent' }">
                             <span v-if="!localModel.color" class="text-gray-400 text-xs">—</span>
 
                             <!-- Tombol reset -->
                             <button v-if="localModel.color"
                                 @click.stop.prevent="set(localModel, 'color', null); emits('update:modelValue', localModel)"
-                                class="absolute -top-2 -right-2 bg-white rounded-full text-xs text-red-500 shadow p-1 leading-none"
+                                class="absolute -top-2 -right-2 bg-white rounded-full text-xs text-red-500 shadow-sm p-1 leading-none"
                                 title="Reset color">
                                 ×
                             </button>

@@ -273,7 +273,7 @@ function tagColorClass(scope?: string) {
 
         <!-- Section: Profile box -->
         <div>
-            <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5">
+            <div class="rounded-lg shadow-xs ring-1 ring-gray-900/5">
                 <dl class="flex flex-wrap">
                     <!-- Profile: Header -->
                     <!-- <div class="flex w-full py-6">

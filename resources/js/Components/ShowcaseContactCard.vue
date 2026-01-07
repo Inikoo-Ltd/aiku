@@ -31,7 +31,7 @@ const props = defineProps<{
     <div class="grid md:grid-flow-col w-fit mx-auto md:mx-0 border border-gray-300 md:border rounded-lg py-4 md:py-3 px-2">
         <!-- Images -->
         <div v-if="props.data?.photo"
-            class="mb-4 md:mb-0 relative place-self-center md:place-self-start rounded-md h-40 w-40 shadow overflow-hidden grid justify-center text-xs items-center">
+            class="mb-4 md:mb-0 relative place-self-center md:place-self-start rounded-md h-40 w-40 shadow-sm overflow-hidden grid justify-center text-xs items-center">
             <!-- <img class="object-fit" :src="`/media/group/${props.data?.photo}`" :alt="trans('Supplier Photo')"> -->
             <ComponentImage :src="data?.photo" />
         </div>

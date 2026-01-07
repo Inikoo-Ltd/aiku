@@ -106,7 +106,7 @@ const visitorsCount = computed(() => {
 <template>
     <div v-if="props.shopBlocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
         <!-- Visitors -->
-        <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">Visitors</p>
                 <span class="text-2xl font-bold">
@@ -117,7 +117,7 @@ const visitorsCount = computed(() => {
         </div>
 
         <!-- Expected Sales -->
-        <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">Expected Sales</p>
                 <span class="text-2xl font-bold">
@@ -128,7 +128,7 @@ const visitorsCount = computed(() => {
         </div>
 
         <!-- Average CLV -->
-        <div v-if="getAverageCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div v-if="getAverageCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">Average CLV</p>
                 <span class="text-2xl font-bold">
@@ -139,7 +139,7 @@ const visitorsCount = computed(() => {
         </div>
 
         <!-- Historic CLV -->
-        <div v-if="getHistoricCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div v-if="getHistoricCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">Historic CLV</p>
                 <span class="text-2xl font-bold">

@@ -160,7 +160,7 @@ const getRoute = (tabSlug) => {
             <div
                 v-for="box in tabs_box"
                 :key="'mobile-' + box.label"
-                class="rounded-lg border shadow-sm overflow-hidden select-none"
+                class="rounded-lg border shadow-xs overflow-hidden select-none"
                 :style="{
                   backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '11' : 'transparent',
                   borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : 'inherit'
@@ -183,7 +183,7 @@ const getRoute = (tabSlug) => {
                             class="rounded-md p-3 transition-all duration-200"
                             :class="[
                                 tab.tab_slug === props.current
-                                    ? 'ring-2 shadow-sm'
+                                    ? 'ring-2 shadow-xs'
                                     : 'bg-gray-50 hover:bg-gray-100',
                                 ['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-pointer active:scale-95' : 'cursor-default'
                             ]"

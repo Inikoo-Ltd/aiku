@@ -133,7 +133,7 @@ const brandRoutes = {
 </script>
 
 <template>
-    <form  class="space-y-6 bg-white rounded-xl shadow-sm">
+    <form  class="space-y-6 bg-white rounded-xl shadow-xs">
         <!-- ✅ Tags field -->
         <div>
             <label for="tags" class="block text-sm font-semibold text-gray-800">

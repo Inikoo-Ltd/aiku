@@ -240,7 +240,7 @@ onMounted(() => {
       <!-- Compare: Original vs Translation -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <!-- Original -->
-        <div class="p-3 rounded-lg border bg-gray-50 shadow-sm">
+        <div class="p-3 rounded-lg border bg-gray-50 shadow-xs">
           <p class="text-xs font-semibold text-gray-500 mb-1">
             {{ fieldData.mainLang || "en" }}
           </p>
@@ -249,7 +249,7 @@ onMounted(() => {
 
 
         <!-- Translation -->
-        <div class="p-3 rounded-lg border shadow-sm">
+        <div class="p-3 rounded-lg border shadow-xs">
           <div class="flex justify-between items-center mb-1">
             <p class="text-xs font-semibold text-gray-500 mb-1">
               {{ langLabel(selectedLang) }}

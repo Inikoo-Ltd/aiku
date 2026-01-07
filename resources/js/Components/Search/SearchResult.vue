@@ -28,7 +28,7 @@ router.on('success', () => emits('finishVisit'))  // On success component 'Link'
     <component :is="data?.route?.name ? Link : 'div'" as="a" :href="data.route?.name ? route(data.route?.name, data.route?.parameters) : '#'"
         class="relative flex gap-x-2 items-center"
     >
-        <div v-if="data.icon" class="bg-slate-100 shadow ring-1 ring-slate-200 h-10 aspect-square rounded-md flex justify-center items-center">
+        <div v-if="data.icon" class="bg-slate-100 shadow-sm ring-1 ring-slate-200 h-10 aspect-square rounded-md flex justify-center items-center">
             <FontAwesomeIcon :icon='data.icon' class='text-gray-500' fixed-width aria-hidden='true' />
         </div>
         

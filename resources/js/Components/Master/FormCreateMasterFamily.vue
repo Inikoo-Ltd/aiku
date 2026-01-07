@@ -216,7 +216,7 @@ const toggleFull = () => {
                     <div class="flex flex-col md:flex-row gap-6">
                         <!-- Kolom kiri: Gambar -->
                         <div class="shrink-0 flex justify-center md:justify-start">
-                            <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-sm"
+                            <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-xs"
                                 @click="(e) => chooseImage(e)">
                                 <!-- Gambar baru (upload preview) -->
                                 <img v-if="previewUrl" :src="previewUrl" alt="Preview"
@@ -234,7 +234,7 @@ const toggleFull = () => {
 
                                 <!-- Tombol remove -->
                                 <button v-if="previewUrl || form.image" @click.stop="resetImage"
-                                    class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
+                                    class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow-sm hover:text-red-500">
                                     <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
                                 </button>
                             </div>

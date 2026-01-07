@@ -50,7 +50,7 @@ const isModalAddress = ref(false)
 
         <!-- Section: Profile box -->
         <div >
-            <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5">
+            <div class="rounded-lg shadow-xs ring-1 ring-gray-900/5">
                 <dl class="flex flex-wrap">
                     <!-- Section: Field -->
                     <div class="flex flex-col gap-y-3 border-t border-gray-900/5 w-full py-6">

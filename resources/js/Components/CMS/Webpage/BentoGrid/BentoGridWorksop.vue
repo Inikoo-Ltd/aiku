@@ -59,7 +59,7 @@ function onSave() {
 
 					</div>
 					<div
-						class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5 lg:rounded-l-[2rem]" />
+						class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5 lg:rounded-l-[2rem]" />
 				</div>
 
 				<!-- Column 2 -->
@@ -89,7 +89,7 @@ function onSave() {
 						</div>
 					</div>
 					<div
-						class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5 max-lg:rounded-t-[2rem]">
+						class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5 max-lg:rounded-t-[2rem]">
 					</div>
 				</div>
 
@@ -117,7 +117,7 @@ function onSave() {
 							</div>
 						</div>
 					</div>
-					<div class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5"></div>
+					<div class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5"></div>
 				</div>
 
 				<!-- Column 4 -->
@@ -146,7 +146,7 @@ function onSave() {
 						</div>
 					</div>
 					<div
-						class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5 lg:rounded-r-[2rem]">
+						class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5 lg:rounded-r-[2rem]">
 					</div>
 				</div>
 

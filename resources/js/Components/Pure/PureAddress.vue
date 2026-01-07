@@ -75,7 +75,7 @@ const addressFields = (countryID: number) => {
                             name="administrative_area"
                             id="administrative_area"
                             autocomplete="password"
-                            class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
+                            class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-xs sm:text-sm border-gray-300 rounded-md" />
                     </div>
                     
                     <div v-else>
@@ -89,7 +89,7 @@ const addressFields = (countryID: number) => {
                             :id="addressField"
                             autocomplete="password"
                             :placeholder="`Enter ${addressFieldData.label}`"
-                            class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 placeholder:text-gray-400 rounded-md" />
+                            class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-xs sm:text-sm border-gray-300 placeholder:text-gray-400 rounded-md" />
                     </div>
                 </div>
             </div>

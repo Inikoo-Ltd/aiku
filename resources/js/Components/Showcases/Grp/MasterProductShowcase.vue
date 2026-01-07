@@ -207,7 +207,7 @@ const isModalProductForSale = ref(false)
 
 
 <template>
-	<div class="w-full  px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
+	<div class="w-full  px-4 py-3 mb-3 shadow-xs grid grid-cols-2">
 		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
 			<ProductUnitLabel v-if="data.masterProduct?.units" :units="data.masterProduct?.units"
 				:unit="data.masterProduct?.unit" class="mr-2" />

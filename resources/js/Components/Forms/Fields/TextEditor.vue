@@ -23,7 +23,7 @@ const props = defineProps<{
   <div class="">
     <Editor v-model="form[fieldName]">
       <template #editor-content="{ editor }">
-        <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
+        <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-xs focus-within:border-[var(--theme-color-0)]">
           <EditorContent :editor="editor" class="editor-content focus:outline-none" />
         </div>
       </template>
@@ -48,7 +48,7 @@ const props = defineProps<{
   min-height: 150px;
 }
 .editor-wrapper {
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow-sm 0.3s ease;
 }
 
 .editor-content {

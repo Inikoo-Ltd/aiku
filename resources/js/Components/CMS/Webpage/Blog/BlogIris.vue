@@ -123,10 +123,10 @@ const screenType = inject("screenType", "desktop")
           <a v-for="post in fieldValue.latest_blogs" :key="post.id" :href="post.url"
             class="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-md transition">
            <!--  <img :src="post.image" :alt="post.title"
-              class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" /> -->
+              class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-xs" /> -->
                <Image :src="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.source"
                         :alt="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.alt"
-                        class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" :imageCover="true"/>
+                        class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-xs" :imageCover="true"/>
             <div class="text-sm font-medium text-gray-700 group-hover:text-gray-900">
               {{ post.title }}
             </div>
@@ -148,7 +148,7 @@ const screenType = inject("screenType", "desktop")
       </div>
 
       <div
-        class="w-full mb-8 rounded-xl overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center shadow-sm">
+        class="w-full mb-8 rounded-xl overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center shadow-xs">
         <Image v-if="fieldValue.image?.source" :src="fieldValue.image.source" :alt="fieldValue.image.alt"
           :imageCover="true" class="w-full h-full object-cover" />
         <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-300 text-6xl" />

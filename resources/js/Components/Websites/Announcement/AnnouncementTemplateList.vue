@@ -206,7 +206,7 @@ onMounted(() => {
                                 ]">
                                 <div class="h-16 w-full object-cover flex items-center justify-center">
                                     <Image :src="announcement.screenshot" zimageCover class=""
-                                        :imgAttributes="{ class: 'h-full w-full object-contain shadow-sm' }" />
+                                        :imgAttributes="{ class: 'h-full w-full object-contain shadow-xs' }" />
                                 </div>
 
                                 <!-- Checkbox: Full template -->

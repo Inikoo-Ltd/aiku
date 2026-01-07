@@ -502,7 +502,7 @@ const isModalUploadFileOpen = ref(false)
                             <div class="mt-3">
                                 <span class="text-xs px-1 my-2">{{ trans('Notes') }}: </span>
                                 <textarea
-                                    class="placeholder:text-gray-400 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
+                                    class="placeholder:text-gray-400 block w-full rounded-md border-gray-300 shadow-xs focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
                                     v-model="formAddPallet.notes" placeholder="Notes">
                                 </textarea>
                                 <p v-if="get(formAddPallet, ['errors', 'notes'])" class="mt-2 text-sm text-red-600">

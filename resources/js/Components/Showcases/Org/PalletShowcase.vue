@@ -297,7 +297,7 @@ const generateRouteEditBarcode = () => {
         <div class="col-span-2 lg:col-span-1  lg:order-2">
         <div class="flex flex-col items-center gap-6">
           <!-- Pallet Code -->
-          <div class="relative w-full border rounded-lg p-4 shadow-sm bg-gray-50 group">
+          <div class="relative w-full border rounded-lg p-4 shadow-xs bg-gray-50 group">
             <div class="text-sm font-medium text-center mb-2">{{ trans("Barcode") }}</div>
             <div class="relative">
               <div v-if="props.data.data.slug" class="relative hover:bg-black/30 rounded-lg p-2">

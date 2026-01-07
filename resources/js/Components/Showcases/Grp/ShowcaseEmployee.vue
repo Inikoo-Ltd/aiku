@@ -38,7 +38,7 @@ const isVisitClockingMachine = ref(false)
 <template>
 <!--   <div class="h-fit grid grid-cols-3 gap-4 p-6">
     <div class="col-span-1">
-      <div class="h-fit grid col-span-3 ring-1 ring-gray-300 shadow rounded-2xl p-6 gap-y-6">
+      <div class="h-fit grid col-span-3 ring-1 ring-gray-300 shadow-sm rounded-2xl p-6 gap-y-6">
         <AppLogin :route="{ name: 'grp.models.profile.app-login-qrcode' }" />
         <div class="mt-8 flex flex-col items-center gap-y-1">
           <div class="text-gray-400 italic">Don't have the app?</div>
@@ -63,13 +63,13 @@ const isVisitClockingMachine = ref(false)
     </div>
 
     <div class="col-span-2">
-      <div class="h-fit w-fit grid col-span-3 ring-1 ring-gray-300 shadow rounded-2xl p-6 gap-y-6">
+      <div class="h-fit w-fit grid col-span-3 ring-1 ring-gray-300 shadow-sm rounded-2xl p-6 gap-y-6">
         <div class="flex flex-col items-center gap-y-4">
           <div class="flex flex-wrap justify-center gap-2">
             <div
               v-for="(value, index) in Array.from(data.pin)"
               :key="index"
-              class="w-12 h-12 flex items-center justify-center text-lg font-semibold border border-gray-300 rounded-md shadow-sm bg-gray-50"
+              class="w-12 h-12 flex items-center justify-center text-lg font-semibold border border-gray-300 rounded-md shadow-xs bg-gray-50"
             >
             
               {{ showPins ? value : 'X' }}
@@ -87,7 +87,7 @@ const isVisitClockingMachine = ref(false)
   </div> -->
 
   <div class="px-6 py-6 grid lg:grid-cols-9 gap-x-8">
-        <div class="lg:col-span-6 ring-1 ring-gray-300 shadow rounded-2xl py-6 grid lg:grid-cols-2 gap-y-4">
+        <div class="lg:col-span-6 ring-1 ring-gray-300 shadow-sm rounded-2xl py-6 grid lg:grid-cols-2 gap-y-4">
             <div class="flex flex-col gap-y-4 px-8">
                 <div class="mx-auto w-fit aspect-square rounded-full overflow-hidden md:h-56" :src="'person.imageUrl'" alt="">
                     <Image :src="data?.employee?.data.avatar" />
@@ -175,13 +175,13 @@ const isVisitClockingMachine = ref(false)
             </div>
         </div>
 
-        <div class="mt-4 lg:mt-0 w-full h-fit lg:max-w-lg grid lg:col-span-3 ring-1 ring-gray-300 shadow rounded-2xl py-6 px-4 gap-y-6">
+        <div class="mt-4 lg:mt-0 w-full h-fit lg:max-w-lg grid lg:col-span-3 ring-1 ring-gray-300 shadow-sm rounded-2xl py-6 px-4 gap-y-6">
             <template v-if="data?.pin">
                 <div class="flex flex-nowrap justify-center gap-2">
                   <div
                     v-for="(value, index) in Array.from(data?.pin)"
                     :key="index"
-                    class="h-6 xl:h-8 aspect-square flex items-center justify-center text-sm xl:text-lg font-semibold border border-gray-300 rounded xl:rounded-md shadow-sm bg-gray-50"
+                    class="h-6 xl:h-8 aspect-square flex items-center justify-center text-sm xl:text-lg font-semibold border border-gray-300 rounded xl:rounded-md shadow-xs bg-gray-50"
                   >
                 
                     <Transition name="spin-to-right">

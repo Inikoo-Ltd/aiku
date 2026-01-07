@@ -43,7 +43,7 @@ const layout = inject('layout', layoutStructure)
 </script>
 
 <template>
-	<div id="header_2_iris" class="relative shadow-sm" :style="{
+	<div id="header_2_iris" class="relative shadow-xs" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             margin : 0, padding : 0,
 			...getStyles(fieldValue.container?.properties, screenType)

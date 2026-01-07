@@ -465,7 +465,7 @@ console.log('sdasd',props)
 
                 <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
-                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-xs text-sm">
                         <span class="text-gray-700 font-medium">
                             Showing
                             <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
@@ -490,7 +490,7 @@ console.log('sdasd',props)
                 <div :class="responsiveGridClass" class="grid gap-6 p-4"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="loadingInitial">
-                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
+                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-xs bg-white">
                             <Skeleton height="200px" class="mb-3" />
                             <Skeleton width="80%" class="mb-2" />
                             <Skeleton width="60%" class="mb-2" />

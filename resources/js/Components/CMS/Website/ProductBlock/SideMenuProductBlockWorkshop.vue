@@ -83,7 +83,7 @@ const onPickBlock = (value: object) => {
     <TabGroup :selectedIndex="selectedTab" @change="changeTab" as="div" class="flex flex-col h-full">
       <!-- Sticky Tabs -->
       <TabList
-        class="flex border-b border-gray-300 bg-white sticky top-0 z-10 shadow-sm"
+        class="flex border-b border-gray-300 bg-white sticky top-0 z-10 shadow-xs"
       >
         <Tab
           v-for="(tab, index) in computedTabs"

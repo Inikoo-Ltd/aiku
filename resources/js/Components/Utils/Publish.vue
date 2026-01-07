@@ -67,7 +67,7 @@ const emits = defineEmits<{
                     <div class="py-2.5">
                         <textarea rows="3" :value="modelValue"
                             @input="$emit('update:modelValue', $event.target?.value)"
-                            class="block w-64 lg:w-96 rounded-md shadow-sm border-gray-300 focus:border-gray-500 focus:ring-gray-500 sm:text-sm" />
+                            class="block w-64 lg:w-96 rounded-md shadow-xs border-gray-300 focus:border-gray-500 focus:ring-gray-500 sm:text-sm" />
                     </div>
                     <div class="flex justify-end">
                         <Button size="xs" @click="saveFunction()" icon="far fa-rocket-launch" label="Publish"

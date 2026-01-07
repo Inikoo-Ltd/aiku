@@ -152,7 +152,7 @@ const saveTranslation = () => {
 
     <!-- Right: Translation Panel -->
     <div class="col-span-2">
-      <div class="bg-white border rounded-lg shadow-sm p-6">
+      <div class="bg-white border rounded-lg shadow-xs p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="col-span-2">
             <div class="flex flex-wrap gap-2">
@@ -168,7 +168,7 @@ const saveTranslation = () => {
           </div>
 
           <!-- Master Language Form -->
-          <div class="bg-gray-50 border border-gray-300 rounded-md p-4 shadow-sm">
+          <div class="bg-gray-50 border border-gray-300 rounded-md p-4 shadow-xs">
             <h3 class="text-base font-semibold mb-3">{{ trans('Master') }}</h3>
             <div class="space-y-3">
               <div>
@@ -195,7 +195,7 @@ const saveTranslation = () => {
           </div>
 
           <!-- Translated Language Form -->
-          <div class="bg-white border border-gray-300 rounded-md p-4 shadow-sm">
+          <div class="bg-white border border-gray-300 rounded-md p-4 shadow-xs">
             <h3 class="text-base font-semibold mb-3">
               {{ trans('Translation') }} ({{ selectedLangCode?.toUpperCase() || '—' }})
             </h3>

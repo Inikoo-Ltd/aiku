@@ -13,7 +13,7 @@ const emit = defineEmits(['resetSearch'])
     ref="button"
     type="button"
     dusk="reset-table"
-    class="w-full rounded-md shadow-sm px-4 py-2 inline-flex justify-center text-sm font-medium border border-red-200 text-red-400 hover:text-red-500 hover:bg-red-100/50 "
+    class="w-full rounded-md shadow-xs px-4 py-2 inline-flex justify-center text-sm font-medium border border-red-200 text-red-400 hover:text-red-500 hover:bg-red-100/50 "
     aria-haspopup="true"
     @click="emit('resetSearch', true)"
   >

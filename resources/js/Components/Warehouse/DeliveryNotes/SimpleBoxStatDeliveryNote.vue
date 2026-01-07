@@ -78,7 +78,7 @@ const listError = inject('listError', {})
 </script>
 
 <template>
-    <div class="bg-white border border-b shadow-sm p-4 text-sm text-gray-700">
+    <div class="bg-white border border-b shadow-xs p-4 text-sm text-gray-700">
         <div class="flex flex-wrap gap-6">
             <!-- Picker -->
             <div class="flex items-center space-x-2 min-w-[160px]">

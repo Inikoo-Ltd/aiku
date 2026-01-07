@@ -120,7 +120,7 @@ watch(isOpenModalCrop, (val) => {
         </Dialog>
 
         <!-- Image Preview -->
-        <div class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
+        <div class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow-sm bg-gray-100"
             :class="form.errors[fieldName] ? 'errorShake' : ''">
             <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" alt="Preview"
                 class="h-full w-full object-cover rounded" />
@@ -139,7 +139,7 @@ watch(isOpenModalCrop, (val) => {
 
             <!-- Delete Button -->
             <button v-if="imgAfterCrop?.original && fieldData.required == false" @click="deleteImage" type="button"
-                class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow transition">
+                class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-sm transition">
                 <FontAwesomeIcon :icon="['fas', 'times']" class="text-sm" />
             </button>
         </div>

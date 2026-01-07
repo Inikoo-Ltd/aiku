@@ -34,7 +34,7 @@ const getYoYComparison = (metric: string) => {
 </script>
 
 <template>
-    <div :class="['flex items-center gap-4 p-4 h-32 bg-gray-50 border shadow-sm rounded-lg', { hidden: (props.data.sales_org_currency?.[props.interval].raw_value || 0) <= 0 }]">
+    <div :class="['flex items-center gap-4 p-4 h-32 bg-gray-50 border shadow-xs rounded-lg', { hidden: (props.data.sales_org_currency?.[props.interval].raw_value || 0) <= 0 }]">
         <div class="text-sm w-full">
             <p class="text-lg font-bold mb-1">{{ trans('Sales') }}</p>
             <p class="flex flex-col">

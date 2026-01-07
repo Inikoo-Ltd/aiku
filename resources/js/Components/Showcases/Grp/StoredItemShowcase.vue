@@ -151,7 +151,7 @@ onMounted(() => {
 
         <div class="max-w-xl mt-1 grid grid-cols-1 gap-x-6 gap-y-8 xl:gap-x-8 h-fit ">
             <div class="flex flex-col items-start">
-                <div class="relative  border rounded-lg p-4 shadow-sm bg-gray-50 group">
+                <div class="relative  border rounded-lg p-4 shadow-xs bg-gray-50 group">
                     <div class="text-sm font-medium text-center mb-2">Barcode</div>
                     <div class="relative">
                         <div v-if="props.data.stored_item.slug" class="relative hover:bg-black/30 rounded-lg p-2">
@@ -237,7 +237,7 @@ onMounted(() => {
 
         <!-- Box: Pie chart -->
         <div v-if="false"
-            class="h-fit flex flex-col col-span-2 justify-between px-5 py-3 rounded-lg border border-gray-100 shadow tabular-nums">
+            class="h-fit flex flex-col col-span-2 justify-between px-5 py-3 rounded-lg border border-gray-100 shadow-sm tabular-nums">
             <div class="sm:flex sm:items-center">
                 <div class="sm:flex-auto">
                     <h1 class="font-semibold leading-6">
@@ -270,7 +270,7 @@ onMounted(() => {
         </div>
 
         <!-- Mini Table -->
-        <!-- <div v-if="false" class="flex flex-col col-span-4 gap-x-5 border border-gray-100 shadow rounded-md px-5 py-3 text-gray-500">
+        <!-- <div v-if="false" class="flex flex-col col-span-4 gap-x-5 border border-gray-100 shadow-sm rounded-md px-5 py-3 text-gray-500">
             <TableStoredItemEdit 
                 :data="data.pallets" 
                 :route_pallets="data.route_pallets" 

@@ -76,7 +76,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 </script>
 
 <template>
-	<div id="header_1_iris" class="shadow-sm" :style="{
+	<div id="header_1_iris" class="shadow-xs" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             margin : 0, padding : 0,
 			...getStyles(fieldValue.container?.properties, screenType)

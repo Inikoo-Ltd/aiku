@@ -126,7 +126,7 @@ watch(isOpenModalCrop, (val) => {
     <div class="relative ml-0 md:ml-7">
       <!-- Image Preview -->
       <div
-        class="overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
+        class="overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow-sm bg-gray-100"
         :class="form.errors[fieldName] ? 'errorShake' : ''"
       >
         <img

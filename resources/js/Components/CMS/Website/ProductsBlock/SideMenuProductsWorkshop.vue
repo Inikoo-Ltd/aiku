@@ -67,7 +67,7 @@ const handleAutoSave = (value: any) => {
 <template>
   <div class="h-full flex flex-col">
     <TabGroup :selectedIndex="selectedTab" @change="changeTab" as="div" class="flex flex-col h-full">
-      <TabList class="flex border-b border-gray-300 bg-white sticky top-0 z-10 shadow-sm">
+      <TabList class="flex border-b border-gray-300 bg-white sticky top-0 z-10 shadow-xs">
         <Tab
           v-for="(tab, index) in tabs"
           :key="index"

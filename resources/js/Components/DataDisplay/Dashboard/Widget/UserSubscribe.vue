@@ -245,7 +245,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 
 	<!-- Display card in non-edit mode -->
 	<dl class="mb-2 grid grid-cols-1 md:grid-cols-4 gap-3">
-		<div class="rounded-lg bg-white shadow border border-gray-200 md:col-span-3">
+		<div class="rounded-lg bg-white shadow-sm border border-gray-200 md:col-span-3">
 			<!-- Card Header -->
 			<div class="px-4 py-5 flex items-center justify-between">
 				<dt class="text-lg font-semibold text-gray-500">{{ trans("Subscriber") }}</dt>

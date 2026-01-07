@@ -58,7 +58,7 @@ watch(props.forcedVisibleSearchInputs, (inputs) => {
   <!-- A looping Field: appears if search data on table by label -->
   <div v-for="(searchInput, key) in searchInputs" v-show="searchInput.value !== null || isForcedVisible(searchInput.key)"
     :key="key" class="px-4 sm:px-0">
-    <div class="flex rounded-md shadow-sm relative mt-3">
+    <div class="flex rounded-md shadow-xs relative mt-3">
       <label :for="searchInput.key"
         class="inline-flex items-center px-4 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
         <FontAwesomeIcon icon="far fa-filter" class="h-4 w-4 mr-2 text-gray-400" aria-hidden="true" />

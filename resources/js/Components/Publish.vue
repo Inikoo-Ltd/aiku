@@ -65,7 +65,7 @@ const emits = defineEmits<{
                             :value="modelValue"
                             :placeholder="trans('Add additional comment')"
                             @input="emits('update:modelValue', $event.target?.value)"
-                            class="block w-64 lg:w-96 rounded-md shadow-sm placeholder:text-gray-400 border-gray-300 focus:border-gray-500 focus:ring-gray-500 sm:text-sm" />
+                            class="block w-64 lg:w-96 rounded-md shadow-xs placeholder:text-gray-400 border-gray-300 focus:border-gray-500 focus:ring-gray-500 sm:text-sm" />
                     </div>
                     <slot name="form-extend"></slot>
                     <div class="flex justify-end">

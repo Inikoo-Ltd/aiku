@@ -26,7 +26,7 @@ const options = [
           class: [
             'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all duration-200',
             context.active
-              ? 'bg-blue-600 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-xs'
               : 'bg-white text-gray-700 hover:bg-gray-50'
           ]
         })

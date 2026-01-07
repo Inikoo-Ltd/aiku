@@ -50,7 +50,7 @@ const props = defineProps<{
             </div>
           </div>
 
-          <div class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5 z-0 lg:rounded-l-[2rem]"></div>
+          <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5 z-0 lg:rounded-l-[2rem]"></div>
         </div>
 
         <div class="relative max-lg:row-start-1">
@@ -80,7 +80,7 @@ const props = defineProps<{
             </div>
           </div>
 
-          <div class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5 z-0 max-lg:rounded-t-[2rem]"></div>
+          <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5 z-0 max-lg:rounded-t-[2rem]"></div>
         </div>
 
         <div class="relative max-lg:row-start-3 lg:col-start-2 lg:row-start-2">
@@ -110,7 +110,7 @@ const props = defineProps<{
             </div>
           </div>
 
-          <div class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5 z-0"></div>
+          <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5 z-0"></div>
         </div>
 
         <div class="relative lg:row-span-2">
@@ -140,7 +140,7 @@ const props = defineProps<{
             </div>
           </div>
 
-          <div class="pointer-events-none absolute inset-px rounded-lg shadow ring-1 ring-black/5 z-0 lg:rounded-r-[2rem]"></div>
+          <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm ring-1 ring-black/5 z-0 lg:rounded-r-[2rem]"></div>
         </div>
 
       </div>

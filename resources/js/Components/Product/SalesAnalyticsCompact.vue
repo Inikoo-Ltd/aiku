@@ -167,7 +167,7 @@ const getDeltaIndicator = (delta: number) => {
 </script>
 
 <template>
-    <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full h-fit">
+    <div class="bg-white border border-gray-200 rounded-lg shadow-xs w-full h-fit">
         <!-- Header -->
         <div class="p-4 border-b border-gray-200">
             <h3 class="text-sm font-semibold text-gray-900">Sales Analytics</h3>

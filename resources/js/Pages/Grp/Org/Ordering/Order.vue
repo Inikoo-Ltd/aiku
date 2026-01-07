@@ -1148,7 +1148,7 @@ const setShippingToAuto = () => {
 
                         <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && Number(box_stats.products.payment.total_amount) > 0" class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            <div class="w-full rounded-md shadow pxb-2 isolate border"
+                            <div class="w-full rounded-md shadow-sm pxb-2 isolate border"
                                 :class="[
                                     Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
                                 ]"
@@ -1260,7 +1260,7 @@ const setShippingToAuto = () => {
 
                     <!-- Section: Delivery Notes -->
                     <div v-if="box_stats?.delivery_notes?.length"
-                        class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
+                        class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-xs">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                             <div class="text-sm font-semibold text-gray-800">

@@ -52,7 +52,7 @@ const layout = inject('layout', {})
 </script>
 
 <template>
-    <div class="shadow-sm" :style="{
+    <div class="shadow-xs" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             margin : 0, padding : 0,
 			...getStyles(modelValue.container?.properties, screenType)

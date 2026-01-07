@@ -361,7 +361,7 @@ const listType = [
           :animation="200"
         >
           <template #item="{ element: product, index }">
-            <div class="border border-gray-300 rounded p-4 bg-white shadow-sm relative group">
+            <div class="border border-gray-300 rounded p-4 bg-white shadow-xs relative group">
               <!-- Remove Product -->
               <button
                 type="button"
@@ -424,9 +424,9 @@ const listType = [
             <div
                 v-for="(product, index) in normalizedModelValue.top_sellers"
                 :key="product.id || index"
-                class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+                class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-xs relative grid grid-cols-5 gap-x-2"
             >
-                <div class=" h-fit shadow">
+                <div class=" h-fit shadow-sm">
                     <Image
                         :src="product.web_images?.main?.thumbnail"
                         xclass=" object-cover rounded"
@@ -502,9 +502,9 @@ const listType = [
                 <div
                     v-for="(product, index) in normalizedModelValue.other_family?.option"
                     :key="product.id || index"
-                    class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+                    class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-xs relative grid grid-cols-5 gap-x-2"
                 >
-                    <div class=" h-fit shadow">
+                    <div class=" h-fit shadow-sm">
                         <Image
                             :src="product.web_images?.main?.thumbnail"
                             xclass=" object-cover rounded"
@@ -551,9 +551,9 @@ const listType = [
             <div
                 v-for="(product, index) in normalizedModelValue.current_family?.option"
                 :key="product.id || index"
-                class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+                class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-xs relative grid grid-cols-5 gap-x-2"
             >
-                <div class=" h-fit shadow">
+                <div class=" h-fit shadow-sm">
                     <Image
                         :src="product.web_images.main.thumbnail"
                         xclass=" object-cover rounded"
@@ -605,9 +605,9 @@ const listType = [
                     <div
                         v-for="(product, index) in listProducts"
                         :key="`${localType}-${product.url}`"
-                        class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+                        class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-xs relative grid grid-cols-5 gap-x-2"
                     >
-                        <div class=" h-fit shadow aspect-square rounded border border-black/5 overflow-hidden">
+                        <div class=" h-fit shadow-sm aspect-square rounded border border-black/5 overflow-hidden">
                             <img
                                 :src="product.attributes.image_url"
                                 :alt="`Images of ${product.attributes.title}`"

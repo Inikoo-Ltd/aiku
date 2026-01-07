@@ -150,7 +150,7 @@ const onLogoutAuth = () => {
 						leave-from-class="opacity-100 scale-100"
 						leave-to-class="opacity-0 scale-95">
 						<PopoverPanel
-							class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
+							class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow-sm">
 							<div class="min-w-32 flex flex-col justify-center gap-y-2">
 								<div class="whitespace-nowrap text-gray-500 text-xs">
 									Are you sure want to logout?

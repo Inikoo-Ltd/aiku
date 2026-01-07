@@ -12,7 +12,7 @@ const props = defineProps<{
 	<div >
 		<!-- Installation Team Card -->
 		<div
-			class="bg-white rounded-lg p-4 flex flex-col justify-between shadow-sm border border-gray-300">
+			class="bg-white rounded-lg p-4 flex flex-col justify-between shadow-xs border border-gray-300">
 			<h3 class="text-lg font-semibold mb-2">Installation Team</h3>
 			<!-- Metrics -->
 			<div>

@@ -75,7 +75,7 @@ const stateColorClass = computed(() => {
 
     <div class="px-4 sm:px-6 lg:px-8 py-6">
         <!-- Status Banner -->
-        <div class="mb-6 bg-white rounded-lg shadow p-4">
+        <div class="mb-6 bg-white rounded-lg shadow-sm p-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div :class="[stateColorClass, 'px-3 py-1 rounded-full flex items-center gap-2']">
@@ -89,7 +89,7 @@ const stateColorClass = computed(() => {
         <!-- Info Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <!-- Customer Info -->
-            <div class="bg-white rounded-lg shadow p-4">
+            <div class="bg-white rounded-lg shadow-sm p-4">
                 <div class="flex items-center gap-2 text-gray-500 mb-2">
                     <FontAwesomeIcon icon="fal fa-user" />
                     <span class="text-sm font-medium">Customer</span>
@@ -103,7 +103,7 @@ const stateColorClass = computed(() => {
             </div>
 
             <!-- Order Info -->
-            <div class="bg-white rounded-lg shadow p-4">
+            <div class="bg-white rounded-lg shadow-sm p-4">
                 <div class="flex items-center gap-2 text-gray-500 mb-2">
                     <FontAwesomeIcon icon="fal fa-box" />
                     <span class="text-sm font-medium">Original Order</span>
@@ -117,7 +117,7 @@ const stateColorClass = computed(() => {
             </div>
 
             <!-- Items Summary -->
-            <div class="bg-white rounded-lg shadow p-4">
+            <div class="bg-white rounded-lg shadow-sm p-4">
                 <div class="flex items-center gap-2 text-gray-500 mb-2">
                     <FontAwesomeIcon icon="fal fa-undo-alt" />
                     <span class="text-sm font-medium">Items</span>
@@ -133,7 +133,7 @@ const stateColorClass = computed(() => {
         </div>
 
         <!-- Return Items Table -->
-        <div class="bg-white rounded-lg shadow">
+        <div class="bg-white rounded-lg shadow-sm">
             <div class="px-4 py-5 border-b border-gray-200">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">Return Items</h3>
             </div>

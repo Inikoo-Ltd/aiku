@@ -115,7 +115,7 @@ const options = {
 	</div> -->
 		<div
 			v-for="stats in dashboardStats"
-			class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums ring-3 ring-gray-300">
+			class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow-sm tabular-nums ring-3 ring-gray-300">
 			<dt class="text-base font-medium text-gray-400">{{ stats.label }}</dt>
 			<dd class="mt-2 flex justify-between gap-x-2">
 				<div

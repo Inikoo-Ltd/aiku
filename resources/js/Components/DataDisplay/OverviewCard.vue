@@ -26,7 +26,7 @@ const chartOptions = {
 </script>
 
 <template>
-	<div class="bg-white border border-gray-300 rounded-lg shadow-sm p-4 w-full">
+	<div class="bg-white border border-gray-300 rounded-lg shadow-xs p-4 w-full">
 		<!-- Label and Value -->
 		<div class="flex justify-between items-center">
 			<div>

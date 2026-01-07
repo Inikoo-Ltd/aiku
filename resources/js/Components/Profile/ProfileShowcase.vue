@@ -36,7 +36,7 @@ const props = defineProps<{
 
 <template>
     <div class="px-6 py-6 grid grid-cols-9 gap-x-8">
-        <div class="col-span-6 ring-1 ring-gray-300 shadow rounded-2xl py-6 grid grid-cols-2 gap-y-4">
+        <div class="col-span-6 ring-1 ring-gray-300 shadow-sm rounded-2xl py-6 grid grid-cols-2 gap-y-4">
             <div class="flex flex-col gap-y-4 px-8">
                 <div class="mx-auto w-fit aspect-square rounded-full overflow-hidden md:h-56" :src="'person.imageUrl'" alt="">
                     <Image :src="data?.data?.avatar" />
@@ -125,7 +125,7 @@ const props = defineProps<{
             </div>
         </div>
 
-        <div class="h-fit grid col-span-3 ring-1 ring-gray-300 shadow rounded-2xl p-6 gap-y-6">
+        <div class="h-fit grid col-span-3 ring-1 ring-gray-300 shadow-sm rounded-2xl p-6 gap-y-6">
             <AppLogin :route="{ name: 'grp.models.profile.app-login-qrcode' }" />
 
             <div class="mt-8 flex flex-col items-center gap-y-1">

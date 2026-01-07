@@ -4,7 +4,7 @@
             :class="[isDark ? 'bg-slate-800' : 'bg-gray-200', 'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-slate-600 focus:ring-offset-2']">
             <span class="sr-only">Use setting</span>
             <span
-                :class="[isDark ? 'translate-x-5  bg-gray-100' : 'translate-x-0 bg-slate-800', 'pointer-events-none relative inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out']">
+                :class="[isDark ? 'translate-x-5  bg-gray-100' : 'translate-x-0 bg-slate-800', 'pointer-events-none relative inline-block h-5 w-5 transform rounded-full shadow-sm ring-0 transition duration-200 ease-in-out']">
 
                 <!-- Light -->
                 <span

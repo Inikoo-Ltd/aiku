@@ -510,7 +510,7 @@ watch(
 									<div class="absolute top-1.5 right-2">
 										<button
 											@click.stop="openConfirmModal(item)"
-											class="p-1 bg-white rounded-full shadow hover:bg-red-500 transition-colors">
+											class="p-1 bg-white rounded-full shadow-sm hover:bg-red-500 transition-colors">
 											<FontAwesomeIcon
 												:icon="faTrashAlt"
 												class="text-red-500 hover:text-white w-4 h-4"

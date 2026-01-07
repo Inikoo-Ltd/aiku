@@ -140,7 +140,7 @@ function roundDown2(num: number) {
 </script>
 
 <template>
-    <div class="bg-white border rounded-md shadow-sm p-3">
+    <div class="bg-white border rounded-md shadow-xs p-3">
         <div class="flex justify-between items-center mb-3">
             <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
                 Products ({{ modelValue.data.length }})

@@ -142,7 +142,7 @@ const component = computed(() => {
                     </div>
             
                     <div class="hidden sm:block">
-                        <nav class="isolate flex divide-x divide-gray-200 rounded-lg shadow" aria-label="Tabs">
+                        <nav class="isolate flex divide-x divide-gray-200 rounded-lg shadow-sm" aria-label="Tabs">
                             <div
                                 v-for="(tab, tabIdx) in props.paymentMethods"
                                 @click="currentTab.index = tabIdx, currentTab.key = tab.key"

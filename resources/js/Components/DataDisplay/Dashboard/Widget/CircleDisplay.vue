@@ -63,7 +63,7 @@ const deliveryStats = computed(() => {
 <template>
 	<dl class=" mb-2 grid grid-cols-1 md:grid-cols-2 gap-3">
 		<!-- Sent Card -->
-		<div class="px-6 py-6 rounded-lg bg-white shadow border border-gray-200">
+		<div class="px-6 py-6 rounded-lg bg-white shadow-sm border border-gray-200">
 			<dt class="text-lg font-semibold text-gray-500 capitalize mb-3">
 				{{ sentStats.label }}
 			</dt>
@@ -96,7 +96,7 @@ const deliveryStats = computed(() => {
 		</div>
 
 		<!-- Delivery Card -->
-		<div class="px-6 py-6 rounded-lg bg-white shadow border border-gray-200">
+		<div class="px-6 py-6 rounded-lg bg-white shadow-sm border border-gray-200">
 			<dt class="text-lg font-semibold text-gray-500 capitalize mb-3">
 				{{ deliveryStats.label }}
 			</dt>

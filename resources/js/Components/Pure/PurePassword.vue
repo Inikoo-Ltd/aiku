@@ -32,7 +32,7 @@ const showPassword = ref(true);
             :id='name'
             :type="showPassword ? 'password' : 'text'" autocomplete="off"
             :placeholder="trans(props.placeholder)"
-            class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
+            class="text-gray-700 placeholder-gray-400 shadow-xs focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
             
         <button type="button" @click="showPassword = !showPassword" :id="'show-password-' + name"
             class="w-min px-3 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500">

@@ -105,7 +105,7 @@ const isCustom = ref(false)
 
         <div class="grid md:grid-cols-2 gap-y-4 md:gap-y-0 gap-x-8">
             <!-- Section: Current balance -->
-            <dl class="relative isolate bg-indigo-50 border border-indigo-200 rounded shadow px-4 py-5 sm:p-6 overflow-hidden grid items-center">
+            <dl class="relative isolate bg-indigo-50 border border-indigo-200 rounded shadow-sm px-4 py-5 sm:p-6 overflow-hidden grid items-center">
                 <div class="-z-10 absolute  top-1/2 -translate-y-1/2 transform-gpu blur-2xl" aria-hidden="true">
                     <div class="aspect-[577/310] w-[36.0625rem] bg-gradient-to-r from-[#ff80b5] to-[#9089fc] opacity-30" style="clip-path: polygon(74.8% 41.9%, 97.2% 73.2%, 100% 34.9%, 92.5% 0.4%, 87.5% 0%, 75% 28.6%, 58.5% 54.6%, 50.1% 56.8%, 46.9% 44%, 48.3% 17.4%, 24.7% 53.9%, 0% 27.9%, 11.9% 74.2%, 24.9% 54.1%, 68.6% 100%, 74.8% 41.9%)" />
                 </div>

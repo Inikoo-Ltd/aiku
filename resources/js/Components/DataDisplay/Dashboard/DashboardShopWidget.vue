@@ -65,7 +65,7 @@ const registrationsRatio = computed(() => {
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
         <ShopSales :interval="interval" :data="data.interval_data" />
         <ShopInvoices :interval="interval" :data="data.interval_data" />
-        <div v-if="data.interval_data.registrations?.[interval]?.formatted_value > 0" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div v-if="data.interval_data.registrations?.[interval]?.formatted_value > 0" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Registrations') }}</p>
                 <span class="text-2xl font-bold">
@@ -78,7 +78,7 @@ const registrationsRatio = computed(() => {
             </div>
         </div>
 
-        <div v-if="registrationsRatio.with_orders > 0" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div v-if="registrationsRatio.with_orders > 0" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Registrations with Orders') }}</p>
                 <p class="flex flex-col">
@@ -96,7 +96,7 @@ const registrationsRatio = computed(() => {
             </div>
         </div>
 
-        <div v-if="registrationsRatio.without_orders > 0" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div v-if="registrationsRatio.without_orders > 0" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Registrations without Orders') }}</p>
                 <p class="flex flex-col">
@@ -114,7 +114,7 @@ const registrationsRatio = computed(() => {
             </div>
         </div>
 
-        <div class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Purchases') }}</p>
                 <span class="text-2xl font-bold">
@@ -127,7 +127,7 @@ const registrationsRatio = computed(() => {
             </div>
         </div>
 
-        <div v-if="getAverageOrderValue() !== null" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div v-if="getAverageOrderValue() !== null" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Average Order Value') }}</p>
                 <span class="text-2xl font-bold">{{ getAverageOrderValue() }}</span>
@@ -135,7 +135,7 @@ const registrationsRatio = computed(() => {
             </div>
         </div>
 
-        <div v-if="getConversionRate() !== null" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-sm rounded-lg">
+        <div v-if="getConversionRate() !== null" class="flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-xs rounded-lg">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Conversion Rate') }}</p>
                 <span class="text-2xl font-bold">{{ getConversionRate().toFixed(2) }}%</span>

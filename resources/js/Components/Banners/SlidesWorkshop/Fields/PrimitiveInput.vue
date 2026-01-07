@@ -71,7 +71,7 @@
   
   <template>
       <div class="relative">
-          <div class="flex rounded-md overflow-hidden shadow-sm ring-2 ring-gray-200 focus-within:ring-gray-500 bg-transparent">
+          <div class="flex rounded-md overflow-hidden shadow-xs ring-2 ring-gray-200 focus-within:ring-gray-500 bg-transparent">
               <span v-if="fieldData?.prefix" class="bg-gray-200 flex select-none items-center px-3 text-gray-500 sm:text-sm">
                   {{ fieldData?.prefix }}
               </span>

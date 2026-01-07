@@ -379,7 +379,7 @@ const radioValue = ref<string[]>(
 	<div v-else class="grid grid-cols-3 gap-6 p-6">
 		<!-- Card Informasi Perusahaan -->
 		<div
-			class="col-span-3 bg-green-50 rounded-lg shadow overflow-hidden border border-green-300 p-6">
+			class="col-span-3 bg-green-50 rounded-lg shadow-sm overflow-hidden border border-green-300 p-6">
 			<h4 class="text-lg font-semibold text-green-800">
 				{{ trans("Thank you for applying!") }}
 			</h4>
@@ -393,7 +393,7 @@ const radioValue = ref<string[]>(
 		</div>
 
 		<div
-			class="col-span-2 bg-white rounded-lg shadow overflow-hidden border xhover:shadow-2xl transition-shadow duration-300">
+			class="col-span-2 bg-white rounded-lg shadow-sm overflow-hidden border xhover:shadow-2xl transition-shadow duration-300">
 			<div class="px-6 py-4 border-b border-gray-200">
 				<h3 class="text-xl font-semibold ">{{ trans("My Details") }}</h3>
 				<p class="mt-1 text-sm text-gray-500">
@@ -441,7 +441,7 @@ const radioValue = ref<string[]>(
 			</div>
 		</div>
 
-		<div class="rounded-lg shadow overflow-hidden border border-[#0F1626] h-fit">
+		<div class="rounded-lg shadow-sm overflow-hidden border border-[#0F1626] h-fit">
 			<div
 				class="px-6 py-4 border-b border-[#0F1626] bg-gradient-to-r from-gray-900 to-gray-800">
 				<h4 class="text-2xl font-bold text-white">{{ trans("Contact Us") }}</h4>

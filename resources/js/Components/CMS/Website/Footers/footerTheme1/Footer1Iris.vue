@@ -381,7 +381,7 @@ const getValueColumn4Transleted = (value: string) => {
                             ]" />
 
                         <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
-                            <!-- <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+                            <!-- <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                                 <LoadingIcon v-if="isLoadingSubmit" class="mr-2" />
                                 Subscribe
                             </button> -->

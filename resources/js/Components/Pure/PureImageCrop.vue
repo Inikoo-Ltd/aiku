@@ -113,7 +113,7 @@ watch(isOpenModalCrop, (value) => {
         </Modal>
 
         <!-- Avatar Button: Large view -->
-        <div class="bg-gray-100 relative overflow-hidden h-40 min-w-32 w-auto aspect-ratio rounded lg:inline-block ring-1 ring-gray-500 shadow">
+        <div class="bg-gray-100 relative overflow-hidden h-40 min-w-32 w-auto aspect-ratio rounded lg:inline-block ring-1 ring-gray-500 shadow-sm">
             <Image class="h-full rounded" :src="imgAfterCrop" alt="" />
             <label id="input-avatar-large-mask" for="input-avatar-large"
                    class="absolute inset-0 flex h-full w-full items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 hover:opacity-100">

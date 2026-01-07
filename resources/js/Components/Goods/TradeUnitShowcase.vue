@@ -99,7 +99,7 @@ console.log
 
 
 <template>
-	<div class="w-full  px-4 py-3 mb-3 shadow-sm">
+	<div class="w-full  px-4 py-3 mb-3 shadow-xs">
 		<span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
 			<!-- Product name -->
 			<span class="align-middle">

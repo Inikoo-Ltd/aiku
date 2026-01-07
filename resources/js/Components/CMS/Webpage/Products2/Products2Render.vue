@@ -119,7 +119,7 @@ const toggleBackInStock = () =>
                                     tracking-wide uppercase
                                     py-1 sm:py-1
                                     text-center
-                                    shadow-sm md:shadow-md
+                                    shadow-xs md:shadow-md
                                     backdrop-blur-sm
                                 "
                             >

@@ -387,7 +387,7 @@ onMounted(() => {
             <!-- {{ portfolio.customer_sales_channel_platform_status }} {{   !portfolio.platform_status }} -->
             <template v-if="(portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status)">
                 <div v-if="portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
-                    <div class="min-h-12 h-auto max-h-24 min-w-24 w-auto max-w-24 shadow bg-gray-100">
+                    <div class="min-h-12 h-auto max-h-24 min-w-24 w-auto max-w-24 shadow-sm bg-gray-100">
                         <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
                     </div>
                     <div class="flex flex-col justify-start items-start gap-y-1">
@@ -427,7 +427,7 @@ onMounted(() => {
 
             <div v-else-if="portfolio.matched_product?.label">
                 <div v-tooltip="trans('Matched product')" class="flex gap-x-2 items-center border-l-2 border-green-500 bg-green-50 py-1 px-2">
-                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
+                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow-sm">
                         <img :src="portfolio.matched_product?.img" />
                     </div>
                     <div>
@@ -529,7 +529,7 @@ onMounted(() => {
                                             class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                             :alt="item.name"/> -->
                                         <div class="min-h-9 h-auto max-h-12 min-w-12 w-auto max-w-12 flex items-center justify-center border border-gray-300 rounded">
-                                            <img v-if="item.images?.[0]?.src" :src="item.images?.[0]?.src" class="shadow" />
+                                            <img v-if="item.images?.[0]?.src" :src="item.images?.[0]?.src" class="shadow-sm" />
                                             <FontAwesomeIcon v-else
                                                 v-tooltip="trans('No image available')"
                                                 icon="fal fa-image"

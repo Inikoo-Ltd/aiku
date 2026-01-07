@@ -45,7 +45,7 @@ onMounted(() => {
     <div class="relative w-full">
         <div class="flex flex-wrap gap-x-2 gap-y-3">
             <div v-for="colorTheme in useColorTheme" @click="() => onClickColor(colorTheme)"
-                class="relative h-20 aspect-[16/9] w-fit flex ring-1 ring-gray-300 hover:ring-2 hover:ring-gray-500 shadow rounded overflow-hidden cursor-pointer"
+                class="relative h-20 aspect-[16/9] w-fit flex ring-1 ring-gray-300 hover:ring-2 hover:ring-gray-500 shadow-sm rounded overflow-hidden cursor-pointer"
             >
                 <div class="absolute h-full left-0 w-1/6" :style="{backgroundColor: colorTheme[0]}" />
                 <div class="absolute h-0.5 w-4 left-1 top-2" :style="{backgroundColor: colorTheme[6]}" />

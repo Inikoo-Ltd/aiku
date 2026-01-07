@@ -86,7 +86,7 @@ watch(type, (newValue) => {
     <transition name="fade">
       <div v-if="type" class="mt-4">
         <h3 class="text-md font-medium text-gray-700 mb-2">Editor JSON-LD</h3>
-        <div class="border border-gray-300 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md">
+        <div class="border border-gray-300 rounded-lg overflow-hidden shadow-xs transition-all duration-300 hover:shadow-md">
           <Codemirror 
             v-model="form[fieldName]" 
             class="h-[300px] bg-gray-50 text-gray-900 border border-gray-200"

@@ -185,7 +185,7 @@ function onSubmitVideoUrl() {
 
                         <!-- Upload button overlay -->
                         <button type="button"
-                            class="absolute bottom-2 right-2 bg-white border rounded-full p-2 text-gray-500 shadow group-hover:opacity-100 opacity-0 transition"
+                            class="absolute bottom-2 right-2 bg-white border rounded-full p-2 text-gray-500 shadow-sm group-hover:opacity-100 opacity-0 transition"
                             @click="$refs[`fileInput-${categoryBox.column_in_db}`][0].click()">
                             <FontAwesomeIcon :icon="faUpload" />
                         </button>

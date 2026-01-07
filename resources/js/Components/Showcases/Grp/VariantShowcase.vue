@@ -161,7 +161,7 @@ console.log("MasterVariantShowcase props:", props)
     <div class="col-span-12 lg:col-span-9 grid grid-cols-1 lg:grid-cols-3 gap-3">
 
       <div class="space-y-3">
-        <div class="bg-white border rounded-lg shadow-sm overflow-hidden">
+        <div class="bg-white border rounded-lg shadow-xs overflow-hidden">
           <div class="aspect-square flex items-center justify-center bg-gray-50 relative">
             <Image v-if="selectedProduct?.main_images" :src="selectedProduct.main_images" :alt="selectedProduct.name"
               preview image-class="object-contain w-full h-full p-3" />
@@ -172,7 +172,7 @@ console.log("MasterVariantShowcase props:", props)
             </div>
 
             <span v-if="selectedProduct?.unit"
-              class="absolute top-2 left-2 bg-white/90 text-[10px] px-2 py-0.5 rounded-md shadow">
+              class="absolute top-2 left-2 bg-white/90 text-[10px] px-2 py-0.5 rounded-md shadow-sm">
               {{ selectedProduct.unit }}
             </span>
           </div>
@@ -198,7 +198,7 @@ console.log("MasterVariantShowcase props:", props)
 
       <div class="lg:col-span-2 space-y-3">
 
-        <div class="bg-white shadow-sm p-0.5 rounded-md">
+        <div class="bg-white shadow-xs p-0.5 rounded-md">
           <Swiper :space-between="6" :breakpoints="{
             0: { slidesPerView: 3.2 },
             640: { slidesPerView: 4.5 },
@@ -234,7 +234,7 @@ console.log("MasterVariantShowcase props:", props)
         </div>
 
 
-        <div class="bg-white rounded-lg border shadow-sm p-3 space-y-4">
+        <div class="bg-white rounded-lg border shadow-xs p-3 space-y-4">
           <div class="text-lg font-semibold text-gray-800">
             <ProductUnitLabel v-if="selectedProduct?.units" :units="selectedProduct.units" :unit="selectedProduct.unit"class="mr-2" />
               {{ selectedProduct?.name }}

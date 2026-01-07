@@ -52,7 +52,7 @@ const bottomNavOptions = [
             <div class="flex gap-x-1">
                 <div v-for="color in useSolidColor" @click="() => data.navigation.colorNav = color"
                     :style="{ 'background-color': color }"
-                    class="relative h-5 aspect-square rounded overflow-hidden shadow cursor-pointer transition-all duration-200 ease-in-out"
+                    class="relative h-5 aspect-square rounded overflow-hidden shadow-sm cursor-pointer transition-all duration-200 ease-in-out"
                     :class="{ 'scale-110': data.navigation?.colorNav == color }"
                 >
                     <transition name="slide-bot-to-top">

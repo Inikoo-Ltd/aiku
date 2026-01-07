@@ -58,7 +58,7 @@
                 </div>
                 <!-- Group of Button Page -->
                 <div v-if="HideButton">
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <nav class="relative z-0 inline-flex rounded-md shadow-xs -space-x-px" aria-label="Pagination">
                         <!-- Button Page: Back -->
                         <component :is="previousPageUrl ? 'a' : 'div'" :class="{
                             'cursor-not-allowed text-gray-400': !previousPageUrl,

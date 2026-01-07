@@ -68,7 +68,7 @@ const gridClass = computed(() => {
                         <RadioGroupOption as="template" v-for="option in fieldData.options" :key="option.value"
                             :value="option[fieldData.valueProp] || option" v-slot="{ active, checked }">
                             <div :class="[
-                                'relative flex cursor-pointer rounded-lg border p-3 shadow-sm focus:outline-none transition-all',
+                                'relative flex cursor-pointer rounded-lg border p-3 shadow-xs focus:outline-none transition-all',
                                 active ? 'border-indigo-500 ring-2 ring-indigo-500' : 'border-gray-300',
                                 checked ? 'bg-indigo-100 border-indigo-400' : 'hover:bg-gray-50'
                             ]">

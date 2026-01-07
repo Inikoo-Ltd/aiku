@@ -301,7 +301,7 @@ const layout = inject('layout', layoutStructure)
                 </div>
                 <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
                     <div v-for="platform in platformData" :key="platform.id"
-                         class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
+                         class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-xs sm:px-6 sm:pt-6">
                         <dt>
                             <div class="absolute rounded-md bg-slate-800 p-3 flex justify-center items-center">
                                 <FontAwesomeIcon :icon="platform.icon" class="size-6 text-white" fixed-width aria-hidden="true"/>

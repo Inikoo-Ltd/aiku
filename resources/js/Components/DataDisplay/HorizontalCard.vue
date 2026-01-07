@@ -77,7 +77,7 @@ const chartOptions = ref({
 </script>
 
 <template>
-	<div class="p-4 bg-white border rounded shadow-sm">
+	<div class="p-4 bg-white border rounded shadow-xs">
 		<h3 class="text-sm font-medium mb-4">Core Web Vitals</h3>
 		<Chart type="bar" :data="chartData" :options="chartOptions" class="h-60" />
 	</div>

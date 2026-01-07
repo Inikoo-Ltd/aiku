@@ -118,7 +118,7 @@ console.log('ssss',props)
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image_thumbnail)="{ item: collection }">
             <div class="flex justify-center">
-                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow-sm" />
             </div>
         </template>
         <template #cell(state_icon)="{ item: collection }">

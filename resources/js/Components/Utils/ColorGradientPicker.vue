@@ -138,7 +138,7 @@ const xxxx = [
 <template>
     <div class="relative">
         <!-- Preview -->
-        <div class="group relative h-12 w-full overflow-hidden rounded shadow" :style="{
+        <div class="group relative h-12 w-full overflow-hidden rounded shadow-sm" :style="{
             background: compGradient || 'linear-gradient(0deg, rgb(20, 20, 20), rgb(240, 240, 240))'
         }" />
 
@@ -216,7 +216,7 @@ const xxxx = [
                     />
                 </template>
                 <template #button>
-                    <div class="group relative h-7 w-7 overflow-hidden rounded shadow cursor-pointer" :style="{
+                    <div class="group relative h-7 w-7 overflow-hidden rounded shadow-sm cursor-pointer" :style="{
                         backgroundColor: props.data?.colors[index]
                     }" />
                 </template>
@@ -243,7 +243,7 @@ const xxxx = [
                         set(props.data, 'angle', stock.angle),
                         set(props.data, 'colors', stock.colors)
                     }"
-                    class="group relative h-7 w-full max-w-11 overflow-hidden rounded shadow cursor-pointer"
+                    class="group relative h-7 w-full max-w-11 overflow-hidden rounded shadow-sm cursor-pointer"
                     :style="{
                         background: stock.value
                     }"

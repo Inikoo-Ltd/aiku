@@ -83,7 +83,7 @@ const closePopover = (close: any): void => {
                 {{ trans('Profit Margin Breakdown') }}
             </div>
 
-            <div class="p-5 bg-gray-50 rounded-md shadow-sm border border-gray-200 text-gray-800 space-y-2">
+            <div class="p-5 bg-gray-50 rounded-md shadow-xs border border-gray-200 text-gray-800 space-y-2">
 
                 <!-- Retail Price -->
                 <div class="flex justify-between items-center text-sm">

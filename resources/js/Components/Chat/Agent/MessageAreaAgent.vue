@@ -270,7 +270,7 @@ const handleClickOutside = (e: MouseEvent) => {
 				</button>
 
 				<div v-if="isMenuOpen && !isClosed"
-					class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
+					class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow-sm z-50">
 
 					<ModalConfirmationDelete :routeDelete="{
 						name: 'grp.org.crm.agents.sessions.close',

@@ -267,7 +267,7 @@ const debounceUpdateName = debounce((description: string) => {
                     ]"
                 >
                     <template #editor-content="{ editor }">
-                        <div class="border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-gray-400"
+                        <div class="border-2 border-gray-300 rounded-lg p-3 shadow-xs focus-within:border-gray-400"
                             :class="get(listState, [selectedDataToEditDescription?.id, 'customer_description'], undefined) === 'error' ? 'errorShake' : ''"
                         >
                             <EditorContent :editor="editor" class="h-80 overflow-y-auto focus:outline-none" />

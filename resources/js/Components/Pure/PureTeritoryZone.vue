@@ -107,7 +107,7 @@ function getCountryLabel(code: string): string {
     <div
       v-for="(item, index) in items"
       :key="index"
-      class="p-3 rounded border border-gray-300 bg-white shadow-sm space-y-2"
+      class="p-3 rounded border border-gray-300 bg-white shadow-xs space-y-2"
     >
       <!-- Country Code -->
       <div class="flex justify-between items-center">

@@ -52,7 +52,7 @@
   <template>
       <div class="py-3 mx-auto px-5 space-y-4">
           <!-- The banner -->
-          <div v-if="data.compiled_layout?.components?.length && data.state != 'switch_off'" class="mx-auto w-fit rounded-md overflow-hidden border border-gray-300 shadow">
+          <div v-if="data.compiled_layout?.components?.length && data.state != 'switch_off'" class="mx-auto w-fit rounded-md overflow-hidden border border-gray-300 shadow-sm">
               <BannerPreview :data="data" />
           </div>
   

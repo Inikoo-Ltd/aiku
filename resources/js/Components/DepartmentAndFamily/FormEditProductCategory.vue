@@ -90,7 +90,7 @@ const submitForm = async () => {
       <label for="description" class="block mb-1 text-sm font-semibold text-gray-700">Description</label>
       <Editor v-model="form.description">
         <template #editor-content="{ editor }">
-          <div class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-blue-400">
+          <div class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-xs focus-within:border-blue-400">
             <EditorContent :editor="editor" class="editor-content focus:outline-none" />
           </div>
         </template>
@@ -101,7 +101,7 @@ const submitForm = async () => {
       <label for="description_extra" class="block mb-1 text-sm font-semibold text-gray-700">Description extra</label>
       <Editor v-model="form.description_extra">
         <template #editor-content="{ editor }">
-          <div class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-blue-400">
+          <div class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-xs focus-within:border-blue-400">
             <EditorContent :editor="editor" class="editor-content focus:outline-none" />
           </div>
         </template>

@@ -162,7 +162,7 @@ defineExpose({
 	</div>
     
     <!-- Section: Table -->
-	<div class="overflow-auto ring-1 ring-black/5 sm:rounded-lg align-middle shadow" :style="{ maxHeight : '500px', minHeight: '200px'}">
+	<div class="overflow-auto ring-1 ring-black/5 sm:rounded-lg align-middle shadow-sm" :style="{ maxHeight : '500px', minHeight: '200px'}">
         <table class="min-w-full border-separate border-spacing-0">
             <thead class="sticky top-0 z-10 bg-gray-100">
                 <tr>

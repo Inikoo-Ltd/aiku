@@ -280,7 +280,7 @@ const routeOrder = (order) => {
 		<!-- Column 1: Payment & Customer Information -->
 		<div class="space-y-6">
 			<!-- Section: Payment Summary -->
-			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+			<div class="rounded-lg shadow-xs ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						{{ trans('Payment Summary') }}
@@ -363,7 +363,7 @@ const routeOrder = (order) => {
 		<!-- Column 2: Order & Account Information -->
 		<div class="space-y-6">
 			<!-- Section: Order data -->
-			<div v-if="normalizedShowcase.order_data?.data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+			<div v-if="normalizedShowcase.order_data?.data" class="rounded-lg shadow-xs ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: themeColors.buttonBg }" />
@@ -463,7 +463,7 @@ const routeOrder = (order) => {
 			</div>
 
 			<!-- Section: Invoice data -->
-			<div v-if="normalizedShowcase.invoice_data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+			<div v-if="normalizedShowcase.invoice_data" class="rounded-lg shadow-xs ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-file-invoice-dollar" :style="{ color: themeColors.buttonBg }" />
@@ -507,7 +507,7 @@ const routeOrder = (order) => {
 				</div>
 			</div>
 
-			<div v-if="normalizedShowcase.creditTransaction?.type == 'Top up' && normalizedShowcase.customer.name" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+			<div v-if="normalizedShowcase.creditTransaction?.type == 'Top up' && normalizedShowcase.customer.name" class="rounded-lg shadow-xs ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200 flex">
 					<h3 class="text-lg font-medium flex items-center gap-2  w-full">
 						<FontAwesomeIcon icon="fal fa-user" :style="{ color: themeColors.buttonBg }" />
@@ -558,7 +558,7 @@ const routeOrder = (order) => {
 
 			<!-- Section: Credit Transaction Information -->
 			<div v-if="normalizedShowcase.creditTransaction"
-				class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+				class="rounded-lg shadow-xs ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-piggy-bank" :style="{ color: themeColors.buttonBg }" />

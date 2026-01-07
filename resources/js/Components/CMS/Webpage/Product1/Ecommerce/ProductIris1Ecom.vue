@@ -155,7 +155,7 @@ console.log('sss',layout)
                             <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
                                 v-tooltip="customerData?.back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
                                 @click="() => customerData?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-                                class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+                                class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-xs transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
@@ -343,7 +343,7 @@ console.log('sss',layout)
         <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
             v-tooltip="customerData.is_back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
             @click="() => customerData.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-            class="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+            class="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-xs transition hover:bg-gray-200 hover:border-gray-400">
             <LoadingIcon v-if="isLoadingRemindBackInStock" />
             <FontAwesomeIcon v-else :icon="customerData.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
                 :class="[customerData.back_in_stock ? 'text-green-600' : 'text-gray-600']" />
