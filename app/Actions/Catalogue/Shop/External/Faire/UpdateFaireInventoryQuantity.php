@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 
 class UpdateFaireInventoryQuantity extends OrgAction
 {
-    public string $commandSignature = 'faire:inventory {shop} {product}';
+    public string $commandSignature = 'faire:inventory {shop}';
 
     public function handle(Shop $shop, Product $product): array
     {
