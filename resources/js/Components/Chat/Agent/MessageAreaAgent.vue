@@ -337,7 +337,7 @@ const handleClickOutside = (e: MouseEvent) => {
 			<!-- Message Input -->
 			<textarea ref="messageInput" v-model="newMessage" @input="autoResize"
 				@keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..." class="flex-1 resize-none border rounded-lg px-3 py-2 text-sm
-		       leading-5  focus:outline-none" />
+		       leading-5  focus:outline-hidden" />
 
 			<!-- Send -->
 			<Button @click="sendMessage" :icon="faPaperPlane"></Button>

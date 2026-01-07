@@ -184,7 +184,7 @@ watch(
 
         <div class="flex items-center gap-3">
           <button type="button"
-            class="border border-gray-300 rounded-sm px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
+            class="border border-gray-300 rounded-sm px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500">
             <IconPicker :model-value="localNav.icon" @update:model-value="icon => commit({ icon })" />
           </button>
 

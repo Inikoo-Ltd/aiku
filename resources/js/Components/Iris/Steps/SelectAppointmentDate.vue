@@ -114,7 +114,7 @@ const meetOptions = [
                                             />
                                             <!-- <div
                                                 :class="[
-                                                    'cursor-pointer focus:outline-none flex items-center justify-center rounded-md py-3 px-3 text-sm font-medium',
+                                                    'cursor-pointer focus:outline-hidden flex items-center justify-center rounded-md py-3 px-3 text-sm font-medium',
                                                     active ? 'ring-2 ring-gray-600' : '',
                                                     checked ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' : 'border border-dashed border-gray-300 bg-white text-gray-700 hover:bg-gray-200',
                                                 ]">

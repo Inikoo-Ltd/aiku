@@ -185,7 +185,7 @@ defineOptions({
                     </div>
 
                     <button v-if="product.description_extra" @click="toggleExpanded"
-                        class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                        class="mt-1 text-gray-900 text-xs underline focus:outline-hidden">
                         {{ expanded ? trans("Show Less") : trans("Read More") }}
                     </button>
                 </div>

@@ -136,7 +136,7 @@ const onLogoutAuth = () => {
 
 				<Popover class="relative w-full" v-slot="{ open }">
 					<PopoverButton
-						class="flex w-full focus:outline-none focus:ring-0 focus:border-none px-2">
+						class="flex w-full focus:outline-hidden focus:ring-0 focus:border-none px-2">
 						<div class="w-full rounded-md" :class="[open ? 'bg-black/25' : '']">
 							<NavigationSimple :nav="logoutData" />
 						</div>

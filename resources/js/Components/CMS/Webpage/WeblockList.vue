@@ -83,7 +83,7 @@ onMounted(() => {
 					v-model="search"
 					type="text"
 					placeholder="Search blocks..."
-					class="px-3 py-2 text-sm border rounded-md w-64 bg-white focus:outline-none focus:ring focus:ring-indigo-200"
+					class="px-3 py-2 text-sm border rounded-md w-64 bg-white focus:outline-hidden focus:ring focus:ring-indigo-200"
 				/>
 			</div>
 

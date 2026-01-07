@@ -89,7 +89,7 @@ const onLogoutAuth = () => {
             <!-- Section: LogoutRetina -->
             <div class="absolute left-0 bottom-[88px] w-full mx-auto">
                 <Popover class="relative w-10/12 mx-auto" v-slot="{ open }">
-                    <PopoverButton class="w-fit flex xw-full focus:outline-none focus:ring-0 focus:border-none">
+                    <PopoverButton class="w-fit flex xw-full focus:outline-hidden focus:ring-0 focus:border-none">
                         <div class="xw-full rounded-md flex justify-center "
                             :class="[
                                 open ? 'bg-white/25' : '',

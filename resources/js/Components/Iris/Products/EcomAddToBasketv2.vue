@@ -273,7 +273,7 @@ watch(() => props.customerData, (newVal) => {
                 </button>
 
                 <!-- Input -->
-                <input type="number" class="w-full h-10 text-center leading-none outline-none appearance-none" :min="0"
+                <input type="number" class="w-full h-10 text-center leading-none outline-hidden appearance-none" :min="0"
                     :max="customer.stock" :disabled="isLoadingSubmitQuantityProduct" :value="customer.quantity_ordered_new === null || customer.quantity_ordered_new === undefined
                         ? customer.quantity_ordered ?? 0
                         : customer.quantity_ordered_new

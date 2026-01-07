@@ -73,7 +73,7 @@ watch(value, (newValue) => {
         <Switch
             v-model="value"
             @update:modelValue="() => form.errors[fieldName] = null"
-            class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+            class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/75"
             :class="[
                 value ? 'bg-indigo-500' : 'bg-indigo-100',
                 form.errors[fieldName] ? 'errorShake' : ''

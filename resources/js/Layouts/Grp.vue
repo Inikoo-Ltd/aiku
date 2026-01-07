@@ -513,7 +513,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 		color: v-bind("`${layout.app.theme[7]}`");
 	}
 
-	@apply focus:ring-0 focus:outline-none focus:border-none
+	@apply focus:ring-0 focus:outline-hidden focus:border-none
     bg-no-repeat [background-position:0%_100%]
     transition-all
     [background-size:100%_0.2em]
@@ -532,7 +532,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 		color: v-bind("`${layout.app.theme[7]}`");
 	}
 
-	@apply focus:ring-0 focus:outline-none focus:border-none
+	@apply focus:ring-0 focus:outline-hidden focus:border-none
     bg-no-repeat [background-position:0%_100%]
     [background-size:100%_0.2em]
     motion-safe:transition-all motion-safe:duration-200
@@ -550,7 +550,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 	@apply rounded-sm overflow-hidden
     cursor-pointer
-    focus:ring-0 focus:outline-none
+    focus:ring-0 focus:outline-hidden
     bg-no-repeat [background-position:0%_100%]
     motion-safe:transition-all motion-safe:duration-100
     [background-size:100%_100%]
@@ -571,7 +571,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 	@apply rounded-sm overflow-hidden
     cursor-pointer
-    focus:ring-0 focus:outline-none
+    focus:ring-0 focus:outline-hidden
     bg-no-repeat [background-position:0%_100%]
     [background-size:100%_0em]
     motion-safe:transition-all motion-safe:duration-100

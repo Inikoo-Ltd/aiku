@@ -69,7 +69,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
             <!-- Floating menu button (mobile only) -->
             <button
                 @click="sidebarOpen = !sidebarOpen"
-                class="fixed bottom-4 right-4 z-50 md:hidden bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg focus:outline-none"
+                class="fixed bottom-4 right-4 z-50 md:hidden bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg focus:outline-hidden"
                 aria-label="Toggle menu">
                 <FontAwesomeIcon
                     :icon="faListUl"
@@ -151,7 +151,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         color: v-bind('`${layout.app.theme[3]}`');
     }
 
-    @apply focus:ring-0 focus:outline-none focus:border-none
+    @apply focus:ring-0 focus:outline-hidden focus:border-none
     bg-no-repeat [background-position:0%_100%]
     [background-size:100%_0.2em]
     motion-safe:transition-all motion-safe:duration-200
@@ -166,7 +166,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         color: v-bind('`${layout.app.theme[7]}`');
     }
 
-    @apply focus:ring-0 focus:outline-none focus:border-none
+    @apply focus:ring-0 focus:outline-hidden focus:border-none
     bg-no-repeat [background-position:0%_100%]
     [background-size:100%_0.2em]
     motion-safe:transition-all motion-safe:duration-200
@@ -186,7 +186,7 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 
     @apply border-indigo-300 border-2 rounded-md
     cursor-pointer
-    focus:ring-0 focus:outline-none focus:border-none
+    focus:ring-0 focus:outline-hidden focus:border-none
     bg-no-repeat [background-position:0%_100%]
     [background-size:100%_0em]
     motion-safe:transition-all motion-safe:duration-100

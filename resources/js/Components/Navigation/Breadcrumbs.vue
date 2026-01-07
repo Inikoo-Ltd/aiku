@@ -147,7 +147,7 @@ const isLoading = ref<string | boolean>(false)
                 leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100"
                 leave-to-class="transform opacity-0 scale-95">
                 <MenuItems
-                    class="origin-top-right absolute left-4 top-9 w-64 rounded-md shadow-lg bg-white ring-1 ring-black/5 divide-y divide-gray-200 focus:outline-none">
+                    class="origin-top-right absolute left-4 top-9 w-64 rounded-md shadow-lg bg-white ring-1 ring-black/5 divide-y divide-gray-200 focus:outline-hidden">
                     <MenuItem v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx" class="">
                     <template v-if="breadcrumb.type === 'simple'">
                         <component :is="breadcrumb.simple?.url || breadcrumb.simple?.route?.name ? Link : 'span'"

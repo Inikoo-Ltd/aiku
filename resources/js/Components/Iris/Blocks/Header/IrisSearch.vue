@@ -101,7 +101,7 @@ onUnmounted(() => {
 <template>
     <!-- Button: Search -->
     <div id="search"
-        class="h-7 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
+        class="h-7 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 hover:text-gray-500 focus:outline-hidden focus:ring-2 focus:ring-gray-500">
         <span class="sr-only">{{ trans("Search") }}</span>
         <FontAwesomeIcon aria-hidden="true" size="sm" icon="fa-regular fa-search" />
 

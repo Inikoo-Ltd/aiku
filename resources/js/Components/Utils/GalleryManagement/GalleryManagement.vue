@@ -124,21 +124,21 @@ const beforeSubmitImage = (files) => {
                 <Tab as="template" v-slot="{ selected }" v-if="tabs.includes('upload')">
                     <button
                         :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
-                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none mb-2">
+                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-hidden mb-2">
                         Upload
                     </button>
                 </Tab>
                 <Tab as="template" v-slot="{ selected }" v-if="tabs.includes('images_uploaded')">
                     <button
                         :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
-                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none mb-2">
+                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-hidden mb-2">
                         Images Uploaded
                     </button>
                 </Tab>
                 <Tab as="template" v-slot="{ selected }" v-if="tabs.includes('stock_images')">
                     <button
                         :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
-                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none mb-2">
+                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-hidden mb-2">
                         Stock Images
                     </button>
                 </Tab>

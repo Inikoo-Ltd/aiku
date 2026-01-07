@@ -359,6 +359,6 @@ const isModalProductForSale = ref(false)
             color: v-bind('`${layout.app.theme[7]}`');
         }
 
-        @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] transition-all [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
+        @apply focus:ring-0 focus:outline-hidden focus:border-none bg-no-repeat [background-position:0%_100%] transition-all [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
     }
 </style>

@@ -99,7 +99,7 @@ const onCancel = (e) => {
             <div class="flex justify-end">
                 <Button @click="onCancel" label="cancel" type="tertiary" class="mr-1" />
                 <Button @click="onSubmit" label="Save" type="save" :loading="loading"
-                    class="bg-indigo-700 hover:bg-slate-600 border border-slate-500 text-teal-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2" />
+                    class="bg-indigo-700 hover:bg-slate-600 border border-slate-500 text-teal-50 focus:outline-hidden focus:ring-2 focus:ring-gray-300 focus:ring-offset-2" />
             </div>
         </div>
     </div>

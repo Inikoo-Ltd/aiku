@@ -110,7 +110,7 @@ console.log(props.data)
                 :class="open && 'bg-gray-100'">
                 <div class="flex items-center w-1/2 gap-x-2">
                     <!-- Location Icon -->
-                    <DisclosureButton class="flex-none rounded-full focus:outline-none"
+                    <DisclosureButton class="flex-none rounded-full focus:outline-hidden"
                         :class="location.notes && 'text-yellow-400'" @click="hideOther(index)"
                         :ref="el => (disclosure[index] = close)">
                         <FontAwesomeIcon v-tooltip="'Notes'" :icon="location.notes ? fasStickyNote : faStickyNote" />

@@ -71,7 +71,7 @@ const handleDragLeave = () => {
                 <div class="flex text-sm text-gray-600">
                     <label
                         :for="`file-upload-${fieldName}`"
-                        class="relative cursor-pointer rounded-md font-medium text-org-600 hover:text-org-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-org-500 focus-within:ring-offset-2"
+                        class="relative cursor-pointer rounded-md font-medium text-org-600 hover:text-org-500 focus-within:outline-hidden focus-within:ring-2 focus-within:ring-org-500 focus-within:ring-offset-2"
                     >
                         <span>{{ fileName || 'Upload a file' }}</span>
                         <input

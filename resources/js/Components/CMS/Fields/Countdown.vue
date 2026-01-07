@@ -64,7 +64,7 @@ const model = defineModel()
                 >
                     <template #editor-content="{ editor }">
                         <div class="bg-gray-200 editor-wrapper border-2 border-gray-300 rounded-lg px-3 py-2 shadow-xs focus-within:border-blue-400">
-                            <EditorContent :editor="editor" class="focus:outline-none" />
+                            <EditorContent :editor="editor" class="focus:outline-hidden" />
                         </div>
                     </template>
                 </Editor2>

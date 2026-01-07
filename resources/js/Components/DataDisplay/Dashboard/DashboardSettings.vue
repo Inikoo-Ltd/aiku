@@ -275,7 +275,7 @@ onMounted(() => {
                                     v-slot="{ active, checked }"
                                 >
                                     <div :class="[
-                                            'cursor-pointer focus:outline-none flex items-center justify-center py-1 sm:py-2 md:py-3 px-2 sm:px-3 text-xs sm:text-sm font-medium whitespace-nowrap',
+                                            'cursor-pointer focus:outline-hidden flex items-center justify-center py-1 sm:py-2 md:py-3 px-2 sm:px-3 text-xs sm:text-sm font-medium whitespace-nowrap',
                                             checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
                                         ]"
                                          v-tooltip="option.tooltip"

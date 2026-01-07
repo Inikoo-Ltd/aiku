@@ -302,7 +302,7 @@ console.log(props)
                                 <Switch @click="previewMode = !previewMode"
                                     :class="[previewMode ? 'bg-slate-600' : 'bg-slate-300']"
                                     :disabled="selectedLang !== null"
-                                    class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
+                                    class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/75">
                                     <span aria-hidden="true" :class="previewMode ? 'translate-x-3' : 'translate-x-0'"
                                         class="pointer-events-none inline-block h-full w-1/2 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out">
                                     </span>

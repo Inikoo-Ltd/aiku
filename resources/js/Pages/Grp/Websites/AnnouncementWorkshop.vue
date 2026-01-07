@@ -362,7 +362,7 @@ const onSectionSetting = () => {
                     v-slot="{ selected }"
                 >
                     <button :class="[
-                        'px-8 w-full rounded-lg py-2.5 text-sm font-medium leading-5 ring-white/60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                        'px-8 w-full rounded-lg py-2.5 text-sm font-medium leading-5 ring-white/60 ring-offset-2 ring-offset-blue-400 focus:outline-hidden focus:ring-2',
                         selected
                             ? 'bg-white text-slate-700 shadow'
                             : 'text-blue-100 hover:bg-white/[0.12] hover:text-white',

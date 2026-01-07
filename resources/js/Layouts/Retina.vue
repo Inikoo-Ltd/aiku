@@ -457,7 +457,7 @@ onMounted(() => {
         color: #374151;
     }
 
-    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+    @apply focus:ring-0 focus:outline-hidden focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
 }
 
 .secondaryLink {
@@ -468,7 +468,7 @@ onMounted(() => {
         color: v-bind('`${layout.app.theme[7]}`');
     }
 
-    @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
+    @apply focus:ring-0 focus:outline-hidden focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
 }
 
 // For icon box in FlatTreemap
@@ -482,7 +482,7 @@ onMounted(() => {
         color: v-bind('`${layout.app.theme[1]}`');
     }
 
-    @apply border-indigo-300 border-2 rounded-md cursor-pointer focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0em] motion-safe:transition-all motion-safe:duration-100 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;
+    @apply border-indigo-300 border-2 rounded-md cursor-pointer focus:ring-0 focus:outline-hidden focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0em] motion-safe:transition-all motion-safe:duration-100 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;
 }
 
 .vue-notification-group {

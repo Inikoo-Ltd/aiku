@@ -261,7 +261,7 @@ onMounted(() => {
 					rows="1"
 					@keydown="handleKeyDown"
 					placeholder="Type a message..."
-					class="flex-1 resize-none px-3 py-2 rounded-lg text-sm outline-none border"
+					class="flex-1 resize-none px-3 py-2 rounded-lg text-sm outline-hidden border"
 					:style="{ borderColor: layout.app.theme[4] }"
 				/>
 

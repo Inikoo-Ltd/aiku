@@ -102,7 +102,7 @@ const changePaddingToSameValue = (newVal: number) => {
                     :class="[
                         isPaddingUnitLinked ? 'bg-slate-600' : 'bg-slate-300'
                     ]"
-                    class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                    class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/75"
                 >
                     <!-- <span class="sr-only">Use setting</span> -->
                     <span aria-hidden="true" :class="isPaddingUnitLinked ? 'translate-x-3' : 'translate-x-0'"

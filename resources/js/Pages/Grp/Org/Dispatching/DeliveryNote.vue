@@ -570,7 +570,7 @@ onMounted(() => {
 								v-for="picker in quick_pickers"
 								:key="picker.id"
 								@click="selectedPicker = picker"
-								class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
 								:class="{
 									'bg-blue-500 text-white': selectedPicker?.id === picker.id,
 								}">

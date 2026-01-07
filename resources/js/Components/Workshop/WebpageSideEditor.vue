@@ -285,7 +285,7 @@ const cancelRename = () => {
 				<Tab
 					v-for="(tab, index) in tabs"
 					:key="index"
-					class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-none"
+					class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-hidden"
 					:class="
 						selectedTab === index ? 'bg-white text-theme border-b-2 border-theme' : ''
 					">
@@ -319,7 +319,7 @@ const cancelRename = () => {
 								:size="'xs'"
 								label="Block" />
 							<select
-								class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
+								class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-hidden"
 								:value="filterBlock"
 								@change="(event: { target: { value: any } }) => filterBlock = event.target.value">
 								<option disabled value="">Filter</option>

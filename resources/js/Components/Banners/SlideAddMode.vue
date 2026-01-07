@@ -39,7 +39,7 @@ const onChange = () => {
             :class="bannerType == 'square' ? 'h-72 aspect-square mx-auto' : ''"
         >
             <label for="fileInput"
-                class="absolute cursor-pointer rounded-md inset-0 focus-within:outline-none focus-within:ring-2 focus-within:ring-gray-400 focus-within:ring-offset-0">
+                class="absolute cursor-pointer rounded-md inset-0 focus-within:outline-hidden focus-within:ring-2 focus-within:ring-gray-400 focus-within:ring-offset-0">
                 <!-- <span>{{ trans("Click") }}</span> -->
                 <input type="file" multiple name="file" id="fileInput" class="sr-only" @change="onChange" ref="fileInput" />
             </label>

@@ -57,7 +57,7 @@ const status = computed(() => ({
         <div class="text-gray-600 leading-relaxed" v-if="status.description" v-html="props.data?.description"></div>
         <div v-if="showExtra" class="text-gray-600 leading-relaxed" v-html="props.data?.description_extra"></div>
         <button v-if="props.data?.description_extra" @click="showExtra = !showExtra"
-          class="text-blue-500 text-xs font-medium hover:underline focus:outline-none">
+          class="text-blue-500 text-xs font-medium hover:underline focus:outline-hidden">
           {{ showExtra ? trans("Show Less") : trans("Read More") }}
         </button>
       </div>

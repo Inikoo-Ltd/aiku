@@ -115,7 +115,7 @@ const onExport = () => {
                 </div>
 
                 <transition name="headlessui2">
-                    <MenuItems class="w-64 z-10 absolute right-0 p-2 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
+                    <MenuItems class="w-64 z-10 absolute right-0 p-2 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-hidden" >
                         <div class="mb-2 space-y-1">
                             <div @click="() => selectedColumnExport.length === props.export.columns.length ? selectedColumnExport = [] : selectedColumnExport = props.export.columns.map(column => column.value)"
                                 class="flex items-center justify-end gap-x-1.5 whitespace-nowrap px-3 py-1 cursor-pointer select-none border-b border-gray-300"
@@ -139,7 +139,7 @@ const onExport = () => {
                             :href="route(props.export.route.name, {...props.export.route.parameters, columns: selectedColumnExport.join(',')})"
                             doxwnload
                             target="_blank"
-                            xclass="bg-indigo-200/70 hover:bg-indigo-200 w-full leading-4 inline-flex justify-center items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max border border-gray-300 text-gray-700 rounded-md px-3 md:px-4 text-center py-[3px] md:py-[6px] text-sm"
+                            xclass="bg-indigo-200/70 hover:bg-indigo-200 w-full leading-4 inline-flex justify-center items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed min-w-max border border-gray-300 text-gray-700 rounded-md px-3 md:px-4 text-center py-[3px] md:py-[6px] text-sm"
                         >
                             <Button
                                 icon="fas fa-file-export"

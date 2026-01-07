@@ -1055,7 +1055,7 @@ const calculateVat = (price: number) => {
                 >
                     <template #editor-content="{ editor }">
                         <div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-xs focus-within:border-gray-400">
-                            <EditorContent :editor="editor" class="focus:outline-none" />
+                            <EditorContent :editor="editor" class="focus:outline-hidden" />
                         </div>
                     </template>
                 </Editor2>
