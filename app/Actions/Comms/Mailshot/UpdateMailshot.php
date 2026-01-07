@@ -31,6 +31,10 @@ class UpdateMailshot extends OrgAction
     {
         $mailshot = $this->update($mailshot, $modelData, ['data']);
 
+        // update subject if changed
+        if ($mailshot->wasChanged('subject') && $mailshot->email) {
+            $mailshot->email->update(['subject' => $mailshot->subject]);
+        }
 
         if ($mailshot->wasChanged('state')) {
             GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
