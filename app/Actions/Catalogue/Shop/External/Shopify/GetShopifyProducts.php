@@ -19,6 +19,8 @@ class GetShopifyProducts extends OrgAction
 
     public function asCommand($command)
     {
-        return $this->handle(Shop::where('slug', $command->argument('shop'))->first());
+        $this->handle(Shop::where('slug', $command->argument('shop'))->first());
+
+        return 0;
     }
 }
