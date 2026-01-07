@@ -50,7 +50,7 @@ class StoreMasterVariant extends OrgAction
 
             $masterVariant->refresh();
 
-            foreach ($masterVariant->allProduct() as $masterAsset) {
+            foreach ($masterVariant->fetchProductFromData() as $masterAsset) {
                 $masterAsset->updateQuietly([
                     'master_variant_id' => $masterVariant->id,
                     'is_variant_leader' => $masterVariant->leader_id == $masterAsset->id,

@@ -7,6 +7,7 @@ import { Image as ImageTS } from "@/types/Image"
 import { isArray } from "lodash-es"
 import axios from "axios"
 import { getProductRenderDropshippingComponent } from "@/Composables/getIrisComponents"
+import { faGameConsoleHandheld } from "@far"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -119,10 +120,26 @@ const fetchData = async () => {
   }
 }
 
+
+const getAllProductFormVariant = async () => {
+    console.log("fetching products from variant", variant.value.id)
+  try {
+    const response = await axios.get(
+      route("iris.json.products.variant", {
+        variant: variant.value.id
+      })
+    )
+   console.log("products from variant", response.data)
+  } catch (error: any) {
+    console.error("cannot break cached cuz", error)
+  }
+}
+
+
 onMounted(() => {
     if (layout?.iris_variables && layout?.iris?.is_logged_in) {
         fetchProductExistInChannel()
-        fetchData() // break chaced
+        fetchData()
     }
     if (props.fieldValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
@@ -136,6 +153,7 @@ onMounted(() => {
             }
         })
     }
+    if(variant.value) getAllProductFormVariant()
 })
 
 
