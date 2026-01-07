@@ -413,6 +413,11 @@ class StoreShop extends OrgAction
 
     public function htmlResponse(Shop $shop): RedirectResponse
     {
-        return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug]);
+        return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug])
+            ->with('notification', [
+                'status'  => 'success',
+                'title' => __('Your shop is still being created.'),
+                'description' => __('Please wait approximately 45 minutes for the shop to be fully created.'),
+            ]);
     }
 }

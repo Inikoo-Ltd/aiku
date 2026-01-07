@@ -117,7 +117,7 @@ const isOpenModalAddShop = ref(false)
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
         <template #otherBefore>
-          <Button v-if="currentTab == 'shops' && layout.app.environment !== 'production'" :type="'edit'" @click="isOpenModalAddShop = true">
+          <Button v-if="currentTab == 'shops'" :type="'edit'" @click="isOpenModalAddShop = true">
             <FontAwesomeLayers class="me-2">
               <FontAwesomeIcon :icon="faStoreAlt"/>
               <FontAwesomeIcon :icon="faPlusCircle" style="left: unset; right: -12px; bottom: -22px; width: 75%;"/>
