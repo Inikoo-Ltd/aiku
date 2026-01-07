@@ -176,7 +176,7 @@ class IndexShops extends OrgAction
                         'title' => __('Shop')
                     ],
                     'actions' => [
-                        $this->canEdit && !app()->isProduction() ? [
+                        $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New shop'),

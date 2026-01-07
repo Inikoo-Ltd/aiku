@@ -12,7 +12,6 @@ use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
@@ -25,7 +24,6 @@ use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\Organisation\SetIconAsShopLogo;
-use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
@@ -34,7 +32,6 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
@@ -44,7 +41,6 @@ use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\Role;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
@@ -146,8 +142,8 @@ class StoreShop extends OrgAction
             $shop->outboxCustomerNotificationIntervals()->create();
             $shop->outboxColdEmailsIntervals()->create();
             $shop->outboxPushIntervals()->create();
-            StoreShopPlatformStats::run($shop);
 
+            StoreShopPlatformStats::run($shop);
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $shop->timeSeries()->create(['frequency' => $frequency]);
             }
@@ -159,7 +155,6 @@ class StoreShop extends OrgAction
                     $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
                 }
             }
-
             $shop->serialReferences()->create(
                 [
                     'model'           => SerialReferenceModelEnum::CUSTOMER,
@@ -179,7 +174,6 @@ class StoreShop extends OrgAction
                     'format'          => $shop->slug.'-%04d'
                 ]
             );
-
             $shop->serialReferences()->create(
                 [
                     'model'           => SerialReferenceModelEnum::PURGE,
@@ -195,7 +189,6 @@ class StoreShop extends OrgAction
                     'format'          => 'inv-'.$shop->slug.'-%04d'
                 ]
             );
-
             $shop->serialReferences()->create(
                 [
                     'model'           => SerialReferenceModelEnum::REFUND,
@@ -218,7 +211,6 @@ class StoreShop extends OrgAction
             }
 
             SetCurrencyHistoricFields::run($shop->currency, $shop->created_at);
-
             $paymentAccount       = StorePaymentAccount::make()->action(
                 $organisation->getAccountsServiceProvider(),
                 [
@@ -239,7 +231,6 @@ class StoreShop extends OrgAction
                     'state'       => PaymentAccountShopStateEnum::ACTIVE
                 ]
             );
-
             SeedTrafficSources::run($shop);
 
             $shop->refresh();
@@ -247,20 +238,17 @@ class StoreShop extends OrgAction
             return $shop;
         });
 
-
         GroupHydrateShops::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateShops::dispatch($organisation)->delay($this->hydratorsDelay);
-        ProspectQuerySeeder::run($shop);
-        SeedShopOutboxes::run($shop);
-        SeedJobPositions::run($organisation);
+        ProspectQuerySeeder::dispatch($shop);
+        SeedShopOutboxes::dispatch($shop);
+        SeedJobPositions::dispatch($organisation);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
-        SeedShopOfferCampaigns::run($shop);
-        SeedTrafficSources::run($shop);
-
+        SeedShopOfferCampaigns::dispatch($shop);
+        SeedTrafficSources::dispatch($shop);
         if ($shop->master_shop_id) {
             MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
         }
-
 
         return $shop;
     }
