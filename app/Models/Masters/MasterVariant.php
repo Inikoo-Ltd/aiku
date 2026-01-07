@@ -161,7 +161,7 @@ class MasterVariant extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterAsset::class, 'master_variant_id');
     }
 
-    public function leaderProduct(): HasOne
+    public function leaderMasterProduct(): HasOne
     {
         return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
     }

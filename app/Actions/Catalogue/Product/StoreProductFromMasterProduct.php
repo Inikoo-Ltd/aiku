@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -28,7 +29,6 @@ class StoreProductFromMasterProduct extends GrpAction
             return;
         }
 
-        $isMinion = data_get($modelData, 'is_minion_variant');
 
         $productCategories = $masterAsset->masterFamily->productCategories;
 
@@ -55,6 +55,28 @@ class StoreProductFromMasterProduct extends GrpAction
                         ];
                     }
 
+                    $variant = null;
+
+                    if ($masterAsset->masterVariant) {
+
+
+                        $variant = $masterAsset->masterVariant->variants()->where('shop_id', $shop->id)->first();
+
+                        if (!$variant) {
+                            $variant = StoreVariantFromMaster::make()->action(
+                                $masterAsset->masterVariant,
+                                $shop,
+                                [
+                                //Loius fill this
+                           ]
+                            );
+                        }
+
+
+
+                    }
+
+
                     $data = [
                         'code'              => $masterAsset->code,
                         'name'              => $masterAsset->name,
@@ -65,13 +87,15 @@ class StoreProductFromMasterProduct extends GrpAction
                         'rrp'               => $rrp,
                         'unit'              => $masterAsset->unit,
                         'units'             => $masterAsset->units,
-                        'is_main'           => true,
                         'trade_units'       => $tradeUnits,
                         'master_product_id' => $masterAsset->id,
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
-                        'is_for_sale'       => true,
-                        'is_minion_variant' => $isMinion
+
+                        'is_main'           => !$variant,
+                        'is_for_sale'       => $masterAsset->status,
+                        'is_minion_variant' => (bool)$variant,
+                        'variant_id'        => $variant->id
                     ];
 
                     if (count($tradeUnits) > 1) {
@@ -89,17 +113,38 @@ class StoreProductFromMasterProduct extends GrpAction
                         data_set($data, 'trade_units', $tradeUnits);
 
                         // Don't create Webpage if it's marked as is_minion
-                        $this->updateFoundProduct($product, $data, $isMinion ? false : true);
+                        $this->updateFoundProduct($product, $data, !$variant);
+
+                        $leader = $masterAsset->masterVariant->leaderMasterProduct->products()->where('shop_id', $shop->id)->first();
+                        if ($leader->id == $product->id) {
+                            $product->update([
+                                'is_main' => true,
+                                'is_minion_variant' => false,
+                                'is_variant_leader' => true,
+                            ]);
+                        }
+
                         continue;
                     }
+
 
                     $product = StoreProduct::run($productCategory, $data);
                     $product->refresh();
                     CloneProductImagesFromTradeUnits::run($product);
                     $product->refresh();
 
-                    // Don't create Webpage if it's marked as is_minion
-                    if (!$isMinion) {
+                    $leader = $masterAsset->masterVariant->leaderMasterProduct->products()->where('shop_id', $shop->id)->first();
+                    if ($leader->id == $product->id) {
+                        $product->update([
+                            'is_main' => true,
+                            'is_minion_variant' => false,
+                            'is_variant_leader' => true,
+                        ]);
+                    }
+
+
+                    // Don't create a Webpage if it's marked as is_minion
+                    if (!$variant) {
                         $webpage = StoreProductWebpage::run($product);
                         PublishWebpage::make()->action($webpage, [
                             'comment' => 'first publish'
