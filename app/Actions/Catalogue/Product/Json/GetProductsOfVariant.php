@@ -31,13 +31,9 @@ class GetProductsOfVariant extends IrisAction
         ];
     }
 
-    public function asController(ActionRequest $request): array
+    public function asController(Variant $variant, ActionRequest $request): array
     {
         $this->initialisation($request);
-
-        $variant = Variant::query()
-            ->whereKey($request->route('variant'))
-            ->firstOrFail();
 
         return $this->handle($variant);
     }

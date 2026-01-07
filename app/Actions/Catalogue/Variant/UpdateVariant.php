@@ -60,14 +60,14 @@ class UpdateVariant extends OrgAction
                     'is_minion_variant'  => false
                 ]);
             
-            // foreach($products->get() as $product) {
-            //     UpdateWebpage::make()->action($product->webpage()->first(), [
-            //          'state_data' => [
-            //              'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-            //              'redirect_webpage_id'   => $variant->leaderProduct->webpage->id
-            //          ]
-            //      ]);
-            // }
+            foreach($products->get() as $product) {
+                UpdateWebpage::make()->action($product->webpage()->first(), [
+                     'state_data' => [
+                         'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
+                         'redirect_webpage_id'   => $variant->leaderProduct->webpage->id
+                     ]
+                 ]);
+            }
 
             return $variant;
         });
