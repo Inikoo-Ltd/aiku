@@ -105,7 +105,7 @@ class ShowVariant extends OrgAction
                     $this->tab === VariantTabsEnum::PRODUCTS->value ? ProductsResource::collection(IndexProductsInVariant::run($variant)) : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInVariant::run($variant))),
             ]
         )
-                ->table(IndexProductsInVariant::make()->tableStructure(variant:$variant, prefix: VariantTabsEnum::PRODUCTS->value));
+        ->table(IndexProductsInVariant::make()->tableStructure(variant:$variant, prefix: VariantTabsEnum::PRODUCTS->value));
     }
 
     /**

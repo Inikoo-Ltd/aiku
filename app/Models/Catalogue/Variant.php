@@ -131,6 +131,13 @@ class Variant extends Model implements Auditable, HasMedia
         return $this->hasOne(MasterVariant::class, 'id', 'master_variant_id');
     }
 
+    public function fetchProductFromData(): \Illuminate\Database\Eloquent\Collection
+    {
+        $key = collect(data_get($this->data, 'products'))->keys();
+
+        return Product::whereIn('id', $key)->get();
+    }
+
     public function allProduct(): HasMany
     {
         return $this->hasMany(Product::class, 'variant_id');
