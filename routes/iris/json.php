@@ -32,6 +32,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
@@ -80,4 +81,5 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('product/{product:id}', GetIrisProductEcomOrdering::class)->name('product.ecom_ordering_data');
 
     Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
+    Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
 });

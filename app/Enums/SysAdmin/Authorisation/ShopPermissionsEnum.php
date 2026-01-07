@@ -9,7 +9,6 @@
 namespace App\Enums\SysAdmin\Authorisation;
 
 use App\Models\Catalogue\Shop;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 enum ShopPermissionsEnum: string
 {
@@ -76,10 +75,7 @@ enum ShopPermissionsEnum: string
 
     private static function allowedForShop(Shop $shop): array
     {
-        return match ($shop->engine->value) {
-            ShopEngineEnum::FAIRE->value => self::permissionsForFaireShop(),
-            default => self::cases(),
-        };
+        return self::cases();
     }
 
     private static function permissionsForFaireShop(): array
@@ -95,10 +91,13 @@ enum ShopPermissionsEnum: string
             self::ORDERS_VIEW,
             self::ORDERS_EDIT,
 
+            self::CRM,
             self::CRM_VIEW,
+            self::CRM_EDIT,
             self::CRM_PROSPECTS_VIEW,
 
             self::SUPERVISOR_PRODUCTS,
+            self::SUPERVISOR_ORDERS,
         ];
     }
 }

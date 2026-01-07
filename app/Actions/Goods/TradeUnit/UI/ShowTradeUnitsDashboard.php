@@ -33,7 +33,7 @@ class ShowTradeUnitsDashboard extends OrgAction
                 'title'        => $title,
                 'pageHead'     => [
                     'icon'  => [
-                        'icon'  => ['fal', 'fa-cloud-atom'],
+                        'icon'  => ['fal', 'fa-atom'],
                         'title' => $title
                     ],
                     'title' => __('Trade Units Dashboard'),

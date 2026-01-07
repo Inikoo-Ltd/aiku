@@ -64,7 +64,8 @@ class IndexInvoices extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('invoices.reference', $value);
+                $query->whereWith('invoices.reference', $value)->orWhereWith('invoices.customer_name', $value);
+
             });
         });
 

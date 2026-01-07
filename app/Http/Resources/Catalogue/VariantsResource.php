@@ -33,7 +33,6 @@ class VariantsResource extends JsonResource
     public function toArray($request): array
     {
         $options = data_get($this->data, 'variants.*.options');
-
         return [
             'id'                            => $this->id,
             'code'                          => $this->code,
@@ -52,6 +51,10 @@ class VariantsResource extends JsonResource
             'leader_product_slug'           => $this->leader_product_slug,
             'parent_code'                   => $this->parent_code,
             'parent_slug'                   => $this->parent_slug,
+            'shop_code'                     => $this->shop?->code,
+            'shop_slug'                     => $this->shop?->slug,
+            'organisation_slug'             => $this->organisation?->slug,
+            'family_slug'                   => $this->family?->slug,
         ];
     }
 }

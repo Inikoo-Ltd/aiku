@@ -43,7 +43,10 @@ const props = withDefaults(defineProps<{
     screenType: "mobile" | "tablet" | "desktop"
 }>(), {})
 
+console.log('props_product', props)
+
 const layout = inject("layout", {})
+const variant = ref(props.fieldValue.variant || null)
 const product = ref(props.fieldValue.product)
 const isLoadingRemindBackInStock = ref(false)
 const customerData = ref(null)

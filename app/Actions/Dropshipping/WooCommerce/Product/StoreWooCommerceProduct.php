@@ -114,8 +114,8 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
-            if(is_string(Arr::get($result, '0'))) {
-                if(json_decode(Arr::get($result, '0', ''), true)['code'] === 'product_invalid_sku') {
+            if (is_string(Arr::get($result, '0'))) {
+                if (json_decode(Arr::get($result, '0', ''), true)['code'] === 'product_invalid_sku') {
                     throw new \Exception(trans('Invalid or duplicated SKU: SKU already exists'));
                 }
             }

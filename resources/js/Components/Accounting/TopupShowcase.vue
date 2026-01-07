@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
 
-const props = defineProps<{
+defineProps<{
     data: {
         amount: number
         currency_code: string

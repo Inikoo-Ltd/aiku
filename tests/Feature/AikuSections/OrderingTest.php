@@ -16,6 +16,8 @@ use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
@@ -1252,4 +1254,35 @@ it('nullifies order tracking number when no shipments exist', function () {
     $order->refresh();
 
     expect($order->tracking_number)->toBeNull();
+});
+
+test('get iris basket transactions in collection action', function () {
+    $collection = StoreCollection::make()->action($this->shop, [
+        'code' => 'TEST_COLLECTION',
+        'name' => 'Test Collection',
+    ]);
+
+    $this->product->containedByCollections()->attach($collection, ['model_type' => 'Product', 'type' => 'Product']);
+
+
+
+    // Case 2: With basket, but no transactions for this product
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $this->customer->update(['current_order_in_basket_id' => $basket->id]);
+
+    $result = GetIrisBasketTransactionsInCollection::run($this->customer->fresh(), $collection);
+    expect($result)->toBeArray()
+        ->and($result)->toHaveKey($this->product->id)
+        ->and($result[$this->product->id]['quantity_ordered'])->toBe(0);
+
+    // Case 3: With basket and transactions
+    $transactionData = Transaction::factory()->definition();
+    $transactionData['quantity_ordered'] = 5;
+    $transactionData['order_id'] = $basket->id;
+    StoreTransaction::make()->action($basket, $this->product->currentHistoricProduct, $transactionData);
+
+    $result = GetIrisBasketTransactionsInCollection::run($this->customer->fresh(), $collection);
+    expect($result)->toBeArray()
+        ->and($result)->toHaveKey($this->product->id)
+        ->and((float)$result[$this->product->id]['quantity_ordered'])->toBe(5.0);
 });

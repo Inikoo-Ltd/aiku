@@ -286,7 +286,7 @@ const getTooltips = () => {
 			</div> -->
 
 			<!-- Sales Analytics Compact -->
-			<div v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0">
+			<div v-if="salesData">
 				<SalesAnalyticsCompact :salesData="salesData" />
 			</div>
 		</div>
