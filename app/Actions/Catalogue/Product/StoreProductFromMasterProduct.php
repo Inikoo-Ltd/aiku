@@ -29,7 +29,6 @@ class StoreProductFromMasterProduct extends GrpAction
             return;
         }
 
-
         $productCategories = $masterAsset->masterFamily->productCategories;
 
         if ($productCategories) {
@@ -56,22 +55,24 @@ class StoreProductFromMasterProduct extends GrpAction
                     }
 
                     $variant = null;
-                    $isMain=$masterAsset->is_main;
+                    $isMain = $masterAsset->is_main;
 
                     if ($masterAsset->masterVariant) {
-                        $isMain=false;
+                        $isMain = false;
+
                         $variant = $masterAsset->masterVariant->variants()->where('shop_id', $shop->id)->first();
                         if (!$variant) {
+                            // Need to fetch leader product, otherwise won't work. So it would be better to place this 
+                            // Only need this, the other fields are handled by the trait function (WithVariantDataPreparation)
                             $variant = StoreVariantFromMaster::make()->action(
                                 $masterAsset->masterVariant,
                                 $shop,
                                 [
-                                //Loius fill this
-                           ]
+                                    'data'              => $masterAsset->masterVariant->data,
+                                ]
                             );
                         }
                     }
-
 
                     $data = [
                         'code'              => $masterAsset->code,
@@ -87,7 +88,6 @@ class StoreProductFromMasterProduct extends GrpAction
                         'master_product_id' => $masterAsset->id,
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
-
                         'is_main'           => $isMain,
                         'is_for_sale'       => $masterAsset->status,
                         'is_minion_variant' => (bool)$variant,
@@ -98,7 +98,6 @@ class StoreProductFromMasterProduct extends GrpAction
                         data_set($data, 'gross_weight', $masterAsset->gross_weight);
                         data_set($data, 'marketing_weight', $masterAsset->marketing_weight);
                     }
-
 
                     $product = Product::where('shop_id', $shop->id)
                         ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])
