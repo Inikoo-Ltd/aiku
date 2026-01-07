@@ -369,8 +369,8 @@ class IndexCollections extends OrgAction
                     : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
 
                 CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
-                    fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
+                    fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::SALES->value));

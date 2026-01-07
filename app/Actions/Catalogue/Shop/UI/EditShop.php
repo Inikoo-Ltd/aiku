@@ -93,13 +93,15 @@ class EditShop extends OrgAction
             ];
         }
 
-        $isExternalFaire =  $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE;
+        $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
 
         $allowedBlueprintLabels = [
             __('Shop details'),
             __('Properties'),
             __('Languages'),
             __('Faire Keys'),
+            __('Shopify Keys'),
+            __('Wix Keys'),
         ];
 
         $formData = [
@@ -416,21 +418,12 @@ class EditShop extends OrgAction
                             'label' => __('Shopify Keys'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
-                                'shopify_api_secret' => [
+                                'shop_url' => [
                                     'type'  => 'input',
-                                    'label' => __('Shopify Access Token'),
-                                    'value' => Arr::get($shop->settings, 'shopify.api_secret', ''),
+                                    'disabled' => true,
+                                    'label' => __('Shopify Shop Url'),
+                                    'value' => Arr::get($shop->settings, 'shopify.shop_url', ''),
                                 ],
-                                'shopify_api_key' => [
-                                    'type'  => 'input',
-                                    'label' => __('Shopify Access Token'),
-                                    'value' => Arr::get($shop->settings, 'shopify.api_key', ''),
-                                ],
-                                'shopify_access_token' => [
-                                    'type'  => 'input',
-                                    'label' => __('Shopify Access Token'),
-                                    'value' => Arr::get($shop->settings, 'shopify.access_token', ''),
-                                ]
                             ],
                         ],
                         default => []
@@ -464,7 +457,7 @@ class EditShop extends OrgAction
             ],
         ];
 
-        if ($isExternalFaire) {
+        if ($isExternal) {
             if (!isset($formData['blueprint'])) {
                 $formData['blueprint'] = [];
             }

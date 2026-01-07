@@ -24,6 +24,8 @@ class ProductCategoryHydrateInvoiceIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
     use WithIntervalsAggregators;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $productCategoryId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithIntervalFromId($productCategoryId, $intervals, $doPreviousPeriods);

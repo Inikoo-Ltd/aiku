@@ -63,7 +63,7 @@ class CreateCustomerClient extends OrgAction
                                 'fields' => [
                                     'company_name' => [
                                         'type'  => 'input',
-                                        'label' => __('company')
+                                        'label' => __('Company')
                                     ],
                                     'contact_name' => [
                                         'type'  => 'input',

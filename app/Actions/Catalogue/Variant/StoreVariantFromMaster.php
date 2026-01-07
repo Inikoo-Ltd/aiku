@@ -45,6 +45,13 @@ class StoreVariantFromMaster extends OrgAction
                 $variant->timeSeries()->create(['frequency' => $frequency]);
             }
 
+            foreach ($variant->allProduct() as $product) {
+                $product->updateQuietly([
+                    'variant_id' => $variant->id,
+                    'is_variant_leader' => $variant->leader_id == $product->id,
+                ]);
+            }
+
             $variant->refresh();
 
             return $variant;
@@ -62,7 +69,7 @@ class StoreVariantFromMaster extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                  => ['required', 'exists:products,id'],
+            'leader_id'                  => ['required', Rule::exists('products', 'id')->whereNull('variant_id')],
             'family_id'                  => ['required', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)],
             'department_id'              => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::DEPARTMENT)],
             'sub_department_id'          => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)],

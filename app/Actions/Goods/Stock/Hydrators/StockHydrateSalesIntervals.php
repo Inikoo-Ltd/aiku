@@ -29,6 +29,8 @@ class StockHydrateSalesIntervals implements ShouldBeUnique
 
     public function handle(Stock $stock, ?array $intervals = null, ?array $doPreviousPeriods = null, ?DeliveryNoteItemSalesTypeEnum $onlyProcessSalesType = null): void
     {
+        // todo this action takes 3s to do is too slow
+        return;
         $this->handleStockable(
             $stock,
             $intervals,

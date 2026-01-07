@@ -108,7 +108,7 @@ trait WithTimeSeriesData
                     : 0;
 
                 return [
-                    'quarter' => "Q{$quarter} {$year}",
+                    'quarter' => "Q{$quarter} " . substr((string)$year, -2),
                     'quarter_number' => $quarter,
                     'year' => $year,
                     'total_sales' => (float) $record->sales_grp_currency,
@@ -157,25 +157,20 @@ trait WithTimeSeriesData
         ];
     }
 
-    protected function getCustomerMetrics(Model $model, callable $queryBuilder): array
+    protected function getTotalCustomersFromTimeSeries(Model $model, string $timeSeriesRecordsTable): int
     {
-        $totalCustomers = $model->stats->number_customers ?? 0;
+        $yearlyTimeSeries = $model->timeSeries()
+            ->where('frequency', TimeSeriesFrequencyEnum::YEARLY)
+            ->first();
 
-        if ($totalCustomers === 0) {
-            return [
-                'total_customers' => 0,
-                'repeat_customers' => 0,
-                'repeat_customers_percentage' => 0,
-            ];
+        if (!$yearlyTimeSeries) {
+            return 0;
         }
 
-        $repeatCustomers = $queryBuilder($model);
+        // Ambil customers_invoiced dari semua yearly records, gunakan max (karena biasanya aggregate per tahun)
+        $totalCustomers = $yearlyTimeSeries->records()->max('customers_invoiced') ?? 0;
 
-        return [
-            'total_customers' => $totalCustomers,
-            'repeat_customers' => $repeatCustomers,
-            'repeat_customers_percentage' => ($repeatCustomers / $totalCustomers) * 100,
-        ];
+        return (int) $totalCustomers;
     }
 
     protected function getTimeSeriesForeignKey(string $timeSeriesRecordsTable): string
@@ -193,8 +188,6 @@ trait WithTimeSeriesData
             'total_invoices' => 0,
             'customer_metrics' => [
                 'total_customers' => 0,
-                'repeat_customers' => 0,
-                'repeat_customers_percentage' => 0,
             ],
             'yearly_sales' => [],
             'quarterly_sales' => [],

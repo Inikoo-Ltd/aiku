@@ -148,9 +148,20 @@ class MasterVariant extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterVariantTimeSeries::class);
     }
 
+    public function allProduct(): HasMany
+    {
+        return $this->hasMany(MasterAsset::class, 'master_variant_id');
+    }
+
     public function leaderProduct(): HasOne
     {
         return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
+    }
+
+    public function minionProduct(): HasMany
+    {        
+        return $this->hasMany(MasterAsset::class, 'master_variant_id')
+            ->where('is_variant_leader', false);
     }
 
     public function variants(): HasMany

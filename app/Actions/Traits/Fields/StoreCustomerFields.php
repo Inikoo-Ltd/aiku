@@ -23,7 +23,7 @@ trait StoreCustomerFields
                 'fields' => [
                     'company_name' => [
                         'type'  => 'input',
-                        'label' => __('company'),
+                        'label' => __('Company'),
                         'value' => ''
                     ],
                     'contact_name' => [

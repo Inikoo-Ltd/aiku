@@ -43,7 +43,10 @@ const props = withDefaults(defineProps<{
     screenType: "mobile" | "tablet" | "desktop"
 }>(), {})
 
+console.log('props_product', props)
+
 const layout = inject("layout", {})
+const variant = ref(props.fieldValue.variant || null)
 const product = ref(props.fieldValue.product)
 const isLoadingRemindBackInStock = ref(false)
 const customerData = ref(null)
@@ -131,6 +134,7 @@ const onAddBackInStock = (productData: ProductResource) => {
             },
             onSuccess: () => {
                 set(product.value, "is_back_in_stock", true)
+                set(customerData.value, "back_in_stock", true)
                 layout.reload_handle()
             },
             onError: errors => {
@@ -161,6 +165,7 @@ const onUnselectBackInStock = (productData: ProductResource) => {
             },
             onSuccess: () => {
                 set(product.value, "is_back_in_stock", false)
+                set(customerData.value, "back_in_stock", false)
                 layout.reload_handle()
             },
             onError: errors => {

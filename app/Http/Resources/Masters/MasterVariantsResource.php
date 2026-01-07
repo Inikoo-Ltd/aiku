@@ -30,6 +30,8 @@ class MasterVariantsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $options = data_get($this->data, 'variants.*.options');
+
         return [
             'id'                            => $this->id,
             'code'                          => $this->code,
@@ -38,8 +40,10 @@ class MasterVariantsResource extends JsonResource
             'number_minions'                => $this->number_minions,
             'number_dimensions'             => $this->number_dimensions,
             'number_used_slots'             => $this->number_used_slots,
+            'number_max_slots'              => count($options[0] ?? [1]) * count($options[1] ?? [1]),
             'number_used_slots_for_sale'    => $this->number_used_slots_for_sale,
             'data'                          => $this->data,
+            'options'                       => data_get($this->data, 'variants') ? collect(data_get($this->data, 'variants'))->mapWithKeys(fn ($variant) => [$variant['label'] => json_encode($variant['options'])]) : [],
             'leader_product_id'             => $this->leader_product_id,
             'leader_product_name'           => $this->leader_product_name,
             'leader_product_code'           => $this->leader_product_code,

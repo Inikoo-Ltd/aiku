@@ -14,16 +14,16 @@ class ResetYearIntervals
 {
     use WithResetIntervals;
 
-    public string $commandSignature =  'intervals:reset-year';
+    public string $commandSignature = 'intervals:reset-year';
     public string $commandDescription = 'Reset year intervals';
-
+    public int $jobTries = 1;
 
     public function __construct()
     {
-        $this->intervals = [
+        $this->intervals         = [
             DateIntervalEnum::YEAR_TO_DAY
         ];
-        $this->doPreviousPeriods =  ['previous_years'];
+        $this->doPreviousPeriods = ['previous_years'];
     }
 
 

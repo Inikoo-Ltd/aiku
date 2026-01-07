@@ -233,7 +233,7 @@ class EditEmployee extends OrgAction
                 ],
                 'identity_document_number' => [
                     'type'  => 'input',
-                    'label' => __('identity document number'),
+                    'label' => __('Identity document number'),
                     'value' => $employee->identity_document_number
                 ],
                 'notes'                    => [

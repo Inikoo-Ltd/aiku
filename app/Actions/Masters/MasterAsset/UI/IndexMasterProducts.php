@@ -27,7 +27,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -85,7 +85,7 @@ class IndexMasterProducts extends GrpAction
         ];
     }
 
-    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null, $filterInVariant = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -131,6 +131,12 @@ class IndexMasterProducts extends GrpAction
                 'families.id',
                 '=',
                 'master_assets.master_family_id'
+            )
+            ->leftJoin(
+                'master_variants as master_variant',
+                'master_variant.id',
+                '=',
+                'master_assets.master_variant_id'
             );
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -171,6 +177,11 @@ class IndexMasterProducts extends GrpAction
             'families.slug as master_family_slug',
             'families.code as master_family_code',
             'families.name as master_family_name',
+
+            //variants
+            'master_variant.slug as variant_slug',
+            'master_variant.slug as variant_code',
+            'master_assets.is_variant_leader as is_variant_leader',
         ]);
 
         // PARENT FILTER ONLY
@@ -217,6 +228,15 @@ class IndexMasterProducts extends GrpAction
             abort(419);
         }
 
+        if ($filterInVariant) {
+            if ($filterInVariant == 'none') {
+                $queryBuilder->whereNull('master_assets.master_variant_id');
+            } else {
+                $queryBuilder->whereNull('master_assets.master_variant_id')->orWhere('master_assets.master_variant_id', $filterInVariant);
+            }
+            $queryBuilder->where('master_assets.status', true); // Only fetch MasterAssets that are used as a material for Variant
+        }
+
         return $queryBuilder
             ->defaultSort('master_assets.code')
             ->allowedSorts(['code', 'name', 'used_in'])
@@ -261,7 +281,13 @@ class IndexMasterProducts extends GrpAction
             $table
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $table->column(key: 'variant_slug', label: 'Variant', canBeHidden: false, searchable: true);
+            }
+
+            $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'master_department_code', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false)
@@ -379,10 +405,11 @@ class IndexMasterProducts extends GrpAction
                         ],
                     ] : [],
                 ],
-                'data'                  => MasterProductsResource::collection($masterAssets),
-                'masterProductCategoryId' => $this->parent->id,
-                'editable_table'        => false,
-                'shopsData'             => $shopsData,
+                'data'                      => MasterProductsResource::collection($masterAssets),
+                'variantSlugs'              => $isFamily ? $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
+                'masterProductCategoryId'   => $this->parent->id,
+                'editable_table'            => false,
+                'shopsData'                 => $shopsData,
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -521,6 +548,17 @@ class IndexMasterProducts extends GrpAction
         $this->initialisation($group, $request);
 
         return $this->handle($masterFamily);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterFamilyInMasterShopFilterInVariant(MasterShop $masterShop, MasterProductCategory $masterFamily, String $filterInVariant, ActionRequest $request): LengthAwarePaginator
+    {
+        $group = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+
+        return $this->handle(parent: $masterFamily, filterInVariant: $filterInVariant);
     }
 
     /** @noinspection PhpUnusedParameterInspection */

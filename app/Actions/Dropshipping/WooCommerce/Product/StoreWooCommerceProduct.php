@@ -112,14 +112,12 @@ class StoreWooCommerceProduct extends RetinaAction
                 data_set($wooCommerceProduct, 'backorders', 'yes');
             }
 
-            $availableSku = $wooCommerceUser->getWooCommerceProducts([
-                'sku' => $portfolio->sku
-            ]);
+            $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
-            if (blank($availableSku)) {
-                $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
-            } else {
-                $result = Arr::get($availableSku, '0');
+            if (is_string(Arr::get($result, '0'))) {
+                if (json_decode(Arr::get($result, '0', ''), true)['code'] === 'product_invalid_sku') {
+                    throw new \Exception(trans('Invalid or duplicated SKU: SKU already exists'));
+                }
             }
 
             UpdatePortfolio::run($portfolio, [
@@ -142,7 +140,9 @@ class StoreWooCommerceProduct extends RetinaAction
             // Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [$e->getMessage()]
+                'errors_response' => [
+                    'message' => $e->getMessage()
+                ]
             ]);
 
             if ($logs) {

@@ -45,6 +45,7 @@ const props = defineProps<{
     is_orphan_products?: boolean
     attachments?: Record<string, any>
     shop_id?: number
+    variantSlugs?: Record<string, string>;
 }>()
 
 const layout = inject<string>('layout')
@@ -159,6 +160,7 @@ const onCancelEditBulkProduct = () => {
         :editable_table="props.editable_table"
         :selectedProductsId="selectedProductsId"
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
+        :variantSlugs="variantSlugs"
     />
 
     <!-- MODAL -->

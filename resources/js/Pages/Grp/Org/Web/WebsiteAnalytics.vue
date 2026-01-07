@@ -220,6 +220,15 @@ const props = defineProps<{
 				}
 			}
 		}
+        localAnalytics?: {
+            totalVisitors: number
+            totalPageViews: number
+            timeSeries: Array<{
+                timestamp: string
+                visitors: number
+                page_views: number
+            }>
+        }
 	}
 }>()
 
@@ -277,8 +286,7 @@ const handleSelectChange = () => {
 
 const setChartDataAndOptions = () => {
 	// Retrieve your timeseries data
-	const timeseriesData =
-		props.data?.rumAnalyticsTimeseries?.data?.viewer?.accounts[0]?.series || []
+	const timeseriesData = props.data.localAnalytics?.timeSeries || []
 
 	// Determine the current time rounded down to the nearest 15 minutes.
 	const now = new Date()
@@ -332,7 +340,7 @@ const setChartDataAndOptions = () => {
 
 	// Bucket the data points into their respective 15-minute intervals.
 	timeseriesData.forEach((item) => {
-		const timestamp = new Date(item.dimensions.ts)
+		const timestamp = new Date(item.timestamp)
 		// Only include data points within the 24-hour window.
 		if (timestamp < startTime || timestamp > endTime) {
 			return
@@ -340,7 +348,7 @@ const setChartDataAndOptions = () => {
 		const diffMs = timestamp.getTime() - startTime.getTime()
 		const bucketIndex = Math.floor(diffMs / intervalMs)
 		if (bucketIndex >= 0 && bucketIndex < dataPoints.length) {
-			dataPoints[bucketIndex] += item.sum.visits
+			dataPoints[bucketIndex] += item.visitors || 0
 		}
 	})
 
@@ -349,7 +357,7 @@ const setChartDataAndOptions = () => {
 			labels: labels,
 			datasets: [
 				{
-					label: "Total visits",
+					label: "Visitors",
 					data: dataPoints,
 					borderColor: "#007bff",
 					backgroundColor: "transparent",
@@ -431,48 +439,16 @@ const handleCardClick = (metricLabel: string) => {
 	selectedMetric.value = metricLabel
 }
 
-const visitsTotal = computed(() => {
-	const accounts = props.data?.rumAnalyticsTimeseries?.data?.viewer?.accounts
-
-	if (!accounts || !Array.isArray(accounts) || accounts.length === 0) {
-		return 0
-	}
-
-	return accounts.reduce((accountSum, account) => {
-		if (!account.series || !Array.isArray(account.series)) {
-			return accountSum
-		}
-
-		const seriesSum = account.series.reduce((seriesTotal, seriesItem) => {
-			return seriesTotal + (seriesItem.sum?.visits || 0)
-		}, 0)
-
-		return accountSum + seriesSum
-	}, 0)
+const visitorsTotal = computed(() => {
+	return props.data.localAnalytics?.totalVisitors || 0
 })
 
 const pageViewsTotal = computed(() => {
-	const accounts = props.data?.rumAnalyticsTimeseries?.data?.viewer?.accounts
-	if (!accounts || !Array.isArray(accounts) || accounts.length === 0) {
-		return 0
-	}
-
-	return accounts.reduce((totalSum, account) => {
-		if (!account.series || !Array.isArray(account.series)) {
-			return totalSum
-		}
-
-		const accountSeriesSum = account.series.reduce((sum, seriesItem) => {
-			return sum + (seriesItem.count || 0)
-		}, 0)
-
-		return totalSum + accountSeriesSum
-	}, 0)
+	return props.data.localAnalytics?.totalPageViews || 0
 })
 
 const pageViewsChartData = computed(() => {
-	const timeseriesData =
-		props.data?.rumAnalyticsTimeseries?.data?.viewer?.accounts[0]?.series || []
+	const timeseriesData = props.data.localAnalytics?.timeSeries || []
 
 	const now = new Date()
 	const roundedNow = new Date(now)
@@ -516,14 +492,14 @@ const pageViewsChartData = computed(() => {
 	}
 
 	timeseriesData.forEach((item) => {
-		const timestamp = new Date(item.dimensions.ts)
+		const timestamp = new Date(item.timestamp)
 		if (timestamp < startTime || timestamp > endTime) {
 			return
 		}
 		const diffMs = timestamp.getTime() - startTime.getTime()
 		const bucketIndex = Math.floor(diffMs / intervalMs)
 		if (bucketIndex >= 0 && bucketIndex < dataPoints.length) {
-			dataPoints[bucketIndex] += item.count || 0
+			dataPoints[bucketIndex] += item.page_views || 0
 		}
 	})
 
@@ -563,8 +539,8 @@ watch(value, handleSelectChange)
 				<!-- Visits Card -->
 
 				<OverviewCard
-					label="Visits"
-					:value="visitsTotal"
+					label="Visitors"
+					:value="visitorsTotal"
 					:percentageChange="0"
 					:chartData="chartsData['Analytics Timeseries']" />
 

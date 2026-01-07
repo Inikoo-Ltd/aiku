@@ -131,9 +131,20 @@ class Variant extends Model implements Auditable, HasMedia
         return $this->hasOne(MasterVariant::class, 'id', 'master_variant_id');
     }
 
+    public function allProduct(): HasMany
+    {
+        return $this->hasMany(Product::class, 'variant_id');
+    }
+
     public function leaderProduct(): HasOne
     {
         return $this->hasOne(Product::class, 'id', 'leader_id');
+    }
+
+    public function minionProduct(): HasMany
+    {        
+        return $this->hasMany(Product::class, 'variant_id')
+            ->where('is_variant_leader', false);
     }
 
     public function salesStats(): HasOne

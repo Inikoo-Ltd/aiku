@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\WebsiteVisitor;
 
+use App\Actions\Web\WebsitePageView\StoreWebsitePageView;
 use App\Actions\Utils\GetOsFromUserAgent;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
@@ -19,7 +20,7 @@ class ProcessWebsiteVisitorTracking
 {
     use AsAction;
 
-    public string $queue = 'analytics';
+    public string $jobQueue = 'analytics';
 
     public function handle(
         string $sessionId,
@@ -46,22 +47,26 @@ class ProcessWebsiteVisitorTracking
         });
 
         if ($visitor) {
-            return UpdateWebsiteVisitor::run($visitor, $currentUrl);
+            $visitor = UpdateWebsiteVisitor::run($visitor, $currentUrl);
+        } else {
+            $visitor = StoreWebsiteVisitor::run(
+                website: $website,
+                sessionId: $sessionId,
+                webUser: $webUser,
+                visitorHash: $visitorHash,
+                ipHash: $ipHash,
+                ip: $ip,
+                device: $device,
+                browser: $browser,
+                os: $os,
+                userAgent: $userAgent,
+                currentUrl: $currentUrl,
+                referrer: $referrer,
+            );
         }
 
-        return StoreWebsiteVisitor::run(
-            website: $website,
-            sessionId: $sessionId,
-            webUser: $webUser,
-            visitorHash: $visitorHash,
-            ipHash: $ipHash,
-            ip: $ip,
-            device: $device,
-            browser: $browser,
-            os: $os,
-            userAgent: $userAgent,
-            currentUrl: $currentUrl,
-            referrer: $referrer,
-        );
+        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
+
+        return $visitor;
     }
 }

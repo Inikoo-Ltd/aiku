@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use App\Models\Masters\MasterAsset;
 use App\Models\Catalogue\Product;
 use App\Http\Resources\Catalogue\ProductResourceForVariant;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 
 trait WithVariantDataPreparation
 {
@@ -46,9 +47,10 @@ trait WithVariantDataPreparation
                 $product = $masterProductList[data_get($variant, 'product.id')]
                     ->products()
                     ->where('shop_id', $this->shop->id)
+                    // ->whereNot('state', ProductStateEnum::DISCONTINUED)
                     ->first();
 
-                if (!$product || !$product->is_for_sale) {
+                if (!$product) {
                     return [];
                 }
 
@@ -65,12 +67,8 @@ trait WithVariantDataPreparation
         $this->leadItem = collect($products)->where('is_leader', true)->first();
 
         $this->leader_id = data_get($this->leadItem, 'product.id');
-
-        $this->number_minions             = array_reduce(
-            data_get($this->data['variants'], '*.options'),
-            fn ($carry, $item) => $carry * count($item),
-            1
-        ) - 1;
+        $options = data_get($this->data['variants'], '*.options');
+        $this->number_minions             = (count($options) > 1 ? count($options[0]) * count($options[1]) : count($options[0])) - 1;
         $this->number_dimensions          = count($this->data['variants']);
         $this->number_used_slots          = count($products);
         $this->number_used_slots_for_sale = Product::whereIn('id', array_keys($products))
@@ -87,17 +85,17 @@ trait WithVariantDataPreparation
             ->id;
 
         $this->department_id = $this->parent->masterDepartment
-            ? $this->parent->masterDepartment->productCategories
+            ? $this->parent->masterDepartment->productCategories()
                 ->where('shop_id', $this->shop->id)
-                ->firstOrFail()
-                ->id
+                ->first()
+                ?->id
             : null;
 
         $this->sub_department_id = $this->parent->masterSubDepartment
-            ? $this->parent->masterSubDepartment->productCategories
+            ? $this->parent->masterSubDepartment->productCategories()
                 ->where('shop_id', $this->shop->id)
-                ->firstOrFail()
-                ->id
+                ->first()
+                ?->id
             : null;
 
         $this->organisation_id = $this->shop->organisation_id;
@@ -109,7 +107,7 @@ trait WithVariantDataPreparation
 
     private function prepareCodeSlug(): void
     {
-        $code = data_get($this->leadItem, 'product.code').'-var-'.now()->format('His');
+        $code = data_get($this->leadItem, 'product.code');
         $this->set('code', $code);
         $this->set('slug', strtolower($code));
     }

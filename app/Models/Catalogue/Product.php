@@ -172,6 +172,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_unit_reviewed
  * @property int|null $variant_id
  * @property bool $is_variant_leader
+ * @property bool|null $is_minion_variant
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

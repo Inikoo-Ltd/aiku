@@ -7,6 +7,7 @@ use App\Actions\OrgAction;
 use App\Services\QueryBuilder;
 use App\Models\Goods\TradeUnit;
 use App\InertiaTable\InertiaTable;
+use Illuminate\Support\Facades\DB;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
@@ -53,31 +54,57 @@ class IndexAgent extends OrgAction
         }
 
         return QueryBuilder::for(ChatAgent::class)
-          ->join('users', 'chat_agents.user_id', '=', 'users.id')
-          ->without('user')
-          ->select([
-              'chat_agents.id',
-              'chat_agents.user_id',
-              'users.contact_name as name',
-              'chat_agents.max_concurrent_chats',
-              'chat_agents.current_chat_count',
-              'chat_agents.is_online',
-              'chat_agents.is_available',
-              'chat_agents.auto_accept',
-              'chat_agents.specialization',
-              'chat_agents.created_at'
-          ])
-          ->allowedSorts([
-              'is_online',
-              'is_available',
-              'current_chat_count',
-              'max_concurrent_chats',
-              'name',
-              'created_at'
-          ])
-          ->allowedFilters([$globalSearch])
-          ->withPaginator($prefix, tableName: request()->route()->getName())
-          ->withQueryString();
+            ->join('users', 'chat_agents.user_id', '=', 'users.id')
+
+            ->join('shop_has_chat_agents as shca', function ($join) use ($organisation) {
+                $join->on('shca.chat_agent_id', '=', 'chat_agents.id')
+                    ->where('shca.organisation_id', $organisation->id);
+            })
+
+            ->leftJoin('shops', 'shops.id', '=', 'shca.shop_id')
+
+            ->without('user')
+
+            ->select([
+                'chat_agents.id',
+                'chat_agents.user_id',
+                'users.contact_name as name',
+                'chat_agents.max_concurrent_chats',
+                'chat_agents.current_chat_count',
+                'chat_agents.is_online',
+                'chat_agents.is_available',
+                'chat_agents.auto_accept',
+                'chat_agents.specialization',
+                'chat_agents.created_at',
+
+                DB::raw("'{$organisation->name}' as organisation_name"),
+
+                DB::raw("
+                COALESCE(
+                    STRING_AGG(DISTINCT shops.name, ', '),
+                    '—'
+                ) as shops
+            "),
+            ])
+
+            ->groupBy([
+                'chat_agents.id',
+                'users.contact_name',
+            ])
+
+            ->allowedSorts([
+                'is_online',
+                'is_available',
+                'current_chat_count',
+                'max_concurrent_chats',
+                'name',
+                'created_at',
+            ])
+
+            ->allowedFilters([$globalSearch])
+
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     /**
@@ -89,21 +116,23 @@ class IndexAgent extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
-               ->withModelOperations($modelOperations)
-               ->withGlobalSearch()
-               ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-               ->column(key: 'is_online', label: __('Status'), canBeHidden: false, sortable: true)
-               ->column(key: 'is_available', label: __('Available'), canBeHidden: false, sortable: true)
-               ->column(key: 'current_chat_count', label: __('Current Chats'), canBeHidden: false, sortable: true)
-               ->column(key: 'max_concurrent_chats', label: __('Max Chats'), canBeHidden: false, sortable: true)
-               ->column(key: 'auto_accept', label: __('Auto Accept'), canBeHidden: false, sortable: true) // TAMBAH INI
-               ->column(key: 'specialization', label: __('Specialization'), canBeHidden: false)
-               ->column(key: 'action', label: __('Action'))
-               ->defaultSort('name');
+                ->withModelOperations($modelOperations)
+                ->withGlobalSearch()
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false)
+                ->column(key: 'shops', label: __('Shops'), canBeHidden: false)
+                ->column(key: 'is_online', label: __('Status'), canBeHidden: false, sortable: true)
+                ->column(key: 'is_available', label: __('Available'), canBeHidden: false, sortable: true)
+                ->column(key: 'current_chat_count', label: __('Current Chats'), canBeHidden: false, sortable: true)
+                ->column(key: 'max_concurrent_chats', label: __('Max Chats'), canBeHidden: false, sortable: true)
+                ->column(key: 'auto_accept', label: __('Auto Accept'), canBeHidden: false, sortable: true) // TAMBAH INI
+                ->column(key: 'specialization', label: __('Specialization'), canBeHidden: false)
+                ->column(key: 'action', label: __('Action'))
+                ->defaultSort('name');
         };
     }
 

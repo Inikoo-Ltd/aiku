@@ -5,7 +5,6 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import PureVariantField from "@/Components/Pure/PureVariantField.vue"
@@ -44,35 +43,92 @@ const isValid = computed(() => {
 
 
 const save = () => {
-    const products = Object.values(form.data_variants.products)
+    const cleanedVariants = sanitizeVariants()
+    const products = Object.values(cleanedVariants.products)
 
     const leader =
         products.find((item: any) => item.is_leader) ||
-        products[0] || 
+        products[0] ||
         null
 
-    form.product_leader = leader ? leader.product.id : null
-
-    console.log(form.data())
+    form.transform(data => ({
+        ...data,
+        product_leader: leader ? leader.product.id : null,
+        data_variants: cleanedVariants
+    }))
 
     form.post(route(props.save_route.name, props.save_route.parameters), {
-        onSuccess: (response) => {
-            console.log("Success callback");
+        onSuccess: () => {
+            notify({
+                title: "Success",
+                type: "success",
+                duration: 3000
+            })
         },
         onError: (errorBag) => {
-            const errorBagUnique = errorBag ? new Set(Object.values(errorBag).flat()) : [];
-            console.log('Fail', errorBag);
+            const messages = errorBag
+                ? [...new Set(Object.values(errorBag).flat())].join("<br>")
+                : trans("Please try again")
+
             notify({
                 title: "Something went wrong",
-                data: {
-                    html: errorBagUnique ? [...errorBagUnique].join('<br>') : trans("Please try again or contact administrator")
-                },
-                type: 'error',
+                data: { html: messages },
+                type: "error",
                 duration: 5000
-            });
-        },
-    });
+            })
+        }
+    })
 }
+
+
+const sanitizeVariants = () => {
+    const variants = form.data_variants.variants
+        .filter(v => v.label?.trim())
+        .map(v => ({
+            label: v.label.trim(),
+            options: v.options.filter(o => o?.trim()),
+        }))
+        .filter(v => v.options.length > 0)
+
+    const groupBy = variants.some(v => v.label === form.data_variants.groupBy)
+        ? form.data_variants.groupBy
+        : null
+
+    const validKeys = new Set(
+        variants.length
+            ? variants.flatMap(v =>
+                v.options.map(o => `${v.label}=${o}`)
+            )
+            : []
+    )
+
+    const products: Record<string, any> = {}
+
+    Object.entries(form.data_variants.products).forEach(([id, p]: any) => {
+        const keyOnly = Object.entries(p)
+            .filter(([k]) => k !== "product" && k !== "is_leader")
+            .reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})
+
+        const isValid = Object.entries(keyOnly).every(
+            ([k, v]) => validKeys.has(`${k}=${v}`)
+        )
+
+        if (!isValid) return
+
+        products[id] = {
+            ...keyOnly,
+            product: p.product,
+            is_leader: !!p.is_leader
+        }
+    })
+
+    return {
+        variants,
+        groupBy,
+        products
+    }
+}
+
 
 </script>
 
@@ -81,7 +137,7 @@ const save = () => {
     <Head :title="capitalize(props.title)" />
     <PageHeading :data="props.pageHead" />
     <div class="flex justify-center mt-6">
-        <div class="w-full max-w-2xl p-4 bg-white rounded-lg shadow space-y-4">
+        <div class="w-full max-w-6xl p-4 bg-white rounded-lg shadow space-y-4">
             <div>
                 <PureVariantField v-model="form.data_variants" :master_assets_route="master_assets_route" :master_asset="master_asset" />
             </div>

@@ -8,10 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
-use App\Actions\Helpers\Country\UI\GetCountriesOptions;
-use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Models\SysAdmin\Organisation;
@@ -52,53 +48,6 @@ class CreateExternalShop extends OrgAction
                             'value'    => '',
                         ]
                     ]
-                ],
-                [
-                    'title'  => __('localization'),
-                    'icon'   => 'fa-light fa-phone',
-                    'fields' => [
-                        'country_id'  => [
-                            'type'        => 'select',
-                            'label'       => __('Country'),
-                            'placeholder' => __('Select a country'),
-                            'options'     => GetCountriesOptions::run(),
-                            'value'       => $this->organisation->country_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-                        'language_id' => [
-                            'type'        => 'select',
-                            'label'       => __('Language'),
-                            'placeholder' => __('Select a language'),
-                            'options'     => GetLanguagesOptions::make()->all(),
-                            'value'       => $this->organisation->language_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-                        'currency_id' => [
-                            'type'        => 'select',
-                            'label'       => __('Currency'),
-                            'placeholder' => __('Select a currency'),
-                            'options'     => GetCurrenciesOptions::run(),
-                            'value'       => $this->organisation->currency_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-                        'timezone_id' => [
-                            'type'        => 'select',
-                            'label'       => __('timezone'),
-                            'placeholder' => __('Select a timezone'),
-                            'options'     => GetTimeZonesOptions::run(),
-                            'value'       => $this->organisation->timezone_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-
-                    ]
                 ]
             ],
             ShopEngineEnum::SHOPIFY->value => [
@@ -111,59 +60,12 @@ class CreateExternalShop extends OrgAction
                             'required' => true,
                             'value'    => '',
                         ],
-                        'shop_url' => [
+                        'name' => [
                             'type'     => 'input',
                             'label'    => __('Shop Url'),
                             'required' => true,
                             'value'    => '',
                         ]
-                    ]
-                ],
-                [
-                    'title'  => __('localization'),
-                    'icon'   => 'fa-light fa-phone',
-                    'fields' => [
-                        'country_id'  => [
-                            'type'        => 'select',
-                            'label'       => __('Country'),
-                            'placeholder' => __('Select a country'),
-                            'options'     => GetCountriesOptions::run(),
-                            'value'       => $this->organisation->country_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-                        'language_id' => [
-                            'type'        => 'select',
-                            'label'       => __('Language'),
-                            'placeholder' => __('Select a language'),
-                            'options'     => GetLanguagesOptions::make()->all(),
-                            'value'       => $this->organisation->language_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-                        'currency_id' => [
-                            'type'        => 'select',
-                            'label'       => __('Currency'),
-                            'placeholder' => __('Select a currency'),
-                            'options'     => GetCurrenciesOptions::run(),
-                            'value'       => $this->organisation->currency_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-                        'timezone_id' => [
-                            'type'        => 'select',
-                            'label'       => __('timezone'),
-                            'placeholder' => __('Select a timezone'),
-                            'options'     => GetTimeZonesOptions::run(),
-                            'value'       => $this->organisation->timezone_id,
-                            'required'    => true,
-                            'mode'        => 'single',
-                            'searchable'  => true
-                        ],
-
                     ]
                 ]
             ],
