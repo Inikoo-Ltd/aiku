@@ -13,9 +13,12 @@ import {
 	faUser,
 	faHdd,
 	faCloudDownload,
+    faMinus
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Chart from "primevue/chart"
+import DataTable from "primevue/datatable"
+import Column from "primevue/column"
 import { onMounted, Ref, ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3";
 import OverviewCard from "../../../../Components/DataDisplay/OverviewCard.vue"
@@ -24,7 +27,7 @@ import { capitalize } from "@/Composables/capitalize";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 
-library.add(faArrowUp, faArrowDown, faHandSparkles, faEnvelope, faUser, faHdd, faCloudDownload)
+library.add(faArrowUp, faArrowDown, faHandSparkles, faEnvelope, faUser, faHdd, faCloudDownload, faMinus)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -229,6 +232,19 @@ const props = defineProps<{
                 page_views: number
             }>
         }
+        pageConversionAnalytics?: Array<{
+            page_path: string
+            page_url: string
+            conversion_rate: number
+            total_conversions: number
+            total_visits: number
+            avg_time_spent: number
+            trend: {
+                direction: 'up' | 'down' | 'neutral'
+                value: number
+                prev_rate: number
+            }
+        }>
 	}
 }>()
 
@@ -571,7 +587,7 @@ watch(value, handleSelectChange)
 			</div>
 
 			<!-- Main Content -->
-			<div class="lg:col-span-3">
+			<div class="lg:col-span-3 space-y-4">
 				<div class="bg-white rounded-lg shadow-md p-6">
 					<div class="relative">
 						<Chart
@@ -581,6 +597,40 @@ watch(value, handleSelectChange)
 							class="h-96" />
 					</div>
 				</div>
+
+                <div v-if="props.data.pageConversionAnalytics" class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Page Conversion Rate</h2>
+                    <DataTable :value="props.data.pageConversionAnalytics" paginator :rows="10" :rowsPerPageOptions="[10, 20, 50]" sortMode="multiple" tableStyle="min-width: 50rem">
+                        <Column field="page_url" header="Page URL" sortable style="width: 30%">
+                            <template #body="{ data }">
+                                <a :href="data.page_url" target="_blank" class="text-blue-600 hover:underline truncate block max-w-xs" :title="data.page_url">{{ data.page_url }}</a>
+                            </template>
+                        </Column>
+                        <Column field="conversion_rate" header="Conversion Rate" sortable style="width: 20%">
+                            <template #body="{ data }">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold">{{ data.conversion_rate }}%</span>
+                                    <span v-if="data.trend.direction === 'up'" class="text-green-500" :title="`Up ${data.trend.value}% from ${data.trend.prev_rate}%`">
+                                        <font-awesome-icon :icon="['fal', 'arrow-up']" />
+                                    </span>
+                                    <span v-else-if="data.trend.direction === 'down'" class="text-red-500" :title="`Down ${data.trend.value}% from ${data.trend.prev_rate}%`">
+                                        <font-awesome-icon :icon="['fal', 'arrow-down']" />
+                                    </span>
+                                    <span v-else class="text-gray-400" title="No change">
+                                        <font-awesome-icon :icon="['fal', 'minus']" />
+                                    </span>
+                                </div>
+                            </template>
+                        </Column>
+                        <Column field="total_conversions" header="Add to Basket" sortable style="width: 15%"></Column>
+                        <Column field="total_visits" header="Visits" sortable style="width: 15%"></Column>
+                        <Column field="avg_time_spent" header="Avg Time" sortable style="width: 20%">
+                            <template #body="{ data }">
+                                {{ data.avg_time_spent }}s
+                            </template>
+                        </Column>
+                    </DataTable>
+                </div>
 			</div>
 		</div>
 	</div>

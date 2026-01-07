@@ -141,7 +141,8 @@ class StoreProduct extends OrgAction
             return $product;
         });
 
-        ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
+
+        ProductHydrateProductVariants::dispatch($product->main_product_id)->delay($this->hydratorsDelay);
 
         if ($product->exclusive_for_customer_id) {
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
@@ -274,7 +275,7 @@ class StoreProduct extends OrgAction
 
 
         if (!$this->strict) {
-            $rules['org_stocks'] = ['present', 'array'];
+            $rules['org_stocks'] = ['nullable', 'array'];
 
             $rules                              = $this->noStrictStoreRules($rules);
             $rules['historic_source_id']        = ['sometimes', 'required', 'string', 'max:255'];
@@ -284,7 +285,7 @@ class StoreProduct extends OrgAction
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
         } else {
-            $rules['trade_units'] = ['present', 'array'];
+            $rules['trade_units'] = ['nullable', 'array'];
         }
 
         return $rules;

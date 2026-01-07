@@ -49,7 +49,7 @@ class FixAuroraOffersStatus
                 $expirationAuroraParsedDate = null;
                 $expirationAuroraDate       = $auroraDealData->{'Deal Expiration Date'};
 
-                if($expirationAuroraDate == '0000-00-00 00:00:00'){
+                if ($expirationAuroraDate == '0000-00-00 00:00:00') {
                     $expirationAuroraDate = null;
                 }
 

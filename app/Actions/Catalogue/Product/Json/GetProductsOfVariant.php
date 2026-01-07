@@ -22,7 +22,7 @@ class GetProductsOfVariant extends IrisAction
         return [
             'products' => $variant->allProduct
                 ->map(
-                    fn($product) =>
+                    fn ($product) =>
                     WebBlockProductResource::make($product)
                         ->toArray(request())
                 )

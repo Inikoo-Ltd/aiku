@@ -17,6 +17,7 @@ use App\Enums\UI\Catalogue\MasterShopTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -81,6 +82,7 @@ class ShowMasterShop extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterShopTabsEnum::navigation()
                 ],
+                'organisations_list' => GetOrganisationOptions::run(),
 
                 MasterShopTabsEnum::SHOWCASE->value => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ?

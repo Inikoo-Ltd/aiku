@@ -58,12 +58,14 @@ class StoreVariantFromMaster extends OrgAction
 
                 ]);
 
-               UpdateWebpage::make()->action($product->webpage()->first(), [
-                    'state_data' => [
-                        'state'                 => $isLeader ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-                        'redirect_webpage_id'   => $leaderProduct->webpage->id
-                    ]
-                ]);
+                if($product->webpage()->exists()) {
+                    UpdateWebpage::make()->action($product->webpage()->first(), [
+                         'state_data' => [
+                             'state'                 => $isLeader ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
+                             'redirect_webpage_id'   => $leaderProduct->webpage->id
+                         ]
+                     ]);
+                }
             }
 
             $variant->refresh();
