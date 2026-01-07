@@ -71,7 +71,7 @@ const handleFormSubmit = async () => {
 	form.post(
 		route(props.formData.route.name, {
 			...props.formData.route.parameters,
-			organisation: form.organisation,
+			// organisation: form.organisation,
 		}),
 		{
 			onStart: () => (isLoading.value = true),
