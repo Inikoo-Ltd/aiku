@@ -35,9 +35,9 @@ class CloneMasterAssetToOtherShop extends OrgAction
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         StoreProductFromMasterProduct::make()->action($this->masterAsset, [
-            'shop_products' => $shopProducts
+            'shop_products' => $shopProducts,
+            'is_minion_variant' => $this->masterAsset->is_minion_variant,
         ]);
-
 
         return $masterFamily;
     }

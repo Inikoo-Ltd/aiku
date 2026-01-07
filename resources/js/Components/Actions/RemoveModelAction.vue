@@ -12,7 +12,7 @@ import { faTrashAlt } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core";
 library.add(faTrashAlt)
 
-const props = defineProps<{
+defineProps<{
     action: {
         buttonLabel?: string,
         title?:string,

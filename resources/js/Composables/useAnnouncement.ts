@@ -10,7 +10,7 @@ import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Pro
 import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
 import AnnouncementInformation1 from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1.vue"
 import AnnouncementInformation2TransitionText from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue"
-import AnnouncemenPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
+import AnnouncementPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
 import type { Component } from "vue"
 import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
 
@@ -21,7 +21,7 @@ export const getAnnouncementComponent = (code: string) => {
         'announcement-informational-1': AnnouncementInformational1,
         'announcement-information-1': AnnouncementInformation1,
         'announcement-promo-1': AnnouncementPromo1,
-        'announcement-promo-3': AnnouncemenPromo3,
+        'announcement-promo-3': AnnouncementPromo3,
         'announcement-promo-2-countdown': AnnouncementPromo2Countdown,
         'announcement-information-2-transition-text': AnnouncementInformation2TransitionText,
     }

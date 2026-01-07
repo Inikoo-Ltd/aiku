@@ -95,7 +95,7 @@ const form = useForm({
     trade_units: [
 
     ],
-    is_follower: false,
+    is_minion_variant: false,
     image: null,
     shop_products: null,
     marketing_weight: 0,
@@ -536,10 +536,10 @@ const successEditTradeUnit = (data) => {
                                     )"
                                 />
                             </label>
-                            <Toggle v-model="form.is_follower" />
-                            <small v-if="form.errors.is_follower" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <Toggle v-model="form.is_minion_variant" />
+                            <small v-if="form.errors.is_minion_variant" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.is_follower.join(", ") }}
+                                {{ form.errors.is_minion_variant.join(", ") }}
                             </small>
                         </div>
 

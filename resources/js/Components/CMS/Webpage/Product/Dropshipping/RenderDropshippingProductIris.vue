@@ -39,6 +39,7 @@ const props = withDefaults(defineProps<{
     screenType: "mobile" | "tablet" | "desktop"
 }>(), {})
 
+const variant = ref(props.fieldValue.variant || null)
 const layout = inject("layout", {})
 const product = ref(props.fieldValue.product)
 const isLoadingFetchExistenceChannels = ref(false)
@@ -136,6 +137,7 @@ onMounted(() => {
         })
     }
 })
+
 
 watch(
   () => props.fieldValue.product,
