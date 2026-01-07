@@ -113,7 +113,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
                     TranslateModel::dispatch(
                         model: $product,
-                        transactionData: Arr::only($data, [
+                        translationData: Arr::only($data, [
                             'unit',
                             'name',
                             'description',
