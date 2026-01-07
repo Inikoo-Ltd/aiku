@@ -23,6 +23,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import { trans } from "laravel-vue-i18n";
+import { useLayoutStore } from "@/Stores/layout";
 
 library.add( faCube, faFolder, faFolderTree )
 
@@ -40,6 +41,7 @@ const props = defineProps<{
 
 }>()
 
+const layout = useLayoutStore()
 const isCreateShopModal = ref(false)
 const engines = ref([])
 const currentTab = ref(props.tabs.current)
@@ -75,6 +77,7 @@ const redirectToTarget = (engine: string) => {
 
         <template #button-shop="{action}">
             <Button
+                v-if="layout.app.environment !== 'production'"
                 type="primary"
                 :style="'create'"
                 label="Shop"

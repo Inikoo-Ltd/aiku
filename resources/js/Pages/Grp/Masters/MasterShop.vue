@@ -15,9 +15,9 @@ import {
   faAtom,
   faFolderTree,
   faChartLine,
-  faShoppingCart, 
-  faStickyNote, 
-  faMoneyBillWave, 
+  faShoppingCart,
+  faStickyNote,
+  faMoneyBillWave,
   faExclamationTriangle,
   faFolderDownload,
   faStoreAlt,
@@ -38,6 +38,7 @@ import TableShopInMaster from "@/Components/Tables/Grp/Masters/TableShopInMaster
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
+import { useLayoutStore } from "@/Stores/layout"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
   faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload
@@ -58,6 +59,7 @@ const props = defineProps<{
 
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const layout = useLayoutStore();
 
 const component = computed(() => {
 
@@ -84,7 +86,7 @@ const createShop = () => {
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
         <template #otherBefore>
-          <Button v-if="currentTab == 'shops'" :type="'edit'" v-on:click="createShop">
+          <Button v-if="currentTab == 'shops' && layout.app.environment !== 'production'" :type="'edit'" v-on:click="createShop">
             <FontAwesomeLayers class="me-2">
               <FontAwesomeIcon :icon="faStoreAlt"/>
               <FontAwesomeIcon :icon="faPlusCircle" style="left: unset; right: -12px; bottom: -22px; width: 75%;"/>
