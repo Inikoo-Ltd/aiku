@@ -50,7 +50,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
             $items->chunk(100)->each(function ($chunkedItems) use ($salesChannel, $existingPortfolios) {
                 $chunkedItems->each(function ($item) use ($salesChannel, $existingPortfolios) {
                     if (!in_array($salesChannel->id . '-' . $item->id, $existingPortfolios)) {
-                        StorePortfolio::make()->action($salesChannel, $item, []);
+                        StorePortfolio::dispatch($salesChannel, $item, []);
                     }
                 });
             });
@@ -62,7 +62,6 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
         return [
             'customer_sales_channel_ids' => 'required|array|min:1',
             'customer_sales_channel_ids.*' => 'required|integer|exists:customer_sales_channels,id',
-            // 'item_id' => 'required|array|min:1',
             'item_id.*' => 'required|integer|exists:products,id'
         ];
     }
