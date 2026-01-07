@@ -137,6 +137,14 @@ class ShowMailshot extends OrgAction
                             'mailshot' => $mailshot->id
                         ],
                     ],
+                    'scheduleMailshotRoute' => [
+                        'name' => 'grp.models.shop.outboxes.newsletter.schedule',
+                        'parameters' => [
+                            'shop' => $this->shop->id,
+                            'outbox' => $mailshot->outbox->id,
+                            'mailshot' => $mailshot->id
+                        ],
+                    ],
 
             ]
         )->table(
