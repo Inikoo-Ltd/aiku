@@ -35,10 +35,10 @@ class UpdateVariant extends OrgAction
         $variant = DB::transaction(function () use ($modelData, $variant) {
             $variant->update($modelData);
             $variant->refresh();
-    
+
             $products = $variant->allProduct();
             $productIds = $products->pluck('id');
-    
+
             Product::where('variant_id', $variant->id)
                 ->whereNotIn('id', $productIds)
                 ->update([
@@ -46,21 +46,21 @@ class UpdateVariant extends OrgAction
                     'is_variant_leader' => false,
                     'is_minion_variant'  => false
                 ]);
-    
+
             Product::whereIn('id', $productIds)
                 ->update([
                     'variant_id' => $variant->id,
                     'is_variant_leader' => false,
                     'is_minion_variant'  => true
                 ]);
-            
+
             Product::where('id', $variant->leader_id)
                 ->update([
                     'is_variant_leader' => true,
                     'is_minion_variant'  => false
                 ]);
-            
-            foreach($products->get() as $product) {
+
+            foreach ($products->get() as $product) {
                 UpdateWebpage::make()->action($product->webpage()->first(), [
                      'state_data' => [
                          'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,

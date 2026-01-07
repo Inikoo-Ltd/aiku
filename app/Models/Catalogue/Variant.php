@@ -43,6 +43,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property int $master_variant_id
  * @property string $slug
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
@@ -52,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Product|null $leaderProduct
  * @property-read MasterVariant|null $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $minionProduct
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\VariantSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Catalogue\VariantSalesOrderingIntervals|null $salesOrderingIntervals
@@ -149,7 +151,7 @@ class Variant extends Model implements Auditable, HasMedia
     }
 
     public function minionProduct(): HasMany
-    {        
+    {
         return $this->hasMany(Product::class, 'variant_id')
             ->where('is_variant_leader', false);
     }
