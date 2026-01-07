@@ -85,6 +85,12 @@ class FetchAuroraWebpage extends FetchAurora
         }
 
 
+        if($website->shop->is_migrating_to_aiku){
+            return;
+        }
+
+
+
         $parsedData = $this->processAuroraWebpage($this->organisation, $website, $this->auroraModelData);
         if (!$parsedData) {
             return;

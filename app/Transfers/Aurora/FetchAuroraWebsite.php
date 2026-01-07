@@ -45,6 +45,10 @@ class FetchAuroraWebsite extends FetchAurora
             return;
         }
 
+        if($shop->is_migrating_to_aiku){
+            return;
+        }
+
         $this->parsedData['shop'] = $shop;
 
         $state = match ($this->auroraModelData->{'Website Status'}) {
