@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, computed } from "vue"
+import { ref, inject, computed, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
@@ -24,7 +24,6 @@ import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 
 import { Swiper, SwiperSlide } from "swiper/vue"
-import { Pagination } from "swiper/modules"
 import "swiper/css"
 import { faImage } from "@far"
 
@@ -76,6 +75,7 @@ const emits = defineEmits<{
     (e: "selectProduct", value: any[]): void
 }>()
 
+const product = ref(props.product)
 const layout = inject("layout", {})
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
@@ -88,7 +88,14 @@ const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
 const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", p)
 const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
 
-console.log('sss', layout)
+
+watch(
+    () => props.product,
+    (newProduct) => {
+       product.value = newProduct
+    },
+    { deep: true }
+)
 
 </script>
 
@@ -182,12 +189,15 @@ console.log('sss', layout)
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock" :product="product" :customerData="customerData"
-                            :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
-
+                        <EcomAddToBasketv2 
+                            v-if="product.stock"  
+                            v-model:product="product"  
+                            :customerData="customerData"
+                            :key="keyCustomer" 
+                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" 
+                        />
                         <div v-else>
-                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled
-                                full />
+                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
@@ -329,8 +339,9 @@ console.log('sss', layout)
 
         <!-- ADD TO CART -->
         <div class="mt-6 flex flex-col gap-2">
-            <EcomAddToBasketv2 v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
-                :product="product" :customerData="customerData"
+            <EcomAddToBasketv2 
+                v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+                   v-model:product="product"  :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
             <Button v-else-if="layout?.iris?.is_logged_in" :label="product.status_label ?? trans('Out of stock')"

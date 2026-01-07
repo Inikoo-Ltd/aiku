@@ -2,12 +2,13 @@
 import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, inject, onMounted, computed, watch, onUnmounted } from "vue"
+import { ref, inject, onMounted, computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { ulid } from "ulid"
+import { usePage } from '@inertiajs/vue3'
 
 import { Image as ImageTS } from "@/types/Image"
 import { getProductRenderB2bComponent } from "@/Composables/getIrisComponents"
@@ -49,9 +50,11 @@ const props = withDefaults(
 
 
 const layout = inject("layout", {})
+const page = usePage()
 
 const variant = ref<any>(props.fieldValue?.variant ?? null)
 const selected_product = ref<ProductResource>(props.fieldValue.product)
+const appliedVariantFromUrl = ref(false)
 
 const productsList = ref<ProductResource[]>([])
 
@@ -253,6 +256,9 @@ const onUnselectBackInStock = (product: ProductResource) => {
 const changeSelectedProduct = (product: ProductResource) => {
   selected_product.value = { ...product }
   getOrderingProduct(product.id)
+  const url = new URL(window.location.href)
+  url.searchParams.set('variant', product.code)
+  window.history.replaceState({}, '', url.toString())
 }
 
 
@@ -270,6 +276,27 @@ const fetchData = async () => {
 }
 
 
+watch(
+  () => listProducts.value,
+  (products) => {
+    if (!products.length || appliedVariantFromUrl.value) return
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const variantCode = urlParams.get('variant')
+    if (!variantCode) return
+
+    const matchedProduct = listProducts.value.find(
+      p => p.code === variantCode
+    )
+
+    if (matchedProduct) {
+      selected_product.value = { ...matchedProduct }
+      getOrderingProduct(selected_product.value.id)
+      appliedVariantFromUrl.value = true
+    }
+  },
+  { immediate: true }
+)
 
 watch(
   () => layout?.iris?.is_logged_in,
@@ -308,12 +335,14 @@ onMounted(() => {
       },
     })
   }
+
   if (layout?.iris?.is_logged_in) {
-        fetchData()
-    }
+    fetchData()
+  }
 
   getAllProductFromVariant()
 })
+
 
 </script>
 

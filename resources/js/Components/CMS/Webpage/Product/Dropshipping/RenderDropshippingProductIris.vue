@@ -66,6 +66,7 @@ const layout: any = inject("layout", {})
 
 const product = ref<any>(props.fieldValue?.product ?? null)
 const variant = ref<any>(props.fieldValue?.variant ?? null)
+const appliedVariantFromUrl = ref(false)
 
 const productsList = ref<ProductResource[]>([])
 
@@ -185,6 +186,14 @@ const listProducts = computed(() =>
     .filter(Boolean)
 )
 
+const changeSelectedProduct = (item: ProductResource) => {
+  product.value = { ...item }
+  fetchProductExistInChannel(item.id)
+  const url = new URL(window.location.href)
+  url.searchParams.set('variant', item.code)
+  window.history.replaceState({}, '', url.toString())
+}
+
 
 watch(
   () => layout?.iris?.is_logged_in,
@@ -216,11 +225,30 @@ watch(
 )
 
 
+watch(
+  () => listProducts.value,
+  (products) => {
+    if (!products.length || appliedVariantFromUrl.value) return
 
-const changeSelectedProduct = (item: ProductResource) => {
-  product.value = { ...item }
-  fetchProductExistInChannel(item.id)
-}
+    const urlParams = new URLSearchParams(window.location.search)
+    const variantCode = urlParams.get('variant')
+    if (!variantCode) return
+
+    const matchedProduct = listProducts.value.find(
+      p => p.code === variantCode
+    )
+
+    if (matchedProduct) {
+      product.value = { ...matchedProduct }
+      fetchProductExistInChannel(product.value.id)
+      appliedVariantFromUrl.value = true
+    }
+  },
+  { immediate: true }
+)
+
+
+
 
 onMounted(() => {
   if (props.fieldValue?.product?.luigi_identity) {
