@@ -480,11 +480,11 @@ watch(
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-xs text-sm">
                         <span class="font-medium">
                             {{ trans("Showing") }}
-                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                            <span :class="['font-semibold', `text-(--theme-color-0)`]">
                                 {{ products.length }}
                             </span>
                             {{ trans("of") }}
-                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                            <span :class="['font-semibold', `text-(--theme-color-0)`]">
                                 {{ totalProducts }}
                             </span>
                             {{ products.length === 1 ? trans("product") : trans("products") }}
