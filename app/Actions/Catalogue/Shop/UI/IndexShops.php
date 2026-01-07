@@ -123,7 +123,7 @@ class IndexShops extends OrgAction
                     'title'       => __('No shops found'),
                     'description' => __('Get started by creating a shop. ✨'),
                     'count'       => $organisation->catalogueStats->number_shops,
-                    'action'      => [
+                    'action'      => !app()->isProduction() ? [] : [
                         'type'    => 'button',
                         'style'   => 'create',
                         'tooltip' => __('New shop'),
@@ -176,7 +176,7 @@ class IndexShops extends OrgAction
                         'title' => __('Shop')
                     ],
                     'actions' => [
-                        $this->canEdit ? [
+                        $this->canEdit && !app()->isProduction() ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New shop'),

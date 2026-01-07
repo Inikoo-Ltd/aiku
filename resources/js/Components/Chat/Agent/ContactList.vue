@@ -160,16 +160,15 @@ const handleSendMessage = async (text: string) => {
 
 	try {
 		const organisation = route().params?.organisation ?? "aw"
-
 		const payload = {
 			message_text: text,
 			message_type: "text",
-			sender_type: userName.value,
+			sender_type: "agent",
 		}
 
 		const assignRoute: routeType = {
 			name: "grp.org.crm.agents.messages.send",
-			parameters: [selectedSession.value.ulid, organisation],
+			parameters: [organisation, selectedSession.value.ulid],
 			method: "post",
 		}
 
@@ -416,9 +415,7 @@ const tabClass = (tab: string) => {
 	padding: 6px 12px;
 	cursor: pointer;
 	border-bottom: 2px solid transparent;
-	transition:
-		color 0.15s ease,
-		border-color 0.15s ease;
+	transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .tabPrimary {

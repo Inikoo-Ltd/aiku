@@ -91,7 +91,7 @@ const sendMessage = async () => {
 		id: tempId as any,
 		_tempId: tempId,
 		message_text: newMessage.value,
-		sender_type: props.userName,
+		sender_type: "agent",
 		created_at: new Date().toISOString(),
 		_status: "sending",
 	}
@@ -131,11 +131,18 @@ const getMessages = async (loadMore = false) => {
 
 	isLoadingMore.value = loadMore
 
-	const cursor =
-		loadMore && nextCursor.value ? `?cursor=${nextCursor.value}&limit=50` : "?limit=10"
+	const params = {
+		limit: loadMore && nextCursor.value ? 50 : 10,
+		request_from: "agent",
+	}
+
+	if (loadMore && nextCursor.value) {
+		params.cursor = nextCursor.value
+	}
 
 	const { data } = await axios.get(
-		`${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages${cursor}`
+		`${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages`,
+		{ params }
 	)
 
 	const messages = data?.data?.messages ?? data?.messages ?? []
@@ -183,6 +190,7 @@ let chatChannel: any = null
 const stopSocket = () => {
 	chatChannel?.stopListening(".message")
 	chatChannel?.stopListening(".typing")
+	chatChannel?.stopListening(".messages.read")
 	chatChannel = null
 }
 
@@ -207,7 +215,20 @@ const initSocket = () => {
 			messagesLocal.value.push({ ...message, _status: "sent" })
 		}
 
+		if (message.sender_type !== "agent") {
+			markAsRead()
+		}
+
 		scrollBottom()
+	})
+	chatChannel.listen(".messages.read", (event: any) => {
+		if (event.reader_type !== "agent") {
+			messagesLocal.value.forEach((msg) => {
+				if (event.message_ids.includes(msg.id)) {
+					msg.is_read = true
+				}
+			})
+		}
 	})
 
 	chatChannel.listen(".typing", (payload: any) => {
@@ -231,6 +252,19 @@ const initSocket = () => {
 			remoteTypingUser.value = null
 		}, 800)
 	})
+}
+
+const markAsRead = async () => {
+	if (!chatSession.value?.ulid) return
+	try {
+		const requestFrom = "agent"
+		await axios.post(`${baseUrl}/app/api/chats/read`, {
+			session_ulid: chatSession.value.ulid,
+			request_from: requestFrom,
+		})
+	} catch (e) {
+		console.error("Failed to mark read", e)
+	}
 }
 
 const onViewMessageDetails = () => {
