@@ -9,7 +9,6 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Traits\WithTimeSeriesData;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetProductCategoryTimeSeriesData
@@ -29,26 +28,14 @@ class GetProductCategoryTimeSeriesData
         // Get total sales data
         $totalSalesData = $this->getTotalSalesData($productCategory);
 
-        // Get customer metrics
-        $customerMetrics = $this->getCustomerMetrics($productCategory, function ($productCategory) {
-            $categoryColumn = $this->getCategoryColumn($productCategory);
-
-            return DB::table('invoice_transactions')
-                ->join('invoices', 'invoice_transactions.invoice_id', '=', 'invoices.id')
-                ->where('invoice_transactions.' . $categoryColumn, $productCategory->id)
-                ->where('invoices.in_process', false)
-                ->select('invoices.customer_id')
-                ->groupBy('invoices.customer_id')
-                ->havingRaw('COUNT(DISTINCT invoices.id) > 1')
-                ->get()
-                ->count();
-        });
+        // Get total customers from time series (customers_invoiced)
+        $totalCustomers = $this->getTotalCustomersFromTimeSeries($productCategory, $timeSeriesRecordsTable);
 
         return [
             'all_sales_since' => $totalSalesData['all_sales_since'],
             'total_sales' => $totalSalesData['total_sales'],
             'total_invoices' => $totalSalesData['total_invoices'],
-            'customer_metrics' => $customerMetrics,
+            'total_customers' => $totalCustomers,
             'yearly_sales' => $yearlySales,
             'quarterly_sales' => $quarterlySales,
             'currency' => $currency,

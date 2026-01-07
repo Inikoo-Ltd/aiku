@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Discounts;
 use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
@@ -32,7 +33,7 @@ class CloneAuroraVolGROffers
      */
     public function asCommand(Command $command): int
     {
-        $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
+        $organisation       = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
         $organisationSource = $this->getOrganisationSource($organisation);
         $organisationSource->initialisation($organisation);
 
@@ -69,21 +70,31 @@ class CloneAuroraVolGROffers
                         ->whereRaw("lower(code) = lower(?)", [$fromFamily->code])
                         ->first();
 
-                    if ($toFamily
-                        && !Offer::where('shop_id', $toShop->id)
-                            ->where('type', 'Category Quantity Ordered Order Interval')
-                            ->where('trigger_id', $toFamily->id)->exists()) {
-                        StoreVolumeGRDiscount::make()->action(
-                            $toFamily,
-                            [
-                                'trigger_data_item_quantity' => $auroraOffer->{'Deal Terms'},
-                                'percentage_off'             => $auroraOffer->{'Deal Component Allowance'},
-                                'interval'                   => 30
-                            ]
-                        );
-                        $command->info("Offer created for $toFamily->code");
-                    } elseif (!$toFamily) {
-                        $command->error("Family not found for $fromFamily->code");
+                    if ($toFamily) {
+                        $offer = Offer::where('shop_id', $toShop->id)->where('type', 'Category Quantity Ordered Order Interval')->where('trigger_id', $toFamily->id)->first();
+                        if (!$offer) {
+                            StoreVolumeGRDiscount::make()->action(
+                                $toFamily,
+                                [
+                                    'trigger_data_item_quantity' => $auroraOffer->{'Deal Terms'},
+                                    'percentage_off'             => $auroraOffer->{'Deal Component Allowance'},
+                                    'interval'                   => 30
+                                ]
+                            );
+                            $command->info("Offer created for $toFamily->code");
+                        } else {
+                            $offer->update([
+                                'state'  => OfferStateEnum::ACTIVE,
+                                'status' => true,
+                            ]);
+                            foreach ($offer->offerAllowances as $offerAllowance) {
+                                $offerAllowance->update([
+                                    'state'  => $offer->state->value,
+                                    'status' => $offer->status,
+                                    'end_at' => null
+                                ]);
+                            }
+                        }
                     }
                 }
             });

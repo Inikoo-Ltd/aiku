@@ -7,7 +7,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 import { FreeMode, Navigation, Thumbs } from 'swiper/modules';
 
-const props = defineProps<{
+defineProps<{
     images: Array<String>
 }>()
 

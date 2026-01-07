@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
+import { inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
@@ -8,12 +8,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { LuigiTranslation } from "@/Composables/Unique/LuigiTranslation"
+import { AutoComplete } from "primevue"
 library.add(faSearch)
 
 
-// vika_luigi.js
-// &language=en
-// &currency_symbol=£
 
 const props = defineProps<{
     id: string
@@ -70,14 +68,25 @@ const LBInitAutocompleteNew = async () => {
                     defaultFilters: {
                         availability: 1,  // Filter out of stock products
                     },
+                    recommend: {
+                        heroName: trans('Top product'),
+                        name: trans('Top products'),
+                    }
                 },
                 {
-                    name: trans("Queries"),
                     type: "query",
+                    name: trans("Queries"),
+                    recommend: {
+                        name: trans('Top searches'),
+                        size: 2,
+                    }
                 },
                 {
-                    name: trans("Categories"),
                     type: "category",
+                    name: trans("Categories"),
+                    recommend: {
+                        name: trans('Top categories'),
+                    }
                 },
                 {
                     name: trans("Articles"),
@@ -400,13 +409,6 @@ const visitSearchPage = () => {
         @apply w-[33%]  !important;
     }
 }
-
-/* Button: Shop Today */
-/* .luigi-ac-heromobile .luigi-ac-first-main .luigi-ac-action-primary {
-    margin-top: 20px;
-    position: inherit !important;
-    width: 100% !important;
-} */
 
 
 /* ====================================== Search result */

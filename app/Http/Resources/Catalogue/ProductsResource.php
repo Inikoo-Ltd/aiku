@@ -98,7 +98,7 @@ class ProductsResource extends JsonResource
             'master_product_id'         => $this->master_product_id,
             'variant_slug'              => $this->variant_slug,
             'is_variant_leader'         => $this->is_variant_leader,
-            'variant_code'           => $this->variant_code,
+            'variant_code'              => $this->variant_code,
         ];
     }
 

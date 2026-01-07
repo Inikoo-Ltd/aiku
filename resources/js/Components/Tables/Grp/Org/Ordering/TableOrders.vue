@@ -215,7 +215,7 @@ const generateRouteDeliveryNote = (id: string) => {
             </div>
             
             <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex gap-2 pr-2 py-1.5">
-                <div v-tooltip="order.shipping_data?.[0].trackings?.[0]" class="group w-fit whitespace-nowrap max-w-96 truncate">
+                <div class="group w-fit whitespace-nowrap ">
                     <!-- Delivery Note -->
                     <template v-if="order.shipping_data?.[0].delivery_note_reference">
                         <Link
@@ -237,24 +237,26 @@ const generateRouteDeliveryNote = (id: string) => {
                                         : null
                                 "
                                 :alt="order.shipping_data?.[0].shipper_label"
-                                class="ml-1 h-5 w-5 object-contain inline-block"
+                                class="ml-1 h-4 w-4 object-contain inline-block"
                                 :title="order.shipping_data?.[0].shipper_label"
                                 v-tooltip="order.shipping_data?.[0].shipper_label"
                             />
                             {{ order.shipping_data?.[0].shipper_slug }}:
                         </span>
-                        <a v-if="order.shipping_data?.[0].tracking_urls.length"
-                            :href="order.shipping_data?.[0].tracking_urls[0]"
-                            class="underline"
-                            target="_blank"
-                            rel="noopener"
-                        >
-                            {{ order.shipping_data?.[0].trackings?.[0] }}
-                            <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                        </a>
-                        
-                        <span v-else>
-                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                        <span v-tooltip="order.shipping_data?.[0].trackings?.[0]" class="max-w-96 truncate inline-block align-middle">
+                            <a v-if="order.shipping_data?.[0].tracking_urls.length"
+                                :href="order.shipping_data?.[0].tracking_urls[0]"
+                                class="underline"
+                                target="_blank"
+                                rel="noopener"
+                            >
+                                {{ order.shipping_data?.[0].trackings?.[0] }}
+                                <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                            </a>
+                            
+                            <span v-else>
+                                {{ order.shipping_data?.[0].trackings?.[0] }}
+                            </span>
                         </span>
                     </template>
                 </div>

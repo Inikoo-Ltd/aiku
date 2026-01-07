@@ -10,9 +10,11 @@
 namespace App\Actions\Catalogue\Variant;
 
 use App\Actions\OrgAction;
+use App\Actions\Catalogue\Product\UI\IndexProductsInVariant;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\VariantTabsEnum;
+use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ProductVariantResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -88,18 +90,22 @@ class ShowVariant extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => VariantTabsEnum::navigation()
                 ],
-                /* 'masterRoute'        => [
+                'masterRoute'        => [
                     'name'      => 'grp.masters.master_shops.show.master_families.master_variants.show',
                     'parameters' => [
                         'masterShop'      => $variant->masterVariant->masterShop->slug,
                         'masterFamily'    => $variant->masterVariant->masterFamily->slug,
                         'masterVariant'   => $variant->masterVariant->slug,
                     ],
-                ], */
+                ],
+                'variantSlugs'   => [$variant->slug => productCodeToHexCode($variant->slug)],
                 VariantTabsEnum::SHOWCASE->value =>
                     $this->tab === VariantTabsEnum::SHOWCASE->value ? $variantData : Inertia::lazy(fn () => $variantData),
+                VariantTabsEnum::PRODUCTS->value =>
+                    $this->tab === VariantTabsEnum::PRODUCTS->value ? ProductsResource::collection(IndexProductsInVariant::run($variant)) : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInVariant::run($variant))),
             ]
-        );
+        )
+                ->table(IndexProductsInVariant::make()->tableStructure(variant:$variant, prefix: VariantTabsEnum::PRODUCTS->value));
     }
 
     /**

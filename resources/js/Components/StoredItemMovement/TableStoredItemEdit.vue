@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import { useLocaleStore } from "@/Stores/locale"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { computed, ref, watch, onMounted } from "vue"
+import { ref, watch, onMounted } from "vue"
 import PureInputNumber from "@/Components/Pure/PureInputNumber.vue"
 import { cloneDeep, get } from 'lodash-es'
 import Popover from '@/Components/Popover.vue'
@@ -12,6 +12,7 @@ import { useForm } from "@inertiajs/vue3"
 import { faExclamationTriangle } from "@fal"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { routeType } from "@/types/route"
 
 library.add(faExclamationTriangle)
 

@@ -227,11 +227,11 @@ class IndexMasterProducts extends GrpAction
         } else {
             abort(419);
         }
-        
-        if($filterInVariant) {
-            if($filterInVariant == 'none') {
+
+        if ($filterInVariant) {
+            if ($filterInVariant == 'none') {
                 $queryBuilder->whereNull('master_assets.master_variant_id');
-            }else{
+            } else {
                 $queryBuilder->whereNull('master_assets.master_variant_id')->orWhere('master_assets.master_variant_id', $filterInVariant);
             }
             $queryBuilder->where('master_assets.status', true); // Only fetch MasterAssets that are used as a material for Variant
@@ -283,7 +283,7 @@ class IndexMasterProducts extends GrpAction
                 ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
-            if($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY){
+            if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $table->column(key: 'variant_slug', label: 'Variant', canBeHidden: false, searchable: true);
             }
 
@@ -406,7 +406,7 @@ class IndexMasterProducts extends GrpAction
                     ] : [],
                 ],
                 'data'                      => MasterProductsResource::collection($masterAssets),
-                'variantSlugs'              => $isFamily ?  $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
+                'variantSlugs'              => $isFamily ? $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
                 'masterProductCategoryId'   => $this->parent->id,
                 'editable_table'            => false,
                 'shopsData'                 => $shopsData,
@@ -558,7 +558,7 @@ class IndexMasterProducts extends GrpAction
         $this->parent = $masterFamily;
         $this->initialisation($group, $request);
 
-        return $this->handle(parent: $masterFamily,  filterInVariant: $filterInVariant);
+        return $this->handle(parent: $masterFamily, filterInVariant: $filterInVariant);
     }
 
     /** @noinspection PhpUnusedParameterInspection */

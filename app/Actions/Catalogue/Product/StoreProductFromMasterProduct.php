@@ -28,6 +28,8 @@ class StoreProductFromMasterProduct extends GrpAction
             return;
         }
 
+        $isMinion = data_get($modelData, 'is_minion_variant');
+
         $productCategories = $masterAsset->masterFamily->productCategories;
 
         if ($productCategories) {
@@ -69,6 +71,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
                         'is_for_sale'       => true,
+                        'is_minion_variant' => $isMinion
                     ];
 
                     if (count($tradeUnits) > 1) {
@@ -85,21 +88,23 @@ class StoreProductFromMasterProduct extends GrpAction
                         data_set($data, 'family_id', $productCategory->id);
                         data_set($data, 'trade_units', $tradeUnits);
 
-                        $this->updateFoundProduct($product, $data, true);
+                        // Don't create Webpage if it's marked as is_minion
+                        $this->updateFoundProduct($product, $data, $isMinion ? false : true);
                         continue;
                     }
 
                     $product = StoreProduct::run($productCategory, $data);
-
                     $product->refresh();
                     CloneProductImagesFromTradeUnits::run($product);
                     $product->refresh();
 
-
-                    $webpage = StoreProductWebpage::run($product);
-                    PublishWebpage::make()->action($webpage, [
-                        'comment' => 'first publish'
-                    ]);
+                    // Don't create Webpage if it's marked as is_minion
+                    if (!$isMinion) {
+                        $webpage = StoreProductWebpage::run($product);
+                        PublishWebpage::make()->action($webpage, [
+                            'comment' => 'first publish'
+                        ]);
+                    }
 
                     TranslateModel::dispatch(
                         model: $product,
@@ -137,7 +142,8 @@ class StoreProductFromMasterProduct extends GrpAction
     public function rules(): array
     {
         return [
-            'shop_products' => ['sometimes', 'array']
+            'shop_products' => ['sometimes', 'array'],
+            'is_minion_variant'      => ['sometimes', 'boolean'],
         ];
     }
 

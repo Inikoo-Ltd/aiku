@@ -12,6 +12,7 @@ import VariantShowcase from "@/Components/Showcases/Grp/VariantShowcase.vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 
 library.add(faImage, faOctopusDeploy)
 
@@ -30,6 +31,7 @@ const props = defineProps<{
         name: string
         parameters: []
     }
+    products?: any
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -40,6 +42,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Record<string, any> ={
         showcase: VariantShowcase,
+        products: TableProducts,
     }
     return components[currentTab.value]
 })
