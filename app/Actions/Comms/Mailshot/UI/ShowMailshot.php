@@ -12,6 +12,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
 use App\Http\Resources\Inventory\LocationResource;
@@ -80,6 +81,8 @@ class ShowMailshot extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
+                            'disabled' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]),
+                            'tooltip' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]) ? __('Mailshot is not in process or ready') : null,
                             'label' => __('Workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
                             'route' => [
@@ -95,6 +98,8 @@ class ShowMailshot extends OrgAction
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
+                            'disabled' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]),
+                            'tooltip' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]) ? __('Mailshot is not in process or ready') : null,
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
                                 'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.edit" : "grp.org.shops.show.marketing.newsletters.edit",
@@ -129,22 +134,23 @@ class ShowMailshot extends OrgAction
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
                         )
                     )),
-                    'sendMailshotRoute' => [
-                        'name' => 'grp.models.shop.outboxes.newsletter.send',
-                        'parameters' => [
-                            'shop' => $this->shop->id,
-                            'outbox' => $mailshot->outbox->id,
-                            'mailshot' => $mailshot->id
-                        ],
+                'sendMailshotRoute' => [
+                    'name' => 'grp.models.shop.outboxes.newsletter.send',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'outbox' => $mailshot->outbox->id,
+                        'mailshot' => $mailshot->id
                     ],
-                    'scheduleMailshotRoute' => [
-                        'name' => 'grp.models.shop.outboxes.newsletter.schedule',
-                        'parameters' => [
-                            'shop' => $this->shop->id,
-                            'outbox' => $mailshot->outbox->id,
-                            'mailshot' => $mailshot->id
-                        ],
+                ],
+                'scheduleMailshotRoute' => [
+                    'name' => 'grp.models.shop.outboxes.newsletter.schedule',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'outbox' => $mailshot->outbox->id,
+                        'mailshot' => $mailshot->id
                     ],
+                ],
+                'status' => $mailshot->state->value,
 
             ]
         )->table(

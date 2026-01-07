@@ -34,11 +34,17 @@ const props = defineProps<{
     dispatched_emails?: {}
     sendMailshotRoute?: routeType
     scheduleMailshotRoute?: routeType
+    status?: string
 }>();
 
 
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+
+// Computed property to check if buttons should be disabled
+const isButtonDisabled = computed(() => {
+    return !props.status || !['in_process', 'ready'].includes(props.status.toLowerCase());
+});
 
 // Schedule datetime picker state
 const showSchedulePicker = ref(false);
@@ -190,9 +196,9 @@ const component = computed(() => {
         <template #otherBefore>
             <div class="flex">
                 <Button label="Sent Now" class="!border-r-none !rounded-r-none" icon="fa-paper-plane"
-                    @click="handleSendNow" />
+                    @click="handleSendNow" :disabled="isButtonDisabled" />
                 <Button label="Schedule" class="!border-l-none !rounded-l-none" icon="fa-clock"
-                    @click="handleSchedule($event)" />
+                    @click="handleSchedule($event)" :disabled="isButtonDisabled" />
             </div>
         </template>
     </PageHeading>
