@@ -113,10 +113,10 @@ class ShowMasterFamily extends GrpAction
         $perfectFamily = $masterFamily->status;
         $masterProducts = $masterFamily->masterAssets->pluck('code');
 
-        if($perfectFamily) {
+        if ($perfectFamily) {
             foreach ($masterFamily->productCategories as $productCategory) {
                 $products = $productCategory->getProducts()->pluck('code');
-                if (array_diff($masterProducts->toArray(), $products->toArray())){
+                if (array_diff($masterProducts->toArray(), $products->toArray())) {
                     $perfectFamily = false;
                 }
             }

@@ -159,6 +159,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, MasterAsset> $masterProductVariants
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
+ * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
@@ -434,7 +435,10 @@ class MasterAsset extends Model implements Auditable, HasMedia
         })->first();
     }
 
-
+    public function masterVariant(): BelongsTo
+    {
+        return $this->belongsTo(MasterVariant::class, 'master_variant_id');
+    }
 
 
 

@@ -16,6 +16,8 @@ class GetFaireProducts extends OrgAction
 {
     public string $commandSignature = 'faire:products {shop}';
 
+    public $jobQueue = 'low-priority';
+
     public function handle(Shop $shop): void
     {
         $products = $shop->getFaireProducts([
