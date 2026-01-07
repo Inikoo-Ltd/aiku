@@ -28,18 +28,18 @@ console.log(route().params);
 
 const getVariantRoute = (item: any) => {
   return route('grp.org.shops.show.catalogue.families.show.variants.show', {
-    organisation: route().params.organisation,
-    shop: route().params.shop,
-    family: route().params.family,
+    organisation: item.organisation_slug,
+    shop: item.shop_slug,
+    family: item.family_slug,
     variant: item.slug,
   });
 }
 
 const getLeaderProductRoute = (item: any) => {
   return route('grp.org.shops.show.catalogue.families.show.products.show', {
-    organisation: route().params.organisation,
-    shop: route().params.shop,
-    family: route().params.family,
+    organisation: item.organisation_slug,
+    shop: item.shop_slug,
+    family: item.family_slug,
     product: item.leader_product_slug,
   });
 }
@@ -52,6 +52,19 @@ const formatOptions = (value) => {
   }
 }
 
+function shopRoute(item: Family) {
+    switch (route().current()) {
+        case 'grp.masters.master_shops.show.master_families.master_variants.show':
+            return route(
+                "grp.org.shops.show.catalogue.families.show.variants.show",
+                [item.organisation_slug, item.shop_slug, item.family_slug, item.slug ])
+        default:
+            return route(
+                "grp.org.shops.show.catalogue.dashboard",
+                [item.organisation_slug, item.shop_slug])
+    }
+}
+
 </script>
 
 <template>
@@ -61,8 +74,13 @@ const formatOptions = (value) => {
           {{ item.code }}
         </Link>
       </template>
+      <template #cell(shop_id)="{ item }">
+         <Link :href="shopRoute(item)" class="primaryLink">
+              {{ item.shop_code }}
+          </Link>
+      </template>
       <template #cell(leader_product_name)="{ item }">
-        <Link :href="getLeaderProductRoute(item)" class="primaryLink">
+        <Link :href="getLeaderProductRoute(item)" class="secondaryLink">
           {{ item.leader_product_name }}
         </Link>
       </template>

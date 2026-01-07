@@ -59,6 +59,8 @@ class StoreShop extends OrgAction
     use WithStoreShopRules;
     use WithModelAddressActions;
 
+    public MasterShop $masterShop;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -86,6 +88,14 @@ class StoreShop extends OrgAction
 
         if (!Arr::has($modelData, 'engine')) {
             $modelData['engine'] = ShopEngineEnum::AIKU->value;
+        }
+
+        if (!Arr::has($modelData, 'type') && isset($this->masterShop)) {
+            $modelData['engine'] = $this->masterShop->type;
+        }
+
+        if (!Arr::has($modelData, 'timezone_id')) {
+            $modelData['timezone_id'] = $organisation->timezone_id;
         }
 
         data_set($modelData, 'group_id', $organisation->group_id);
@@ -313,6 +323,7 @@ class StoreShop extends OrgAction
      */
     public function inMaster(MasterShop $masterShop, Organisation $organisation, ActionRequest $request): Shop
     {
+        $this->masterShop = $masterShop;
         $this->initialisation($organisation, $request);
 
         $modelData = $this->validatedData;

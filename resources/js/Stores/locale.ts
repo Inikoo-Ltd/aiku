@@ -44,10 +44,18 @@ export const useLocaleStore = defineStore("locale", () => {
 		return formatter.format(num);
 	};
 
+	const numberShort = (number: number) => {
+		return new Intl.NumberFormat(locale_iso.value || language.value.code, {
+			notation: "compact",
+			compactDisplay: "short",
+			maximumFractionDigits: 1,
+		}).format(number)
+	}
+
 
 	const currencySymbol = (currencyCode: string) => {
 		if(!currencyCode) return '-'
-		
+
 		return new Intl.NumberFormat('en', {
 			style: 'currency',
 			currency: currencyCode,
@@ -63,14 +71,14 @@ export const useLocaleStore = defineStore("locale", () => {
 				style: "currency",
 				currency: currencyCode,
 			}).format(number);
-	
+
 			formattedNumber = formattedNumber.replace(/(\d)([KMGTPE])/g, (match, p1, p2) => {
-				return `${p1} ${p2.toLowerCase()}`;
+				return `${p1}${p2}`;
 			});
-	
+
 			return formattedNumber;
 
 	}
 
-	return { language, locale_iso, languageOptions, number, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
+	return { language, locale_iso, languageOptions, number, numberShort, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

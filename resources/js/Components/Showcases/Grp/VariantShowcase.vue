@@ -274,7 +274,7 @@ console.log("MasterVariantShowcase props:", props)
     </div>
 
     <aside class="col-span-12 lg:col-span-3 space-y-3">
-         <SalesAnalyticsCompact v-if="selectedProduct?.salesData?.yearly_sales?.length"
+         <SalesAnalyticsCompact
             :salesData="selectedProduct.salesData" />
     </aside>
 

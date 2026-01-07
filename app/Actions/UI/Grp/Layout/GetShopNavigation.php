@@ -12,7 +12,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 class GetShopNavigation
 {

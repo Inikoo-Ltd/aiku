@@ -15,8 +15,9 @@ return new class () extends Migration {
 
     public function up(): void
     {
-        Schema::create('website_page_views', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('website_page_views')) {
+            Schema::create('website_page_views', function (Blueprint $table) {
+                $table->id();
 
             // Context
             $table = $this->groupOrgRelationship($table);
@@ -60,6 +61,7 @@ return new class () extends Migration {
             $table->index(['webpage_id', 'view_date']);
             $table->index(['website_id', 'view_date']);
         });
+        }
     }
 
     public function down(): void

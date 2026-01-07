@@ -50,7 +50,7 @@ class StoreMasterVariant extends OrgAction
 
             $masterVariant->refresh();
 
-            foreach ($masterVariant->allProduct() as $masterAsset) {
+            foreach ($masterVariant->fetchProductFromData() as $masterAsset) {
                 $masterAsset->updateQuietly([
                     'master_variant_id' => $masterVariant->id,
                     'is_variant_leader' => $masterVariant->leader_id == $masterAsset->id,
@@ -163,10 +163,11 @@ class StoreMasterVariant extends OrgAction
     public function redirectSuccess(MasterVariant $masterVariant): RedirectResponse
     {
         return redirect()
-            ->route('grp.masters.master_shops.show.master_families.show', [
-                'tab'          => 'variants',
-                'masterShop'   => $masterVariant->masterShop->slug,
-                'masterFamily' => $masterVariant->masterFamily->slug,
+            ->route('grp.masters.master_shops.show.master_families.master_variants.show', [
+                'tab'           => 'variants',
+                'masterShop'    => $masterVariant->masterShop->slug,
+                'masterFamily'  => $masterVariant->masterFamily->slug,
+                'masterVariant' => $masterVariant->slug
             ])
             ->with(
                 'notification',

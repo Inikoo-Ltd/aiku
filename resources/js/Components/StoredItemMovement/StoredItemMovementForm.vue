@@ -10,12 +10,9 @@ import { faPlus } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import SelectQuery from "@/Components/SelectQuery.vue"
-import { notify } from "@kyvg/vue3-notification"
-import axios from "axios"
 import { get } from 'lodash-es'
 import { routeType } from "@/types/route"
 import { useLayoutStore } from '@/Stores/layout'
-import Pallet from "@/Pages/Grp/Org/Fulfilment/Pallet.vue"
 
 library.add(faPlus)
 const props = defineProps<{

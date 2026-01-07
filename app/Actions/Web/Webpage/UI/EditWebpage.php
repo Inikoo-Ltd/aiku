@@ -57,7 +57,6 @@ class EditWebpage extends OrgAction
     {
         $isBlog = $webpage->type == WebpageTypeEnum::BLOG;
 
-
         $fields = [
             "seo_image"        => [
                 "type"    => "image_crop_square",
@@ -117,10 +116,12 @@ class EditWebpage extends OrgAction
             ],
         ];
 
+        $inVariant = false;
 
         if ($webpage->model_type == 'Product') {
             /** @var \App\Models\Catalogue\Product $product */
             $product       = $webpage->model;
+            $inVariant = $product->variant_id ? true : false;
             $productFields = [
                 'product_name'              => [
                     'type'        => 'input',
@@ -155,22 +156,30 @@ class EditWebpage extends OrgAction
             $fields = array_merge($fields, $productFields);
         }
 
-
         $mainData = [
             'label'  => $isBlog ? __('Blog') : __('Webpage'),
             'icon'   => 'fal fa-browser',
             'fields' => $fields
-
         ];
 
+        $warning = [];
+
+        if ($inVariant) {
+            $warning = [
+                'type'  => 'warning',
+                'title' => __('Important'),
+                'text'  => __('This product is set as a part of a variant. Therefore editing this webpage state is disabled'),
+                'icon'  => ['fas', 'fa-exclamation-triangle']
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
             [
                 'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-
-                'pageHead' => [
+                'warning'     => $warning,
+                'pageHead'    => [
                     'title'      => __('Settings'),
                     'icon'       => [
                         'icon'  => ['fal', 'sliders-h'],
@@ -181,7 +190,6 @@ class EditWebpage extends OrgAction
                     'afterTitle' => [
                         'label' => $webpage->getUrl(),
                     ],
-
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -209,7 +217,7 @@ class EditWebpage extends OrgAction
                                 ],
                             ]
                         ],
-                        [
+                        $inVariant ? [] : [
                             'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
                             'fields' => [

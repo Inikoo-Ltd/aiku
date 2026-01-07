@@ -110,16 +110,18 @@ class ShowMasterFamily extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
-        $perfectFamily = true;
+        $perfectFamily = $masterFamily->status;
         $masterProducts = $masterFamily->masterAssets->pluck('code');
 
-        foreach($masterFamily->productCategories as $productCategory) {
-            $products = $productCategory->getProducts()->pluck('code');
-            if(array_diff($masterProducts->toArray(), $products->toArray())){
-                $perfectFamily = false;
+        if($perfectFamily) {
+            foreach ($masterFamily->productCategories as $productCategory) {
+                $products = $productCategory->getProducts()->pluck('code');
+                if (array_diff($masterProducts->toArray(), $products->toArray())){
+                    $perfectFamily = false;
+                }
             }
         }
-        
+
         $tabs = [
             MasterFamilyTabsEnum::SALES->value =>
                 $this->tab === MasterFamilyTabsEnum::SALES->value
