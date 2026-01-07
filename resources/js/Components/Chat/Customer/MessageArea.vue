@@ -40,6 +40,15 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const selectedRating = ref<number | null>(null)
 const starPop = ref<number | null>(null)
 
+const localMessages = ref<any[]>([])
+
+watch(
+	() => props.messages,
+	(newVal) => {
+		localMessages.value = [...newVal]
+	},
+	{ immediate: true, deep: true }
+)
 
 const getGuestProfileSubmitted = (): boolean => {
 	try {
@@ -62,8 +71,6 @@ watch(
 	}
 )
 
-
-
 const updateRating = async (r: number) => {
 	starPop.value = r
 
@@ -81,9 +88,9 @@ const updateRating = async (r: number) => {
 }
 
 const groupedMessages = computed(() => {
-	const groups: Record<string, LocalChatMessage[]> = {}
+	const groups: Record<string, any[]> = {}
 
-	props.messages
+	localMessages.value
 		.slice()
 		.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
 		.forEach((msg) => {
@@ -93,7 +100,7 @@ const groupedMessages = computed(() => {
 				year: "numeric",
 			}).format(new Date(msg.created_at))
 
-				; (groups[label] ??= []).push(msg)
+			;(groups[label] ??= []).push(msg)
 		})
 
 	return groups
@@ -143,7 +150,6 @@ const isUserMessage = (message: any) => {
 	return message.sender_type === "guest" || message.sender_type === "user"
 }
 
-
 watch(
 	() => props.messages,
 	() => {
@@ -166,24 +172,20 @@ watch(
 	{ deep: true }
 )
 
-
 onMounted(() => {
 	emit("mounted")
 	scrollToBottom()
 })
-
 </script>
 
 <template>
 	<div class="flex flex-col bg-white">
-
 		<!-- Messages -->
 		<div
 			v-if="messages.length"
 			ref="messagesContainer"
 			@scroll="onScroll"
-			class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)]  scroll-smooth"
-		>
+			class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
 			<template v-for="(group, date) in groupedMessages" :key="date">
 				<div class="mx-auto text-xs text-gray-400 flex justify-center">
 					{{ date }}
@@ -193,8 +195,7 @@ onMounted(() => {
 					v-for="m in group"
 					:key="m.id"
 					class="flex"
-					:class="isUserMessage(m) ? 'justify-end' : 'justify-start'"
-				>
+					:class="isUserMessage(m) ? 'justify-end' : 'justify-start'">
 					<BubbleChat :message="m" viewerType="user" />
 				</div>
 			</template>
@@ -202,32 +203,28 @@ onMounted(() => {
 			<div v-if="loading" class="flex justify-center py-3">
 				<div
 					class="w-5 h-5 rounded-full border-2 border-transparent animate-spin"
-					:style="{ borderTopColor: layout.app.theme[4] }"
-				/>
+					:style="{ borderTopColor: layout.app.theme[4] }" />
 			</div>
 		</div>
 
 		<!-- Empty -->
 		<div
 			v-if="!messages.length && isLoggedIn"
-			class="flex-1 grid place-content-center text-gray-400 text-sm"
-		>
+			class="flex-1 grid place-content-center text-gray-400 text-sm">
 			{{ trans("Start the conversation") }}
 		</div>
 
 		<!-- Rating -->
-		<div
-			v-if="isRating"
-			class="flex justify-between items-center border-t px-3 py-2"
-		>
+		<div v-if="isRating" class="flex justify-between items-center border-t px-3 py-2">
 			<div class="flex gap-1">
 				<button v-for="n in 5" :key="n" @click="updateRating(n)">
 					<FontAwesomeIcon
 						:icon="faStar"
-						:class="n <= (selectedRating ?? rating ?? 0)
-							? 'text-yellow-400'
-							: 'text-gray-300'"
-					/>
+						:class="
+							n <= (selectedRating ?? rating ?? 0)
+								? 'text-yellow-400'
+								: 'text-gray-300'
+						" />
 				</button>
 			</div>
 
@@ -236,24 +233,19 @@ onMounted(() => {
 				class="flex items-center gap-2 text-sm px-3 py-1 rounded border"
 				:style="{
 					borderColor: layout.app.theme[4],
-					color: layout.app.theme[4]
-				}"
-			>
+					color: layout.app.theme[4],
+				}">
 				<FontAwesomeIcon :icon="faPlus" />
 				New Chat
 			</button>
 		</div>
 
 		<!-- Input -->
-		<div
-			v-if="!isRating"
-			class="border-t p-2 flex gap-2 items-end"
-		>
+		<div v-if="!isRating" class="border-t p-2 flex gap-2 items-end">
 			<GuestProfileForm
 				v-if="!isLoggedIn && !guestProfileSubmitted"
 				:sessionUlid="session?.ulid"
-				@submitted="onGuestProfileSubmitted"
-			/>
+				@submitted="onGuestProfileSubmitted" />
 
 			<template v-else>
 				<textarea
@@ -262,21 +254,17 @@ onMounted(() => {
 					@keydown="handleKeyDown"
 					placeholder="Type a message..."
 					class="flex-1 resize-none px-3 py-2 rounded-lg text-sm outline-none border"
-					:style="{ borderColor: layout.app.theme[4] }"
-				/>
+					:style="{ borderColor: layout.app.theme[4] }" />
 
 				<Button
 					:icon="isSending ? faSpinner : faPaperPlane"
 					:loading="isSending"
 					:disabled="!input.trim()"
-					@click="sendMessage"
-				/>
+					@click="sendMessage" />
 			</template>
 		</div>
-
 	</div>
 </template>
-
 
 <style scoped>
 @keyframes spin {

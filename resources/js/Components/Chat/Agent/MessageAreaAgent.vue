@@ -57,8 +57,6 @@ const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const menuRef = ref<HTMLElement | null>(null)
 
-
-
 const scrollBottom = () =>
 	nextTick(() => {
 		if (messagesContainer.value) {
@@ -69,10 +67,8 @@ const scrollBottom = () =>
 const autoResize = () => {
 	if (!messageInput.value) return
 	messageInput.value.style.height = "auto"
-	messageInput.value.style.height =
-		Math.min(messageInput.value.scrollHeight, 120) + "px"
+	messageInput.value.style.height = Math.min(messageInput.value.scrollHeight, 120) + "px"
 }
-
 
 const sendMessage = async () => {
 	if (!newMessage.value.trim()) return
@@ -97,14 +93,13 @@ const sendMessage = async () => {
 
 	try {
 		await emit("send-message", text)
-		const msg = messagesLocal.value.find(m => m._tempId === tempId)
+		const msg = messagesLocal.value.find((m) => m._tempId === tempId)
 		if (msg) msg._status = "sending"
 	} catch {
-		const msg = messagesLocal.value.find(m => m._tempId === tempId)
+		const msg = messagesLocal.value.find((m) => m._tempId === tempId)
 		if (msg) msg._status = "failed"
 	}
 }
-
 
 const resendMessage = async (msg: LocalChatMessage) => {
 	if (msg._status === "sending") return
@@ -119,18 +114,23 @@ const resendMessage = async (msg: LocalChatMessage) => {
 	}
 }
 
-
-
 const getMessages = async (loadMore = false) => {
 	if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
 
 	isLoadingMore.value = loadMore
 
-	const cursor =
-		loadMore && nextCursor.value ? `?cursor=${nextCursor.value}&limit=50` : "?limit=10"
+	const params = {
+		limit: loadMore && nextCursor.value ? 50 : 10,
+		request_from: "agent",
+	}
+
+	if (loadMore && nextCursor.value) {
+		params.cursor = nextCursor.value
+	}
 
 	const { data } = await axios.get(
-		`${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages${cursor}`
+		`${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages`,
+		{ params }
 	)
 
 	const messages = data?.data?.messages ?? data?.messages ?? []
@@ -154,8 +154,6 @@ const getMessages = async (loadMore = false) => {
 	scrollBottom()
 }
 
-
-
 const groupedMessages = computed(() => {
 	const groups: Record<string, LocalChatMessage[]> = {}
 
@@ -175,8 +173,6 @@ const groupedMessages = computed(() => {
 	return groups
 })
 
-
-
 let chatChannel: any = null
 
 const stopSocket = () => {
@@ -192,7 +188,7 @@ const initSocket = () => {
 
 	chatChannel.listen(".message", ({ message }: any) => {
 		const index = messagesLocal.value.findIndex(
-			m =>
+			(m) =>
 				m._status === "sending" &&
 				m.message_text === message.message_text &&
 				m.sender_type === "agent"
@@ -204,23 +200,50 @@ const initSocket = () => {
 			messagesLocal.value.push({ ...message, _status: "sent" })
 		}
 
+		if (message.sender_type !== "agent") {
+			markAsRead()
+		}
+
 		scrollBottom()
+	})
+	chatChannel.listen(".messages.read", (event: any) => {
+		if (event.reader_type !== "agent") {
+			messagesLocal.value.forEach((msg) => {
+				if (event.message_ids.includes(msg.id)) {
+					msg.is_read = true
+				}
+			})
+		}
 	})
 }
 
+const markAsRead = async () => {
+	if (!chatSession.value?.ulid) return
+	try {
+		const requestFrom = "agent"
+		await axios.post(`${baseUrl}/app/api/chats/read`, {
+			session_ulid: chatSession.value.ulid,
+			request_from: requestFrom,
+		})
+	} catch (e) {
+		console.error("Failed to mark read", e)
+	}
+}
 
 const onViewMessageDetails = () => {
 	isMenuOpen.value = false
 	emit("view-message-details")
 }
 
-
-watch(() => chatSession.value?.ulid, async () => {
-	stopSocket()
-	messagesLocal.value = []
-	await getMessages()
-	initSocket()
-})
+watch(
+	() => chatSession.value?.ulid,
+	async () => {
+		stopSocket()
+		messagesLocal.value = []
+		await getMessages()
+		initSocket()
+	}
+)
 
 onMounted(async () => {
 	await getMessages()
@@ -240,20 +263,20 @@ const handleClickOutside = (e: MouseEvent) => {
 }
 </script>
 
-
-
 <template>
-	<div class="flex flex-col h-full bg-white  overflow-hidden">
-
+	<div class="flex flex-col h-full bg-white overflow-hidden">
 		<!-- Header -->
 		<header class="flex items-center gap-3 px-3 py-2 border-b bg-gray-50">
 			<button @click="$emit('back')">
 				<FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
 			</button>
 
-
-			<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
-				<Image v-if="session.image" :src="session.image" class="w-full h-full rounded-full object-cover" />
+			<div
+				class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+				<Image
+					v-if="session.image"
+					:src="session.image"
+					class="w-full h-full rounded-full object-cover" />
 
 				<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
 			</div>
@@ -264,45 +287,49 @@ const handleClickOutside = (e: MouseEvent) => {
 				{{ session?.guest_identifier || session?.contact_name }}
 			</span>
 
-				<div class="relative" ref="menuRef">
+			<div class="relative" ref="menuRef">
 				<button @click.stop="isMenuOpen = !isMenuOpen">
 					<FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
 				</button>
 
-				<div v-if="isMenuOpen && !isClosed"
+				<div
+					v-if="isMenuOpen && !isClosed"
 					class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
-
-					<ModalConfirmationDelete :routeDelete="{
-						name: 'grp.org.crm.agents.sessions.close',
-						parameters: [session.organisation.id, session?.ulid],
-						method: 'patch',
-					}" :title="trans('Are you sure you want to close this session?')" @success="$emit('close-session')">
-
+					<ModalConfirmationDelete
+						:routeDelete="{
+							name: 'grp.org.crm.agents.sessions.close',
+							parameters: [session.organisation.id, session?.ulid],
+							method: 'patch',
+						}"
+						:title="trans('Are you sure you want to close this session?')"
+						@success="$emit('close-session')">
 						<template #default="{ changeModel }">
 							<button @click="changeModel" class="menu-item text-red-600">
 								<FontAwesomeIcon :icon="faTimesCircle" />
-								{{ trans('Close Chat Session') }}
+								{{ trans("Close Chat Session") }}
 							</button>
 						</template>
 					</ModalConfirmationDelete>
 
-
 					<button class="menu-item" @click="onViewMessageDetails">
-						<FontAwesomeIcon :icon="faMessage" /> {{ trans('Message Details') }}
+						<FontAwesomeIcon :icon="faMessage" /> {{ trans("Message Details") }}
 					</button>
 				</div>
 			</div>
 		</header>
 
 		<!-- Messages -->
-		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
+		<div
+			ref="messagesContainer"
+			class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
 			<template v-for="(msgs, date) in groupedMessages" :key="date">
 				<div class="text-center text-xs text-gray-400">{{ date }}</div>
 
-				<div v-for="msg in msgs" :key="msg.id" class="flex"
+				<div
+					v-for="msg in msgs"
+					:key="msg.id"
+					class="flex"
 					:class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-
-
 					<BubbleChat :message="msg" viewerType="agent" />
 
 					<!-- 	<div class="px-3 py-2 rounded-lg max-w-[75%] text-sm flex items-center gap-2 cursor-default" :class="msg.sender_type === 'agent'
@@ -320,14 +347,12 @@ const handleClickOutside = (e: MouseEvent) => {
 							<FontAwesomeIcon :icon="faExclamation" />
 						</button>
 					</div> -->
-
 				</div>
 			</template>
 		</div>
 
 		<!-- Footer -->
 		<footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
-
 			<!-- Attachment -->
 			<!-- <button @click="fileInput?.click()"
 				class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 shrink-0">
@@ -335,9 +360,14 @@ const handleClickOutside = (e: MouseEvent) => {
 			</button> -->
 
 			<!-- Message Input -->
-			<textarea ref="messageInput" v-model="newMessage" @input="autoResize"
-				@keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..." class="flex-1 resize-none border rounded-lg px-3 py-2 text-sm
-		       leading-5  focus:outline-none" />
+			<textarea
+				ref="messageInput"
+				v-model="newMessage"
+				@input="autoResize"
+				@keydown.enter.exact.prevent="sendMessage"
+				rows="1"
+				placeholder="Type message..."
+				class="flex-1 resize-none border rounded-lg px-3 py-2 text-sm leading-5 focus:outline-none" />
 
 			<!-- Send -->
 			<Button @click="sendMessage" :icon="faPaperPlane"></Button>
