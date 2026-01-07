@@ -40,8 +40,6 @@ class IndexProductsInVariant extends OrgAction
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', 'organisations.id');
-        $queryBuilder->where('products.is_main', true);
-        $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.variant_id', $variant->id);
         $queryBuilder->leftJoin('variants', 'variants.id', 'products.variant_id');
 

@@ -50,7 +50,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 
         if ($variant) {
-            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant['data']);
+            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant->only(['id', 'data']));
         }
 
         return $webBlock;
