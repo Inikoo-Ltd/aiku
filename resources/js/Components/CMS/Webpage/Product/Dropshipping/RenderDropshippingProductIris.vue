@@ -1,191 +1,241 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
+import { faGameConsoleHandheld } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, inject, onMounted, computed, watch } from "vue"
-import { Image as ImageTS } from "@/types/Image"
 import { isArray } from "lodash-es"
 import axios from "axios"
-import { getProductRenderDropshippingComponent } from "@/Composables/getIrisComponents"
-import { faGameConsoleHandheld } from "@far"
 
-library.add(faCube, faLink, faFilePdf, faFileDownload)
+import { Image as ImageTS } from "@/types/Image"
+import { getProductRenderDropshippingComponent } from "@/Composables/getIrisComponents"
+
+library.add(
+  faCube,
+  faLink,
+  faFilePdf,
+  faFileDownload,
+  faGameConsoleHandheld
+)
+
 
 interface ProductResource {
-    id: number
-    name: string
-    code: string
-    image?: {
-        source: ImageTS
-    }
-    currency_code: string
-    rpp?: number
-    unit: string
-    stock: number
-    rating: number
-    price: number
-    url: string | null
-    units: number
-    bestseller?: boolean
-    is_favourite?: boolean
-    exist_in_portfolios_channel: number[]
-    is_exist_in_all_channel: boolean
+  id: number
+  name: string
+  code: string
+  image?: { source: ImageTS }
+  currency_code: string
+  rpp?: number
+  unit: string
+  stock: number
+  rating: number
+  price: number
+  url: string | null
+  units: number
+  bestseller?: boolean
+  is_favourite?: boolean
+  exist_in_portfolios_channel: number[]
+  is_exist_in_all_channel: boolean
 }
 
-const props = withDefaults(defineProps<{
-    fieldValue: any
-    webpageData?: any
-    blockData?: object
-    code:string
-    screenType: "mobile" | "tablet" | "desktop"
-}>(), {})
+interface VariantAttribute {
+  code: string
+  label: string
+}
 
-const variant = ref(props.fieldValue.variant || null)
-const layout = inject("layout", {})
-const product = ref(props.fieldValue.product)
+interface VariantProduct {
+  product: { id: number }
+  is_leader: boolean
+  variant?: {
+    attributes?: VariantAttribute[]
+  }
+}
+
+
+
+const props = defineProps<{
+  fieldValue: any
+  webpageData?: any
+  blockData?: object
+  code: string
+  screenType: "mobile" | "tablet" | "desktop"
+}>()
+
+
+
+const layout: any = inject("layout", {})
+
+const product = ref<any>(props.fieldValue?.product ?? null)
+const variant = ref<any>(props.fieldValue?.variant ?? null)
+
 const isLoadingFetchExistenceChannels = ref(false)
 const productExistenceInChannels = ref<number[]>([])
+const productsList = ref<ProductResource[]>([])
+
+
 
 const fetchProductExistInChannel = async () => {
-    if(layout?.iris_variables?.id){
-        try {
-            isLoadingFetchExistenceChannels.value = true
-            const response = await axios.get(
-                route(
-                    "iris.json.customer.product.channel_ids.index",
-                    {
-                        customer: layout?.iris_variables?.id,
-                        product: product.value.id
-                    }
-                )
-            )
+  if (!layout?.iris_variables?.id || !product.value?.id) return
 
-            if (response.status !== 200) {
-                throw new Error("Failed to fetch product existence in channel")
-            }
+  try {
+    isLoadingFetchExistenceChannels.value = true
 
-            // console.log('Product exist in channel response:', response.data)
-            productExistenceInChannels.value = response.data || []
-        } catch (error: any) {
-            console.error('Error fetching product existence in channel:', error.message)
-        } finally {
-            isLoadingFetchExistenceChannels.value = false
-        }
-    }
+    const response = await axios.get(
+      route("iris.json.customer.product.channel_ids.index", {
+        customer: layout.iris_variables.id,
+        product: product.value.id,
+      })
+    )
+
+    productExistenceInChannels.value = response.data ?? []
+  } catch (e) {
+    console.error("fetchProductExistInChannel error", e)
+  } finally {
+    isLoadingFetchExistenceChannels.value = false
+  }
 }
 
-const imagesSetup = ref(isArray(product.value.images) ? product.value.images :
-    product.value.images
-        .filter(item => item.type == "image")
-        .map(item => ({
-            label: item.label,
-            column: item.column_in_db,
-            images: item.images
-        }))
+const resolveProductImages = (product: any) => {
+  const images = product?.images
+  if (!images || !isArray(images)) return []
+
+  return images
+    .filter(i => i?.type === "image" && i?.images)
+    .flatMap(i =>
+      (Array.isArray(i.images) ? i.images : [i.images]).map(
+        (img: ImageTS) => ({
+          source: img,
+          thumbnail: img,
+        })
+      )
+    )
+}
+
+const videoSetup = computed(() =>
+  product.value?.images?.find((i: any) => i.type === "video") ?? null
 )
 
-const videoSetup = ref(
-    product.value.images.find(item => item.type === "video") || null
-)
 
-const validImages = computed(() => {
-    if (!imagesSetup.value) return []
-
-    const hasType = imagesSetup.value.some(item => "type" in item)
-
-    if (hasType) {
-        return imagesSetup.value
-            .filter(item => item.images)
-            .flatMap(item => {
-                const images = Array.isArray(item.images) ? item.images : [item.images]
-                return images.map(img => ({
-                    source: img,
-                    thumbnail: img
-                }))
-            })
-    }
-    return imagesSetup.value
-})
- 
 const fetchData = async () => {
+  if (!product.value?.slug) return
+
   try {
     const response = await axios.get(
       route("iris.catalogue.product.resource", {
-        product: product.value.slug
+        product: product.value.slug,
       })
     )
-    product.value = {...product.value, ...response.data}
-  } catch (error: any) {
-    console.error("cannot break cached cuz", error)
+
+    product.value = { ...product.value, ...response.data }
+  } catch (e) {
+    console.error("fetchData error", e)
   }
 }
 
 
-const getAllProductFormVariant = async () => {
-    console.log("fetching products from variant", variant.value.id)
+
+const getAllProductFromVariant = async () => {
+  if (!variant.value?.id) return
+
   try {
     const response = await axios.get(
       route("iris.json.products.variant", {
-        variant: variant.value.id
+        variant: variant.value.id,
       })
     )
-   console.log("products from variant", response.data)
-  } catch (error: any) {
-    console.error("cannot break cached cuz", error)
+    productsList.value = response.data.products ?? []
+  } catch (e) {
+    console.error("getAllProductFromVariant error", e)
   }
 }
 
 
+const variantProducts = computed<VariantProduct[]>(() => {
+  return Object.values(variant.value?.data?.products ?? {})
+})
+
+const variants = computed(() => {
+  return variant.value?.data?.variants ?? []
+})
+
+const getVariantLabel = (index: number) => {
+  const entry = variantProducts.value[index]
+  if (!entry) return null
+
+
+  return variants.value
+    .map(v => entry[v.label])
+    .filter(Boolean)
+    .join(" – ")
+}
+
+const listProducts = computed(() => {
+  return variantProducts.value
+    .map((v, index) => {
+      const baseProduct = productsList.value.find(
+        p => p.id === v.product.id
+      )
+
+      if (!baseProduct) return null
+
+      return {
+        ...baseProduct,
+        is_leader: v.is_leader,
+        variant_label: getVariantLabel(index),
+        validImages : resolveProductImages(baseProduct),
+      }
+    })
+    .filter(Boolean)
+})
+
+
 onMounted(() => {
-    if (layout?.iris_variables && layout?.iris?.is_logged_in) {
-        fetchProductExistInChannel()
-        fetchData()
-    }
-    if (props.fieldValue?.product?.luigi_identity) {
-        window?.dataLayer?.push({
-            event: "view_item",
-            ecommerce: {
-                items: [
-                    {
-                        item_id: props.fieldValue?.product?.luigi_identity
-                    }
-                ]
-            }
-        })
-    }
-    if(variant.value) getAllProductFormVariant()
+  if (layout?.iris?.is_logged_in) {
+    fetchProductExistInChannel()
+    fetchData()
+  }
+
+  if (props.fieldValue?.product?.luigi_identity) {
+    window?.dataLayer?.push({
+      event: "view_item",
+      ecommerce: {
+        items: [{ item_id: props.fieldValue.product.luigi_identity }],
+      },
+    })
+  }
+
+  getAllProductFromVariant()
 })
 
 
 watch(
   () => props.fieldValue.product,
-  newVal => {
-    product.value = { ...newVal }
+  val => {
+    product.value = val ? { ...val } : null
   },
   { deep: true }
 )
 
 watch(
-  () => layout.iris.customer,
-  newVal => {
+  () => layout?.iris?.customer,
+  () => {
     fetchProductExistInChannel()
     fetchData()
-  },
-  { deep: true }
+  }
 )
-
 </script>
 
 <template>
-        <component 
-            :is="getProductRenderDropshippingComponent(code)" 
-            :fieldValue 
-            :webpageData 
-            :blockData 
-            :validImages
-            :videoSetup
-            :product
-            :isLoadingFetchExistenceChannels
-            :productExistenceInChannels
-        />
+  <component
+    :is="getProductRenderDropshippingComponent(code)"
+    :fieldValue="fieldValue"
+    :webpageData="webpageData"
+    :blockData="blockData"
+    :validImages="resolveProductImages(product)"
+    :videoSetup="videoSetup"
+    :product="product"
+    :isLoadingFetchExistenceChannels="isLoadingFetchExistenceChannels"
+    :productExistenceInChannels="productExistenceInChannels"
+    :listproducts="listProducts"
+  />
 </template>

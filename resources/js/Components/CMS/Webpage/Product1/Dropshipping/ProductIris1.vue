@@ -13,8 +13,11 @@ import { trans } from "laravel-vue-i18n"
 import { Image as ImageTS } from "@/types/Image"
 import { isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
-import axios from "axios"
 import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
+import { Swiper, SwiperSlide } from "swiper/vue"
+import "swiper/css"
+import { faImage } from "@far"
+
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -49,8 +52,11 @@ const props = withDefaults(defineProps<{
     }
     product : ProductResource
     productExistenceInChannels : Number[]
+    listproducts?: object
 }>(), {})
 
+
+console.log('pppppp',props.listproducts)
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
 const contentRef = ref(null)
@@ -115,6 +121,33 @@ const toggleExpanded = () => {
                             </span>
                         </div>
                     </div>
+                </div>
+
+                 <div v-if="listproducts && listproducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md">
+                    <Swiper :space-between="6" :breakpoints="{
+                        0: { slidesPerView: 3.2 },
+                        640: { slidesPerView: 4.5 },
+                        1024: { slidesPerView: 4 }
+                    }">
+                        <SwiperSlide v-for="(item, index) in listproducts" :key="item.id">
+                            <button
+                                class="relative w-full rounded-lg border transition p-2 flex flex-col items-center gap-1"
+                                :class="'border-gray-200 hover:border-gray-300'">
+                                <!-- IMAGE -->
+                                <div class="aspect-square w-14 flex items-center justify-center bg-gray-50 rounded-md">
+                                    <Image v-if="item.validImages" :src="item.validImages" :alt="item.code"
+                                        class="max-h-12 max-w-12 object-contain" />
+                                    <FontAwesomeIcon v-else :icon="faImage" class="text-gray-300 text-sm" />
+                                </div>
+
+                                <!-- VARIANT LABEL -->
+                                <span
+                                    class="text-[11px] font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700 leading-tight text-center">
+                                    {{ item.variant_label }}
+                                </span>
+                            </button>
+                        </SwiperSlide>
+                    </Swiper>
                 </div>
 
                 <!-- Price + Profit popover -->
