@@ -26,6 +26,7 @@ use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
+use Illuminate\Console\Command;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -33,8 +34,12 @@ class AsyncShopPermissions extends OrgAction
 {
     public $jobQueue = 'urgent';
 
-    public function handle(Organisation $organisation, Shop $shop): void
+    public function handle(Shop $shop): void
     {
+
+        $organisation=$shop->organisation;
+        setPermissionsTeamId($shop->group->id);
+
         SeedShopPermissions::run($shop);
         SeedAikuScopedSections::make()->seedShopAikuScopedSection($shop);
 
@@ -48,6 +53,23 @@ class AsyncShopPermissions extends OrgAction
                 Role::where('name', RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $shop))->first()
             ]);
         }
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'shop:hydrate_permissions {shop}';
+    }
+
+    public function getCommandDescription(): string
+    {
+        return 'Hydrate permissions for a shop';
+    }
+
+    public function asCommand(Command$command): int
+    {
+      $shop = Shop::where('slug', $command->argument('shop'))->first();
+      $this->handle($shop);
+      return 0;
     }
 
 }
