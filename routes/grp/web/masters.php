@@ -109,7 +109,7 @@ Route::name("master_shops")->prefix('master-shops')
             Route::get('', ShowMasterShop::class)->name('');
 
             Route::prefix('/shop')->as('.shop')->group(function () {
-                Route::get('/create', CreateShopFromMaster::class)->name('.create');
+                Route::get('/create/{organisation}', CreateShopFromMaster::class)->name('.create');
                 Route::post('/store/{organisation}', StoreShopFromMaster::class)->name('.store');
             });
 
