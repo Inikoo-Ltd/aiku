@@ -10,15 +10,29 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDepartments;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamilies;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProducts;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\SysAdmin\User\UserAddRoles;
+use App\Actions\Web\Website\DeleteWebsite;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
+use Illuminate\Validation\Validator;
+use Lorisleiva\Actions\ActionRequest;
 
 class AsyncShopPermissions extends OrgAction
 {
+    public $jobQueue = 'urgent';
+
     public function handle(Organisation $organisation, Shop $shop): void
     {
         SeedShopPermissions::run($shop);
@@ -35,4 +49,5 @@ class AsyncShopPermissions extends OrgAction
             ]);
         }
     }
+
 }

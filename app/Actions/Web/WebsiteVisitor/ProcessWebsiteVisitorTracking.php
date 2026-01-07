@@ -27,7 +27,7 @@ class ProcessWebsiteVisitorTracking
         Website $website,
         ?WebUser $webUser,
         string $userAgent,
-        string $ip,
+        array $ips,
         string $currentUrl,
         ?string $referrer
     ): void {
@@ -46,16 +46,11 @@ class ProcessWebsiteVisitorTracking
             $browser = explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown';
             $os = GetOsFromUserAgent::run($parsedUserAgent);
 
-            $ipHash = hash('sha256', $ip . config('app.key'));
-            $visitorHash = hash('sha256', $ipHash . $userAgent);
-
             $visitor = StoreWebsiteVisitor::run(
                 website: $website,
                 sessionId: $sessionId,
                 webUser: $webUser,
-                visitorHash: $visitorHash,
-                ipHash: $ipHash,
-                ip: $ip,
+                ips: $ips,
                 device: $device,
                 browser: $browser,
                 os: $os,
