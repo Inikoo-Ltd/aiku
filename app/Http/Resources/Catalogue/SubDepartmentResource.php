@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -24,31 +25,35 @@ class SubDepartmentResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var ProductCategory $subDepartment */
+        $subDepartment = $this->resource;
+
         $urlMaster                              = null;
-        if ($this->master_product_category_id) {
+        if ($subDepartment->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',
                 'parameters' => [
-                    $this->masterProductCategory->id
+                   $subDepartment->masterProductCategory->id
                 ]
             ];
         }
 
         return [
-            'slug'       => $this->slug,
-            'id'        => $this->id,
-            'image_id'   => $this->image_id,
-            'image'      => $this->imageSources(720, 720),
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'state'      => $this->state,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'slug'       => $subDepartment->slug,
+            'id'        => $subDepartment->id,
+            'image_id'   => $subDepartment->image_id,
+            'image'      => $subDepartment->imageSources(720, 720),
+            'code'       => $subDepartment->code,
+            'name'       => $subDepartment->name,
+            'state'      => $subDepartment->state,
+            'created_at' => $subDepartment->created_at,
+            'updated_at' => $subDepartment->updated_at,
             'url_master'       => $urlMaster,
-             'is_name_reviewed' => $this->is_name_reviewed,
-            'is_description_title_reviewed' => $this->is_description_title_reviewed,
-            'is_description_reviewed' => $this->is_description_reviewed,
-            'is_description_extra_reviewed' => $this->is_description_extra_reviewed
+             'is_name_reviewed' => $subDepartment->is_name_reviewed,
+             'is_description_title_reviewed' => $subDepartment->is_description_title_reviewed,
+             'is_description_reviewed' => $subDepartment->is_description_reviewed,
+             'is_description_extra_reviewed' => $subDepartment->is_description_extra_reviewed,
+            'stats' => $subDepartment->stats
         ];
     }
 }

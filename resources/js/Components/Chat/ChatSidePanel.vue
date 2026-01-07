@@ -98,7 +98,6 @@ const loadUserSessions = async () => {
 	}
 }
 
-
 const priorityIcon = (p?: string) => {
 	const key = String(p || "").toLowerCase()
 	switch (key) {
@@ -335,7 +334,6 @@ onMounted(async () => {
 
 <template>
 	<Teleport to="body">
-
 		<div class="fixed inset-0" @click="emit('close')" />
 
 		<div
@@ -345,8 +343,12 @@ onMounted(async () => {
 					<div class="w-10"></div>
 
 					<div class="flex-1 flex flex-col items-center gap-2 text-center">
-						<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
-							<Image v-if="avatarUrl" :src="avatarUrl" class="w-full h-full rounded-full object-cover" />
+						<div
+							class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+							<Image
+								v-if="avatarUrl"
+								:src="avatarUrl"
+								class="w-full h-full rounded-full object-cover" />
 
 							<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
 						</div>
@@ -356,12 +358,14 @@ onMounted(async () => {
 								{{ capitalize(displayName) }}
 							</div>
 
-							<span v-if="props.session?.web_user"
+							<span
+								v-if="props.session?.web_user"
 								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-xs text-[11px] font-medium bg-green-100 text-green-800">
 								{{ trans("Customer") }}
 							</span>
 
-							<span v-else
+							<span
+								v-else
 								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-xs text-[11px] font-medium bg-blue-100 text-blue-800">
 								{{ trans("Guest") }}
 							</span>
@@ -377,32 +381,42 @@ onMounted(async () => {
 			</div>
 
 			<div class="flex border-b text-sm">
-				<button class="px-4 py-2" :class="activeTab === 'history' ? 'tab-active' : 'tab-inactive'"
+				<button
+					class="px-4 py-2"
+					:class="activeTab === 'history' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'history'">
 					{{ trans("History") }}
 				</button>
 
-				<button class="px-4 py-2" :class="activeTab === 'profile' ? 'tab-active' : 'tab-inactive'"
+				<button
+					class="px-4 py-2"
+					:class="activeTab === 'profile' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'profile'">
 					{{ trans("Profile") }}
 				</button>
 
-				<button class="px-4 py-2" :class="activeTab === 'message-details' ? 'tab-active' : 'tab-inactive'"
+				<button
+					class="px-4 py-2"
+					:class="activeTab === 'message-details' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'message-details'">
 					{{ trans("Message Details") }}
 				</button>
-
 			</div>
 
 			<div class="flex-1 overflow-y-auto">
 				<div v-if="activeTab === 'history'" class="h-full">
 					<template v-if="!selectedHistory">
-						<div v-if="isLoadingHistory" class="text-sm px-4 py-2 text-center text-gray-500">
+						<div
+							v-if="isLoadingHistory"
+							class="text-sm px-4 py-2 text-center text-gray-500">
 							Loading...
 						</div>
 						<div v-else>
-							<div v-for="s in userSessions" :key="s.ulid"
-								class="flex items-start gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer" @click="
+							<div
+								v-for="s in userSessions"
+								:key="s.ulid"
+								class="flex items-start gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer"
+								@click="
 									selectedHistory = {
 										ulid: s.ulid,
 										contact_name: s.contact_name,
@@ -411,7 +425,7 @@ onMounted(async () => {
 										web_user: s.web_user,
 										guest_profile: s.guest_profile,
 									}
-									">
+								">
 								<div class="flex-1">
 									<div class="flex items-center justify-between">
 										<div class="text-sm">
@@ -428,8 +442,12 @@ onMounted(async () => {
 							</div>
 						</div>
 					</template>
-					<MessageHistory v-else :sessionUlid="selectedHistory?.ulid || ''" viewerType="agent"
-						:session="selectedHistory || undefined" @back="selectedHistory = null" />
+					<MessageHistory
+						v-else
+						:sessionUlid="selectedHistory?.ulid || ''"
+						viewerType="agent"
+						:session="selectedHistory || undefined"
+						@back="selectedHistory = null" />
 				</div>
 
 				<div v-if="activeTab === 'profile'" class="p-4 space-y-3">
@@ -467,13 +485,22 @@ onMounted(async () => {
 						</div>
 					</div>
 
-					<div v-if="!props.session?.web_user && props.session?.guest_identifier" class="pt-2 space-y-2">
-						<div class="text-xs text-gray-500">{{ trans("Sync by email (optional)") }}</div>
-						<input type="email" v-model="syncEmail" disabled placeholder="guest@example.com"
+					<div
+						v-if="!props.session?.web_user && props.session?.guest_identifier"
+						class="pt-2 space-y-2">
+						<div class="text-xs text-gray-500">
+							{{ trans("Sync by email (optional)") }}
+						</div>
+						<input
+							type="email"
+							v-model="syncEmail"
+							disabled
+							placeholder="guest@example.com"
 							class="w-full px-3 py-2 border rounded-sm" />
 						<button
 							class="w-full px-3 py-2 buttonPrimary rounded-sm bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
-							:disabled="isSyncing || !syncEmail" @click="onSyncByEmail">
+							:disabled="isSyncing || !syncEmail"
+							@click="onSyncByEmail">
 							<FontAwesomeIcon :icon="faSync" class="text-base text-white" />
 							{{ isSyncing ? trans("Syncing...") : trans("Sync by email") }}
 						</button>
@@ -485,7 +512,10 @@ onMounted(async () => {
 						</div>
 						<Link
 							:href="`/org/${props.session.web_user.organisation_slug}/shops/${props.session.web_user.shop_slug}/crm/customers/${props.session.web_user.slug}`">
-							<Button :icon="faUser" :full="true" :label="trans('View Customer Profile')" />
+							<Button
+								:icon="faUser"
+								:full="true"
+								:label="trans('View Customer Profile')" />
 						</Link>
 					</div>
 				</div>
@@ -494,27 +524,39 @@ onMounted(async () => {
 					<div class="grid grid-cols-3 gap-2 items-center">
 						<div class="text-gray-500 text-sm">{{ trans("Status") }}</div>
 						<div class="flex items-center text-sm">
-							<FontAwesomeIcon :icon="statusIcon(props.session?.status)" class="mr-1 text-sm"
+							<FontAwesomeIcon
+								:icon="statusIcon(props.session?.status)"
+								class="mr-1 text-sm"
 								:class="statusClass(props.session?.status)" />
 							{{ capitalize(props.session?.status || "") }}
 						</div>
 					</div>
 					<div class="grid grid-cols-3 gap-2 items-center">
 						<div class="text-gray-500 text-sm">{{ trans("Priority") }}</div>
-						<div v-if="!isEditingPriority" class="flex items-center text-sm cursor-pointer"
+						<div
+							v-if="!isEditingPriority"
+							class="flex items-center text-sm cursor-pointer"
 							@click="isEditingPriority = true">
-							<FontAwesomeIcon :icon="priorityIcon(currentPriority)" class="mr-1 text-sm"
+							<FontAwesomeIcon
+								:icon="priorityIcon(currentPriority)"
+								class="mr-1 text-sm"
 								:class="priorityClass(currentPriority)" />
 							{{ capitalize(currentPriority || "") }}
 						</div>
 						<div v-else class="flex flex-wrap items-center gap-2">
-							<button v-for="opt in priorityOptions" :key="opt" :disabled="isUpdatingPriority"
+							<button
+								v-for="opt in priorityOptions"
+								:key="opt"
+								:disabled="isUpdatingPriority"
 								class="items-center justify-center border px-2 py-0.5 rounded-xs text-[11px]"
-								:class="priorityClass(opt)" @click="updatePriority(opt)">
+								:class="priorityClass(opt)"
+								@click="updatePriority(opt)">
 								<FontAwesomeIcon :icon="priorityIcon(opt)" class="mr-1 text-xs" />
 								{{ capitalize(opt) }}
 							</button>
-							<button class="px-2 py-1 text-xs border rounded-sm" :disabled="isUpdatingPriority"
+							<button
+								class="px-2 py-1 text-xs border rounded-sm"
+								:disabled="isUpdatingPriority"
 								@click="isEditingPriority = false">
 								{{ trans("Cancel") }}
 							</button>
@@ -523,37 +565,64 @@ onMounted(async () => {
 					<div class="grid grid-cols-3 gap-2 items-center">
 						<div class="text-gray-500 text-sm">{{ trans("Agent") }}</div>
 
-						<div v-if="!isEditingAgent" class="col-span-2 font-medium text-sm cursor-pointer"
+						<div
+							v-if="!isEditingAgent"
+							class="col-span-2 font-medium text-sm cursor-pointer"
 							@click="isEditingAgent = true">
 							{{ props.session?.assigned_agent?.name || "-" }}
 						</div>
 
 						<div v-else class="col-span-2">
-							<SelectQuery :urlRoute="`${baseUrl}/app/api/chats/agents`" :label="'label'"
-								:valueProp="'agent_id'" :object="true" :searchable="true" :closeOnSelect="true"
-								:canClear="true" :onChange="assignAgent">
+							<SelectQuery
+								:urlRoute="`${baseUrl}/app/api/chats/agents`"
+								:label="'label'"
+								:valueProp="'agent_id'"
+								:object="true"
+								:searchable="true"
+								:closeOnSelect="true"
+								:canClear="true"
+								:onChange="assignAgent">
 								<template #option="{ option, isSelected, isPointed }">
-									<div class="flex items-center px-2 py-1.5"
+									<div
+										class="flex items-center px-2 py-1.5"
 										:class="[isPointed(option) ? 'bg-gray-100' : '']">
-										<div class="w-7 h-7 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white"
+										<div
+											class="w-7 h-7 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white"
 											:style="{
 												backgroundColor: avatarAgent(
 													option?.name || option?.label
 												).color,
 											}">
-											{{ avatarAgent(option?.name || option?.label).initials }}
+											{{
+												avatarAgent(option?.name || option?.label).initials
+											}}
 										</div>
 										<div class="flex-1">
-											<div class="text-sm" :class="[isSelected(option) ? 'font-medium' : '']">
+											<div
+												class="text-sm"
+												:class="[isSelected(option) ? 'font-medium' : '']">
 												{{ option?.label || option?.name }}
 											</div>
+											<span
+												v-if="option.shop_names"
+												class="mx-1 text-gray-400">
+												—
+											</span>
+
+											<span
+												class="text-gray-500 truncate max-w-[200px] inline-block align-bottom text-xs"
+												:title="option.shop_names">
+												{{ option.shop_names }}
+											</span>
 										</div>
 									</div>
 								</template>
 							</SelectQuery>
 
 							<div class="flex items-center gap-2 mt-2">
-								<button class="px-2 py-1 text-xs border rounded-sm" :disabled="isAssigningAgent"
+								<button
+									class="px-2 py-1 text-xs border rounded-sm"
+									:disabled="isAssigningAgent"
 									@click="isEditingAgent = false">
 									{{ trans("Cancel") }}
 								</button>
@@ -572,13 +641,11 @@ onMounted(async () => {
 <style scoped>
 .tab-active {
 	color: v-bind("layout?.app?.theme[4]") !important;
-	border-bottom: 2px solid  v-bind("layout?.app?.theme[4]") !important;
+	border-bottom: 2px solid v-bind("layout?.app?.theme[4]") !important;
 	font-weight: 600;
 }
 
 .tab-inactive {
 	color: #6b7280;
 }
-
-
 </style>
