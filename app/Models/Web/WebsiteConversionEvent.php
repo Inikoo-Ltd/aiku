@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $website_id
  * @property int $website_visitor_id
  * @property int|null $webpage_id
- * @property string $event_type
+ * @property \App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum $event_type
  * @property int|null $product_id
  * @property int $quantity
  * @property string $page_url
@@ -46,6 +46,7 @@ class WebsiteConversionEvent extends Model
 
     protected $casts = [
         'event_date' => 'date',
+        'event_type' => \App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum::class
     ];
 
     public function group(): BelongsTo
