@@ -51,9 +51,12 @@ class StoreMasterVariant extends OrgAction
             $masterVariant->refresh();
 
             foreach ($masterVariant->fetchProductFromData() as $masterAsset) {
+                $isLeader = $masterVariant->leader_id == $masterAsset->id;
                 $masterAsset->updateQuietly([
                     'master_variant_id' => $masterVariant->id,
-                    'is_variant_leader' => $masterVariant->leader_id == $masterAsset->id,
+                    'is_main'           => $isLeader,
+                    'is_variant_leader' => $isLeader,
+                    'is_minion_variant' => !$isLeader,
                 ]);
             }
 
