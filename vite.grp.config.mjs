@@ -10,6 +10,7 @@ import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
 import path from "node:path";
+import tailwindcss from "@tailwindcss/vite";
 
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
@@ -39,7 +40,8 @@ export default ({ mode }) => {
                 }
               }
             }),
-        i18n()
+        i18n(),
+        tailwindcss(),
       ],
       ssr    : {
         noExternal: ["@inertiajs/server"]

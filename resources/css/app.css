@@ -2,9 +2,10 @@
 @import url("fonts.css");
 @import url("@vueform/multiselect/themes/default.css");
 
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilities; */
+@import "tailwindcss";
 
 @layer utilities {
     /* .primaryLink {
