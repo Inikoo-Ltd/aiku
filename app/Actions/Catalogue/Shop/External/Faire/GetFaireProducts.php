@@ -5,6 +5,9 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
@@ -36,8 +39,13 @@ class GetFaireProducts extends OrgAction
                     'description' => $product['description'],
                     'rrp' => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
                     'price' => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
-                    'is_main' => true
-                ]);
+                    'unit' => 'Piece',
+                    'units' => $product['unit_multiplier'],
+                    'is_main' => true,
+                    'trade_config' => ProductTradeConfigEnum::AUTO,
+                    'status' => ProductStatusEnum::FOR_SALE,
+                    'state' => ProductStateEnum::ACTIVE,
+                ], strict: false);
 
                 StoreHistoricAsset::run($product, []);
 
