@@ -11,7 +11,6 @@ import Image from "@/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
 import { Image as ImageTS } from "@/types/Image"
-import { isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
@@ -46,22 +45,26 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
-    validImages : object
-    videoSetup : {
-        url : string
+    validImages: object
+    videoSetup: {
+        url: string
     }
-    product : ProductResource
-    productExistenceInChannels : Number[]
-    listproducts?: object
+    product: ProductResource
+    productExistenceInChannels: Number[]
+    listProducts?: object
 }>(), {})
 
+const emits = defineEmits<{
+    (e: "selectProduct", value: any[]): void
+}>()
 
-console.log('pppppp',props.listproducts)
+
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
 const contentRef = ref(null)
 const expanded = ref(false)
 
+const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
 
 const toggleExpanded = () => {
     expanded.value = !expanded.value
@@ -82,8 +85,7 @@ const toggleExpanded = () => {
                 </div>
 
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="product?.tags?.length">
-                    <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags"
-                        :key="index">
+                    <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags" :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
                             <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
@@ -108,7 +110,8 @@ const toggleExpanded = () => {
                             <div class="flex items-center gap-[1px]"></div>
                         </div>
 
-                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <div v-if="layout?.iris?.is_logged_in"
+                            class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
@@ -123,28 +126,35 @@ const toggleExpanded = () => {
                     </div>
                 </div>
 
-                 <div v-if="listproducts && listproducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md">
-                    <Swiper :space-between="6" :breakpoints="{
-                        0: { slidesPerView: 3.2 },
+                <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
+                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
                         640: { slidesPerView: 4.5 },
                         1024: { slidesPerView: 4 }
                     }">
-                        <SwiperSlide v-for="(item, index) in listproducts" :key="item.id">
-                            <button
-                                class="relative w-full rounded-lg border transition p-2 flex flex-col items-center gap-1"
-                                :class="'border-gray-200 hover:border-gray-300'">
-                                <!-- IMAGE -->
-                                <div class="aspect-square w-14 flex items-center justify-center bg-gray-50 rounded-md">
-                                    <Image v-if="item.validImages" :src="item.validImages" :alt="item.code"
-                                        class="max-h-12 max-w-12 object-contain" />
-                                    <FontAwesomeIcon v-else :icon="faImage" class="text-gray-300 text-sm" />
+
+                        <SwiperSlide v-for="item in listProducts" :key="item.id">
+                            <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
+                                'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
+                                item.code === product.code
+                                    ? 'ring-1 primary'
+                                    : 'border-gray-200 hover:border-gray-300'
+                            ]">
+                                <!-- IMAGE FULL AREA -->
+                                <div class="relative w-full aspect-square bg-gray-50">
+                                    <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                        :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
+                                    <FontAwesomeIcon v-else :icon="faImage"
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
                                 </div>
 
                                 <!-- VARIANT LABEL -->
-                                <span
-                                    class="text-[11px] font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700 leading-tight text-center">
-                                    {{ item.variant_label }}
-                                </span>
+                                <div class="p-1">
+                                    <span :class="[
+                                        'block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700'
+                                    ]">
+                                        {{ item.variant_label }}
+                                    </span>
+                                </div>
                             </button>
                         </SwiperSlide>
                     </Swiper>
@@ -156,9 +166,10 @@ const toggleExpanded = () => {
 
                 <!-- Button existence on all channels -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="product" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
-                        :productHasPortfolio="productExistenceInChannels" :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                        />
+                    <ButtonAddPortfolio :product="product"
+                        :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                        :productHasPortfolio="productExistenceInChannels"
+                        :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)" />
                     <!-- <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
                     </div> -->
@@ -222,19 +233,53 @@ const toggleExpanded = () => {
             </div>
         </div>
 
+
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddPortfolio 
-            :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)" 
-            :product="product"
-            :productHasPortfolio="productExistenceInChannels" 
-            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+            <ButtonAddPortfolio :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
+                :product="product" :productHasPortfolio="productExistenceInChannels"
+                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+        </div>
+
+
+        <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md my-4">
+            <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                640: { slidesPerView: 4.5 },
+                1024: { slidesPerView: 4 }
+            }">
+
+                <SwiperSlide v-for="item in listProducts" :key="item.id">
+                    <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
+                        'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
+                        item.code === product.code
+                            ? 'ring-1 primary'
+                            : 'border-gray-200 hover:border-gray-300'
+                    ]">
+                        <!-- IMAGE FULL AREA -->
+                        <div class="relative w-full aspect-square bg-gray-50">
+                            <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
+                            <FontAwesomeIcon v-else :icon="faImage"
+                                class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                        </div>
+
+                        <!-- VARIANT LABEL -->
+                        <div class="p-1">
+                            <span :class="[
+                                'block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700'
+                            ]">
+                                {{ item.variant_label }}
+                            </span>
+                        </div>
+                    </button>
+                </SwiperSlide>
+            </Swiper>
         </div>
 
         <div class="text-xs font-medium py-3">
             <div v-html="product.description"></div>
-             <div class="text-xs font-normal text-gray-700 my-1">
-            <div class="prose prose-sm text-gray-700 max-w-none" v-html="product.description_extra"></div>
-        </div>
+            <div class="text-xs font-normal text-gray-700 my-1">
+                <div class="prose prose-sm text-gray-700 max-w-none" v-html="product.description_extra"></div>
+            </div>
         </div>
 
         <div class="mt-4">
@@ -250,3 +295,11 @@ const toggleExpanded = () => {
         </div>
     </div>
 </template>
+
+
+<style lang="scss" scoped>
+.primary {
+    color: var(--theme-color-4) !important;
+    border: 2px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
+}
+</style>

@@ -4,11 +4,11 @@ import { faFilePdf, faFileDownload } from "@fas"
 import { faGameConsoleHandheld } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, inject, onMounted, computed, watch } from "vue"
-import { isArray } from "lodash-es"
 import axios from "axios"
 
 import { Image as ImageTS } from "@/types/Image"
 import { getProductRenderDropshippingComponent } from "@/Composables/getIrisComponents"
+import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 
 library.add(
   faCube,
@@ -52,7 +52,6 @@ interface VariantProduct {
 }
 
 
-
 const props = defineProps<{
   fieldValue: any
   webpageData?: any
@@ -61,59 +60,63 @@ const props = defineProps<{
   screenType: "mobile" | "tablet" | "desktop"
 }>()
 
-
-
 const layout: any = inject("layout", {})
+
+
 
 const product = ref<any>(props.fieldValue?.product ?? null)
 const variant = ref<any>(props.fieldValue?.variant ?? null)
 
-const isLoadingFetchExistenceChannels = ref(false)
-const productExistenceInChannels = ref<number[]>([])
 const productsList = ref<ProductResource[]>([])
 
 
+const productExistenceInChannels = ref<Record<number, number[]>>({})
+const isLoadingProductChannel = ref<Record<number, boolean>>({})
 
-const fetchProductExistInChannel = async () => {
-  if (!layout?.iris_variables?.id || !product.value?.id) return
+
+
+const fetchProductExistInChannel = async (productId: number) => {
+  if (!layout?.iris?.is_logged_in) return
+  if (isLoadingProductChannel.value[productId]) return
+
+  isLoadingProductChannel.value = {
+    ...isLoadingProductChannel.value,
+    [productId]: true,
+  }
 
   try {
-    isLoadingFetchExistenceChannels.value = true
-
     const response = await axios.get(
       route("iris.json.customer.product.channel_ids.index", {
-        customer: layout.iris_variables.id,
-        product: product.value.id,
+        customer: layout.iris_variables.customer_id,
+        product: productId,
       })
     )
 
-    productExistenceInChannels.value = response.data ?? []
+    productExistenceInChannels.value = {
+      ...productExistenceInChannels.value,
+      [productId]: response.data ?? [],
+    }
   } catch (e) {
     console.error("fetchProductExistInChannel error", e)
   } finally {
-    isLoadingFetchExistenceChannels.value = false
+    isLoadingProductChannel.value = {
+      ...isLoadingProductChannel.value,
+      [productId]: false,
+    }
   }
 }
 
-const resolveProductImages = (product: any) => {
-  const images = product?.images
-  if (!images || !isArray(images)) return []
+const fetchAllProductExistenceChannels = async () => {
+  if (!layout?.iris?.is_logged_in) return
 
-  return images
-    .filter(i => i?.type === "image" && i?.images)
-    .flatMap(i =>
-      (Array.isArray(i.images) ? i.images : [i.images]).map(
-        (img: ImageTS) => ({
-          source: img,
-          thumbnail: img,
-        })
-      )
-    )
+  const ids = [
+    product.value?.id,
+    ...listProducts.value.map(p => p.id),
+  ].filter(Boolean)
+
+  const uniqueIds = [...new Set(ids)]
+  await Promise.all(uniqueIds.map(id => fetchProductExistInChannel(id)))
 }
-
-const videoSetup = computed(() =>
-  product.value?.images?.find((i: any) => i.type === "video") ?? null
-)
 
 
 const fetchData = async () => {
@@ -125,14 +128,11 @@ const fetchData = async () => {
         product: product.value.slug,
       })
     )
-
     product.value = { ...product.value, ...response.data }
   } catch (e) {
     console.error("fetchData error", e)
   }
 }
-
-
 
 const getAllProductFromVariant = async () => {
   if (!variant.value?.id) return
@@ -150,18 +150,16 @@ const getAllProductFromVariant = async () => {
 }
 
 
-const variantProducts = computed<VariantProduct[]>(() => {
-  return Object.values(variant.value?.data?.products ?? {})
-})
 
-const variants = computed(() => {
-  return variant.value?.data?.variants ?? []
-})
+const variantProducts = computed<VariantProduct[]>(() =>
+  Object.values(variant.value?.data?.products ?? {})
+)
+
+const variants = computed(() => variant.value?.data?.variants ?? [])
 
 const getVariantLabel = (index: number) => {
   const entry = variantProducts.value[index]
   if (!entry) return null
-
 
   return variants.value
     .map(v => entry[v.label])
@@ -169,32 +167,62 @@ const getVariantLabel = (index: number) => {
     .join(" – ")
 }
 
-const listProducts = computed(() => {
-  return variantProducts.value
+const listProducts = computed(() =>
+  variantProducts.value
     .map((v, index) => {
       const baseProduct = productsList.value.find(
         p => p.id === v.product.id
       )
-
       if (!baseProduct) return null
 
       return {
         ...baseProduct,
         is_leader: v.is_leader,
         variant_label: getVariantLabel(index),
-        validImages : resolveProductImages(baseProduct),
+        validImages: resolveProductImages(baseProduct),
       }
     })
     .filter(Boolean)
-})
+)
 
+
+watch(
+  () => layout?.iris?.is_logged_in,
+  loggedIn => {
+    if (loggedIn) {
+      fetchAllProductExistenceChannels()
+      fetchData()
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => listProducts.value,
+  products => {
+    if (products.length) {
+      fetchAllProductExistenceChannels()
+    }
+  }
+)
+
+watch(
+  () => props.fieldValue.product,
+  val => {
+    product.value = { ...val }
+    fetchProductExistInChannel(val.id)
+  },
+  { deep: true }
+)
+
+
+
+const changeSelectedProduct = (item: ProductResource) => {
+  product.value = { ...item }
+  fetchProductExistInChannel(item.id)
+}
 
 onMounted(() => {
-  if (layout?.iris?.is_logged_in) {
-    fetchProductExistInChannel()
-    fetchData()
-  }
-
   if (props.fieldValue?.product?.luigi_identity) {
     window?.dataLayer?.push({
       event: "view_item",
@@ -206,36 +234,20 @@ onMounted(() => {
 
   getAllProductFromVariant()
 })
-
-
-watch(
-  () => props.fieldValue.product,
-  val => {
-    product.value = val ? { ...val } : null
-  },
-  { deep: true }
-)
-
-watch(
-  () => layout?.iris?.customer,
-  () => {
-    fetchProductExistInChannel()
-    fetchData()
-  }
-)
 </script>
 
 <template>
   <component
+    :key="product.code"
     :is="getProductRenderDropshippingComponent(code)"
     :fieldValue="fieldValue"
     :webpageData="webpageData"
     :blockData="blockData"
-    :validImages="resolveProductImages(product)"
-    :videoSetup="videoSetup"
     :product="product"
-    :isLoadingFetchExistenceChannels="isLoadingFetchExistenceChannels"
-    :productExistenceInChannels="productExistenceInChannels"
-    :listproducts="listProducts"
+    :productExistenceInChannels="productExistenceInChannels[product.id]"
+    :listProducts="listProducts"
+    :validImages="resolveProductImages(product)"
+    :videoSetup="resolveProductVideo(product)"
+    @selectProduct="changeSelectedProduct"
   />
 </template>

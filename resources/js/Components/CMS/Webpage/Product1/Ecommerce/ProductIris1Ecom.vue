@@ -177,7 +177,7 @@ console.log('sss', layout)
                 </div>
 
                 <!-- PRICE -->
-                <ProductPrices :field-value="fieldValue" />
+                <ProductPrices :field-value="fieldValue" :key="product.code" />
 
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
@@ -343,6 +343,41 @@ console.log('sss', layout)
                 {{ trans("Login or Register for Wholesale Prices") }}
             </LinkIris>
         </div>
+
+
+          <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md my-4">
+                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                        640: { slidesPerView: 4.5 },
+                        1024: { slidesPerView: 4 }
+                    }">
+
+                        <SwiperSlide v-for="item in listProducts" :key="item.id">
+                            <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
+                                'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
+                                item.code === product.code
+                                    ? 'ring-1 primary'
+                                    : 'border-gray-200 hover:border-gray-300'
+                            ]">
+                                <!-- IMAGE FULL AREA -->
+                                <div class="relative w-full aspect-square bg-gray-50">
+                                    <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                        :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
+                                    <FontAwesomeIcon v-else :icon="faImage"
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                </div>
+
+                                <!-- VARIANT LABEL -->
+                                <div class="p-1">
+                                    <span :class="[
+                                        'block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700'
+                                    ]">
+                                        {{ item.variant_label }}
+                                    </span>
+                                </div>
+                            </button>
+                        </SwiperSlide>
+                    </Swiper>
+                </div>
 
         <!-- DESCRIPTION -->
         <div class="mt-4 text-xs font-medium py-3">

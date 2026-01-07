@@ -85,11 +85,11 @@ const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
 
-
+console.log('RenderProductEcom mounted',props.product)
 
 </script>
 
-<template>           
+<template> 
     <div  class="text-gray-800 isolate h-full flex flex-col"  comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
