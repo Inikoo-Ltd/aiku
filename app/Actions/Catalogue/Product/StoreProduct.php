@@ -141,7 +141,8 @@ class StoreProduct extends OrgAction
             return $product;
         });
 
-        ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
+
+        ProductHydrateProductVariants::dispatch($product->main_product_id)->delay($this->hydratorsDelay);
 
         if ($product->exclusive_for_customer_id) {
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
