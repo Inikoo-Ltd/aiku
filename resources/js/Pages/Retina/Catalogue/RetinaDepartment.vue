@@ -35,11 +35,9 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import RetinaTableCollections from "@/Components/Tables/Retina/RetinaTableCollections.vue"
 import TableSubDepartments from "@/Components/Tables/Retina/RetinaTableSubDepartments.vue"
-import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 import AddPortfolio from "@/Components/Retina/AddPortfolioModal.vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import axios from "axios"
-import { routeType } from "@/types/route"
 
 library.add(
 	faFolder,
@@ -114,8 +112,6 @@ const getCustomerChannels = async () => {
 
 		usedCustomerChannels.value =
 			res.data?.data?.customer_channels ?? res.data?.customer_channels ?? res.data ?? {}
-
-		console.log("usedCustomerChannels:", usedCustomerChannels.value)
 	} catch (error) {
 		console.error("Failed to load used channels", error)
 	} finally {
@@ -133,10 +129,13 @@ const channelArray = computed(() => {
 		customer_sales_channel_id: c.customer_sales_channel_id,
 		customer_sales_channel_name: c.customer_sales_channel_name,
 		platform_name: c.platform_name ?? "-",
-
-		is_used: Boolean(used?.[c.customer_sales_channel_id]),
+		is_used: Array.isArray(used) ? used.includes(c.customer_sales_channel_id) : false,
 	}))
 })
+
+const handleChannelsSubmitted = (ids: number[]) => {
+	usedCustomerChannels.value = [...new Set([...(usedCustomerChannels.value ?? []), ...ids])]
+}
 
 onMounted(() => {
 	getCustomerChannels()
@@ -147,7 +146,10 @@ onMounted(() => {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #other>
-			<AddPortfolio :channels="channelArray" :productCategory="data.department.id" />
+			<AddPortfolio
+				:channels="channelArray"
+				:productCategory="data.department.id"
+				@submitted="handleChannelsSubmitted" />
 		</template>
 	</PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
