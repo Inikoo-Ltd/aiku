@@ -89,7 +89,10 @@ class ShowWebsiteAnalyticsDashboard extends OrgAction
                 ],
                 'data'        => array_merge(
                     GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq),
-                    ['localAnalytics' => \App\Actions\Web\WebsiteVisitor\GetWebsiteVisitorAnalytics::make()->handle($website, $analyticReq)]
+                    [
+                        'localAnalytics' => \App\Actions\Web\WebsiteVisitor\GetWebsiteVisitorAnalytics::make()->handle($website, $analyticReq),
+                        'pageConversionAnalytics' => \App\Actions\Web\WebsiteVisitor\GetWebsitePageConversionAnalytics::make()->handle($website, $analyticReq),
+                    ]
                 )
 
 

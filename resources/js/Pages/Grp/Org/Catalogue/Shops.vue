@@ -77,7 +77,6 @@ const redirectToTarget = (engine: string) => {
 
         <template #button-shop="{action}">
             <Button
-                v-if="layout.app.environment !== 'production'"
                 type="primary"
                 :style="'create'"
                 label="Shop"
