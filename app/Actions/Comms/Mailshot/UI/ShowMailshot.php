@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
@@ -17,6 +18,7 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
+use App\Http\Resources\Comms\MailshotRecipient\MailshotRecipientsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -116,6 +118,11 @@ class ShowMailshot extends OrgAction
                     fn () => GetMailshotShowcase::run($mailshot)
                     : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot)),
 
+                MailshotTabsEnum::RECIPIENTS->value => $this->tab == MailshotTabsEnum::RECIPIENTS->value ?
+                    fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
+                    : Inertia::lazy(fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
+
+
                 MailshotTabsEnum::DISPATCHED_EMAILS->value => $this->tab == MailshotTabsEnum::DISPATCHED_EMAILS->value
                     ?
                     fn () => DispatchedEmailsResource::collection(
@@ -167,6 +174,11 @@ class ShowMailshot extends OrgAction
             IndexDispatchedEmails::make()->tableStructure(
                 parent: $mailshot,
                 prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
+            )
+        )->table(
+            IndexMailshotRecipients::make()->tableStructure(
+                parent: $mailshot,
+                prefix: MailshotTabsEnum::RECIPIENTS->value
             )
         );
     }

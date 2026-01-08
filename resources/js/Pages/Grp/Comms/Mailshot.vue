@@ -15,6 +15,7 @@ import { faEnvelope, faStop } from "@fas";
 import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
+import TableMailshotRecipients from "@/Components/Tables/TableMailshotRecipients.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import axios from "axios"
 import { notify } from '@kyvg/vue3-notification'
@@ -34,6 +35,7 @@ const props = defineProps<{
     tabs: TSTabs
     showcase?: string
     email_preview?: Object
+    recipients?: {}
     dispatched_emails?: {}
     sendMailshotRoute?: routeType
     scheduleMailshotRoute?: routeType
@@ -190,7 +192,8 @@ const component = computed(() => {
         showcase: MailshotShowcase,
         email_preview: EmailPreview,
         history: TableHistories,
-        dispatched_emails: TableDispatchedEmails
+        dispatched_emails: TableDispatchedEmails,
+        recipients: TableMailshotRecipients
     };
     return components[currentTab.value];
 });
