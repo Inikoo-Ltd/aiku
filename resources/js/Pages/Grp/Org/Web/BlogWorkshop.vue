@@ -233,12 +233,7 @@ const openFullScreenPreview = () => {
 
 const openWebsite = () => window.open(props.url, '_blank');
 
-const compUsersEditThisPage = computed(() => {
-  return useLiveUsers().liveUsersArray.filter(user =>
-    user.current_page?.route_name === layout.currentRoute &&
-    user.current_page?.route_params?.webpage === layout.currentParams?.webpage
-  ).map(user => user.name ?? user.username);
-});
+
 
 // Events
 onMounted(() => {
@@ -307,12 +302,6 @@ watch(currentView, (newVal) => {
             v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview" />
           <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width
             class="cursor-pointer hover:text-blue-600" v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" />
-        </div>
-        <div v-if="compUsersEditThisPage.length > 1"
-          class="flex items-center gap-2 px-3 py-1 rounded bg-yellow-100 text-yellow-800 border border-yellow-300">
-          <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
-          <span>{{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}</span>
-          <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
         </div>
       </div>
 
