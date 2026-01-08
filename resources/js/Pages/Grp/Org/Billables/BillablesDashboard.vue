@@ -16,6 +16,7 @@ import type { Component } from 'vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
+import BillablesDashboard from '@/Components/Billables/BillablesDashboard.vue'
 
 
 const props = defineProps<{
@@ -32,7 +33,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components: Component = {
-        dashboard: {}
+        dashboard: BillablesDashboard
     }
 
     return components[currentTab.value]

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Billables\UI;
 
+use App\Actions\Billables\UI\GetBillablesDashboard\GetBillablesDashboard;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -48,13 +49,16 @@ class ShowBillablesDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-chart-network'],
                         'title' => __('Billables')
                     ],
-                    'title' => __('Billables dashboard'),
+                    'title' => __('Billables'),
                 ],
                 'tabs' => [
-                    'current'    => $this->tab,
+                    'current'    => $this->tab ?? BillablesTabsEnum::values()[0],
                     'navigation' => BillablesTabsEnum::navigation()
                 ],
 
+                BillablesTabsEnum::DASHBOARD->value => $this->tab == BillablesTabsEnum::DASHBOARD->value ?
+                    fn () => GetBillablesDashboard::run()
+                    : Inertia::lazy(fn () => GetBillablesDashboard::run()),
 
             ]
         );
