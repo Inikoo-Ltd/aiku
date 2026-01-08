@@ -68,6 +68,7 @@ class ProductsWebpageResource extends JsonResource
             'profit_per_unit' => $profitPerUnit,
             'rrp_per_unit'    => $rrpPerUnit,
             'units'           => $units,
+            'is_variant'      => !($this->is_variant_leader || $this->is_variant_minion),
         ];
     }
 }
