@@ -106,7 +106,7 @@ const sanitizeVariants = () => {
 
     Object.entries(form.data_variants.products).forEach(([id, p]: any) => {
         const keyOnly = Object.entries(p)
-            .filter(([k]) => k !== "product" && k !== "is_leader")
+            .filter(([k]) => !["product", "is_leader", "all_child_has_webpage"].includes(k))
             .reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})
 
         const isValid = Object.entries(keyOnly).every(
@@ -116,9 +116,10 @@ const sanitizeVariants = () => {
         if (!isValid) return
 
         products[id] = {
-            ...keyOnly,
+            ...keyOnly, 
             product: p.product,
-            is_leader: !!p.is_leader
+            is_leader: !!p.is_leader,
+            all_child_has_webpage: p.all_child_has_webpage,
         }
     })
 
