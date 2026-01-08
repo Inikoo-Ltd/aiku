@@ -94,7 +94,7 @@ class IndexProductsInVariant extends OrgAction
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'code_product', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_variant_leader', label: ['fal', 'fa-star-half-alt'], type: 'icon')
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
