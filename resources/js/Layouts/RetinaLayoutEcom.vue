@@ -94,7 +94,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 						>
 							{{ trans("Reference") }}:
 							<span class="font-semibold tabular-nums">
-								#{{ layout?.iris?.customer?.reference }}
+								#{{ layout?.iris_variables?.reference }}
 							</span>
 						</div>
 					</div>

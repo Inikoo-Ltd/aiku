@@ -21,6 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 
 library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
 
@@ -213,8 +214,8 @@ const generateRouteDeliveryNote = (id: string) => {
                 {{ trans("For Collection") }}
             </div>
             
-            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex flex-col gap-1 group pr-2 py-1.5">
-                <div class="group w-fit whitespace-nowrap max-w-42 truncate group-hover:max-w-max">
+            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex gap-2 pr-2 py-1.5">
+                <div class="group w-fit whitespace-nowrap ">
                     <!-- Delivery Note -->
                     <template v-if="order.shipping_data?.[0].delivery_note_reference">
                         <Link
@@ -227,22 +228,42 @@ const generateRouteDeliveryNote = (id: string) => {
                     </template>
                     
                     <template v-if="order.shipping_data?.[0].trackings?.[0]">
-                        <span class="opacity-70">|</span> {{ order.shipping_data?.[0].shipper_slug }}:
-                        <a v-if="order.shipping_data?.[0].tracking_urls.length"
-                            :href="order.shipping_data?.[0].tracking_urls[0]"
-                            class="underline"
-                            target="_blank"
-                            rel="noopener"
-                        >
-                            {{ order.shipping_data?.[0].trackings?.[0] }}
-                            <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                        </a>
-                        
-                        <span v-else>
-                            {{ order.shipping_data?.[0].trackings?.[0] }}
+                        <span>
+                            <span class="opacity-70">|</span>
+                            <img v-if="order.shipping_data?.[0].shipper_slug"
+                                :src="
+                                    order.shipping_data?.[0].shipper_slug
+                                        ? `/assets/shipper_logo/${order.shipping_data?.[0].shipper_slug}.png`
+                                        : null
+                                "
+                                :alt="order.shipping_data?.[0].shipper_label"
+                                class="ml-1 h-4 w-4 object-contain inline-block"
+                                :title="order.shipping_data?.[0].shipper_label"
+                                v-tooltip="order.shipping_data?.[0].shipper_label"
+                            />
+                            {{ order.shipping_data?.[0].shipper_slug }}:
+                        </span>
+                        <span v-tooltip="order.shipping_data?.[0].trackings?.[0]" class="max-w-96 truncate inline-block align-middle">
+                            <a v-if="order.shipping_data?.[0].tracking_urls.length"
+                                :href="order.shipping_data?.[0].tracking_urls[0]"
+                                class="underline"
+                                target="_blank"
+                                rel="noopener"
+                            >
+                                {{ order.shipping_data?.[0].trackings?.[0] }}
+                                <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                            </a>
+                            
+                            <span v-else>
+                                {{ order.shipping_data?.[0].trackings?.[0] }}
+                            </span>
                         </span>
                     </template>
                 </div>
+                <CopyButton
+                    v-if="order.shipping_data?.[0].trackings?.[0]"
+                    :text="order.shipping_data?.[0].trackings?.[0]"
+                />
             </div>
             <div v-else>
 

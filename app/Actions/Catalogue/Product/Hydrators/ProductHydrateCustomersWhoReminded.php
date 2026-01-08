@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Product;
+use App\Models\Comms\BackInStockReminderSnapshot;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,8 +31,8 @@ class ProductHydrateCustomersWhoReminded implements ShouldBeUnique
     {
 
         $stats         = [
-            'number_customers_who_reminded' => $product->backInStockReminders()->whereNull('un_reminded_at')->count(),
-            'number_customers_who_un_reminded' => $product->backInStockReminders()->whereNotNull('un_reminded_at')->count()
+            'number_customers_who_reminded' => BackInStockReminderSnapshot::where('product_id', $product->id)->whereNull('reminder_cancelled_at')->whereNotNull('reminder_sent_at')->count(),
+            'number_customers_who_un_reminded' => BackInStockReminderSnapshot::where('product_id', $product->id)->whereNotNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
         ];
 
         $product->stats->update($stats);

@@ -43,16 +43,16 @@ class ShowReturn extends OrgAction
         return Inertia::render(
             'Org/Incoming/Return',
             [
-                'title'       => __('Return') . ': ' . $return->reference,
+                'title'       => __('Return').': '.$return->reference,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $return,
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [],
                 'pageHead'    => [
-                    'title' => $return->reference,
-                    'model' => __('Return'),
-                    'icon'  => [
+                    'title'   => $return->reference,
+                    'model'   => __('Return'),
+                    'icon'    => [
                         'icon'  => 'fal fa-undo-alt',
                         'title' => __('Return'),
                     ],
@@ -62,10 +62,10 @@ class ShowReturn extends OrgAction
                 'box_stats'   => $this->getBoxStats($return),
                 'data'        => ReturnItemResource::collection($return->returnItems),
             ]
-        )->table($this->tableStructure($return));
+        )->table($this->tableStructure());
     }
 
-    public function tableStructure(OrderReturn $return): \Closure
+    public function tableStructure(): \Closure
     {
         return function (\App\InertiaTable\InertiaTable $table) {
             $table
@@ -76,12 +76,12 @@ class ShowReturn extends OrgAction
                 ]);
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true);
-            $table->column(key: 'org_stock_name', label: __('Product'), canBeHidden: false, sortable: true);
-            $table->column(key: 'quantity_expected', label: __('Expected'), canBeHidden: false, sortable: true, align: 'right');
-            $table->column(key: 'quantity_received', label: __('Received'), canBeHidden: false, sortable: true, align: 'right');
-            $table->column(key: 'quantity_accepted', label: __('Accepted'), canBeHidden: false, sortable: true, align: 'right');
-            $table->column(key: 'quantity_rejected', label: __('Rejected'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'org_stock_code', label: __('SKU'), sortable: true);
+            $table->column(key: 'org_stock_name', label: __('Product'), sortable: true);
+            $table->column(key: 'quantity_expected', label: __('Expected'), sortable: true, align: 'right');
+            $table->column(key: 'quantity_received', label: __('Received'), sortable: true, align: 'right');
+            $table->column(key: 'quantity_accepted', label: __('Accepted'), sortable: true, align: 'right');
+            $table->column(key: 'quantity_rejected', label: __('Rejected'), sortable: true, align: 'right');
         };
     }
 
@@ -91,12 +91,12 @@ class ShowReturn extends OrgAction
 
         if ($return->state === ReturnStateEnum::WAITING_TO_RECEIVE) {
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'primary',
-                'label'   => __('Mark as Received'),
-                'key'     => 'mark_received',
-                'icon'    => 'fal fa-inbox-in',
-                'route'   => [
+                'type'  => 'button',
+                'style' => 'primary',
+                'label' => __('Mark as Received'),
+                'key'   => 'mark_received',
+                'icon'  => 'fal fa-inbox-in',
+                'route' => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.return.receive',
                     'parameters' => ['return' => $return->id],
@@ -106,12 +106,12 @@ class ShowReturn extends OrgAction
 
         if ($return->state === ReturnStateEnum::RECEIVED) {
             $actions[] = [
-                'type'    => 'button',
-                'style'   => 'primary',
-                'label'   => __('Start Inspection'),
-                'key'     => 'start_inspection',
-                'icon'    => 'fal fa-search',
-                'route'   => [
+                'type'  => 'button',
+                'style' => 'primary',
+                'label' => __('Start Inspection'),
+                'key'   => 'start_inspection',
+                'icon'  => 'fal fa-search',
+                'route' => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.return.inspect',
                     'parameters' => ['return' => $return->id],
@@ -129,7 +129,7 @@ class ShowReturn extends OrgAction
             'state_icon'  => ReturnStateEnum::stateIcon()[$return->state->value],
             'state_label' => $return->state->labels()[$return->state->value],
             'customer'    => [
-                'name' => $return->customer->name ?? '-',
+                'name'  => $return->customer->name ?? '-',
                 'route' => $return->customer ? [
                     'name'       => 'grp.org.shops.show.crm.customers.show',
                     'parameters' => [
@@ -139,7 +139,7 @@ class ShowReturn extends OrgAction
                     ],
                 ] : null,
             ],
-            'order' => $return->orders->first() ? [
+            'order'       => $return->orders->first() ? [
                 'reference' => $return->orders->first()->reference,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.ordering.orders.show',
@@ -158,9 +158,9 @@ class ShowReturn extends OrgAction
                 'rejected' => $return->stats->number_items_state_rejected ?? 0,
             ],
             'dates'       => [
-                'created'    => $return->created_at,
-                'received'   => $return->received_at,
-                'processed'  => $return->processed_at,
+                'created'      => $return->created_at,
+                'received'     => $return->received_at,
+                'restocked_at' => $return->restocked_at,
             ],
         ];
     }

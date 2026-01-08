@@ -37,7 +37,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
-import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
+import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
 
 library.add(
     faFolder,
@@ -75,6 +75,7 @@ const props = defineProps<{
     images?:object
     mini_breadcrumbs?: any[]
     variants?:object
+    isPerfectFamily: boolean
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
@@ -94,7 +95,7 @@ const component = computed(() => {
         history: TableHistories,
         images : ImagesManagement,
         sales: ProductCategorySales,
-        variants: TableVariants,
+        variants: TableMasterVariants,
     }
     return components[currentTab.value] ?? ModelDetails
 })
@@ -121,6 +122,12 @@ const showDialog = ref(false);
                     color="#4B0082"
                 />
             </Link>
+            </div>
+        </template>
+        
+        <template #button-variants>
+            <div v-if="!isPerfectFamily">
+                <Button :style="'create'" :label="trans('Variants')" :tooltip="trans('Unable to create new variant. Please fix data that are related to this Master Family')" :disabled="true"/>
             </div>
         </template>
 

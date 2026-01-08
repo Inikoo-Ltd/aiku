@@ -10,7 +10,7 @@ import Table from "@/Components/Table/Table.vue"
 import { remove as loRemove, cloneDeep} from "lodash-es"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
 import InputNumber from "primevue/inputnumber"
@@ -20,12 +20,14 @@ import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
+import { faShapes, faStar } from "@fas"
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
     editable_table?: boolean
     isCheckBox?: boolean
+    variantSlugs?: Record<string, string>;
 }>()
 
 const emits = defineEmits<{
@@ -123,6 +125,20 @@ function masterShopRoute(masterProduct: MasterProduct) {
     )
 }
 
+
+function masterVarinatRoute(masterProduct: MasterProduct) {
+    if(masterProduct.variant_slug)
+    return route("grp.masters.master_shops.show.master_families.master_variants.show",
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterFamily: masterProduct.master_family_slug,
+            masterVariant: masterProduct.variant_slug
+        }
+    )
+
+    return "#"
+}
+
 const editingValues = shallowRef<Record<number, { price: number; rrp: number, unit : string }>>({})
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
@@ -214,6 +230,12 @@ function onCancel(item) {
     delete editingValues.value[item.id]
 }
 
+function getClassColorIcon(varSlug: string) {
+    if (!props.variantSlugs) return {};
+
+    const color = props.variantSlugs[varSlug];
+    return color ? { color: `${color} !important` } : {};
+}
 
 </script>
 
@@ -264,6 +286,42 @@ function onCancel(item) {
                 {{ masterProduct["code"] }}
             </Link>
         </template>
+
+        <template #cell(code_product)="{ item: masterProduct }">
+            <FontAwesomeIcon :icon="masterProduct.is_variant_leader ? faStar : faShapes" class="shrink-0 mx-2" :class="masterProduct.is_variant_leader
+                ? 'text-yellow-500'
+                : 'text-gray-500'" />
+
+            <Link v-if="masterProduct.code" v-tooltip="masterProduct.code"
+                :href="masterProductRoute(masterProduct) as string" class="secondaryLink">
+                {{ masterProduct.code }}
+            </Link>
+        </template>
+
+
+
+        <template #cell(variant_slug)="{ item: masterProduct }">
+            <Link v-if="masterProduct.variant_slug" :href="masterVarinatRoute(masterProduct) as string"
+                class="inline-block" v-tooltip="masterProduct.is_variant_leader
+                    ? trans('Leader product of ') + masterProduct.variant_code
+                    : trans('Follower product of ') + masterProduct.variant_code">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150" :class="masterProduct.is_variant_leader
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-gray-50 border-gray-200'">
+                    <!-- ICON -->
+                    <FontAwesomeIcon :icon="masterProduct.is_variant_leader ? faStar : faShapes" class="shrink-0"
+                        :style="{ ...getClassColorIcon(masterProduct.variant_slug), fontSize: '0.7rem' }" />
+
+                    <!-- CODE -->
+                    <span class="leading-none truncate" :style="{ ...getClassColorIcon(masterProduct.variant_slug) }">
+                        {{ masterProduct.variant_code }}
+                    </span>
+                </span>
+            </Link>
+        </template>
+
         <template #cell(name)="{ item: masterProduct }">
             <div>
                 <ProductUnitLabel

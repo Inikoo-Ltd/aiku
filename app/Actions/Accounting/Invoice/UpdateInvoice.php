@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
+use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\OrgAction;
@@ -97,6 +98,8 @@ class UpdateInvoice extends OrgAction
 
         if (Arr::has($modelData, 'date')) {
             $invoice->invoiceTransactions()->update(['date' => $invoice->date]);
+            UpdateCustomerLastInvoicedDate::run($invoice->customer);
+
         }
 
 

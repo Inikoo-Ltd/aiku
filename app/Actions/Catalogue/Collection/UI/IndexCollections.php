@@ -19,6 +19,7 @@ use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\CollectionsTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
@@ -28,16 +29,12 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\AllowedSort;
-use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexCollections extends OrgAction
 {
@@ -85,8 +82,6 @@ class IndexCollections extends OrgAction
         $queryBuilder = QueryBuilder::for(Collection::class);
         $queryBuilder->where('collections.shop_id', $shop->id);
         $queryBuilder->leftjoin('collection_stats', 'collection_stats.collection_id', 'collections.id');
-        $queryBuilder->leftJoin('collection_sales_intervals', 'collection_sales_intervals.collection_id', 'collections.id');
-        $queryBuilder->leftJoin('collection_ordering_intervals', 'collection_ordering_intervals.collection_id', 'collections.id');
 
         $queryBuilder
             ->leftJoin('webpages', function ($join) {
@@ -118,15 +113,18 @@ class IndexCollections extends OrgAction
             ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
 
-        $interval = request()->input('interval', 'all');
-
-        $salesLyColumn = $interval === 'all'
-            ? 'NULL'
-            : "collection_sales_intervals.sales_grp_currency_{$interval}_ly";
-
-        $invoicesLyColumn = $interval === 'all'
-            ? 'NULL'
-            : "collection_ordering_intervals.invoices_{$interval}_ly";
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'collection_time_series',
+            timeSeriesRecordsTable: 'collection_time_series_records',
+            foreignKey: 'collection_id',
+            aggregateColumns: [
+                'sales_grp_currency' => 'sales',
+                'invoices' => 'invoices'
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: true
+        );
 
         $queryBuilder
             ->defaultSort('collections.code')
@@ -156,11 +154,10 @@ class IndexCollections extends OrgAction
                 'webpages.slug as webpage_slug',
                 'websites.slug as website_slug',
                 'currencies.code as currency_code',
-                DB::raw("collection_sales_intervals.sales_grp_currency_{$interval} as sales"),
-                DB::raw("{$salesLyColumn} as sales_ly"),
-                DB::raw("collection_ordering_intervals.invoices_{$interval} as invoices"),
-                DB::raw("{$invoicesLyColumn} as invoices_ly"),
-                DB::raw("'{$interval}' as current_interval"),
+                $timeSeriesData['selectRaw']['sales'],
+                $timeSeriesData['selectRaw']['sales_ly'],
+                $timeSeriesData['selectRaw']['invoices'],
+                $timeSeriesData['selectRaw']['invoices_ly'],
             ])
             ->selectRaw(
                 '(
@@ -171,7 +168,35 @@ class IndexCollections extends OrgAction
         AND model_has_collections.model_type = ?
     ) as parents_data',
                 ['ProductCategory',]
-            );
+            )
+            ->groupBy([
+                'collections.id',
+                'collections.code',
+                'collections.state',
+                'collections.products_status',
+                'collections.name',
+                'collections.description',
+                'collections.created_at',
+                'collections.updated_at',
+                'collections.slug',
+                'collections.web_images',
+                'collections.master_collection_id',
+                'collection_stats.number_families',
+                'collection_stats.number_products',
+                'collection_stats.number_parents',
+                'shops.slug',
+                'shops.code',
+                'shops.name',
+                'organisations.name',
+                'organisations.slug',
+                'organisations.code',
+                'webpages.id',
+                'webpages.state',
+                'webpages.url',
+                'webpages.slug',
+                'websites.slug',
+                'currencies.code',
+            ]);
 
 
         return $queryBuilder
@@ -182,34 +207,8 @@ class IndexCollections extends OrgAction
                 'number_parents',
                 'number_families',
                 'number_products',
-                AllowedSort::custom(
-                    'sales',
-                    new class ($interval) implements Sort {
-                        public function __construct(private string $interval)
-                        {
-                        }
-
-                        public function __invoke(Builder $query, bool $descending, string $property)
-                        {
-                            $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("collection_sales_intervals.sales_grp_currency_{$this->interval}", $direction);
-                        }
-                    }
-                ),
-                AllowedSort::custom(
-                    'invoices',
-                    new class ($interval) implements Sort {
-                        public function __construct(private string $interval)
-                        {
-                        }
-
-                        public function __invoke(Builder $query, bool $descending, string $property)
-                        {
-                            $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy("collection_ordering_intervals.invoices_{$this->interval}", $direction);
-                        }
-                    }
-                ),
+                'sales',
+                'invoices',
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -234,7 +233,7 @@ class IndexCollections extends OrgAction
             }
 
             if ($sales) {
-                $table->withInterval();
+                $table->betweenDates(['date']);
             }
 
             $table
@@ -370,8 +369,8 @@ class IndexCollections extends OrgAction
                     : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
 
                 CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
-                    fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
+                    fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::SALES->value));

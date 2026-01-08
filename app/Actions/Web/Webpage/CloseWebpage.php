@@ -12,6 +12,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Webpage\Luigi\DeleteLuigiContent;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -41,7 +42,13 @@ class CloseWebpage extends OrgAction
         $webpage->update([
             'state' => WebpageStateEnum::CLOSED->value,
         ]);
+        $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
 
+        try {
+            DeleteLuigiContent::run($webpage->website, $identity, 'item');
+        } catch (\Exception) {
+            //
+        }
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
 

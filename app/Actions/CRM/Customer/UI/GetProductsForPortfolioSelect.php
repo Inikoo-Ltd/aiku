@@ -4,6 +4,7 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\CRM\ProductsForPortfolioSelectResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -76,6 +77,7 @@ class GetProductsForPortfolioSelect extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
 
         $queryBuilder->where('products.is_for_sale', true);
+        $queryBuilder->whereNot('products.state', ProductStateEnum::DISCONTINUED->value);
 
         $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id)
             ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {

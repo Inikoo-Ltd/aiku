@@ -89,22 +89,22 @@ class EditSupplier extends GrpAction
                                 ],
                                 'company_name' => [
                                     'type'  => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => $supplier->company_name
                                 ],
                                 'contact_name' => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $supplier->contact_name
                                 ],
                                 'contact_website' => [
                                     'type'  => 'input',
-                                    'label' => __('contact website'),
+                                    'label' => __('Contact website'),
                                     'value' => $supplier->contact_website
                                 ],
                                 'email'        => [
                                     'type'    => 'input',
-                                    'label'   => __('email'),
+                                    'label'   => __('Email'),
                                     'value'   => $supplier->email,
                                     'options' => [
                                         'inputType' => 'email'
@@ -167,7 +167,7 @@ class EditSupplier extends GrpAction
                                 ],
                                 'currency'      => [
                                     'type'  => 'input',
-                                    'label' => __('currency'),
+                                    'label' => __('Currency'),
                                     'value' => ''
                                 ],
                                 'payment terms' => [
@@ -223,12 +223,12 @@ class EditSupplier extends GrpAction
 
 
                         [
-                            'title'  => __('currency'),
+                            'title'  => __('Currency'),
                             'fields' => [
 
                                 'currency_id' => [
                                     'type'  => 'currencies',
-                                    'label' => __('currency'),
+                                    'label' => __('Currency'),
                                     'value' => ''
                                 ],
 
@@ -242,7 +242,7 @@ class EditSupplier extends GrpAction
                             'fields' => [
                                 'currency_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('currency'),
+                                    'label'       => __('Currency'),
                                     'placeholder' => __('Select a currency'),
                                     'options'     => GetCurrenciesOptions::run(),
                                     'value'       => $supplier->currency_id,

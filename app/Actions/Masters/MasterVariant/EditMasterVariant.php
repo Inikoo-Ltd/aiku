@@ -10,7 +10,6 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\OrgAction;
-use App\Models\Masters\MasterAsset;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -90,13 +89,16 @@ class EditMasterVariant extends OrgAction
 
     public function htmlResponse(MasterVariant $masterVariant, ActionRequest $request): Response
     {
-        $masterProductInVariant = MasterAsset::whereIn('id', data_get($masterVariant->data, 'products.*.product.id'))->get();
-
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Edit Master Variant'),
-                'breadcrumbs' => [],
+                'breadcrumbs' => ShowMasterVariant::make()->getBreadcrumbs(
+                    $masterVariant,
+                    preg_replace('/edit$/', 'show', $request->route()->getName()),
+                    $request->route()->originalParameters(),
+                    '(editing)'
+                ),
                 'pageHead'    => [
                     'title'     => __('Edit master variant'),
                     'actions'   => [
@@ -113,7 +115,6 @@ class EditMasterVariant extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('Variant'),
                             'label'   => __('Variant'),
                             'icon'    => 'fa-light fa-shapes',
                             'fields'  => [
@@ -123,11 +124,17 @@ class EditMasterVariant extends OrgAction
                                     'value'    => $masterVariant->data,
                                     'required' => true,
                                     'full'     => true,
+                                    'noSaveButton' => true,
+                                    'save_route' => [
+                                        'name'       => 'grp.models.master_variant.update',
+                                        'parameters' => [$masterVariant->id]
+                                    ],
                                     'master_assets_route' => [
-                                        'name' => 'grp.masters.master_shops.show.master_families.master_products.index',
+                                        'name' => 'grp.masters.master_shops.show.master_families.master_products.index.filter_in_variant',
                                         'parameters' => [
                                             'masterShop'    => $masterVariant->masterShop->slug,
-                                            'masterFamily'  => $masterVariant->masterFamily->slug
+                                            'masterFamily'  => $masterVariant->masterFamily->slug,
+                                            'filterInVariant'   => $masterVariant->id
                                         ]
                                     ],
                                 ],
@@ -143,15 +150,5 @@ class EditMasterVariant extends OrgAction
                 ]
             ]
         );
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterVariant
-    {
-        $this->initialisationFromGroup($masterProductCategory->group, $request);
-
-        return $this->handle($masterProductCategory, $this->validatedData);
     }
 }

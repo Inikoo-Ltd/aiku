@@ -18,6 +18,7 @@ use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\Webpage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -55,6 +56,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_extra
  * @property CollectionProductsStatusEnum $products_status
  * @property array<array-key, mixed>|null $offers_data
+ * @property \Illuminate\Support\Carbon|null $inactivated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -74,6 +76,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\CollectionTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newModelQuery()
@@ -96,17 +99,18 @@ class Collection extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'data'              => 'array',
-        'web_images'        => 'array',
-        'state'             => CollectionStateEnum::class,
-        'products_status'   => CollectionProductsStatusEnum::class,
-        'offers_data'       => 'array',
+        'data'            => 'array',
+        'web_images'      => 'array',
+        'state'           => CollectionStateEnum::class,
+        'products_status' => CollectionProductsStatusEnum::class,
+        'offers_data'     => 'array',
+        'inactivated_at'  => 'datetime',
     ];
 
     protected $attributes = [
-        'data'          => '{}',
-        'web_images'    => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'web_images'  => '{}',
+        'offers_data' => '{}',
     ];
 
     public function getRouteKeyName(): string
@@ -192,5 +196,9 @@ class Collection extends Model implements Auditable, HasMedia
         return $this->morphOne(Webpage::class, 'model');
     }
 
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(CollectionTimeSeries::class);
+    }
 
 }

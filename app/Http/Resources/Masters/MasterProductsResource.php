@@ -40,6 +40,16 @@ class MasterProductsResource extends JsonResource
 
     public function toArray($request): array
     {
+        $extraField = [];
+        // Add this check so that this won't disturb usage in other place. Needed this for the checks done during variant creation.
+        if(isset($this->is_variant_leader)){
+            $allChildHasWeb = true;
+            foreach($this->products as $product){
+                if(!$product->webpage()->exists()) $allChildHasWeb = false;
+            }
+            data_set($extraField, 'allChildHasWebpage', $allChildHasWeb);
+        }
+
         return [
             'id'                     => $this->id,
             'slug'                   => $this->slug,
@@ -65,7 +75,7 @@ class MasterProductsResource extends JsonResource
             'rrp'                    => $this->rrp,
             'status'                 => $this->status,
             'currency_code'          => $this->currency_code,
-            'image_thumbnail'        => $this->imageSources(720, 480),
+            'image_thumbnail'        => $this->web_images,
             'status_icon'            => $this->status ? [
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',
@@ -75,6 +85,10 @@ class MasterProductsResource extends JsonResource
                 'icon'    => 'fas fa-times-circle',
                 'class'   => 'text-red-400'
             ],
+            'variant_slug'           => $this->variant_slug,
+            'is_variant_leader'      => $this->is_variant_leader,
+            'variant_code'           => $this->variant_code,
+            ...$extraField
         ];
     }
 }

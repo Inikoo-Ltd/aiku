@@ -19,4 +19,24 @@ trait HasTimeSeriesRecords
 
         return $table;
     }
+
+    public function getTimeSeriesRecordsSalesField(Blueprint $table): Blueprint
+    {
+        $table->decimal('sales', 16)->default(0);
+        $table->decimal('sales_org_currency', 16)->default(0);
+        $table->decimal('sales_grp_currency', 16)->default(0);
+
+        return $table;
+    }
+
+    public function getTimeSeriesRecordsOrderingField(Blueprint $table): Blueprint
+    {
+        $table->integer('invoices')->default(0);
+        $table->integer('refunds')->default(0);
+        $table->integer('orders')->default(0);
+        $table->integer('delivery_notes')->default(0);
+        $table->integer('customers_invoiced');
+
+        return $table;
+    }
 }

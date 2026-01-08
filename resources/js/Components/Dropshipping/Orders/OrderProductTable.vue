@@ -302,12 +302,14 @@ defineExpose({
       <template #cell(quantity_ordered)="{ item }">
         <div class="flex items-center justify-end gap-2">
           <!-- Editable when creating and not in edit mode -->
-          <div v-if="state === 'creating' && !editingIds.has(item.id)" class="w-fit">
+          <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)" class="w-fit">
             <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
-              :bindToTarget="{ min: 0 }" isWithRefreshModel keySubmit="quantity_ordered"
+              :bindToTarget="{ min: 0, max: item.available_quantity }" isWithRefreshModel keySubmit="quantity_ordered"
               :isLoading="isLoading === 'quantity' + item.id" :readonly="readonly"
-              @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)" noUndoButton
-              noSaveButton />
+              @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+              noUndoButton
+              noSaveButton
+            />
           </div>
 
           <!-- Read-only display -->

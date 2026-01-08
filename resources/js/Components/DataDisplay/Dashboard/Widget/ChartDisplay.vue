@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import CountUp from "vue-countup-v3"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faExclamation, faInfo, faPlay } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import MeterGroup from "primevue/metergroup"
-import { values } from 'lodash-es'
-import ChartDashboardDynamic from "../../ChartDashboardDynamic.vue"
 import Chart from "primevue/chart"
-import ProgressDashboardCard from "../../ProgressDashboardCard.vue"
 import { Link } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLocaleStore } from "@/Stores/locale"

@@ -2,176 +2,127 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use App\Actions\OrgAction;
-use App\Models\CRM\WebUser;
+use Exception;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Http\JsonResponse;
-use App\Models\CRM\Livechat\ChatEvent;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
-use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 
-class StoreChatSession extends OrgAction
+class StoreChatSession
 {
     use AsAction;
-
-    public function handle(array $modelData): ChatSession
-    {
-        $isGuest = empty($modelData['web_user_id']);
-
-        $guestIdentifier = $isGuest
-            ? ($modelData['guest_identifier'] ?? 'guest_' . Str::random(16))
-            : null;
-
-        $chatSession = ChatSession::create([
-            'ulid' => $modelData['ulid'] ?? Str::ulid(),
-            'web_user_id' => $modelData['web_user_id'] ?? null,
-            'status' => ChatSessionStatusEnum::WAITING->value,
-            'guest_identifier' => $guestIdentifier,
-            'language_id' => $modelData['language_id'] ?? 68,
-            'priority' => $modelData['priority'] ?? ChatPriorityEnum::NORMAL->value,
-            'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
-        ]);
-
-        $this->logSessionOpen($chatSession, $modelData, $isGuest, $guestIdentifier);
-
-        return $chatSession;
-    }
 
     public function rules(): array
     {
         return [
-            'web_user_id' => [
-                'nullable',
-                'exists:web_users,id'
-            ],
-            'language_id' => [
-                'required',
-                'exists:languages,id'
-            ],
-            'guest_identifier' => [
-                'nullable',
-                'string',
-                'max:255'
-            ],
-            'ai_model_version' => [
-                'nullable',
-                'string',
-                'max:50'
-            ],
-            'priority' => [
-                'required',
-                Rule::enum(ChatPriorityEnum::class)
-            ],
-            'ulid' => [
-                'sometimes',
-                'string',
-                'size:26',
-                'unique:chat_sessions,ulid'
-            ],
+            'web_user_id'      => ['nullable', 'exists:web_users,id'],
+            'language_id'      => ['required', 'exists:languages,id'],
+            'guest_identifier' => ['nullable', 'string', 'max:255'],
+            'ai_model_version' => ['nullable', 'string', 'max:50'],
+            'shop_id'          => ['required', 'exists:shops,id'],
+            'priority'         => ['required', Rule::enum(ChatPriorityEnum::class)],
+            'ulid'             => ['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid'],
         ];
     }
 
-    public function asController(Request $request): JsonResponse
+
+    /**
+     * @throws \Exception|\Throwable
+     */
+    public function asController(ActionRequest $request): ChatSession
     {
-        $webUserId = $this->getAuthenticatedWebUserId();
+        $validated = $request->validated();
 
-        if ($webUserId) {
-            $request->merge(['web_user_id' => $webUserId]);
-        }
-
-        $chatSession = $this->handle($request->validated());
-
-        return $this->jsonResponse($chatSession);
+        return $this->handle($validated);
     }
 
-    protected function getAuthenticatedWebUserId(): ?int
+
+    /**
+     * @throws \Throwable
+     * @throws \Random\RandomException
+     */
+    public function handle(array $modelData): ChatSession
     {
-        $webUserGuards = ['retina', 'web'];
+        DB::beginTransaction();
 
-        foreach ($webUserGuards as $guard) {
-            if (auth()->guard($guard)->check()) {
-                $user = auth()->guard($guard)->user();
-                if ($user instanceof WebUser) {
-                    return $user->id;
-                }
-            }
+        try {
+            $isGuest = empty($modelData['web_user_id']);
+
+            $guestIdentifier = $isGuest
+                ? ($modelData['guest_identifier'] ?? 'guest_'.random_int(10000, 99999))
+                : null;
+
+            $chatSessionData = [
+                'ulid'             => $modelData['ulid'] ?? Str::ulid(),
+                'web_user_id'      => $modelData['web_user_id'] ?? null,
+                'status'           => ChatSessionStatusEnum::WAITING->value,
+                'guest_identifier' => $guestIdentifier,
+                'language_id'      => $modelData['language_id'],
+                'priority'         => $modelData['priority'],
+                'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
+                'shop_id'          => $modelData['shop_id'] ?? null,
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ];
+
+            $chatSession = ChatSession::create($chatSessionData);
+
+            $this->logSessionOpen($chatSession, $modelData, $isGuest, $guestIdentifier);
+
+            DB::commit();
+
+            return $chatSession;
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to create chat session', [
+                'error' => $e->getMessage(),
+                'data'  => $modelData
+            ]);
+
+            throw $e;
         }
-
-        return null;
     }
+
+
+    public function jsonResponse(ChatSession $chatSession): ChatSessionResource
+    {
+        return ChatSessionResource::make($chatSession)
+            ->additional([
+                'success' => true,
+                'message' => 'Chat session started successfully',
+            ]);
+    }
+
 
     protected function logSessionOpen(ChatSession $chatSession, array $data, bool $isGuest, ?string $guestIdentifier): void
     {
-        $actorType = $isGuest ? ChatActorTypeEnum::GUEST : ChatActorTypeEnum::USER;
-        $actorId = $isGuest ? null : $data['web_user_id'];
+        try {
+            $actorType = $isGuest ? ChatActorTypeEnum::GUEST : ChatActorTypeEnum::USER;
+            $actorId   = $isGuest ? null : $data['web_user_id'];
 
-        ChatEvent::create([
-            'chat_session_id' => $chatSession->id,
-            'event_type' => ChatEventTypeEnum::OPEN->value,
-            'actor_type' => $actorType->value,
-            'actor_id' => $actorId,
-            'payload' => [
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
+            $eventPayload = [
+                'ip_address'       => request()->ip(),
+                'user_agent'       => request()->userAgent(),
                 'guest_identifier' => $guestIdentifier,
-                'language_id' => $data['language_id'] ?? 68,
-                'priority' => $data['priority'] ?? ChatPriorityEnum::NORMAL->value,
-                'is_guest' => $isGuest,
-                'authenticated_guard' => $this->getCurrentWebUserGuard(),
-            ],
-        ]);
-    }
+                'language_id'      => $data['language_id'],
+                'priority'         => $data['priority'],
+                'is_guest'         => $isGuest,
+            ];
 
-    protected function getCurrentWebUserGuard(): ?string
-    {
-        $guards = ['retina', 'web'];
-
-        foreach ($guards as $guard) {
-            if (auth()->guard($guard)->check()) {
-                $user = auth()->guard($guard)->user();
-                if ($user instanceof WebUser) {
-                    return $guard;
-                }
-            }
+            StoreChatEvent::make()->openSession($chatSession, $actorType, $actorId, $eventPayload);
+        } catch (Exception $e) {
+            Log::warning('Failed to log chat session open event', [
+                'session_id' => $chatSession->id,
+                'error'      => $e->getMessage()
+            ]);
         }
-
-        return null;
     }
-
-
-    public function jsonResponse(ChatSession $chatSession): JsonResponse
-    {
-        return response()->json([
-            'success' => true,
-            'message' => 'Chat session started successfully',
-            'data' => [
-                'ulid' => $chatSession->ulid,
-                'status' => $chatSession->status,
-                'is_guest' => is_null($chatSession->web_user_id),
-                'guest_identifier' => $chatSession->guest_identifier,
-                'created_at' => $chatSession->created_at,
-            ]
-        ]);
-    }
-
-
-    public function htmlResponse(ChatSession $chatSession): JsonResponse
-    {
-        return $this->jsonResponse($chatSession);
-    }
-
-
-
-
-
-
-
-
-
 }

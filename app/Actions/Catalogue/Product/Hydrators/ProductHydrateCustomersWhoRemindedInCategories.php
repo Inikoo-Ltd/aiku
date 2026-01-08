@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Catalogue\Product;
+use App\Models\Comms\BackInStockReminderSnapshot;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -31,16 +32,18 @@ class ProductHydrateCustomersWhoRemindedInCategories implements ShouldBeUnique
             $productCategory = $product->{$categoryType};
 
             if ($productCategory) {
-                $methodName = lcfirst($categoryType) . 'BackInStockReminders';
+                $columnName = match($categoryType) {
+                    'family' => 'family_id',
+                    'subDepartment' => 'sub_department_id',
+                    'department' => 'department_id',
+                };
 
-                if (method_exists($productCategory, $methodName)) {
-                    $stats = [
-                        'number_customers_who_reminded' => $productCategory->{$methodName}()->whereNull('un_reminded_at')->count(),
-                        'number_customers_who_un_reminded' => $productCategory->{$methodName}()->whereNotNull('un_reminded_at')->count(),
+                // update the stats for the product category
+                $stats = [
+                        'number_customers_who_reminded' => BackInStockReminderSnapshot::where($columnName, $productCategory->id)->whereNull('reminder_cancelled_at')->whereNotNull('reminder_sent_at')->count(),
+                        'number_customers_who_un_reminded' => BackInStockReminderSnapshot::where($columnName, $productCategory->id)->whereNotNull('reminder_cancelled_at')->whereNull('reminder_sent_at')->count(),
                     ];
-
-                    $productCategory->stats->update($stats);
-                }
+                $productCategory->stats->update($stats);
             }
         }
     }

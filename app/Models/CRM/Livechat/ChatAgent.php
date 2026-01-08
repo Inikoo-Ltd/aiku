@@ -3,6 +3,8 @@
 namespace App\Models\CRM\Livechat;
 
 use App\Models\SysAdmin\User;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,6 +24,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatAssignment> $assignments
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ShopHasChatAgent> $shopAssignments
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read User $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent available()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newModelQuery()
@@ -106,6 +111,24 @@ class ChatAgent extends Model
         return $this->hasMany(ChatAssignment::class, 'chat_agent_id');
     }
 
+    public function shopAssignments()
+    {
+        return $this->hasMany(ShopHasChatAgent::class);
+    }
+
+    public function shops()
+    {
+        return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')
+            ->withPivot(['organisation_id'])
+            ->withTimestamps();
+    }
+
+    public function organisations()
+    {
+        return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
+            ->withPivot(['shop_id'])
+            ->withTimestamps();
+    }
 
 
     public function isAvailableForChat(): bool
@@ -113,6 +136,11 @@ class ChatAgent extends Model
         return $this->is_online
             && $this->is_available
             && $this->current_chat_count < $this->max_concurrent_chats;
+    }
+
+    public function isAvailable()
+    {
+        return $this->current_chat_count < $this->max_concurrent_chats;
     }
 
 
@@ -150,8 +178,8 @@ class ChatAgent extends Model
     public function scopeAvailable($query)
     {
         return $query->where('is_available', true)
-                    ->where('is_online', true)
-                    ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
+            ->where('is_online', true)
+            ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
     }
 
 

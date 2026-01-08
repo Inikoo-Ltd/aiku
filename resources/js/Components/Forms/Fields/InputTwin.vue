@@ -61,7 +61,7 @@ const emits = defineEmits()
 </template>
 
 <style scoped>
-v-deep(input[type=number]) {
+:deep(input[type=number]) {
     padding-top: 0.5rem !important;
     padding-right: 0.5rem !important;
     padding-bottom: 0.5rem !important;

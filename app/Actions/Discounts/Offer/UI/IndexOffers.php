@@ -62,6 +62,7 @@ class IndexOffers extends OrgAction
             ->select(
                 'offers.id',
                 'offers.slug',
+                'offers.state',
                 'offers.code',
                 'offers.name',
                 'offer_campaigns.slug as offer_campaign_slug',
@@ -102,6 +103,8 @@ class IndexOffers extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
+            $table->column(key: 'state', label: '', type: 'icon', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {

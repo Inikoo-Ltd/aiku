@@ -41,7 +41,7 @@ class DropshippingPortfoliosResource extends JsonResource
 {
     public function toArray($request): array
     {
-        if ($department = $this->item->department) {
+        if ($department = $this->item?->department) {
             $department = $department->name.', ';
         }
         $quantity         = $this->item->available_quantity;
@@ -191,6 +191,8 @@ class DropshippingPortfoliosResource extends JsonResource
                     'portfolio' => $this->id
                 ]
             ],
+            'product_state'             => $this->product_state ?? null,
+            'is_for_sale'               => $this->is_for_sale ?? null,
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
             ...$ebayUploadRoute,

@@ -27,7 +27,7 @@ class InertiaTable
     private array $title = [];
     private array $betweenDates = [];
     private ?DateIntervalEnum $dateInterval;
-    private bool $withInterval = false;
+    private bool $withFrequency = false;
 
     private Collection $emptyState;
     private Collection $modelOperations;
@@ -123,9 +123,9 @@ class InertiaTable
         return $this;
     }
 
-    public function withInterval(bool $withInterval = true): self
+    public function withFrequency(bool $withFrequency = true): self
     {
-        $this->withInterval = $withInterval;
+        $this->withFrequency = $withFrequency;
 
         return $this;
     }
@@ -216,7 +216,7 @@ class InertiaTable
             'footerRows'                      => $this->footerRows,
             'betweenDates'                    => $this->betweenDates,
             'dateInterval'                    => $this->dateInterval,
-            'withInterval'                    => $this->withInterval,
+            'withFrequency'                   => $this->withFrequency,
         ];
     }
 

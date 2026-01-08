@@ -95,6 +95,8 @@ class UpdateShop extends OrgAction
                     'ebay_warehouse_state' => 'settings.ebay.warehouse_state',
                     'ebay_warehouse_country' => 'settings.ebay.warehouse_country',
                     'faire_access_token'    => 'settings.faire.access_token',
+                    'wix_access_token'    => 'settings.wix.access_token',
+                    'enable_chat'  => 'settings.chat.enable_chat',
                     'portal_link'   => 'settings.portal.link',
                     default => $key
                 },
@@ -114,7 +116,19 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'ebay_warehouse_city');
         data_forget($modelData, 'ebay_warehouse_state');
         data_forget($modelData, 'faire_access_token');
+        data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
+
+        if (Arr::exists($modelData, 'enable_chat')) {
+            $enableChat = Arr::pull($modelData, 'enable_chat');
+            UpdateWebsite::make()->action(
+                website: $shop->website,
+                modelData: ['enable_chat' => $enableChat],
+                hydratorsDelay: 0,
+                strict: false,
+                audit: true
+            );
+        }
 
         if (Arr::exists($modelData, 'widget_key')) {
             $widgetKey = Arr::pull($modelData, 'widget_key');
@@ -283,6 +297,8 @@ class UpdateShop extends OrgAction
             'ebay_warehouse_state'         => ['sometimes', 'string'],
             'ebay_warehouse_country'       => ['sometimes', 'string'],
             'faire_access_token'           => ['sometimes', 'string'],
+            'wix_access_token'             => ['sometimes', 'string'],
+            'enable_chat'                  => ['sometimes', 'boolean'],
             'portal_link'                  => ['sometimes', 'string'],
             'widget_key'                   => ['sometimes', 'string'],
             'required_approval'            => ['sometimes', 'boolean'],

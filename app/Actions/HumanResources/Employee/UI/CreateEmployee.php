@@ -71,7 +71,7 @@ class CreateEmployee extends OrgAction
                                 ],
                                 'phone'         => [
                                     'type'  => 'input',
-                                    'label' => __('contact number'),
+                                    'label' => __('Contact number'),
                                     'value' => ''
                                 ],
                                 'contact_address'      => [
@@ -102,7 +102,7 @@ class CreateEmployee extends OrgAction
                                 ],
                                 'identity_document_number'         => [
                                     'type'  => 'input',
-                                    'label' => __('identity document number'),
+                                    'label' => __('Identity document number'),
                                     'value' => ''
                                 ],
                                 'notes'         => [

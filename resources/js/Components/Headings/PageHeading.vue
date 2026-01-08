@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faMapSigns, faPallet, faTruckCouch, faFilePdf, faUpload, faWarehouse, faEmptySet, faMoneyBillWave, faEllipsisH } from "@fal"
+import { faMapSigns, faPallet, faTruckCouch, faFilePdf, faUpload, faWarehouse, faEmptySet, faMoneyBillWave, faEllipsisH, faShapes, faLock } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
 import Container from "@/Components/Headings/Container.vue"
@@ -29,7 +29,7 @@ import ButtonExport from "@/Components/ButtonExport.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 
-library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave)
+library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave, faShapes, faLock)
 
 const props = defineProps<{
     data: PageHeadingTypes
@@ -293,7 +293,7 @@ const setError = (e) => {
                                             </span>
                                             <!-- Button -->
                                             <Action v-if="action.type == 'button'" :action="action" :dataToSubmit="dataToSubmit" />
-                                            
+
                                             <!-- ButtonGroup -->
                                             <div v-if="action.type == 'buttonGroup' && action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
                                                 (action.button?.length || 0) > 1 ? '' : '',

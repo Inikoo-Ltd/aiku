@@ -110,14 +110,14 @@ class OrderReturn extends Model implements Auditable
     protected $table = 'returns';
 
     protected $casts = [
-        'data'          => 'array',
-        'state'         => ReturnStateEnum::class,
-        'date'          => 'datetime',
-        'received_at'   => 'datetime',
-        'inspecting_at' => 'datetime',
-        'processed_at'  => 'datetime',
-        'cancelled_at'  => 'datetime',
-        'fetched_at'    => 'datetime',
+        'data'            => 'array',
+        'state'           => ReturnStateEnum::class,
+        'date'            => 'datetime',
+        'received_at'     => 'datetime',
+        'inspecting_at'   => 'datetime',
+        'processed_at'    => 'datetime',
+        'cancelled_at'    => 'datetime',
+        'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
 

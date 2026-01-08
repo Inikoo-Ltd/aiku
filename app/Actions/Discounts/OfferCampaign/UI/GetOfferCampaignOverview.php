@@ -19,9 +19,12 @@ class GetOfferCampaignOverview
     public function handle(OfferCampaign $offerCampaign): array
     {
         $stats = $offerCampaign->stats;
+        // dd($offerCampaign->offers);
         return [
             'offerCampaign' => OfferCampaignResource::make($offerCampaign),
+            'offers'    => $offerCampaign->offers,
             // 'stats'   => $offerCampaign->stats,
+            'currency_code' => $offerCampaign->shop->currency->code,
             'stats'   => [
                 [
                     "label" => "Offers",

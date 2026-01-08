@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -52,7 +53,9 @@ class StoreProductFromMasterProduct extends GrpAction
                             'quantity' => $tradeUnit->pivot->quantity,
                         ];
                     }
-
+                    
+                    
+                    $isMain = $masterAsset->is_main;
                     $data = [
                         'code'              => $masterAsset->code,
                         'name'              => $masterAsset->name,
@@ -63,19 +66,19 @@ class StoreProductFromMasterProduct extends GrpAction
                         'rrp'               => $rrp,
                         'unit'              => $masterAsset->unit,
                         'units'             => $masterAsset->units,
-                        'is_main'           => true,
                         'trade_units'       => $tradeUnits,
                         'master_product_id' => $masterAsset->id,
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
-                        'is_for_sale'       => true,
+                        'is_main'           => $isMain,
+                        'is_for_sale'       => $masterAsset->status,
+                        'is_minion_variant' => !$isMain,
                     ];
 
                     if (count($tradeUnits) > 1) {
                         data_set($data, 'gross_weight', $masterAsset->gross_weight);
                         data_set($data, 'marketing_weight', $masterAsset->marketing_weight);
                     }
-
 
                     $product = Product::where('shop_id', $shop->id)
                         ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])
@@ -85,25 +88,32 @@ class StoreProductFromMasterProduct extends GrpAction
                         data_set($data, 'family_id', $productCategory->id);
                         data_set($data, 'trade_units', $tradeUnits);
 
-                        $this->updateFoundProduct($product, $data, true);
+
+                        $this->updateFoundProduct($product, $data, $isMain);
+
+
                         continue;
                     }
 
-                    $product = StoreProduct::run($productCategory, $data);
 
+                    $product = StoreProduct::run($productCategory, $data);
                     $product->refresh();
                     CloneProductImagesFromTradeUnits::run($product);
                     $product->refresh();
 
+                    if ($isMain) {
+                        $webpage = StoreProductWebpage::run($product);
+                        PublishWebpage::make()->action($webpage, [
+                            'comment' => 'first publish'
+                        ]);
+                    }
 
-                    $webpage = StoreProductWebpage::run($product);
-                    PublishWebpage::make()->action($webpage, [
-                        'comment' => 'first publish'
-                    ]);
+                    $product = $this->setVariantData($product, $masterAsset);
+
 
                     TranslateModel::dispatch(
                         model: $product,
-                        transactionData: Arr::only($data, [
+                        translationData: Arr::only($data, [
                             'unit',
                             'name',
                             'description',
@@ -117,11 +127,48 @@ class StoreProductFromMasterProduct extends GrpAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
+    public function setVariantData(Product $product, MasterAsset $masterAsset): Product
+    {
+        $masterVariant = $masterAsset->masterVariant;
+
+        if ($masterVariant) {
+            $variant = $masterAsset->masterVariant->variants()->where('shop_id', $product->shop->id)->first();
+            if (!$variant) {
+                $variant = StoreVariantFromMaster::make()->action(
+                    $masterAsset->masterVariant,
+                    $product->shop,
+                    [
+                        'data' => $masterAsset->masterVariant->data,
+                    ]
+                );
+            }
+            $product->update([
+                'variant_id' => $variant->id,
+            ]);
+            $leader = $masterAsset->masterVariant->leaderMasterProduct->products()->where('shop_id', $product->shop->id)->first();
+            if ($leader->id == $product->id) {
+                $product->update([
+                    'is_main'           => true,
+                    'is_minion_variant' => false,
+                    'is_variant_leader' => true,
+                ]);
+            }
+        }
+        return $product;
+    }
+
+
     public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage): void
     {
         $product = UpdateProduct::run($product, $modelData);
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
+        if ($product->masterProduct) {
+            $this->setVariantData($product, $product->masterProduct);
+        }
         if ($createWebpage && $product->webpage === null) {
             $webpage = StoreProductWebpage::run($product);
             PublishWebpage::make()->action($webpage, [
@@ -137,7 +184,8 @@ class StoreProductFromMasterProduct extends GrpAction
     public function rules(): array
     {
         return [
-            'shop_products' => ['sometimes', 'array']
+            'shop_products'     => ['sometimes', 'array'],
+            'is_minion_variant' => ['sometimes', 'boolean'],
         ];
     }
 

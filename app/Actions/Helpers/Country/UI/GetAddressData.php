@@ -49,6 +49,10 @@ class GetAddressData
                 }
             }
 
+            if (Arr::exists($fields, 'additional_name')) {
+                Arr::forget($fields, 'additional_name');
+            }
+
 
             $selectOptions[$country->id] =
                 [

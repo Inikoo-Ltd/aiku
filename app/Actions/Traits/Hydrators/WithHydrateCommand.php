@@ -47,14 +47,9 @@ trait WithHydrateCommand
     public function asCommand(Command $command): int
     {
         $command->info($command->getName());
-
         $tableName = (new $this->model())->getTable();
-
         $query = $this->prepareQuery($tableName, $command);
-
-
         $count = $query->count();
-
         $bar = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
@@ -96,7 +91,10 @@ trait WithHydrateCommand
         $query = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
         if ($command->hasOption('shop') && $command->option('shop')) {
-            $shop = Shop::where('slug', $command->option('shop'))->first();
+            $shopOption = $command->option('shop');
+            $shop       = is_numeric($shopOption)
+                ? Shop::find($shopOption)
+                : Shop::where('slug', $shopOption)->first();
             if ($shop) {
                 $query->where('shop_id', $shop->id);
             }

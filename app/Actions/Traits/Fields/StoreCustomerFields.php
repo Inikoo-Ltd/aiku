@@ -19,21 +19,21 @@ trait StoreCustomerFields
     {
         return [
             [
-                'title'  => __('contact'),
+                'title'  => __('Contact'),
                 'fields' => [
                     'company_name' => [
                         'type'  => 'input',
-                        'label' => __('company'),
+                        'label' => __('Company'),
                         'value' => ''
                     ],
                     'contact_name' => [
                         'type'  => 'input',
-                        'label' => __('contact name'),
+                        'label' => __('Contact name'),
                         'value' => ''
                     ],
                     'email' => [
                         'type'  => 'input',
-                        'label' => __('email'),
+                        'label' => __('Email'),
                         'value' => ''
                     ],
                     'phone' => [

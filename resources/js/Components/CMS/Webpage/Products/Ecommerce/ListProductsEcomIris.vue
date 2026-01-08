@@ -18,7 +18,6 @@ import { faSearch } from "@fal"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
-import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
 
 
@@ -343,14 +342,8 @@ const getRouteForProductInBasket = () => {
     const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
         return `/json/product-category/${model_id}/transaction-data`
-        // return route("iris.json.product_category.transaction_data", {
-        //     productCategory: model_id
-        // });
     } else if (model_type == "Collection") {
         return `/json/collection/${model_id}/transaction-data`
-        // return route("iris.json.collection.transaction_data", {
-        //     collection: model_id
-        // });
     }
 };
 

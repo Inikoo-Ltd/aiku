@@ -10,6 +10,7 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $number_records
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $shop_id
+ * @property-read \App\Models\Catalogue\Asset $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\AssetTimeSeriesRecord> $records
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AssetTimeSeries newQuery()
@@ -43,6 +46,11 @@ class AssetTimeSeries extends Model
     protected $attributes = [
         'data' => '{}',
     ];
+
+    public function asset(): BelongsTo
+    {
+        return $this->belongsTo(Asset::class);
+    }
 
     public function records(): HasMany
     {

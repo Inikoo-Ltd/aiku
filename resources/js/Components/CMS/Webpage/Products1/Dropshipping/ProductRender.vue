@@ -13,7 +13,7 @@ import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vu
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import BestsellerBadge from "@/Components/CMS/Webpage/Products/BestsellerBadge.vue"
 import Prices from "@/Components/CMS/Webpage/Products1/Prices.vue"
-import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
 
@@ -98,8 +98,6 @@ const onAddFavourite = (product: ProductResource) => {
     )
 }
 const onUnselectFavourite = (product: ProductResource) => {
-
-    // Section: Submit
     router.delete(
         route("iris.models.favourites.delete", {
             product: product.id
@@ -111,11 +109,6 @@ const onUnselectFavourite = (product: ProductResource) => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
                 product.is_favourite = false
             },
             onError: errors => {
@@ -133,8 +126,6 @@ const onUnselectFavourite = (product: ProductResource) => {
 }
 
 const onAddBackInStock = (product: ProductResource) => {
-
-    // Section: Submit
     router.post(
         route("iris.models.remind_back_in_stock.store", {
             product: product.id
@@ -202,7 +193,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
 </script>
 
 <template>
-
     <div class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
@@ -262,12 +252,18 @@ const onUnselectBackInStock = (product: ProductResource) => {
             <Prices :product="product" :currency="currency" />
         </div>
 
-        <ButtonAddPortfolio
-            :product="product"
-            :productHasPortfolio="productHasPortfolio"
-            :buttonStyle="buttonStyle"
-            :buttonStyleLogin
-        />
+        <div>
+            <ButtonAddPortfolio v-if="!product.is_variant" :product="product" :productHasPortfolio="productHasPortfolio"
+                :buttonStyle="buttonStyle" :buttonStyleLogin />
+            <div v-else class="w-full">
+                <LinkIris v-if="product.url" :href="product.url" type="internal"
+                    class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+                    <template #default>
+                        <Button full :label="trans('Check Variants')" />
+                    </template>
+                </LinkIris>
+            </div>
+        </div>
     </div>
 </template>
 

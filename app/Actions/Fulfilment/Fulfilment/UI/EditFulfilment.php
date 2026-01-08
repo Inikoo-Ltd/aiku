@@ -13,8 +13,10 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -38,10 +40,22 @@ class EditFulfilment extends OrgAction
 
     public function htmlResponse(Fulfilment $fulfilment, ActionRequest $request): Response
     {
+
+        $shop = $fulfilment->shop;
+        $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
+            ->where('container_type', 'Shop')
+            ->where('container_id', $shop->id)->first();
+
+
+
+        $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
+            ->where('container_type', 'Shop')
+            ->where('container_id', $shop->id)->first();
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('fulfilment setting'),
+                'title'       => __('Fulfilment setting'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -75,20 +89,15 @@ class EditFulfilment extends OrgAction
                                     "label" => __("Logo"),
                                     "value" => $fulfilment->shop->imageSources(320, 320)
                                 ],
-                                // "image_id" => [
-                                //     "type"  => "image_crop_square",
-                                //     "label" => __("favicon"),
-                                //     "value" => $fulfilment->shop->imageSources(32, 32)
-                                // ],
                             ]
                         ],
                         [
-                            'label'  => __('properties'),
+                            'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'country_id'  => [
                                     'type'        => 'select',
-                                    'label'       => __('country'),
+                                    'label'       => __('Country'),
                                     'placeholder' => __('Select your country'),
                                     'value'       => $fulfilment->shop->country_id,
                                     'options'     => GetCountriesOptions::run(),
@@ -96,7 +105,7 @@ class EditFulfilment extends OrgAction
                                 ],
                                 'currency_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('currency'),
+                                    'label'       => __('Currency'),
                                     'placeholder' => __('Select your currency'),
                                     'required'    => true,
                                     'value'       => $fulfilment->shop->currency_id,
@@ -105,7 +114,7 @@ class EditFulfilment extends OrgAction
                                 ],
                                 'language_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('language'),
+                                    'label'       => __('Language'),
                                     'placeholder' => __('Select your language'),
                                     'required'    => true,
                                     'value'       => $fulfilment->shop->language_id,
@@ -116,22 +125,22 @@ class EditFulfilment extends OrgAction
 
                         ],
                         [
-                            'label'  => __('contact/details'),
+                            'label'  => __('Contact/details'),
                             'icon'   => 'fa-light fa-user',
                             'fields' => [
                                 'contact_name'        => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $fulfilment->shop->contact_name,
                                 ],
                                 'company_name'        => [
                                     'type'  => 'input',
-                                    'label' => __('company name'),
+                                    'label' => __('Company name'),
                                     'value' => $fulfilment->shop->company_name,
                                 ],
                                 'email'               => [
                                     'type'    => 'input',
-                                    'label'   => __('email'),
+                                    'label'   => __('Email'),
                                     'value'   => $fulfilment->shop->email,
                                     'options' => [
                                         'inputType' => 'email'
@@ -139,7 +148,7 @@ class EditFulfilment extends OrgAction
                                 ],
                                 'phone'               => [
                                     'type'  => 'phone',
-                                    'label' => __('telephone'),
+                                    'label' => __('Telephone'),
                                     'value' => $fulfilment->shop->phone,
                                 ],
                                 'address'             => [
@@ -152,7 +161,7 @@ class EditFulfilment extends OrgAction
                                 ],
                                 'registration_number' => [
                                     'type'  => 'input',
-                                    'label' => __('registration number'),
+                                    'label' => __('Registration number'),
                                     'value' => $fulfilment->shop->data['registration_number'] ?? '',
                                 ],
                                 'vat_number'          => [
@@ -163,12 +172,12 @@ class EditFulfilment extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('invoices footer'),
+                            'label'  => __('Invoices footer'),
                             'icon'   => 'fa-light fa-shoe-prints',
                             'fields' => [
                                 'invoice_footer'  => [
                                     'type'        => 'textEditor',
-                                    'label'       => __('invoice footer'),
+                                    'label'       => __('Invoice footer'),
                                     'full'      => true,
                                     'value'       => $fulfilment->shop->invoice_footer
                                 ],
@@ -180,7 +189,7 @@ class EditFulfilment extends OrgAction
                             'fields' => [
                                 'sender_email' => [
                                     'type'  => 'input',
-                                    'label' => __('email'),
+                                    'label' => __('Email'),
                                     'verification' => [
                                         'route' => [
                                             'name' => 'grp.models.shop.sender_email.verify',
@@ -197,11 +206,11 @@ class EditFulfilment extends OrgAction
                         [
                             'title'  => __('recurring bill settings'),
                             'icon'   => 'fa-light fa-flag-checkered',
-                            'label'  => __('cut off day'),
+                            'label'  => __('Cut off day'),
                             'fields' => [
                                 'monthly_cut_off'    => [
                                     'type'    => 'date_radio',
-                                    'label'   => __('monthly cut off day'),
+                                    'label'   => __('Monthly cut off day'),
                                     'options' => [
                                         1,
                                         2,
@@ -277,8 +286,67 @@ class EditFulfilment extends OrgAction
                                     'value'     => $fulfilment->settings['rental_agreement_cut_off']['weekly']['day']
                                 ]
                             ]
-                        ]
-
+                        ],
+                        [
+                            'label'  => __('Invoice numbers'),
+                            'icon'   => 'fal fa-file-invoice',
+                            'fields' => [
+                                'invoice_serial_references' => [
+                                    'type'    => 'invoice_serial_references',
+                                    'options' => [
+                                        [
+                                            'type' => [
+                                                'label' => __('Standalone invoice numbers'),
+                                                'key_value' => 'stand_alone_invoice_numbers'
+                                            ],
+                                            'format' => [
+                                                'label' => __('format'),
+                                                'key_value' => 'stand_alone_invoice_numbers_format'
+                                            ],
+                                            'sequence' => [
+                                                'label' => __('sequence'),
+                                                'key_value' => 'stand_alone_invoice_numbers_serial'
+                                            ],
+                                        ],
+                                        [
+                                            'type' => [
+                                                'label' => __('Standalone refunds numbers'),
+                                                'key_value' => 'stand_alone_refund_numbers'
+                                            ],
+                                            'format' => [
+                                                'label' => __('Format'),
+                                                'key_value' => 'stand_alone_refund_numbers_format'
+                                            ],
+                                            'sequence' => [
+                                                'label' => __('Sequence'),
+                                                'key_value' => 'stand_alone_refund_numbers_serial'
+                                            ],
+                                        ],
+                                    ],
+                                    'label'   => __('Invoice numbers'),
+                                    'value'   => [
+                                        'stand_alone_invoice_numbers'        => true,
+                                        'stand_alone_invoice_numbers_format' => $invoiceSerialReference->format,
+                                        'stand_alone_invoice_numbers_serial' => $invoiceSerialReference->serial,
+                                        'stand_alone_refund_numbers'         => Arr::get($fulfilment->shop->settings, 'invoicing.stand_alone_refund_numbers', false),
+                                        'stand_alone_refund_numbers_format'  => $refundSerialReference?->format,
+                                        'stand_alone_refund_numbers_serial'  => $refundSerialReference?->serial,
+                                    ]
+                                ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Chat'),
+                            'icon'   => 'fal fa-comment-alt',
+                            'fields' => [
+                                'enable_chat'  => [
+                                    'type'          => 'toggle',
+                                    'information'   => __('If active, will enable the Chat feature on this shop website'),
+                                    'label'         => __('Enable Chat Feature'),
+                                    'value'         => Arr::get($fulfilment->settings, 'chat.enable_chat', false),
+                                ]
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

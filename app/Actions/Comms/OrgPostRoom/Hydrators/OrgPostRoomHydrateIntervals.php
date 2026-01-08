@@ -55,7 +55,7 @@ class OrgPostRoomHydrateIntervals implements ShouldBeUnique
             '1m',
             '1w',
             '3d',
-            '1d',
+  //          '1d',we don't have this in the database, add it if needed
             'ytd',
             'qtd',
             'mtd',

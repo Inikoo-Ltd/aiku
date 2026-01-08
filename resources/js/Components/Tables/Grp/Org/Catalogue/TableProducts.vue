@@ -16,7 +16,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Invoice } from "@/types/invoice"
 import { RouteParams } from "@/types/route-params"
@@ -27,14 +27,14 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
-import { faTriangle, faEquals, faMinus} from "@fas"
+import { faTriangle, faEquals, faMinus, faShapes, faStar} from "@fas"
 
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil)
 
 
-defineProps<{
+const props = defineProps<{
     data: {}
     editable_table: boolean
     tab?: string,
@@ -46,6 +46,7 @@ defineProps<{
     isCheckboxProducts?: boolean
     master?: boolean
     selectedProductsId?: {}
+    variantSlugs?: Record<string, string>;
 }>()
 
 const emits = defineEmits<{
@@ -364,10 +365,35 @@ const getIntervalStateColor = (isPositive: boolean) => {
     }
 }
 
+function getClassColorIcon(varSlug: string) {
+    if (!props.variantSlugs) return {};
+
+    const color = props.variantSlugs[varSlug];
+    return color ? { color: `${color} !important` } : {};
+}
+
+function variantRoute(product: MasterProduct): string {
+    if (!product.variant_slug) return "#"
+
+    const params = route().params as RouteParams
+
+    return route(
+        "grp.org.shops.show.catalogue.families.show.variants.show",
+        {
+            organisation: params.organisation,
+            shop: params.shop,
+            subDepartment: params.subDepartment,
+            family: params.family,
+            variant: product.variant_slug,
+        }
+    )
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
+        
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -379,6 +405,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             {{ refund["organisation_code"] }}
             </Link>
         </template>
+
         <template #cell(state)="{ item: product }">
             <Icon :data="product.state"></Icon>
         </template>
@@ -435,13 +462,9 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         <FontAwesomeIcon :icon="faMinus" />
                     </template>
                 </InputNumber>
-
                 <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
-
             </div>
-
         </template>
-
 
         <template #cell(margin)="{ item }">
             <span :class="{
@@ -581,6 +604,50 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 {{ product["code"] }}
                 </Link>
             </div>
+        </template>
+
+        <template #cell(code_product)="{ item: product }">
+            <div class="flex items-center gap-2">
+                <FontAwesomeIcon :icon="product.is_variant_leader ? faStar : faShapes" class="shrink-0" :class="product.is_variant_leader
+                    ? 'text-yellow-500'
+                    : 'text-gray-500'" />
+
+                <div class="whitespace-nowrap flex items-center gap-1">
+                    <Link :href="masterProductRoute(product) as string" v-tooltip="trans('Go to Master')"
+                        class="transition-opacity" :class="product.master_product_id
+                            ? 'opacity-70 hover:opacity-100'
+                            : 'opacity-0 pointer-events-none'">
+                        <FontAwesomeIcon icon="fab fa-octopus-deploy" class="text-indigo-700" />
+                    </Link>
+
+                    <Link :href="productRoute(product)" class="primaryLink">
+                        {{ product.code }}
+                    </Link>
+                </div>
+            </div>
+        </template>
+
+
+        <template #cell(variant_slug)="{ item: product }">
+            <Link v-if="product.variant_slug" :href="variantRoute(product) as string"
+                class="inline-block" v-tooltip="product.is_variant_leader
+                    ? trans('Leader product of ') + product.variant_code
+                    : trans('Follower product of ') + product.variant_code">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150" :class="product.is_variant_leader
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-gray-50 border-gray-200'">
+                    <!-- ICON -->
+                    <FontAwesomeIcon :icon="product.is_variant_leader ? faStar : faShapes" class="shrink-0"
+                        :style="{ ...getClassColorIcon(product.variant_slug), fontSize: '0.7rem' }" />
+
+                    <!-- CODE -->
+                    <span class="leading-none truncate" :style="{ ...getClassColorIcon(product.variant_slug) }">
+                        {{ product.variant_code }}
+                    </span>
+                </span>
+            </Link>
         </template>
 
         <template #cell(shop_code)="{ item: product }">

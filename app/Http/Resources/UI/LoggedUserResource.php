@@ -26,6 +26,7 @@ class LoggedUserResource extends JsonResource
             'id'       => $user->id,
             'username' => $user->username,
             'email'    => $user->email,
+            'is_agent' => $user->chatAgent ? true : false,
             'settings' => [
                 'timezones' => Arr::get($user->settings, 'timezones'),
                 'app_theme' => Arr::get($user->settings, 'app_theme'),

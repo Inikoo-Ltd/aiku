@@ -202,7 +202,7 @@ class Asset extends Model implements HasMedia
 
     public function product(): HasOne
     {
-        return $this->hasOne(Product::class);
+        return $this->hasOne(Product::class, 'id', 'model_id'); // Fix relation
     }
 
     public function charge(): HasOne

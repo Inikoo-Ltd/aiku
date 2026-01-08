@@ -50,7 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state
  * @property OrgStockQuantityStatusEnum|null $quantity_status
- * @property string|null $quantity_in_locations stock quantity in units
+ * @property numeric|null $quantity_in_locations stock quantity in units
  * @property string $value_in_locations
  * @property float|null $available_forecast days
  * @property array<array-key, mixed> $data
@@ -69,7 +69,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_single_trade_unit Indicates if the org stock has a single trade unit
  * @property string $quantity_in_submitted_orders
  * @property string $quantity_to_be_picked
- * @property string $quantity_available
+ * @property numeric $quantity_available
  * @property string $source_quantity_in_submitted_orders
  * @property string $source_quantity_to_be_picked
  * @property bool $is_on_demand
@@ -118,6 +118,8 @@ class OrgStock extends Model implements Auditable
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',
+        'quantity_in_locations'            => 'decimal:3',
+        'quantity_available'               => 'decimal:3',
     ];
 
     protected $attributes = [

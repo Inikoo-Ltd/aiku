@@ -92,11 +92,13 @@ class ProductsResource extends JsonResource
             'invoices'                  => $this->invoices ?? 0,
             'invoices_ly'               => $this->invoices_ly ?? 0,
             'invoices_delta'            => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
-            'current_interval'          => $this->current_interval ?? 'ytd',
             'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
             'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
-            'master_product_id'         => $this->master_product_id
+            'master_product_id'         => $this->master_product_id,
+            'variant_slug'              => $this->variant_slug,
+            'is_variant_leader'         => $this->is_variant_leader,
+            'variant_code'              => $this->variant_code,
         ];
     }
 

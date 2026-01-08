@@ -12,6 +12,8 @@ import { Link, router } from "@inertiajs/vue3";
 import MasterNavigation from "../Navigation/MasterNavigation.vue"
 import FormCreateMasterFamily from "../Master/FormCreateMasterFamily.vue"
 import ReviewContent from "../ReviewContent.vue"
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { faExternalLink } from "@far"
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
@@ -34,6 +36,7 @@ const props = withDefaults(
                 description: string
                 description_title: string
                 description_extra: string
+                stats: any
             }
 
             routes: {
@@ -57,6 +60,7 @@ const props = withDefaults(
             storeFamilyRoute: any
             shopsData: any
         },
+        salesData?: object
         isMaster: boolean
     }>(), {
         isMaster: false,
@@ -70,7 +74,7 @@ const navigateTo = () => {
     let routeCurr = route().current();
     let targetRoute;
     let routeParams = route().params;
-    
+
     switch (routeCurr) {
         case "grp.masters.master_shops.show.master_departments.show.master_sub_departments.show":
             targetRoute = route("grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit", {
@@ -142,14 +146,24 @@ const openFamilyModal = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                   <ProductCategoryCard :data="data.subDepartment" />
             </div>
-            <div  class="md:col-start-7 md:col-end-9">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+                <!-- Spacing / Content area -->
+            </div>
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+                <!-- Sales Analytics Compact -->
+                <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
+
+                <!-- Product State Stats -->
+                <ProductCategoryStats v-if="data.subDepartment.stats" :stats="data.subDepartment.stats" />
+
+                <!-- Master Navigation or Review Content -->
                 <MasterNavigation v-if="isMaster"
                     sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
                     :families-event="openFamilyModal" isAddFamilies />
                 <ReviewContent v-else  :data="data.subDepartment"  />
             </div>
         </div>
-        
+
     </div>
     <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
         @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />

@@ -15,11 +15,13 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Actions\Web\WebsiteConversionEvent\StoreWebsiteConversionEvent;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
@@ -106,13 +108,24 @@ class StoreTransaction extends OrgAction
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
+
+            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+            AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
+
         }
 
+        if (request()->hasSession() && request()->get('website')) {
+            StoreWebsiteConversionEvent::dispatch(
+                sessionId: request()->session()->getId(),
+                websiteId: request()->get('website')->id,
+                eventType: WebsiteConversionEventTypeEnum::ADD_TO_BASKET,
+                url: request()->header('referer') ?? request()->fullUrl(),
+                productId: $transaction->asset_id,
+                quantity: 1
+            );
+        }
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-
-        AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
         if ($transaction->submitted_at && $transaction->asset) {
             $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
         }

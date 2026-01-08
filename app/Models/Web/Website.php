@@ -122,7 +122,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Web\Redirect> $redirects
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
@@ -137,6 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Snapshot|null $unpublishedProductsSnapshot
  * @property-read Snapshot|null $unpublishedSidebarSnapshot
  * @property-read Snapshot|null $unpublishedSubDepartmentSnapshot
+ * @property-read Collection<int, \App\Models\Web\WebsiteVisitor> $visitors
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats
  * @property-read Collection<int, WebUserRequest> $webUserRequests
@@ -375,6 +376,11 @@ class Website extends Model implements Auditable, HasMedia
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);
+    }
+
+    public function visitors(): HasMany
+    {
+        return $this->hasMany(WebsiteVisitor::class);
     }
 
     public function announcements(): HasMany

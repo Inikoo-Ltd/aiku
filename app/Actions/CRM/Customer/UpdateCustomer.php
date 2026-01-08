@@ -25,6 +25,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithAddressAuditing;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
@@ -45,6 +46,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateCustomer extends OrgAction
 {
     use WithActionUpdate;
+    use WithAddressAuditing;
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
@@ -58,13 +60,16 @@ class UpdateCustomer extends OrgAction
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
 
+
             Arr::forget($modelData, 'contact_address');
 
 
             if (!blank($contactAddressData)) {
                 if ($customer->address) {
-                    UpdateAddress::run($customer->address, $contactAddressData);
+                    UpdateAddress::run($customer->address, $contactAddressData, $customer, 'contact address');
                 } else {
+
+
                     $this->addAddressToModelFromArray(
                         model: $customer,
                         addressData: $contactAddressData,
@@ -72,6 +77,9 @@ class UpdateCustomer extends OrgAction
                         updateLocation: false,
                         canShip: true
                     );
+                    $customer->refresh();
+
+                    $this->auditNewAddress($customer, $customer->address, 'contact address');
                 }
                 $customer->refresh();
 
@@ -103,7 +111,7 @@ class UpdateCustomer extends OrgAction
             Arr::forget($modelData, 'delivery_address');
 
             if ($customer->address_id != $customer->delivery_address_id) {
-                UpdateAddress::run($customer->deliveryAddress, $deliveryAddressData);
+                UpdateAddress::run($customer->deliveryAddress, $deliveryAddressData, $customer, 'delivery address');
             } else {
                 $customer = $this->addAddressToModelFromArray(
                     model: $customer,
@@ -112,6 +120,10 @@ class UpdateCustomer extends OrgAction
                     updateLocation: false,
                     updateAddressField: 'delivery_address_id'
                 );
+
+                $customer->refresh();
+
+                $this->auditNewAddress($customer, $customer->address, 'delivery address');
             }
         }
 

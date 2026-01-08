@@ -48,9 +48,6 @@ class IrisProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-
-
-
         $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
 
         $url = $this->canonical_url;
@@ -84,9 +81,8 @@ class IrisProductsInWebpageResource extends JsonResource
             'top_seller'      => $this->top_seller,
             'web_images'      => $this->web_images,
             'transaction_id'  => $this->transaction_id,
-            'is_on_demand'    => $this->is_on_demand
+            'is_on_demand'    => $this->is_on_demand,
+            'is_variant'      => $this->is_variant
         ];
     }
-
-
 }

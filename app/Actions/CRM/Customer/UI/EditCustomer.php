@@ -79,12 +79,12 @@ class EditCustomer extends OrgAction
                             'fields' => [
                                 'contact_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $customer->contact_name
                                 ],
                                 'company_name'             => [
                                     'type'  => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => $customer->company_name
                                 ],
                                 'phone'                    => [
@@ -133,7 +133,7 @@ class EditCustomer extends OrgAction
                                 ],
                                 'identity_document_number' => [
                                     'type'  => 'input',
-                                    'label' => __('identity document number'),
+                                    'label' => __('Identity document number'),
                                     'value' => $customer->identity_document_number
                                 ],
                             ]

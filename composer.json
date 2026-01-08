@@ -12,6 +12,7 @@
     "ext-bcmath": "*",
     "ext-curl": "*",
     "ext-gd": "*",
+    "ext-gettext": "*",
     "ext-iconv": "*",
     "ext-intl": "*",
     "ext-mbstring": "*",
@@ -19,8 +20,8 @@
     "ext-pgsql": "*",
     "ext-simplexml": "*",
     "ext-soap": "*",
+    "ext-zip": "*",
     "ext-zlib": "*",
-    "ext-gettext": "*",
     "adawolfa/isdoc": "^1.3",
     "alibabacloud/dm-20151123": "^1.0",
     "aws/aws-php-sns-message-validator": "^1.1",
@@ -65,6 +66,7 @@
     "nyholm/psr7": "^1.8",
     "owen-it/laravel-auditing": "^14.0",
     "patrickschur/language-detection": "^5.3",
+    "pdmfc/redis-queue-inspector": "^0.1.4",
     "pgvector/pgvector": "^0.2.0",
     "phlak/semver": "^6.0",
     "phpmailer/phpmailer": "^6.9",
@@ -102,8 +104,7 @@
     "vemcogroup/laravel-translation": "^3.0",
     "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
-    "webklex/laravel-imap": "^6.2",
-    "ext-zip": "*"
+    "webklex/laravel-imap": "^6.2"
   },
   "require-dev": {
     "amphibee/laravel-pint-pre-commit": "^1.5",
@@ -137,10 +138,7 @@
   "autoload-dev": {
     "psr-4": {
       "Tests\\": "tests/"
-    },
-    "files": [
-      "tests/Helpers/DropshippingTestHelpers.php"
-    ]
+    }
   },
   "scripts": {
     "post-autoload-dump": [

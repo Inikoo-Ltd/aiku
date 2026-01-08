@@ -163,12 +163,16 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 
 	try {
 		if (product.data.quantity_ordered > 0) {
+			// console.log('111111111')
 			if (
 				(addedProductIds.value && addedProductIds.value.has(productId)) ||
 				(addedOrderIds.value && addedOrderIds.value.has(orderId))
 			) {
+				// console.log('1111111aaaaaaaa')
+
 				// Update product
 				if (product.data.purchase_order_id || product.data.order_id) {
+					// console.log('1111111abbbbbbbbb')
 					formProducts
 						.transform(() => ({
 							quantity_ordered: product.data.quantity_ordered,
@@ -188,6 +192,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 						)
 				}
 			} else if (props.typeModel === "purchase_order") {
+				// console.log('1111111bbbb')
 				// Add product ,
 				formProducts
 					.transform(() => ({
@@ -217,6 +222,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 					decrement: "fal fa-undo",
 				}
 			} else if (props.typeModel === "order") {
+				// console.log('1111111cccccccc')
 				formProducts
 					.transform(() => ({
 						quantity_ordered: product.data.quantity_ordered,
@@ -237,8 +243,10 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 					)
 
 				// Refresh list and update addedProductIds
-				await fetchProductList()
+				// await fetchProductList()
+				onSearchQuery(searchQuery.value)
 				if (productId) {
+					// console.log('1111111cccccaaaaaa')
 					addedProductIds.value.add(productId)
 					iconStates.value[productId] = {
 						increment: "fal fa-cloud",
@@ -249,8 +257,10 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 			
 			
 		} else if (product.data.quantity_ordered === 0) {
+			// console.log('1111111dddddd')
 			// Handle delete
 			if (addedProductIds.value && addedProductIds.value.has(productId)) {
+				// console.log('1111111adddddaaaaa')
 				formProducts.delete(
 					route(product?.data?.deleteRoute?.name || "#", {
 						...product.data.deleteRoute?.parameters,
@@ -314,13 +324,24 @@ onMounted(() => {
 		tableBody.addEventListener("scroll", debounce(onFetchNext, 200))
 	}
 
-	fetchProductList()
+	onSearchQuery(searchQuery.value)
+	// fetchProductList()
 })
 
 onUnmounted(() => {
 	const tableBody = document.querySelector(".p-datatable-scrollable-body")
 	if (tableBody) {
 		tableBody.removeEventListener("scroll", onFetchNext)
+	}
+})
+
+watch(() => model.value, (newValue) => {
+	// console.log('vfcvcvc')
+	if (newValue === true) {
+		// console.log('wwwwwww')
+		// fetchProductList()
+		onSearchQuery(searchQuery.value)
+		
 	}
 })
 </script>
@@ -372,7 +393,7 @@ onUnmounted(() => {
 									</div>
 								</template>
 								
-								<template #empty> No Product found. </template>
+								<template #empty> {{ trans("No Product found") }}. </template>
 
 								<!-- Loading Icon -->
 								<template #loading>
@@ -389,10 +410,23 @@ onUnmounted(() => {
 									</template>
 								</Column>
 								<Column field="code" header="Code"></Column>
-								<Column field="name" header="Description"></Column>
+								<Column field="name" header="Name">
+									<template #body="slotProps">
+										<div>
+											<div>
+												{{ slotProps.data?.name }}
+											</div>
+											<div class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
+												{{ trans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
+											</div>
+										</div>
+									</template>
+								</Column>
 								<Column header="" style="width: 8%">
 									<template #body="slotProps">
 											<NumberWithButtonSave
+												:key="slotProps.data.id"
+												isWithRefreshModel
 												v-model="slotProps.data.quantity_ordered"
 												:min="1"
 												:isLoading="isXxLoading === slotProps.data.id"
@@ -400,8 +434,11 @@ onUnmounted(() => {
 												@update:modelValue="(e) => (debSubmitProducts(action, slotProps))"
 												noUndoButton
 												noSaveButton
+												:bindToTarget="{
+													max: slotProps.data?.available_quantity,
+												}"
+												:readonly="!slotProps.data?.available_quantity"
 											/>
-
 									</template>
 								</Column>
 

@@ -64,7 +64,7 @@ class CreateGuest extends InertiaAction
                             'fields' => [
                                 'company_name' => [
                                     'type'  => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => '',
                                 ],
                                 'contact_name' => [
@@ -80,7 +80,7 @@ class CreateGuest extends InertiaAction
                                 ],
                                 'email'        => [
                                     'type'  => 'input',
-                                    'label' => __('email'),
+                                    'label' => __('Email'),
                                     'value' => ''
                                 ],
                             ]

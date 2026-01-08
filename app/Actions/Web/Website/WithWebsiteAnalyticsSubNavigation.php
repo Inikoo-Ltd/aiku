@@ -48,6 +48,18 @@ trait WithWebsiteAnalyticsSubNavigation
                     "tooltip" => __("Website User Requests"),
                 ],
             ],
+            [
+                "number"   => $website->visitors()->count(),
+                "label"    => __("Website Visitors"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.analytics.visitors.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-users"],
+                    "tooltip" => __("Website Visitors"),
+                ],
+            ],
 
         ];
     }
@@ -83,6 +95,18 @@ trait WithWebsiteAnalyticsSubNavigation
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-project-diagram"],
                     "tooltip" => __("Website User Requests"),
+                ],
+            ],
+            [
+                "number"   => $website->visitors()->count(),
+                "label"    => __("Website Visitors"),
+                "route"    => [
+                    "name"       => "grp.org.fulfilments.show.web.analytics.visitors.index",
+                    "parameters" => [$shop->organisation->slug, $fulfilment->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-users"],
+                    "tooltip" => __("Website Visitors"),
                 ],
             ],
 

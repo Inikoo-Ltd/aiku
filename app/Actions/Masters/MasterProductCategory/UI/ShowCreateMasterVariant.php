@@ -74,17 +74,26 @@ class ShowCreateMasterVariant extends OrgAction
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
+        $perfectFamily = $masterFamily->status;
+        if ($perfectFamily) {
+            foreach ($masterFamily->productCategories as $productCategory) {
+                $products = $productCategory->getProducts()->pluck('code');
+                if (array_diff($masterProducts->toArray(), $products->toArray())) {
+                    abort(404);
+                }
+            }
+        }
+
         return $masterFamily;
     }
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Masters/CreateVariant',
+            'Masters/CreateMasterVariant',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterFamily,
-                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('Create Master Variant'),
@@ -93,10 +102,11 @@ class ShowCreateMasterVariant extends OrgAction
                 ],
                 'master_family' => MasterProductCategoryResource::make($masterFamily),
                 'master_assets_route' => [
-                    'name' => 'grp.masters.master_shops.show.master_families.master_products.index',
+                    'name' => 'grp.masters.master_shops.show.master_families.master_products.index.filter_in_variant',
                     'parameters' => [
-                        'masterShop'    => $masterFamily->masterShop->slug,
-                        'masterFamily'  => $masterFamily->slug
+                        'masterShop'        => $masterFamily->masterShop->slug,
+                        'masterFamily'      => $masterFamily->slug,
+                        'filterInVariant'   => 'none'
                     ]
                 ],
                 'save_route' => [
@@ -110,13 +120,22 @@ class ShowCreateMasterVariant extends OrgAction
     }
 
 
-    public function getBreadcrumbs(MasterProductCategory $masterFamily, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterProductCategory $masterFamily, array $routeParameters): array
     {
-        return ShowMasterFamily::make()->getBreadcrumbs(
-            masterFamily: $masterFamily,
-            routeName: preg_replace('/edit$/', 'show', $routeName),
-            routeParameters: $routeParameters,
-            suffix: '('.__('Creating master variants').')'
+        return array_merge(
+            ShowMasterFamily::make()->getBreadcrumbs(
+                masterFamily: $masterFamily,
+                routeName: 'grp.masters.master_shops.show.master_families.show',
+                routeParameters: $routeParameters,
+            ),
+            [
+                [
+                    'type' => 'creatingModel',
+                    'creatingModel' => [
+                        'label' => __('Creating Master Variant'),
+                    ]
+                ]
+            ]
         );
     }
 }

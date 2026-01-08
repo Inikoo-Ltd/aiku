@@ -87,7 +87,13 @@ class ShowWebsiteAnalyticsDashboard extends OrgAction
                     'subNavigation' => $this->getWebsiteAnalyticsNavigation($website),
 
                 ],
-                'data'        => GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq)
+                'data'        => array_merge(
+                    GetWebsiteCloudflareAnalytics::make()->action($website, $analyticReq),
+                    [
+                        'localAnalytics' => \App\Actions\Web\WebsiteVisitor\GetWebsiteVisitorAnalytics::make()->handle($website, $analyticReq),
+                        'pageConversionAnalytics' => \App\Actions\Web\WebsiteVisitor\GetWebsitePageConversionAnalytics::make()->handle($website, $analyticReq),
+                    ]
+                )
 
 
             ]

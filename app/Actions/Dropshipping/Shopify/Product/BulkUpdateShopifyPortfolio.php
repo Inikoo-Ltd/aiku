@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -29,9 +30,10 @@ class BulkUpdateShopifyPortfolio
             $inventoryItems = [];
 
             foreach ($portfolios as $portfolio) {
-                $logs[] = StorePlatformPortfolioLog::run($portfolio, []);
-
+                /** @var Product $product */
                 $product = $portfolio->item;
+
+                $logs[] = StorePlatformPortfolioLog::run($portfolio, []);
 
                 // Get variant ID (either from stored or fetch default variant)
                 $variantId = Arr::get($portfolio->data, 'shopify_product.variants.edges.0.node.id');
@@ -54,7 +56,11 @@ class BulkUpdateShopifyPortfolio
 
                 // Get inventory item ID from variant
                 $inventoryItemId = $this->getInventoryItemId($shopifyUser, $variantId);
+
                 $availableQuantity = $product->available_quantity;
+                if (! $product->is_for_sale) {
+                    $availableQuantity = 0;
+                }
 
                 $maxQtyAd = $shopifyUser->customerSalesChannel?->max_quantity_advertise;
 

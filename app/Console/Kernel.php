@@ -8,6 +8,8 @@
 
 namespace App\Console;
 
+use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -19,15 +21,9 @@ use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
-use App\Actions\Helpers\TimeSeries\ResetDailyTimeSeries;
-use App\Actions\Helpers\TimeSeries\ResetMonthlyTimeSeries;
-use App\Actions\Helpers\TimeSeries\ResetQuarterlyTimeSeries;
-use App\Actions\Helpers\TimeSeries\ResetWeeklyTimeSeries;
-use App\Actions\Helpers\TimeSeries\ResetYearlyTimeSeries;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
-use App\Actions\Comms\Outbox\ReorderRemainder\Hydrators\CustomersHydrateReorderRemainderEmails;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -98,50 +94,7 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->job(ResetYearlyTimeSeries::makeJob())->yearlyOn(1, 1, '02:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ResetYearlyTimeSeries'
-            ),
-            name: 'ResetYearlyTimeSeries',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
 
-        $this->logSchedule(
-            $schedule->job(ResetQuarterlyTimeSeries::makeJob())->quarterlyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ResetQuarterlyTimeSeries',
-            ),
-            name: 'ResetQuarterlyTimeSeries',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
-            $schedule->job(ResetMonthlyTimeSeries::makeJob())->monthlyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ResetMonthlyTimeSeries',
-            ),
-            name: 'ResetMonthlyTimeSeries',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
-            $schedule->job(ResetWeeklyTimeSeries::makeJob())->weeklyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ResetWeeklyTimeSeries',
-            ),
-            name: 'ResetWeeklyTimeSeries',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
-            $schedule->job(ResetDailyTimeSeries::makeJob())->dailyAt('02:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ResetDailyTimeSeries',
-            ),
-            name: 'ResetDailyTimeSeries',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
 
         $this->logSchedule(
             $schedule->job(UpdateCurrentRecurringBillsTemporalAggregates::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
@@ -269,17 +222,6 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-
-        // No need for now because it similar like PingActiveWooChannel
-        /*$this->logSchedule(
-            $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'ReviveInActiveWooChannel',
-            ),
-            name: 'ReviveInActiveWooChannel',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );*/
-
         $this->logSchedule(
             $schedule->command('ebay:ping')->daily()->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'CheckAllEbayChannels',
@@ -334,14 +276,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->command('faire:orders')->hourly()->sentryMonitor(
-                monitorSlug: 'GetFaireOrders',
-            ),
-            name: 'GetFaireOrders',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
+        //        $this->logSchedule(
+        //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
+        //                monitorSlug: 'GetFaireOrders',
+        //            ),
+        //            name: 'GetFaireOrders',
+        //            type: 'command',
+        //            scheduledAt: now()->format('H:i')
+        //        );
 
         $this->logSchedule(
             $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
@@ -416,42 +358,60 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(CustomersHydrateReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'CustomersHydrateReorderRemainderEmails',
+            $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'SendReorderRemainderEmails',
             ),
-            name: 'CustomersHydrateReorderRemainderEmails',
+            name: 'SendReorderRemainderEmails',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
 
-        $urlsToHit = [
-            [
-                'url' => 'https://www.aw-dropship.es/',
-                'inertia' => true,
-                'xmlhttp' => true,
-                'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true',
-            ],
-            [
-                'url' => 'https://www.aw-dropship.es/',
-                'inertia' => false,
-                'xmlhttp' => false,
-                'slug' => 'Hit https://www.aw-dropship.es/',
-            ],
-        ];
+        // $urlsToHit = [
+        //     [
+        //         'url' => 'https://www.aw-dropship.es/',
+        //         'inertia' => true,
+        //         'xmlhttp' => true,
+        //         'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true',
+        //     ],
+        //     [
+        //         'url' => 'https://www.aw-dropship.es/',
+        //         'inertia' => false,
+        //         'xmlhttp' => false,
+        //         'slug' => 'Hit https://www.aw-dropship.es/',
+        //     ],
+        // ];
 
-        foreach ($urlsToHit as $config) {
-            $command = sprintf(
-                'iris:hit-url %s --inertia=%s --xmlhttp=%s',
-                $config['url'],
-                $config['inertia'] ? 'true' : 'false',
-                $config['xmlhttp'] ? 'true' : 'false'
-            );
+        // foreach ($urlsToHit as $config) {
+        //     $command = sprintf(
+        //         'iris:hit-url %s --inertia=%s --xmlhttp=%s',
+        //         $config['url'],
+        //         $config['inertia'] ? 'true' : 'false',
+        //         $config['xmlhttp'] ? 'true' : 'false'
+        //     );
 
-            $schedule->command($command)
-                ->everyMinute()
-                ->timezone('UTC')
-                ->sentryMonitor(monitorSlug: $config['slug']);
-        }
+        //     $schedule->command($command)
+        //         ->everyMinute()
+        //         ->timezone('UTC');
+        // }
+
+
+        $this->logSchedule(
+            $schedule->job(RunBackInStockEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'BackToStockHydrateEmailBulkRuns',
+            ),
+            name: 'BackToStockHydrateEmailBulkRuns',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('process-websites-daily-time-series')->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessDailyWebsiteTimeSeries',
+            ),
+            name: 'ProcessDailyWebsiteTimeSeries',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void

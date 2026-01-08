@@ -14,10 +14,10 @@ use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\Traits\WithSalesIntervals;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
@@ -33,7 +33,6 @@ class ShowDepartment extends OrgAction
     use WithDepartmentSubNavigation;
     use WithWebpageActions;
     use WithDepartmentNavigation;
-    use WithSalesIntervals;
 
     private Organisation|Shop $parent;
 
@@ -147,9 +146,13 @@ class ShowDepartment extends OrgAction
                     fn () => GetProductCategoryShowcase::run($department)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($department)),
 
-                'salesIntervals' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
-                    fn () => $this->getSalesIntervalsData($department, $this->organisation->currency->code)
-                    : Inertia::lazy(fn () => $this->getSalesIntervalsData($department, $this->organisation->currency->code)),
+                'salesData' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
+                    fn () => GetProductCategoryTimeSeriesData::run($department)
+                    : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($department)),
+
+                DepartmentTabsEnum::SALES->value => $this->tab == DepartmentTabsEnum::SALES->value ?
+                    fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))),
 
                 DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value
                     ?
@@ -181,7 +184,8 @@ class ShowDepartment extends OrgAction
                 parent: $department->shop,
                 prefix: 'customers'
             )
-        )->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value))
+            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(DepartmentTabsEnum::SALES->value));
     }
 
 

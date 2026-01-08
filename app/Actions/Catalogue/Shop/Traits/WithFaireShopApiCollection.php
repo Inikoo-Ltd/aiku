@@ -16,11 +16,18 @@ trait WithFaireShopApiCollection
      * @param string $token
      * @return void
      */
-    protected function initializeApi(): void
+    protected function initializeApi($isFileDownload = false): void
     {
+        $headers = [];
+        if (! $isFileDownload) {
+            $headers = [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json'
+            ];
+        }
+
         $this->defaultHeaders = [
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
+            ...$headers,
             'X-FAIRE-ACCESS-TOKEN' => Arr::get($this->settings, 'faire.access_token')
         ];
     }
@@ -33,9 +40,9 @@ trait WithFaireShopApiCollection
      * @param array $params
      * @return array
      */
-    protected function buildRequest(string $method, string $endpoint, array $params = [], $data = []): array
+    protected function buildRequest(string $method, string $endpoint, array $params = [], $data = [], $isFileDownload = false): array|string
     {
-        $this->initializeApi();
+        $this->initializeApi($isFileDownload);
 
         $url = $this->baseUrl . trim($endpoint, '/');
 
@@ -47,6 +54,10 @@ trait WithFaireShopApiCollection
             );
 
         if ($response->successful()) {
+            if ($isFileDownload) {
+                return $response->body();
+            }
+
             return $response->json();
         }
 
@@ -144,5 +155,31 @@ trait WithFaireShopApiCollection
     public function updateShippingFaireOrder(string $orderId, array $attributes): array
     {
         return $this->buildRequest('PUT', "orders/{$orderId}/shipments", $attributes);
+    }
+
+    /**
+     * Get packing PDF specific order by ID
+     *
+     * @param string $orderId
+     * @return array
+     */
+    public function getPackingSlip(string $orderId): array|string
+    {
+        return $this->buildRequest(method: 'GET', endpoint: "orders/{$orderId}/packing-slip-pdf", isFileDownload: true);
+    }
+
+    /**
+     * Update Inventory Quantity
+     *
+     * @param string $orderId
+     * @return array
+     */
+    public function updateInventoryQuantity(array $attributes): array
+    {
+        return $this->buildRequest('PATCH', "product-inventory/by-skus", [
+            'sku' => Arr::get($attributes, 'sku'),
+            'product_variant_id' => Arr::get($attributes, 'product_variant_id'),
+            'on_hand_quantity' => Arr::get($attributes, 'quantity')
+        ]);
     }
 }

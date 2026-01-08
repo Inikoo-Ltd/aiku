@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
+use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -25,6 +26,7 @@ use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
@@ -282,7 +284,7 @@ class UpdateProduct extends OrgAction
             )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
-            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
+            ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
         }
 
 
@@ -306,6 +308,9 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'available_quantity_updated_at' => now()
             ]);
+            if ($product->shop->type == ShopTypeEnum::DROPSHIPPING) {
+                UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
+            }
         }
 
         if (Arr::has($changed, 'master_product_id')) {
@@ -430,6 +435,7 @@ class UpdateProduct extends OrgAction
             'webpage_breadcrumb_label'     => ['sometimes', 'string', 'max:40'],
 
             // Sale Status & Webpage
+            'is_main'                      => ['sometimes', 'boolean'],
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],

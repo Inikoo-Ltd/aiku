@@ -8,6 +8,7 @@
 
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
+use App\Actions\Catalogue\Shop\External\Faire\GetFairePackingPdfSlip;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
@@ -47,6 +48,7 @@ Route::prefix('orders/{order}')->group(function () {
     Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order.uploads.templates');
     Route::get('proforma-invoice', PdfProformaInvoice::class)->name('proforma_invoice.download');
 
+    Route::get('faire-packing-slip', GetFairePackingPdfSlip::class)->name('faire_packing_slip.download');
 });
 
 Route::get('/purges/', IndexPurges::class)->name('purges.index');

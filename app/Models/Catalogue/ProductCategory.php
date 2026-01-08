@@ -10,6 +10,7 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
@@ -251,13 +252,47 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->children()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
     }
 
-
     public function getProducts(): LaravelCollection
     {
         return match ($this->type) {
             ProductCategoryTypeEnum::DEPARTMENT => Product::where('department_id', $this->id)->get(),
             ProductCategoryTypeEnum::FAMILY => Product::where('family_id', $this->id)->get(),
             ProductCategoryTypeEnum::SUB_DEPARTMENT => Product::where('sub_department_id', $this->id)->get(),
+        };
+    }
+
+    public function getProductsDistinctVariant(): LaravelCollection // This is to fetch non-variant products. If it's a variant, will fetch only the leader.
+    {
+        $column = match ($this->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => 'department_id',
+            ProductCategoryTypeEnum::FAMILY => 'family_id',
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department_id',
+        };
+
+        return Product::where($column, $this->id)
+            ->where(function ($query) {
+                $query
+                    ->where('products.is_minion_variant', false)
+                    ->orWhere('is_variant_leader', true);
+            })
+            ->get();
+    }
+
+    public function getActiveProducts(): LaravelCollection
+    {
+        return match ($this->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => Product::where('department_id', $this->id)
+                ->where('is_for_sale', true)
+                ->where('state', '!=', ProductStateEnum::DISCONTINUED->value)
+                ->get(),
+            ProductCategoryTypeEnum::FAMILY => Product::where('family_id', $this->id)
+                ->where('is_for_sale', true)
+                ->where('state', '!=', ProductStateEnum::DISCONTINUED->value)
+                ->get(),
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => Product::where('sub_department_id', $this->id)
+                ->where('is_for_sale', true)
+                ->where('state', '!=', ProductStateEnum::DISCONTINUED->value)
+                ->get(),
         };
     }
 

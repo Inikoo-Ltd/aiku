@@ -48,6 +48,8 @@ class ChatAssignment extends Model
        'deleted_at' => 'datetime',
     ];
 
+    protected $guarded = [];
+
 
     public function chatSession(): BelongsTo
     {

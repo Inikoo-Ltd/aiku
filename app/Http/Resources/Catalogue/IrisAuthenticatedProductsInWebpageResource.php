@@ -113,7 +113,8 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'price_per_unit'       => $pricePerUnit,
             'available_quantity'   => $this->available_quantity,
             'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'         => $this->is_on_demand
+            'is_on_demand'         => $this->is_on_demand,
+            'is_variant'           => $this->variant_id ? true : false,
         ];
     }
 

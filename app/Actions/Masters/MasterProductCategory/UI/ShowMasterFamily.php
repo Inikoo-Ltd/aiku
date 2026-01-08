@@ -110,6 +110,18 @@ class ShowMasterFamily extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
+        $perfectFamily = $masterFamily->status;
+        $masterProducts = $masterFamily->masterAssets->pluck('code');
+
+        if ($perfectFamily) {
+            foreach ($masterFamily->productCategories as $productCategory) {
+                $products = $productCategory->getProducts()->pluck('code');
+                if (array_diff($masterProducts->toArray(), $products->toArray())) {
+                    $perfectFamily = false;
+                }
+            }
+        }
+
         $tabs = [
             MasterFamilyTabsEnum::SALES->value =>
                 $this->tab === MasterFamilyTabsEnum::SALES->value
@@ -272,13 +284,15 @@ class ShowMasterFamily extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('Master Product'),
-                        ] : false,
-                        $this->canEdit && app()->environment('local') ? [
+                        $this->canEdit 
+                            ? [
+                                'type'    => 'button',
+                                'style'   => 'create',
+                                'tooltip' => __('Add a master product to this family'),
+                                'label'   => __('Master Product'),
+                            ]
+                            : false,
+                        $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' && app()->environment('local') ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Create a variants group for this family'),
@@ -296,6 +310,7 @@ class ShowMasterFamily extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+                'isPerfectFamily'         => $perfectFamily,
                 'masterProductCategoryId' => $masterFamily->id,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
                 ...$tabs,
@@ -303,10 +318,10 @@ class ShowMasterFamily extends GrpAction
 
             ]
         )
-            ->table(IndexMailshots::make()->tableStructure($masterFamily))
+            ->table(IndexMailshots::make()->tableStructure(parent: $masterFamily))
             ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
             ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value))
-            ->table(IndexMasterVariant::make()->tableStructure($masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
+            ->table(IndexMasterVariant::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
 
     }

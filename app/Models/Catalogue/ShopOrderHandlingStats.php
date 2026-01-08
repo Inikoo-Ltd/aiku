@@ -151,7 +151,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_items_delivery_notes_state_unassigned
  * @property int $number_items_delivery_notes_state_dispatched
  * @property int $number_items_delivery_notes_state_cancelled
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats query()

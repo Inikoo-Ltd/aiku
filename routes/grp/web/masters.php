@@ -6,9 +6,9 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
-use App\Actions\Catalogue\Shop\UI\CreateShopInGroup;
-use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
@@ -109,10 +109,9 @@ Route::name("master_shops")->prefix('master-shops')
             Route::get('', ShowMasterShop::class)->name('');
 
             Route::prefix('/shop')->as('.shop')->group(function () {
-                Route::get('/create', CreateShopInGroup::class)->name('.create');
-                Route::post('/store/{organisation}', [StoreShop::class, 'inMaster'])->name('.store');
+                Route::get('/create/{organisation}', CreateShopFromMaster::class)->name('.create');
+                Route::post('/store/{organisation:id}', StoreShopFromMaster::class)->name('.store')->withoutScopedBindings();
             });
-
 
             Route::prefix('master-departments')->as('.master_departments.')->group(function () {
                 Route::get('', IndexMasterDepartments::class)->name('index');
@@ -200,6 +199,7 @@ Route::name("master_shops")->prefix('master-shops')
 
                 Route::prefix('{masterFamily}/master-products')->as('master_products.')->group(function () {
                     Route::get('', [IndexMasterProducts::class, 'inMasterFamilyInMasterShop'])->name('index');
+                    Route::get('/inVariant/{filterInVariant}', [IndexMasterProducts::class, 'inMasterFamilyInMasterShopFilterInVariant'])->name('index.filter_in_variant');
                     Route::get('create', [CreateMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('create');
                     Route::get('{masterProduct}', [ShowMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('show');
                     Route::get('{masterProduct}/edit', [EditMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('edit');

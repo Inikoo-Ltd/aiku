@@ -11,7 +11,6 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\WithDiscountArgumentValidation;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
@@ -31,7 +30,6 @@ class StoreProductCategoryDiscount extends OrgAction
 {
     use WithNoStrictRules;
     use WithStoreOffer;
-    use WithDiscountArgumentValidation;
 
     /**
      * @throws \Throwable
@@ -140,14 +138,11 @@ class StoreProductCategoryDiscount extends OrgAction
     {
         $category = ProductCategory::where('slug', $command->argument('category'))->firstOrFail();
 
-        if (!$discount = $this->validateDiscountArgument($command)) {
-            return 1;
-        }
 
         $modelData      = [
             'end_at'                     => $command->argument('end_at') ? Carbon::parse($command->argument('end_at')) : null,
             'trigger_data_item_quantity' => $command->argument('item_quantity'),
-            'percentage_off'             => $discount,
+            'percentage_off'             => $command->argument('discount'),
 
         ];
         $this->asAction = true;

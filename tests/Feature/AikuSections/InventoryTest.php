@@ -74,6 +74,7 @@ beforeEach(
     function () {
         $this->organisation = createOrganisation();
         $this->group        = group();
+        setPermissionsTeamId($this->group->id);
         $this->guest        = createAdminGuest($this->group);
 
         $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
@@ -1085,6 +1086,6 @@ test('org stock families  hydrator', function () {
     HydrateOrgStockFamily::run($orgStockFamily);
 });
 
-test('inventory  hydrator', function () {
+test('inventory hydrator', function () {
     $this->artisan('hydrate -s inv')->assertExitCode(0);
 });

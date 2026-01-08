@@ -16,6 +16,7 @@ class ResetMonthlyIntervals
 
     public string $commandSignature = 'intervals:reset-month';
     public string $commandDescription = 'Reset monthly intervals';
+    public int $jobTries = 1;
 
     public function __construct()
     {

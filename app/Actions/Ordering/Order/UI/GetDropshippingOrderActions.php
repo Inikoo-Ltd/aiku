@@ -80,10 +80,18 @@ class GetDropshippingOrderActions
                 OrderStateEnum::SUBMITTED => [
                     [
                         'type'    => 'button',
-                        'style'   => 'create',
+                        // 'style'   => 'create',
+                        'style'   => 'secondary',
+                        'icon'    => 'fas fa-plus',
                         'tooltip' => __('Add a product'),
                         'label'   => __('Add a product'),
                         'key'     => 'add-product',
+                        'route'   => [
+                            'name'       => 'grp.models.order.transaction.store',
+                            'parameters' => [
+                                'order' => $order->id,
+                            ]
+                        ]
                     ],
                     [
                         'type'    => 'button',

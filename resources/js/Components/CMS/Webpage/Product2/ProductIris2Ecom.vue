@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, computed } from "vue"
+import { ref, inject, computed, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
@@ -68,7 +68,7 @@ const layout = inject("layout", {})
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 const locale = useLocaleStore()
-const product = ref(props.fieldValue.product)
+const product = ref(props.product)
 const currency = layout?.iris?.currency
 const toggleExpanded = () => (expanded.value = !expanded.value)
 
@@ -112,6 +112,15 @@ const groupedAttachments = computed(() => {
     return grouped
 })
 
+watch(
+    () => props.product,
+    (newProduct) => {
+       product.value = newProduct
+    },
+    { deep: true }
+)
+
+
 </script>
 
 
@@ -153,7 +162,7 @@ const groupedAttachments = computed(() => {
                             </div>
 
                             <!-- REMIND ME -->
-                            <button v-if="product.stock <= 0 && layout?.app?.environment === 'local'" @click="
+                            <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'" @click="
                                 product.is_back_in_stock
                                     ? onUnselectBackInStock(product)
                                     : onAddBackInStock(product)
@@ -222,7 +231,7 @@ const groupedAttachments = computed(() => {
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock > 0" :product="product" :customerData="customerData"
+                        <EcomAddToBasketv2 v-if="product.stock > 0"    v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
                         <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
                     </div>

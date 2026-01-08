@@ -8,6 +8,7 @@
 
 namespace App\Models\Masters;
 
+use App\Models\Catalogue\Variant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
@@ -40,14 +41,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string $slug
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
- * @property-read \App\Models\Masters\MasterAsset|null $leaderProduct
+ * @property-read \App\Models\Masters\MasterAsset|null $leaderMasterProduct
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
+ * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $minionProduct
  * @property-read \App\Models\Masters\MasterVariantOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterVariantOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterVariantSalesIntervals|null $salesIntervals
@@ -55,6 +60,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterVariantStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterVariantTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Variant> $variants
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariant newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariant newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariant onlyTrashed()
@@ -104,6 +110,16 @@ class MasterVariant extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
+    public function masterDepartment(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_department_id');
+    }
+
+    public function masterSubDepartment(): BelongsTo
+    {
+        return $this->belongsTo(MasterProductCategory::class, 'master_sub_department_id');
+    }
+
     public function masterFamily(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_family_id');
@@ -134,10 +150,31 @@ class MasterVariant extends Model implements Auditable, HasMedia
         return $this->hasMany(MasterVariantTimeSeries::class);
     }
 
-    public function leaderProduct(): HasOne
+    public function fetchProductFromData(): \Illuminate\Database\Eloquent\Collection
+    {
+        $key = collect(data_get($this->data, 'products'))->keys();
+
+        return MasterAsset::whereIn('id', $key)->get();
+    }
+    public function allProduct(): HasMany
+    {
+        return $this->hasMany(MasterAsset::class, 'master_variant_id');
+    }
+
+    public function leaderMasterProduct(): HasOne
     {
         return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
     }
 
+    public function minionProduct(): HasMany
+    {
+        return $this->hasMany(MasterAsset::class, 'master_variant_id')
+            ->where('is_variant_leader', false);
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(Variant::class);
+    }
 
 }

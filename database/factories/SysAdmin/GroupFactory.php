@@ -24,6 +24,7 @@ class GroupFactory extends Factory
         $currency = Currency::where('code', 'USD')->firstOrFail();
 
         return [
+            'ulid'        => (string) \Illuminate\Support\Str::ulid(),
             'code'        => fake()->lexify(),
             'name'        => fake()->company(),
             'country_id'  => $country->id,

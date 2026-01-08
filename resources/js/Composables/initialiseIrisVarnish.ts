@@ -79,9 +79,14 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
         // --- Handle Logged In ---
         if (varnish.is_logged_in) {
-            
+            // Data: Iris Variables
             if (varnish?.variables) {
                 layout.iris_variables = varnish.variables
+            }
+
+            // Data: Gold Reward
+            if (varnish?.offer_data) {
+                layout.offer_data = varnish.offer_data
             }
 
             if (varnish?.offer_meters) {

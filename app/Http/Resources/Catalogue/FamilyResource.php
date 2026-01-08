@@ -55,7 +55,8 @@ class FamilyResource extends JsonResource
             'is_description_title_reviewed' => $family->is_description_title_reviewed,
             'is_description_reviewed'       => $family->is_description_reviewed,
             'is_description_extra_reviewed' => $family->is_description_extra_reviewed,
-            'products'                      => ProductResource::collection($family->getProducts())->toArray(request())
+            'products'                      => ProductResource::collection($family->getProducts())->toArray(request()),
+            'stats'                         => $family->stats
         ];
     }
 }

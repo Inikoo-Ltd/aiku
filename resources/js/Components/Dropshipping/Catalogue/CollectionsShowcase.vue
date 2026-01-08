@@ -12,7 +12,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import CollectionSelector from '@/Components/DepartmentAndFamily/CollectionSelector.vue'
 import { routeType } from '@/types/route'
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue'
-import SalesIntervalsCompact from '@/Components/Product/SalesIntervalsCompact.vue'
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
 
@@ -42,7 +42,7 @@ const props = defineProps<{
       detach_parent : routeType
     }
   }
-  salesIntervals?: object
+  salesData?: object
 }>()
 console.log(props)
 
@@ -176,8 +176,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
       </div>
 
       <!-- Sales Analytics - right sidebar -->
-      <div v-if="salesIntervals">
-        <SalesIntervalsCompact :intervalsData="salesIntervals" />
+      <div v-if="salesData">
+        <SalesAnalyticsCompact :salesData="salesData" />
       </div>
     </div>
   </div>

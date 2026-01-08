@@ -37,7 +37,6 @@ class IndexMasterProductsBulkEdit extends GrpAction
         return $parent;
     }
 
-
     public function jsonResponse(Group|MasterShop|MasterProductCategory $masterAssets): AnonymousResourceCollection
     {
         return MasterProductsResource::collection($masterAssets);

@@ -10,7 +10,7 @@
 
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
-use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
@@ -19,12 +19,15 @@ use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateOffer;
-use App\Actions\Discounts\Offer\SuspendPermanentOffer;
+use App\Actions\Discounts\Offer\SuspendOffer;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
@@ -34,13 +37,16 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
+use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -51,19 +57,23 @@ beforeAll(function () {
 
 
 beforeEach(function () {
-    $this->organisation = createOrganisation();
-    $this->group        = $this->organisation->group;
-    $this->adminGuest   = createAdminGuest($this->organisation->group);
+    list(
+        $this->organisation,
+        $this->user,
+        $this->shop
+    ) = createShop();
 
-    $shop = Shop::first();
-    if (!$shop) {
-        $storeData = Shop::factory()->definition();
-        $shop      = StoreShop::make()->action(
-            $this->organisation,
-            $storeData
-        );
-    }
-    $this->shop = $shop;
+    $this->group      = $this->organisation->group;
+    $this->adminGuest = createAdminGuest($this->organisation->group);
+
+    list(
+        $this->tradeUnit,
+        $this->product
+    ) = createProduct($this->shop);
+
+    $this->customer = createCustomer($this->shop);
+
+
     Config::set(
         'inertia.testing.page_paths',
         [resource_path('js/Pages/Grp')]
@@ -417,7 +427,7 @@ test('create volume discount', function () {
     expect($offer)->toBeInstanceOf(Offer::class)
         ->and($offer->status)->toBeTrue()
         ->and($offer->offerAllowances->first()->status)->toBeTrue()
-        ->and($offer->allowance_signature)->toBe('all_products_in_product_category:1:percentage_off:0.2')
+        ->and($offer->allowance_signature)->toBe('all_products_in_product_category:3:percentage_off:0.2')
         ->and($offer->trigger_data['item_quantity'])->toBe(5)
         ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.2);
 });
@@ -547,17 +557,15 @@ test('suspend permanent offer suspends offer and active allowances', function ()
     expect($offer->state)->toBe(OfferStateEnum::ACTIVE)
         ->and($offer->status)->toBeTrue();
 
-    $suspended = SuspendPermanentOffer::run($offer);
+    $suspended = SuspendOffer::run($offer);
 
     $suspended->refresh();
     expect($suspended->state)->toBe(OfferStateEnum::SUSPENDED)
-        ->and($suspended->status)->toBeFalse()
-        ->and($suspended->end_at)->not->toBeNull();
+        ->and($suspended->status)->toBeFalse();
 
     $allowance = $suspended->offerAllowances()->first();
     expect($allowance->state)->toBe(OfferAllowanceStateEnum::SUSPENDED)
-        ->and($allowance->status)->toBeFalse()
-        ->and($allowance->end_at)->not->toBeNull();
+        ->and($allowance->status)->toBeFalse();
 });
 
 test('suspend permanent offer is safe to run twice', function () {
@@ -571,26 +579,176 @@ test('suspend permanent offer is safe to run twice', function () {
     $offer->status   = true;
     $offer->save();
 
-    SuspendPermanentOffer::run($offer);
+    SuspendOffer::run($offer);
     $offer->refresh();
     expect($offer->state)->toBe(OfferStateEnum::SUSPENDED);
 
     // Run again should remain suspended without error
-    SuspendPermanentOffer::run($offer);
+    SuspendOffer::run($offer);
     $offer->refresh();
     expect($offer->state)->toBe(OfferStateEnum::SUSPENDED)
         ->and($offer->status)->toBeFalse();
 });
 
-test('suspend permanent offer aborts on non-permanent offer', function () {
-    $shop          = $this->shop;
-    $offerCampaign = $shop->offerCampaigns()->first();
 
-    $offerData       = Offer::factory()->definition();
-    $offer           = StoreOffer::make()->action($offerCampaign, $offerData);
-    $offer->duration = OfferDurationEnum::INTERVAL;
-    $offer->save();
+test('delete all active offers', function () {
+    foreach (Offer::where('status', true)->get() as $offer) {
+        DeleteOffer::make()->action($offer, true);
+    }
+    foreach (Offer::where('state', OfferStateEnum::IN_PROCESS)->get() as $offer) {
+        DeleteOffer::make()->action($offer, true);
+    }
+    expect(Offer::where('status', true)->count())->toBe(0);
+});
 
-    expect(fn () => SuspendPermanentOffer::run($offer))
-        ->toThrow(HttpException::class);
+describe('calculate order discounts', function () {
+    test('CalculateOrderDiscounts: Amount AND Order Number trigger applies discount', function () {
+        $shop     = $this->shop;
+        $customer = $this->customer;
+
+        if (!$shop->offerCampaigns()->exists()) {
+            SeedShopOfferCampaigns::run($shop);
+        }
+
+
+        $firstOrderBonusOffer =
+            StoreFirstOrderBonus::make()->action(
+                $shop,
+                [
+                    'trigger_data_min_amount' => 150.0,
+                    'percentage_off'          => 0.10
+                ]
+            );
+
+        expect($firstOrderBonusOffer)->toBeInstanceOf(Offer::class)
+            ->and($firstOrderBonusOffer->status)->toBeTrue();
+
+
+        $order = StoreOrder::make()->action($customer, []);
+
+        expect($order)->toBeInstanceOf(Order::class);
+
+        $product = $shop->products()->first();
+
+        expect($product)->toBeInstanceOf(Product::class)
+            ->and((float)$product->price)->toBe(100.0);
+
+        $transactionData = [
+            'quantity_ordered' => 1,
+        ];
+        $item            = $product->historicAsset;
+        $transaction     = StoreTransaction::make()->action($order, $item, $transactionData);
+        $order->refresh();
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(100.0);
+
+        UpdateTransaction::run($transaction, [
+            'quantity_ordered' => 2,
+        ]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(180.0);
+    });
+
+
+    test('CalculateOrderDiscounts: Category Ordered trigger', function () {
+        $product = $this->shop->products()->first();
+
+        $categoryDiscount = StoreProductCategoryDiscount::make()->action(
+            $product->family,
+            [
+                'trigger_data_item_quantity' => 1,
+                'percentage_off'             => 0.60,
+            ]
+        );
+
+        expect($categoryDiscount)->toBeInstanceOf(Offer::class);
+
+        $order = Order::first();
+
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(80.0);
+    });
+
+    test('suspend all active offers', function () {
+        foreach (Offer::where('state', OfferStateEnum::ACTIVE)->get() as $offer) {
+            SuspendOffer::run($offer);
+        }
+        expect(Offer::where('status', true)->count())->toBe(0);
+
+        $order = Order::first();
+
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(200.0);
+    });
+
+    test('CalculateOrderDiscounts: Category Ordered trigger item quantity', function () {
+        $product = $this->shop->products()->first();
+
+        $categoryDiscount = StoreProductCategoryDiscount::make()->action(
+            $product->family,
+            [
+                'trigger_data_item_quantity' => 5,
+                'percentage_off'             => 0.30,
+            ]
+        );
+
+        expect($categoryDiscount)->toBeInstanceOf(Offer::class)
+            ->and($categoryDiscount->status)->toBeTrue()
+            ->and($categoryDiscount->trigger_type)->toBe('ProductCategory')
+            ->and($categoryDiscount->type)->toBe('Category Quantity Ordered');
+
+        $order = Order::first();
+
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(200.0);
+
+        UpdateTransaction::run($transaction, [
+            'quantity_ordered' => 5,
+        ]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(350.0);
+
+        SuspendOffer::run($categoryDiscount);
+
+    });
+
+    test('CalculateOrderDiscounts: Vol/GR', function () {
+        $product = $this->shop->products()->first();
+
+        $VolGRDiscount = StoreVolumeGRDiscount::make()->action(
+            $product->family,
+            [
+                'trigger_data_item_quantity' => 5,
+                'percentage_off'             => 0.30,
+                'interval'                   => 30,
+            ]
+        );
+
+        expect($VolGRDiscount)->toBeInstanceOf(Offer::class)
+            ->and($VolGRDiscount->status)->toBeTrue()
+            ->and($VolGRDiscount->trigger_type)->toBe('ProductCategory')
+            ->and($VolGRDiscount->type)->toBe('Category Quantity Ordered Order Interval');
+
+        $order = Order::first();
+
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(350.0);
+
+        UpdateTransaction::run($transaction, [
+            'quantity_ordered' => 4,
+        ]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(400.0);
+
+        $todayMinus5Days = now()->subDays(5);
+
+        UpdateCustomerLastInvoicedDate::run($order->customer, $todayMinus5Days);
+
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(280.0);
+
+    });
+
+
 });

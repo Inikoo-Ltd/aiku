@@ -100,17 +100,17 @@ class EditOrgSupplier extends OrgAction
                                 ],
                                 'company_name' => [
                                     'type' => 'input',
-                                    'label' => __('company'),
+                                    'label' => __('Company'),
                                     'value' => $supplier->company_name,
                                 ],
                                 'contact_name' => [
                                     'type' => 'input',
-                                    'label' => __('contact name'),
+                                    'label' => __('Contact name'),
                                     'value' => $supplier->contact_name,
                                 ],
                                 'email' => [
                                     'type' => 'input',
-                                    'label' => __('email'),
+                                    'label' => __('Email'),
                                     'value' => $supplier->email,
                                     'options' => [
                                         'inputType' => 'email',
@@ -173,7 +173,7 @@ class EditOrgSupplier extends OrgAction
                                 ],
                                 'currency'      => [
                                     'type'  => 'input',
-                                    'label' => __('currency'),
+                                    'label' => __('Currency'),
                                     'value' => ''
                                 ],
                                 'payment terms' => [
@@ -229,12 +229,12 @@ class EditOrgSupplier extends OrgAction
 
 
                         [
-                            'title'  => __('currency'),
+                            'title'  => __('Currency'),
                             'fields' => [
 
                                 'currency_id' => [
                                     'type'  => 'currencies',
-                                    'label' => __('currency'),
+                                    'label' => __('Currency'),
                                     'value' => ''
                                 ],
 
@@ -248,7 +248,7 @@ class EditOrgSupplier extends OrgAction
                             'fields' => [
                                 'currency_id' => [
                                     'type' => 'select',
-                                    'label' => __('currency'),
+                                    'label' => __('Currency'),
                                     'placeholder' => __('Select a currency'),
                                     'options' => GetCurrenciesOptions::run(),
                                     'value' => $supplier->currency_id,

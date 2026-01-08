@@ -77,7 +77,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $in_process
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
- * @property string|null $discontinued_at
+ * @property \Illuminate\Support\Carbon|null $discontinued_at
  * @property string|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
@@ -135,6 +135,9 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $not_for_sale_from_trade_unit
  * @property array<array-key, mixed>|null $web_images
  * @property array<array-key, mixed> $tax_category
+ * @property int|null $master_variant_id
+ * @property bool $is_variant_leader
+ * @property bool|null $is_minion_variant
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -156,6 +159,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, MasterAsset> $masterProductVariants
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
+ * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
@@ -210,6 +214,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'variant_is_visible'   => 'boolean',
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
+        'discontinued_at'      => 'datetime',
         'stocks_status'        => MasterAssetStocksStatusEnum::class,
         'products_status'      => MasterAssetProductsStatusEnum::class,
         'offers_data'          => 'array',
@@ -218,9 +223,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'offers_data' => '{}',
-        'web_images'  => '{}',
+        'data'         => '{}',
+        'offers_data'  => '{}',
+        'web_images'   => '{}',
         'tax_category' => '{}',
     ];
 
@@ -430,5 +435,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
         })->first();
     }
 
+    public function masterVariant(): BelongsTo
+    {
+        return $this->belongsTo(MasterVariant::class, 'master_variant_id');
+    }
 
 }

@@ -24,13 +24,22 @@ class GroupHydrateEmailsBulkRuns implements ShouldBeUnique
 
     public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(Group $group): string
+    public function getJobUniqueId(int|null $groupId): string
     {
-        return $group->id;
+        return $groupId ?? 'empty';
     }
 
-    public function handle(Group $group): void
+    public function handle(int|null $groupId): void
     {
+
+        if (!$groupId) {
+            return;
+        }
+        $group = Group::find($groupId);
+        if (!$group) {
+            return;
+        }
+
         $stats = [
             'number_bulk_runs' => $group->emailBulkRuns()->count(),
         ];

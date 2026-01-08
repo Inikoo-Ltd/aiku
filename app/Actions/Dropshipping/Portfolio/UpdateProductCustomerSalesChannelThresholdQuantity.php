@@ -22,14 +22,21 @@ class UpdateProductCustomerSalesChannelThresholdQuantity implements ShouldBeUniq
     use WithActionUpdate;
 
     public string $commandSignature = 'csc:threshold {productId}';
+    public string $jobQueue = 'ds';
 
-    public function getJobUniqueId(int $productId): string
+    public function getJobUniqueId(int|null $productId): string
     {
-        return $productId;
+        return $productId ?? 'empty';
     }
 
-    public function handle(int $productId): void
+    public function handle(int|null $productId): void
     {
+        return;
+
+        if (!$productId) {
+            return;
+        }
+
         $product = Product::find($productId);
         if (!$product) {
             return;

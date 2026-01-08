@@ -32,18 +32,6 @@ function shipperRoute(shipper: Shipper) {
 </script>
 
 <template>
-	<!-- <Table :resource="data" :name="tab" class="mt-5">
-		<template #cell(api_shipper)="{ item: shipper }">
-			{{ shipper.type }}
-		</template>
-		<template #cell(name)="{ item: shipper }">
-			<img :src="`{shipper.code}.png`" :alt="shipper.name" class="h-5 w-5 object-contain" />
-			<Link :href="shipperRoute(shipper)" class="primaryLink">
-				{{ shipper.name }}
-			</Link>
-		</template>
-	</Table> -->
-
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(api_shipper)="{ item: shipper }">
 			{{ shipper.type }}
@@ -51,25 +39,10 @@ function shipperRoute(shipper: Shipper) {
 
 		<template #cell(name)="{ item: shipper }">
 			<div class="flex items-center gap-2">
-
-        <img
-					
-          :src="`/assets/shipper_logo/${shipper.code}.png?${Date.now()}`"
+				<img
+					:src="`/assets/shipper_logo/${shipper.slug}.png?${Date.now()}`"
 					:alt="shipper.name"
-					class="h-5 w-5 object-contain" 
-          
-        />
-
-				<!-- <img
-					
-          :src="`/assets/shipper_logo/${shipper.code}.png?${Date.now()}`"
-					:alt="shipper.name"
-					class="h-5 w-5 object-contain" 
-          @error="($event.target as HTMLImageElement).src = '/assets/shipper_logo/default.png'"
-          
-          /> -->
-          
-
+					class="h-5 w-5 object-contain" />
 				<Link :href="shipperRoute(shipper)" class="primaryLink">
 					{{ shipper.name }}
 				</Link>

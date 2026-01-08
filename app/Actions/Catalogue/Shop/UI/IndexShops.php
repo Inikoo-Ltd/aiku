@@ -14,6 +14,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ShopsTabsEnum;
@@ -122,7 +123,7 @@ class IndexShops extends OrgAction
                     'title'       => __('No shops found'),
                     'description' => __('Get started by creating a shop. ✨'),
                     'count'       => $organisation->catalogueStats->number_shops,
-                    'action'      => [
+                    'action'      => !app()->isProduction() ? [] : [
                         'type'    => 'button',
                         'style'   => 'create',
                         'tooltip' => __('New shop'),
@@ -167,19 +168,21 @@ class IndexShops extends OrgAction
             'Org/Catalogue/Shops',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('shops'),
+                'title'       => __('Shops'),
                 'pageHead'    => [
-                    'title'   => __('shops'),
+                    'title'   => __('Shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('Shop')
                     ],
+                    'model' => $this->organisation->code,
                     'actions' => [
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New shop'),
                             'label'   => __('Shop'),
+                            'options' => ShopEngineEnum::options(),
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -192,7 +195,6 @@ class IndexShops extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => ShopsTabsEnum::navigation(),
                 ],
-
 
                 ShopsTabsEnum::SHOPS->value => $this->tab == ShopsTabsEnum::SHOPS->value ?
                     fn () => ShopResource::collection($shops)
