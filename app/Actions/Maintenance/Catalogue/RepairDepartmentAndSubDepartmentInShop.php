@@ -21,8 +21,8 @@ class RepairDepartmentAndSubDepartmentInShop
 
     public function handle(Shop $shop, Command $command): void
     {
-        $command->line('Running repair from master [' . $shop->masterShop->code . '] to Shop:' . $shop->code);
-        CloneCatalogueStructure::dispatch($shop->masterShop, $shop, false, true, true);
+        $command->line('Running repair from master ['.$shop->masterShop->code.'] to Shop:'.$shop->code);
+        CloneCatalogueStructure::run($shop->masterShop, $shop, false, true, true);
     }
 
 
@@ -31,8 +31,10 @@ class RepairDepartmentAndSubDepartmentInShop
     public function asCommand(Command $command): void
     {
         $shops = Shop::where('state', ShopStateEnum::OPEN)->get();
-        foreach($shops as $shop) {
-            if($shop->masterShop) $this->handle($shop, $command);
+        foreach ($shops as $shop) {
+            if ($shop->masterShop) {
+                $this->handle($shop, $command);
+            }
         }
     }
 
