@@ -10,9 +10,11 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Models\Catalogue\Collection;
 use App\Traits\ParsesCollectionParentsData;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -40,6 +42,21 @@ class MasterCollectionsResource extends JsonResource
 
     public function toArray($request): array
     {
+        $activeWebpage = [];
+        if(isset($this->has_active_webpage)){
+            $activeWebpage = [
+                'childrens'          => $this->childrenCollections()->select([
+                    'collections.shop_id',
+                    'collections.code',
+                    'collections.name',
+                    'collections.state',
+                ])
+                ->with('shop:id,code,slug')
+                ->with('webpage:id,model_id,state')
+                ->get() ?? []
+            ];
+        }
+
         return [
             'id'   => $this->id,
             'slug' => $this->slug,
@@ -81,9 +98,8 @@ class MasterCollectionsResource extends JsonResource
                     'masterCollection' => $this->id,
                 ],
             ],
-
-            'has_active_webpage' => $this->has_active_webpage,
             'image_thumbnail'    => Arr::get($this->web_images, 'main.thumbnail'),
+            ...$activeWebpage
         ];
     }
 

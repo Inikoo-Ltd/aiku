@@ -191,7 +191,7 @@ class IndexMasterCollections extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $masterCollections): AnonymousResourceCollection
     {
-        return MasterCollectionsResource::collection($masterCollections);
+        return MasterCollectionsResource::collection($masterCollections)->resolve();
     }
 
     public function htmlResponse(LengthAwarePaginator $masterCollections, ActionRequest $request): Response

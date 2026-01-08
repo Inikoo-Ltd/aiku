@@ -15,12 +15,13 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import Dialog from 'primevue/dialog'
 import TableShopPicker from "@/Components/Master/TableShopPicker.vue"
+import TableCollectionInShopPicker from "@/Components/Master/TableCollectionInShopPicker.vue"
 
 library.add(fasCheckCircle, faTimesCircle, faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit)
 
@@ -189,45 +190,15 @@ console.log('ssss', props)
 
         <template #cell(actions)="{ item }">
             <div class="flex items-center gap-2">
-                <Button v-tooltip="item.has_active_webpage
-                    ? trans('Cannot delete: Active webpage exists')
-                    : trans('Delete master collection')" @click="openDeleteDialog(item)"
+                <Button v-tooltip="trans('Delete master collection')" @click="openDeleteDialog(item)"
                     :type="'negative'" icon="fal fa-trash" size="s"
                     :class="{ 'opacity-50 cursor-not-allowed': item.has_active_webpage }" />
-
-
-                <!--   <ModalConfirmationDelete
-                :routeDelete="item.delete_route"
-                :title="trans('Are you sure you want to delete this master collection?')"
-                isFullLoading
-                :noLabel="trans('Delete')"
-                :noIcon="'fal fa-store-alt-slash'"
-            >
-                <template #beforeTitle>
-                    <div class="text-center font-semibold text-xl mb-4">
-                        {{ `${item.name} (${item.code})` }}
-                    </div>
-                </template>
-
-<template #default="{ isOpenModal, changeModel }">
-                    <Button
-                        v-tooltip="item.has_active_webpage ? trans('Cannot delete: Active webpage exists') : trans('Delete master collection')"
-                        @click="!item.has_active_webpage && changeModel()"
-                        :type="item.has_active_webpage ? 'disabled' : 'negative'"
-                        icon="fal fa-trash"
-                        size="s"
-                        :key="1"
-                        :class="{'opacity-50 cursor-not-allowed': item.has_active_webpage}"
-                    />
-                </template>
-</ModalConfirmationDelete> -->
             </div>
         </template>
     </Table>
 
-
     <Dialog v-model:visible="showDeleteDialog" modal header="Delete Master Collection" :style="{ width: '700px' }">
-        <TableShopPicker v-model="shopIndex" />   
+        <TableCollectionInShopPicker v-model="shopIndex" :collections="selectedItem.childrens" />   
         <template #footer>
             <div class="flex justify-end gap-2">
                 <Button type="secondary" :label="trans('Cancel')" @click="showDeleteDialog = false" />
@@ -235,5 +206,4 @@ console.log('ssss', props)
             </div>
         </template>
     </Dialog>
-
 </template>
