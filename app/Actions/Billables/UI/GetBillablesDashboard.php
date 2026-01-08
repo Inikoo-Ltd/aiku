@@ -7,7 +7,7 @@
  * Copyright: 2026
 */
 
-namespace App\Actions\Billables\UI\GetBillablesDashboard;
+namespace App\Actions\Billables\UI;
 
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Web\Webpage\WebpageStateEnum;
