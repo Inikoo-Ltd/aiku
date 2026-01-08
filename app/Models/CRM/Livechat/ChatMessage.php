@@ -79,7 +79,7 @@ class ChatMessage extends Model implements HasMedia
 
     public function sender(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo(__FUNCTION__, 'sender_type', 'sender_id');
     }
 
 
