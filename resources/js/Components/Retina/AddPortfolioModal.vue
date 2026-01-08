@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted, onMounted } from "vue"
+import { ref, computed, watch, onUnmounted, onMounted, inject } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from "@headlessui/vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -18,8 +18,14 @@ const props = defineProps<{
 	productCategory: number
 }>()
 
+const emit = defineEmits<{
+	(e: "submitted", ids: number[]): void
+}>()
+
 const isModalOpen = ref(false)
 const isRunning = ref(false)
+
+const layout = inject("layout")
 
 const selectedChannels = ref<number[]>([])
 const selectAll = ref(false)
@@ -46,17 +52,15 @@ const progress = ref(0)
 
 const channel = ref(null)
 const initSocketListener = () => {
-	console.log("Initializing Webblocks Update Socket Listener")
 	if (!window.Echo) {
 		console.error("Echo not found!")
 		return
 	}
 
-	const socketEvent = `retina.pc-clone.${props.productCategory}`
+	const socketEvent = `retina.pc-clone.${layout.user.customer_id}`
 	const socketAction = ".action-progress"
-	console.log("Listening to socket event:", socketEvent + socketAction)
+
 	channel.value = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
-		console.log("SOCKET EVENT:", eventData)
 		if (typeof eventData.number_percentage === "number") {
 			progress.value = eventData.number_percentage
 			isRunning.value = true
@@ -65,21 +69,18 @@ const initSocketListener = () => {
 		if (eventData.number_percentage >= 100) {
 			isRunning.value = false
 			progress.value = 100
-
-			setTimeout(() => {
-				isModalOpen.value = false
-				stopSocketListener()
-			}, 500)
+			isModalOpen.value = false
+			stopSocketListener()
 		}
 	})
 }
 
 const stopSocketListener = () => {
+	progress.value = 0
 	if (channel.value) {
-		window.Echo.leave(`private-retina.pc-clone.${props.productCategory}`)
+		channel.value = null
 		channel.value = null
 	}
-	progress.value = 0
 }
 
 const onSubmit = () => {
@@ -87,8 +88,6 @@ const onSubmit = () => {
 
 	isRunning.value = true
 	progress.value = 0
-
-	initSocketListener()
 
 	router.post(
 		route("retina.models.portfolio.store_to_multi_channels", {
@@ -100,18 +99,15 @@ const onSubmit = () => {
 		{
 			preserveScroll: true,
 			onSuccess: () => {
-				// notify({
-				// 	title: trans("Success"),
-				// 	text: trans("Portfolio added"),
-				// 	type: "success",
-				// })
+				initSocketListener()
+
+				emit("submitted", selectedChannels.value)
 
 				selectedChannels.value = []
 				selectAll.value = false
 			},
 			onError: () => {
 				isRunning.value = false
-				stopSocketListener()
 
 				notify({
 					title: trans("Failed"),
@@ -122,6 +118,10 @@ const onSubmit = () => {
 		}
 	)
 }
+
+onMounted(() => {
+	initSocketListener()
+})
 
 onUnmounted(() => {
 	stopSocketListener()
