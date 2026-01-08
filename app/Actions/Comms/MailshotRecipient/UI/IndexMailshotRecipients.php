@@ -29,14 +29,12 @@ class IndexMailshotRecipients extends OrgAction
         $queryBuilder->where('mailshot_recipients.mailshot_id', '=', $parent->id)
             ->leftJoin('dispatched_emails', 'mailshot_recipients.dispatched_email_id', '=', 'dispatched_emails.id')
             ->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id')
-            ->leftJoin('email_copies', 'dispatched_emails.id', '=', 'email_copies.dispatched_email_id')
             ->leftJoin('customers', 'mailshot_recipients.recipient_id', '=', 'customers.id', 'and', 'mailshot_recipients.recipient_type', '=', class_basename(Customer::class));
 
         return $queryBuilder
             ->defaultSort('-sent_at')
             ->select([
                 'mailshot_recipients.id',
-                'mailshot_recipients.created_at',
                 'dispatched_emails.state',
                 'dispatched_emails.sent_at as sent_at',
                 'email_addresses.email as email_address',
