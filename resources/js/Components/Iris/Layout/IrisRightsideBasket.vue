@@ -335,12 +335,14 @@ const idxProductLoading = ref<number | null>(null)
 
                             <!-- Product: Image -->
                             <div class="relative group">
-                                <LinkIris :href="product.canonical_url" class="block font-medium hover:underline size-14 shrink-0 overflow-hidden rounded-md border border-gray-200"
+                                <LinkIris :href="product.canonical_url" class="flex justify-center items-center font-medium hover:underline min-w-14 min-h-14 size-14 shrink-0 overflow-hidden rounded-md border border-gray-200"
                                     @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
                                     <Image
+                                        v-if="product?.web_image_thumbnail"
                                         :src="product?.web_image_thumbnail"
-                                        class="w-full h-full flex justify-center items-center group-hover:scale-110 transition-all"
+                                        class="size-14 flex justify-center items-center group-hover:scale-110 transition-all"
                                     />
+                                    <FontAwesomeIcon v-else icon="fal fa-image" class="text-xl opacity-40 group-hover:opacity-70" fixed-width aria-hidden="true" />
                                 </LinkIris>
                                 
                                 <div v-if="idxProductLoading === idxProd"

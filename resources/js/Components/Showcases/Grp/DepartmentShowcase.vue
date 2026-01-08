@@ -13,6 +13,7 @@ import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
+import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { faExternalLink } from '@far';
 import { routeType } from "@/types/route"
 
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<{
             }
             description_title: string
             description_extra: string
+            stats: any
         };
         routeList: {
             collectionRoute: any;
@@ -132,7 +134,10 @@ const openFamilyModal = () => {
             </div>
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
                 <!-- Sales Analytics Compact -->
-                <SalesAnalyticsCompact v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0" :salesData="salesData" />
+                <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
+
+                <!-- Product State Stats -->
+                <ProductCategoryStats v-if="data.department.stats" :stats="data.department.stats" />
 
                 <!-- Master Navigation or Review Content -->
                 <MasterNavigation v-if="isMaster"

@@ -60,7 +60,7 @@ class GetWebBlockSeeAlso
                 'code'   => $modelOtherFamily->code,
                 'title'  => $modelOtherFamily->webpage?->title,
                 'option' => ProductsWebpageResource::collection(
-                    $modelOtherFamily->getProducts()
+                    $modelOtherFamily->getProductsDistinctVariant()
                         // ->where('stock', '>', 0)
                         ->sortByDesc('id')
                         ->take(6)
@@ -77,7 +77,7 @@ class GetWebBlockSeeAlso
             ->all();
 
         $productsModel = Product::with(['images']) // eager-load to prevent N+1
-        ->whereIn('id', $ids)
+            ->whereIn('id', $ids)
             ->get();
 
         $productOverwrite = collect(
@@ -107,7 +107,7 @@ class GetWebBlockSeeAlso
                     'slug'   => $family->slug,
                     'name'   => $family->name,
                     'option' => ProductsWebpageResource::collection(
-                        $family->getProducts()->sortByDesc('id')->take(6)
+                        $family->getProductsDistinctVariant()->sortByDesc('id')->take(6)
                     )->resolve(),
                 ];
             }

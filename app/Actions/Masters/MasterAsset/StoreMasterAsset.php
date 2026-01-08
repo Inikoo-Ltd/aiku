@@ -46,9 +46,20 @@ class StoreMasterAsset extends OrgAction
      */
     public function handle(MasterProductCategory $masterFamily, array $modelData): MasterAsset
     {
+
+        $isMain = Arr::get($modelData, 'is_main', true);
+        $isMinionVariant = false;
+        if (Arr::has($modelData, 'is_minion_variant')) {
+            $isMinionVariant = Arr::get($modelData, 'is_minion_variant', false);
+            $isMain = !$isMinionVariant;
+        }
+
+        data_set($modelData, 'is_main', $isMain);
+        data_set($modelData, 'is_minion_variant', $isMinionVariant);
+
+
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
-
 
         $numberOfTradeUnits = count($tradeUnits);
         if ($numberOfTradeUnits > 1) {
@@ -61,11 +72,7 @@ class StoreMasterAsset extends OrgAction
             data_set($modelData, 'units', '1');
         }
 
-
-
-
         data_set($modelData, 'group_id', $masterFamily->group_id);
-
 
         data_set($modelData, 'master_department_id', $masterFamily->master_department_id);
         data_set($modelData, 'master_shop_id', $masterFamily->master_shop_id);
@@ -73,7 +80,6 @@ class StoreMasterAsset extends OrgAction
         if ($masterFamily->master_sub_department_id) {
             data_set($modelData, 'master_sub_department_id', $masterFamily->master_sub_department_id);
         }
-
 
         data_set($modelData, 'bucket_images', $this->strict);
 
@@ -84,19 +90,19 @@ class StoreMasterAsset extends OrgAction
             $masterAsset->orderingIntervals()->create();
             $masterAsset->salesIntervals()->create();
             $masterAsset->orderingStats()->create();
+
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $masterAsset->timeSeries()->create(['frequency' => $frequency]);
             }
+
             $this->processTradeUnits($masterAsset, $tradeUnits);
             $masterAsset->refresh();
 
             if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT  && count($shopProducts) > 0) {
-
                 StoreProductFromMasterProduct::make()->action($masterAsset, [
-                    'shop_products' => $shopProducts
+                    'shop_products'     => $shopProducts,
                 ]);
             }
-
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
@@ -173,6 +179,7 @@ class StoreMasterAsset extends OrgAction
             'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
+            'is_minion_variant'      => ['sometimes', 'boolean'],
 
         ];
 

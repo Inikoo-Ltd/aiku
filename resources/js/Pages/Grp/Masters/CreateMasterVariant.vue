@@ -43,35 +43,93 @@ const isValid = computed(() => {
 
 
 const save = () => {
-    const products = Object.values(form.data_variants.products)
+    const cleanedVariants = sanitizeVariants()
+    const products = Object.values(cleanedVariants.products)
 
     const leader =
         products.find((item: any) => item.is_leader) ||
-        products[0] || 
+        products[0] ||
         null
 
-    form.product_leader = leader ? leader.product.id : null
-
-    console.log(form.data())
+    form.transform(data => ({
+        ...data,
+        product_leader: leader ? leader.product.id : null,
+        data_variants: cleanedVariants
+    }))
 
     form.post(route(props.save_route.name, props.save_route.parameters), {
-        onSuccess: (response) => {
-            console.log("Success callback");
+        onSuccess: () => {
+            notify({
+                title: "Success",
+                type: "success",
+                duration: 3000
+            })
         },
         onError: (errorBag) => {
-            const errorBagUnique = errorBag ? new Set(Object.values(errorBag).flat()) : [];
-            console.log('Fail', errorBag);
+            const messages = errorBag
+                ? [...new Set(Object.values(errorBag).flat())].join("<br>")
+                : trans("Please try again")
+
             notify({
                 title: "Something went wrong",
-                data: {
-                    html: errorBagUnique ? [...errorBagUnique].join('<br>') : trans("Please try again or contact administrator")
-                },
-                type: 'error',
+                data: { html: messages },
+                type: "error",
                 duration: 5000
-            });
-        },
-    });
+            })
+        }
+    })
 }
+
+
+const sanitizeVariants = () => {
+    const variants = form.data_variants.variants
+        .filter(v => v.label?.trim())
+        .map(v => ({
+            label: v.label.trim(),
+            options: v.options.filter(o => o?.trim()),
+        }))
+        .filter(v => v.options.length > 0)
+
+    const groupBy = variants.some(v => v.label === form.data_variants.groupBy)
+        ? form.data_variants.groupBy
+        : null
+
+    const validKeys = new Set(
+        variants.length
+            ? variants.flatMap(v =>
+                v.options.map(o => `${v.label}=${o}`)
+            )
+            : []
+    )
+
+    const products: Record<string, any> = {}
+
+    Object.entries(form.data_variants.products).forEach(([id, p]: any) => {
+        const keyOnly = Object.entries(p)
+            .filter(([k]) => !["product", "is_leader", "all_child_has_webpage"].includes(k))
+            .reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})
+
+        const isValid = Object.entries(keyOnly).every(
+            ([k, v]) => validKeys.has(`${k}=${v}`)
+        )
+
+        if (!isValid) return
+
+        products[id] = {
+            ...keyOnly, 
+            product: p.product,
+            is_leader: !!p.is_leader,
+            all_child_has_webpage: p.all_child_has_webpage,
+        }
+    })
+
+    return {
+        variants,
+        groupBy,
+        products
+    }
+}
+
 
 </script>
 

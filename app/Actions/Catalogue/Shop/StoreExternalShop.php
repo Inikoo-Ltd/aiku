@@ -6,10 +6,10 @@
  *  Copyright (c) 2022, Raul A Perusquia F
  */
 
-namespace App\Actions\Catalogue\Shop\External;
+namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
-use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreShopRules;
@@ -19,14 +19,8 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Helpers\Country;
-use App\Models\Helpers\Currency;
-use App\Models\Helpers\Language;
-use App\Models\Helpers\Timezone;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
-use Exception;
-use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -77,6 +71,10 @@ class StoreExternalShop extends OrgAction
                 $shopifyUser->update([
                     'external_shop_id' => $shop->id
                 ]);
+            }
+
+            if ($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
+                GetFaireProducts::dispatch($shop);
             }
 
             return $shop;
@@ -137,22 +135,10 @@ class StoreExternalShop extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('engine', $request->route()->parameter('engine'));
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function action(Organisation $organisation, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Shop
-    {
-        if (!$audit) {
-            Shop::disableAuditing();
-        }
-        $this->asAction       = true;
-        $this->hydratorsDelay = $hydratorsDelay;
-        $this->strict         = $strict;
-        $this->initialisation($organisation, $modelData);
-
-        return $this->handle($organisation, $this->validatedData);
+        $this->set('country_id', $this->organisation->country_id);
+        $this->set('currency_id', $this->organisation->currency_id);
+        $this->set('language_id', $this->organisation->language_id);
+        $this->set('timezone_id', $this->organisation->timezone_id);
     }
 
     /**
@@ -165,113 +151,9 @@ class StoreExternalShop extends OrgAction
         return $this->handle($organisation, $this->validatedData);
     }
 
-
-    public string $commandSignature = 'shop-external:create {organisation : organisation slug} {code} {name} {type}
-    {--warehouses=*} {--contact_name=} {--company_name=} {--email=} {--phone=} {--identity_document_number=} {--identity_document_type=} {--country=} {--currency=} {--language=} {--timezone=}';
-
-
-    /**
-     * @throws \Throwable
-     */
-    public function asCommand(Command $command): int
-    {
-        $this->asAction = true;
-
-        try {
-            /** @var Organisation $organisation */
-            $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-        $this->organisation = $organisation;
-        setPermissionsTeamId($organisation->group->id);
-
-        if ($command->option('country')) {
-            try {
-                $country = Country::where('code', $command->option('country'))->firstOrFail();
-            } catch (Exception $e) {
-                $command->error($e->getMessage());
-
-                return 1;
-            }
-        } else {
-            $country = $organisation->country;
-        }
-
-        if ($command->option('currency')) {
-            try {
-                $currency = Currency::where('code', $command->option('currency'))->firstOrFail();
-            } catch (Exception $e) {
-                $command->error($e->getMessage());
-
-                return 1;
-            }
-        } else {
-            $currency = $organisation->currency;
-        }
-
-        if ($command->option('language')) {
-            try {
-                $language = Language::where('code', $command->option('language'))->firstOrFail();
-            } catch (Exception $e) {
-                $command->error($e->getMessage());
-
-                return 1;
-            }
-        } else {
-            $language = $organisation->language;
-        }
-
-        if ($command->option('timezone')) {
-            try {
-                $timezone = Timezone::where('name', $command->option('timezone'))->firstOrFail();
-            } catch (Exception $e) {
-                $command->error($e->getMessage());
-
-                return 1;
-            }
-        } else {
-            $timezone = $organisation->timezone;
-        }
-
-
-        $this->setRawAttributes([
-            'code'        => $command->argument('code'),
-            'name'        => $command->argument('name'),
-            'type'        => $command->argument('type'),
-            'timezone_id' => $timezone->id,
-            'country_id'  => $country->id,
-            'currency_id' => $currency->id,
-            'language_id' => $language->id,
-        ]);
-
-        if ($command->option('warehouses')) {
-            $this->fill([
-                'warehouses' => $command->option('warehouses')
-            ]);
-        }
-
-
-        try {
-            $validatedData = $this->validateAttributes();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-        $shop = $this->handle($organisation, $validatedData);
-
-        $command->info("Shop $shop->code created successfully 🎉");
-
-        return 0;
-    }
-
     public function htmlResponse(Shop $shop): RedirectResponse
     {
-        if($redirectUri = Arr::get($shop->settings, 'shopify.auth_url')) {
+        if ($redirectUri = Arr::get($shop->settings, 'shopify.auth_url')) {
             request()->session()->flash('redirect', [
                 'url'  => $redirectUri,
                 'target'  => '_blank',

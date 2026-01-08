@@ -63,7 +63,7 @@ class StoreOfferAllowance extends OrgAction
             $rules['is_discretionary'] = ['sometimes', 'boolean'];
             $rules['is_locked']        = ['sometimes', 'boolean'];
             $rules['source_data']      = ['sometimes', 'array'];
-            $rules['type']             = ['sometimes', 'nullable', 'string'];
+
 
             $rules = $this->noStrictStoreRules($rules);
         }

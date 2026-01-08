@@ -32,7 +32,7 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
                         ->where('p.is_for_sale', true);
                 });
 
-            if(! $portfolio) {
+            if (! $portfolio) {
                 continue;
             }
 

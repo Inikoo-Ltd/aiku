@@ -47,10 +47,10 @@ trait WithVariantDataPreparation
                 $product = $masterProductList[data_get($variant, 'product.id')]
                     ->products()
                     ->where('shop_id', $this->shop->id)
-                    ->whereNot('state', ProductStateEnum::DISCONTINUED)
+                    // ->whereNot('state', ProductStateEnum::DISCONTINUED)
                     ->first();
 
-                if (!$product || !$product->is_for_sale) {
+                if (!$product) {
                     return [];
                 }
 

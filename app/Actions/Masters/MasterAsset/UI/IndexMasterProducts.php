@@ -21,6 +21,7 @@ use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
+use App\Http\Resources\Masters\MasterProductListVarResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -99,8 +100,6 @@ class IndexMasterProducts extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
-            ->where('master_assets.is_main', true)
-
             // stats
             ->leftJoin(
                 'master_asset_stats',
@@ -108,7 +107,6 @@ class IndexMasterProducts extends GrpAction
                 '=',
                 'master_asset_stats.master_asset_id'
             )
-
             // group & currency
             ->leftJoin('groups', 'master_assets.group_id', '=', 'groups.id')
             ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id')
@@ -227,14 +225,16 @@ class IndexMasterProducts extends GrpAction
         } else {
             abort(419);
         }
-        
-        if($filterInVariant) {
-            if($filterInVariant == 'none') {
+
+        if ($filterInVariant) {
+            if ($filterInVariant == 'none') {
                 $queryBuilder->whereNull('master_assets.master_variant_id');
-            }else{
+            } else {
                 $queryBuilder->whereNull('master_assets.master_variant_id')->orWhere('master_assets.master_variant_id', $filterInVariant);
             }
             $queryBuilder->where('master_assets.status', true); // Only fetch MasterAssets that are used as a material for Variant
+        }else if (($parent instanceof MasterProductCategory && $parent->type != MasterProductCategoryTypeEnum::FAMILY)) {
+            $queryBuilder->where('master_assets.is_main', true);
         }
 
         return $queryBuilder
@@ -283,7 +283,7 @@ class IndexMasterProducts extends GrpAction
                 ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
-            if($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY){
+            if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $table->column(key: 'variant_slug', label: 'Variant', canBeHidden: false, searchable: true);
             }
 
@@ -406,7 +406,7 @@ class IndexMasterProducts extends GrpAction
                     ] : [],
                 ],
                 'data'                      => MasterProductsResource::collection($masterAssets),
-                'variantSlugs'              => $isFamily ?  $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
+                'variantSlugs'              => $isFamily ? $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
                 'masterProductCategoryId'   => $this->parent->id,
                 'editable_table'            => false,
                 'shopsData'                 => $shopsData,
@@ -558,7 +558,7 @@ class IndexMasterProducts extends GrpAction
         $this->parent = $masterFamily;
         $this->initialisation($group, $request);
 
-        return $this->handle(parent: $masterFamily,  filterInVariant: $filterInVariant);
+        return $this->handle(parent: $masterFamily, filterInVariant: $filterInVariant);
     }
 
     /** @noinspection PhpUnusedParameterInspection */

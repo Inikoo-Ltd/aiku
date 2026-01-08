@@ -17,10 +17,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
+ * @property int $shop_id
+ * @property int $website_id
  * @property int $website_visitor_id
  * @property int|null $webpage_id
- * @property int $website_id
- * @property int $shop_id
  * @property string $page_url
  * @property string $page_path
  * @property string|null $page_type
@@ -31,8 +31,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group $group
  * @property-read Organisation $organisation
- * @property-read Shop $shop
- * @property-read Webpage|null $webpage
+ * @property-read Shop|null $shop
+ * @property-read \App\Models\Web\Webpage|null $webpage
  * @property-read \App\Models\Web\Website $website
  * @property-read \App\Models\Web\WebsiteVisitor $websiteVisitor
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsitePageView newModelQuery()

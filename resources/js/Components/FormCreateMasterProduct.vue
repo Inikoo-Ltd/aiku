@@ -43,6 +43,7 @@ import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
 import { faPencil, faImage } from "@fal";
 import { faBoxUp } from "@fas";
+import Toggle from "./Pure/Toggle.vue";
 
 library.add(
     faShapes, faBoxUp,
@@ -94,6 +95,7 @@ const form = useForm({
     trade_units: [
 
     ],
+    is_minion_variant: false,
     image: null,
     shop_products: null,
     marketing_weight: 0,
@@ -133,6 +135,7 @@ const resetImage = () => {
     if (fileInput.value) fileInput.value.value = ""
 }
 
+
 const getTableData = (data) => {
     if (debounceTimer) clearTimeout(debounceTimer)
 
@@ -154,11 +157,10 @@ const getTableData = (data) => {
                 item.quantity = item.ds_quantity;
             }
         }
-
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
-                    masterProductCategory: props.masterProductCategory,
+                    masterProductCategory: props.masterProductCategoryId,
                 }),
                 { trade_units: form.trade_units, shop_products: finalDataTable },
                 { signal: abortController.signal }
@@ -513,13 +515,31 @@ const successEditTradeUnit = (data) => {
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <div class="col-span-2">
+                        <div :class="layout?.app?.environment != 'local' ? 'col-span-2' : ''">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
                             <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.code.join(", ") }}
+                            </small>
+                        </div>
+
+                        <div v-if="layout?.app?.environment === 'local'">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                {{trans('Is Follower')}} 
+                                <FontAwesomeIcon
+                                    :icon="faInfoCircle"
+                                    class="text-xs text-gray-400 ml-1"
+                                    v-tooltip="trans(
+                                        'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
+                                    )"
+                                />
+                            </label>
+                            <Toggle v-model="form.is_minion_variant" />
+                            <small v-if="form.errors.is_minion_variant" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.is_minion_variant.join(", ") }}
                             </small>
                         </div>
 

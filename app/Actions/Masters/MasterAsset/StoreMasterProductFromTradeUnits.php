@@ -41,7 +41,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     {
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
-        $masterShop   = Arr::pull($modelData, 'masterShop');
+        data_forget($modelData, 'masterShop');
+
         $hasOneTradeUnit = count($tradeUnits) == 1;
 
         $qtyFinal = 1;
@@ -70,10 +71,10 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'marketing_weight'     => Arr::get($modelData, 'marketing_weight', 0),
                 'gross_weight'         => Arr::get($modelData, 'gross_weight', 0),
                 'marketing_dimensions' => Arr::get($modelData, 'marketing_dimensions', []),
-                'is_main'              => true,
                 'type'                 => MasterAssetTypeEnum::PRODUCT,
                 'trade_units'          => $tradeUnits,
-                'shop_products'        => $shopProducts
+                'shop_products'        => $shopProducts,
+                'is_minion_variant'    => Arr::get($modelData, 'is_minion_variant', false),
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
@@ -100,6 +101,20 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
 
         return $masterAsset;
+    }
+
+    public function prepareForValidation(): void
+    {
+
+        if (is_string($this->get('is_minion_variant'))) {
+            // Typecast since got string from FE
+            $this->set('is_minion_variant', match (strtolower($this->get('is_minion_variant'))) {
+                'true'  => true,
+                default => false,
+            });
+        }
+
+
     }
 
     public function rules(): array
@@ -158,7 +173,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'image'                  => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
-            'masterShop'             => ['required']
+            'masterShop'             => ['required'],
+            'is_minion_variant'      => ['required', 'boolean'],
         ];
     }
 

@@ -9,6 +9,7 @@ import { faAlbumCollection } from "@fal";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
+import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
 import { faExternalLink } from '@far';
 
@@ -21,7 +22,7 @@ const props = withDefaults(defineProps<{
             save_route: routeType
         }
         family: {
-            data: {},
+            data: any,
         },
         routeList: {
             collectionRoute: routeType
@@ -42,7 +43,7 @@ const navigateTo = () => {
     let routeCurr = route().current();
     let targetRoute;
     let routeParams = route().params;
-    
+
     switch (routeCurr) {
         case "grp.masters.master_shops.show.master_departments.show.master_families.show":
         case "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show" :
@@ -51,7 +52,7 @@ const navigateTo = () => {
                 section: 1
             });
             break;
-            
+
         case "grp.masters.master_shops.show.master_sub_departments.master_families.show":
             targetRoute = route("grp.masters.master_shops.show.master_sub_departments.master_families.edit", {
                 ...routeParams,
@@ -66,8 +67,8 @@ const navigateTo = () => {
         case "grp.org.shops.show.catalogue.families.show":
             targetRoute = route("grp.org.shops.show.catalogue.families.edit", { ...routeParams, section: 1 })
             break;
-        
-        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show": 
+
+        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show":
             targetRoute = route("grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.edit", { ...routeParams, section: 1 })
             break;
 
@@ -128,7 +129,10 @@ const navigateTo = () => {
             </div>
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
                 <!-- Sales Analytics Compact -->
-                <SalesAnalyticsCompact v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0" :salesData="salesData" />
+                <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
+
+                <!-- Product State Stats -->
+                <ProductCategoryStats v-if="data.family.data.stats" :stats="data.family.data.stats" />
 
                 <!-- Review Content -->
                 <ReviewContent v-if="!isMaster" :data="data.family.data"  />

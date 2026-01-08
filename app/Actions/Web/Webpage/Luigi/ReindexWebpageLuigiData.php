@@ -24,9 +24,9 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
 
     public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(Webpage $webpage): string
+    public function getJobUniqueId(int|null $webpageId): string
     {
-        return $webpage->id;
+        return $webpageId ?? 'string';
     }
 
 
@@ -35,8 +35,17 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
     /**
      * @throws \Exception
      */
-    public function handle(Webpage $webpage): void
+    public function handle(int|null $webpageId): void
     {
+
+        if ($webpageId == null) {
+            return;
+        }
+        $webpage = Webpage::find($webpageId);
+        if (!$webpage) {
+            return;
+        }
+
         $accessToken = $this->getAccessToken($webpage->website);
         if (count($accessToken) < 2) {
             Log::error("Luigi's Box access token is not configured properly for website {$webpage->website->name}.");
@@ -74,7 +83,7 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
         } else {
             $webpage = Webpage::first();
         }
-        $this->handle($webpage);
+        $this->handle($webpage->id);
 
         return 0;
     }

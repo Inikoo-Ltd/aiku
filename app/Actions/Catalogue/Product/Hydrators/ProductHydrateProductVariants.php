@@ -18,15 +18,22 @@ class ProductHydrateProductVariants implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Product $product): string
+    public function getJobUniqueId(int|null $productID): string
     {
-        return $product->id;
+        return $productID ?? 'empty';
     }
 
-    public function handle(Product $product): void
+    public function handle(int|null $productID): void
     {
+        if (!$productID) {
+            return;
+        }
+        $product = Product::find($productID);
+        if (!$product) {
+            return;
+        }
 
-        $stats         = [
+        $stats = [
             'number_product_variants' => $product->productVariants()->count(),
         ];
 

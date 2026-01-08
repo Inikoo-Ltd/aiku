@@ -25,11 +25,16 @@ class GetIrisProductsInCollection extends IrisAction
         $queryBuilder->join('collection_has_models', function ($join) use ($collection) {
             $join->on('products.id', '=', 'collection_has_models.model_id')
                 ->where('collection_has_models.model_type', '=', 'Product')
-                ->where('collection_has_models.collection_id', '=', $collection->id);
+                ->where('collection_has_models.collection_id', '=', $collection->id)
+                ->where(function ($query) {
+                    $query
+                        ->where('products.is_minion_variant', false)
+                        ->orWhere('products.is_variant_leader', true);
+                });
         });
-        $queryBuilder->select(array_merge(
-            $this->getSelect(),
-            [
+        $queryBuilder->select(
+            $this->getSelect([
+                DB::raw('products.variant_id IS NOT NULL as is_variant'),
                 DB::raw('exists (
                         select os.is_on_demand
                         from org_stocks os
@@ -37,8 +42,8 @@ class GetIrisProductsInCollection extends IrisAction
                         where phos.product_id = products.id
                         and os.is_on_demand = true
                     ) as is_on_demand')
-            ]
-        ));
+            ])
+        );
         $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
 
         if ($collection->stats->number_products > 0) {

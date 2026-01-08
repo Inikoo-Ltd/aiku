@@ -9,8 +9,6 @@ import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 
-
-
 interface ChatMessage {
 	id: number
 	chat_session_id?: number
@@ -36,8 +34,6 @@ type LocalChatMessage = ChatMessage & {
 	_status?: LocalMessageStatus
 }
 
-
-
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
@@ -54,7 +50,7 @@ const activeMenu = ref<"chat" | "history">("chat")
 const isLoggedIn = ref(false)
 
 const messagesLocal = ref<LocalChatMessage[]>([])
-const messages = messagesLocal 
+const messages = messagesLocal
 
 const chatSession = ref<ChatSessionData | null>(null)
 
@@ -73,14 +69,10 @@ let websocketInitialized = false
 
 const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
-
-
 const syncLoginState = () => {
 	const iris = JSON.parse(localStorage.getItem("iris") || "{}")
 	isLoggedIn.value = iris?.is_logged_in === true
 }
-
-
 
 const saveChatSession = (sessionData: ChatSessionData) => {
 	localStorage.setItem(
@@ -131,7 +123,18 @@ const createSession = async (): Promise<ChatSessionData | null> => {
 	}
 }
 
-
+const markAsRead = async () => {
+	if (!chatSession.value?.ulid) return
+	try {
+		const requestFrom = isLoggedIn.value ? "user" : "guest"
+		await axios.post(`${baseUrl}/app/api/chats/read`, {
+			session_ulid: chatSession.value.ulid,
+			request_from: requestFrom,
+		})
+	} catch (e) {
+		console.error("Failed to mark read", e)
+	}
+}
 
 const getMessages = async (loadMore = false) => {
 	if (!chatSession.value?.ulid) return
@@ -139,7 +142,8 @@ const getMessages = async (loadMore = false) => {
 	try {
 		if (loadMore) isLoadingMore.value = true
 
-		let url = `${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages`
+		const requestFrom = isLoggedIn.value ? "user" : "guest"
+		let url = `${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages?request_from=${requestFrom}`
 
 		if (loadMore && messagesLocal.value.length) {
 			url += `?cursor=${messagesLocal.value[0].created_at}&limit=100`
@@ -201,20 +205,17 @@ const sendMessage = async (text: string) => {
 			payload
 		)
 
-		// update status message ini saja
-		const index = messagesLocal.value.findIndex(m => m._tempId === tempId)
+		const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
 		if (index !== -1) {
 			messagesLocal.value[index]._status = "sent"
 		}
 	} catch {
-		const index = messagesLocal.value.findIndex(m => m._tempId === tempId)
+		const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
 		if (index !== -1) {
 			messagesLocal.value[index]._status = "failed"
 		}
 	}
 }
-
-
 
 const stopChatWebSocket = () => {
 	if (currentChannelName && window.Echo) {
@@ -242,7 +243,7 @@ const initWebSocket = () => {
 		if (!msg) return
 
 		const index = messagesLocal.value.findIndex(
-			m =>
+			(m) =>
 				m._status === "sending" &&
 				m.message_text === msg.message_text &&
 				m.sender_type === msg.sender_type
@@ -256,6 +257,7 @@ const initWebSocket = () => {
 
 		if (msg.sender_type === "agent") {
 			playNotificationSoundFile(soundUrl)
+			markAsRead()
 		}
 
 		if (e.session_status === "closed") {
@@ -264,9 +266,18 @@ const initWebSocket = () => {
 
 		forceScrollBottom()
 	})
+
+	chatChannel.listen(".messages.read", (event: any) => {
+		console.log("read event", event)
+		if (event.reader_type === "agent") {
+			messagesLocal.value.forEach((msg) => {
+				if (event.message_ids.includes(msg.id)) {
+					msg.is_read = true
+				}
+			})
+		}
+	})
 }
-
-
 
 const forceScrollBottom = () => {
 	setTimeout(() => {
@@ -287,8 +298,6 @@ const toggle = () => {
 	open.value = !open.value
 	if (open.value) initChat()
 }
-
-
 
 const loadUserSessions = async () => {
 	if (!layout?.user?.id) return
@@ -328,15 +337,13 @@ const startNewSession = async () => {
 	forceScrollBottom()
 }
 
-
-watch(activeMenu, v => v === "history" && loadUserSessions())
-
+watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
 onMounted(() => {
 	syncLoginState()
 	window.addEventListener("storage", syncLoginState)
 
-	document.addEventListener("mousedown", e => {
+	document.addEventListener("mousedown", (e) => {
 		if (
 			open.value &&
 			panelRef.value &&
@@ -350,8 +357,6 @@ onMounted(() => {
 
 onBeforeUnmount(stopChatWebSocket)
 
-
-
 defineExpose({
 	messages,
 	sendMessage,
@@ -361,7 +366,6 @@ defineExpose({
 	isLoadingMore,
 })
 </script>
-
 
 <template>
 	<div>
@@ -383,18 +387,26 @@ defineExpose({
 			<div
 				v-if="open"
 				ref="panelRef"
-				class="fixed bottom-[9rem] right-5 z-[70] w-[350px] h-fit  bg-[#f6f6f7] rounded-md overflow-hidden border">
-
-				<div class="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold">
+				class="fixed bottom-[9rem] right-5 z-[70] w-[350px] h-fit bg-[#f6f6f7] rounded-md overflow-hidden border">
+				<div
+					class="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold">
 					<span>{{ trans("Chat Support") }}</span>
 
 					<div v-if="isLoggedIn" class="flex gap-1 capitalize">
-						<button v-for="m in ['chat', 'history']" :key="m" @click="activeMenu = m"
+						<button
+							v-for="m in ['chat', 'history']"
+							:key="m"
+							@click="activeMenu = m"
 							class="px-2 py-1 rounded text-xs transition"
-							:class="activeMenu === m ? 'text-white' : 'bg-gray-100 text-gray-600'" :style="activeMenu === m ? {
-								backgroundColor: layout.app.theme[4],
-								color: layout.app.theme[5]
-							} : {}">
+							:class="activeMenu === m ? 'text-white' : 'bg-gray-100 text-gray-600'"
+							:style="
+								activeMenu === m
+									? {
+											backgroundColor: layout.app.theme[4],
+											color: layout.app.theme[5],
+									  }
+									: {}
+							">
 							{{ m }}
 						</button>
 					</div>
@@ -411,24 +423,23 @@ defineExpose({
 					@send-message="sendMessage"
 					@reload="(loadMore: any) => getMessages(loadMore)"
 					@mounted="forceScrollBottom"
-					@new-session="startNewSession"
-				/>
+					@new-session="startNewSession" />
 
-				<div v-if="activeMenu === 'history'" class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
-					<MessageHistory 
-						v-if="selectedHistory" 
+				<div
+					v-if="activeMenu === 'history'"
+					class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
+					<MessageHistory
+						v-if="selectedHistory"
 						:sessionUlid="selectedHistory.ulid"
-						:session="selectedHistory" 
-						@back="selectedHistory = null" 
-						viewerType="user"
-					/>
+						:session="selectedHistory"
+						@back="selectedHistory = null"
+						viewerType="user" />
 
 					<div v-else>
 						<HistoryChatList
 							:data="userSessions"
 							:loading="isLoadingHistory"
-							@click-session="selectedHistory = $event"
-						/>
+							@click-session="selectedHistory = $event" />
 					</div>
 				</div>
 			</div>

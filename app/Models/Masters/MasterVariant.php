@@ -41,16 +41,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string $slug
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
- * @property-read \App\Models\Masters\MasterAsset|null $leaderProduct
+ * @property-read \App\Models\Masters\MasterAsset|null $leaderMasterProduct
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $minionProduct
  * @property-read \App\Models\Masters\MasterVariantOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterVariantOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterVariantSalesIntervals|null $salesIntervals
@@ -147,26 +149,28 @@ class MasterVariant extends Model implements Auditable, HasMedia
     {
         return $this->hasMany(MasterVariantTimeSeries::class);
     }
-    
-    public function allProduct(): \Illuminate\Database\Eloquent\Collection
+
+    public function fetchProductFromData(): \Illuminate\Database\Eloquent\Collection
     {
         $key = collect(data_get($this->data, 'products'))->keys();
 
         return MasterAsset::whereIn('id', $key)->get();
     }
+    public function allProduct(): HasMany
+    {
+        return $this->hasMany(MasterAsset::class, 'master_variant_id');
+    }
 
-    public function leaderProduct(): HasOne
+    public function leaderMasterProduct(): HasOne
     {
         return $this->hasOne(MasterAsset::class, 'id', 'leader_id');
     }
 
-    public function minionProduct(): \Illuminate\Database\Eloquent\Collection
+    public function minionProduct(): HasMany
     {
-        $key = collect(data_get($this->data, 'products'))->where('is_leader', false)->keys();
-
-        return MasterAsset::whereIn('id', $key)->get();
+        return $this->hasMany(MasterAsset::class, 'master_variant_id')
+            ->where('is_variant_leader', false);
     }
-
 
     public function variants(): HasMany
     {

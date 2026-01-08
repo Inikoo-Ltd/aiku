@@ -20,12 +20,11 @@ class GetIrisBasketTransactionsInCollection extends IrisAction
     public function handle(Customer $customer, Collection $collection): array
     {
         $basket = $customer->orderInBasket;
-        $query = DB::table('products');
+        $query  = DB::table('products');
 
         $query->join('collection_has_models', function ($join) {
             $join->on('products.id', '=', 'collection_has_models.model_id')
                 ->where('collection_has_models.model_type', '=', 'Product');
-
         });
         $query->where('collection_has_models.collection_id', '=', $collection->id);
 
@@ -36,19 +35,20 @@ class GetIrisBasketTransactionsInCollection extends IrisAction
                     ->where('transactions.order_id', '=', $basket->id)
                     ->whereNull('transactions.deleted_at');
             });
+            $query->selectRaw('products.id,array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');
+        } else {
+            $query->selectRaw('products.id')->groupBy('products.id');
         }
-        $query->selectRaw('products.id,array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');
 
         $productsData = [];
         foreach ($query->get() as $data) {
             $quantityOrdered = json_decode(str_replace(['{', '}'], ['', ''], $data->quantity_ordered), true);
+
             $productsData[$data->id] = [
-                'quantity_ordered' => $quantityOrdered,
+                'quantity_ordered'     => $quantityOrdered ?? 0,
                 'quantity_ordered_new' => 0
             ];
         }
-
-
         return $productsData;
     }
 

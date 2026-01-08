@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $invoices
  * @property int|null $refunds
  * @property int|null $orders
- * @property int|null $delivery_notes
  * @property int|null $customers_invoiced
  * @property \Illuminate\Support\Carbon|null $from
  * @property \Illuminate\Support\Carbon|null $to

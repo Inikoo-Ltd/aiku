@@ -140,8 +140,12 @@ const debUpdateQuantity = debounce((newVal?: number) => {
         <div class="max-w-full relative">
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
-                @input="(e) => (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())"
-                @update:modelValue="e => (set(product, 'quantity_ordered_new', e), debUpdateQuantity())"
+                @input="(e) => (
+                    Number(e?.value) > product.available_quantity
+                    ? (set(product, 'quantity_ordered_new', product.available_quantity), debUpdateQuantity())
+                    : (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())
+                )"
+                @update:modelValue="e => (e != product.quantity_ordered_new ? (set(product, 'quantity_ordered_new', e), debUpdateQuantity()) : false)"
                 size="small"
                 inputId="minmax-buttons"
                 mode="decimal"

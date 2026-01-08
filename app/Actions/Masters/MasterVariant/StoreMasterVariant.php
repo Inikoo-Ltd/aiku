@@ -18,6 +18,7 @@ use App\Rules\AlphaDashDot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -49,10 +50,13 @@ class StoreMasterVariant extends OrgAction
 
             $masterVariant->refresh();
 
-            foreach ($masterVariant->allProduct() as $masterAsset) {
+            foreach ($masterVariant->fetchProductFromData() as $masterAsset) {
+                $isLeader = $masterVariant->leader_id == $masterAsset->id;
                 $masterAsset->updateQuietly([
                     'master_variant_id' => $masterVariant->id,
-                    'is_variant_leader' => $masterVariant->leader_id == $masterAsset->id,
+                    'is_main'           => $isLeader,
+                    'is_variant_leader' => $isLeader,
+                    'is_minion_variant' => !$isLeader,
                 ]);
             }
 
@@ -109,7 +113,7 @@ class StoreMasterVariant extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                  => ['required', 'exists:master_assets,id'],
+            'leader_id'                  => ['required', Rule::exists('master_assets', 'id')->whereNull('master_variant_id')],
             'code'                       => [
                 'required',
                 'max:32',
@@ -162,10 +166,11 @@ class StoreMasterVariant extends OrgAction
     public function redirectSuccess(MasterVariant $masterVariant): RedirectResponse
     {
         return redirect()
-            ->route('grp.masters.master_shops.show.master_families.show', [
-                'tab'          => 'variants',
-                'masterShop'   => $masterVariant->masterShop->slug,
-                'masterFamily' => $masterVariant->masterFamily->slug,
+            ->route('grp.masters.master_shops.show.master_families.master_variants.show', [
+                'tab'           => 'variants',
+                'masterShop'    => $masterVariant->masterShop->slug,
+                'masterFamily'  => $masterVariant->masterFamily->slug,
+                'masterVariant' => $masterVariant->slug
             ])
             ->with(
                 'notification',

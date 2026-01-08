@@ -11,8 +11,10 @@ namespace App\Actions\Catalogue\Variant;
 
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
@@ -45,11 +47,26 @@ class StoreVariantFromMaster extends OrgAction
                 $variant->timeSeries()->create(['frequency' => $frequency]);
             }
 
-            foreach ($variant->allProduct() as $product) {
+            $leaderProduct = $variant->leaderProduct;
+
+            foreach ($variant->fetchProductFromData() as $product) {
+                $isLeader = $leaderProduct->id == $product->id;
                 $product->updateQuietly([
-                    'variant_id' => $variant->id,
-                    'is_variant_leader' => $variant->leader_id == $product->id,
+                    'variant_id'        => $variant->id,
+                    'is_main'           => $isLeader,
+                    'is_variant_leader' => $isLeader,
+                    'is_minion_variant' => !$isLeader
+
                 ]);
+
+                if ($product->webpage()->exists()) {
+                    UpdateWebpage::make()->action($product->webpage()->first(), [
+                         'state_data' => [
+                             'state'                 => $isLeader ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
+                             'redirect_webpage_id'   => $leaderProduct->webpage->id
+                         ]
+                     ]);
+                }
             }
 
             $variant->refresh();
@@ -69,7 +86,7 @@ class StoreVariantFromMaster extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                  => ['required', 'exists:products,id'],
+            'leader_id'                  => ['required', Rule::exists('products', 'id')->whereNull('variant_id')],
             'family_id'                  => ['required', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)],
             'department_id'              => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::DEPARTMENT)],
             'sub_department_id'          => ['nullable', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)],

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\WebsiteVisitor;
 
+use App\Actions\Web\WebsitePageView\StoreWebsitePageView;
 use App\Actions\Utils\GetOsFromUserAgent;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
@@ -26,18 +27,10 @@ class ProcessWebsiteVisitorTracking
         Website $website,
         ?WebUser $webUser,
         string $userAgent,
-        string $ip,
+        array $ips,
         string $currentUrl,
         ?string $referrer
-    ): WebsiteVisitor {
-        $parsedUserAgent = (new Browser())->parse($userAgent);
-        $device = $parsedUserAgent->deviceType();
-        $browser = explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown';
-        $os = GetOsFromUserAgent::run($parsedUserAgent);
-
-        $ipHash = hash('sha256', $ip . config('app.key'));
-        $visitorHash = hash('sha256', $ipHash . $userAgent);
-
+    ): void {
         $cacheKey = "visitor:session:$sessionId:$website->id";
         $visitor = Cache::remember($cacheKey, 1800, function () use ($sessionId, $website) {
             return WebsiteVisitor::where('session_id', $sessionId)
@@ -46,22 +39,27 @@ class ProcessWebsiteVisitorTracking
         });
 
         if ($visitor) {
-            return UpdateWebsiteVisitor::run($visitor, $currentUrl);
+            $visitor = UpdateWebsiteVisitor::run($visitor, $currentUrl);
+        } else {
+            $parsedUserAgent = (new Browser())->parse($userAgent);
+            $device = $parsedUserAgent->deviceType();
+            $browser = explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown';
+            $os = GetOsFromUserAgent::run($parsedUserAgent);
+
+            $visitor = StoreWebsiteVisitor::run(
+                website: $website,
+                sessionId: $sessionId,
+                webUser: $webUser,
+                ips: $ips,
+                device: $device,
+                browser: $browser,
+                os: $os,
+                userAgent: $userAgent,
+                currentUrl: $currentUrl,
+                referrer: $referrer,
+            );
         }
 
-        return StoreWebsiteVisitor::run(
-            website: $website,
-            sessionId: $sessionId,
-            webUser: $webUser,
-            visitorHash: $visitorHash,
-            ipHash: $ipHash,
-            ip: $ip,
-            device: $device,
-            browser: $browser,
-            os: $os,
-            userAgent: $userAgent,
-            currentUrl: $currentUrl,
-            referrer: $referrer,
-        );
+        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
     }
 }

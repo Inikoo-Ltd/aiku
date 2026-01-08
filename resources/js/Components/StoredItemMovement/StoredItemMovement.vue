@@ -13,7 +13,6 @@ import StoredItemMovementForm from './StoredItemMovementForm.vue'
 import { routeType } from '@/types/route'
 import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
-// import Pallet from "@/Pages/Grp/Org/Fulfilment/Pallet.vue"
 
 
 const props = defineProps<{

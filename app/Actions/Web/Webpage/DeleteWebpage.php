@@ -55,7 +55,7 @@ class DeleteWebpage extends OrgAction
         }
 
         WebpageRecordSearch::run($webpage);
-        DeleteReindexWebpageLuigiData::dispatch($webpage);
+        DeleteReindexWebpageLuigiData::dispatch($webpage->id);
 
         return $webpage;
     }

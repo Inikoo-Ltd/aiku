@@ -3,6 +3,7 @@
 namespace App\Http\Resources\CRM\Livechat;
 
 use App\Models\CRM\Livechat\ChatMessage;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
@@ -111,12 +112,16 @@ class ChatSessionListResource extends JsonResource
             ] : null,
 
             'assigned_agent' => $activeAssignment ? [
-                'id' => $activeAssignment->chatAgent->id,
-                'name' => $activeAssignment->chatAgent->user->contact_name,
+                'id' => $activeAssignment->chatAgent?->id,
+                'name' => $activeAssignment->chatAgent?->user?->contact_name,
             ] : null,
 
             'unread_count' => ChatMessage::where('chat_session_id', $this->id)
                 ->where('is_read', false)
+                ->whereIn('sender_type', [
+                    ChatSenderTypeEnum::GUEST->value,
+                    ChatSenderTypeEnum::USER->value,
+                ])
                 ->count(),
 
             'message_count' => $this->relationLoaded('messages')
