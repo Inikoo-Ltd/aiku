@@ -73,9 +73,7 @@ class StoreWebsiteVisitor
         Website $website,
         string $sessionId,
         ?WebUser $webUser,
-        string $visitorHash,
-        string $ipHash,
-        string $ip,
+        array $ips,
         string $device,
         string $browser,
         string $os,
@@ -85,12 +83,25 @@ class StoreWebsiteVisitor
     ): WebsiteVisitor {
         $countryCode = null;
         $city = null;
+        $selectedIp = $ips[0] ?? '127.0.0.1';
 
-        if (!in_array($ip, ['127.0.0.1', '::1', 'localhost'])) {
+        foreach ($ips as $ip) {
+            if (in_array($ip, ['127.0.0.1', '::1', 'localhost'])) {
+                continue;
+            }
+
             $locationData = $this->getLocationWithFallback($ip);
-            $countryCode = $locationData['country_code'];
-            $city = $locationData['city'];
+
+            if ($locationData['country_code']) {
+                $countryCode = $locationData['country_code'];
+                $city = $locationData['city'];
+                $selectedIp = $ip;
+                break;
+            }
         }
+
+        $ipHash = hash('sha256', $selectedIp . config('app.key'));
+        $visitorHash = hash('sha256', $ipHash . $userAgent);
 
         $isNewVisitor = !WebsiteVisitor::where('visitor_hash', $visitorHash)
             ->where('website_id', $website->id)

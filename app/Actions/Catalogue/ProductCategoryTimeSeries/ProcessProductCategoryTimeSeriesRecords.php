@@ -34,6 +34,10 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
         $to .= ' 23:59:59';
 
         $productCategory = ProductCategory::find($productCategoryId);
+        if(!$productCategory) {
+            return;
+        }
+
 
         $timeSeries = ProductCategoryTimeSeries::where('product_category_id', $productCategoryId)
             ->where('frequency', $frequency->value)->first();
