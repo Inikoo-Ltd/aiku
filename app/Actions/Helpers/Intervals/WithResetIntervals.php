@@ -370,13 +370,13 @@ trait WithResetIntervals
                 invoiceCategory: $invoiceCategory,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
+            );
 
             InvoiceCategoryHydrateOrderingIntervals::dispatch(
                 invoiceCategory: $invoiceCategory,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
+            );
         }
 
         foreach (
@@ -385,17 +385,17 @@ trait WithResetIntervals
                 InvoiceCategoryStateEnum::COOLDOWN
             ])->get() as $invoiceCategory
         ) {
-            InvoiceCategoryHydrateSalesIntervals::run(
+            InvoiceCategoryHydrateSalesIntervals::dispatch(
                 invoiceCategory: $invoiceCategory,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            );
+            )->delay(now()->addMinute())->onQueue('low-priority');
 
-            InvoiceCategoryHydrateOrderingIntervals::run(
+            InvoiceCategoryHydrateOrderingIntervals::dispatch(
                 invoiceCategory: $invoiceCategory,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
-            );
+            )->delay(now()->addMinute())->onQueue('low-priority');
         }
     }
 
