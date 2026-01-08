@@ -39,29 +39,33 @@ class UpdateVariant extends OrgAction
             $products = $variant->allProduct();
             $productIds = $products->pluck('id');
 
+            // Detach other product not in variant
             Product::where('variant_id', $variant->id)
                 ->whereNotIn('id', $productIds)
                 ->update([
-                    'variant_id' => null,
+                    'is_main'           => true,
+                    'variant_id'        => null,
                     'is_variant_leader' => false,
-                    'is_minion_variant'  => false
+                    'is_minion_variant' => false
                 ]);
-
+            // Attach minion
             Product::whereIn('id', $productIds)
                 ->update([
-                    'variant_id' => $variant->id,
+                    'is_main'           => false,
+                    'variant_id'        => $variant->id,
                     'is_variant_leader' => false,
-                    'is_minion_variant'  => true
+                    'is_minion_variant' => true
                 ]);
-
+            // Attach leader
             Product::where('id', $variant->leader_id)
                 ->update([
+                    'is_main' => true,
                     'is_variant_leader' => true,
-                    'is_minion_variant'  => false
+                    'is_minion_variant' => false
                 ]);
 
             foreach ($products->get() as $product) {
-                if($product->webpage()->exists()) {
+                if ($product->webpage()->exists()) {
                     UpdateWebpage::make()->action($product->webpage()->first(), [
                          'state_data' => [
                              'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,

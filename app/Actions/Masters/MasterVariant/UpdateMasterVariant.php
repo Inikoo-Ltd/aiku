@@ -32,20 +32,27 @@ class UpdateMasterVariant extends OrgAction
             $masterProducts = $masterVariant->allProduct();
             $masterProductIds = $masterProducts->pluck('id');
 
+            // Detach other master product not in variant
             MasterAsset::where('master_variant_id', $masterVariant->id)
                 ->whereNotIn('id', $masterProductIds)
                 ->update([
+                    'is_main'           => true,
                     'master_variant_id' => null,
                     'is_variant_leader' => false,
                 ]);
-
-            MasterAsset::whereIn('id', $masterProductIds)->update([
-                'master_variant_id' => $masterVariant->id,
-                'is_variant_leader' => false,
-            ]);
-
+            // Attach minion
+            MasterAsset::whereIn('id', $masterProductIds)
+                ->update([
+                    'is_main'           => false,
+                    'master_variant_id' => $masterVariant->id,
+                    'is_variant_leader' => false,
+                ]);
+            // Attach leader
             MasterAsset::where('id', $masterVariant->leader_id)
-                ->update(['is_variant_leader' => true]);
+                ->update([
+                    'is_main' => true,
+                    'is_variant_leader' => true,
+                ]);
 
             foreach ($masterVariant->variants as $variant) {
                 UpdateVariant::make()->action($variant, $modelData);

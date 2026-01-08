@@ -64,7 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Snapshot|null $liveSnapshot
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\BannerStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch

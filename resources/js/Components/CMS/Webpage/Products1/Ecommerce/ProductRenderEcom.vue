@@ -85,11 +85,11 @@ const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
 
-
+console.log('RenderProductEcom mounted',props.product)
 
 </script>
 
-<template>           
+<template> 
     <div  class="text-gray-800 isolate h-full flex flex-col"  comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
@@ -106,7 +106,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width aria-hidden="true" />
                 </slot>
 
-                <template v-if="layout?.iris?.is_logged_in && basketButton">
+                <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
                     <div v-if="isLoadingFavourite" class="absolute bottom-2 left-2 text-gray-500 text-xl z-10">
                         <LoadingIcon />
                     </div>
@@ -125,7 +125,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </div>
                 </template>
 
-                <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
+                <div v-if="layout?.iris?.is_logged_in && !product.is_variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
                         v-if="product.stock && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
@@ -136,7 +136,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" 
                         :buttonStyle="buttonStyle" 
                     />
-                    <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton"
+                    <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.is_variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">

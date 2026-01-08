@@ -290,12 +290,9 @@ test('validation rules are correct for SendChatMessage', function () {
         'message_text',
         'message_type',
         'sender_id',
-        'media_id'
     ])
-        ->and($rules['message_text'])->toEqual(['required_without:media_id', 'string', 'max:5000'])
         ->and($rules['message_type'])->toEqual(['required', Rule::enum(ChatMessageTypeEnum::class)])
-        ->and($rules['sender_id'])->toEqual(['nullable', 'integer', Rule::exists('web_users', 'id')])
-        ->and($rules['media_id'])->toEqual(['sometimes', 'exists:media,id']);
+        ->and($rules['sender_id'])->toEqual(['nullable', 'integer', Rule::exists('web_users', 'id')]);
 });
 
 

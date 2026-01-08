@@ -284,7 +284,7 @@ class UpdateProduct extends OrgAction
             )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
-            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
+            ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
         }
 
 

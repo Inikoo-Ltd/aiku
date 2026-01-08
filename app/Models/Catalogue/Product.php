@@ -549,4 +549,9 @@ class Product extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Media::class, 'id', 'art5_image_id');
     }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(Variant::class, 'variant_id');
+    }
 }

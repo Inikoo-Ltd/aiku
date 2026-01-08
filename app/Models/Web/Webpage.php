@@ -107,7 +107,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Webpage|null $redirectWebpage
  * @property-read \App\Models\Web\Redirect|null $redirectedTo
  * @property-read \App\Models\Helpers\Media|null $seoImage
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\WebpageStats|null $stats
  * @property-read Collection<int, \App\Models\Web\WebpageTimeSeries> $timeSeries
