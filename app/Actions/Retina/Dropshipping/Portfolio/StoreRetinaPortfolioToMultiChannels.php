@@ -24,6 +24,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 {
     use WithActionUpdate;
 
+    public $jobQueue = 'long-running';
 
     /**
      * @var ProductCategory|null
