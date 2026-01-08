@@ -16,6 +16,7 @@ class ProcessResetIntervalsOrgStocks
 {
     use AsAction;
 
+    public string $jobQueue = 'default-long';
     public string $commandSignature = 'aiku:process-reset-intervals-org-stocks';
 
     public function handle(array $intervals = [], array $doPreviousPeriods = []): void
