@@ -43,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group $group
  * @property-read Organisation $organisation
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read WebUser|null $webUser
  * @property-read \App\Models\Web\Website $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteVisitor newModelQuery()

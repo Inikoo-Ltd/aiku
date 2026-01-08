@@ -60,6 +60,6 @@ class ProcessWebsiteVisitorTracking
             );
         }
 
-        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
+        StoreWebsitePageView::run($visitor, $website, $currentUrl);
     }
 }

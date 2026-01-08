@@ -12,6 +12,7 @@ use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
 use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
+use App\Actions\Catalogue\Product\Json\GetGrpProductOfVariant;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
@@ -234,3 +235,6 @@ Route::get('dashboard-custom-dates/organisation/{organisation:id}/invoice-catego
 Route::get('timezones', IndexTimeZones::class)->name('timezones');
 
 Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::class)->name('beefree.authenticate');
+
+
+Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');

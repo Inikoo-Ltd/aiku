@@ -287,6 +287,19 @@ function getClassColorIcon(varSlug: string) {
             </Link>
         </template>
 
+        <template #cell(code_product)="{ item: masterProduct }">
+            <FontAwesomeIcon :icon="masterProduct.is_variant_leader ? faStar : faShapes" class="shrink-0 mx-2" :class="masterProduct.is_variant_leader
+                ? 'text-yellow-500'
+                : 'text-gray-500'" />
+
+            <Link v-if="masterProduct.code" v-tooltip="masterProduct.code"
+                :href="masterProductRoute(masterProduct) as string" class="secondaryLink">
+                {{ masterProduct.code }}
+            </Link>
+        </template>
+
+
+
         <template #cell(variant_slug)="{ item: masterProduct }">
             <Link v-if="masterProduct.variant_slug" :href="masterVarinatRoute(masterProduct) as string"
                 class="inline-block" v-tooltip="masterProduct.is_variant_leader

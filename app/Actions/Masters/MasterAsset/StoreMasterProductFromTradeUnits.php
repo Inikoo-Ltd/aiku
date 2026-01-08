@@ -74,7 +74,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'type'                 => MasterAssetTypeEnum::PRODUCT,
                 'trade_units'          => $tradeUnits,
                 'shop_products'        => $shopProducts,
-                'is_minion_variant'    => Arr::get($modelData, 'is_minion_variant',false),
+                'is_minion_variant'    => Arr::get($modelData, 'is_minion_variant', false),
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
@@ -106,7 +106,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function prepareForValidation(): void
     {
 
-        if(is_string($this->get('is_minion_variant'))){
+        if (is_string($this->get('is_minion_variant'))) {
             // Typecast since got string from FE
             $this->set('is_minion_variant', match (strtolower($this->get('is_minion_variant'))) {
                 'true'  => true,
