@@ -55,7 +55,8 @@ defineProps<{
     tab?: string
 }>();
 
-// const { formatTime } = useFormatTime();
+const locale = inject("locale", aikuLocaleStructure);
+
 </script>
 
 <template>
@@ -64,51 +65,16 @@ defineProps<{
             <Icon v-if="mailshotRecipient.state" :data="mailshotRecipient.state" />
         </template>
 
-        <template #cell(subject)="{ item: mailshotRecipient }">
-            <div class="max-w-xs truncate">
-                {{ mailshotRecipient.subject }}
-            </div>
-        </template>
-
         <template #cell(email_address)="{ item: mailshotRecipient }">
             <div class="text-sm font-medium">
                 {{ mailshotRecipient.email_address }}
             </div>
         </template>
 
-        <template #cell(recipient_type)="{ item: mailshotRecipient }">
-            <div class="text-sm">
-                {{ mailshotRecipient.recipient_type }}
-            </div>
-        </template>
-
         <template #cell(sent_at)="{ item: mailshotRecipient }">
             <div class="text-sm">
-                {{ mailshotRecipient.sent_at }}
-                <!-- {{ formatTime(mailshotRecipient.sent_at, 'L LTS') }} -->
+                {{ useFormatTime(mailshotRecipient.sent_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}
             </div>
         </template>
-
-        <template #cell(number_email_tracking_events)="{ item: mailshotRecipient }">
-            <div class="text-sm text-center">
-                {{ mailshotRecipient.number_email_tracking_events }}
-            </div>
-        </template>
-
-        <template #cell(number_reads)="{ item: mailshotRecipient }">
-            <div class="text-sm text-center">
-                {{ mailshotRecipient.number_reads }}
-            </div>
-        </template>
-
-        <template #cell(number_clicks)="{ item: mailshotRecipient }">
-            <div class="text-sm text-center">
-                {{ mailshotRecipient.number_clicks }}
-            </div>
-        </template>
-        <!--
-        <template #cell-mask_as_spam="{ item: mailshotRecipient }">
-            <Icon v-if="mailshotRecipient.mask_as_spam?.icon" :icon="mailshotRecipient.mask_as_spam.icon" />
-        </template> -->
     </Table>
 </template>
