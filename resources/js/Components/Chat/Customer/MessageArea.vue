@@ -192,13 +192,15 @@ watch(
 	{ deep: true }
 )
 
+const myUserName = props.isLoggedIn ? "user" : "guest"
+
 const sendTypingStatus = async (status: boolean) => {
 	if (!chatSession.value?.ulid) return
 
 	try {
 		await axios.post(`${baseUrl}/app/api/chats/typing`, {
 			session_ulid: chatSession.value.ulid,
-			user_name: "customer",
+			user_name: myUserName,
 			is_typing: status,
 		})
 	} catch (e) {
@@ -230,10 +232,10 @@ const initSocket = () => {
 	chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
 	chatChannel.listen(".typing", (payload: any) => {
-		if (payload.user_name === "customer") return
+		if (payload.user_name === myUserName) return
 
 		if (payload.is_typing) {
-			agentTypingUser.value = "agent"
+			agentTypingUser.value = payload.user_name
 
 			if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
 

@@ -234,7 +234,7 @@ const initSocket = () => {
 		if (payload.user_name === "agent") return
 
 		if (payload.is_typing) {
-			remoteTypingUser.value = "customer"
+			remoteTypingUser.value = payload.user_name
 
 			if (remoteTypingTimeout) clearTimeout(remoteTypingTimeout)
 
