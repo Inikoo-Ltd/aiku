@@ -15,12 +15,14 @@ use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property mixed $units
  * @property mixed $rrp
+ * @property mixed $id
  */
 class WebBlockProductResource extends JsonResource
 {
@@ -49,18 +51,18 @@ class WebBlockProductResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
-         $back_in_stock    = false;
+        $back_in_stock    = false;
 
         if ($request->user()) {
+            /** @var Customer $customer */
             $customer = $request->user()->customer;
             if ($customer) {
-                $set_data_back_in_stock = $customer->BackInStockReminder()
+                $set_data_back_in_stock = $customer->backInStockReminder()
                     ?->where('product_id', $this->id)
                     ->first();
 
                 if ($set_data_back_in_stock) {
                     $back_in_stock    = true;
-                    $back_in_stock_id = $set_data_back_in_stock->id;
                 }
             }
         }

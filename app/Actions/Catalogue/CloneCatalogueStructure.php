@@ -53,8 +53,8 @@ class CloneCatalogueStructure
     {
         $this->cloneDepartments($fromShop, $shop);
         $this->cloneSubDepartments($fromShop, $shop);
-        
-        if(!$skipFamilies){
+
+        if (!$skipFamilies) {
             $this->cloneFamilies($fromShop, $shop);
         }
 
@@ -67,7 +67,7 @@ class CloneCatalogueStructure
             $this->deleteSubDepartmentsNotFoundInFromShop($fromShop, $shop);
         }
 
-        if(!$skipFamilies){
+        if (!$skipFamilies) {
             $this->attachFamiliesToDepartments($fromShop, $shop);
             $this->attachFamiliesToSubDepartments($fromShop, $shop);
         }

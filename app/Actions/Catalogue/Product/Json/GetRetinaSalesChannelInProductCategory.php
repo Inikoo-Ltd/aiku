@@ -10,7 +10,6 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\RetinaAction;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\DB;

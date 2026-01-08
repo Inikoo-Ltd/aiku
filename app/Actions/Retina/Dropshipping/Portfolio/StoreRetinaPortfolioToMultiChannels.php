@@ -53,7 +53,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
                 ->whereIn('item_id', $items->pluck('id'))
                 ->where('item_type', $items->first()->getMorphClass())
                 ->get(['item_id', 'customer_sales_channel_id'])
-                ->map(fn($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
+                ->map(fn ($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
         })->unique()->values()->toArray();
 
         $totalOperations = $channels->count() * $items->count() - count($existingPortfolios);

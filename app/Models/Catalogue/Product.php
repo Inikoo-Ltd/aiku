@@ -172,7 +172,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_unit_reviewed
  * @property int|null $variant_id
  * @property bool $is_variant_leader
- * @property bool|null $is_minion_variant
+ * @property bool $is_minion_variant
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -221,6 +221,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read \App\Models\Catalogue\Variant|null $variant
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
