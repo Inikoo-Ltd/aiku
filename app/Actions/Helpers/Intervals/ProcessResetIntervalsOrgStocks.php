@@ -16,7 +16,9 @@ class ProcessResetIntervalsOrgStocks
 {
     use AsAction;
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-org-stocks';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (
             OrgStock::whereIn('state', [

@@ -18,8 +18,9 @@ class ProcessResetIntervalsProductCategories
     use AsAction;
 
     public string $jobQueue = 'default-long';
+    public string $commandSignature = 'aiku:process-reset-intervals-product-categories';
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (
             ProductCategory::whereIn('state', [

@@ -27,7 +27,9 @@ class ProcessResetIntervalsShops
 {
     use AsAction;
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-shops';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         /** @var Shop $shop */
         foreach (

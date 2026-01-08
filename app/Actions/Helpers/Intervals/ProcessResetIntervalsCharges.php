@@ -22,7 +22,9 @@ class ProcessResetIntervalsCharges
 
     public string $jobQueue = 'default-long';
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-charges';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (
             Charge::whereNot('state', ChargeStateEnum::DISCONTINUED)->get() as $charge

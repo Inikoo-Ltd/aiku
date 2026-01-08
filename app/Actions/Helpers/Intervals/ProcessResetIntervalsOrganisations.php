@@ -24,7 +24,9 @@ class ProcessResetIntervalsOrganisations
 {
     use AsAction;
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-organisations';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         /** @var Organisation $organisation */
         foreach (Organisation::whereNot('type', OrganisationTypeEnum::AGENT)->get() as $organisation) {

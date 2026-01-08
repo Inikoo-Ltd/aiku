@@ -19,7 +19,9 @@ class ProcessResetIntervalsCollections
 
     public string $jobQueue = 'default-long';
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-collections';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (
             Collection::where('state', CollectionStateEnum::ACTIVE)->get() as $collection

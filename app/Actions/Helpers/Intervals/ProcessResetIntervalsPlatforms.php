@@ -15,7 +15,9 @@ class ProcessResetIntervalsPlatforms
 {
     use AsAction;
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-platforms';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (
             Platform::all() as $platform

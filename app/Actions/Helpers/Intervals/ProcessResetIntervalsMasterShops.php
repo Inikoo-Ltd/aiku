@@ -19,7 +19,9 @@ class ProcessResetIntervalsMasterShops
 {
     use AsAction;
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-master-shops';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (MasterShop::all() as $masterShop) {
             MasterShopHydrateSalesIntervals::dispatch(

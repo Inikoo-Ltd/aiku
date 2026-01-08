@@ -17,7 +17,9 @@ class ProcessResetIntervalsInvoiceCategories
 {
     use AsAction;
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public string $commandSignature = 'aiku:process-reset-intervals-invoice-categories';
+
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (
             InvoiceCategory::whereIn('state', [

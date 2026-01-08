@@ -17,8 +17,9 @@ class ProcessResetIntervalsStockFamilies
     use AsAction;
 
     public string $jobQueue = 'default-long';
+    public string $commandSignature = 'aiku:process-reset-intervals-stock-families';
 
-    public function handle(array $intervals, array $doPreviousPeriods): void
+    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
     {
         foreach (
             StockFamily::whereIn(
