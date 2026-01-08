@@ -606,6 +606,28 @@ function variantRoute(product: MasterProduct): string {
             </div>
         </template>
 
+        <template #cell(code_product)="{ item: product }">
+            <div class="flex items-center gap-2">
+                <FontAwesomeIcon :icon="product.is_variant_leader ? faStar : faShapes" class="shrink-0" :class="product.is_variant_leader
+                    ? 'text-yellow-500'
+                    : 'text-gray-500'" />
+
+                <div class="whitespace-nowrap flex items-center gap-1">
+                    <Link :href="masterProductRoute(product) as string" v-tooltip="trans('Go to Master')"
+                        class="transition-opacity" :class="product.master_product_id
+                            ? 'opacity-70 hover:opacity-100'
+                            : 'opacity-0 pointer-events-none'">
+                        <FontAwesomeIcon icon="fab fa-octopus-deploy" class="text-indigo-700" />
+                    </Link>
+
+                    <Link :href="productRoute(product)" class="primaryLink">
+                        {{ product.code }}
+                    </Link>
+                </div>
+            </div>
+        </template>
+
+
         <template #cell(variant_slug)="{ item: product }">
             <Link v-if="product.variant_slug" :href="variantRoute(product) as string"
                 class="inline-block" v-tooltip="product.is_variant_leader

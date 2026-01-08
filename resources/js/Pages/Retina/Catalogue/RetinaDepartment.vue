@@ -24,7 +24,7 @@ import {
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, ref } from "vue"
+import { computed, ref, watch, onMounted } from "vue"
 import RetinaDepartmentShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaDepartmentShowcase.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -37,6 +37,9 @@ import RetinaTableCollections from "@/Components/Tables/Retina/RetinaTableCollec
 import TableSubDepartments from "@/Components/Tables/Retina/RetinaTableSubDepartments.vue"
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 import AddPortfolio from "@/Components/Retina/AddPortfolioModal.vue"
+import { useLayoutStore } from "@/Stores/retinaLayout"
+import axios from "axios"
+import { routeType } from "@/types/route"
 
 library.add(
 	faFolder,
@@ -90,34 +93,54 @@ const component = computed(() => {
 	return components[currentTab.value]
 })
 
-const channelList = ref<Record<string, any>>({
-	"36323": {
-		customer_sales_channel_id: 36323,
-		customer_sales_channel_name: "AsaShop",
-		platform_id: 4,
-		platform_slug: "manual",
-		platform_code: "manual",
-		platform_name: "Manual",
-	},
-	"56967": {
-		customer_sales_channel_id: 56967,
-		customer_sales_channel_name: "Dunwell Whiskey Distillery",
-		platform_id: 4,
-		platform_slug: "manual",
-		platform_code: "manual",
-		platform_name: "Manual",
-	},
-	"61962": {
-		customer_sales_channel_id: 61962,
-		customer_sales_channel_name: "https://canary.aw-advantage.com/",
-		platform_id: 3,
-		platform_slug: "woocommerce",
-		platform_code: "woocommerce",
-		platform_name: "Woo Commerce",
-	},
+const layout = useLayoutStore()
+const usedCustomerChannels = ref<Record<string, any>>({})
+const isLoadingChannels = ref(false)
+
+const allCustomerChannels = computed(() => {
+	return layout.user?.customerSalesChannels ?? {}
 })
 
-const channelArray = computed(() => Object.values(channelList.value))
+const getCustomerChannels = async () => {
+	try {
+		isLoadingChannels.value = true
+
+		const res = await axios.get(
+			route("retina.json.dropshipping.product.channels_list_product_category", {
+				productCategory: props.data.department.id,
+			}),
+			{ withCredentials: true }
+		)
+
+		usedCustomerChannels.value =
+			res.data?.data?.customer_channels ?? res.data?.customer_channels ?? res.data ?? {}
+
+		console.log("usedCustomerChannels:", usedCustomerChannels.value)
+	} catch (error) {
+		console.error("Failed to load used channels", error)
+	} finally {
+		isLoadingChannels.value = false
+	}
+}
+
+const channelArray = computed(() => {
+	const all = allCustomerChannels.value
+	const used = usedCustomerChannels.value
+
+	if (!all || typeof all !== "object") return []
+
+	return Object.values(all).map((c: any) => ({
+		customer_sales_channel_id: c.customer_sales_channel_id,
+		customer_sales_channel_name: c.customer_sales_channel_name,
+		platform_name: c.platform_name ?? "-",
+
+		is_used: Boolean(used?.[c.customer_sales_channel_id]),
+	}))
+})
+
+onMounted(() => {
+	getCustomerChannels()
+})
 </script>
 
 <template>

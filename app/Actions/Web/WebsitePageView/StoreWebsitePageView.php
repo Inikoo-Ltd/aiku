@@ -19,8 +19,6 @@ class StoreWebsitePageView
 {
     use AsAction;
 
-    public string $jobQueue = 'low-priority';
-
     public function handle(
         WebsiteVisitor $visitor,
         Website $website,

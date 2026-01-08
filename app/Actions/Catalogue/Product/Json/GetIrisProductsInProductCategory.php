@@ -23,9 +23,15 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
-        $queryBuilder->select(array_merge(
-            $this->getSelect(),
-            [
+        $queryBuilder
+            ->where(function ($query) {
+                $query
+                    ->whereNull('products.variant_id')
+                    ->orWhere('products.is_variant_leader', true);
+            });
+        $queryBuilder->select(
+            $this->getSelect([
+                DB::raw('products.variant_id IS NOT NULL as is_variant'),
                 DB::raw('exists (
                         select os.is_on_demand
                         from org_stocks os
@@ -33,8 +39,8 @@ class GetIrisProductsInProductCategory extends IrisAction
                         where phos.product_id = products.id
                         and os.is_on_demand = true
                     ) as is_on_demand')
-            ]
-        ));
+            ])
+        );
         $perPage = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('products.department_id', $productCategory->id);
@@ -44,7 +50,6 @@ class GetIrisProductsInProductCategory extends IrisAction
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $queryBuilder->where('products.sub_department_id', $productCategory->id);
         }
-
 
         // Section: Sort
         $orderBy = request()->query('order_by');
@@ -62,7 +67,6 @@ class GetIrisProductsInProductCategory extends IrisAction
                 $queryBuilder->orderBy($column, $direction);
             }
         }
-
 
         return $this->getData($queryBuilder, $perPage);
     }

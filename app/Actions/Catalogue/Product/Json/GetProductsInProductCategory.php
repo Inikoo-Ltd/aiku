@@ -33,8 +33,14 @@ class GetProductsInProductCategory extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
 
-        $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->where('products.available_quantity', '>', 0);
+        $queryBuilder
+                ->where(function ($query) {
+                    $query
+                        ->where('products.is_minion_variant', false)
+                        ->where('products.is_for_sale', true)
+                        ->where('products.available_quantity', '>', 0)
+                        ->orWhere('products.is_variant_leader', true);
+                });
 
         if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('products.department_id', $parent->id);

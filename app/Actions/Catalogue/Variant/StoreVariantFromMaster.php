@@ -52,13 +52,14 @@ class StoreVariantFromMaster extends OrgAction
             foreach ($variant->fetchProductFromData() as $product) {
                 $isLeader = $leaderProduct->id == $product->id;
                 $product->updateQuietly([
-                    'variant_id' => $variant->id,
+                    'variant_id'        => $variant->id,
+                    'is_main'           => $isLeader,
                     'is_variant_leader' => $isLeader,
-                    'is_minion_variant'  => !$isLeader
+                    'is_minion_variant' => !$isLeader
 
                 ]);
 
-                if($product->webpage()->exists()) {
+                if ($product->webpage()->exists()) {
                     UpdateWebpage::make()->action($product->webpage()->first(), [
                          'state_data' => [
                              'state'                 => $isLeader ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,

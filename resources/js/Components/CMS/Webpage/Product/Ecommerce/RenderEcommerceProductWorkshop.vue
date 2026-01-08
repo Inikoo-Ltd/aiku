@@ -5,12 +5,9 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Image as ImageTS } from "@/types/Image"
 import { getProductRenderB2bComponent } from "@/Composables/getWorkshopComponents"
 import { ref, inject, onMounted, computed, watch, onUnmounted } from "vue"
-import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
-import { set, isArray } from "lodash-es"
+import { set } from "lodash-es"
+import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import axios from "axios"
-import { ulid } from "ulid"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -47,90 +44,87 @@ const layout = inject("layout", {})
 const product = ref(props.modelValue.product)
 const isLoadingRemindBackInStock = ref(false)
 const customerData = ref(null)
-const keyCustomer = ref(ulid())
 const isLoadingFavourite = ref(false)
+const variant = ref<any>(props.modelValue?.variant ?? null)
+const productsList = ref<ProductResource[]>([])
 
 
-const onAddFavourite = (product: ProductResource) => {
-}
+const onAddFavourite = (product: ProductResource) => {}
 
-const onUnselectFavourite = (product: ProductResource) => {
-    router.delete(
-        route("iris.models.favourites.delete", {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                set(customerData.value, "is_favourite", false)
+const onUnselectFavourite = (product: ProductResource) => {}
 
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
-}
+const onAddBackInStock = (productData: ProductResource) => {}
 
-const onAddBackInStock = (productData: ProductResource) => {
-
-}
-
-const onUnselectBackInStock = (productData: ProductResource) => {
-   
-}
+const onUnselectBackInStock = (productData: ProductResource) => {}
 
 const getOrderingProduct = async () => {}
 
+const getAllProductFromVariant = async () => {
+  if (!variant.value?.id) return
 
-const imagesSetup = ref(isArray(product.value.images) ? product.value.images :
-    product.value.images
-        .filter(item => item.type == "image")
-        .map(item => ({
-            label: item.label,
-            column: item.column_in_db,
-            images: item.images
-        }))
+  try {
+    const response = await axios.get(
+      route("grp.json.variant.products", {
+        variant: variant.value.id,
+      })
+    )
+    productsList.value = response.data.products ?? []
+  } catch (e) {
+    console.error("getAllProductFromVariant error", e)
+  }
+}
+
+const variantProducts = computed<any[]>(() =>
+  Object.values(variant.value?.data?.products ?? {})
 )
 
-const videoSetup = ref(
-    product.value.images.find(item => item.type === "video") || null
+const variants = computed<any[]>(() =>
+  variant.value?.data?.variants ?? []
 )
 
-const validImages = computed(() => {
-    if (!imagesSetup.value) return []
+const getVariantLabel = (index: number) => {
+  const entry = variantProducts.value[index]
+  if (!entry) return null
 
-    const hasType = imagesSetup.value.some(item => "type" in item)
+  return variants.value
+    .map(v => entry[v.label])
+    .filter(Boolean)
+    .join(" – ")
+}
 
-    if (hasType) {
-        return imagesSetup.value
-            .filter(item => item.images)
-            .flatMap(item => {
-                const images = Array.isArray(item.images) ? item.images : [item.images]
-                return images.map(img => ({
-                    source: img,
-                    thumbnail: img
-                }))
-            })
-    }
+const listProducts = computed(() => {
+  return variantProducts.value
+    .map((v, index) => {
+      const baseProduct = productsList.value.find(
+        p => p.id === v.product.id
+      )
 
-    return imagesSetup.value
+      if (!baseProduct) return null
+
+      return {
+        ...baseProduct,
+        is_leader: v.is_leader,
+        variant_label: getVariantLabel(index),
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (!a.variant_label) return 1
+      if (!b.variant_label) return -1
+
+      return a.variant_label.localeCompare(b.variant_label, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      })
+    })
 })
 
-const fetchData = async () => {
+const changeSelectedProduct = (item: ProductResource) => {
+  product.value = { ...item }
+  getOrderingProduct(item.id)
 }
+
+
 
 
 watch(() => layout?.iris?.is_logged_in, (newVal) => {
@@ -163,6 +157,7 @@ onMounted(() => {
             }
         })
     }
+    getAllProductFromVariant()
 })
 
 onUnmounted(() => {
@@ -184,12 +179,14 @@ onUnmounted(() => {
         :isLoadingRemindBackInStock
         :product
         :customerData
-        :validImages
-        :videoSetup
+        :validImages="resolveProductImages(product)"
+        :videoSetup="resolveProductVideo(product)"
         :screenType
+        :listProducts="listProducts"
         @setFavorite="onAddFavourite"
         @unsetFavorite="onUnselectFavourite"
         @setBackInStock="onAddBackInStock"
         @unsetBackInStock="onUnselectBackInStock"
+        @selectProduct="changeSelectedProduct"
     />
 </template>

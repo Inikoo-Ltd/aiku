@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from "vue"
+import { ref, computed, watch, onUnmounted, onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from "@headlessui/vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 const props = defineProps<{
 	channels: Array<{
 		customer_sales_channel_id: number
 		customer_sales_channel_name: string
 		platform_name: string
+		is_used: boolean
 	}>
 	productCategory: number
 }>()
@@ -23,13 +25,21 @@ const selectedChannels = ref<number[]>([])
 const selectAll = ref(false)
 
 const channelCount = computed(() => props.channels.length)
+const usedCount = computed(() => props.channels.filter((c) => c.is_used).length)
 
 watch(selectAll, (val) => {
-	selectedChannels.value = val ? props.channels.map((c) => c.customer_sales_channel_id) : []
+	if (val) {
+		selectedChannels.value = props.channels
+			.filter((c) => !c.is_used)
+			.map((c) => c.customer_sales_channel_id)
+	} else {
+		selectedChannels.value = []
+	}
 })
 
 watch(selectedChannels, (val) => {
-	selectAll.value = val.length === channelCount.value && channelCount.value > 0
+	const selectableCount = props.channels.filter((c) => !c.is_used).length
+	selectAll.value = val.length === selectableCount && selectableCount > 0
 })
 
 const handleProgress = (event: any) => {
@@ -63,11 +73,6 @@ const startProgress = () => {
 const onSubmit = () => {
 	if (!selectedChannels.value.length) return
 
-	// console.log("SUBMIT PORTFOLIO", {
-	// 	productCategory: props.productCategory,
-	// 	customer_sales_channel_ids: selectedChannels.value,
-	// })
-	// return
 	startProgress()
 
 	router.post(
@@ -102,13 +107,12 @@ const onSubmit = () => {
 </script>
 
 <template>
-	<button
+	<Button
 		v-if="channelCount > 0"
-		@click="isModalOpen = true"
-		class="inline-flex items-center gap-x-2 px-3 py-2 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
-		<FontAwesomeIcon icon="plus" fixed-width />
-		Add Portfolio
-	</button>
+		style="indigo"
+		icon="plus"
+		label="Add Portfolio"
+		@click="isModalOpen = true" />
 
 	<TransitionRoot appear :show="isModalOpen" as="template">
 		<Dialog as="div" class="relative z-50" @close="isModalOpen = false">
@@ -138,7 +142,10 @@ const onSubmit = () => {
 						<div class="mt-4 space-y-3">
 							<label
 								class="flex items-center gap-3 p-3 border rounded cursor-pointer">
-								<input type="checkbox" v-model="selectAll" :disabled="isRunning" />
+								<input
+									type="checkbox"
+									v-model="selectAll"
+									:disabled="isRunning || channelCount === usedCount" />
 								<div>
 									<div class="font-medium">All Channels</div>
 									<div class="text-xs text-gray-500">
@@ -151,17 +158,32 @@ const onSubmit = () => {
 								<label
 									v-for="c in props.channels"
 									:key="c.customer_sales_channel_id"
-									class="flex gap-3 p-3 border rounded cursor-pointer">
+									class="flex items-start gap-3 p-3 rounded border transition"
+									:class="{
+										'opacity-50 cursor-not-allowed bg-gray-50': c.is_used,
+										'cursor-pointer hover:bg-gray-50': !c.is_used,
+									}">
 									<input
 										type="checkbox"
+										class="mt-1"
 										:value="c.customer_sales_channel_id"
 										v-model="selectedChannels"
-										:disabled="isRunning" />
-									<div>
-										<div class="font-medium truncate">
-											{{ c.customer_sales_channel_name }}
+										:disabled="isRunning || c.is_used" />
+
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center justify-between gap-2">
+											<div class="font-medium truncate">
+												{{ c.customer_sales_channel_name }}
+											</div>
+
+											<span
+												v-if="c.is_used"
+												class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+												Already In
+											</span>
 										</div>
-										<div class="text-xs text-gray-500">
+
+										<div class="text-xs text-gray-500 mt-0.5 truncate">
 											{{ c.platform_name }}
 										</div>
 									</div>
@@ -169,17 +191,19 @@ const onSubmit = () => {
 							</div>
 						</div>
 
-						<!-- ACTIONS -->
 						<div class="mt-6 flex justify-end gap-2">
-							<button @click="isModalOpen = false" :disabled="isRunning">
-								Cancel
-							</button>
-							<button
-								@click="onSubmit"
-								:disabled="!selectedChannels.length || isRunning"
-								class="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50">
-								Submit
-							</button>
+							<Button
+								type="transparent"
+								label="Cancel"
+								:disabled="isRunning"
+								@click="isModalOpen = false" />
+
+							<Button
+								type="primary"
+								label="Submit"
+								:loading="isRunning"
+								:disabled="!selectedChannels.length"
+								@click="onSubmit" />
 						</div>
 					</DialogPanel>
 				</TransitionChild>
