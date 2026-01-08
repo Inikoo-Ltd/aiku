@@ -200,8 +200,8 @@ watch(
 
 <template>
     <div class="flex items-center gap-2 relative">
-        <div class="flex items-center border rounded-lg overflow-hidden w-32">
-            <button class="px-3 py-2" :disabled="isLoadingSubmitQuantityProduct" @click="decrementQty">
+        <div class="flex items-center border rounded-lg overflow-hidden min-w-28 max-w-32">
+            <button class="px-2.5 py-2" :disabled="isLoadingSubmitQuantityProduct" @click="decrementQty">
                 <FontAwesomeIcon icon="fas fa-minus" />
             </button>
 
@@ -213,7 +213,7 @@ watch(
                 @input="onManualInput"
             />
 
-            <button class="px-3 py-2" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
+            <button class="px-2.5 py-2" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
                 <FontAwesomeIcon icon="fas fa-plus" />
             </button>
         </div>
