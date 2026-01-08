@@ -167,6 +167,14 @@ class ShowMailshot extends OrgAction
                         'shop' => $this->shop->slug
                     ],
                 ],
+                'cancelScheduleMailshotRoute' => [
+                    'name' => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'outbox' => $mailshot->outbox->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
                 'status' => $mailshot->state->value,
 
             ]

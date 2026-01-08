@@ -41,6 +41,7 @@ const props = defineProps<{
     scheduleMailshotRoute?: routeType
     deleteMailshotRoute?: routeType
     indexRoute?: routeType
+    cancelScheduleMailshotRoute?: routeType
     status?: string
 }>();
 
@@ -55,6 +56,10 @@ const shouldShowButtons = computed(() => {
 
 const shouldShowDeleteButton = computed(() => {
     return props.status && ['ready', 'in_process'].includes(props.status.toLowerCase());
+});
+
+const shouldShowCancelScheduleButton = computed(() => {
+    return props.status && props.status.toLowerCase() === 'scheduled';
 });
 
 // Schedule datetime picker state
@@ -247,6 +252,42 @@ const handleDelete = async () => {
         })
 }
 
+const handleCancelSchedule = async () => {
+    if (!props.cancelScheduleMailshotRoute) {
+        notify({
+            type: 'error',
+            title: 'Error',
+            text: 'Cancel schedule mailshot route not configured',
+        })
+        return;
+    }
+
+    await axios.post(route(props.cancelScheduleMailshotRoute.name, props.cancelScheduleMailshotRoute.parameters))
+        .then((response) => {
+            if (response.data) {
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'Schedule cancelled successfully',
+                })
+            } else {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to cancel schedule',
+                })
+            }
+        })
+        .catch((exception) => {
+            console.log(exception);
+            notify({
+                type: 'error',
+                title: 'Error',
+                text: 'Failed to cancel schedule',
+            })
+        })
+}
+
 </script>
 
 
@@ -277,6 +318,16 @@ const handleDelete = async () => {
                     <Button :disabled="false" icon="fal fa-trash-alt" type="negative" @click="changeModel" />
                 </template>
             </ModalConfirmationDelete>
+
+            <ModalConfirmation @onYes="handleCancelSchedule" v-if="shouldShowCancelScheduleButton"
+                :title="trans('Are you sure you want to cancel this schedule?')"
+                :description="trans('This action will cancel the scheduled mailshot')" isFullLoading>
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button :label="trans('Cancel Schedule')" :disabled="false" class="!border-r-none !rounded-r-none"
+                        icon="fal fa-clock" type="negative" @click="changeModel" />
+                </template>
+            </ModalConfirmation>
+
         </template>
 
     </PageHeading>

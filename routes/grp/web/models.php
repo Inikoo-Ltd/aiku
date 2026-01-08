@@ -62,6 +62,7 @@ use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
+use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
@@ -766,6 +767,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/send', SendNewsLetter::class)->name('newsletter.send')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('newsletter.cancel-schedule')->withoutScopedBindings();
     });
 
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
