@@ -256,7 +256,7 @@ const onClickLuigi = () => {
 			:header="''"
 			:showCloseIcon="false"
 			:style="{
-				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+				...getStyles(irisLayout?.app?.webpage_layout?.container?.properties, screenType),
 				margin: 0,
 				padding: 0,
 				border: 'none !important',
@@ -302,8 +302,8 @@ const onClickLuigi = () => {
 								class=""
 								fixed-width
 								aria-hidden="true" />
-							<span v-if="layout?.currentQuery?.q" class="ml-2 text-sm">{{
-								layout?.currentQuery?.q
+							<span v-if="irisLayout?.currentQuery?.q" class="ml-2 text-sm">{{
+								irisLayout?.currentQuery?.q
 							}}</span>
 							<span v-else class="ml-2 text-sm italic opacity-60">{{
 								trans("I am looking for..")
