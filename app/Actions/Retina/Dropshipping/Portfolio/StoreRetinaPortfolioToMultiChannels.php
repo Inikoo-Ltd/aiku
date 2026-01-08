@@ -16,6 +16,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaPortfolioToMultiChannels extends RetinaAction
@@ -61,7 +62,8 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
     {
         return [
             'customer_sales_channel_ids' => 'required|array|min:1',
-            'customer_sales_channel_ids.*' => 'required|integer|exists:customer_sales_channels,id',
+            'customer_sales_channel_ids.*' => ['required', 'integer', Rule::exists('customer_sales_channels', 'id')
+                ->where('customer_id', $this->customer->id)],
             'item_id.*' => 'required|integer|exists:products,id'
         ];
     }
