@@ -15,13 +15,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $website_visitor_id
- * @property int|null $webpage_id
  * @property int $group_id
  * @property int $organisation_id
- * @property int $website_id
  * @property int $shop_id
- * @property string $event_type
+ * @property int $website_id
+ * @property int $website_visitor_id
+ * @property int|null $webpage_id
+ * @property \App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum $event_type
  * @property int|null $product_id
  * @property int $quantity
  * @property string $page_url
@@ -32,9 +32,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read Shop $shop
- * @property-read Website $website
- * @property-read WebsiteVisitor $websiteVisitor
- * @property-read Webpage|null $webpage
+ * @property-read \App\Models\Web\Webpage|null $webpage
+ * @property-read \App\Models\Web\Website $website
+ * @property-read \App\Models\Web\WebsiteVisitor $websiteVisitor
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteConversionEvent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteConversionEvent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteConversionEvent query()
@@ -46,6 +46,7 @@ class WebsiteConversionEvent extends Model
 
     protected $casts = [
         'event_date' => 'date',
+        'event_type' => \App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum::class
     ];
 
     public function group(): BelongsTo

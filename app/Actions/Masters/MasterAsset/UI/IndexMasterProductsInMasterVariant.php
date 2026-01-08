@@ -90,7 +90,7 @@ class IndexMasterProductsInMasterVariant extends OrgAction
             $table
                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                    ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
-                   ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+                   ->column(key: 'code_product', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table
                   ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                   ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)

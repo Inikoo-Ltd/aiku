@@ -3,7 +3,10 @@
 namespace App\Models\CRM\Livechat;
 
 use App\Models\Helpers\Media;
+use App\Models\Traits\HasImage;
+use Spatie\MediaLibrary\HasMedia;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -39,10 +42,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage withoutTrashed()
  * @mixin \Eloquent
  */
-class ChatMessage extends Model
+class ChatMessage extends Model implements HasMedia
 {
     use HasFactory;
     use SoftDeletes;
+    use HasImage;
+    use InteractsWithMedia;
 
     protected $table = 'chat_messages';
 
@@ -66,9 +71,9 @@ class ChatMessage extends Model
     }
 
 
-    public function media(): BelongsTo
+    public function attachment(): BelongsTo
     {
-        return $this->belongsTo(Media::class);
+        return $this->belongsTo(Media::class, 'media_id');
     }
 
 

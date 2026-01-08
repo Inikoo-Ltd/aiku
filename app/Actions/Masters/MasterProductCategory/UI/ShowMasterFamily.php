@@ -113,10 +113,10 @@ class ShowMasterFamily extends GrpAction
         $perfectFamily = $masterFamily->status;
         $masterProducts = $masterFamily->masterAssets->pluck('code');
 
-        if($perfectFamily) {
+        if ($perfectFamily) {
             foreach ($masterFamily->productCategories as $productCategory) {
                 $products = $productCategory->getProducts()->pluck('code');
-                if (array_diff($masterProducts->toArray(), $products->toArray())){
+                if (array_diff($masterProducts->toArray(), $products->toArray())) {
                     $perfectFamily = false;
                 }
             }
@@ -284,13 +284,15 @@ class ShowMasterFamily extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('Master Product'),
-                        ] : false,
-                        $this->canEdit && app()->environment('local') ? [
+                        $this->canEdit 
+                            ? [
+                                'type'    => 'button',
+                                'style'   => 'create',
+                                'tooltip' => __('Add a master product to this family'),
+                                'label'   => __('Master Product'),
+                            ]
+                            : false,
+                        $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' && app()->environment('local') ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Create a variants group for this family'),

@@ -26,8 +26,7 @@ class ChatMessageResource extends JsonResource
             'is_ai' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AI->value,
             'sender_name' => $this->getSenderName($chatMessage),
             'is_read' => $chatMessage->is_read,
-            'media_url' => $chatMessage->media?->getUrl(),
-            'media_type' => $chatMessage->media?->mime_type,
+            'media_url' => $chatMessage->imageSources(0, 0, 'attachment'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'timestamp' => $chatMessage->created_at->timestamp

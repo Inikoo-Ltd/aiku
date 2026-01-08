@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { LuigiTranslation } from "@/Composables/Unique/LuigiTranslation"
-import { AutoComplete } from "primevue"
+// import { AutoComplete } from "primevue"   /// No need to import AutoComplete
 library.add(faSearch)
 
 

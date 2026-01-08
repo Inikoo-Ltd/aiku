@@ -27,7 +27,7 @@ class TrackWebsiteVisitor
                 website: $request->get('website'),
                 webUser: $request->user('retina'),
                 userAgent: $request->userAgent(),
-                ip: $request->ip(),
+                ips: $request->ips(),
                 currentUrl: $request->fullUrl(),
                 referrer: $request->header('referer'),
             );
