@@ -357,7 +357,8 @@ function updateLinkCustom(value) {
             workshop: value.workshop,
             id: value.type === 'internal' ? value.id : null,
             href: value.href,
-            target: value.target ? value.target : '_self'
+            target: value.target ? value.target : '_self',
+            rel: value.rel
         };
         editorInstance.value?.chain().focus().extendMarkRange("link").setCustomLink(attrs).run();
     }

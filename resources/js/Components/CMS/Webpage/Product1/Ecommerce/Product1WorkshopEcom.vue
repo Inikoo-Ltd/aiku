@@ -15,11 +15,33 @@ import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vu
 import { getStyles } from "@/Composables/styles"
 import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
-import Product from "@/Pages/Grp/Org/Catalogue/Product.vue"
+import { Swiper, SwiperSlide } from "swiper/vue"
+import "swiper/css"
+import { faImage } from "@far"
 
 library.add(faCube, faLink, faFileDownload)
 
 type TemplateType = 'webpage' | 'template'
+
+
+interface ProductResource {
+    id: number
+    name: string
+    code: string
+    image?: { source: any }
+    currency_code: string
+    rpp?: number
+    unit: string
+    stock: number
+    rating: number
+    price: number
+    url: string | null
+    units: number
+    bestseller?: boolean
+    is_favourite?: boolean
+    exist_in_portfolios_channel: number[]
+    is_exist_in_all_channel: boolean
+}
 
 const props = withDefaults(defineProps<{
     modelValue: any
@@ -36,13 +58,26 @@ const props = withDefaults(defineProps<{
         url: string
     }
     validImages: object
+    listProducts: ProductResource[]
 }>(), {
     templateEdit: 'webpage'
 })
 
 const emits = defineEmits<{
     (e: 'onDescriptionUpdate', key: string, val: string): void
+    (e: "setFavorite", value: any[]): void
+    (e: "unsetFavorite", value: any[]): void
+    (e: "setBackInStock", value: any[]): void
+    (e: "unsetBackInStock", value: any[]): void
+    (e: "selectProduct", value: any[]): void
 }>()
+
+
+const onAddFavourite = (p: ProductResource) => emits("setFavorite", p)
+const onUnselectFavourite = (p: ProductResource) => emits("unsetFavorite", p)
+const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
+const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", p)
+const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
 
 const product = ref(props.modelValue.product)
 const layout = inject('layout', {})
@@ -136,12 +171,13 @@ defineOptions({
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                     :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
-                                   <span>
-                                    {{ product?.is_on_demand
-                                    ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
-                                }}
-                                </span>
+                                    <span>
+                                        {{ product?.is_on_demand
+                                            ? trans("Unlimited quantity available")
+                                            : (product.stock > 0 ? trans("In stock") + ` (${product.stock} ` +
+                                                trans("available") + `)` : trans("Out Of Stock"))
+                                        }}
+                                    </span>
                                 </span>
                             </div>
 
@@ -187,16 +223,51 @@ defineOptions({
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock > 0" :product="product" :customerData="customerData"
-                            :key="keyCustomer" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
+                        <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product"
+                            :customerData="customerData" :key="keyCustomer"
+                            :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
                         <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
                     </div>
 
-                    <div v-else
-                        class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
+                    <div v-else class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
                         :style="getStyles(modelValue?.buttonLogin?.properties, screenType)">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </div>
+                </div>
+
+
+                <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
+                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                        640: { slidesPerView: 4.5 },
+                        1024: { slidesPerView: 4 }
+                    }">
+
+                        <SwiperSlide v-for="item in listProducts" :key="item.id">
+                            <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
+                                'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
+                                item.code === product.code
+                                    ? 'ring-1 primary'
+                                    : 'border-gray-200 hover:border-gray-300'
+                            ]">
+                                <!-- IMAGE FULL AREA -->
+                                <div class="relative w-full aspect-square bg-gray-50">
+                                    <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                        :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
+                                    <FontAwesomeIcon v-else :icon="faImage"
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                </div>
+
+                                <!-- VARIANT LABEL -->
+                                <div class="p-1">
+                                    <span :class="[
+                                        'block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700'
+                                    ]">
+                                        {{ item.variant_label }}
+                                    </span>
+                                </div>
+                            </button>
+                        </SwiperSlide>
+                    </Swiper>
                 </div>
 
                 <!-- DESCRIPTION -->
@@ -275,17 +346,51 @@ defineOptions({
 
         <!-- ADD TO CART -->
         <div class="mt-6 flex flex-col gap-2">
-            <EcomAddToBasketv2 v-if="layout?.iris?.is_logged_in && product.stock > 0" :product="product"
+            <EcomAddToBasketv2 v-if="layout?.iris?.is_logged_in && product.stock > 0" v-model:product="product"
                 :customerData="customerData" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
 
             <Button v-else-if="layout?.iris?.is_logged_in" :label="trans('Out of stock')" type="tertiary" disabled
                 full />
 
-            <div v-else 
-                :style="getStyles(modelValue?.button?.properties, screenType)"
+            <div v-else :style="getStyles(modelValue?.button?.properties, screenType)"
                 class="block text-center border text-sm px-3 py-2 rounded text-gray-600 w-full">
                 {{ trans("Login or Register for Wholesale Prices") }}
             </div>
+        </div>
+
+
+        <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md my-4">
+            <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                640: { slidesPerView: 4.5 },
+                1024: { slidesPerView: 4 }
+            }">
+
+                <SwiperSlide v-for="item in listProducts" :key="item.id">
+                    <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
+                        'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
+                        item.code === product.code
+                            ? 'ring-1 primary'
+                            : 'border-gray-200 hover:border-gray-300'
+                    ]">
+                        <!-- IMAGE FULL AREA -->
+                        <div class="relative w-full aspect-square bg-gray-50">
+                            <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
+                            <FontAwesomeIcon v-else :icon="faImage"
+                                class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                        </div>
+
+                        <!-- VARIANT LABEL -->
+                        <div class="p-1">
+                            <span :class="[
+                                'block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700'
+                            ]">
+                                {{ item.variant_label }}
+                            </span>
+                        </div>
+                    </button>
+                </SwiperSlide>
+            </Swiper>
         </div>
 
         <!-- DESCRIPTION -->

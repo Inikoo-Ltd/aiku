@@ -88,7 +88,6 @@ class CloneProductsFromMaster
                                         'create_in_shop' => 'Yes'
                                     ]
                                 ],
-                                'is_minion_variant' => $masterProduct->is_minion_variant,
                             ]
                         );
                     }

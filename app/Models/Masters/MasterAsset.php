@@ -440,7 +440,4 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return $this->belongsTo(MasterVariant::class, 'master_variant_id');
     }
 
-
-
-
 }
