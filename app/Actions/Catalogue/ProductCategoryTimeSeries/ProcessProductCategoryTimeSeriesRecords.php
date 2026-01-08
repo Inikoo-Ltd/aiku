@@ -34,7 +34,7 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
         $to .= ' 23:59:59';
 
         $productCategory = ProductCategory::find($productCategoryId);
-        if(!$productCategory) {
+        if (!$productCategory) {
             return;
         }
 

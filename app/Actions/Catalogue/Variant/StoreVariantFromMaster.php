@@ -58,7 +58,7 @@ class StoreVariantFromMaster extends OrgAction
 
                 ]);
 
-                if($product->webpage()->exists()) {
+                if ($product->webpage()->exists()) {
                     UpdateWebpage::make()->action($product->webpage()->first(), [
                          'state_data' => [
                              'state'                 => $isLeader ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,

@@ -61,7 +61,7 @@ class UpdateVariant extends OrgAction
                 ]);
 
             foreach ($products->get() as $product) {
-                if($product->webpage()->exists()) {
+                if ($product->webpage()->exists()) {
                     UpdateWebpage::make()->action($product->webpage()->first(), [
                          'state_data' => [
                              'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,

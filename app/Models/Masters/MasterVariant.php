@@ -46,7 +46,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
- * @property-read \App\Models\Masters\MasterAsset|null $leaderProduct
+ * @property-read \App\Models\Masters\MasterAsset|null $leaderMasterProduct
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
