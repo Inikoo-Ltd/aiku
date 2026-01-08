@@ -115,3 +115,4 @@ rgb.icc
 /devops/varnish/warm_up.sh
 /.output.txt
 laradumps.yaml
+/.ai/mcp/mcp.json

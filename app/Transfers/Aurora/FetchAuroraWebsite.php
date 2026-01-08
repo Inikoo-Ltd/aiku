@@ -45,7 +45,7 @@ class FetchAuroraWebsite extends FetchAurora
             return;
         }
 
-        if($shop->is_migrating_to_aiku){
+        if ($shop->is_migrating_to_aiku) {
             return;
         }
 

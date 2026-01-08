@@ -26,12 +26,16 @@ class GetProductForWooCommerce
      */
     private function transformToStandardFormat($product): array
     {
+        if(blank($product)) {
+            return [];
+        }
+
         return [
-            'id' => $product['id'],
-            'name' => $product['name'],
-            'slug' => $product['slug'],
-            'code' => $product['sku'],
-            'price' => $product['price'],
+            'id' => Arr::get($product, 'id'),
+            'name' => Arr::get($product, 'name'),
+            'slug' => Arr::get($product, 'slug'),
+            'code' => Arr::get($product, 'sku'),
+            'price' => Arr::get($product, 'price'),
             'images' => Arr::get($product, 'images')
         ];
     }

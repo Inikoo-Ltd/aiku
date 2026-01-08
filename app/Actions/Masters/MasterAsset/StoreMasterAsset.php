@@ -47,11 +47,11 @@ class StoreMasterAsset extends OrgAction
     public function handle(MasterProductCategory $masterFamily, array $modelData): MasterAsset
     {
 
-        $isMain=Arr::get($modelData,'is_main',true);
-        $isMinionVariant=false;
-        if(Arr::has($modelData,'is_minion_variant')){
-            $isMinionVariant=Arr::get($modelData,'is_minion_variant',false);
-            $isMain=!$isMinionVariant;
+        $isMain = Arr::get($modelData, 'is_main', true);
+        $isMinionVariant = false;
+        if (Arr::has($modelData, 'is_minion_variant')) {
+            $isMinionVariant = Arr::get($modelData, 'is_minion_variant', false);
+            $isMain = !$isMinionVariant;
         }
 
         data_set($modelData, 'is_main', $isMain);

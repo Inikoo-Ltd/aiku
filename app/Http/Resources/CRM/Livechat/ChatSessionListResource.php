@@ -112,8 +112,8 @@ class ChatSessionListResource extends JsonResource
             ] : null,
 
             'assigned_agent' => $activeAssignment ? [
-                'id' => $activeAssignment->chatAgent->id,
-                'name' => $activeAssignment->chatAgent->user->contact_name,
+                'id' => $activeAssignment->chatAgent?->id,
+                'name' => $activeAssignment->chatAgent?->user?->contact_name,
             ] : null,
 
             'unread_count' => ChatMessage::where('chat_session_id', $this->id)
