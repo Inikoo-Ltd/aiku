@@ -150,7 +150,7 @@ class UpdateProductCategory extends OrgAction
         ])) {
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
-                ReindexWebpageLuigiData::dispatch($productCategory->webpage)->delay(60 * 15);
+                ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60 * 15);
                 ClearCacheByWildcard::run("irisData:website:{$productCategory->webpage->website_id}:*");
             }
         }
