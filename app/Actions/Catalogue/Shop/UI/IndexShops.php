@@ -168,20 +168,21 @@ class IndexShops extends OrgAction
             'Org/Catalogue/Shops',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('shops'),
+                'title'       => __('Shops'),
                 'pageHead'    => [
-                    'title'   => __('shops'),
+                    'title'   => __('Shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('Shop')
                     ],
+                    'model' => $this->organisation->code,
                     'actions' => [
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New shop'),
                             'label'   => __('Shop'),
-                            'options' => ShopEngineEnum::values(),
+                            'options' => ShopEngineEnum::options(),
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -194,7 +195,6 @@ class IndexShops extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => ShopsTabsEnum::navigation(),
                 ],
-
 
                 ShopsTabsEnum::SHOPS->value => $this->tab == ShopsTabsEnum::SHOPS->value ?
                     fn () => ShopResource::collection($shops)

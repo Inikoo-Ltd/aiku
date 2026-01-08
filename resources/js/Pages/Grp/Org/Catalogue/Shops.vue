@@ -24,6 +24,8 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import Modal from "@/Components/Utils/Modal.vue";
 import { trans } from "laravel-vue-i18n";
 import { useLayoutStore } from "@/Stores/layout";
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 
 library.add( faCube, faFolder, faFolderTree )
 
@@ -69,6 +71,26 @@ const redirectToTarget = (engine: string) => {
     }
 }
 
+// Section: create internal shop
+const isLoadingVisitInternal = ref(false)
+const isCreateShopModalInternal = ref(false)
+const selectedMasterShopForInternal = ref(null)
+const createInternalShop = () => {
+    router.visit(
+        route('grp.masters.master_shops.show.shop.create', {
+            masterShop: selectedMasterShopForInternal.value,
+            organisation: layout.currentParams?.organisation
+        }),
+        {
+            onStart: () => {
+                isLoadingVisitInternal.value = true
+            },
+            onError: () => {
+                isLoadingVisitInternal.value = false
+            }
+        }
+    )
+}
 </script>
 
 <template>
@@ -76,21 +98,75 @@ const redirectToTarget = (engine: string) => {
     <PageHeading :data="pageHead">
 
         <template #button-shop="{action}">
-            <Button
-                type="primary"
-                :style="'create'"
-                label="Shop"
-                @click="() => {
-                    isCreateShopModal = true
-                    engines = action?.options
-                }"
-            />
+            <div>
+                <Button
+                    v-if="layout.app.environment !== 'production'"
+                    type="primary"
+                    :style="'create'"
+                    :label="trans('Internal')"
+                    @click="() => isCreateShopModalInternal = true"
+                    xrouteTarget="{
+                        name: 'grp.masters.master_shops.show.shop.create',
+                        parameters: {
+                            
+                        }
+                    }"
+                    class="rounded-r-none border-r-0"
+                />
+                <Button
+                    type="primary"
+                    :style="'create'"
+                    :label="trans('External')"
+                    @click="() => {
+                        isCreateShopModal = true
+                        engines = action?.options
+                    }"
+                    class="rounded-l-none border-l-0"
+                />
+            </div>
         </template>
 
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]" />
 
+
+    <Modal :isOpen="isCreateShopModalInternal" width="w-full max-w-lg" @close="isCreateShopModalInternal = false">
+        <div>
+            <div class="font-bold text-2xl text-center mb-4">
+                {{ trans("Create Shop") }}
+            </div>
+
+            <div class="">
+                {{ trans("Select master shop for the new shop") }}:
+            </div>
+
+            <div>
+                <PureMultiselectInfiniteScroll
+                    v-model="selectedMasterShopForInternal"
+                    :fetchRoute="{
+                        name: 'grp.masters.master_shops.index'
+                    }"
+                    labelProp="name"
+                    valueProp="slug"
+                    placeholder="Select shop"
+                    required
+                />
+            </div>
+
+            <div class="mt-6">
+                <Button
+                    @click="() => createInternalShop()"
+                    v-tooltip="selectedMasterShopForInternal ? '' : 'Select master shop'"
+                    :label="trans('Create shop')"
+                    :loading="isLoadingVisitInternal"
+                    :disabled="!selectedMasterShopForInternal"
+                    iconRight="far fa-arrow-right"
+                    full
+                />
+            </div>
+        </div>
+    </Modal>
 
     <Modal :isOpen="isCreateShopModal" @onClose="isCreateShopModal = false" width="w-full max-w-[500px]">
         <div class="text-center font-semibold text-lg mb-4">
@@ -99,9 +175,9 @@ const redirectToTarget = (engine: string) => {
 
         <div class="flex justify-center gap-2">
             <Button v-for="engine in engines" :key="engine"
-                    :label="capitalize(trans(engine))"
-                    type="tertiary"
-                    @click="redirectToTarget(engine)"
+                :label="engine.label"
+                type="tertiary"
+                @click="redirectToTarget(engine.value)"
             />
         </div>
     </Modal>
