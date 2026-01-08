@@ -27,7 +27,6 @@ type LocalChatMessage = ChatMessage & {
 const props = defineProps<{
 	messages: ChatMessage[]
 	session: SessionAPI | null
-	userName: string
 }>()
 
 const emit = defineEmits([
@@ -232,10 +231,10 @@ const initSocket = () => {
 	})
 
 	chatChannel.listen(".typing", (payload: any) => {
-		if (payload.user_name === props.userName) return
+		if (payload.user_name === "agent") return
 
 		if (payload.is_typing) {
-			remoteTypingUser.value = payload.user_name
+			remoteTypingUser.value = "customer"
 
 			if (remoteTypingTimeout) clearTimeout(remoteTypingTimeout)
 
@@ -289,7 +288,7 @@ const sendTypingStatus = async (status: boolean) => {
 	try {
 		await axios.post(`${baseUrl}/app/api/chats/typing`, {
 			session_ulid: chatSession.value.ulid,
-			user_name: props.userName,
+			user_name: "agent",
 			is_typing: status,
 		})
 	} catch (e) {
@@ -310,7 +309,7 @@ const handleTyping = () => {
 		sendTypingStatus(false)
 	}, 500)
 
-	typingUser.value = props.userName
+	typingUser.value = "agent"
 }
 
 onMounted(async () => {
@@ -392,7 +391,6 @@ const handleClickOutside = (e: MouseEvent) => {
 			class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
 			<template v-for="(msgs, date) in groupedMessages" :key="date">
 				<div class="text-center text-xs text-gray-400">{{ date }}</div>
-
 				<div
 					v-for="msg in msgs"
 					:key="msg.id"
