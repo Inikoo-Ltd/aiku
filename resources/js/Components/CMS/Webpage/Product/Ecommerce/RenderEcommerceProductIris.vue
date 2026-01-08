@@ -61,7 +61,6 @@ const productsList = ref<ProductResource[]>([])
 
 const customerData = ref<Record<number, any>>({})
 const isLoadingOrdering = ref<Record<number, boolean>>({})
-
 const isLoadingFavourite = ref(false)
 const isLoadingRemindBackInStock = ref(false)
 
@@ -195,7 +194,10 @@ const onAddFavourite = (product: ProductResource) => {
             is_favourite: true,
           },
         }
+        layout.reload_handle()
       },
+      onStart : () => { isLoadingFavourite.value = true }, 
+      onFinish: () => { isLoadingFavourite.value = false },
     }
   )
 }
@@ -213,7 +215,10 @@ const onUnselectFavourite = (product: ProductResource) => {
             is_favourite: false,
           },
         }
+        layout.reload_handle()
       },
+      onStart : () => { isLoadingFavourite.value = true }, 
+      onFinish: () => { isLoadingFavourite.value = false },
     }
   )
 }
@@ -231,7 +236,10 @@ const onAddBackInStock = (product: ProductResource) => {
             back_in_stock: true,
           },
         }
+      	layout.reload_handle()
       },
+      onStart : () => { isLoadingRemindBackInStock.value = true }, 
+      onFinish: () => { isLoadingRemindBackInStock.value = false },
     }
   )
 }
@@ -248,7 +256,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
             back_in_stock: false,
           },
         }
+        layout.reload_handle()
       },
+      onStart : () => { isLoadingRemindBackInStock.value = true }, 
+      onFinish: () => { isLoadingRemindBackInStock.value = false },
     }
   )
 }

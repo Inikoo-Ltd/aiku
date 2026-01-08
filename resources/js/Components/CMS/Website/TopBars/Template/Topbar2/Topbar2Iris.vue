@@ -145,6 +145,25 @@ const screenType = inject("screenType", "desktop")
                 </template>
             </ButtonWithLink>
 
+
+             <LinkIris href="/app/back-in-stocks" :type="'internal'">
+                <Button
+                    v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
+                    v-tooltip="trans('Reminder back in stock')"
+                    type="transparent"
+                    class="button"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fas fa-envelope-circle-check" class="align-middle button" fixed-width aria-hidden="true" />
+                    </template>
+                    <template #label>
+                        <span class="button">
+                            {{ layout.iris_variables?.back_in_stock_count }}
+                        </span>
+                    </template>
+                </Button>
+            </LinkIris>
+
             <!-- Section: Cart -->
             <!-- <a v-if="checkVisible(model?.cart?.visible || null, isLoggedIn)"
                 id="header_order_totals"

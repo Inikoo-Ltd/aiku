@@ -199,12 +199,14 @@ const onUnselectBackInStock = (product: ProductResource) => {
     <GridProducts :resource="data" :basket-transactions="basketTransactions" :preserve-scroll="true" class="mt-5"
         :key="key">
         <template #card="{ item }">
-            <ProductRender :product="item" :hasInBasket="item"
+            <ProductRender 
+                :product="item"
                 :isLoadingRemindBackInStock="isLoadingRemindBackInStock.includes(item.id)"
-                :isLoadingFavourite="isLoadingFavourite.includes(item.id)" @setBackInStock="onAddBackInStock"
-                @unsetBackInStock="onUnselectBackInStock" @set-favorite="onAddFavourite"
-                @unset-favorite="onUnselectFavourite" :addToBasketRoute="addToBasketRoute"
-                :update-basket-quantity-route="updateBasketQuantityRoute" />
+                :isLoadingFavourite="isLoadingFavourite.includes(item.id)" 
+                @setBackInStock="onAddBackInStock"
+                @unsetBackInStock="onUnselectBackInStock" 
+                :hideButtonPortofolio="true"
+            />
         </template>
     </GridProducts>
 </template>
