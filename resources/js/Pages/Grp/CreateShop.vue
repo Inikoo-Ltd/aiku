@@ -144,7 +144,8 @@ const onSelectSubmitChange = (value) => {
 								:disabled="form.processing"
 								class="rounded-l-none border-none"
 								:style="'tertiary'"
-								size="l" />
+								size="l"
+							/>
 						</MenuButton>
 
 						<transition

@@ -261,6 +261,18 @@ class GetRetinaDropshippingNavigation
             ]
         ];
 
+        $groupNavigation['back-in-stocks'] = [
+                'label'   => __('Back In Stocks'),
+                'icon'    => ['fas', 'fa-envelope-circle-check'],
+                'root'    => 'retina.dropshipping.back_in_stock.',
+                'route'   => [
+                    'name' => 'retina.dropshipping.back_in_stock.index'
+                ],
+                'topMenu' => [
+
+                ]
+            ];
+
         return $groupNavigation;
     }
 }

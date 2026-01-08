@@ -49,11 +49,15 @@ class CloneCatalogueStructure
     /**
      * @throws \Throwable
      */
-    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false): void
+    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false, $skipFamilies = false): void
     {
         $this->cloneDepartments($fromShop, $shop);
         $this->cloneSubDepartments($fromShop, $shop);
-        $this->cloneFamilies($fromShop, $shop);
+        
+        if(!$skipFamilies){
+            $this->cloneFamilies($fromShop, $shop);
+        }
+
         if (!$skipProducts) {
             $this->cloneProducts($fromShop, $shop);
         }
@@ -63,8 +67,10 @@ class CloneCatalogueStructure
             $this->deleteSubDepartmentsNotFoundInFromShop($fromShop, $shop);
         }
 
-        $this->attachFamiliesToDepartments($fromShop, $shop);
-        $this->attachFamiliesToSubDepartments($fromShop, $shop);
+        if(!$skipFamilies){
+            $this->attachFamiliesToDepartments($fromShop, $shop);
+            $this->attachFamiliesToSubDepartments($fromShop, $shop);
+        }
 
 
     }
@@ -765,7 +771,7 @@ class CloneCatalogueStructure
 
     public function getCommandSignature(): string
     {
-        return 'catalogue:clone {from_type} {from} {to_type} {to} {--delete-missing : Delete categories not found in source shop} {--skip-products : Skip cloning products}';
+        return 'catalogue:clone {from_type} {from} {to_type} {to} {--delete-missing : Delete categories not found in source shop} {--skip-products : Skip cloning products} {--skip-family : Skip cloning family}';
     }
 
     /**
@@ -789,7 +795,10 @@ class CloneCatalogueStructure
         $deleteMissing = $command->option('delete-missing');
 
         $skipProducts = $command->option('skip-products');
-        $this->handle($fromShop, $toShop, $deleteMissing, $skipProducts);
+
+        $skipFamilies = $command->option('skip-family');
+
+        $this->handle($fromShop, $toShop, $deleteMissing, $skipProducts, $skipFamilies);
 
         return 0;
     }

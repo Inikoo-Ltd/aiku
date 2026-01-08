@@ -49,6 +49,22 @@ class WebBlockProductResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
+         $back_in_stock    = false;
+
+        if ($request->user()) {
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $set_data_back_in_stock = $customer->BackInStockReminder()
+                    ?->where('product_id', $this->id)
+                    ->first();
+
+                if ($set_data_back_in_stock) {
+                    $back_in_stock    = true;
+                    $back_in_stock_id = $set_data_back_in_stock->id;
+                }
+            }
+        }
+
         return [
             'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
@@ -82,7 +98,8 @@ class WebBlockProductResource extends JsonResource
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $isOnDemand,
-            'is_back_in_stock'  => $product->backInStockReminders
+            'is_back_in_stock'  => $product->backInStockReminders,
+            'back_in_stock'     => $back_in_stock
         ];
     }
 

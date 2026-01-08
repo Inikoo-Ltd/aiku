@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { faCube, faLink } from "@fal"
+import { faCube, faLink, faEnvelope} from "@fal"
 import { faCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted, computed, watch } from "vue"
+import { ref, inject } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
@@ -16,6 +16,9 @@ import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
+
 
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
@@ -52,19 +55,23 @@ const props = withDefaults(defineProps<{
     product: ProductResource
     productExistenceInChannels: Number[]
     listProducts?: object
+    isLoadingRemindBackInStock? : boolean
 }>(), {})
 
 const emits = defineEmits<{
     (e: "selectProduct", value: any[]): void
+    (e: "setBackInStock", value: any[]): void
+    (e: "unsetBackInStock", value: any[]): void
 }>()
 
 
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
-const contentRef = ref(null)
 const expanded = ref(false)
 
 const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
+const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
+const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", p)
 
 const toggleExpanded = () => {
     expanded.value = !expanded.value
@@ -104,25 +111,45 @@ const toggleExpanded = () => {
                             {{ product.name }}
                         </h1>
 
-                        <div
-                            class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
-                            <div>Product code: {{ product.code }}</div>
-                            <div class="flex items-center gap-[1px]"></div>
+                        <div class="flex items-end justify-between gap-4">
+                            <!-- LEFT CONTENT -->
+                            <div>
+                                <div
+                                    class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                                    <div>Product code: {{ product.code }}</div>
+                                </div>
+
+                                <div v-if="layout?.iris?.is_logged_in"
+                                    class="flex items-center gap-2 text-sm text-gray-600">
+                                    <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                        :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                    <span>
+                                        {{
+                                            product?.stock >= 250
+                                                ? trans("Unlimited quantity")
+                                                : product.stock > 0
+                                                    ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)`
+                                        : trans("Out Of Stock")
+                                        }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT BUTTON -->
+                            <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
+                                v-tooltip="product?.back_in_stock
+                                    ? trans('You will be notify via email when the product back in stock')
+                                    : trans('Click to be notified via email when the product back in stock')" 
+                                    @click="product?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                                class="inline-flex shrink-0 items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+                                <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                                <FontAwesomeIcon v-else
+                                    :icon="product?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                    :class="product?.back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+                                <span>{{ product?.back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
+                            </button>
                         </div>
 
-                        <div v-if="layout?.iris?.is_logged_in"
-                            class="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                            <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
-                            <span>
-                                {{ product?.stock >= 250
-                                    ? trans("Unlimited quantity")
-                                    : (product.stock > 0
-                                        ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)`
-                                        : trans("Out Of Stock"))
-                                }}
-                            </span>
-                        </div>
                     </div>
                 </div>
 

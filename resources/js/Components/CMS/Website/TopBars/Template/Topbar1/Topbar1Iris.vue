@@ -204,7 +204,7 @@ watch(
             <!-- Section: Back in stock -->
             <LinkIris href="/app/back-in-stocks" :type="'internal'">
                 <Button
-                    v-if="(layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping')"
+                    v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('Reminder back in stock')"
                     type="transparent"
                     class="button"
