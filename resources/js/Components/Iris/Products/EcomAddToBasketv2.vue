@@ -84,10 +84,14 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
 
         const products = layout.rightbasket?.products
         if (products) {
+            const manipProduct = {
+                ...product.value,
+                web_image_thumbnail: product.value?.web_images?.main?.thumbnail
+            }
             const index = products.findIndex((p: any) => p.transaction_id === payload.transaction_id)
             index !== -1
-                ? (products[index] = { ...product.value })
-                : products.push({ ...product.value })
+                ? (products[index] = { ...manipProduct })
+                : products.unshift({ ...manipProduct })
         }
 
         router.reload({ only: ['iris'] })
