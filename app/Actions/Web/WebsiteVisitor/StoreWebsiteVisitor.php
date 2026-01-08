@@ -85,7 +85,7 @@ class StoreWebsiteVisitor
         $city = null;
         $selectedIp = $ips[0] ?? '127.0.0.1';
 
-        foreach ($ips as $ip) {
+        foreach (array_reverse($ips) as $ip) {
             if (in_array($ip, ['127.0.0.1', '::1', 'localhost'])) {
                 continue;
             }

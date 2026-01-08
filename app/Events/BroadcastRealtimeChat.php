@@ -7,6 +7,7 @@ use Illuminate\Queue\SerializesModels;
 use App\Models\CRM\Livechat\ChatMessage;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use App\Http\Resources\CRM\Livechat\ChatMessageResource;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
 class BroadcastRealtimeChat implements ShouldBroadcastNow
@@ -50,7 +51,7 @@ class BroadcastRealtimeChat implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'message' => $this->message,
+            'message' => new ChatMessageResource($this->message),
             'session_status' => $this->message->chatSession->status,
         ];
     }
