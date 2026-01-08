@@ -207,7 +207,7 @@ class StoreShop extends OrgAction
                 );
                 SeedAikuScopedSections::make()->seedFulfilmentAikuScopedSection($fulfilment);
             } else {
-                AsyncShopPermissions::dispatch($organisation, $shop);
+                AsyncShopPermissions::dispatch($shop);
             }
 
             SetCurrencyHistoricFields::run($shop->currency, $shop->created_at);

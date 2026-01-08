@@ -47,7 +47,8 @@ trait WithIntervalUniqueJob
             $uniqueId .= '-'.implode('-', $doPreviousPeriods);
         }
 
-        return $uniqueId;
+        return $uniqueId.'-'.now()->format('Y-m-d');
+
     }
 
 }
