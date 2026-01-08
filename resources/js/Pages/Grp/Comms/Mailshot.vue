@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Head, router } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
@@ -21,6 +21,9 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from "@/types/route";
 import { Popover } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import { trans } from "laravel-vue-i18n"
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -34,6 +37,8 @@ const props = defineProps<{
     dispatched_emails?: {}
     sendMailshotRoute?: routeType
     scheduleMailshotRoute?: routeType
+    deleteMailshotRoute?: routeType
+    indexRoute?: routeType
     status?: string
 }>();
 
@@ -41,9 +46,13 @@ const props = defineProps<{
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
-// Computed property to check if buttons should be disabled
-const isButtonDisabled = computed(() => {
-    return !props.status || !['in_process', 'ready'].includes(props.status.toLowerCase());
+// Computed property to check if buttons should be shown
+const shouldShowButtons = computed(() => {
+    return props.status && props.status.toLowerCase() === 'ready';
+});
+
+const shouldShowDeleteButton = computed(() => {
+    return props.status && ['ready', 'in_process'].includes(props.status.toLowerCase());
 });
 
 // Schedule datetime picker state
@@ -186,6 +195,55 @@ const component = computed(() => {
     return components[currentTab.value];
 });
 
+const handleDelete = async () => {
+    if (!props.deleteMailshotRoute) {
+        notify({
+            type: 'error',
+            title: 'Error',
+            text: 'Delete mailshot route not configured',
+        })
+        return;
+    }
+
+    await axios.delete(route(props.deleteMailshotRoute.name, props.deleteMailshotRoute.parameters))
+        .then((response) => {
+            if (response.data) {
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'Mailshot deleted successfully',
+                })
+                // Redirect to newsletters index page
+
+            } else {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to delete mailshot',
+                })
+            }
+        })
+        .catch((exception) => {
+            console.log(exception);
+            notify({
+                type: 'error',
+                title: 'Error',
+                text: 'Failed to delete mailshot',
+            })
+        })
+        .finally(() => {
+            if (!props.indexRoute) {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Mailshot index route not configured',
+                })
+                return;
+            }
+            router.visit(route(props.indexRoute.name, props.indexRoute.parameters));
+        })
+}
+
 </script>
 
 
@@ -194,13 +252,30 @@ const component = computed(() => {
     <Head :title="capitalize(pageHead.title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <div class="flex">
-                <Button label="Sent Now" class="!border-r-none !rounded-r-none" icon="fa-paper-plane"
-                    @click="handleSendNow" :disabled="isButtonDisabled" />
-                <Button label="Schedule" class="!border-l-none !rounded-l-none" icon="fa-clock"
-                    @click="handleSchedule($event)" :disabled="isButtonDisabled" />
+            <div class="flex" v-if="shouldShowButtons">
+                <ModalConfirmation @onYes="handleSendNow" :title="trans('Are you sure you want to send this mailshot?')"
+                    :description="trans('Please make sure your data or design is correct. This action will send an email to all customers')"
+                    isFullLoading>
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button :label="trans('send now')" :disabled="false" class="!border-r-none !rounded-r-none"
+                            icon="fal fa-paper-plane" type="positive" @click="changeModel" />
+                    </template>
+                </ModalConfirmation>
+                <Button label="Schedule" class="!border-l-none !rounded-l-none" icon="fal fa-clock" type="positive"
+                    @click="handleSchedule($event)" />
             </div>
         </template>
+        <template #other>
+            <ModalConfirmationDelete @onYes="handleDelete" v-if="shouldShowDeleteButton"
+                :title="trans('Are you sure you want to delete this mailshot?')"
+                :description="trans('This action cannot be undone. This will permanently delete this mailshot')"
+                isFullLoading>
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button :disabled="false" icon="fal fa-trash-alt" type="negative" @click="changeModel" />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
+
     </PageHeading>
 
     <!-- Schedule DateTime Picker Popover -->

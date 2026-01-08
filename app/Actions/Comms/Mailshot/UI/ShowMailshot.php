@@ -58,7 +58,7 @@ class ShowMailshot extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
-
+        $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]);
         return Inertia::render(
             'Comms/Mailshot',
             [
@@ -78,11 +78,9 @@ class ShowMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        $this->canEdit ? [
+                        $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'disabled' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]),
-                            'tooltip' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]) ? __('Mailshot is not in process or ready') : null,
                             'label' => __('Workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
                             'route' => [
@@ -94,12 +92,10 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $this->canEdit ? [
+                        $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
-                            'disabled' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]),
-                            'tooltip' => !in_array($mailshot->status, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]) ? __('Mailshot is not in process or ready') : null,
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
                                 'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.edit" : "grp.org.shops.show.marketing.newsletters.edit",
@@ -148,6 +144,20 @@ class ShowMailshot extends OrgAction
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
                         'mailshot' => $mailshot->id
+                    ],
+                ],
+                'deleteMailshotRoute' => [
+                    'name' => 'grp.models.shop.mailshot.delete',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'indexRoute' => [
+                    'name' => 'grp.org.shops.show.marketing.newsletters.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug
                     ],
                 ],
                 'status' => $mailshot->state->value,

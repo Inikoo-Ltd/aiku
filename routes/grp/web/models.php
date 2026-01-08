@@ -62,6 +62,7 @@ use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
+use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
@@ -770,6 +771,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
         Route::patch('/workshop', UpdateWorkshopMailShot::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('publish', PublishMailshot::class)->name('publish')->withoutScopedBindings();
+        Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
     });
 });
 
