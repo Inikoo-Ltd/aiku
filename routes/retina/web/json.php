@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
+use App\Actions\Catalogue\Product\Json\GetRetinaSalesChannelInProductCategory;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
@@ -37,6 +38,7 @@ Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', Downlo
 Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images', UploadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.upload_portfolio_zip_images');
 
 Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
+Route::get('dropshipping/{productCategory:id}/pc-channels-list', GetRetinaSalesChannelInProductCategory::class)->name('dropshipping.product.channels_list_product_category')->withoutScopedBindings();
 
 Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
 Route::get('collection/{collection:id}/channels', GetRetinaCustomerCollectionSalesChannelIds::class)->name('collection.channel_ids.index');
