@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ProgressSpinner from "primevue/progressspinner"
 
 const props = defineProps<{
 	channels: Array<{
@@ -19,7 +20,6 @@ const props = defineProps<{
 
 const isModalOpen = ref(false)
 const isRunning = ref(false)
-const progress = ref(0)
 
 const selectedChannels = ref<number[]>([])
 const selectAll = ref(false)
@@ -42,38 +42,53 @@ watch(selectedChannels, (val) => {
 	selectAll.value = val.length === selectableCount && selectableCount > 0
 })
 
-const handleProgress = (event: any) => {
-	if (event.detail?.progress?.percentage !== undefined) {
-		progress.value = event.detail.progress.percentage
+const progress = ref(0)
+
+const channel = ref(null)
+const initSocketListener = () => {
+	console.log("Initializing Webblocks Update Socket Listener")
+	if (!window.Echo) {
+		console.error("Echo not found!")
+		return
 	}
-}
 
-const handleFinish = () => {
-	progress.value = 100
-	setTimeout(() => {
-		isRunning.value = false
-		progress.value = 0
-	}, 300)
-}
-
-router.on("progress", handleProgress)
-router.on("finish", handleFinish)
-
-const startProgress = () => {
-	isRunning.value = true
-	progress.value = 0
-
-	setTimeout(() => {
-		if (progress.value === 0 && isRunning.value) {
-			progress.value = 15
+	const socketEvent = `retina.pc-clone.${props.productCategory}`
+	const socketAction = ".action-progress"
+	console.log("Listening to socket event:", socketEvent + socketAction)
+	channel.value = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
+		console.log("SOCKET EVENT:", eventData)
+		if (typeof eventData.number_percentage === "number") {
+			progress.value = eventData.number_percentage
+			isRunning.value = true
 		}
-	}, 300)
+
+		if (eventData.number_percentage >= 100) {
+			isRunning.value = false
+			progress.value = 100
+
+			setTimeout(() => {
+				isModalOpen.value = false
+				stopSocketListener()
+			}, 500)
+		}
+	})
+}
+
+const stopSocketListener = () => {
+	if (channel.value) {
+		window.Echo.leave(`private-retina.pc-clone.${props.productCategory}`)
+		channel.value = null
+	}
+	progress.value = 0
 }
 
 const onSubmit = () => {
 	if (!selectedChannels.value.length) return
 
-	startProgress()
+	isRunning.value = true
+	progress.value = 0
+
+	initSocketListener()
 
 	router.post(
 		route("retina.models.portfolio.store_to_multi_channels", {
@@ -85,16 +100,19 @@ const onSubmit = () => {
 		{
 			preserveScroll: true,
 			onSuccess: () => {
-				notify({
-					title: trans("Success"),
-					text: trans("Portfolio added"),
-					type: "success",
-				})
-				isModalOpen.value = false
+				// notify({
+				// 	title: trans("Success"),
+				// 	text: trans("Portfolio added"),
+				// 	type: "success",
+				// })
+
 				selectedChannels.value = []
 				selectAll.value = false
 			},
 			onError: () => {
+				isRunning.value = false
+				stopSocketListener()
+
 				notify({
 					title: trans("Failed"),
 					text: trans("Failed to add portfolio"),
@@ -104,6 +122,10 @@ const onSubmit = () => {
 		}
 	)
 }
+
+onUnmounted(() => {
+	stopSocketListener()
+})
 </script>
 
 <template>
@@ -133,10 +155,24 @@ const onSubmit = () => {
 					<DialogPanel class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
 						<DialogTitle class="text-lg font-semibold"> Select Channel </DialogTitle>
 
-						<div v-if="isRunning" class="mt-4 h-2 bg-gray-200 rounded overflow-hidden">
-							<div
-								class="h-full bg-indigo-600 transition-all duration-200"
-								:style="{ width: progress + '%' }" />
+						<div
+							v-if="isRunning"
+							class="mt-4 flex flex-col items-center justify-center">
+							<ProgressSpinner style="width: 60px; height: 60px" />
+							<div class="mt-2 text-sm font-semibold text-gray-700">
+								{{ progress }}%
+							</div>
+
+							<p class="mt-1 text-xs text-gray-500 text-center">
+								Processing portfolio…<br />
+								Please don’t close this window
+							</p>
+
+							<div class="mt-3 w-full h-2 bg-gray-200 rounded overflow-hidden">
+								<div
+									class="h-full bg-indigo-600 transition-all duration-300"
+									:style="{ width: progress + '%' }" />
+							</div>
 						</div>
 
 						<div class="mt-4 space-y-3">
@@ -202,7 +238,7 @@ const onSubmit = () => {
 								type="primary"
 								label="Submit"
 								:loading="isRunning"
-								:disabled="!selectedChannels.length"
+								:disabled="isRunning || !selectedChannels.length"
 								@click="onSubmit" />
 						</div>
 					</DialogPanel>

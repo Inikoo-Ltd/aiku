@@ -24,7 +24,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 {
     use WithActionUpdate;
 
-    public $jobQueue = 'long-running';
+    public $jobQueue = 'ds';
 
     /**
      * @var ProductCategory|null
@@ -35,7 +35,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 
     public function handle(Customer $customer, array $modelData): void
     {
-        if($this->productCategory) {
+        if ($this->productCategory) {
             $this->parentId = $this->productCategory->id;
         } else {
             $this->parentId = $customer->id;
