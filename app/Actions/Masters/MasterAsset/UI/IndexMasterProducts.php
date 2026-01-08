@@ -405,7 +405,7 @@ class IndexMasterProducts extends GrpAction
                     ] : [],
                 ],
                 'data'                    => MasterProductsResource::collection($masterAssets),
-                'variantSlugs'            => $isFamily ? $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn($slug) => [$slug => productCodeToHexCode($slug)]) : [],
+                'variantSlugs'            => $isFamily ? $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
                 'masterProductCategoryId' => $this->parent->id,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
