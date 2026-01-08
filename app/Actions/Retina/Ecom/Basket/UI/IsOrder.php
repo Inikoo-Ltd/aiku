@@ -172,7 +172,19 @@ trait IsOrder
             [
                 'label'       => __('Charges'),
                 'information' => '',
-                'price_total' => $order->charges_amount
+                'slot_name'   => 'charges',
+                'price_total' => $order->charges_amount,
+                'data'      => [
+                    'fetch_route_charges' => [
+                        'name'       => 'grp.org.shops.show.billables.charges.index',
+                        'parameters' => [
+                            'organisation' => $order->organisation->slug,
+                            'shop'         => $order->shop->slug,
+                        ]
+                    ],
+                    'charges_engine' => $order->charges_engine,
+                    'charges_amount' => $order->charges_amount,
+                ]
             ],
             [
                 'label'                     => __('Shipping'),

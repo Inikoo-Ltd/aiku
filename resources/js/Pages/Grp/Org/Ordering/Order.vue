@@ -84,6 +84,7 @@ import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 import { get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import AddCharges from "@/Components/Order/AddCharges.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
@@ -758,6 +759,10 @@ const setShippingToAuto = () => {
         }
     )
 }
+
+
+// Section: Charges
+const isModalAddCharges = ref(false)
 </script>
 
 <template>
@@ -1390,6 +1395,28 @@ const setShippingToAuto = () => {
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
+                        <template #cell_charges_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>{{ fieldSummary.label }}</span>
+                                    <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
+                                    <span @click="isModalAddCharges = true" class="text-gray-500 hover:text-blue-500 cursor-pointer ml-1">
+                                        <FontAwesomeIcon icon="fal fa-plus" class="" fixed-width aria-hidden="true" />
+                                    </span>
+                                </div>
+                                <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+
+                                <Modal :isOpen="isModalAddCharges" @onClose="isModalAddCharges = false" width="w-[800px]">
+                                    <AddCharges
+                                        :data_charges="fieldSummary?.data"
+                                        :currencyCode="currency.code"
+                                        :order_data="data?.data"
+                                    />
+                                </Modal>
+                                
+                            </dt>
+                        </template>
+
                         <template #cell_shipping_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">

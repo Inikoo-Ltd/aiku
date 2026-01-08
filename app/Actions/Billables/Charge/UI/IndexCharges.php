@@ -19,8 +19,10 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Barryvdh\Debugbar\DataCollector\LaravelCollector;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -200,6 +202,11 @@ class IndexCharges extends OrgAction
                 'data'        => ChargesResource::collection($charges),
             ]
         )->table($this->tableStructure($this->parent));
+    }
+
+    public function jsonResponse(LengthAwarePaginator $charges, ActionRequest $request): AnonymousResourceCollection
+    {
+        return ChargesResource::collection($charges);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
