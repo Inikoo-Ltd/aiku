@@ -229,7 +229,7 @@ defineOptions({
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock > 0" :product="product" :customerData="customerData"
+                        <EcomAddToBasketv2 v-if="product.stock > 0"    v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
                         <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
                     </div>

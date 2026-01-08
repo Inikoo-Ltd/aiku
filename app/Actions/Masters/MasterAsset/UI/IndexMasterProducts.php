@@ -21,6 +21,7 @@ use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
+use App\Http\Resources\Masters\MasterProductListVarResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -99,8 +100,6 @@ class IndexMasterProducts extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
-            ->where('master_assets.is_main', true)
-
             // stats
             ->leftJoin(
                 'master_asset_stats',
@@ -108,7 +107,6 @@ class IndexMasterProducts extends GrpAction
                 '=',
                 'master_asset_stats.master_asset_id'
             )
-
             // group & currency
             ->leftJoin('groups', 'master_assets.group_id', '=', 'groups.id')
             ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id')
@@ -235,6 +233,8 @@ class IndexMasterProducts extends GrpAction
                 $queryBuilder->whereNull('master_assets.master_variant_id')->orWhere('master_assets.master_variant_id', $filterInVariant);
             }
             $queryBuilder->where('master_assets.status', true); // Only fetch MasterAssets that are used as a material for Variant
+        }else if (($parent instanceof MasterProductCategory && $parent->type != MasterProductCategoryTypeEnum::FAMILY)) {
+            $queryBuilder->where('master_assets.is_main', true);
         }
 
         return $queryBuilder

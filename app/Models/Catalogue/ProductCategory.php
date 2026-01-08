@@ -261,6 +261,23 @@ class ProductCategory extends Model implements Auditable, HasMedia
         };
     }
 
+    public function getProductsDistinctVariant(): LaravelCollection // This is to fetch non-variant products. If it's a variant, will fetch only the leader.
+    {
+        $column = match ($this->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => 'department_id',
+            ProductCategoryTypeEnum::FAMILY => 'family_id',
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department_id',
+        };
+
+        return Product::where($column, $this->id)
+            ->where(function ($query) {
+                $query
+                    ->where('products.is_minion_variant', false)
+                    ->orWhere('is_variant_leader', true);
+            })
+            ->get();
+    }
+
     public function getActiveProducts(): LaravelCollection
     {
         return match ($this->type) {
