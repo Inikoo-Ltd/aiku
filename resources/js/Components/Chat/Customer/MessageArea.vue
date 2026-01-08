@@ -40,9 +40,6 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const selectedRating = ref<number | null>(null)
 const starPop = ref<number | null>(null)
 
-const userName = computed(() => {
-	return layout?.user?.username ?? "Customer"
-})
 const localMessages = ref<any[]>([])
 
 watch(
@@ -201,7 +198,7 @@ const sendTypingStatus = async (status: boolean) => {
 	try {
 		await axios.post(`${baseUrl}/app/api/chats/typing`, {
 			session_ulid: chatSession.value.ulid,
-			user_name: userName.value,
+			user_name: "customer",
 			is_typing: status,
 		})
 	} catch (e) {
@@ -233,10 +230,10 @@ const initSocket = () => {
 	chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
 	chatChannel.listen(".typing", (payload: any) => {
-		if (payload.user_name === userName.value) return
+		if (payload.user_name === "customer") return
 
 		if (payload.is_typing) {
-			agentTypingUser.value = `Agent ${payload.user_name}`
+			agentTypingUser.value = "agent"
 
 			if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
 
