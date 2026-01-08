@@ -27,18 +27,10 @@ class ProcessWebsiteVisitorTracking
         Website $website,
         ?WebUser $webUser,
         string $userAgent,
-        string $ip,
+        array $ips,
         string $currentUrl,
         ?string $referrer
-    ): WebsiteVisitor {
-        $parsedUserAgent = (new Browser())->parse($userAgent);
-        $device = $parsedUserAgent->deviceType();
-        $browser = explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown';
-        $os = GetOsFromUserAgent::run($parsedUserAgent);
-
-        $ipHash = hash('sha256', $ip . config('app.key'));
-        $visitorHash = hash('sha256', $ipHash . $userAgent);
-
+    ): void {
         $cacheKey = "visitor:session:$sessionId:$website->id";
         $visitor = Cache::remember($cacheKey, 1800, function () use ($sessionId, $website) {
             return WebsiteVisitor::where('session_id', $sessionId)
@@ -49,13 +41,16 @@ class ProcessWebsiteVisitorTracking
         if ($visitor) {
             $visitor = UpdateWebsiteVisitor::run($visitor, $currentUrl);
         } else {
+            $parsedUserAgent = (new Browser())->parse($userAgent);
+            $device = $parsedUserAgent->deviceType();
+            $browser = explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown';
+            $os = GetOsFromUserAgent::run($parsedUserAgent);
+
             $visitor = StoreWebsiteVisitor::run(
                 website: $website,
                 sessionId: $sessionId,
                 webUser: $webUser,
-                visitorHash: $visitorHash,
-                ipHash: $ipHash,
-                ip: $ip,
+                ips: $ips,
                 device: $device,
                 browser: $browser,
                 os: $os,
@@ -66,7 +61,5 @@ class ProcessWebsiteVisitorTracking
         }
 
         StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
-
-        return $visitor;
     }
 }

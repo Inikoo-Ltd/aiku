@@ -18,11 +18,19 @@ class GetChatMessages
     public function rules(): array
     {
         return [
-
             'is_read' => ['sometimes', 'boolean'],
             'sender_type' => [
                 'sometimes',
                 Rule::in(array_column(ChatSenderTypeEnum::cases(), 'value')),
+            ],
+            'request_from' => [
+                'sometimes',
+                'string',
+                Rule::in([
+                    ChatSenderTypeEnum::AGENT->value,
+                    ChatSenderTypeEnum::USER->value,
+                    ChatSenderTypeEnum::GUEST->value,
+                ])
             ],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'cursor' => ['sometimes', 'date'],
@@ -34,7 +42,11 @@ class GetChatMessages
     {
         $validated = $request->validated();
 
-
+        if (array_key_exists('request_from', $validated)) {
+            $requestFrom = $validated['request_from'] ?? ChatSenderTypeEnum::GUEST->value;
+            $readerType = ChatSenderTypeEnum::tryFrom($requestFrom) ?? ChatSenderTypeEnum::GUEST;
+            MarkChatMessagesAsRead::run($chatSession, $readerType);
+        }
 
         $messages = $this->handle($chatSession, $validated);
 
@@ -58,6 +70,7 @@ class GetChatMessages
             ]
         ];
     }
+
 
 
     public function handle(ChatSession $chatSession, array $filters)

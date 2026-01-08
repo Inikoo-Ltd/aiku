@@ -12,9 +12,9 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 use App\Actions\GrpAction;
 use App\Models\Masters\MasterShop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,19 +25,19 @@ class CreateShopFromMaster extends GrpAction
     // TODO master authorisation to create shop (?)
     private MasterShop $masterShop;
 
-    public function asController(MasterShop $masterShop, ActionRequest $request): ActionRequest
+    public function asController(MasterShop $masterShop, Organisation $organisation, ActionRequest $request): Organisation
     {
-        $group        = group();
+        $group            = group();
         $this->masterShop = $masterShop;
         $this->initialisation($group, $request);
 
-        return $request;
+        return $organisation;
     }
 
     /**
      * @throws \Exception
      */
-    public function htmlResponse(ActionRequest $request): Response
+    public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateShop',
@@ -45,7 +45,7 @@ class CreateShopFromMaster extends GrpAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('New shop in master').' '.$this->masterShop->code,
                 'pageHead'    => [
-                    'title'   => __('New shop in master').' '.$this->masterShop->name,
+                    'title'   => __('New shop in').' '.$organisation->code.' '.__('from').' '.$this->masterShop->name,
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -67,32 +67,22 @@ class CreateShopFromMaster extends GrpAction
                             'title'  => __('Detail'),
                             'icon'   => 'fal fa-file-signature',
                             'fields' => [
-                                'organisation' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Organisation'),
-                                    'placeholder' => __('Select one option'),
-                                    'options'     => GetOrganisationOptions::run(),
-                                    'required'    => true,
-                                    'mode'        => 'single',
-                                    'searchable'  => true,
-                                    'key'         => 'organisation_select'
-                                ],
-                                'code' => [
+                                'code'         => [
                                     'type'     => 'input',
                                     'label'    => __('Code'),
                                     'required' => true,
                                 ],
-                                'name' => [
+                                'name'         => [
                                     'type'     => 'input',
                                     'label'    => __('Name'),
                                     'required' => true,
                                     'value'    => '',
                                 ],
-                                'domain' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Domain'),
-                                    'required' => true,
-                                    'value'    => '',
+                                'domain'       => [
+                                    'type'        => 'input',
+                                    'label'       => __('Domain'),
+                                    'required'    => true,
+                                    'value'       => '',
                                     'placeholder' => 'my-shop.com'
                                 ],
                             ]
@@ -161,9 +151,10 @@ class CreateShopFromMaster extends GrpAction
                         ],
                     ],
                     'route'     => [
-                        'name' => 'grp.masters.master_shops.show.shop.store',
+                        'name'       => 'grp.masters.master_shops.show.shop.store',
                         'parameters' => [
-                            'masterShop'    => $this->masterShop->slug
+                            'masterShop'   => $this->masterShop->slug,
+                            'organisation' => $organisation
                         ]
                     ]
                 ],

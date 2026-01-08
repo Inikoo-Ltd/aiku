@@ -48,7 +48,7 @@ class HydrateProducts
 
         ProductHydrateAvailableQuantity::run($product);
         ProductHydrateForSale::run($product);
-        ProductHydrateProductVariants::run($product);
+        ProductHydrateProductVariants::run($product->id);
         ProductHydrateCustomersWhoFavourited::run($product);
         ProductHydrateCustomersWhoFavouritedInCategories::run($product);
         ProductHydrateCustomersWhoReminded::run($product);

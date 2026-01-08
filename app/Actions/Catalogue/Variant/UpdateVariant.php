@@ -61,12 +61,14 @@ class UpdateVariant extends OrgAction
                 ]);
 
             foreach ($products->get() as $product) {
-                UpdateWebpage::make()->action($product->webpage()->first(), [
-                     'state_data' => [
-                         'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-                         'redirect_webpage_id'   => $variant->leaderProduct->webpage->id
-                     ]
-                 ]);
+                if($product->webpage()->exists()) {
+                    UpdateWebpage::make()->action($product->webpage()->first(), [
+                         'state_data' => [
+                             'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
+                             'redirect_webpage_id'   => $variant->leaderProduct->webpage->id
+                         ]
+                    ]);
+                }
             }
 
             return $variant;
