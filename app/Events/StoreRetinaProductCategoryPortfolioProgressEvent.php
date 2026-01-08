@@ -9,7 +9,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StoreRetinaProductCategoryPortfolioProgressEvent implements ShouldBroadcast
+class StoreRetinaProductCategoryPortfolioProgressEvent implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
