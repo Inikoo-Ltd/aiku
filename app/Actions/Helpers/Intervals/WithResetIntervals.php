@@ -401,39 +401,7 @@ trait WithResetIntervals
 
     protected function resetProducts(): void
     {
-        foreach (
-            Product::whereNot('state', ProductCategoryStateEnum::DISCONTINUED)->get() as $product
-        ) {
-            AssetHydrateSalesIntervals::dispatch(
-                assetID: $product->asset_id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-
-            AssetHydrateOrderIntervals::dispatch(
-                assetID: $product->asset_id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-
-            AssetHydrateDeliveryNotesIntervals::dispatch(
-                assetID: $product->asset_id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-
-            AssetHydrateInvoiceIntervals::dispatch(
-                assetID: $product->asset_id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-
-            AssetHydrateInvoicedCustomersIntervals::dispatch(
-                assetID: $product->asset_id,
-                intervals: $this->intervals,
-                doPreviousPeriods: $this->doPreviousPeriods
-            );
-        }
+        ProcessResetIntervalsProducts::dispatch($this->intervals, $this->doPreviousPeriods);
     }
 
     protected function resetCharges(): void
@@ -696,14 +664,14 @@ trait WithResetIntervals
         $this->resetOrganisations();
         $this->resetMasterShops();
         $this->resetShops();
-        $this->resetProducts();
+        $this->resetProducts();//done
         $this->resetCharges();
         $this->resetPlatforms();
         $this->resetInvoiceCategories();
-        $this->resetProductCategories();
+        $this->resetProductCategories();//this default-long
         $this->resetCollections();
-        $this->resetStocks();
-        $this->resetStockFamilies();
+        $this->resetStocks();//this default-long
+        $this->resetStockFamilies();//this default-long
     }
 
 
