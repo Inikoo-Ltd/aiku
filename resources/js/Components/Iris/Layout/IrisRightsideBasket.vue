@@ -339,7 +339,7 @@ const idxProductLoading = ref<number | null>(null)
                                     @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
                                     <Image
                                         :src="product?.web_image_thumbnail"
-                                        class="w-full h-full flex justify-center items-center group-hover:scale-110 transition-all"
+                                        class="size-14 flex justify-center items-center group-hover:scale-110 transition-all"
                                     />
                                 </LinkIris>
                                 
