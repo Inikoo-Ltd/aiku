@@ -11,7 +11,9 @@ namespace App\Actions\Comms\Mailshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\Outbox;
 
 class CancelMailshotSchedule extends OrgAction
 {
@@ -29,7 +31,7 @@ class CancelMailshotSchedule extends OrgAction
         ]);
     }
 
-    public function asController(Mailshot $mailshot): void
+    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot): void
     {
         $this->handle($mailshot);
     }

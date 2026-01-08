@@ -109,7 +109,7 @@ const handleSendNow = async () => {
 
 // Function to format datetime for API
 const formatDateTime = (date: Date) => {
-    return date.toISOString().replace('T', ' ').replace('Z', '.000 +0000');
+    return date.toISOString().slice(0, 19).replace('T', ' ');
 };
 
 // Function to handle schedule with datetime picker
