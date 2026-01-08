@@ -50,7 +50,7 @@ class EditMailshot extends OrgAction
                         'label'    => __('Type'),
                         'required' => false,
                         'value'    => $mailshot->type,
-                        'options'  => Options::forEnum(MailshotTypeEnum::class),
+                        'options'  => Options::forEnum(MailshotTypeEnum::class)->reject(fn ($option) => $option->value === MailshotTypeEnum::NEWSLETTER->value),
                     ],
                     'recipient_type' => [
                         'type'     => 'radio',
