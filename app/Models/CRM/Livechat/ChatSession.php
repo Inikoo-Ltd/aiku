@@ -113,4 +113,16 @@ class ChatSession extends Model
                 ->limit(1)
         ]);
     }
+    public function userLanguage(): BelongsTo
+    {
+        return $this->belongsTo(Language::class, 'user_language_id');
+    }
+    public function agentLanguage(): BelongsTo
+    {
+        return $this->belongsTo(Language::class, 'agent_language_id');
+    }
+    public function activeUserLanguage(): BelongsTo
+    {
+        return $this->belongsTo(Language::class, 'active_user_language_id');
+    }
 }

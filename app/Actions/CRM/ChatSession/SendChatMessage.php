@@ -20,6 +20,7 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
+use App\Actions\CRM\ChatSession\TranslateChatMessage;
 
 class SendChatMessage
 {
@@ -37,12 +38,23 @@ class SendChatMessage
             return $exists;
         }
 
+        $originalLanguageId = $modelData['original_language_id'] ?? null;
+        if (!$originalLanguageId) {
+            if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+                $originalLanguageId = $chatSession->agent_language_id;
+            } else {
+                $originalLanguageId = $chatSession->active_user_language_id ?? $chatSession->user_language_id; // Default User Lang
+            }
+        }
         $chatMessageData = [
             'chat_session_id' => $chatSession->id,
             'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
             'sender_type'     => $modelData['sender_type'],
             'sender_id'       => $modelData['sender_id'] ?? null,
             'message_text'    => $modelData['message_text'] ?? null,
+            'media_id'        => $modelData['media_id'] ?? null,
+            'original_text'        => $modelData['message_text'] ?? null,
+            'original_language_id' => $originalLanguageId,
             'media_id'        => $modelData['media_id'] ?? null,
             'is_read'         => false,
             'created_at'      => now(),
@@ -67,6 +79,7 @@ class SendChatMessage
             $chatMessage
         );
 
+        TranslateChatMessage::run($chatMessage);
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch();
 
