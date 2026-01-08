@@ -14,6 +14,10 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\Broadcast;
 use App\Models\CRM\Livechat\ChatAssignment;
 
+Broadcast::channel('retina.pc-clone.{parentId}', function (int|string $shopifyUserId) {
+    return true;
+});
+
 Broadcast::channel('shopify.upload-product.{shopifyUserId}', function (WebUser|ShopifyUser $user, int|string $shopifyUserId) {
     return true;
 });

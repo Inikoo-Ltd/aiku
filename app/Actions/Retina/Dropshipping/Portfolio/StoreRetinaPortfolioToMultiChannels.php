@@ -12,25 +12,35 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Events\StoreRetinaProductCategoryPortfolioProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 {
     use WithActionUpdate;
 
-
+    public $jobQueue = 'ds';
 
     /**
      * @var ProductCategory|null
      */
     private ?ProductCategory $productCategory = null;
 
+    public int $parentId;
+
     public function handle(Customer $customer, array $modelData): void
     {
+        if ($this->productCategory) {
+            $this->parentId = $this->productCategory->id;
+        } else {
+            $this->parentId = $customer->id;
+        }
+
         $channels = $customer->customerSalesChannels()
             ->whereIn('id', Arr::get($modelData, 'customer_sales_channel_ids'))
             ->get();
@@ -43,26 +53,43 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
                 ->whereIn('item_id', $items->pluck('id'))
                 ->where('item_type', $items->first()->getMorphClass())
                 ->get(['item_id', 'customer_sales_channel_id'])
-                ->map(fn ($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
+                ->map(fn($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
         })->unique()->values()->toArray();
 
-        $channels->each(function ($salesChannel) use ($items, $existingPortfolios) {
-            $items->chunk(100)->each(function ($chunkedItems) use ($salesChannel, $existingPortfolios) {
-                $chunkedItems->each(function ($item) use ($salesChannel, $existingPortfolios) {
+        $totalOperations = $channels->count() * $items->count() - count($existingPortfolios);
+        $successCount = 0;
+        $lastPercentageReported = 0;
+
+        $channels->each(function ($salesChannel) use ($items, $existingPortfolios, $totalOperations, &$successCount, &$lastPercentageReported) {
+            $items->chunk(100)->each(function ($chunkedItems) use ($salesChannel, $existingPortfolios, $totalOperations, &$successCount, &$lastPercentageReported) {
+                $chunkedItems->each(function ($item) use ($salesChannel, $existingPortfolios, $totalOperations, &$successCount, &$lastPercentageReported) {
                     if (!in_array($salesChannel->id . '-' . $item->id, $existingPortfolios)) {
                         StorePortfolio::make()->action($salesChannel, $item, []);
+                        $successCount++;
+                        $currentPercentage = floor(($successCount / $totalOperations) * 100);
+
+                        // Check if we've reached a new 10% milestone
+                        if ($currentPercentage >= $lastPercentageReported + 10) {
+                            StoreRetinaProductCategoryPortfolioProgressEvent::dispatch($this->parentId, $currentPercentage, $successCount, $totalOperations);
+                            $lastPercentageReported = floor($currentPercentage / 10) * 10;
+                        }
                     }
                 });
             });
         });
+
+        // Fire final event if we haven't reached 100%
+        if ($lastPercentageReported < 100) {
+            StoreRetinaProductCategoryPortfolioProgressEvent::dispatch($this->parentId, 100, $successCount, $totalOperations);
+        }
     }
 
     public function rules(): array
     {
         return [
             'customer_sales_channel_ids' => 'required|array|min:1',
-            'customer_sales_channel_ids.*' => 'required|integer|exists:customer_sales_channels,id',
-            // 'item_id' => 'required|array|min:1',
+            'customer_sales_channel_ids.*' => ['required', 'integer', Rule::exists('customer_sales_channels', 'id')
+                ->where('customer_id', $this->customer->id)],
             'item_id.*' => 'required|integer|exists:products,id'
         ];
     }
@@ -87,6 +114,6 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
         $this->productCategory = $productCategory;
         $this->initialisation($request);
 
-        $this->handle($this->customer, $this->validatedData);
+        self::dispatch($this->customer, $this->validatedData);
     }
 }

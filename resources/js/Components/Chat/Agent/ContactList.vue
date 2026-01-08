@@ -151,10 +151,6 @@ const back = () => {
 	selectedSession.value = null
 }
 
-const userName = computed(() => {
-	return layout?.user?.username
-})
-
 const handleSendMessage = async (text: string) => {
 	if (!selectedSession.value?.ulid) return
 
@@ -396,7 +392,6 @@ const tabClass = (tab: string) => {
 					<MessageAreaAgent
 						:messages="messages"
 						:session="selectedSession"
-						:user-name="userName"
 						@back="back"
 						@send-message="handleSendMessage"
 						@close-session="closeSession"
@@ -415,7 +410,9 @@ const tabClass = (tab: string) => {
 	padding: 6px 12px;
 	cursor: pointer;
 	border-bottom: 2px solid transparent;
-	transition: color 0.15s ease, border-color 0.15s ease;
+	transition:
+		color 0.15s ease,
+		border-color 0.15s ease;
 }
 
 .tabPrimary {
