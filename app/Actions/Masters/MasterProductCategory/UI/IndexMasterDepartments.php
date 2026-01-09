@@ -14,7 +14,7 @@ use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\UI\Catalogue\MasterDepartmentsTabsEnum;
+use App\Enums\UI\Catalogue\MasterProductCategoryTabsEnum;
 use App\Http\Resources\Masters\MasterDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterProductCategory;
@@ -39,18 +39,18 @@ class IndexMasterDepartments extends OrgAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
-        return $this->handle(parent: $masterShop, prefix: MasterDepartmentsTabsEnum::INDEX->value);
+        return $this->handle(parent: $masterShop, prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
-        return $this->handle(parent: $group, prefix: MasterDepartmentsTabsEnum::INDEX->value);
+        return $this->handle(parent: $group, prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
 
     public function handle(Group|MasterShop $parent, $prefix = null): LengthAwarePaginator
@@ -88,7 +88,7 @@ class IndexMasterDepartments extends OrgAction
             'currencies.code as currency_code',
         ];
 
-        if ($prefix === MasterDepartmentsTabsEnum::SALES->value) {
+        if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
             // Use reusable time series aggregation method
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'master_product_category_time_series',
@@ -144,7 +144,7 @@ class IndexMasterDepartments extends OrgAction
                 'master_shops.code as master_shop_code',
                 'master_shops.name as master_shop_name',
             ]);
-            if ($prefix === MasterDepartmentsTabsEnum::SALES->value) {
+            if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
                 $queryBuilder->groupBy([
                     'master_shops.slug',
                     'master_shops.code',
@@ -221,7 +221,7 @@ class IndexMasterDepartments extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterDepartments, ActionRequest $request): Response
     {
-        $navigation = MasterDepartmentsTabsEnum::navigation();
+        $navigation = MasterProductCategoryTabsEnum::navigation();
 
         $model = '';
         if ($this->parent instanceof MasterShop) {
@@ -298,16 +298,16 @@ class IndexMasterDepartments extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
-                MasterDepartmentsTabsEnum::INDEX->value => $this->tab == MasterDepartmentsTabsEnum::INDEX->value ?
+                MasterProductCategoryTabsEnum::INDEX->value => $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
                     fn () => MasterDepartmentsResource::collection($masterDepartments)
-                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterDepartmentsTabsEnum::INDEX->value))),
+                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))),
 
-                MasterDepartmentsTabsEnum::SALES->value => $this->tab == MasterDepartmentsTabsEnum::SALES->value ?
-                    fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterDepartmentsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterDepartmentsTabsEnum::SALES->value))),
+                MasterProductCategoryTabsEnum::SALES->value => $this->tab == MasterProductCategoryTabsEnum::SALES->value ?
+                    fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure($this->parent, prefix: MasterDepartmentsTabsEnum::INDEX->value))
-            ->table($this->tableStructure($this->parent, prefix: MasterDepartmentsTabsEnum::SALES->value, sales: true));
+        )->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))
+            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value, sales: true));
     }
 
     public function getBreadcrumbs(MasterShop|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array

@@ -31,6 +31,8 @@ const props = defineProps<{
   }
 }>()
 
+console.log("ProductBlockWorkshop props:", props)
+
 const reload = inject('reload') as () => void
 const isModalOpen = ref(false)
 const isLoadingSave = ref(false)

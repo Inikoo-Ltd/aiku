@@ -33,6 +33,11 @@ use Illuminate\Support\Arr;
  * @property mixed $description_extra
  * @property mixed $web_images
  * @property mixed $status
+ * @property mixed $currency_code
+ * @property mixed $sales
+ * @property mixed $sales_ly
+ * @property mixed $invoices
+ * @property mixed $invoices_ly
  */
 class MasterSubDepartmentsResource extends JsonResource
 {
@@ -62,6 +67,29 @@ class MasterSubDepartmentsResource extends JsonResource
                     'icon'    => 'fas fa-times-circle',
                     'class'   => 'text-red-400'
                 ],
+            'currency_code'    => $this->currency_code,
+            'sales'            => $this->sales ?? 0,
+            'sales_ly'         => $this->sales_ly ?? 0,
+            'sales_delta'      => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'invoices'         => $this->invoices ?? 0,
+            'invoices_ly'      => $this->invoices_ly ?? 0,
+            'invoices_delta'   => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+        ];
+    }
+
+    private function calculateDelta($current, $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 }

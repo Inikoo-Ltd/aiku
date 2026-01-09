@@ -10,6 +10,9 @@ import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import { faFileCheck, faFilePdf, faFileWord } from "@fal"
 import { useLocaleStore } from "@/Stores/locale"
 import Product2Image from "./Product2Image.vue"
+import { faHeart as fasHeart } from "@fas"
+import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import { faArrowToBottom, faDownload, faMapMarkerAlt } from "@fas"
 
 library.add(faCube, faLink, faFileDownload)
 
@@ -125,10 +128,13 @@ const toggleExpanded = () => {
 defineOptions({
     inheritAttrs: false,
 })
+
+console.log(props.modelValue)
 </script>
 
 <template>
-     <div v-if="screenType !== 'mobile'" id="product-1"
+      <!-- DESKTOP -->
+    <div v-if="screenType !== 'mobile'" id="product-1"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -139,6 +145,25 @@ defineOptions({
             <div class="col-span-7">
                 <div class="py-1 w-full">
                     <Product2Image :images="validImages" :video="videoSetup?.url" />
+
+                    <div class="
+                        group
+                        flex items-center gap-3
+                        py-2 px-4 mt-4 w-fit
+                        border rounded-lg bg-gray-50
+                        transition
+                        hover:bg-gray-100 hover:border-gray-300
+                    ">
+                        <FontAwesomeIcon :icon="faArrowToBottom"
+                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+
+                        <span class="
+                            font-medium text-xl text-gray-800
+                            truncate max-w-[420px]
+                        " :title="`${trans('Download Marketing Materials for')} ${product.name}`">
+                            {{ trans('Download Marketing Materials for') }} {{ product.name }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -146,7 +171,7 @@ defineOptions({
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
-                        <div class="text-xl font-bold">
+                        <div class="text-xl font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
                         </div>
 
@@ -157,21 +182,16 @@ defineOptions({
                                 <span :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
                                     {{
                                         product.stock > 0
-                                            ? `${trans("In stock")} (${customerData?.stock})`
+                                            ? `${trans("In stock")} (23)`
                                             : trans("Out Of Stock")
                                     }}
                                 </span>
                             </div>
 
                             <!-- REMIND ME -->
-                            <button v-if="product.stock <= 0 && layout?.app?.environment === 'local'" @click="
-                                product.is_back_in_stock
-                                    ? onUnselectBackInStock(product)
-                                    : onAddBackInStock(product)
-                                "
+                            <button v-if="product.stock <= 0 "
                                 class="absolute right-0 bottom-2 flex items-center gap-2 px-3 py-1.5 text-sm rounded-full border bg-gray-100 hover:bg-gray-200">
-                                <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                                <FontAwesomeIcon v-else
+                                <FontAwesomeIcon
                                     :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
                                     :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
                                 <span>
@@ -186,10 +206,9 @@ defineOptions({
                     </div>
 
                     <!-- FAVOURITE -->
-                    <div v-if="layout?.retina?.type !== 'dropshipping' && layout?.iris?.is_logged_in">
-                        <LoadingIcon v-if="isLoadingFavourite" class="text-gray-500 text-2xl" />
-                        <div v-else class="cursor-pointer text-2xl">
-                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" />
+                    <div v-if="layout?.iris?.is_logged_in">
+                        <div  class="cursor-pointer text-2xl">
+                            <FontAwesomeIcon v-if="product?.is_favourite" :icon="fasHeart" class="text-pink-500" />
                             <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
                         </div>
                     </div>
@@ -205,7 +224,6 @@ defineOptions({
                             ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit
                             }})
                         </div>
-
                     </div>
 
                     <div>
@@ -229,8 +247,9 @@ defineOptions({
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock > 0"    v-model:product="product" :customerData="customerData"
-                            :key="keyCustomer" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
+                        <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product"
+                            :product="product" :key="keyCustomer"
+                            :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
                         <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
                     </div>
 
@@ -241,101 +260,126 @@ defineOptions({
                     </div>
                 </div>
 
-                <!-- INFORMATION + PAYMENTS -->
-                <div v-if="modelValue.setting?.information" class="mt-2">
+
+
+                <div v-if="layout?.iris?.is_logged_in && modelValue?.setting?.appointment" class="
+                        group
+                        flex items-center gap-3
+                        py-2 px-4 mt-4 w-full
+                        border rounded-lg bg-gray-50
+                        transition
+                        hover:bg-gray-100 hover:border-gray-300
+                        my-2
+                    ">
+                    <FontAwesomeIcon :icon="faMapMarkerAlt"
+                        class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+
+                    <span class="
+                             font-medium text-sm underline text-gray-800
+                            truncate max-w-[420px]
+                        " :title="`${trans('Download Marketing Materials for')} ${product.name}`">
+                         <div v-html="modelValue?.appointment_data?.text"></div>
+                    </span>
+                </div>
+
+
+
+                <div class="text-sm font-medium my-2">
+                      <div v-html="modelValue?.delivery_info?.text"></div>
+                </div>
+
+                <div v-if="modelValue.setting?.payments_and_policy && modelValue.paymentData" class="my-5">
                     <div class="flex flex-wrap items-center gap-6 py-2">
                         <img v-for="logo in modelValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
                             class="h-4 px-1" />
                     </div>
                 </div>
 
-                <div>
-                    <div class="flex flex-wrap items-center gap-6 py-2 border bg-gray-50 p-4">
-                        <div class="font-bold text-xl">Product Specification</div>
+                    <div v-if="modelValue?.setting?.product_specs" >
+                        <div class="flex flex-wrap items-center gap-6 py-2 border bg-gray-50 p-4">
+                            <div class="font-bold text-xl">Product Specification</div>
 
-                        <div class="w-full space-y-1">
+                            <div class="w-full space-y-1">
 
-                            <!-- Origin -->
-                            <div v-if="product?.specifications?.origin" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans('Origin') }}</div>
-                                <div class="p-2 text-sm font-thin">{{ product.specifications.origin }}</div>
-                            </div>
-
-                            <!-- Net Weight -->
-                            <div v-if="product?.specifications?.marketing_weight" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans('Net Weight') }}</div>
-                                <div class="p-2 text-sm font-thin">
-                                    {{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}
+                                <!-- Origin -->
+                                <div v-if="product?.specifications?.origin" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm fomedium">{{ trans('Origin') }}</div>
+                                    <div class="p-2 text-sm font-normal">{{ product.specifications.origin }}</div>
                                 </div>
-                            </div>
 
-                            <!-- Shipping Weight -->
-                            <div v-if="product?.specifications?.gross_weight" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans("Shipping Weight") }}</div>
-                                <div class="p-2 text-sm font-thin">{{ product.specifications.gross_weight }} g</div>
-                            </div>
-
-                            <!-- Dimensions -->
-                            <div v-if="product?.specifications?.dimensions" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans("Dimensions") }}</div>
-                                <div class="p-2 text-sm font-thin">{{ product.specifications.dimensions }}</div>
-                            </div>
-
-                            <!-- Ingredients -->
-                            <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans('Materials/Ingredients') }}</div>
-                                <div class="p-2 text-sm font-thin">{{ product.specifications.ingredients }}</div>
-                            </div>
-
-                            <!-- Barcode -->
-                            <div v-if="product?.specifications?.barcode" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans('Barcode') }}</div>
-                                <div class="p-2 text-sm font-thin">{{ product.specifications.barcode }}</div>
-                            </div>
-
-                            <!-- CPNP -->
-                            <div v-if="product?.specifications?.cpnp" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans('cpnp') }}</div>
-                                <div class="p-2 text-sm font-thin">{{ product.specifications.cpnp }}</div>
-                            </div>
-
-                            <!-- Origin Country -->
-                            <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
-
-                                <div class="p-2 flex items-center gap-2 font-thin text-sm">
-                                    <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
-                                        :alt="product.specifications.country_of_origin.name"
-                                        :title="product.specifications.country_of_origin.name" class="h-4 w-auto" />
-                                    <span>{{ product.specifications.country_of_origin.name }}</span>
+                                <!-- Net Weight -->
+                                <div v-if="product?.specifications?.marketing_weight" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ trans('Net Weight') }}</div>
+                                    <div class="p-2 text-sm font-normal">
+                                        {{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Attachments -->
-                            <div v-for="(items, label) in groupedAttachments" :key="label" class="grid grid-cols-2">
-                                <div class="p-2 text-sm font-thin">{{ label }}</div>
+                                <!-- Shipping Weight -->
+                                <div v-if="product?.specifications?.gross_weight" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ trans("Shipping Weight") }}</div>
+                                    <div class="p-2 text-sm font-normal">{{ product.specifications.gross_weight }} g</div>
+                                </div>
 
-                                <div class="p-2 space-y-1">
-                                    <div v-for="item in items" :key="item.caption"
-                                        class="text-xs font-thin text-blue-600 underline cursor-pointer flex items-center">
-                                        <a :href="item.url" target="_blank" class="flex items-center">
-                                            <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" class="mr-1" />
-                                            {{ item.caption }}.{{ extractFileType(item.mime_type) }}
-                                        </a>
+                                <!-- Dimensions -->
+                                <div v-if="product?.specifications?.dimensions" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ trans("Dimensions") }}</div>
+                                    <div class="p-2 text-sm font-normal">{{ product.specifications.dimensions }}</div>
+                                </div>
+
+                                <!-- Ingredients -->
+                                <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ trans('Materials/Ingredients') }}</div>
+                                    <div class="p-2 text-sm font-normal">{{ product.specifications.ingredients }}</div>
+                                </div>
+
+                                <!-- Barcode -->
+                                <div v-if="product?.specifications?.barcode" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ trans('Barcode') }}</div>
+                                    <div class="p-2 text-sm font-normal">{{ product.specifications.barcode }}</div>
+                                </div>
+
+                                <!-- CPNP -->
+                                <div v-if="product?.specifications?.cpnp" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ trans('cpnp') }}</div>
+                                    <div class="p-2 text-sm font-normal">{{ product.specifications.cpnp }}</div>
+                                </div>
+
+                                <!-- Origin Country -->
+                                <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ trans('Origin Country') }}</div>
+
+                                    <div class="p-2 flex items-center gap-2 font-normal text-sm">
+                                        <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
+                                            :alt="product.specifications.country_of_origin.name"
+                                            :title="product.specifications.country_of_origin.name" class="h-4 w-auto" />
+                                        <span>{{ product.specifications.country_of_origin.name }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Attachments -->
+                                <div v-for="(items, label) in groupedAttachments" :key="label" class="grid grid-cols-2">
+                                    <div class="p-2 text-sm font-normal">{{ label }}</div>
+
+                                    <div class="p-2 space-y-1">
+                                        <div v-for="item in items" :key="item.caption"
+                                            class="text-xs font-normal text-blue-600 underline cursor-pointer flex items-center">
+                                            <a :href="item.url" target="_blank" class="flex items-center">
+                                                <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
+                                                    class="mr-1" />
+                                                {{ item.caption }}.{{ extractFileType(item.mime_type) }}
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
-
-
-            </div>
         </div>
 
         <!-- DESCRIPTION -->
-        <div class="text-xs font-medium text-gray-800">
+        <div class="text-xs font-normal text-gray-800">
             <div v-html="product.description" />
 
             <div v-if="expanded" class="text-xs text-gray-700 my-1">
@@ -344,6 +388,80 @@ defineOptions({
 
             <button v-if="product.description_extra" @click="toggleExpanded" class="mt-1 text-xs underline">
                 {{ expanded ? trans("Show Less") : trans("Read More") }}
+            </button>
+        </div>
+    </div>
+
+
+    <!-- MOBILE -->
+    <div v-if="screenType === 'mobile'" class="px-4 py-4 bg-white">
+        <!-- PRODUCT IMAGES -->
+        <Product2Image :images="validImages" :video="videoSetup?.url" />
+
+        <!-- PRODUCT TITLE -->
+        <div class="mt-4">
+            <h1 class="!text-xl font-bold leading-tight">
+                <span v-if="product.units > 1">{{ product.units }}x</span>
+                {{ product.name }}
+            </h1>
+
+            <div class="flex justify-between">
+                <div class="mt-1 text-base font-semibold">
+                    {{ locale.currencyFormat(currency?.code, product.price || 0) }}
+                </div>
+
+                <div class="text-xs text-gray-600">
+                    ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit }})
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ADD TO CART -->
+        <div class="mt-4">
+            <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product" :product="product"
+                :key="keyCustomer" class="w-full" />
+            <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
+        </div>
+
+        <!-- VARIANT SWIPER (MOBILE OPTIMIZED) -->
+        <div v-if="listProducts && listProducts.length > 0" class="mt-6">
+            <Swiper :space-between="10" :slides-per-view="2.4" :grab-cursor="true">
+                <SwiperSlide v-for="item in listProducts" :key="item.id">
+                    <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
+                        class="relative w-full rounded-xl border bg-white overflow-hidden" :class="item.code === product.code
+                            ? 'ring-2 primary'
+                            : 'border-gray-200'">
+                        <!-- IMAGE -->
+                        <div class="relative w-full aspect-square bg-gray-50">
+                            <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                :alt="item.code" class="absolute inset-0 w-full h-full object-contain" loading="lazy" />
+                            <FontAwesomeIcon v-else :icon="faImage"
+                                class="absolute inset-0 m-auto text-gray-300 text-lg" />
+                        </div>
+
+                        <!-- LABEL (ALWAYS SHOW ON MOBILE) -->
+                        <div class="px-2 py-1">
+                            <span class="block text-[11px] font-normal text-center truncate
+                     bg-gray-100 text-gray-800 rounded">
+                                {{ item.variant_label }}
+                            </span>
+                        </div>
+                    </button>
+                </SwiperSlide>
+            </Swiper>
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="mt-6 text-xs text-gray-700">
+            <div v-html="product.description" />
+
+            <div v-if="expanded" class="mt-2">
+                <div class="prose prose-sm max-w-none" v-html="product.description_extra" />
+            </div>
+
+            <button v-if="product.description_extra" @click="toggleExpanded" class="mt-2 text-xs underline">
+                {{ expanded ? trans('Show Less') : trans('Read More') }}
             </button>
         </div>
     </div>

@@ -8,7 +8,7 @@
 import Table from '@/Components/Table/Table.vue'
 import {RouteParams} from "@/types/route-params";
 import {Link, router} from '@inertiajs/vue3'
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import { faFolderTree } from "@fal";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
@@ -17,12 +17,16 @@ import axios from "axios";
 import {notify} from "@kyvg/vue3-notification";
 import {trans} from "laravel-vue-i18n";
 import Image from "@/Components/Image.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { faTriangle, faEquals, faMinus } from "@fas"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 defineProps<{
     data: object,
     tab?: string
 }>()
 
+const locale = inject("locale", aikuLocaleStructure)
 
 const selectedSubDepartment = ref([])
 const tableKey = ref(1)
@@ -123,6 +127,27 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
     }
 }
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return {
+            icon: faTriangle
+        }
+    } else if (!isPositive) {
+        return {
+            icon: faTriangle,
+            class: 'rotate-180'
+        }
+    }
+}
+
+const getIntervalStateColor = (isPositive: boolean) => {
+    if (isPositive) {
+        return 'text-green-500'
+    } else if (!isPositive) {
+        return 'text-red-500'
+    }
+}
+
 </script>
 
 <template>
@@ -138,6 +163,82 @@ const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }
             <div v-if="selectedSubDepartment.length != 0">
                 <Button :icon="faFolderTree" :label="trans('Assign to another department')" @click="visibleDialog = true" :size="'xs'"
                     type="secondary" />
+            </div>
+        </template>
+
+        <template #cell(sales)="{ item: subDepartment }">
+            <span class="tabular-nums">{{ locale.currencyFormat(subDepartment.currency_code, subDepartment.sales) }}</span>
+        </template>
+
+        <template #cell(sales_delta)="{ item }">
+            <div v-if="item.sales_delta">
+                <span>{{ item.sales_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #cell(invoices_delta)="{ item }">
+            <div v-if="item.invoices_delta">
+                <span>{{ item.invoices_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.invoices_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
             </div>
         </template>
 

@@ -2,126 +2,184 @@
 import { ref, inject, computed, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCube, faLink, faHeart, faEnvelope } from "@fal"
-import { faHeart as fasHeart, faPlus, faMinus } from "@fas"
+
+import {
+  faCube,
+  faLink,
+  faHeart,
+  faEnvelope,
+  faFileCheck,
+  faFilePdf,
+  faFileWord
+} from "@fal"
+
+import {
+  faHeart as fasHeart,
+  faPlus,
+  faMinus,
+  faArrowToBottom,
+  faMapMarkerAlt
+} from "@fas"
+
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import { faImage } from "@far"
+
+import { Swiper, SwiperSlide } from "swiper/vue"
+import "swiper/css"
 
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
-import { useLocaleStore } from "@/Stores/locale"
+import Product2Image from "./Product2Image.vue"
+import Image from "@/Components/Image.vue"
 
+import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
-import Product2Image from "./Product2Image.vue"
-import { faFileCheck, faFilePdf, faFileWord } from "@fal"
+import { Link } from "@inertiajs/vue3"
 
-// Register icons
-library.add(faCube, faLink, faPlus, faMinus)
+library.add(
+  faCube,
+  faLink,
+  faPlus,
+  faMinus,
+  faFileCheck,
+  faFilePdf,
+  faFileWord,
+  faArrowToBottom,
+  faMapMarkerAlt,
+  faImage
+)
+
+/* ================= TYPES ================= */
 
 interface ProductResource {
-    id: number
-    name: string
-    code: string
-    image?: { source: any }
-    currency_code: string
-    rpp?: number
-    unit: string
-    stock: number
-    rating: number
-    price: number
-    url: string | null
-    units: number
-    bestseller?: boolean
-    is_favourite?: boolean
-    exist_in_portfolios_channel: number[]
-    is_exist_in_all_channel: boolean
+  id: number
+  name: string
+  code: string
+  image?: { source: any }
+
+  price: number
+  price_per_unit?: number
+  rrp_per_unit?: number
+  profit?: number
+  margin?: string
+
+  currency_code: string
+  unit: string
+  units: number
+  stock: number
+
+  rating?: number
+  url?: string | null
+
+  bestseller?: boolean
+  is_favourite?: boolean
+  is_back_in_stock?: boolean
+
+  description?: string
+  description_extra?: string
+
+  web_images?: any
+  variant_label?: string
+
+  attachments?: any[]
+  specifications?: any
 }
 
-const props = withDefaults(
-    defineProps<{
-        fieldValue: any
-        webpageData?: any
-        blockData?: object
-        screenType: "mobile" | "tablet" | "desktop"
-        validImages: object
-        customerData: any
-        product: ProductResource
-        isLoadingRemindBackInStock: boolean
-        isLoadingFavourite: boolean
-        videoSetup: { url: string }
-    }>(),
-    {}
-)
+/* ================= PROPS / EMITS ================= */
 
-const emits = defineEmits<{
-    (e: "setFavorite", value: any[]): void
-    (e: "unsetFavorite", value: any[]): void
-    (e: "setBackInStock", value: any[]): void
-    (e: "unsetBackInStock", value: any[]): void
+const props = defineProps<{
+  fieldValue: any
+  webpageData?: any
+  blockData?: object
+  screenType: "mobile" | "tablet" | "desktop"
+  validImages: object
+  customerData: any
+  product: ProductResource
+  isLoadingRemindBackInStock: boolean
+  isLoadingFavourite: boolean
+  videoSetup: { url: string }
+  listProducts: ProductResource[]
 }>()
 
-const layout = inject("layout", {})
-const expanded = ref(false)
-const keyCustomer = ref(ulid())
+const emit = defineEmits<{
+  (e: "setFavorite", value: ProductResource): void
+  (e: "unsetFavorite", value: ProductResource): void
+  (e: "setBackInStock", value: ProductResource): void
+  (e: "unsetBackInStock", value: ProductResource): void
+  (e: "selectProduct", value: ProductResource): void
+}>()
+
+/* ================= STATE ================= */
+
+const layout = inject<any>("layout", {})
 const locale = useLocaleStore()
-const product = ref(props.product)
-const currency = layout?.iris?.currency
-const toggleExpanded = () => (expanded.value = !expanded.value)
+const keyCustomer = ref(ulid())
 
-const onAddFavourite = (p: ProductResource) => emits("setFavorite", p)
-const onUnselectFavourite = (p: ProductResource) => emits("unsetFavorite", p)
-const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
-const onUnselectBackInStock = (p: ProductResource) => emits("unsetBackInStock", p)
-
-const extractFileType = (mime: string) => {
-    if (!mime) return ''
-    const parts = mime.split('/')
-    return parts[1]?.split('+')[0]?.toLowerCase() || ''
-}
-
-const getIcon = (type: string) => {
-    switch (type) {
-        case "pdf":
-            return faFilePdf
-        case "doc":
-        case "docx":
-        case "msword":
-        case "vnd.openxmlformats-officedocument.wordprocessingml.document":
-            return faFileWord
-        default:
-            return faFileCheck
-    }
-}
-
-const groupedAttachments = computed(() => {
-    const allFiles = [
-        ...(product.value.attachments || []),
-    ]
-
-    // Group by label (scope)
-    const grouped = {}
-    allFiles.forEach(file => {
-        if (!grouped[file.label]) grouped[file.label] = []
-        grouped[file.label].push(file)
-    })
-
-    return grouped
-})
+const expanded = ref(false)
+const product = ref<ProductResource>(props.product)
 
 watch(
-    () => props.product,
-    (newProduct) => {
-       product.value = newProduct
-    },
-    { deep: true }
+  () => props.product,
+  v => (product.value = v),
+  { deep: true }
 )
 
+const currency = computed(() => layout?.iris?.currency)
 
+/* ================= LOGIC ================= */
+
+const groupedAttachments = computed(() => {
+  if (!product.value.attachments?.length) return {}
+  return product.value.attachments.reduce((acc: any, file: any) => {
+    acc[file.label] ??= []
+    acc[file.label].push(file)
+    return acc
+  }, {})
+})
+
+const toggleExpanded = () => {
+  expanded.value = !expanded.value
+}
+
+/* ===== FIXED HANDLERS ===== */
+
+const onAddFavourite = (p: ProductResource) => {
+  emit("setFavorite", p)
+}
+
+const onUnselectFavourite = (p: ProductResource) => {
+  emit("unsetFavorite", p)
+}
+
+const onAddBackInStock = (p: ProductResource) => {
+  emit("setBackInStock", p)
+}
+
+const onUnselectBackInStock = (p: ProductResource) => {
+  emit("unsetBackInStock", p)
+}
+
+const onSelectProduct = (p: ProductResource) => {
+  emit("selectProduct", p)
+}
+
+const extractFileType = (mime = "") =>
+  mime.split("/")[1]?.split("+")[0]?.toLowerCase() || ""
+
+const getIcon = (type: string) => {
+  if (type === "pdf") return faFilePdf
+  if (["doc", "docx", "msword"].includes(type)) return faFileWord
+  return faFileCheck
+}
+
+const baseUrl = `${window.location.origin}/`
 </script>
+
 
 
 <template>
@@ -137,6 +195,25 @@ watch(
             <div class="col-span-7">
                 <div class="py-1 w-full">
                     <Product2Image :images="validImages" :video="videoSetup?.url" />
+
+                <a   :href="`${baseUrl}app/catalogue/feeds/feeds/product/${product.slug}/download?type=products_images`"class="
+                        group
+                        flex items-center gap-3
+                        py-2 px-4 mt-4 w-fit
+                        border rounded-lg bg-gray-50
+                        transition
+                        hover:bg-gray-100 hover:border-gray-300
+                    ">
+                        <FontAwesomeIcon :icon="faArrowToBottom"
+                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+
+                        <span class="
+                            font-medium text-xl text-gray-800
+                            truncate max-w-[420px]
+                        " :title="`${trans('Download Marketing Materials for')} ${product.name}`">
+                            {{ trans('Download Marketing Materials for') }} {{ product.name }}
+                        </span>
+                    </a>
                 </div>
             </div>
 
@@ -144,7 +221,7 @@ watch(
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
-                        <div class="text-xl font-bold">
+                        <div class="text-xl font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
                         </div>
 
@@ -162,11 +239,12 @@ watch(
                             </div>
 
                             <!-- REMIND ME -->
-                            <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'" @click="
-                                product.is_back_in_stock
-                                    ? onUnselectBackInStock(product)
-                                    : onAddBackInStock(product)
-                                "
+                            <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'"
+                                @click="
+                                    product.is_back_in_stock
+                                        ? onUnselectBackInStock(product)
+                                        : onAddBackInStock(product)
+                                    "
                                 class="absolute right-0 bottom-2 flex items-center gap-2 px-3 py-1.5 text-sm rounded-full border bg-gray-100 hover:bg-gray-200">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
@@ -207,7 +285,6 @@ watch(
                             ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit
                             }})
                         </div>
-
                     </div>
 
                     <div>
@@ -231,8 +308,9 @@ watch(
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock > 0"    v-model:product="product" :customerData="customerData"
-                            :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                        <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product"
+                            :customerData="customerData" :key="keyCustomer"
+                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
                         <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
                     </div>
 
@@ -243,15 +321,81 @@ watch(
                     </LinkIris>
                 </div>
 
-                <!-- INFORMATION + PAYMENTS -->
-                <div v-if="fieldValue.setting?.information" class="mt-2">
+
+                <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-1 rounded-md mb-4">
+                    <Swiper :space-between="8" :slides-per-view="4" :grab-cursor="true" :breakpoints="{
+                        640: { slidesPerView: 4 },
+                        768: { slidesPerView: 4 },
+                        1024: { slidesPerView: 4 }
+                    }">
+                        <SwiperSlide v-for="item in listProducts" :key="item.id">
+                            <button @click="onSelectProduct(item)" :disabled="item.code === product.code" class="group relative w-full rounded-lg border bg-white
+                 overflow-hidden transition flex flex-col" :class="item.code === product.code
+                    ? 'ring-1 primary'
+                    : 'border-gray-200 hover:border-gray-300'">
+                                <!-- IMAGE AREA -->
+                                <div class="relative w-full aspect-square bg-gray-50 overflow-hidden">
+                                    <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                        :alt="item.code" loading="lazy" class="absolute inset-0 w-full h-full object-contain
+                     transition-transform duration-300 ease-out
+                     group-hover:scale-110" />
+
+                                    <FontAwesomeIcon v-else :icon="faImage"
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
+
+                                    <!-- VARIANT LABEL (HOVER ONLY) -->
+                                    <div class="pointer-events-none absolute bottom-1 left-1 right-1
+                     opacity-0 translate-y-1
+                     transition-all duration-200
+                     group-hover:opacity-100 group-hover:translate-y-0">
+                                        <span class="block text-[11px] font-medium px-2 py-0.5 rounded
+                       text-center truncate
+                       bg-gray-900/80 text-white backdrop-blur">
+                                            {{ item.variant_label }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </button>
+                        </SwiperSlide>
+                    </Swiper>
+                </div>
+
+
+                <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"  :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type"   class="
+                        group
+                        flex items-center gap-3
+                        py-2 px-4 mt-4 w-full
+                        border rounded-lg bg-gray-50
+                        transition
+                        hover:bg-gray-100 hover:border-gray-300
+                        my-2
+                    ">
+                    <FontAwesomeIcon :icon="faMapMarkerAlt"
+                        class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+
+                    <span class="
+                             font-medium text-sm underline text-gray-800
+                            truncate max-w-[420px]
+                        " :title="`${trans('Download Marketing Materials for')} ${product.name}`">
+                        <div v-html="fieldValue?.appointment_data?.text"></div>
+                    </span>
+                </LinkIris>
+
+
+
+                <div v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment" class="text-sm font-medium">
+                      <div v-html="fieldValue?.delivery_info?.text"></div>
+                </div>
+
+
+                <div v-if="fieldValue.setting?.payments_and_policy && fieldValue.paymentData"  class="my-2">
                     <div class="flex flex-wrap items-center gap-6 py-2">
                         <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
                             class="h-4 px-1" />
                     </div>
                 </div>
 
-                <div>
+                <div v-if="fieldValue?.setting?.product_specs">
                     <div class="flex flex-wrap items-center gap-6 py-2 border bg-gray-50 p-4">
                         <div class="font-bold text-xl">Product Specification</div>
 
@@ -328,12 +472,9 @@ watch(
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
-
-
             </div>
         </div>
 
@@ -350,5 +491,80 @@ watch(
             </button>
         </div>
     </div>
+
+
+    <!-- MOBILE -->
+    <div v-if="screenType === 'mobile'" class="px-4 py-4 bg-white">
+        <!-- PRODUCT IMAGES -->
+        <Product2Image :images="validImages" :video="videoSetup?.url" />
+
+        <!-- PRODUCT TITLE -->
+        <div class="mt-4">
+            <h1 class="!text-xl font-bold leading-tight">
+                <span v-if="product.units > 1">{{ product.units }}x</span>
+                {{ product.name }}
+            </h1>
+
+            <div class="flex justify-between">
+                <div class="mt-1 text-base font-semibold">
+                    {{ locale.currencyFormat(currency?.code, product.price || 0) }}
+                </div>
+
+                <div class="text-xs text-gray-600">
+                    ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit }})
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ADD TO CART -->
+        <div class="mt-4">
+            <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product" :customerData="customerData"
+                :key="keyCustomer" class="w-full" />
+            <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
+        </div>
+
+        <!-- VARIANT SWIPER (MOBILE OPTIMIZED) -->
+        <div v-if="listProducts && listProducts.length > 0" class="mt-6">
+            <Swiper :space-between="10" :slides-per-view="2.4" :grab-cursor="true">
+                <SwiperSlide v-for="item in listProducts" :key="item.id">
+                    <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
+                        class="relative w-full rounded-xl border bg-white overflow-hidden" :class="item.code === product.code
+                            ? 'ring-2 primary'
+                            : 'border-gray-200'">
+                        <!-- IMAGE -->
+                        <div class="relative w-full aspect-square bg-gray-50">
+                            <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                :alt="item.code" class="absolute inset-0 w-full h-full object-contain" loading="lazy" />
+                            <FontAwesomeIcon v-else :icon="faImage"
+                                class="absolute inset-0 m-auto text-gray-300 text-lg" />
+                        </div>
+
+                        <!-- LABEL (ALWAYS SHOW ON MOBILE) -->
+                        <div class="px-2 py-1">
+                            <span class="block text-[11px] font-medium text-center truncate
+                     bg-gray-100 text-gray-800 rounded">
+                                {{ item.variant_label }}
+                            </span>
+                        </div>
+                    </button>
+                </SwiperSlide>
+            </Swiper>
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="mt-6 text-xs text-gray-700">
+            <div v-html="product.description" />
+
+            <div v-if="expanded" class="mt-2">
+                <div class="prose prose-sm max-w-none" v-html="product.description_extra" />
+            </div>
+
+            <button v-if="product.description_extra" @click="toggleExpanded" class="mt-2 text-xs underline">
+                {{ expanded ? trans('Show Less') : trans('Read More') }}
+            </button>
+        </div>
+    </div>
+
 
 </template>
