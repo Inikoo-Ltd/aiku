@@ -14,7 +14,6 @@ use App\Actions\IrisAction;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -25,7 +24,7 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
     public function handle(Transaction $transaction, array $modelData)
     {
         $product = $transaction->model;
-        if(!($product instanceof Product)){
+        if (!($product instanceof Product)) {
             abort(404);
         }
 
@@ -55,7 +54,7 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
 
         return $this->handle($transaction, $this->validatedData);
     }
-    
+
     public function jsonResponse(Product $product)
     {
         return IrisAuthenticatedProductsInWebpageResource::make($product);
