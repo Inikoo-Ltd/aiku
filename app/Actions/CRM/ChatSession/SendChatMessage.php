@@ -37,12 +37,23 @@ class SendChatMessage
             return $exists;
         }
 
+        $originalLanguageId = $modelData['original_language_id'] ?? null;
+        if (!$originalLanguageId) {
+            if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+                $originalLanguageId = $chatSession->agent_language_id;
+            } else {
+                $originalLanguageId = $chatSession->active_user_language_id ?? $chatSession->user_language_id;
+            }
+        }
+
         $chatMessageData = [
             'chat_session_id' => $chatSession->id,
             'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
             'sender_type'     => $modelData['sender_type'],
             'sender_id'       => $modelData['sender_id'] ?? null,
             'message_text'    => $modelData['message_text'] ?? null,
+            'original_text'        => $modelData['message_text'] ?? null,
+            'original_language_id' => $originalLanguageId,
             'media_id'        => $modelData['media_id'] ?? null,
             'is_read'         => false,
             'created_at'      => now(),
@@ -53,6 +64,9 @@ class SendChatMessage
 
         if (isset($modelData['image']) && $modelData['image'] instanceof UploadedFile) {
             $this->processMessageImage($chatMessage, $modelData['image']);
+        }
+        if (isset($modelData['file']) && $modelData['file'] instanceof UploadedFile) {
+            $this->processMessageFile($chatMessage, $modelData['file']);
         }
 
         $this->updateSessionTimestamps(
@@ -87,6 +101,25 @@ class SendChatMessage
         $chatMessage->updateQuietly([
             'media_id'     => $media->id,
             'message_type' => ChatMessageTypeEnum::IMAGE,
+        ]);
+
+        $chatMessage->refresh();
+    }
+
+    protected function processMessageFile(ChatMessage $chatMessage, UploadedFile $file): void
+    {
+        $fileData = [
+            'path'         => $file->getPathName(),
+            'originalName' => $file->getClientOriginalName(),
+            'extension'    => $file->getClientOriginalExtension(),
+            'checksum'     => md5_file($file->getPathName()),
+        ];
+
+        $media = StoreMediaFromFile::run($chatMessage, $fileData, 'chat_attachments', 'file');
+
+        $chatMessage->updateQuietly([
+            'media_id'     => $media->id,
+            'message_type' => ChatMessageTypeEnum::FILE,
         ]);
 
         $chatMessage->refresh();
@@ -131,7 +164,7 @@ class SendChatMessage
     {
         return [
             'message_text' => [
-                'required_without:image',
+                'required_without_all:image,file',
                 'nullable',
                 'string',
                 'max:5000'
@@ -153,6 +186,12 @@ class SendChatMessage
                 'sometimes',
                 'nullable',
                 File::image()->max(10 * 1024)
+            ],
+            'file' => [
+                'sometimes',
+                'nullable',
+                File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
+                    ->max(20 * 1024)
             ]
         ];
     }
