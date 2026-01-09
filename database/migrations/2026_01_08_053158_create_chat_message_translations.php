@@ -12,10 +12,11 @@ return new class extends Migration
         Schema::create('chat_message_translations', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('chat_message_id')
-                ->constrained('chat_messages')
-                ->onDelete('cascade')
-                ->name('cmt_message_fk');
+            $table->unsignedBigInteger('chat_message_id');
+            $table->foreign('chat_message_id', 'cmt_message_fk')
+                ->references('id')
+                ->on('chat_messages')
+                ->onDelete('cascade');
 
             $table->smallInteger('target_language_id');
             $table->foreign('target_language_id', 'cmt_language_fk')

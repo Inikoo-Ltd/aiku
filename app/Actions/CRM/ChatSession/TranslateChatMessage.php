@@ -12,6 +12,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Actions\Helpers\Translations\Translate;
 use App\Models\CRM\Livechat\ChatMessageTranslation;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use VildanBina\LaravelAutoTranslation\Services\TranslationEngineService;
 
 class TranslateChatMessage
@@ -111,7 +112,21 @@ class TranslateChatMessage
 
 
         if ($this->isUserMessage($message)) {
-            return $session->agent_language_id ?? Language::where('code', 'en')->value('id');
+            if ($session->agent_language_id) {
+                return $session->agent_language_id;
+            }
+
+            $activeAgent = $session->assignments()
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE)
+                ->latest()
+                ->first()
+                ?->chatAgent;
+
+            if ($activeAgent && $activeAgent->language_id) {
+                return $activeAgent->language_id;
+            }
+
+            return Language::where('code', 'en')->value('id');
         }
 
 
@@ -149,7 +164,7 @@ class TranslateChatMessage
             );
 
             $message->update(['message_text' => $translatedText]);
-            BroadcastRealtimeChat::dispatch($message);
+            // BroadcastRealtimeChat::dispatch($message);
         }
     }
 
@@ -166,7 +181,7 @@ class TranslateChatMessage
             $client = OpenAI::client($apiKey);
 
             $response = $client->chat()->create([
-                'model' => 'gpt-5-nano',
+                'model' => 'gpt-4o-mini',
                 'messages' => [
                     [
                         'role' => 'system',
@@ -177,7 +192,7 @@ class TranslateChatMessage
                         'content' => $text
                     ],
                 ],
-                'temperature' => 1,
+                'temperature' => 0.7,
                 'max_tokens' => 5,
             ]);
 
