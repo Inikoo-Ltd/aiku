@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -45,11 +46,16 @@ class MasterProductsResource extends JsonResource
         if (isset($this->is_variant_leader)) {
             $allChildHasWeb = true;
             foreach ($this->products as $product) {
+                if (!$product->shop || $product->shop->state == ShopStateEnum::CLOSED) {
+                    continue;
+                }
+                $hasValidProduct = true;
                 if (!$product->webpage()->exists()) {
                     $allChildHasWeb = false;
+                    break;
                 }
             }
-            data_set($extraField, 'allChildHasWebpage', $allChildHasWeb);
+             data_set($extraField, 'allChildHasWebpage', $hasValidProduct && $allChildHasWeb);
         }
 
         return [
