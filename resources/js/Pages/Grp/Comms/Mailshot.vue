@@ -25,6 +25,7 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -43,6 +44,7 @@ const props = defineProps<{
     indexRoute?: routeType
     cancelScheduleMailshotRoute?: routeType
     status?: string
+    isShowProcessButton?: boolean
 }>();
 
 
@@ -51,7 +53,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
-    return props.status && props.status.toLowerCase() === 'ready';
+    return props.status && props.status.toLowerCase() === 'ready' && props.isShowProcessButton;
 });
 
 const shouldShowDeleteButton = computed(() => {
@@ -109,11 +111,6 @@ const handleSendNow = async () => {
 };
 
 
-// Function to format datetime for API
-const formatDateTime = (date: Date) => {
-    return date.toISOString().slice(0, 19).replace('T', ' ');
-};
-
 // Function to handle schedule with datetime picker
 const handleSchedule = async (event: Event) => {
     if (!props.scheduleMailshotRoute) {
@@ -136,7 +133,7 @@ const handleSchedule = async (event: Event) => {
 const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
-    const formattedDateTime = formatDateTime(scheduleDateTime.value);
+    const formattedDateTime = useFormatTime(scheduleDateTime.value, { formatTime: 'yyyy-MM-dd HH:mm:ss' })
 
     await axios.post(route(props.scheduleMailshotRoute.name, props.scheduleMailshotRoute.parameters), {
         scheduled_at: formattedDateTime
@@ -149,7 +146,9 @@ const confirmSchedule = async () => {
                     text: `Mailshot scheduled for ${scheduleDateTime.value.toLocaleString()}`,
                 })
                 showSchedulePicker.value = false;
+                schedulePicker.value?.hide();
             } else {
+                schedulePicker.value?.hide();
                 notify({
                     type: 'error',
                     title: 'Error',
@@ -166,6 +165,8 @@ const confirmSchedule = async () => {
             })
         })
         .finally(() => {
+            showSchedulePicker.value = false;
+            schedulePicker.value?.hide();
             router.reload();
         })
 };
@@ -310,11 +311,11 @@ const handleCancelSchedule = async () => {
                     isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
                         <Button :label="trans('send now')" :disabled="false" class="!border-r-none !rounded-r-none"
-                            icon="fal fa-paper-plane" type="positive" @click="changeModel" />
+                            icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
                     </template>
                 </ModalConfirmation>
-                <Button label="Schedule" class="!border-l-none !rounded-l-none" icon="fal fa-clock" type="positive"
-                    @click="handleSchedule($event)" />
+                <Button :label="trans('Scheduled')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
+                    type="secondary" @click="handleSchedule($event)" />
             </div>
         </template>
         <template #other>
@@ -342,20 +343,20 @@ const handleCancelSchedule = async () => {
 
     <!-- Schedule DateTime Picker Popover -->
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
-        <div class="p-4 min-w-80 bg-white flex flex-col items-center">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900">Schedule Mailshot</h3>
+        <div class="p-2 min-w-80 bg-white flex flex-col items-center">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
+                    class="text-red-600">(Europe/London)</span> </h3>
             <div class="mb-4 flex justify-center">
                 <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="getMinTime()"
-                    :max-time="{ hours: 23, minutes: 59, seconds: 59 }" :text-input="true" :inline="true"
-                    :enable-time-picker="true" :is-24="true" :minutes-increment="1" :seconds-increment="1"
-                    :auto-apply="true" :open-on-focus="true" :time-picker-inline="true" class="w-full" placeholder=""
-                    :teleport="true" />
+                    :text-input="true" :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
+                    :seconds-increment="1" :auto-apply="true" :open-on-focus="true" :time-picker-inline="true"
+                    class="w-full" placeholder="" :teleport="true" />
             </div>
             <div class="flex gap-2 justify-end w-full">
-                <Button label="Cancel" @click="cancelSchedule"
-                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md" />
-                <Button label="Confirm Schedule" @click="confirmSchedule"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md" />
+                <Button :label="trans('Cancel')" @click="cancelSchedule"
+                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md" type="secondary" />
+                <Button :label="trans('Confirm Schedule')" @click="confirmSchedule" class="px-4 py-2 rounded-md"
+                    type="negative" />
             </div>
         </div>
     </Popover>

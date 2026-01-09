@@ -36,20 +36,20 @@ class SetMailshotAsScheduled
         return $mailshot;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->isAction) {
-            return true;
-        }
+    // public function authorize(ActionRequest $request): bool
+    // {
+    //     if ($this->isAction) {
+    //         return true;
+    //     }
 
-        return $request->user()->authTo("websites.edit");
-    }
+    //     return $request->user()->authTo("websites.edit");
+    // }
 
     public function rules(): array
     {
         return [
             // 'publisher_id'   => ['sometimes','exists:organisation_users,id'],
-            'scheduled_at'    => ['required', 'string']
+            'scheduled_at'    => ['required', 'string', 'date_format:Y-m-d H:i:s']
         ];
     }
 
@@ -62,12 +62,10 @@ class SetMailshotAsScheduled
         );
     }
 
-    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): string
+    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
         $request->validate();
-        $this->handle($mailshot, $request->validated());
-
-        return "🫡";
+        return $this->handle($mailshot, $request->validated());
     }
 
     public function action(Mailshot $mailshot, $modelData): Mailshot
