@@ -29,6 +29,12 @@ class SendNewsLetter extends OrgAction
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
         }
+
+        //  NOTE: only allow sending if mailshot is in READY state
+        if ($mailshot->state != MailshotStateEnum::READY) {
+            return $mailshot;
+        }
+
         data_set($modelData, 'state', MailshotStateEnum::SENDING);
 
         $mailshot->update($modelData);

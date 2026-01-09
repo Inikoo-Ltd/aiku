@@ -70,7 +70,16 @@ const scheduleDateTime = ref(new Date());
 const minDateTime = ref(new Date());
 const schedulePicker = ref();
 
+const inProgress = ref(false);
+const scheduleInProgress = ref(false);
+
 const handleSendNow = async () => {
+    // Prevent multiple simultaneous requests
+    if (inProgress.value) {
+        return;
+    }
+
+    inProgress.value = true;
 
     if (!props.sendMailshotRoute) {
         notify({
@@ -78,6 +87,7 @@ const handleSendNow = async () => {
             title: 'Error',
             text: 'Mailshot route not configured',
         })
+        inProgress.value = false;
         return;
     }
 
@@ -96,6 +106,7 @@ const handleSendNow = async () => {
                     text: 'Failed to send mailshot',
                 })
             }
+
         })
         .catch((exception) => {
             console.log(exception);
@@ -106,6 +117,7 @@ const handleSendNow = async () => {
             })
         })
         .finally(() => {
+            inProgress.value = false;
             router.reload();
         })
 };
@@ -133,7 +145,11 @@ const handleSchedule = async (event: Event) => {
 const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
+    scheduleInProgress.value = true;
     const formattedDateTime = useFormatTime(scheduleDateTime.value, { formatTime: 'yyyy-MM-dd HH:mm:ss' })
+
+    showSchedulePicker.value = false;
+    schedulePicker.value?.hide();
 
     await axios.post(route(props.scheduleMailshotRoute.name, props.scheduleMailshotRoute.parameters), {
         scheduled_at: formattedDateTime
@@ -167,6 +183,7 @@ const confirmSchedule = async () => {
         .finally(() => {
             showSchedulePicker.value = false;
             schedulePicker.value?.hide();
+            scheduleInProgress.value = false;
             router.reload();
         })
 };
@@ -210,6 +227,13 @@ const component = computed(() => {
 });
 
 const handleDelete = async () => {
+
+    if (inProgress.value) {
+        return;
+    }
+
+    inProgress.value = true;
+
     if (!props.deleteMailshotRoute) {
         notify({
             type: 'error',
@@ -236,6 +260,7 @@ const handleDelete = async () => {
                     text: 'Failed to delete mailshot',
                 })
             }
+            inProgress.value = false;
         })
         .catch((exception) => {
             console.log(exception);
@@ -244,6 +269,7 @@ const handleDelete = async () => {
                 title: 'Error',
                 text: 'Failed to delete mailshot',
             })
+            inProgress.value = false;
         })
         .finally(() => {
             if (!props.indexRoute) {
@@ -254,6 +280,7 @@ const handleDelete = async () => {
                 })
                 return;
             }
+            inProgress.value = false
             router.visit(route(props.indexRoute.name, props.indexRoute.parameters));
         })
 }
@@ -267,6 +294,12 @@ const handleCancelSchedule = async () => {
         })
         return;
     }
+
+    if (inProgress.value) {
+        return;
+    }
+
+    inProgress.value = true;
 
     await axios.post(route(props.cancelScheduleMailshotRoute.name, props.cancelScheduleMailshotRoute.parameters))
         .then((response) => {
@@ -283,6 +316,7 @@ const handleCancelSchedule = async () => {
                     text: 'Failed to cancel schedule',
                 })
             }
+            inProgress.value = false;
         })
         .catch((exception) => {
             console.log(exception);
@@ -291,8 +325,10 @@ const handleCancelSchedule = async () => {
                 title: 'Error',
                 text: 'Failed to cancel schedule',
             })
+            inProgress.value = false;
         })
         .finally(() => {
+            inProgress.value = false;
             router.reload();
         })
 }
@@ -306,34 +342,47 @@ const handleCancelSchedule = async () => {
     <PageHeading :data="pageHead">
         <template #otherBefore>
             <div class="flex" v-if="shouldShowButtons">
-                <ModalConfirmation @onYes="handleSendNow" :title="trans('Are you sure you want to send this mailshot?')"
+                <ModalConfirmation :title="trans('Are you sure you want to send this mailshot?')"
                     :description="trans('Please make sure your data or design is correct. This action will send an email to all customers')"
                     isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
-                        <Button :label="trans('send now')" :disabled="false" class="!border-r-none !rounded-r-none"
+                        <Button :label="trans('send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
                             icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
+                    </template>
+                    <template #btn-yes>
+                        <Button :label="trans('send now')" :loading="inProgress" :disabled="inProgress"
+                            @click="handleSendNow" type="secondary" icon="fal fa-paper-plane" />
                     </template>
                 </ModalConfirmation>
                 <Button :label="trans('Scheduled')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
-                    type="secondary" @click="handleSchedule($event)" />
+                    type="secondary" @click="handleSchedule($event)" :loading="scheduleInProgress" />
             </div>
         </template>
         <template #other>
-            <ModalConfirmationDelete @onYes="handleDelete" v-if="shouldShowDeleteButton"
+            <ModalConfirmation v-if="shouldShowDeleteButton"
                 :title="trans('Are you sure you want to delete this mailshot?')"
                 :description="trans('This action cannot be undone. This will permanently delete this mailshot')"
                 isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
-                    <Button :disabled="false" icon="fal fa-trash-alt" type="negative" @click="changeModel" />
+                    <Button :disabled="inProgress" icon="fal fa-trash-alt" type="negative" @click="changeModel" />
                 </template>
-            </ModalConfirmationDelete>
+                <template #btn-yes>
+                    <Button :label="trans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
+                        type="negative" icon="fal fa-trash-alt" />
+                </template>
+            </ModalConfirmation>
 
             <ModalConfirmation @onYes="handleCancelSchedule" v-if="shouldShowCancelScheduleButton"
                 :title="trans('Are you sure you want to cancel this schedule?')"
                 :description="trans('This action will cancel the scheduled mailshot')" isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
-                    <Button :label="trans('Cancel Schedule')" :disabled="false" class="!border-r-none !rounded-r-none"
-                        icon="fal fa-clock" type="negative" @click="changeModel" />
+                    <Button :label="trans('Cancel Schedule')" :disabled="inProgress"
+                        class="!border-r-none !rounded-r-none" icon="fal fa-clock" type="negative"
+                        @click="changeModel" />
+                </template>
+                <template #btn-yes>
+                    <Button :label="trans('Cancel Schedule')" :loading="inProgress" :disabled="inProgress"
+                        @click="handleCancelSchedule" type="negative" icon="fal fa-clock" />
                 </template>
             </ModalConfirmation>
 
