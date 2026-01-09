@@ -83,7 +83,6 @@ class IndexFamilyWebpages extends OrgAction
 
     public function handle(Website $parent, Webpage|null $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
     {
-
         if ($bucket) {
             $this->bucket = $bucket;
         }
@@ -149,7 +148,7 @@ class IndexFamilyWebpages extends OrgAction
                 'websites.slug as website_slug',
                 'product_category_stats.number_current_products',
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url', 'title', 'number_current_products'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'title', 'number_current_products', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -180,17 +179,17 @@ class IndexFamilyWebpages extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                            'title' => __("No webpages found"),
-                            'count' => $parent->webStats->number_webpages,
-                        ]
+                        'title' => __("No webpages found"),
+                        'count' => $parent->webStats->number_webpages,
+                    ]
                 )
-                ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
-            $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
-            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: false, searchable: true);
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'title', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), sortable: true, type: 'icon');
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], tooltip: __('State'), sortable: true, type: 'icon');
+            $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), type: 'icon');
+            $table->column(key: 'code', label: __('Code'), sortable: true);
+            $table->column(key: 'title', label: __('Name'), sortable: true);
+            $table->column(key: 'number_current_products', label: __('Products'), sortable: true);
+            $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             $table->defaultSort('level');
         };
     }
@@ -260,6 +259,7 @@ class IndexFamilyWebpages extends OrgAction
         };
         /** @var Website $website */
         $website = request()->route()->parameter('website');
+
         return match ($routeName) {
             'grp.org.shops.show.web.webpages.index.sub_type.family' =>
             array_merge(

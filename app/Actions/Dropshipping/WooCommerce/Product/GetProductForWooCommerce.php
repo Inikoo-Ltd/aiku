@@ -26,7 +26,7 @@ class GetProductForWooCommerce
      */
     private function transformToStandardFormat($product): array
     {
-        if(blank($product)) {
+        if (blank($product)) {
             return [];
         }
 

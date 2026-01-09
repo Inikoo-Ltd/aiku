@@ -148,7 +148,7 @@ class IndexBlogWebpages extends OrgAction
                 'websites.domain as website_url',
                 'websites.slug as website_slug'
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -193,10 +193,10 @@ class IndexBlogWebpages extends OrgAction
                     }
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], tooltip: __('State'), sortable: true, type: 'icon');
             if ($bucket == 'all') {
                 $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
             }
-            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: false, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
@@ -215,7 +215,6 @@ class IndexBlogWebpages extends OrgAction
     public function htmlResponse(LengthAwarePaginator $webpages, ActionRequest $request): Response
     {
         $subNavigation = [];
-
 
 
         $routeName = $request->route()->getName();

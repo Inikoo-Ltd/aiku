@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { inject, onMounted, ref } from 'vue'
-// import Input from '@/Components/Forms/Fields/Input.vue'
+import { ref } from 'vue'
 import { trans } from "laravel-vue-i18n"
-import BannerPreview from '@/Components/Banners/BannerPreview.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
-import { cloneDeep } from 'lodash-es'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSign, faGlobe, faCopy, faCheck } from '@fal'
@@ -13,12 +9,11 @@ import { faLink } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useCopyText } from '@/Composables/useCopyText'
 import { getAnnouncementComponent } from '@/Composables/useAnnouncement'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(faSign, faGlobe, faCopy, faCheck, faLink)
 
-const props = defineProps<{
+defineProps<{
     data: {
         state: string
         template_code: string
@@ -29,8 +24,6 @@ const props = defineProps<{
     }
     tab?: string
 }>()
-console.log('ccccc', props.data)
-const locale = inject('locale', aikuLocaleStructure)
 
 
 // Method: Copy ulid

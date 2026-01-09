@@ -219,7 +219,7 @@ watch(
 
         </div>
 
-        <div v-else-if="product.stock > 0" class="flex items-center gap-2 xmt-2">
+        <div v-else-if="product.state != 'discontinued'" class="flex items-center gap-2 xmt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
 
@@ -279,7 +279,7 @@ watch(
         </div>
 
         <div v-else>
-            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+            <Button :label="trans('Product Discontinued')" type="tertiary" disabled full />
         </div>
     </div>
 

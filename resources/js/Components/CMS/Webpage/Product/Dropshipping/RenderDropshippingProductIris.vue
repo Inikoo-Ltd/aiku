@@ -9,6 +9,7 @@ import axios from "axios"
 import { Image as ImageTS } from "@/types/Image"
 import { getProductRenderDropshippingComponent } from "@/Composables/getIrisComponents"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
+import { set } from "lodash-es"
 
 library.add(
   faCube,
@@ -61,12 +62,13 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
+console.log(layout)
 
-
-
+const customerData = ref<Record<number, any>>({})
 const product = ref<any>(props.fieldValue?.product ?? null)
 const variant = ref<any>(props.fieldValue?.variant ?? null)
 const appliedVariantFromUrl = ref(false)
+const isLoadingRemindBackInStock = ref(false)
 
 const productsList = ref<ProductResource[]>([])
 
@@ -195,6 +197,47 @@ const changeSelectedProduct = (item: ProductResource) => {
 }
 
 
+const onAddBackInStock = async (product: ProductResource) => {
+  try {
+    isLoadingRemindBackInStock.value = true
+
+    await axios.post(
+      route('iris.models.remind_back_in_stock.store', {
+        product: product.id,
+      })
+    )
+
+    set(product, ['back_in_stock'], true)
+    layout.reload_handle()
+  } catch (error) {
+    console.error('Failed to set back in stock reminder', error)
+  } finally {
+    isLoadingRemindBackInStock.value = false
+  }
+}
+
+const onUnselectBackInStock = async (product: ProductResource) => {
+  try {
+    isLoadingRemindBackInStock.value = true
+
+    await axios.delete(
+      route('iris.models.remind_back_in_stock.delete', {
+        product: product.id,
+      })
+    )
+
+    set(product, ['back_in_stock'], false)
+    layout.reload_handle()
+  } catch (error) {
+    console.error('Failed to unset back in stock reminder', error)
+  } finally {
+    isLoadingRemindBackInStock.value = false
+  }
+}
+
+
+
+
 watch(
   () => layout?.iris?.is_logged_in,
   loggedIn => {
@@ -260,8 +303,14 @@ onMounted(() => {
     })
   }
 
+  if (layout?.iris?.is_logged_in) {
+      fetchData()
+    }
+
   getAllProductFromVariant()
 })
+
+
 </script>
 
 <template>
@@ -272,10 +321,14 @@ onMounted(() => {
     :webpageData="webpageData"
     :blockData="blockData"
     :product="product"
+    :isLoadingRemindBackInStock
     :productExistenceInChannels="productExistenceInChannels[product.id]"
     :listProducts="listProducts"
     :validImages="resolveProductImages(product)"
     :videoSetup="resolveProductVideo(product)"
     @selectProduct="changeSelectedProduct"
+    @setBackInStock="onAddBackInStock"
+    @unsetBackInStock="onUnselectBackInStock"
+
   />
 </template>

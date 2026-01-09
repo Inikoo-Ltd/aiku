@@ -18,6 +18,7 @@ use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
+use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
@@ -1285,4 +1286,9 @@ test('get iris basket transactions in collection action', function () {
     expect($result)->toBeArray()
         ->and($result)->toHaveKey($this->product->id)
         ->and((float)$result[$this->product->id]['quantity_ordered'])->toBe(5.0);
+});
+
+test('reset daily intervals action dispatches expected jobs', function () {
+
+    ResetDailyIntervals::make()->handle();
 });

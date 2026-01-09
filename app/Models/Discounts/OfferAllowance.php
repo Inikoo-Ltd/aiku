@@ -71,7 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Discounts\Offer $offer
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferAllowanceStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @method static \Database\Factories\Discounts\OfferAllowanceFactory factory($count = null, $state = [])

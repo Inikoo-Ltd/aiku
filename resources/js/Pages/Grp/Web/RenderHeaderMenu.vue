@@ -5,7 +5,7 @@ import { sendMessageToParent } from '@/Composables/Workshop';
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
 
-const props = defineProps<{
+defineProps<{
     data: {
         topBar: {
             code : string
