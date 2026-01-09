@@ -423,24 +423,18 @@ console.log(props.modelValue)
                     <FontAwesomeIcon v-else :icon="customerData?.is_favourite ? fasHeart : faHeart"
                         class="text-xl cursor-pointer transition" :class="customerData?.is_favourite
                             ? 'text-pink-500'
-                            : 'text-pink-300 hover:text-pink-400'" @click="
-                                customerData?.is_favourite
-                                    ? onUnselectFavourite(product)
-                                    : onAddFavourite(product)
-                                " />
+                            : 'text-pink-300 hover:text-pink-400'" />
                 </div>
             </div>
 
             <!-- PRICE -->
-            <!-- PRICE + UNIT -->
             <div class='flex justify-between'>
                 <div>
                     <div class="text-xl font-bold">
                         {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                     </div>
                     <div class="text-sm font-medium">
-                        ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit
-                        }})
+                        ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit  }})
                     </div>
                 </div>
 
@@ -466,10 +460,7 @@ console.log(props.modelValue)
 
 
             <!-- REMIND ME -->
-            <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state === 'active'" @click="
-                product.is_back_in_stock
-                    ? onUnselectBackInStock(product)
-                    : onAddBackInStock(product)
+            <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state === 'active'"
                 " class="flex items-center gap-2 px-3 py-2 rounded-full border bg-gray-100 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                 <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" />
@@ -499,7 +490,7 @@ console.log(props.modelValue)
             <!-- VARIANTS -->
             <Swiper v-if="listProducts?.length" :slides-per-view="2.4" :space-between="12">
                 <SwiperSlide v-for="item in listProducts" :key="item.id">
-                    <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
+                    <button :disabled="item.code === product.code"
                         class="rounded-xl border overflow-hidden w-full">
                         <div class="aspect-square bg-gray-50 relative">
                             <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
@@ -513,12 +504,12 @@ console.log(props.modelValue)
             </Swiper>
 
             <!-- APPOINTMENT -->
-            <LinkIris v-if="layout?.iris?.is_logged_in && modelValue?.setting?.appointment"
+            <div v-if="layout?.iris?.is_logged_in && modelValue?.setting?.appointment"
                 :href="modelValue?.appointment_data?.link?.href" :type="modelValue?.appointment_data?.link?.type"
                 class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-gray-50">
                 <FontAwesomeIcon :icon="faMapMarkerAlt" />
                 <div v-html="modelValue?.appointment_data?.text" class="text-sm underline" />
-            </LinkIris>
+            </div>
 
             <!-- DELIVERY -->
             <div v-if="layout?.iris?.is_logged_in && modelValue?.delivery_info?.text"

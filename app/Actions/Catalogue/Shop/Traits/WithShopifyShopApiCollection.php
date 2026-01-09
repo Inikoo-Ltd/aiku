@@ -35,7 +35,30 @@ trait WithShopifyShopApiCollection
                         node {
                             id
                             name
+                            createdAt
+                            displayFinancialStatus
+                            displayFulfillmentStatus
+                            email
+                            phone
                             totalPriceSet {
+                                shopMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                            subtotalPriceSet {
+                                shopMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                            totalTaxSet {
+                                shopMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                            totalShippingPriceSet {
                                 shopMoney {
                                     amount
                                     currencyCode
@@ -44,6 +67,79 @@ trait WithShopifyShopApiCollection
                             customer {
                                 id
                                 email
+                                firstName
+                                lastName
+                                phone
+                                defaultAddress {
+                                    address1
+                                    address2
+                                    city
+                                    province
+                                    provinceCode
+                                    country
+                                    countryCodeV2
+                                    zip
+                                    phone
+                                    company
+                                    firstName
+                                    lastName
+                                }
+                            }
+                            shippingAddress {
+                                address1
+                                address2
+                                city
+                                province
+                                provinceCode
+                                country
+                                countryCodeV2
+                                zip
+                                phone
+                                company
+                                firstName
+                                lastName
+                            }
+                            billingAddress {
+                                address1
+                                address2
+                                city
+                                province
+                                provinceCode
+                                country
+                                countryCodeV2
+                                zip
+                                phone
+                                company
+                                firstName
+                                lastName
+                            }
+                            lineItems(first: 50) {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                        title
+                                        quantity
+                                        sku
+                                        variant {
+                                            id
+                                            title
+                                            price
+                                        }
+                                        originalUnitPriceSet {
+                                            shopMoney {
+                                                amount
+                                                currencyCode
+                                            }
+                                        }
+                                        discountedUnitPriceSet {
+                                            shopMoney {
+                                                amount
+                                                currencyCode
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
