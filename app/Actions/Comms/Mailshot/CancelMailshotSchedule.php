@@ -19,20 +19,22 @@ class CancelMailshotSchedule extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(Mailshot $mailshot): void
+    public function handle(Mailshot $mailshot): Mailshot
     {
         if ($mailshot->state !== MailshotStateEnum::SCHEDULED) {
-            return;
+            return $mailshot;
         }
 
         $this->update($mailshot, [
             'scheduled_at' => null,
             'state' => MailshotStateEnum::READY,
         ]);
+
+        return $mailshot->refresh();
     }
 
-    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot): void
+    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot): Mailshot
     {
-        $this->handle($mailshot);
+        return $this->handle($mailshot);
     }
 }

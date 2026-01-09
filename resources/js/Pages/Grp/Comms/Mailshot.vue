@@ -69,7 +69,6 @@ const minDateTime = ref(new Date());
 const schedulePicker = ref();
 
 const handleSendNow = async () => {
-    // TODO: implement send now, now for testing
 
     if (!props.sendMailshotRoute) {
         notify({
@@ -103,6 +102,9 @@ const handleSendNow = async () => {
                 title: 'Error',
                 text: 'Failed to send mailshot',
             })
+        })
+        .finally(() => {
+            router.reload();
         })
 };
 
@@ -162,6 +164,9 @@ const confirmSchedule = async () => {
                 title: 'Error',
                 text: 'Failed to schedule mailshot',
             })
+        })
+        .finally(() => {
+            router.reload();
         })
 };
 
@@ -285,6 +290,9 @@ const handleCancelSchedule = async () => {
                 title: 'Error',
                 text: 'Failed to cancel schedule',
             })
+        })
+        .finally(() => {
+            router.reload();
         })
 }
 
