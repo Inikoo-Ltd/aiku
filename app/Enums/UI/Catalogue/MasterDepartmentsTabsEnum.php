@@ -11,6 +11,7 @@ enum MasterDepartmentsTabsEnum: string
     use HasTabs;
 
     case INDEX = 'index';
+    case SALES = 'sales';
 
     public function blueprint(): array
     {
@@ -18,6 +19,10 @@ enum MasterDepartmentsTabsEnum: string
             MasterDepartmentsTabsEnum::INDEX => [
                 'title' => __('Index'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterDepartmentsTabsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-money-bill-wave',
             ],
         };
     }
