@@ -37,14 +37,14 @@ class SendChatMessage
             return $exists;
         }
 
-        $originalLanguageId = $modelData['original_language_id'] ?? null;
-        if (!$originalLanguageId) {
-            if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
-                $originalLanguageId = $chatSession->agent_language_id;
-            } else {
-                $originalLanguageId = $chatSession->active_user_language_id ?? $chatSession->user_language_id;
-            }
-        }
+        // $originalLanguageId = $modelData['original_language_id'] ?? null;
+        // if (!$originalLanguageId) {
+        //     if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+        //         $originalLanguageId = $chatSession->agent_language_id;
+        //     } else {
+        //         $originalLanguageId = $chatSession->active_user_language_id ?? $chatSession->user_language_id;
+        //     }
+        // }
 
         $chatMessageData = [
             'chat_session_id' => $chatSession->id,
@@ -52,8 +52,6 @@ class SendChatMessage
             'sender_type'     => $modelData['sender_type'],
             'sender_id'       => $modelData['sender_id'] ?? null,
             'message_text'    => $modelData['message_text'] ?? null,
-            'original_text'        => $modelData['message_text'] ?? null,
-            'original_language_id' => $originalLanguageId,
             'media_id'        => $modelData['media_id'] ?? null,
             'is_read'         => false,
             'created_at'      => now(),
