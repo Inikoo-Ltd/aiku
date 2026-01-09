@@ -26,6 +26,7 @@
           navigation: {}
       }
       index?: {}
+      sales?: {}
   }>()
 
   const currentTab = ref<string>(props.tabs.current)
@@ -35,6 +36,7 @@
   const component = computed(() => {
       const components: any = {
           index: TableMasterDepartments,
+          sales: TableMasterDepartments,
       }
 
       return components[currentTab.value]

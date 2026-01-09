@@ -14,7 +14,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
 
 class FindSpecificShopifyProductVariant
 {

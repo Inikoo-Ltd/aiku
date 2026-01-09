@@ -83,6 +83,8 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
 
+        $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
+
         return [
             'id'                   => $this->id,
             'code'                 => $this->code,
@@ -115,6 +117,9 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'         => $this->is_on_demand,
             'is_variant'           => $this->variant_id ? true : false,
+            'offers_data'          => $this->offers_data,
+            'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
+            'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
         ];
     }
 
