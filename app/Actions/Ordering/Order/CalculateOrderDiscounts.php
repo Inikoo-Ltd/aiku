@@ -288,7 +288,7 @@ class CalculateOrderDiscounts
                 continue;
             }
 
-            $current = property_exists($transaction, 'percentage_off') ? $transaction->percentage_off : null;
+            $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
 
             // Apply only if undefined or lower than the new percentage
             if ($current === null || (is_numeric($current) && (float)$current < $percentageOff)) {
