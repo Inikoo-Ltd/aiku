@@ -295,6 +295,7 @@ class ShowMasterFamily extends GrpAction
                         $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' && app()->environment('local') ? [
                             'type'    => 'button',
                             'style'   => 'create',
+                            'key'     =>'variants',
                             'tooltip' => __('Create a variants group for this family'),
                             'label'   => __('Variants'),
                             'route'   => [

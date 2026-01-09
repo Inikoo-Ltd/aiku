@@ -195,6 +195,7 @@ const buildNodes = computed<Node[]>(() => {
           label: Object.values(keyObj).join(" — "),
           product: getProduct(keyObj),
           is_leader: isLeaderByKey(keyObj),  
+          all_child_has_webpage: getChildHasWebpage(keyObj),
         }
       })
     }
@@ -574,9 +575,13 @@ const noLeader = computed(() => {
 
                     <!-- Leader -->
                     <td class="px-4 text-center">
-                      <input type="checkbox" :disabled="!child.product" :checked="child.is_leader"
+                      <input 
+                        type="checkbox" 
+                        :disabled="!child.product || !child.all_child_has_webpage" 
+                        :checked="child.is_leader"
                         @change="setLeader(child, $event.target.checked)"
-                        class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
+                         v-tooltip="!child.all_child_has_webpage ? trans(`Unable to set this product as a leader. One or more of it's child has no webpage. A leader product is required to have webpage`) : ''"
+                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
                     <!-- Product -->
