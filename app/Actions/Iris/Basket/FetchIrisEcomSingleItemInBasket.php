@@ -58,6 +58,6 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
     
     public function jsonResponse(Product $product)
     {
-        return IrisAuthenticatedProductsInWebpageResource::make($product);
+        return IrisAuthenticatedProductsInWebpageResource::make($product)->toArray(request());
     }
 }
