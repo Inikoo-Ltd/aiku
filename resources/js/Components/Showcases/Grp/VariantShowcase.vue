@@ -163,7 +163,7 @@ console.log("MasterVariantShowcase props:", props)
       <div class="space-y-3">
         <div class="bg-white border rounded-lg shadow-sm overflow-hidden">
           <div class="aspect-square flex items-center justify-center bg-gray-50 relative">
-            <Image v-if="selectedProduct?.main_images" :src="selectedProduct.main_images" :alt="selectedProduct.name"
+            <Image :key="products.code" v-if="selectedProduct?.main_images" :src="selectedProduct.main_images" :alt="selectedProduct.name"
               preview image-class="object-contain w-full h-full p-3" />
 
             <div v-else class="flex flex-col items-center text-gray-400">

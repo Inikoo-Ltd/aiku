@@ -21,6 +21,7 @@ import { getProductsRenderDropshippingComponent } from "@/Composables/getIrisCom
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import RenderProductDropshiping from "./RenderProductDropshiping.vue";
 
 library.add(faFileDownload)
 
@@ -396,7 +397,7 @@ const search_sort_class = ref(getStyles(props.fieldValue?.search_sort?.sort?.pro
 const placeholder_class = ref(getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
 const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false))
 
-console.log('sdasd',props)
+
 </script>
 
 <template>
@@ -502,10 +503,26 @@ console.log('sdasd',props)
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white">
-                             <component :is="getProductsRenderDropshippingComponent(code)" :product="product" :key="index" :bestSeller="fieldValue.bestseller"
+                           <!--   <component 
+                                :is="getProductsRenderDropshippingComponent(code)" 
+                                :product="product" 
+                                :key="index" 
+                                :bestSeller="fieldValue.bestseller"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :productHasPortfolio="productHasPortfolio.list[product.id]"
-                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" :screenType/>
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" 
+                                :screenType
+                            /> -->
+                            <RenderProductDropshiping 
+                                :product="product" 
+                                :key="index" 
+                                :bestSeller="fieldValue.bestseller"
+                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
+                                :productHasPortfolio="productHasPortfolio.list[product.id]"
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" 
+                                :screenType
+                                :code="code"
+                            />
                         </div>
                     </template>
 

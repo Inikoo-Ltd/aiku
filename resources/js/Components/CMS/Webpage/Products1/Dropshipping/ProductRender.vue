@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import Image from "@/Components/Image.vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed } from "vue"
+import { inject, ref } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import { Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCircle, faHeart as fasHeart, faMedal } from "@fas"
+import { faCircle} from "@fas"
 import { Image as ImageTS } from "@/types/Image"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import BestsellerBadge from "@/Components/CMS/Webpage/Products/BestsellerBadge.vue"
 import Prices from "@/Components/CMS/Webpage/Products1/Prices.vue"
-import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope } from '@far'
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
 
@@ -46,175 +47,88 @@ interface ProductResource {
     }
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     product: ProductResource
-    productHasPortfolio: Array<Number> | undefined
+    productHasPortfolio?: Array<number>
     bestSeller: any
-    buttonStyle?: object | undefined
+    buttonStyle?: object
     currency?: {
         code: string
         name: string
     }
-    buttonStyleLogin?: object | undefined
-    screenType:string
-}>()
+    buttonStyleLogin?: object
+    screenType: string
+    hideButtonPortofolio?: boolean
+}>(), {
+    hideButtonPortofolio: false,
+})
+
 
 
 const currency = layout?.iris?.currency || props.currency
-const isLoadingRemindBackInStock = ref(false)
 
-// Section: Add to Favourites
-const isLoadingFavourite = ref(false)
+const emits = defineEmits<{
+    (e: 'setFavorite', value: any[]): void
+    (e: 'unsetFavorite', value: any[]): void
+    (e: 'setBackInStock', value: any[]): void
+    (e: 'unsetBackInStock', value: any[]): void
+}>()
+
+
 const onAddFavourite = (product: ProductResource) => {
-
-    // Section: Submit
-    router.post(
-        route("iris.models.favourites.store", {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                product.is_favourite = true
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
+     emits('setFavorite', product)
 }
 const onUnselectFavourite = (product: ProductResource) => {
-
-    // Section: Submit
-    router.delete(
-        route("iris.models.favourites.delete", {
-            product: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingFavourite.value = true
-            },
-            onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
-                product.is_favourite = false
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
+    emits('unsetFavorite', product)
 }
+
 
 const onAddBackInStock = (product: ProductResource) => {
+     emits('setBackInStock', product)
+}
 
-    // Section: Submit
-    router.post(
-        route("iris.models.remind_back_in_stock.store", {
-            product: product.id
-        }),
-        {
-            // item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            only: ["iris"],
-            preserveState: true,
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                product.is_back_in_stock = true
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingRemindBackInStock.value = false
-            }
-        }
-    )
-}
 const onUnselectBackInStock = (product: ProductResource) => {
-    router.delete(
-        route("iris.models.remind_back_in_stock.delete", {
-            backInStockReminder: product.id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["iris"],
-            onStart: () => {
-                isLoadingRemindBackInStock.value = true
-            },
-            onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
-                product.is_back_in_stock = false
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingFavourite.value = false
-            }
-        }
-    )
+    emits('unsetBackInStock', product)
 }
+
+const idxSlideLoading = ref(false)
+const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+
 
 </script>
 
 <template>
-
     <div class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType/>
 
             <!-- Product Image -->
-            <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px]"
-                :class="product.is_coming_soon || product.stock > 0 ? '' : 'grayscale hover:grayscale-0'"
+            <component 
+                :is="product.url ? LinkIris : 'div'" 
+                :href="product.url"  
+                :type="typeOfLink" 
+                @start="() => idxSlideLoading = true" 
+                @finish="() => idxSlideLoading = false"
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
             >
-                <Image :src="product?.web_images?.main?.gallery" :alt="product.name"
-                    :style="{ objectFit: 'contain' }" />
+                <Image 
+                    :src="product?.web_images?.main?.gallery" 
+                    :alt="product.name" 
+                    :style="{ objectFit: 'contain' }"  
+                />
+
+                 <div v-if="layout?.iris?.is_logged_in && !product.is_variant" class="absolute right-2 bottom-2">
+                    <button 
+                        v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.is_variant"
+                        @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                        class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
+                        <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                        <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                            fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+                    </button>
+                </div>
             </component>
 
             <!-- Title -->
@@ -262,14 +176,21 @@ const onUnselectBackInStock = (product: ProductResource) => {
             <Prices :product="product" :currency="currency" />
         </div>
 
-        <ButtonAddPortfolio
-            :product="product"
-            :productHasPortfolio="productHasPortfolio"
-            :buttonStyle="buttonStyle"
-            :buttonStyleLogin
-        />
+        <div v-if="!hideButtonPortofolio">
+            <ButtonAddPortfolio v-if="!product.is_variant" :product="product" :productHasPortfolio="productHasPortfolio"
+                :buttonStyle="buttonStyle" :buttonStyleLogin />
+            <div v-else class="w-full">
+                <LinkIris v-if="product.url" :href="product.url" type="internal"
+                    class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+                    <template #default>
+                        <Button full :label="trans('Check Variants')" />
+                    </template>
+                </LinkIris>
+            </div>
+        </div>
     </div>
 </template>
 
 
-<style scoped></style>
+<style scoped>
+</style>

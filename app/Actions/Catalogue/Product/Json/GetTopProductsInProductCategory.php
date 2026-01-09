@@ -17,6 +17,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class GetTopProductsInProductCategory extends OrgAction
@@ -39,7 +40,13 @@ class GetTopProductsInProductCategory extends OrgAction
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->whereNotNull('products.top_seller');
         $queryBuilder->where('products.family_id', $productCategory->id)
-                    ->orderBy('products.top_seller', 'asc');
+                ->orderBy('products.top_seller', 'asc');
+        $queryBuilder
+                ->where(function ($query) {
+                    $query
+                        ->where('products.is_minion_variant', false)
+                        ->orWhere('products.is_variant_leader', true);
+                });
 
         $queryBuilder
             ->defaultSort('products.top_seller')
@@ -59,6 +66,7 @@ class GetTopProductsInProductCategory extends OrgAction
                 'products.unit',
                 'products.top_seller',
                 'products.web_images',
+                DB::raw('products.variant_id IS NOT NULL as is_variant'),
             ]);
 
         return $queryBuilder->allowedSorts(['code', 'name', 'top_seller'])

@@ -15,7 +15,7 @@ class GetShopifyStore extends OrgAction
         return $shopifyUser->getShopifyShop();
     }
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): void
     {
         $shopifyUser = ShopifyUser::find($command->argument('shopify_user'));
 

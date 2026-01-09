@@ -12,7 +12,9 @@ use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
 use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
+use App\Actions\Catalogue\Product\Json\GetGrpProductOfVariant;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
+use App\Actions\Catalogue\Product\Json\GetOrderCharges;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
@@ -153,6 +155,7 @@ Route::get('delivery-recent-uploads/{palletDelivery:id}', IndexRecentPalletDeliv
 Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransactionUploads::class)->name('order.transaction.recent_uploads');
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
+Route::get('order/{order:id}/charges', GetOrderCharges::class)->name('order.charges');
 Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModification::class)->name('order.products_for_modify');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
@@ -234,3 +237,6 @@ Route::get('dashboard-custom-dates/organisation/{organisation:id}/invoice-catego
 Route::get('timezones', IndexTimeZones::class)->name('timezones');
 
 Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::class)->name('beefree.authenticate');
+
+
+Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');

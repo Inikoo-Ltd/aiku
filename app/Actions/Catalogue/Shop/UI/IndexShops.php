@@ -163,6 +163,9 @@ class IndexShops extends OrgAction
     {
         $productIndex = IndexProductsInOrganisation::class;
 
+        $shopEngines = array_filter(ShopEngineEnum::values(), function ($shopEngine) {
+            return $shopEngine !== 'aiku';
+        });
 
         return Inertia::render(
             'Org/Catalogue/Shops',
@@ -179,9 +182,20 @@ class IndexShops extends OrgAction
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
+                            'tooltip' => __('New External shop'),
+                            'label'   => __('External Shop'),
+                            'options' => $shopEngines,
+                            'route'   => [
+                                'name'       => 'grp.org.shops.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                        $this->canEdit ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
                             'tooltip' => __('New shop'),
                             'label'   => __('Shop'),
-                            'options' => ShopEngineEnum::values(),
+                            'options' => $shopEngines,
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',
                                 'parameters' => $request->route()->originalParameters()

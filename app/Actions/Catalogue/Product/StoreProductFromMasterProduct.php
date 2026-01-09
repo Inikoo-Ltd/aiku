@@ -56,7 +56,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
 
                     $isMain = $masterAsset->is_main;
-                    $data   = [
+                    $data = [
                         'code'              => $masterAsset->code,
                         'name'              => $masterAsset->name,
                         'description'       => $masterAsset->description,

@@ -137,7 +137,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed> $tax_category
  * @property int|null $master_variant_id
  * @property bool $is_variant_leader
- * @property bool|null $is_minion_variant
+ * @property bool $is_minion_variant
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -439,8 +439,5 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterVariant::class, 'master_variant_id');
     }
-
-
-
 
 }

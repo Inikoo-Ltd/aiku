@@ -31,9 +31,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Media|null $attachment
  * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
- * @property-read Media|null $media
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Model|\Eloquent|null $sender
+ * @property-read Media|null $seoImage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage fromSenderType(\App\Enums\CRM\Livechat\ChatSenderTypeEnum $senderType)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newQuery()

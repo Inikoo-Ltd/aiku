@@ -19,7 +19,7 @@ class ReindexWebpageLuigiAsync extends OrgAction
      */
     public function handle(Webpage $webpage): void
     {
-        ReindexWebpageLuigiData::dispatch($webpage);
+        ReindexWebpageLuigiData::dispatch($webpage->id);
 
     }
 

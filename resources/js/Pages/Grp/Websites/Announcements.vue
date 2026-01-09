@@ -6,13 +6,13 @@
 -->
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
-import { ref } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TableAnnouncements from '@/Components/Tables/Grp/Websites/TableAnnouncements.vue'
+import { PageHeadingTypes } from "@/types/PageHeading"
 
-const props = defineProps<{
-  pageHead: {}
+defineProps<{
+  pageHead: PageHeadingTypes
   title: string
   data: {}
 }>()

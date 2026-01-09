@@ -284,13 +284,15 @@ class ShowMasterFamily extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('Master Product'),
-                        ] : false,
-                        $this->canEdit && app()->environment('local') ? [
+                        $this->canEdit
+                            ? [
+                                'type'    => 'button',
+                                'style'   => 'create',
+                                'tooltip' => __('Add a master product to this family'),
+                                'label'   => __('Master Product'),
+                            ]
+                            : false,
+                        $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' && app()->environment('local') ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Create a variants group for this family'),
