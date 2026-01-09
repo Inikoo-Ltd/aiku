@@ -4,21 +4,21 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 import {
-  faCube,
-  faLink,
-  faHeart,
-  faEnvelope,
-  faFileCheck,
-  faFilePdf,
-  faFileWord
+    faCube,
+    faLink,
+    faHeart,
+    faEnvelope,
+    faFileCheck,
+    faFilePdf,
+    faFileWord
 } from "@fal"
 
 import {
-  faHeart as fasHeart,
-  faPlus,
-  faMinus,
-  faArrowToBottom,
-  faMapMarkerAlt
+    faHeart as fasHeart,
+    faPlus,
+    faMinus,
+    faArrowToBottom,
+    faMapMarkerAlt
 } from "@fas"
 
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
@@ -42,76 +42,76 @@ import { ulid } from "ulid"
 import { Link } from "@inertiajs/vue3"
 
 library.add(
-  faCube,
-  faLink,
-  faPlus,
-  faMinus,
-  faFileCheck,
-  faFilePdf,
-  faFileWord,
-  faArrowToBottom,
-  faMapMarkerAlt,
-  faImage
+    faCube,
+    faLink,
+    faPlus,
+    faMinus,
+    faFileCheck,
+    faFilePdf,
+    faFileWord,
+    faArrowToBottom,
+    faMapMarkerAlt,
+    faImage
 )
 
 /* ================= TYPES ================= */
 
 interface ProductResource {
-  id: number
-  name: string
-  code: string
-  image?: { source: any }
+    id: number
+    name: string
+    code: string
+    image?: { source: any }
 
-  price: number
-  price_per_unit?: number
-  rrp_per_unit?: number
-  profit?: number
-  margin?: string
+    price: number
+    price_per_unit?: number
+    rrp_per_unit?: number
+    profit?: number
+    margin?: string
 
-  currency_code: string
-  unit: string
-  units: number
-  stock: number
+    currency_code: string
+    unit: string
+    units: number
+    stock: number
 
-  rating?: number
-  url?: string | null
+    rating?: number
+    url?: string | null
 
-  bestseller?: boolean
-  is_favourite?: boolean
-  is_back_in_stock?: boolean
+    bestseller?: boolean
+    is_favourite?: boolean
+    is_back_in_stock?: boolean
 
-  description?: string
-  description_extra?: string
+    description?: string
+    description_extra?: string
 
-  web_images?: any
-  variant_label?: string
+    web_images?: any
+    variant_label?: string
 
-  attachments?: any[]
-  specifications?: any
+    attachments?: any[]
+    specifications?: any
 }
 
 /* ================= PROPS / EMITS ================= */
 
 const props = defineProps<{
-  fieldValue: any
-  webpageData?: any
-  blockData?: object
-  screenType: "mobile" | "tablet" | "desktop"
-  validImages: object
-  customerData: any
-  product: ProductResource
-  isLoadingRemindBackInStock: boolean
-  isLoadingFavourite: boolean
-  videoSetup: { url: string }
-  listProducts: ProductResource[]
+    fieldValue: any
+    webpageData?: any
+    blockData?: object
+    screenType: "mobile" | "tablet" | "desktop"
+    validImages: object
+    customerData: any
+    product: ProductResource
+    isLoadingRemindBackInStock: boolean
+    isLoadingFavourite: boolean
+    videoSetup: { url: string }
+    listProducts: ProductResource[]
 }>()
 
 const emit = defineEmits<{
-  (e: "setFavorite", value: ProductResource): void
-  (e: "unsetFavorite", value: ProductResource): void
-  (e: "setBackInStock", value: ProductResource): void
-  (e: "unsetBackInStock", value: ProductResource): void
-  (e: "selectProduct", value: ProductResource): void
+    (e: "setFavorite", value: ProductResource): void
+    (e: "unsetFavorite", value: ProductResource): void
+    (e: "setBackInStock", value: ProductResource): void
+    (e: "unsetBackInStock", value: ProductResource): void
+    (e: "selectProduct", value: ProductResource): void
 }>()
 
 /* ================= STATE ================= */
@@ -124,9 +124,9 @@ const expanded = ref(false)
 const product = ref<ProductResource>(props.product)
 
 watch(
-  () => props.product,
-  v => (product.value = v),
-  { deep: true }
+    () => props.product,
+    v => (product.value = v),
+    { deep: true }
 )
 
 const currency = computed(() => layout?.iris?.currency)
@@ -134,47 +134,47 @@ const currency = computed(() => layout?.iris?.currency)
 /* ================= LOGIC ================= */
 
 const groupedAttachments = computed(() => {
-  if (!product.value.attachments?.length) return {}
-  return product.value.attachments.reduce((acc: any, file: any) => {
-    acc[file.label] ??= []
-    acc[file.label].push(file)
-    return acc
-  }, {})
+    if (!product.value.attachments?.length) return {}
+    return product.value.attachments.reduce((acc: any, file: any) => {
+        acc[file.label] ??= []
+        acc[file.label].push(file)
+        return acc
+    }, {})
 })
 
 const toggleExpanded = () => {
-  expanded.value = !expanded.value
+    expanded.value = !expanded.value
 }
 
 /* ===== FIXED HANDLERS ===== */
 
 const onAddFavourite = (p: ProductResource) => {
-  emit("setFavorite", p)
+    emit("setFavorite", p)
 }
 
 const onUnselectFavourite = (p: ProductResource) => {
-  emit("unsetFavorite", p)
+    emit("unsetFavorite", p)
 }
 
 const onAddBackInStock = (p: ProductResource) => {
-  emit("setBackInStock", p)
+    emit("setBackInStock", p)
 }
 
 const onUnselectBackInStock = (p: ProductResource) => {
-  emit("unsetBackInStock", p)
+    emit("unsetBackInStock", p)
 }
 
 const onSelectProduct = (p: ProductResource) => {
-  emit("selectProduct", p)
+    emit("selectProduct", p)
 }
 
 const extractFileType = (mime = "") =>
-  mime.split("/")[1]?.split("+")[0]?.toLowerCase() || ""
+    mime.split("/")[1]?.split("+")[0]?.toLowerCase() || ""
 
 const getIcon = (type: string) => {
-  if (type === "pdf") return faFilePdf
-  if (["doc", "docx", "msword"].includes(type)) return faFileWord
-  return faFileCheck
+    if (type === "pdf") return faFilePdf
+    if (["doc", "docx", "msword"].includes(type)) return faFileWord
+    return faFileCheck
 }
 
 const baseUrl = `${window.location.origin}/`
@@ -196,7 +196,8 @@ const baseUrl = `${window.location.origin}/`
                 <div class="py-1 w-full">
                     <Product2Image :images="validImages" :video="videoSetup?.url" />
 
-                <a   :href="`${baseUrl}app/catalogue/feeds/feeds/product/${product.slug}/download?type=products_images`"class="
+                    <a :href="`${baseUrl}app/catalogue/feeds/feeds/product/${product.slug}/download?type=products_images`"
+                        class="
                         group
                         flex items-center gap-3
                         py-2 px-4 mt-4 w-fit
@@ -361,7 +362,9 @@ const baseUrl = `${window.location.origin}/`
                 </div>
 
 
-                <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"  :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type"   class="
+                <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"
+                    :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type"
+                    class="
                         group
                         flex items-center gap-3
                         py-2 px-4 mt-4 w-full
@@ -384,11 +387,11 @@ const baseUrl = `${window.location.origin}/`
 
 
                 <div v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment" class="text-sm font-medium">
-                      <div v-html="fieldValue?.delivery_info?.text"></div>
+                    <div v-html="fieldValue?.delivery_info?.text"></div>
                 </div>
 
 
-                <div v-if="fieldValue.setting?.payments_and_policy && fieldValue.paymentData"  class="my-2">
+                <div v-if="fieldValue.setting?.payments_and_policy && fieldValue.paymentData" class="my-2">
                     <div class="flex flex-wrap items-center gap-6 py-2">
                         <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
                             class="h-4 px-1" />
@@ -493,78 +496,165 @@ const baseUrl = `${window.location.origin}/`
     </div>
 
 
-    <!-- MOBILE -->
-    <div v-if="screenType === 'mobile'" class="px-4 py-4 bg-white">
-        <!-- PRODUCT IMAGES -->
+    <!-- ================= MOBILE ================= -->
+    <div v-if="screenType === 'mobile'" class="bg-white">
+
+        <!-- IMAGES -->
         <Product2Image :images="validImages" :video="videoSetup?.url" />
 
-        <!-- PRODUCT TITLE -->
-        <div class="mt-4">
+        <div class="px-4 py-4 space-y-5">
+
+            <!-- TITLE -->
             <h1 class="!text-xl font-bold leading-tight">
                 <span v-if="product.units > 1">{{ product.units }}x</span>
                 {{ product.name }}
             </h1>
 
-            <div class="flex justify-between">
-                <div class="mt-1 text-base font-semibold">
-                    {{ locale.currencyFormat(currency?.code, product.price || 0) }}
-                </div>
+            <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-1">
+                <!-- STOCK -->
+                <span class="text-sm font-medium" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+                    {{
+                        product.stock > 0
+                            ? `${trans('In stock')} (${customerData?.stock})`
+                            : trans('Out Of Stock')
+                    }}
+                </span>
 
-                <div class="text-xs text-gray-600">
-                    ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit }})
+                <!-- FAVOURITE -->
+                <div v-if="layout?.retina?.type !== 'dropshipping'">
+                    <LoadingIcon v-if="isLoadingFavourite" class="text-gray-400" />
+                    <FontAwesomeIcon v-else :icon="customerData?.is_favourite ? fasHeart : faHeart"
+                        class="text-xl cursor-pointer transition" :class="customerData?.is_favourite
+                            ? 'text-pink-500'
+                            : 'text-pink-300 hover:text-pink-400'" @click="
+                                customerData?.is_favourite
+                                    ? onUnselectFavourite(product)
+                                    : onAddFavourite(product)
+                                " />
                 </div>
-
             </div>
-        </div>
 
-        <!-- ADD TO CART -->
-        <div class="mt-4">
+            <!-- PRICE -->
+            <!-- PRICE + UNIT -->
+            <div class='flex justify-between'>
+                <div>
+                    <div class="text-xl font-bold">
+                        {{ locale.currencyFormat(currency?.code, product.price || 0) }}
+                    </div>
+                    <div class="text-sm font-medium">
+                        ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit
+                        }})
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs font-medium border-b-2 border-gray-900 p-1.5 text-right ">
+                        <p>Retail Price:</p>
+                        <p>{{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                        </p>
+                    </div>
+                    <div class="p-1.5 text-right">
+                        <span class="text-base font-medium">Profit:</span>
+
+                        <div class="flex items-center justify-end text-xs font-bold">
+                            <span>{{ locale.currencyFormat(currency?.code, product.profit || 0) }} &nbsp;</span>
+                            <span class="font-normal">({{ product.margin }})</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STOCK + FAVOURITE -->
+
+
+
+            <!-- REMIND ME -->
+            <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state === 'active'" @click="
+                product.is_back_in_stock
+                    ? onUnselectBackInStock(product)
+                    : onAddBackInStock(product)
+                " class="flex items-center gap-2 px-3 py-2 rounded-full border bg-gray-100 text-sm">
+                <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" />
+                <span>
+                    {{
+                        product.is_back_in_stock
+                            ? trans('will be notified when in Stock')
+                            : trans('Remind me')
+                    }}
+                </span>
+            </button>
+
+            <!-- ADD TO CART -->
             <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product" :customerData="customerData"
                 :key="keyCustomer" class="w-full" />
             <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
-        </div>
 
-        <!-- VARIANT SWIPER (MOBILE OPTIMIZED) -->
-        <div v-if="listProducts && listProducts.length > 0" class="mt-6">
-            <Swiper :space-between="10" :slides-per-view="2.4" :grab-cursor="true">
+            <!-- DOWNLOAD -->
+            <a :href="`${baseUrl}app/catalogue/feeds/feeds/product/${product.slug}/download?type=products_images`"
+                class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-gray-50">
+                <FontAwesomeIcon :icon="faArrowToBottom" />
+                <span class="text-sm font-medium truncate">
+                    {{ trans('Download Marketing Materials for') }} {{ product.name }}
+                </span>
+            </a>
+
+            <!-- VARIANTS -->
+            <Swiper v-if="listProducts?.length" :slides-per-view="2.4" :space-between="12">
                 <SwiperSlide v-for="item in listProducts" :key="item.id">
                     <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
-                        class="relative w-full rounded-xl border bg-white overflow-hidden" :class="item.code === product.code
-                            ? 'ring-2 primary'
-                            : 'border-gray-200'">
-                        <!-- IMAGE -->
-                        <div class="relative w-full aspect-square bg-gray-50">
+                        class="rounded-xl border overflow-hidden w-full">
+                        <div class="aspect-square bg-gray-50 relative">
                             <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
-                                :alt="item.code" class="absolute inset-0 w-full h-full object-contain" loading="lazy" />
-                            <FontAwesomeIcon v-else :icon="faImage"
-                                class="absolute inset-0 m-auto text-gray-300 text-lg" />
+                                class="absolute inset-0 w-full h-full object-contain" />
                         </div>
-
-                        <!-- LABEL (ALWAYS SHOW ON MOBILE) -->
-                        <div class="px-2 py-1">
-                            <span class="block text-[11px] font-medium text-center truncate
-                     bg-gray-100 text-gray-800 rounded">
-                                {{ item.variant_label }}
-                            </span>
+                        <div class="p-1 text-xs truncate text-center">
+                            {{ item.variant_label }}
                         </div>
                     </button>
                 </SwiperSlide>
             </Swiper>
-        </div>
 
-        <!-- DESCRIPTION -->
-        <div class="mt-6 text-xs text-gray-700">
-            <div v-html="product.description" />
+            <!-- APPOINTMENT -->
+            <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"
+                :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type"
+                class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-gray-50">
+                <FontAwesomeIcon :icon="faMapMarkerAlt" />
+                <div v-html="fieldValue?.appointment_data?.text" class="text-sm underline" />
+            </LinkIris>
 
-            <div v-if="expanded" class="mt-2">
-                <div class="prose prose-sm max-w-none" v-html="product.description_extra" />
+            <!-- DELIVERY -->
+            <div v-if="layout?.iris?.is_logged_in && fieldValue?.delivery_info?.text"
+                v-html="fieldValue.delivery_info.text" class="text-sm" />
+
+            <!-- PAYMENTS -->
+            <div v-if="fieldValue?.setting?.payments_and_policy && fieldValue.paymentData">
+                <div class="flex flex-wrap gap-4">
+                    <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" class="h-4" />
+                </div>
             </div>
 
-            <button v-if="product.description_extra" @click="toggleExpanded" class="mt-2 text-xs underline">
-                {{ expanded ? trans('Show Less') : trans('Read More') }}
-            </button>
+            <!-- PRODUCT SPECS -->
+            <div v-if="fieldValue?.setting?.product_specs" class="border rounded-lg p-4 bg-gray-50">
+                <div class="font-bold mb-2">Product Specification</div>
+                <div class="space-y-1 text-sm">
+                    <div v-if="product.specifications.origin">
+                        Origin: {{ product.specifications.origin }}
+                    </div>
+                    <div v-if="product.specifications.barcode">
+                        Barcode: {{ product.specifications.barcode }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="text-xs">
+                <div v-html="product.description" />
+                <div v-if="expanded" v-html="product.description_extra" class="mt-2" />
+                <button v-if="product.description_extra" @click="toggleExpanded" class="underline text-xs mt-2">
+                    {{ expanded ? trans('Show Less') : trans('Read More') }}
+                </button>
+            </div>
         </div>
     </div>
-
-
 </template>
