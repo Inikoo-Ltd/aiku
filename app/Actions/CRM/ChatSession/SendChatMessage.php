@@ -131,7 +131,8 @@ class SendChatMessage
     {
         return [
             'message_text' => [
-                'required_without:media_id',
+                'required_without:image',
+                'nullable',
                 'string',
                 'max:5000'
             ],

@@ -92,19 +92,19 @@ class OfferAllowance extends Model implements Auditable
     use InShop;
 
     protected $casts = [
-        'data'            => 'array',
-        'source_data'     => 'array',
-        'target_data'     => 'array',
-        'state'           => OfferAllowanceStateEnum::class,
-        'type'            => OfferAllowanceType::class,
-        'class'           => OfferAllowanceClass::class,
-        'target_type'     => OfferAllowanceTargetTypeEnum::class,
-        'duration'        => OfferDurationEnum::class,
+        'data'              => 'array',
+        'source_data'       => 'array',
+        'target_data'       => 'array',
+        'state'             => OfferAllowanceStateEnum::class,
+        'type'              => OfferAllowanceType::class,
+        'class'             => OfferAllowanceClass::class,
+        'target_type'       => OfferAllowanceTargetTypeEnum::class,
+        'duration'          => OfferDurationEnum::class,
         'begin_at'          => 'datetime',
         'end_at'            => 'datetime',
         'last_suspended_at' => 'datetime',
         'fetched_at'        => 'datetime',
-        'last_fetched_at' => 'datetime',
+        'last_fetched_at'   => 'datetime',
     ];
 
     protected $attributes = [
@@ -141,7 +141,6 @@ class OfferAllowance extends Model implements Auditable
                             $slug .= '-'.$category->code;
                         }
                     }
-
                 }
                 if ($this->type) {
                     $slug .= '-'.$this->type->slug();
@@ -151,12 +150,8 @@ class OfferAllowance extends Model implements Auditable
                         $percentage = Arr::get($this->data, 'percentage_off', '');
                         if ($percentage) {
                             $slug .= '-'.(100 * $percentage);
-
                         }
-
-
                     }
-
                 }
 
 

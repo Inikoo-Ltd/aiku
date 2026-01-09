@@ -16,6 +16,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Sentry;
 
 class StoreShopifyProductVariant extends RetinaAction
@@ -110,7 +111,12 @@ class StoreShopifyProductVariant extends RetinaAction
                 ]
             ];
 
-            if ($level === 1) {
+            $currentVariant = FindSpecificShopifyProductVariant::run($customerSalesChannel, $portfolio->platform_product_id);
+
+            if (Arr::get($currentVariant, 'price') > 0 && Arr::get($currentVariant, 'price') !== $product->rrp) {
+                data_set($variants[0], 'price', Arr::get($currentVariant, 'price'));
+                data_set($variants[0], 'compareAtPrice', Arr::get($currentVariant, 'price'));
+            } else {
                 data_set($variants[0], 'price', $product->rrp);
                 data_set($variants[0], 'compareAtPrice', $product->rrp);
             }
