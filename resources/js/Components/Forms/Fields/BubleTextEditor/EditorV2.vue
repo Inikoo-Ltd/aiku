@@ -466,6 +466,11 @@ const convertRemToPx = (remString) => {
     return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
 }
 
+const shouldShowBubble = ({ editor }: any) => {
+  if (!editor) return false
+
+  return editor.isFocused && !showDialog.value
+}
 
 
 onMounted(async () => {
@@ -482,7 +487,7 @@ onMounted(async () => {
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
         <Teleport to="body">
-            <BubbleMenu :tippy-options="{
+            <BubbleMenu  :shouldShow="shouldShowBubble" :tippy-options="{
                 placement: 'bottom',
                 offset: [0, 8],}" ref="_bubbleMenu"  :editor="editorInstance"
                 v-if="editorInstance && !showDialog"

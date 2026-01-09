@@ -85,7 +85,6 @@ const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
 
-console.log('RenderProductEcom mounted',props.product)
 
 </script>
 

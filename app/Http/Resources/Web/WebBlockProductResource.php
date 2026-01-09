@@ -15,12 +15,14 @@ use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property mixed $units
  * @property mixed $rrp
+ * @property mixed $id
  */
 class WebBlockProductResource extends JsonResource
 {
@@ -48,6 +50,22 @@ class WebBlockProductResource extends JsonResource
         $isOnDemand = $product->orgStocks()->where('is_on_demand', true)->exists();
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
+
+        $back_in_stock    = false;
+
+        if ($request->user()) {
+            /** @var Customer $customer */
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $set_data_back_in_stock = $customer->backInStockReminder()
+                    ?->where('product_id', $this->id)
+                    ->first();
+
+                if ($set_data_back_in_stock) {
+                    $back_in_stock    = true;
+                }
+            }
+        }
 
         return [
             'luigi_identity'    => $product->getLuigiIdentity(),
@@ -82,7 +100,8 @@ class WebBlockProductResource extends JsonResource
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $isOnDemand,
-            'is_back_in_stock'  => $product->backInStockReminders
+            'is_back_in_stock'  => $product->backInStockReminders,
+            'back_in_stock'     => $back_in_stock
         ];
     }
 

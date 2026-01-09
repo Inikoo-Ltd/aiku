@@ -53,8 +53,8 @@ class StoreProductFromMasterProduct extends GrpAction
                             'quantity' => $tradeUnit->pivot->quantity,
                         ];
                     }
-                    
-                    
+
+
                     $isMain = $masterAsset->is_main;
                     $data = [
                         'code'              => $masterAsset->code,

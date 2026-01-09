@@ -22,7 +22,7 @@ class GetGrpProductOfVariant extends OrgAction
         return [
             'products' => $variant->allProduct
                 ->map(
-                    fn($product) =>
+                    fn ($product) =>
                     WebBlockProductResource::make($product)
                         ->toArray(request())
                 )

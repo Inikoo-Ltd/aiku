@@ -50,7 +50,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $label
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\Helpers\Currency $currency
+ * @property-read Currency $currency
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
@@ -123,7 +123,7 @@ class Charge extends Model implements Auditable
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
     }
-    
+
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);

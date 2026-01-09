@@ -95,7 +95,7 @@ trait WithIrisProductsInWebpage
                     ->where('products.is_for_sale', true)
                     ->orWhere('products.is_variant_leader', true); // If is_variant_leader is true, ignore is_for_sale. Otherwise can't display the item at all
             });
-            
+
         if ($stockMode == 'in_stock') {
             $queryBuilder->where('products.available_quantity', '>', 0);
         } elseif ($stockMode == 'out_of_stock') {

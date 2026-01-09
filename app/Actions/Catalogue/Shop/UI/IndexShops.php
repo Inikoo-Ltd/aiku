@@ -163,26 +163,39 @@ class IndexShops extends OrgAction
     {
         $productIndex = IndexProductsInOrganisation::class;
 
+        $shopEngines = array_filter(ShopEngineEnum::values(), function ($shopEngine) {
+            return $shopEngine !== 'aiku';
+        });
 
         return Inertia::render(
             'Org/Catalogue/Shops',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Shops'),
+                'title'       => __('shops'),
                 'pageHead'    => [
-                    'title'   => __('Shops'),
+                    'title'   => __('shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('Shop')
                     ],
-                    'model' => $this->organisation->code,
                     'actions' => [
+                        $this->canEdit ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('New External shop'),
+                            'label'   => __('External Shop'),
+                            'options' => $shopEngines,
+                            'route'   => [
+                                'name'       => 'grp.org.shops.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New shop'),
                             'label'   => __('Shop'),
-                            'options' => ShopEngineEnum::options(),
+                            'options' => $shopEngines,
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -195,6 +208,7 @@ class IndexShops extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => ShopsTabsEnum::navigation(),
                 ],
+
 
                 ShopsTabsEnum::SHOPS->value => $this->tab == ShopsTabsEnum::SHOPS->value ?
                     fn () => ShopResource::collection($shops)

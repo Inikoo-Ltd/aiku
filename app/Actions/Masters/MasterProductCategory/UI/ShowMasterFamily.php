@@ -284,7 +284,7 @@ class ShowMasterFamily extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canEdit 
+                        $this->canEdit
                             ? [
                                 'type'    => 'button',
                                 'style'   => 'create',

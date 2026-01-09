@@ -33,14 +33,14 @@ class GetOrderCharges extends OrgAction
                     ->orWhereStartWith('products.code', $value);
             });
         });
-        
+
         $shop = $order->shop;
 
         $queryBuilder = QueryBuilder::for(Charge::class);
         $queryBuilder
             ->where('charges.shop_id', $shop->id)
             ->where('charges.state', ChargeStateEnum::ACTIVE);
-        
+
         $queryBuilder
             ->leftJoin('transactions', function ($join) {
                 $join

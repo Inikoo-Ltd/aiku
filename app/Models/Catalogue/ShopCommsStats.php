@@ -89,7 +89,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_traffic_sources
  * @property int $number_outboxes_type_reorder_reminder_2nd
  * @property int $number_outboxes_type_reorder_reminder_3rd
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \App\Models\Catalogue\Shop $shop
  * @method static Builder<static>|ShopCommsStats newModelQuery()
  * @method static Builder<static>|ShopCommsStats newQuery()
  * @method static Builder<static>|ShopCommsStats query()
