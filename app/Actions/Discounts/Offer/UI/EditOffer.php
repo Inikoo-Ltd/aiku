@@ -53,6 +53,13 @@ class EditOffer extends OrgAction
                                         'required'    => true,
                                         'value'       => $offer->name,
                                     ],
+                                    'label'        => [
+                                        'type'        => 'input',
+                                        'label'       => __('Label'),
+                                        'placeholder' => __('Label'),
+                                        'required'    => true,
+                                        'value'       => $offer->label,
+                                    ],
                                     'trigger_data_item_quantity'        => [
                                         'type'        => 'input_number',
                                         'label'       => __('Product quantity'),
