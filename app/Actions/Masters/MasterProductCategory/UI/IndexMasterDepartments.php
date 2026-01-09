@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\UI\Catalogue\MasterDepartmentsTabsEnum;
 use App\Http\Resources\Masters\MasterDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterProductCategory;
@@ -37,18 +38,18 @@ class IndexMasterDepartments extends OrgAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentsTabsEnum::values());
 
-        return $this->handle(parent: $masterShop);
+        return $this->handle(parent: $masterShop, prefix: MasterDepartmentsTabsEnum::INDEX->value);
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentsTabsEnum::values());
 
-        return $this->handle(parent: $group);
+        return $this->handle(parent: $group, prefix: MasterDepartmentsTabsEnum::INDEX->value);
     }
 
     public function handle(Group|MasterShop $parent, $prefix = null): LengthAwarePaginator
@@ -147,6 +148,8 @@ class IndexMasterDepartments extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterDepartments, ActionRequest $request): Response
     {
+        $navigation = MasterDepartmentsTabsEnum::navigation();
+
         $model = '';
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
@@ -218,9 +221,15 @@ class IndexMasterDepartments extends OrgAction
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'        => MasterDepartmentsResource::collection($masterDepartments),
+                'tabs'                                => [
+                    'current'    => $this->tab,
+                    'navigation' => $navigation,
+                ],
+                MasterDepartmentsTabsEnum::INDEX->value => $this->tab == MasterDepartmentsTabsEnum::INDEX->value ?
+                    fn () => MasterDepartmentsResource::collection($masterDepartments)
+                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterDepartmentsTabsEnum::INDEX->value))),
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure($this->parent, prefix: MasterDepartmentsTabsEnum::INDEX->value));
     }
 
     public function getBreadcrumbs(MasterShop|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array

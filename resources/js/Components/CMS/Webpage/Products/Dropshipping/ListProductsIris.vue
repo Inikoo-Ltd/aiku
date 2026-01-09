@@ -477,8 +477,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                             {{ products.length === 1 ? "product" : "products" }}
                         </span>
                     </div>
-
-                    <div v-if="layout?.iris_variables?.id">
+                    <div v-if="layout?.iris_variables?.customer_id">
                         <ButtonAddCategoryToPortfolio :products :categoryId 
                             :routeGetCategoryChannels="{
                                 name: props.fieldValue.model_type == 'ProductCategory' ? 'iris.json.customer.product_category.channel_ids.index' : 'iris.json.customer.collection.channel_ids.index',
