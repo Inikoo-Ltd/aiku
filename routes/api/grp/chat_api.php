@@ -14,6 +14,7 @@ use App\Actions\CRM\ChatSession\HandleChatTyping;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\StoreGuestProfile;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
+use App\Actions\CRM\ChatSession\DownloadChatAttachment;
 use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
 
 Route::get('/ping', function () {
@@ -51,3 +52,6 @@ Route::post('/typing', HandleChatTyping::class, 'typing')
 
 Route::post('/read', HandleChatRead::class, 'read')
     ->name('read');
+
+Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)
+    ->name('chat.attachment.download');
