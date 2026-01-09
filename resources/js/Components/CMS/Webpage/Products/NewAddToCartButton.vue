@@ -108,6 +108,25 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
     }
 }
 
+// Section: get updated product to manipulating props.product
+const fetchProduct = async (transId?: string|number|null) => {
+    if (!transId) return
+
+    try {
+        const response = await axios.get(
+            route('iris.models.transaction.fetch_product', {transaction: transId})
+        )
+
+        const newProduct = response.data
+        Object.keys(newProduct).forEach(key => {
+            props.product[key] = newProduct[key]
+        })
+
+    } catch (error: any) {
+        console.log('error', error)
+    }
+}
+
 // Add to basket function - exact copy dari ButtonAddToBasketInFamily
 const onAddToBasket = async (product: ProductResource, basket: any) => {
     try {
@@ -145,9 +164,10 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
         }
 
         layout.reload_handle()
-        router.reload({
-            only: ['iris', 'data'],
-        })
+        fetchProduct(response.data?.transaction_id)
+        // router.reload({
+        //     only: ['iris', 'data'],
+        // })
 
         product.transaction_id = response.data?.transaction_id
         basket.quantity_ordered = response.data?.quantity_ordered
@@ -211,6 +231,12 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                             products.splice(index, 1)
                         }
                     }
+
+                    // Section: remove offers data
+                    delete props.product.transaction_id
+                    delete props.product.offer_net_amount_per_quantity
+                    delete props.product.offer_price_per_unit
+                    delete props.product.offers_data
                 } else {
                     // Update product quantity in layout basket
                     const products = layout.rightbasket?.products
@@ -221,6 +247,8 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                             products[index].quantity_ordered_new = basket.quantity_ordered_new
                         }
                     }
+
+                    fetchProduct(productTransactionId)
                 }
             },
             onError: errors => {

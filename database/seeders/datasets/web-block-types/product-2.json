@@ -2,21 +2,25 @@
 	"slug": "product-2",
 	"scope": "webpage",
 	"code": "product-2",
-	"name": "Product showcase A",
+	"name": "Product showcase B",
 	"icon": ["fal", "cube"],
 	"category": "product",
-	"website_type" : [],
-	"is_in_test" : true,
+	"website_type": ["b2b", "b2c"],
+	"is_in_test": true,
 	"fixed": true,
 	"data": {
 		"fieldValue": {
-			"setting" : {
-				"faqs" : true,
-				"product_specs" : true,
-				"customer_review" : true,
-				"payments_and_policy" : true
+			"setting": {
+				"product_specs": true,
+				"payments_and_policy": true,
+				"appointment": true
 			},
-			"information" : []
+			"delivery_info": {
+				"text": "Free delivery on orders over £175+VAT."
+			},
+			"appointment_data": {
+				"text": "<p>See Product In The Showroom</p><p>- Book Appointment</p>"
+			}
 		}
 	}
 }
