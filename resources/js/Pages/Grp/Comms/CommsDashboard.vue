@@ -12,13 +12,14 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume } from "@fal";
+import ComsDashboard from "@/Components/Coms/ComsDashboard.vue";
 
 library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume);
 
 const props = defineProps<{
-  title: string,
-  pageHead: PageHeadingTypes
-  tabs: TSTabs
+    title: string,
+    pageHead: PageHeadingTypes
+    tabs: TSTabs
 
 
 }>();
@@ -28,11 +29,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
 
-  const components: Component = {
-    dashboard: {}
-  };
+    const components: Component = {
+        dashboard: ComsDashboard
+    };
 
-  return components[currentTab.value];
+    return components[currentTab.value];
 
 });
 
@@ -40,8 +41,9 @@ const component = computed(() => {
 
 
 <template>
-  <Head :title="capitalize(title)" />
-  <PageHeading :data="pageHead" />
-  <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-  <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead" />
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>
