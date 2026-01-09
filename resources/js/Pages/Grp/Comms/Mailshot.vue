@@ -12,11 +12,12 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import MailshotShowcase from "@/Components/Showcases/Org/Mailshot/MailshotShowcase.vue";
 import { faEnvelope, faStop } from "@fas";
-import { faDraftingCompass, faUsers, faPaperPlane ,faBullhorn} from "@fal";
+import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
+import ComsDashboard from "@/Components/Coms/ComsDashboard.vue";
 
-library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane,faBullhorn);
+library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn);
 
 
 const props = defineProps<{
@@ -37,15 +38,16 @@ const component = computed(() => {
         showcase: MailshotShowcase,
         email_preview: EmailPreview,
         history: TableHistories,
-        dispatched_emails: TableDispatchedEmails
+        dispatched_emails: TableDispatchedEmails,
+        recipients: ComsDashboard,
     };
     return components[currentTab.value];
 });
-
 </script>
 
 
 <template>
+
     <Head :title="capitalize(pageHead.title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
