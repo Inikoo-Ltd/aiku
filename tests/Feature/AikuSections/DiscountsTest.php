@@ -46,6 +46,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
+use App\Actions\Discounts\Offer\SetOfferAsPermanent;
 use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 
 use function Pest\Laravel\actingAs;
@@ -147,6 +148,34 @@ test('update offer allowance', function ($offerAllowance) {
     $offerAllowance = UpdateOfferAllowance::make()->action($offerAllowance, OfferAllowance::factory()->definition());
     $this->assertModelExists($offerAllowance);
 })->depends('create offer allowance');
+
+test('set offer as permanent', function (Offer $offer) {
+    $offerAllowance = $offer->offerAllowances()->first();
+    $offer->update([
+        'duration' => OfferDurationEnum::INTERVAL,
+        'end_at'   => now()->addDays(10),
+        'state'    => OfferStateEnum::IN_PROCESS,
+    ]);
+    $offerAllowance->update([
+        'duration' => OfferDurationEnum::INTERVAL,
+        'end_at'   => now()->addDays(10),
+        'state'    => OfferAllowanceStateEnum::IN_PROCESS,
+    ]);
+
+    $offer = SetOfferAsPermanent::run($offer);
+
+    expect($offer->duration)->toBe(OfferDurationEnum::PERMANENT)
+        ->and($offer->end_at)->toBeNull()
+        ->and($offer->state)->toBe(OfferStateEnum::ACTIVE)
+        ->and($offer->status)->toBeTrue();
+
+    $offerAllowance->refresh();
+    expect($offerAllowance->duration)->toBe(OfferDurationEnum::PERMANENT)
+        ->and($offerAllowance->end_at)->toBeNull()
+        ->and($offerAllowance->state)->toBe(OfferAllowanceStateEnum::ACTIVE)
+        ->and($offerAllowance->status)->toBeTrue();
+
+})->depends('create offer');
 
 test('UI Discount Dashboard', function () {
     $response = get(route('grp.org.shops.show.discounts.dashboard', [$this->organisation->slug, $this->shop->slug]));
