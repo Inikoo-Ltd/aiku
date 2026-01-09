@@ -22,6 +22,9 @@ class DetectWebsiteFromDomain
     public function handle($domain): ?Website
     {
         $domain = $this->parseDomain($domain);
+        if($domain==null){
+            abort(404, 'Not found');
+        }
 
         /** @var Website $website */
         $website = Website::where('domain', $domain)->where('status', true)->first();
@@ -32,10 +35,13 @@ class DetectWebsiteFromDomain
         return $website;
     }
 
-    public function parseDomain(string $domain)
+    public function parseDomain(string $domain): string|null
     {
         $domain = strtolower($domain);
         if (app()->environment('local')) {
+            if ($domain == config('app.domain') || $domain == 'app.'.config('app.domain')) {
+                return null;
+            }
             if ($domain == 'fulfilment.test') {
                 $domain = config('app.local.retina_fulfilment_domain');
             } elseif ($domain == 'ds.test') {
