@@ -377,8 +377,8 @@ const handleCancelSchedule = async () => {
                 :description="trans('This action will cancel the scheduled mailshot')" isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
                     <Button :label="trans('Cancel Schedule')" :disabled="inProgress"
-                        class="!border-r-none !rounded-r-none" icon="fal fa-clock" type="negative"
-                        @click="changeModel" />
+                        class="!border-r-none !rounded-r-none" icon="fal fa-clock" type="negative" @click="changeModel"
+                        :tooltip="trans('This can still be canceled before it starts sending')" />
                 </template>
                 <template #btn-yes>
                     <Button :label="trans('Cancel Schedule')" :loading="inProgress" :disabled="inProgress"
