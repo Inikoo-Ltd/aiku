@@ -85,8 +85,13 @@ function clientRoute(order) {
           <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="" fixed-width aria-hidden="true" />
           <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="" fixed-width aria-hidden="true" />
         </span>
-        <div v-if="!(item.payment_amount >= item.total_amount) && item.state != 'cancelled'" class="text-xs text-red-500 italic bg-red-100 px-1 py-0.5 w-fit rounded-sm mt-0.5">
-          {{ trans("Not paid yet") }}
+        <div
+          v-if="!(item.payment_amount >= item.total_amount) && item.state != 'cancelled'"
+          class="cursor-default text-xs text-red-500 italic bg-red-100 px-1.5 py-0.5 w-fit rounded-sm mt-0.5 border border-red-300"
+          v-tooltip="trans('If your order is marked as unpaid, please add the required funds to your account balance. Once done, return back to orders and click to complete the payment by balance. Your order will then be automatically sent to the warehouse for fulfilment') + '.'"
+        >
+          <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+          {{ trans("Unpaid") }}
         </div>
       </template>
 
