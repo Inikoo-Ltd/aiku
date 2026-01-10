@@ -775,6 +775,7 @@ test('UI Edit customer web users', function () {
 });
 
 test('UI Index customer orders', function () {
+    $this->withoutExceptionHandling();
     /** @var Customer $customer */
     $customer = Customer::first();
 
