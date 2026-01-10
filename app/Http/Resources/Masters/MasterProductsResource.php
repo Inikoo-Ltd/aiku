@@ -55,7 +55,7 @@ class MasterProductsResource extends JsonResource
                     break;
                 }
             }
-             data_set($extraField, 'allChildHasWebpage', $hasValidProduct && $allChildHasWeb);
+            data_set($extraField, 'allChildHasWebpage', $hasValidProduct && $allChildHasWeb);
         }
 
         return [

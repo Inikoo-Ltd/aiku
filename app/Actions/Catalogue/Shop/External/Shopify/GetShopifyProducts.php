@@ -28,7 +28,7 @@ class GetShopifyProducts extends OrgAction
             foreach (Arr::get($product, 'variants.edges', []) as $variant) {
                 $variant = Arr::get($variant, 'node');
 
-                if(! Arr::get($variant, 'sku')) {
+                if (! Arr::get($variant, 'sku')) {
                     return;
                 }
 

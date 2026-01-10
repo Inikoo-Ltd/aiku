@@ -289,7 +289,7 @@ class ShowMasterFamily extends GrpAction
                         $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'key'     =>'variants',
+                            'key'     => 'variants',
                             'tooltip' => __('Create a variants group for this family'),
                             'label'   => __('Variants'),
                             'route'   => [

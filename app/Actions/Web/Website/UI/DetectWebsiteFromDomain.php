@@ -22,7 +22,7 @@ class DetectWebsiteFromDomain
     public function handle($domain): ?Website
     {
         $domain = $this->parseDomain($domain);
-        if($domain==null){
+        if ($domain == null) {
             abort(404, 'Not found');
         }
 
