@@ -19,6 +19,7 @@ enum OrdersTabsEnum: string
     case ORDERS    = 'orders';
     case LAST_ORDERS    = 'last_orders';
     case EXCESS_ORDERS    = 'excess_orders';
+    case ORDERS_WITH_REPLACEMENTS    = 'orders_with_replacements';
     case STATS     = 'stats';
     case HISTORY   = 'history';
 
@@ -32,11 +33,11 @@ enum OrdersTabsEnum: string
             ],
             OrdersTabsEnum::LAST_ORDERS => [
                 'title' => __('Last orders'),
-                'icon'  => 'fal fa-bars',
+                'icon'  => 'fal fa-flux-capacitor',
             ],
             OrdersTabsEnum::EXCESS_ORDERS => [
                 'title' => __('Overpaid orders'),
-                'icon'  => 'fal fa-bars',
+                'icon'  => 'fal fa-arrow-from-bottom',
             ],
             OrdersTabsEnum::STATS => [
                 'title' => __('Stats'),
@@ -47,6 +48,11 @@ enum OrdersTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'
+            ],
+            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS => [
+                'title' => __('Orders with replacements'),
+                'icon'  => 'fal fa-sync-alt',
+
             ]
         };
     }
