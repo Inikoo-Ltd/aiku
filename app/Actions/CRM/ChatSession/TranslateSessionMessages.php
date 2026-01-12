@@ -4,10 +4,11 @@ namespace App\Actions\CRM\ChatSession;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use App\Actions\CRM\ChatSession\TranslateChatMessage;
+use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 
 class TranslateSessionMessages
 {
@@ -22,22 +23,31 @@ class TranslateSessionMessages
             })
             ->get();
 
+        if ($messages->isEmpty()) {
+            return;
+        }
+
         foreach ($messages as $message) {
             TranslateChatMessage::run($message, $targetLanguageId);
         }
     }
 
-    public function asController(Request $request, ChatSession $chatSession): JsonResponse
+    public function asController(ActionRequest $request, ChatSession $chatSession): JsonResponse
     {
-        $request->validate([
-            'target_language_id' => 'required|exists:languages,id',
-        ]);
+        $validatedData = $request->validated();
 
-        $this->handle($chatSession, $request->target_language_id);
+        $this->handle($chatSession, $validatedData['target_language_id']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Session messages translation processing started in background',
+            'message' => 'Session messages translation processed successfully',
         ]);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'target_language_id' => 'required|exists:languages,id',
+        ];
     }
 }

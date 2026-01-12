@@ -35,7 +35,7 @@ class TranslateSingleMessage
 
         return response()->json([
             'success' => true,
-            'message' => 'Message translation processing started',
+            'message' => 'Message translation processed successfully',
             'data'    => new ChatMessageResource($chatMessage)
         ]);
     }

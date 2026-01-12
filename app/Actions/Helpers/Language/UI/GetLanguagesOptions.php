@@ -64,7 +64,7 @@ class GetLanguagesOptions
 
     public function getLanguageJson(): JsonResponse
     {
-        $languages = Language::all();
+        $languages = Language::where('status', true)->get();
 
         $options = $this->handle($languages);
 
