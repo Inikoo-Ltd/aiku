@@ -58,7 +58,7 @@ const isLoadingVisit = ref(false)
                 </component>
             </h3>
 
-            <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
+            <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize flex-wrap">
                 <div>{{ product.attributes.product_code?.[0] }}</div>
 
                 <div class="flex items-center text-xs mb-2">

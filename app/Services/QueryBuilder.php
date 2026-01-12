@@ -295,45 +295,65 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             }
         }
 
-        // Add joins
-        $this->leftJoin($timeSeriesTable, function ($join) use ($timeSeriesTable, $foreignKey, $frequency, $localKey) {
-            $mainTable = $this->getModel()->getTable();
-            $joinColumn = $localKey ? "$mainTable.$localKey" : "$mainTable.id";
-            $join->on("$timeSeriesTable.{$foreignKey}", '=', $joinColumn)
-                 ->where("$timeSeriesTable.frequency", $frequency);
-        });
+        // Create a unique alias for the subquery to prevent collisions
+        $alias = 'agg_' . substr(md5($timeSeriesTable . $frequency . ($prefix ?? '')), 0, 6);
 
-        $this->leftJoin($timeSeriesRecordsTable, "{$timeSeriesRecordsTable}.{$timeSeriesTable}_id", "$timeSeriesTable.id");
+        // Build the subquery
+        $subQuery = DB::table($timeSeriesTable)
+            ->join($timeSeriesRecordsTable, "$timeSeriesRecordsTable.{$timeSeriesTable}_id", '=', "$timeSeriesTable.id")
+            ->where("$timeSeriesTable.frequency", $frequency)
+            ->groupBy("$timeSeriesTable.$foreignKey")
+            ->select("$timeSeriesTable.$foreignKey");
 
-        // Build SELECT raw statements for aggregation
+        // Build SELECT raw statements for aggregation (for the subquery)
+        // and prepare selectRaw return values (referencing the subquery alias)
         $selectRaw = [];
 
-        foreach ($aggregateColumns as $column => $alias) {
+        foreach ($aggregateColumns as $column => $colAlias) {
+            // We use simple aliases inside the subquery to avoid long names, but we need to ensure uniqueness if multiple cols map to similar names?
+            // Actually $colAlias is usually 'sales' or 'invoices'. Let's use those.
+
             // Current period aggregation
             if ($hasDateFilter) {
-                $selectRaw[$alias] = DB::raw(
-                    "COALESCE(SUM(CASE WHEN {$timeSeriesRecordsTable}.from <= '{$endDate->toDateTimeString()}' " .
-                    "AND {$timeSeriesRecordsTable}.to >= '{$startDate->toDateTimeString()}' " .
-                    "THEN {$timeSeriesRecordsTable}.{$column} ELSE 0 END), 0) as {$alias}"
+                $subQuery->selectRaw(
+                    "COALESCE(SUM(CASE WHEN {$timeSeriesRecordsTable}.from <= ? " .
+                    "AND {$timeSeriesRecordsTable}.to >= ? " .
+                    "THEN {$timeSeriesRecordsTable}.{$column} ELSE 0 END), 0) as {$colAlias}",
+                    [$endDate->toDateTimeString(), $startDate->toDateTimeString()]
                 );
             } else {
-                $selectRaw[$alias] = DB::raw("COALESCE(SUM({$timeSeriesRecordsTable}.{$column}), 0) as {$alias}");
+                $subQuery->selectRaw("COALESCE(SUM({$timeSeriesRecordsTable}.{$column}), 0) as {$colAlias}");
             }
+
+            // The main query just selects the column from the subquery alias
+            $selectRaw[$colAlias] = DB::raw("COALESCE({$alias}.{$colAlias}, 0) as {$colAlias}");
 
             // Last year aggregation
             if ($includeLY) {
-                $aliasLY = $alias . '_ly';
+                $aliasLY = $colAlias . '_ly';
                 if ($hasDateFilter) {
-                    $selectRaw[$aliasLY] = DB::raw(
-                        "COALESCE(SUM(CASE WHEN {$timeSeriesRecordsTable}.from <= '{$endDateLY->toDateTimeString()}' " .
-                        "AND {$timeSeriesRecordsTable}.to >= '{$startDateLY->toDateTimeString()}' " .
-                        "THEN {$timeSeriesRecordsTable}.{$column} ELSE 0 END), 0) as {$aliasLY}"
+                    $subQuery->selectRaw(
+                        "COALESCE(SUM(CASE WHEN {$timeSeriesRecordsTable}.from <= ? " .
+                        "AND {$timeSeriesRecordsTable}.to >= ? " .
+                        "THEN {$timeSeriesRecordsTable}.{$column} ELSE 0 END), 0) as {$aliasLY}",
+                        [$endDateLY->toDateTimeString(), $startDateLY->toDateTimeString()]
                     );
+
+                    $selectRaw[$aliasLY] = DB::raw("COALESCE({$alias}.{$aliasLY}, 0) as {$aliasLY}");
                 } else {
+                    // If no date filter, LY is 0 (or undefined logic, currently 0 in original code)
                     $selectRaw[$aliasLY] = DB::raw("0 as {$aliasLY}");
                 }
             }
         }
+
+        // Join the subquery to the main query
+        $mainTable = $this->getModel()->getTable();
+        $joinColumn = $localKey ? "$mainTable.$localKey" : "$mainTable.id";
+
+        $this->leftJoinSub($subQuery, $alias, function ($join) use ($alias, $foreignKey, $joinColumn) {
+            $join->on("$alias.$foreignKey", '=', $joinColumn);
+        });
 
         return [
             'hasDateFilter' => $hasDateFilter,

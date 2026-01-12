@@ -59,6 +59,26 @@ const showWarning = () => {
 }
 
 
+// Section: fetch customer ordering product data (quantity_ordered_new, offers_data, etc..)
+const fetchCustomerOrderingProduct = async () => {
+
+    try {
+        const response = await axios.get(
+            route("iris.json.product.ecom_ordering_data", {
+                product: product.value.id,
+            })
+        )
+
+        Object.keys(response.data).forEach(key => {
+            props.customerData[key] = response.data[key]
+        })
+
+    } catch (error: any) {
+        console.log('error', error)
+    }
+}
+
+
 const onAddToBasket = async (productData: ProductResource, quantity: number) => {
     try {
         setStatus('loading')
@@ -94,8 +114,10 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
                 : products.unshift({ ...manipProduct })
         }
 
-        router.reload({ only: ['iris'] })
+        // router.reload({ only: ['iris'] })
         layout.reload_handle()
+        fetchCustomerOrderingProduct()
+
         setStatus('success')
     } catch (error: any) {
         setStatus('error')
@@ -136,9 +158,13 @@ const onUpdateQuantity = async () => {
             }
         }
 
-        if (willRemove) customer.value.transaction_id = null
+        if (willRemove) {
+            customer.value.transaction_id = null
+        }
 
+        fetchCustomerOrderingProduct()
         layout.reload_handle()
+        
         setStatus('success')
     } catch (error: any) {
         setStatus('error')

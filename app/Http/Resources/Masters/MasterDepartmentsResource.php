@@ -42,6 +42,15 @@ class MasterDepartmentsResource extends JsonResource
             'name'             => $this->name,
             'image_thumbnail'  => Arr::get($this->web_images, 'main.thumbnail'),
             'description'      => $this->description,
+            'status_icon'            => $this->status ? [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-400'
+            ] : [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-400'
+            ],
             'master_shop_slug' => $this->master_shop_slug,
             'master_shop_code' => $this->master_shop_code,
             'master_shop_name' => $this->master_shop_name,

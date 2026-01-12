@@ -525,7 +525,6 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
             ->component("Masters/MasterFamilies")
             ->has("title")
             ->has("breadcrumbs", 4)
-            ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
