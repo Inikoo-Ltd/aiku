@@ -134,8 +134,7 @@ class IndexSubDepartments extends OrgAction
                     'invoices'           => 'invoices'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: true
+                prefix: $prefix
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales'];
@@ -210,25 +209,25 @@ class IndexSubDepartments extends OrgAction
                 ->withModelOperations($modelOperations);
 
             if ($sales) {
-                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                $table->column(key: 'code', label: __('Code'), sortable: true)
+                    ->column(key: 'sales', label: __('Sales'), sortable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right');
             } else {
                 if ($parent instanceof Organisation) {
-                    $table->column(key: 'shop_code', label: __('Shop'), sortable: true, searchable: true);
-                    $table->column(key: 'department_code', label: __('department'), sortable: true, searchable: true);
+                    $table->column(key: 'shop_code', label: __('Shop'), sortable: true);
+                    $table->column(key: 'department_code', label: __('Department'), sortable: true);
                 }
 
                 if (class_basename($parent) == 'MasterProductCategory') {
-                    $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'shop_code', label: __('Shop'), sortable: true);
                 }
                 $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
-                $table->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
-                    ->column(key: 'number_families', label: __('families'), sortable: true)
-                    ->column(key: 'number_products', label: __('products'), sortable: true);
+                $table->column(key: 'code', label: __('Code'), sortable: true)
+                    ->column(key: 'name', label: __('Name'), sortable: true)
+                    ->column(key: 'number_families', label: __('Families'), sortable: true)
+                    ->column(key: 'number_products', label: __('Products'), sortable: true);
             }
         };
     }
@@ -321,7 +320,7 @@ class IndexSubDepartments extends OrgAction
                     fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
                     : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
-        )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+        )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))
         ->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))
         ->table(IndexSubDepartmentsNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
     }
