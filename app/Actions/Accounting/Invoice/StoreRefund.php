@@ -54,7 +54,7 @@ class StoreRefund extends OrgAction
         data_set($modelData, 'net_amount', 0);
         data_set($modelData, 'grp_net_amount', 0);
         data_set($modelData, 'org_net_amount', 0);
-        data_set($modelData, 'tax_amount', 0);
+        data_set($modelData, 'tax_amount', $invoice->tax_amount);
         data_set($modelData, 'in_process', true);
         data_set($modelData, 'original_invoice_id', $invoice->id);
         data_set($modelData, 'customer_id', $invoice->customer_id);
