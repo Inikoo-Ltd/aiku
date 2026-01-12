@@ -40,6 +40,7 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import { Link } from "@inertiajs/vue3"
+import Discount from "@/Components/Utils/Label/Discount.vue"
 
 library.add(
     faCube,
@@ -184,7 +185,7 @@ const baseUrl = `${window.location.origin}/`
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'" id="product-1"
+    <div v-if="screenType !== 'mobile'" id="product-iris-2-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -276,8 +277,14 @@ const baseUrl = `${window.location.origin}/`
                     </div>
                 </div>
 
+                <!-- Section: Discounts -->
+                <div v-if="Object.keys(product.offers_data || {})?.length" class="w-full">
+                    <Discount :offers_data="product.offers_data" class="w-full justify-center" />
+                </div>
+
 
                 <div class='flex justify-between'>
+                    <!-- Section: Price -->
                     <div>
                         <div class="text-xl font-bold">
                             {{ locale.currencyFormat(currency?.code, product.price || 0) }}
@@ -288,14 +295,15 @@ const baseUrl = `${window.location.origin}/`
                         </div>
                     </div>
 
+                    <!-- Section: RRP -->
                     <div>
                         <div class="text-xs font-medium border-b-2 border-gray-900 p-1.5 text-right ">
-                            <p>Retail Price:</p>
+                            <p>{{ trans("Retail Price") }}:</p>
                             <p>{{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                             </p>
                         </div>
                         <div class="p-1.5 text-right">
-                            <span class="text-base font-medium">Profit:</span>
+                            <span class="text-base font-medium">{{ trans("Profit") }}:</span>
 
                             <div class="flex items-center justify-end text-xs font-bold">
                                 <span>{{ locale.currencyFormat(currency?.code, product.profit || 0) }} &nbsp;</span>
