@@ -29,7 +29,6 @@ class EditFamily extends OrgAction
     }
 
 
-
     public function inOrganisation(Organisation $organisation, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->initialisation($organisation, $request);
@@ -56,7 +55,6 @@ class EditFamily extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
     {
-
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
 
         return $this->handle($family);
@@ -65,7 +63,6 @@ class EditFamily extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
     {
-
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
 
         return $this->handle($family);
@@ -84,12 +81,11 @@ class EditFamily extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
                     ->get(['id as value', 'name as label'])
                     ->toArray(),
-                'value'   =>  $family->parent_id,
+                'value'    => $family->parent_id,
             ];
-
         }
 
-        $urlMaster                              = null;
+        $urlMaster = null;
         if ($family->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',
@@ -99,36 +95,37 @@ class EditFamily extends OrgAction
             ];
         }
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Family'),
-                'warning' => $family->masterProductCategory ? [
-                    'type'  =>  'warning',
-                    'title' =>  'warning',
-                    'text'  =>  __('Changing name or description may affect master family.'),
+                'warning'     => $family->masterProductCategory ? [
+                    'type'  => 'warning',
+                    'title' => 'warning',
+                    'text'  => __('Changing name or description may affect master family.'),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
-                'iconRight' => $urlMaster ? [
-                        'icon'  => "fab fa-octopus-deploy",
-                        'color' => "#4B0082",
-                        'class' => 'opacity-70 hover:opacity-100',
-                        'url'   => $urlMaster
-                    ] : [],
+                'iconRight'   => $urlMaster ? [
+                    'icon'  => "fab fa-octopus-deploy",
+                    'color' => "#4B0082",
+                    'class' => 'opacity-70 hover:opacity-100',
+                    'url'   => $urlMaster
+                ] : [],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'  => [
                     'previous' => $this->getPreviousModel($family, $request),
                     'next'     => $this->getNextModel($family, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => __('Edit'),
+                    'title'   => __('Edit'),
                     'icon'     => 'fal fa-folder',
                     'model'     => __('Family :codeFamily', ['codeFamily' => $family->code]),
-                    'actions'  => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -158,70 +155,82 @@ class EditFamily extends OrgAction
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
-                                    'code' => [
+                                    'code'              => [
                                         'type'  => 'input',
                                         'label' => __('Code'),
                                         'value' => $family->code
                                     ],
-                                    'name' => $family->masterProductCategory ? [
-                                        'type'  => 'input_translation',
-                                        'label' => __('Name'),
-                                        'information'   => __('This name only for internal use (i.e listing in table)'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $family->masterProductCategory->name,
-                                        'languages' => $languages,
-                                        'value' => $family->getTranslations('name_i8n'),
-                                        'mode' => 'single'
-                                    ] : [
-                                        'type'  => 'input',
-                                        'label' => __('Name'),
-                                        'information'   => __('This name only for internal use (i.e listing in table)'),
-                                        'value' => $family->name
-                                    ],
-                                    'description_title' => $family->masterProductCategory ? [
-                                        'type'  => 'input_translation',
-                                        'label' => __('Description title'),
-                                        'information'   => __('This will display in Family page as h1 title'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $family->masterProductCategory->description_title,
-                                        'languages' => $languages,
-                                        'mode' => 'single',
-                                        'value' => $family->getTranslations('description_title_i8n')
-                                    ] : [
-                                         'type'  => 'input',
-                                         'label' => __('Description title'),
-                                         'value' => $family->description_title
-                                    ],
-                                    'description' => $family->masterProductCategory ? [
-                                        'type'  => 'textEditor_translation',
-                                        'label' => __('Description'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $family->masterProductCategory->description,
-                                        'languages' => $languages,
-                                        'mode' => 'single',
-                                        'value' => $family->getTranslations('description_i8n')
-                                    ] : [
-                                        'type'  => 'textEditor',
-                                        'label' => __('Description'),
-                                        'value' => $family->description
-                                    ],
-                                    'description_extra' => $family->masterProductCategory ? [
-                                        'type'  => 'textEditor_translation',
-                                        'label' => __('Extra description'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $family->masterProductCategory->description_extra,
-                                        'languages' => $languages,
-                                        'mode' => 'single',
-                                        'value' => $family->getTranslations('description_extra_i8n')
-                                    ] : [
-                                        'type'  => 'textEditor',
-                                        'label' => __('Extra description'),
-                                        'value' => $family->description_extra
-                                    ],
+                                    'name'              => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'input_translation',
+                                            'label'         => __('Name'),
+                                            'information'   => __('This name only for internal use (i.e listing in table)'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $family->masterProductCategory->name,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->name,
+                                            'reviewed'      => $family->is_name_reviewed
+                                        ]
+                                        : [
+                                            'type'        => 'input',
+                                            'label'       => __('Name'),
+                                            'information' => __('This name only for internal use (i.e listing in table)'),
+                                            'value'       => $family->name
+                                        ],
+                                    'description_title' => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'input_translation',
+                                            'label'         => __('Description title'),
+                                            'information'   => __('This will display in Family page as h1 title'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $family->masterProductCategory->description_title,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->description_title,
+                                            'reviewed'      => $family->is_description_title_reviewed
+                                        ]
+                                        : [
+                                            'type'  => 'input',
+                                            'label' => __('Description title'),
+                                            'value' => $family->description_title
+                                        ],
+                                    'description'       => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'textEditor_translation',
+                                            'label'         => __('Description'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $family->masterProductCategory->description,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->description,
+                                            'reviewed'      => $family->is_description_reviewed
+                                        ]
+                                        : [
+                                            'type'  => 'textEditor',
+                                            'label' => __('Description'),
+                                            'value' => $family->description
+                                        ],
+                                    'description_extra' => $family->masterProductCategory
+                                        ? [
+                                            'type'          => 'textEditor_translation',
+                                            'label'         => __('Extra description'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $family->masterProductCategory->description_extra,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $family->description_extra,
+                                            'reviewed'      => $family->is_description_extra_reviewed
+                                        ]
+                                        : [
+                                            'type'  => 'textEditor',
+                                            'label' => __('Extra description'),
+                                            'value' => $family->description_extra
+                                        ],
                                 ]
                             ],
                             [
@@ -230,15 +239,15 @@ class EditFamily extends OrgAction
                                 'icon'   => 'fa-light fa-money-bill',
                                 'fields' => [
                                     'cost_price_ratio' => [
-                                        'type'          => 'input_number',
-                                        'bind' => [
+                                        'type'        => 'input_number',
+                                        'bind'        => [
                                             'maxFractionDigits' => 3
                                         ],
-                                        'label'         => __('Pricing ratio'),
-                                        'placeholder'   => __('Cost price ratio'),
-                                        'required'      => true,
-                                        'value'         => $family->cost_price_ratio,
-                                        'min'           => 0
+                                        'label'       => __('Pricing ratio'),
+                                        'placeholder' => __('Cost price ratio'),
+                                        'required'    => true,
+                                        'value'       => $family->cost_price_ratio,
+                                        'min'         => 0
                                     ]
                                 ]
                             ],
@@ -247,11 +256,11 @@ class EditFamily extends OrgAction
                                 'icon'   => 'fa-light fa-image',
                                 'title'  => __('Media'),
                                 'fields' => [
-                                    "image"         => [
-                                        "type"    => "crop-image-full",
-                                        "label"   => __("Image"),
-                                        "value"   => $family->imageSources(720, 480),
-                                        "required" => false,
+                                    "image" => [
+                                        "type"         => "crop-image-full",
+                                        "label"        => __("Image"),
+                                        "value"        => $family->imageSources(720, 480),
+                                        "required"     => false,
                                         'noSaveButton' => true,
                                         "full"         => true
                                     ],
@@ -262,29 +271,28 @@ class EditFamily extends OrgAction
                                 'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                                 'icon'   => 'fa-light fa-folder-tree',
                                 'fields' => [
-                                    'department_or_sub_department_id'  =>  [
-                                        'type'    => 'select_infinite',
-                                        'label'   => __('Parent'),
-                                        'options'   => [
-                                                [
-                                                    'id' =>  $family->subDepartment->id ?? $family->department->id  ?? null,
-                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null,
-                                                    'type' =>  $family->subDepartment->type ?? $family->department->type  ?? null
-                                                ]
+                                    'department_or_sub_department_id' => [
+                                        'type'       => 'select_infinite',
+                                        'label'      => __('Parent'),
+                                        'options'    => [
+                                            [
+                                                'id'   => $family->subDepartment->id ?? $family->department->id ?? null,
+                                                'code' => $family->subDepartment->code ?? $family->department->code ?? null,
+                                                'type' => $family->subDepartment->type ?? $family->department->type ?? null
+                                            ]
                                         ],
-                                        'fetchRoute'    => [
+                                        'fetchRoute' => [
                                             'name'       => 'grp.json.shop.department_and_sub_departments',
                                             'parameters' => [
                                                 'shop' => $family->shop->slug,
                                             ]
                                         ],
-                                        'required' => true,
+                                        'required'   => true,
                                         'type_label' => 'department-and-sub-department',
-                                        'valueProp' => 'id',
-                                        'labelProp' => 'code',
-                                        'value'   => $family->subDepartment->id ?? $family->department->id  ?? null,
+                                        'valueProp'  => 'id',
+                                        'labelProp'  => 'code',
+                                        'value'      => $family->subDepartment->id ?? $family->department->id ?? null,
                                     ],
-
 
 
                                 ],
@@ -294,17 +302,17 @@ class EditFamily extends OrgAction
                                 'label'  => __('Discounts'),
                                 'icon'   => 'fa-light fa-badge-percent',
                                 'fields' => [
-                                    'vol_gr'  =>  [
-                                        'label'         => 'Vol / GR',
-                                        'type'          => 'input_twin',
-                                        'value' => [
+                                    'vol_gr' => [
+                                        'label'  => 'Vol / GR',
+                                        'type'   => 'input_twin',
+                                        'value'  => [
                                             [
                                                 'volume'   => $family->offers_data['vol_gr']['volume'] ?? null,
                                                 'discount' => $family->offers_data['vol_gr']['discount'] ?? null,
                                             ]
                                         ],
                                         'fields' => [
-                                            'volume' => [
+                                            'volume'   => [
                                                 'key'         => 'volume',
                                                 'placeholder' => __('Minimal Volume'),
                                                 'required'    => true,
@@ -330,7 +338,7 @@ class EditFamily extends OrgAction
                         'updateRoute' => [
                             'name'       => 'grp.models.product_category.update',
                             'parameters' => [
-                                'productCategory'   => $family->id
+                                'productCategory' => $family->id
                             ]
                         ],
                     ]
@@ -346,7 +354,7 @@ class EditFamily extends OrgAction
             $family,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '(' . __('Editing') . ')'
+            suffix: '('.__('Editing').')'
         );
     }
 
