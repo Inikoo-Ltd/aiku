@@ -215,7 +215,7 @@ class ShowRefund extends OrgAction
                 ]
             ];
 
-            if($refund->tax_amount > 0) {
+            if ($refund->tax_amount > 0) {
                 $actions[] = [
                     'type'  => 'button',
                     'style' => 'secondary',

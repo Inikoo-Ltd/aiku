@@ -19,7 +19,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Throwable;
 
 class UpdateFamilyDescriptionFromAurora
 {

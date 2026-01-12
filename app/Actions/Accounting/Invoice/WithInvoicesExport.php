@@ -67,7 +67,7 @@ trait WithInvoicesExport
 
                         $totalRefunded = $invoiceTransaction->historicAsset->price * $quantityRefunded;
 
-                        if($invoiceTransaction->is_tax_only) {
+                        if ($invoiceTransaction->is_tax_only) {
                             $totalRefunded = $invoiceTransaction->tax_amount;
                         }
 

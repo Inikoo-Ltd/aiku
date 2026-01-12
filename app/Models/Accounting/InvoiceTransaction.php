@@ -73,6 +73,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $master_family_id
  * @property int|null $master_asset_id
  * @property bool $is_refund
+ * @property string $tax_amount
+ * @property bool $is_tax_only
+ * @property string $amount_total
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer
