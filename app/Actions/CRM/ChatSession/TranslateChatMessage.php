@@ -10,10 +10,8 @@ use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use App\Actions\Helpers\Translations\Translate;
 use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
-use VildanBina\LaravelAutoTranslation\Services\TranslationEngineService;
 
 class TranslateChatMessage
 {
@@ -112,9 +110,6 @@ class TranslateChatMessage
 
 
         if ($this->isUserMessage($message)) {
-            if ($session->agent_language_id) {
-                return $session->agent_language_id;
-            }
 
             $activeAgent = $session->assignments()
                 ->where('status', ChatAssignmentStatusEnum::ACTIVE)
@@ -124,6 +119,10 @@ class TranslateChatMessage
 
             if ($activeAgent && $activeAgent->language_id) {
                 return $activeAgent->language_id;
+            }
+
+            if ($session->agent_language_id) {
+                return $session->agent_language_id;
             }
 
             return Language::where('code', 'en')->value('id');
@@ -145,7 +144,9 @@ class TranslateChatMessage
         $targetLang = Language::find($targetLangId);
         $originalLang = Language::find($message->original_language_id);
 
-        if (!$targetLang) return;
+        if (!$targetLang) {
+            return;
+        }
 
         $targetCode = $targetLang->code;
         $sourceCode = $originalLang ? $originalLang->code : 'auto-detect';
@@ -172,11 +173,15 @@ class TranslateChatMessage
     private function detectLanguageCode(string $text): ?string
     {
 
-        if (mb_strlen($text) <= 3) return null;
+        if (mb_strlen($text) <= 3) {
+            return null;
+        }
 
         try {
             $apiKey = env('CHATGPT_TRANSLATIONS_API_KEY');
-            if (!$apiKey) return null;
+            if (!$apiKey) {
+                return null;
+            }
 
             $client = OpenAI::client($apiKey);
 
