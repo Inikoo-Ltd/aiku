@@ -13,22 +13,20 @@ class RepairInvoiceTransactionsMasterAssetId implements ShouldQueue
     use AsAction;
 
     public string $jobQueue = 'default-long';
+    protected int $chunkSize = 5000;
 
     public string $commandSignature = 'invoice-transactions:repair-master-asset-id
         {--dry-run : Show how many rows would be updated without writing}
-        {--chunk=5000 : Chunk size for batch updates}
         {--from= : Only repair transactions with date >= this (YYYY-MM-DD)}
         {--to= : Only repair transactions with date <= this (YYYY-MM-DD)}
-        {--force : Skip confirmation prompt}
         {--async : Dispatch to queue (Horizon) instead of running inline}';
 
-    public function handle(?string $from = null, ?string $to = null, int $chunkSize = 5000, bool $dryRun = false, bool $force = false): int
+    /**
+     * Build base candidate query
+     */
+    protected function baseQuery(?string $from, ?string $to)
     {
-        if ($chunkSize < 1) {
-            return Command::FAILURE;
-        }
-
-        $baseQuery = DB::table('invoice_transactions as it')
+        $query = DB::table('invoice_transactions as it')
             ->whereNull('it.master_asset_id')
             ->whereNotNull('it.asset_id')
             ->whereExists(function ($query) {
@@ -38,109 +36,114 @@ class RepairInvoiceTransactionsMasterAssetId implements ShouldQueue
                     ->whereNotNull('a.master_asset_id');
             });
 
-        if ($from !== null && $from !== '') {
-            $baseQuery->where('it.date', '>=', $from.' 00:00:00');
+        if ($from) {
+            $query->where('it.date', '>=', $from . ' 00:00:00');
         }
 
-        if ($to !== null && $to !== '') {
-            $baseQuery->where('it.date', '<=', $to.' 23:59:59');
+        if ($to) {
+            $query->where('it.date', '<=', $to . ' 23:59:59');
         }
 
+        return $query;
+    }
+
+    /**
+     * Execute repair
+     */
+    public function handle(?string $from = null, ?string $to = null, bool $dryRun = false, ?callable $onProgress = null): int
+    {
+        $baseQuery = $this->baseQuery($from, $to);
         $candidateCount = (clone $baseQuery)->count();
 
-        if ($candidateCount === 0) {
-            return Command::SUCCESS;
+        if ($onProgress) {
+            $onProgress(0, $candidateCount);
         }
 
-        if ($dryRun) {
+        if ($candidateCount === 0 || $dryRun) {
             return Command::SUCCESS;
         }
 
         $updatedTotal = 0;
+        $driver = DB::getDriverName();
 
         while (true) {
             $ids = (clone $baseQuery)
                 ->select('it.id')
                 ->orderBy('it.id')
-                ->limit($chunkSize)
+                ->limit($this->chunkSize)
                 ->pluck('id')
                 ->all();
 
-            if (count($ids) === 0) {
+            if (empty($ids)) {
                 break;
             }
 
-            $updated = DB::table('invoice_transactions as it')
-                ->whereIn('it.id', $ids)
-                ->whereNull('it.master_asset_id')
-                ->whereNotNull('it.asset_id')
-                ->whereExists(function ($query) {
-                    $query->selectRaw('1')
-                        ->from('assets as a')
-                        ->whereColumn('a.id', 'it.asset_id')
-                        ->whereNotNull('a.master_asset_id');
-                })
-                ->update([
-                    'master_asset_id' => DB::raw('(select a.master_asset_id from assets as a where a.id = it.asset_id)'),
-                ]);
+            if ($driver === 'pgsql') {
+                // PostgreSQL: UPDATE ... FROM
+                $idsPlaceholder = implode(',', $ids);
+
+                $sql = "
+                    UPDATE invoice_transactions it
+                    SET master_asset_id = a.master_asset_id
+                    FROM assets a
+                    WHERE a.id = it.asset_id
+                      AND it.id IN ($idsPlaceholder)
+                      AND it.master_asset_id IS NULL
+                      AND a.master_asset_id IS NOT NULL
+                ";
+
+                $updated = DB::affectingStatement($sql);
+            } else {
+                // MySQL / MariaDB: JOIN update
+                $updated = DB::table('invoice_transactions as it')
+                    ->join('assets as a', 'a.id', '=', 'it.asset_id')
+                    ->whereIn('it.id', $ids)
+                    ->whereNull('it.master_asset_id')
+                    ->whereNotNull('a.master_asset_id')
+                    ->update([
+                        'it.master_asset_id' => DB::raw('a.master_asset_id'),
+                    ]);
+            }
 
             $updatedTotal += (int) $updated;
+
+            if ($onProgress) {
+                $onProgress($updatedTotal, $candidateCount);
+            }
         }
 
-        return $updatedTotal > 0 ? Command::SUCCESS : Command::FAILURE;
+        return Command::SUCCESS;
     }
 
+    /**
+     * CLI handler
+     */
     public function asCommand(Command $command): int
     {
         $dryRun = (bool) $command->option('dry-run');
-        $chunkSize = (int) $command->option('chunk');
         $from = $command->option('from');
         $to = $command->option('to');
-        $force = (bool) $command->option('force');
         $async = (bool) $command->option('async');
 
-        if ($chunkSize < 1) {
-            $command->error('Option --chunk must be >= 1');
-
-            return Command::FAILURE;
-        }
-
-        $baseQuery = DB::table('invoice_transactions as it')
-            ->whereNull('it.master_asset_id')
-            ->whereNotNull('it.asset_id')
-            ->whereExists(function ($query) {
-                $query->selectRaw('1')
-                    ->from('assets as a')
-                    ->whereColumn('a.id', 'it.asset_id')
-                    ->whereNotNull('a.master_asset_id');
-            });
-
-        if ($from !== null && $from !== '') {
-            $baseQuery->where('it.date', '>=', $from.' 00:00:00');
-        }
-
-        if ($to !== null && $to !== '') {
-            $baseQuery->where('it.date', '<=', $to.' 23:59:59');
-        }
-
+        $baseQuery = $this->baseQuery($from, $to);
         $candidateCount = (clone $baseQuery)->count();
 
         $command->line('Repair invoice_transactions.master_asset_id from assets.master_asset_id');
-        $command->line('Candidates: '.$candidateCount);
+        $command->line('Candidates: ' . number_format($candidateCount));
 
         if ($candidateCount === 0) {
             $command->info('Nothing to repair.');
-
             return Command::SUCCESS;
         }
 
         if ($dryRun) {
             $sample = (clone $baseQuery)
+                ->join('assets as a', 'a.id', '=', 'it.asset_id')
                 ->select([
                     'it.id as invoice_transaction_id',
                     'it.asset_id',
                     'it.master_asset_id as current_master_asset_id',
-                    DB::raw('(select a.master_asset_id from assets as a where a.id = it.asset_id) as new_master_asset_id'),
+                    'a.master_asset_id as new_master_asset_id',
                     'it.date',
                 ])
                 ->orderBy('it.id')
@@ -159,66 +162,32 @@ class RepairInvoiceTransactionsMasterAssetId implements ShouldQueue
             );
 
             $command->info('Dry run only. No changes were written.');
-
             return Command::SUCCESS;
         }
 
         if ($async) {
-            self::dispatch($from, $to, $chunkSize, false, $force)->onQueue($this->jobQueue);
-
-            $command->info('Dispatched job to queue: '.$this->jobQueue);
-
+            self::dispatch($from, $to, false)->onQueue($this->jobQueue);
+            $command->info('Dispatched job to queue: ' . $this->jobQueue);
             return Command::SUCCESS;
         }
 
-        if (!$force) {
-            if (!$command->confirm('Proceed to update '.$candidateCount.' invoice_transactions rows?', true)) {
-                $command->info('Aborted.');
-
-                return Command::SUCCESS;
-            }
-        }
-
-        $updatedTotal = 0;
+        $bar = $command->getOutput()->createProgressBar($candidateCount);
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $bar->start();
 
         try {
-            while (true) {
-                $ids = (clone $baseQuery)
-                    ->select('it.id')
-                    ->orderBy('it.id')
-                    ->limit($chunkSize)
-                    ->pluck('id')
-                    ->all();
+            $this->handle($from, $to, false, function ($current) use ($bar) {
+                $bar->setProgress($current);
+            });
 
-                if (count($ids) === 0) {
-                    break;
-                }
+            $bar->finish();
+            $command->newLine();
+            $command->info('Done.');
 
-                $updated = DB::table('invoice_transactions as it')
-                    ->whereIn('it.id', $ids)
-                    ->whereNull('it.master_asset_id')
-                    ->whereNotNull('it.asset_id')
-                    ->whereExists(function ($query) {
-                        $query->selectRaw('1')
-                            ->from('assets as a')
-                            ->whereColumn('a.id', 'it.asset_id')
-                            ->whereNotNull('a.master_asset_id');
-                    })
-                    ->update([
-                        'master_asset_id' => DB::raw('(select a.master_asset_id from assets as a where a.id = it.asset_id)'),
-                    ]);
-
-                $updatedTotal += (int) $updated;
-
-                $command->line('Updated '.$updated.' rows (total '.$updatedTotal.')');
-            }
         } catch (Throwable $e) {
             $command->error($e->getMessage());
-
             return Command::FAILURE;
         }
-
-        $command->info('Done. Updated total rows: '.$updatedTotal);
 
         return Command::SUCCESS;
     }
