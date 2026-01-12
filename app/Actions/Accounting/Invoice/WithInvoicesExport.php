@@ -10,6 +10,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Pallet;
 use Carbon\Carbon;
@@ -51,7 +52,7 @@ trait WithInvoicesExport
                 return $transaction;
             });
 
-            $refund = $invoice->payment_amount > $invoice->total_amount;
+            $refund = $invoice->type == InvoiceTypeEnum::REFUND;
             $refundData = [];
             if ($refund) {
                 foreach ($invoice->invoiceTransactions->where('model_type', 'Product') as $invoiceTransaction) {
@@ -63,13 +64,19 @@ trait WithInvoicesExport
 
                     if ($refunded) {
                         $quantityRefunded = $invoiceTransaction->transaction->quantity_ordered - $invoiceTransaction->quantity;
+
                         $totalRefunded = $invoiceTransaction->historicAsset->price * $quantityRefunded;
+
+                        if($invoiceTransaction->is_tax_only) {
+                            $totalRefunded = $invoiceTransaction->tax_amount;
+                        }
 
                         $refundData[] = [
                             'code' => $invoiceTransaction->historicAsset->code,
                             'description' => $invoiceTransaction->historicAsset->name,
                             'price' =>  $invoiceTransaction->historicAsset->price,
                             'quantity' => $quantityRefunded,
+                            'is_tax_only' => $invoiceTransaction->is_tax_only,
                             'total' => $totalRefunded
                         ];
                     }
@@ -101,7 +108,7 @@ trait WithInvoicesExport
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
 
-            if ($isAttachIsdocToPdf) {
+            if (!$isAttachIsdocToPdf) {
                 try {
                     $outputFile = AttacheIsDocToInvoicePdf::make()->handle($invoice, $pdf, $filename);
                     return response()->file($outputFile, [
