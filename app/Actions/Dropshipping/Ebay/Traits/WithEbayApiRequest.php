@@ -795,14 +795,13 @@ trait WithEbayApiRequest
     {
         try {
             $params = [
+                'offset' => $offset,
                 'limit'  => $limit,
-                'offset' => $offset
             ];
 
-            $queryString = http_build_query($params);
-            $endpoint    = "/sell/inventory/v1/inventory_item?$queryString";
+            $endpoint    = "/sell/inventory/v1/inventory_item";
 
-            return $this->makeEbayRequest('get', $endpoint);
+            return $this->makeEbayRequest('get', $endpoint, queryParams: $params);
         } catch (Exception $e) {
             Log::error('Get eBay Products Error: '.$e->getMessage());
 

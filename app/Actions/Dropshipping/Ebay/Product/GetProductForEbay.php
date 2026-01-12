@@ -41,17 +41,18 @@ class GetProductForEbay
         ];
     }
 
-    public function handle(EbayUser $ebayUser, $query = ''): array
+    public function handle(EbayUser $ebayUser, $query = '', $offset = 0): array
     {
-        if (! blank($query)) {
+        if (!blank($query)) {
             $product = $ebayUser->getProduct($query);
             $products = [$product];
         } else {
-            $rawProducts = $ebayUser->getProducts();
+            $rawProducts = $ebayUser->getProducts(offset: $offset);
             $products = Arr::get($rawProducts, 'inventoryItems', []);
         }
+        $hasErrors = collect($products)->contains(fn ($product) => isset($product['errors']));
 
-        return array_map([$this, 'transformToStandardFormat'], $products);
+        return $hasErrors ? [] : array_map([$this, 'transformToStandardFormat'], $products);
     }
 
     public function asController(EbayUser $ebayUser, ActionRequest $request): array
