@@ -89,10 +89,12 @@ class Translate extends OrgAction
         $languageTo   = Language::where('code', $languageTo)->first();
         $text         = Arr::get($this->validatedData, 'text');
 
-        $randomString = Str::random(10);
+        /* $randomString = Str::random(10);
         Translate::dispatch($text, $languageFrom, $languageTo, $randomString);
 
-        return $randomString;
+        return $randomString; */
+
+        return $this->handle($text, $languageFrom, $languageTo);
     }
 
     /**

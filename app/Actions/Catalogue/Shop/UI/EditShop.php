@@ -324,7 +324,7 @@ class EditShop extends OrgAction
                             'options'     => GetLanguagesOptions::make()->all(),
                             'searchable'  => true
                         ],
-                        'extra_languages' => [
+                      /*   'extra_languages' => [
                             'type'        => 'select',
                             'label'       => __('Extra language'),
                             'placeholder' => __('Select your language'),
@@ -335,7 +335,7 @@ class EditShop extends OrgAction
                             'mode'        => 'tags',
                             'labelProp'   => 'name',
                             'valueProp'   => 'id',
-                        ]
+                        ] */
                     ],
                 ],
                 [

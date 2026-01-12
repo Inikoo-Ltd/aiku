@@ -136,7 +136,7 @@ class EditDepartment extends OrgAction
                                                 'label' => __('Name'),
                                                 'value' => $department->name
                                             ],
-                                        'description_title' => $department->masterProductCategory
+                                      /*   'description_title' => $department->masterProductCategory
                                             ? [
                                                 'type'          => 'input_translation',
                                                 'label'         => __('description title'),
@@ -153,7 +153,7 @@ class EditDepartment extends OrgAction
                                                 'type'  => 'input',
                                                 'label' => __('description title'),
                                                 'value' => $department->description_title
-                                            ],
+                                            ], */
                                         'description'       => $department->masterProductCategory
                                             ? [
                                                 'type'          => 'textEditor_translation',

@@ -100,8 +100,8 @@ const promoData = computed(() => {
       aria-label="Family Description Section">
 
       <!-- Description Title (SEO: Heading) -->
-      <h1 v-if="fieldValue.family.description_title" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
-        {{ fieldValue.family.description_title }}
+      <h1 v-if="fieldValue.family.name" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
+        {{ fieldValue.family.name }}
       </h1>
 
       <!-- Main Description -->
