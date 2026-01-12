@@ -53,7 +53,8 @@ class RedoProductCategoryTranslationsFromMaster
                                 model: $productCategory,
                                 translationData: [
                                     $field => $masterProductCategory->{$field}
-                                ]
+                                ],
+                                overwrite: true
                             );
                         }
                     }
