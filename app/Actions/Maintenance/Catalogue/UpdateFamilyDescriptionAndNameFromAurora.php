@@ -20,7 +20,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateFamilyDescriptionFromAurora
+class UpdateFamilyDescriptionAndNameFromAurora
 {
     use AsAction;
     use WithOrganisationSource;
@@ -107,23 +107,7 @@ class UpdateFamilyDescriptionFromAurora
                                 'is_description_extra_reviewed' => true
                             ]
                         );
-                        $family
-                            ->setTranslation('description_extra_i8n', $family->shop->language->code, '')
-                            ->save();
-                        $family
-                            ->setTranslation('description_title_i8n', $family->shop->language->code, '')
-                            ->save();
-                        if ($masterCategory) {
-                            $masterCategory
-                                ->setTranslation('description_i8n', $family->shop->language->code, $description)
-                                ->save();
-                            $masterCategory
-                                ->setTranslation('description_extra_i8n', $family->shop->language->code, '')
-                                ->save();
-                            $masterCategory
-                                ->setTranslation('description_title_i8n', $family->shop->language->code, '')
-                                ->save();
-                        }
+
                     }
 
                     // get family name
