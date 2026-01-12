@@ -115,9 +115,12 @@ const productRoute = (item) => {
             <template #cell(net_amount)="{ item}">
                 <div class="flex flex-col items-end">
                     <!-- Net Amount (yang tersisa setelah refund) -->
-                    <div>
+                    <div v-if="!item.is_tax_only">
                         {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
                     </div>
+					<div v-else>
+						{{ locale.currencyFormat(item.currency_code, item.tax_amount) }}
+					</div>
 
                     <!-- Previous Refund -->
                     <small v-if="item.total_last_refund" class="text-gray-500 text-xs">
