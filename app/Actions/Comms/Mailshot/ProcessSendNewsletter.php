@@ -115,22 +115,6 @@ class ProcessSendNewsletter
         MailshotHydrateDispatchedEmails::run($mailshot);
     }
 
-    private function getRandomElementWithProbabilities(array $prefixes): string
-    {
-        $total = array_sum($prefixes);
-        $random = mt_rand(1, $total);
-
-        $current = 0;
-        foreach ($prefixes as $prefix => $weight) {
-            $current += $weight;
-            if ($random <= $current) {
-                return $prefix;
-            }
-        }
-
-        return array_key_first($prefixes);
-    }
-
     public string $commandSignature = 'mailshot:send {mailshot}';
 
     public function asCommand(Command $command): int
