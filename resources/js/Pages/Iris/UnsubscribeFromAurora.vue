@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { ref, computed, onMounted } from "vue"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
@@ -28,9 +28,14 @@ const recipientEmail = ref<string | null>(null)
 const recipientName = ref<string | null>(null)
 
 // Ambil params dari URL
-const urlParams = new URLSearchParams(window.location.search)
-const a = ref(urlParams.get("a"))
-const s = ref(urlParams.get("s"))
+const a = ref<string | null>(null)
+const s = ref<string | null>(null)
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  a.value = urlParams.get("a")
+  s.value = urlParams.get("s")
+})
 
 const isInvalidParams = computed(() => !a.value || !s.value)
 
