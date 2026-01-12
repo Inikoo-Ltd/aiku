@@ -40,7 +40,7 @@ class RunNewsletterScheduled
         $newsletterQuery->whereRaw("scheduled_at AT TIME ZONE 'UTC' <= ?", [$currentDateTime]); // make sure have save time zone before compare
 
         foreach ($newsletterQuery->cursor() as $newsletter) {
-            ProcessSendNewsletter::dispatch($newsletter);
+            ProcessSendNewsletterNew::dispatch($newsletter);
             //TODO: update the mailshot state to Sending
             $newsletter->update([
                 'state' => MailshotStateEnum::SENDING,

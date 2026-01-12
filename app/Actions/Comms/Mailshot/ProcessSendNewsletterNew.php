@@ -14,8 +14,8 @@ use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Traits\WithSendCustomerOutboxEmail;
-use App\Actions\Traits\WithCheckCanContactByEmail;
-use App\Models\Comms\Email;
+use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
 use Exception;
@@ -28,7 +28,7 @@ class ProcessSendNewsletterNew
     use AsAction;
     use WithSendCustomerOutboxEmail;
 
-    public string $jobQueue = 'default_long';
+    public string $jobQueue = 'default-long';
 
     public function tags(): array
     {
@@ -68,24 +68,27 @@ class ProcessSendNewsletterNew
                     $emailAddress = $recipient->email;
                 }
 
-                $email = Email::firstOrCreate(['address' => $emailAddress]);
-
+                $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first();
                 $dispatchedEmail = StoreDispatchedEmail::run(
-                    email: $email,
-                    mailshot: $mailshot,
-                    modelData: [
-                        'recipient_type' => $recipient->getMorphClass(),
-                        'recipient_id'   => $recipient->id
+                    $mailshot,
+                    $recipient,
+                    [
+                        'is_test'       => false,
+                        'outbox_id'     => $outbox->id,
+                        'email_address' => $recipient->email,
+                        'provider'      => DispatchedEmailProviderEnum::SES,
                     ]
                 );
 
+                $modelData = [
+                    'dispatched_email_id' => $dispatchedEmail->id,
+                    'recipient_type' => class_basename($recipient),
+                    'recipient_id' => $recipient->id,
+                    'channel' => $emailDeliveryChannel->id,
+                ];
                 StoreMailshotRecipient::run(
                     $mailshot,
-                    $dispatchedEmail,
-                    $recipient,
-                    [
-                        'channel' => $emailDeliveryChannel->id,
-                    ]
+                    $modelData
                 );
             }
 
