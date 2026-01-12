@@ -54,7 +54,7 @@ class TranslateChatMessage
      */
     protected function isUserMessage(ChatMessage $message): bool
     {
-        return $message->isFromUser() || $message->sender_type === ChatSenderTypeEnum::GUEST;
+        return $message->isFromUser() || $message->isFromGuest();
     }
 
     /**
@@ -90,7 +90,6 @@ class TranslateChatMessage
      */
     protected function updateSessionLanguage(ChatSession $session, int $languageId): void
     {
-
         if ($session->active_user_language_id !== $languageId) {
             $session->update([
                 'user_language_id' => $languageId,
@@ -107,7 +106,6 @@ class TranslateChatMessage
         if ($explicitTargetId) {
             return $explicitTargetId;
         }
-
 
         if ($this->isUserMessage($message)) {
 

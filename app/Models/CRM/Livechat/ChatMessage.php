@@ -123,6 +123,14 @@ class ChatMessage extends Model implements HasMedia
         return $this->sender_type === ChatSenderTypeEnum::USER;
     }
 
+    /**
+     *
+     */
+    public function isFromGuest(): bool
+    {
+        return $this->sender_type === ChatSenderTypeEnum::GUEST;
+    }
+
 
     public function isFromAgent(): bool
     {
