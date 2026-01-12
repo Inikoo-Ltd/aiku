@@ -125,7 +125,9 @@ class EditFamily extends OrgAction
                     'next'     => $this->getNextModel($family, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $family->code,
+                    'title'    => __('Edit'),
+                    'icon'     => 'fal fa-folder',
+                    'model'     => __('Family :codeFamily', ['codeFamily' => $family->code]),
                     'actions'  => [
                         [
                             'type'  => 'button',
