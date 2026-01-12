@@ -12,6 +12,7 @@ namespace App\Actions\Iris\Basket;
 use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\IrisAction;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
+use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
@@ -21,12 +22,29 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
-    public function handle(Transaction $transaction, array $modelData)
+    private $returnType = 'default';
+
+    public function handle(Transaction $transaction)
     {
         $product = $transaction->model;
         if (!($product instanceof Product)) {
-            abort(404);
+            abort(404, 'Unable to find the selected product transaction');
         }
+
+        $additionalSelect = $this->returnType == 'product_page' ? [
+            'products.currency_id',
+            'products.country_of_origin',
+            'products.marketing_ingredients',
+            'products.gross_weight',
+            'products.barcode',
+            'products.marketing_dimensions',
+            'products.cpnp_number',
+            'products.marketing_weight',
+            'products.slug',
+            'products.description',
+            'products.description_title',
+            'products.description_extra',
+        ] : [];
 
         $queryBuilder = $this->getBaseQuery('all');
         $queryBuilder
@@ -34,6 +52,7 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
             ->where('transactions.id', $transaction->id);
         $queryBuilder->select(
             $this->getSelect([
+                ...$additionalSelect,
                 DB::raw('products.variant_id IS NOT NULL as is_variant'),
                 DB::raw('exists (
                         select os.is_on_demand
@@ -45,18 +64,37 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
             ])
         );
 
+        if($this->returnType == 'product_page'){
+            $queryBuilder->with([
+                'tags',
+                'images',
+                'contents',
+                'backInStockReminders',
+            ]);
+        }
+
         return $queryBuilder->first();
     }
 
     public function asController(Transaction $transaction, ActionRequest $request)
     {
+        $this->returnType = 'default';
         $this->initialisation($request);
 
-        return $this->handle($transaction, $this->validatedData);
+        return $this->handle($transaction);
+    }
+    
+    public function inProductPage(Transaction $transaction, ActionRequest $request)
+    {
+        $this->returnType = 'product_page';
+        $this->initialisation($request);
+
+        return $this->handle($transaction);
     }
 
     public function jsonResponse(Product $product)
     {
+        if($this->returnType == 'product_page') return WebBlockProductResource::make($product)->toArray(request());
         return IrisAuthenticatedProductsInWebpageResource::make($product)->toArray(request());
     }
 }
