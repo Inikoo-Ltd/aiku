@@ -138,7 +138,7 @@ const generateTranslateAI = async () => {
           <button type="button" class="h-6 w-6 flex items-center justify-center
            rounded-md bg-white hover:bg-gray-300 border
            disabled:opacity-50 disabled:pointer-events-none
-           shrink-0 transition mt-0.5" @click="generateTranslateAI" :disabled="isDisabled || loading" v-tooltip="trans('get translation from AI')">
+           shrink-0 transition mt-0.5" @click="generateTranslateAI" :disabled="isDisabled || loading" v-tooltip="trans('Get translation from AI')">
             <LoadingIcon v-if="loading" class="h-3.5 w-3.5 animate-spin" />
             <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" />
           </button>
