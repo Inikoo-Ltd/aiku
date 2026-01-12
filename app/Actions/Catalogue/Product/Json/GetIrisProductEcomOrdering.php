@@ -57,7 +57,7 @@ class GetIrisProductEcomOrdering extends IrisAction
                 'quantity_ordered'                  => $quantityOrdered,
                 'transaction_id'                    => $transactionId,
                 'stock'                             => $product->available_quantity,
-                'quantity_ordered_new'              => $quantityOrdered ? (int) $quantityOrdered : null,    
+                'quantity_ordered_new'              => $quantityOrdered ? (int) $quantityOrdered : null,
                 'offers_data'                       => $offersData,
                 'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
                 'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $product->units : null,

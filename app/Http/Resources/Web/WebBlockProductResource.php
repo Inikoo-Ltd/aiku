@@ -50,9 +50,9 @@ class WebBlockProductResource extends JsonResource
         $isOnDemand = $product->orgStocks()->where('is_on_demand', true)->exists();
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
-        
+
         $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
-        
+
         $offers = isset($this->quantity_ordered) ? [
             'offers_data'                       => $product->offers_data,
             'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
