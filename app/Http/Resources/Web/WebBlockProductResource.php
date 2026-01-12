@@ -53,10 +53,10 @@ class WebBlockProductResource extends JsonResource
         
         $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
         
-        $offers = isset($product->offers_data) ? [
+        $offers = isset($this->quantity_ordered) ? [
             'offers_data'                       => $product->offers_data,
             'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
-            'offer_price_per_unit'             => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
+            'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
         ] : [];
 
         $back_in_stock    = false;

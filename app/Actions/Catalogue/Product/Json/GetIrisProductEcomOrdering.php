@@ -32,7 +32,12 @@ class GetIrisProductEcomOrdering extends IrisAction
                 $transaction = DB::table('transactions')->where('order_id', $basket->id)
                     ->where('model_id', $product->id)->where('model_type', 'Product')
                     ->whereNull('deleted_at')
-                    ->select('id', 'quantity_ordered')
+                    ->select([
+                        'id',
+                        'quantity_ordered',
+                        'offers_data',
+                        'net_amount',
+                    ])
                     ->first();
                 if ($transaction) {
                     $quantityOrdered = $transaction->quantity_ordered;
@@ -40,14 +45,19 @@ class GetIrisProductEcomOrdering extends IrisAction
                 }
             }
 
+            $offerNetAmountPerQuantity = (int)$transaction->quantity_ordered ? ($transaction->net_amount / ((int)$transaction->quantity_ordered ?? null)) : null;
+
             $response = [
-                'is_favourite'        => (bool)$favourite,
-                'back_in_stock'       => $back_in_stock,
-                'back_in_stock_id'    => $back_in_stock_id,
-                'quantity_ordered'    => $quantityOrdered,
-                'transaction_id'      => $transactionId,
-                'stock'               => $product->available_quantity,
-                'quantity_ordered_new'  => $quantityOrdered ? (int) $quantityOrdered : null,
+                'is_favourite'                      => (bool)$favourite,
+                'back_in_stock'                     => $back_in_stock,
+                'back_in_stock_id'                  => $back_in_stock_id,
+                'quantity_ordered'                  => $quantityOrdered,
+                'transaction_id'                    => $transactionId,
+                'stock'                             => $product->available_quantity,
+                'quantity_ordered_new'              => $quantityOrdered ? (int) $quantityOrdered : null,    
+                'offers_data'                       => $product->offers_data,
+                'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
+                'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $product->units : null,
             ];
         }
 
