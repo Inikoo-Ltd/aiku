@@ -39,10 +39,7 @@ class SendNewsLetterNow extends OrgAction
 
         $mailshot->update($modelData);
 
-        //
-        ProcessSendNewsletterNew::dispatch($mailshot);
-
-        //  update
+        ProcessSendNewsletter::dispatch($mailshot);
 
         return $mailshot;
     }

@@ -46,21 +46,12 @@ trait WithSendCustomerOutboxEmail
         ]);
         $dispatchedEmail->refresh();
 
-        $emailHtmlBody = $outbox->emailOngoingRun?->email?->liveSnapshot?->compiled_layout;
-
-        $sender = $outbox->emailOngoingRun?->sender();
-        $subject = $outbox->emailOngoingRun?->email?->subject;
-
-        if ($parent instanceof Mailshot) {
-            $emailHtmlBody = $parent->email->liveSnapshot->compiled_layout;
-            $sender = $parent->sender();
-            $subject = $parent->email->subject;
-        }
+        $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
 
         return $this->sendEmailWithMergeTags(
             $dispatchedEmail,
-            $sender,
-            $subject,
+            $outbox->emailOngoingRun->sender(),
+            $outbox->emailOngoingRun?->email?->subject,
             $emailHtmlBody,
             $unsubscribeUrl,
             $passwordToken,

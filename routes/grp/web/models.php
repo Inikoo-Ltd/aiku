@@ -789,7 +789,6 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
-        Route::post('newsletter/{mailshot:id}/send', SendNewsLetterNow::class)->name('newsletter.send')->withoutScopedBindings();
     });
 });
 
