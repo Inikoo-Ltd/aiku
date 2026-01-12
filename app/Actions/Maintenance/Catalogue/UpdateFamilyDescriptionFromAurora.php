@@ -41,7 +41,7 @@ class UpdateFamilyDescriptionFromAurora
             ->where('type', ProductCategoryTypeEnum::FAMILY)
             ->whereNotNull('source_family_id')
 
-          //    ->where('id',31890)
+            //    ->where('id',31890)
             ->orderBy('id')
             ->chunkById(1000, function ($families) {
                 foreach ($families as $family) {

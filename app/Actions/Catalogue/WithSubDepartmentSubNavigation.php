@@ -71,7 +71,7 @@ trait WithSubDepartmentSubNavigation
             ],
             [
                 'label'    => __('Families'),
-                'number'   => $subDepartment->stats->number_families,
+                'number'   => $subDepartment->stats?->number_families,
                 'route'     => $familiesRoute,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],
@@ -80,7 +80,7 @@ trait WithSubDepartmentSubNavigation
             ],
             [
                 'label'    => __('Products'),
-                'number'   => $subDepartment->stats->number_products,
+                'number'   => $subDepartment->stats?->number_products,
                 'route'     => $productsRoute,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],
@@ -89,7 +89,7 @@ trait WithSubDepartmentSubNavigation
             ],
              [
                  'label'    => __('Collections'),
-                 'number'   => $subDepartment->stats->number_collections,
+                 'number'   => $subDepartment->stats?->number_collections,
                  'route'     => $collectionsRoute,
                  'leftIcon' => [
                      'icon'    => ['fal', 'fa-album-collection'],

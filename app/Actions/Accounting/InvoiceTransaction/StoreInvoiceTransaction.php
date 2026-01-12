@@ -92,6 +92,7 @@ class StoreInvoiceTransaction extends OrgAction
                     $modelData['master_department_id']     = $masterProduct->master_department_id;
                     $modelData['master_sub_department_id'] = $masterProduct->master_sub_department_id;
                     $modelData['master_family_id']         = $masterProduct->master_family_id;
+                    $modelData['master_asset_id']          = $masterProduct->id;
                 }
             } elseif ($historicAsset->model_type == 'Service' && $invoice->shop->type == ShopTypeEnum::FULFILMENT) {
                 $modelData = $this->processFulfilmentService($historicAsset->model, $modelData);

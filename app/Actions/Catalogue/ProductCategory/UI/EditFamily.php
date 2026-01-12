@@ -179,7 +179,7 @@ class EditFamily extends OrgAction
                                             'information' => __('This name only for internal use (i.e listing in table)'),
                                             'value'       => $family->name
                                         ],
-                                    'description_title' => $family->masterProductCategory
+                                /*     'description_title' => $family->masterProductCategory
                                         ? [
                                             'type'          => 'input_translation',
                                             'label'         => __('Description title'),
@@ -196,7 +196,7 @@ class EditFamily extends OrgAction
                                             'type'  => 'input',
                                             'label' => __('Description title'),
                                             'value' => $family->description_title
-                                        ],
+                                        ], */
                                     'description'       => $family->masterProductCategory
                                         ? [
                                             'type'          => 'textEditor_translation',
