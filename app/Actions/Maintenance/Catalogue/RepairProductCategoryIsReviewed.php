@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 12 Jan 2026 11:39:47 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,10 +8,8 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -31,29 +30,29 @@ class RepairProductCategoryIsReviewed
             'description_extra'
         ];
 
-        $english=Language::where('code','en')->first();
+        $english = Language::where('code', 'en')->first();
 
 
         ProductCategory::whereNotNull('master_product_category_id')
             ->orderBy('id')
-            ->chunk(100, function (Collection $productCategories) use ($command, $fields,$english) {
+            ->chunk(100, function (Collection $productCategories) use ($command, $fields, $english) {
                 foreach ($productCategories as $productCategory) {
 
-                    $shop=$productCategory->shop;
+                    $shop = $productCategory->shop;
 
-                    if(!$shop->language_id==$english->id){
+                    if (!$shop->language_id == $english->id) {
                         continue;
                     }
 
 
-                    if(!$shop->masterShop){
+                    if (!$shop->masterShop) {
                         continue;
                     }
 
 
 
                     foreach ($fields as $field) {
-                        if ($productCategory->{$field}=='') {
+                        if ($productCategory->{$field} == '') {
                             $productCategory->update(
                                 [
                                     'is_'.$field.'_reviewed' => false
@@ -70,7 +69,7 @@ class RepairProductCategoryIsReviewed
 
 
                     foreach ($fields as $field) {
-                        if ($productCategory->{$field}==$masterProductCategory->{$field}) {
+                        if ($productCategory->{$field} == $masterProductCategory->{$field}) {
                             $productCategory->update(
                                 [
                                     'is_'.$field.'_reviewed' => false
@@ -79,7 +78,7 @@ class RepairProductCategoryIsReviewed
                             break;
                         }
 
-                        if($masterProductCategory->{$field}=='' && $productCategory->{$field}!=''){
+                        if ($masterProductCategory->{$field} == '' && $productCategory->{$field} != '') {
                             $productCategory->update(
                                 [
                                     'is_'.$field.'_reviewed' => true

@@ -64,7 +64,7 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
             ])
         );
 
-        if($this->returnType == 'product_page'){
+        if ($this->returnType == 'product_page') {
             $queryBuilder->with([
                 'tags',
                 'images',
@@ -83,7 +83,7 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
 
         return $this->handle($transaction);
     }
-    
+
     public function inProductPage(Transaction $transaction, ActionRequest $request)
     {
         $this->returnType = 'product_page';
@@ -94,7 +94,9 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
 
     public function jsonResponse(Product $product)
     {
-        if($this->returnType == 'product_page') return WebBlockProductResource::make($product)->toArray(request());
+        if ($this->returnType == 'product_page') {
+            return WebBlockProductResource::make($product)->toArray(request());
+        }
         return IrisAuthenticatedProductsInWebpageResource::make($product)->toArray(request());
     }
 }

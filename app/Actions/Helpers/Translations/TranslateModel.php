@@ -43,7 +43,7 @@ class TranslateModel
         if (Arr::get($translationData, 'description_extra') && (!$model->description_extra || $overwrite)) {
             data_set($modelData, 'description_extra', Translate::run($translationData['description_extra'], $english, $shopLanguage));
         }
-        
+
         if ($model instanceof ProductCategory) {
             UpdateProductCategory::run($model, $modelData);
         } else {
