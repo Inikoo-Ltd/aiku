@@ -17,7 +17,11 @@ class ChatMessageResource extends JsonResource
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,
-            'original_text' => $chatMessage->original_text,
+            'original' => [
+                'text'          => $chatMessage->original_text,
+                'language_name' => $chatMessage->originalLanguage?->name,
+                'language_flag' => $chatMessage->originalLanguage?->flag ? asset('flags/' . $chatMessage->originalLanguage->flag) : null,
+            ],
             'translations' => $chatMessage->translations->map(function ($translation) {
                 return [
                     'translated_text' => $translation->translated_text,
