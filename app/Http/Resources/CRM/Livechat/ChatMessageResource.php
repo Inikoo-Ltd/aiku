@@ -17,6 +17,14 @@ class ChatMessageResource extends JsonResource
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,
+            'original_text' => $chatMessage->original_text,
+            'translations' => $chatMessage->translations->map(function ($translation) {
+                return [
+                    'translated_text' => $translation->translated_text,
+                    'language_name'   => $translation->targetLanguage?->name,
+                    'language_flag'   => $translation->targetLanguage?->flag ? asset('flags/' . $translation->targetLanguage->flag) : null,
+                ];
+            }),
             'message_type' => $chatMessage->message_type->value,
             'sender_type' => $chatMessage->sender_type->value,
             'is_agent' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AGENT->value,

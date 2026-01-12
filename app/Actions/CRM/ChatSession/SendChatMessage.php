@@ -42,8 +42,6 @@ class SendChatMessage
         if (!$originalLanguageId) {
             if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
                 $originalLanguageId = $chatSession->agent_language_id;
-            } else {
-                $originalLanguageId = $chatSession->active_user_language_id ?? $chatSession->user_language_id; // Default User Lang
             }
         }
         $chatMessageData = [
