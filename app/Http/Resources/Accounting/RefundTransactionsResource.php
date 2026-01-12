@@ -32,6 +32,8 @@ class RefundTransactionsResource extends JsonResource
             'net_amount'                => $this->net_amount,
             'currency_code'             => $this->currency_code,
             'in_process'                => $this->in_process,
+            'is_tax_only'                => $this->is_tax_only,
+            'tax_amount'                => $this->tax_amount,
             'refund_route'              => [
                 'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [
