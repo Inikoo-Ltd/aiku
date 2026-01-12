@@ -102,49 +102,61 @@ const generateTranslateAI = async () => {
 
           <!-- Icon -->
           <div class="h-6 w-6 flex items-center justify-center
-           rounded-md bg-indigo-100 text-[#4B0082] shrink-0">
+           rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
             <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans('master data of ') + props.fieldName"
               class="h-3.5 w-3.5" />
           </div>
 
           <!-- Content -->
-          <div class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 p-4 rounded-md border" v-html="fieldData.main" />
+          <div class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 p-4 rounded-md border"
+            v-html="fieldData.main" />
         </div>
 
-        <div class="relative p-3 rounded-md border bg-white
+        <div class="relative p-3 rounded-md border bg-white">
+          <div class="
          flex gap-3 items-start">
 
-          <p class="text-[11px] font-semibold text-gray-500
-           uppercase tracking-wide shrink-0 pt-1">
-            {{ langLabel }}
-          </p>
+            <p class="text-[11px] font-semibold text-gray-500
+           uppercase tracking-wide shrink-0 pt-1" v-tooltip="languagesTo?.name">
+              {{ langLabel }}
+            </p>
 
-          <div class="flex-1 pr-10 p-4 rounded-md border bg-gray-50">
-            <EditorV2 v-model="props.form[props.fieldName]" :key="key">
-              <template #editor-content="{ editor }">
-                <EditorContent :editor="editor" class="focus:outline-none text-sm text-gray-700
+            <div class="flex-1 pr-10 p-4 rounded-md border ">
+              <div class="bg-gray-50">
+                <EditorV2 v-model="props.form[props.fieldName]" :key="key">
+                  <template #editor-content="{ editor }">
+                    <EditorContent :editor="editor" class="focus:outline-none text-sm text-gray-700
                  whitespace-pre-wrap leading-6 min-h-[5rem]" />
-              </template>
-            </EditorV2>
-          </div>
+                  </template>
+                </EditorV2>
+              </div>
+              <div class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
+                <p class="">{{ trans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
+                <p class="">
+                  {{ trans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
+                </p>
+              </div>
+            </div>
 
-          <button v-if="fieldData.reviewed" type="button" disabled class="
+
+            <button v-if="fieldData.reviewed" type="button" disabled class="
            h-6 w-6 flex items-center justify-center
            rounded-md bg-white text-gray-600 button-primary
            shadow-sm" v-tooltip="trans('already review it by user')">
-            <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5" />
-          </button>
+              <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5" />
+            </button>
 
-          <button type="button" class="h-6 w-6 flex items-center justify-center
+            <button v-if="fieldData.main" type="button" class="h-6 w-6 flex items-center justify-center
            rounded-md bg-white hover:bg-gray-300 border
            disabled:opacity-50 disabled:pointer-events-none
-           shrink-0 transition mt-0.5" @click="generateTranslateAI" :disabled="isDisabled || loading" v-tooltip="trans('get translation from AI')">
-            <LoadingIcon v-if="loading" class="h-3.5 w-3.5 animate-spin" />
-            <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" />
-          </button>
+           shrink-0 transition mt-0.5" @click="generateTranslateAI" :disabled="isDisabled || loading"
+              v-tooltip="trans('Get translation from AI')">
+              <LoadingIcon v-if="loading" class="h-3.5 w-3.5 animate-spin" />
+              <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" />
+            </button>
 
+          </div>
         </div>
-
       </div>
     </div>
 

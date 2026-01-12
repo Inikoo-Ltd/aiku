@@ -114,7 +114,7 @@ const generateTranslateAI = async () => {
 
       <!-- TRANSLATION INPUT -->
       <div class="rounded-md border p-2 bg-white flex items-center gap-2">
-        <p class="w-fit text-[11px] font-medium text-gray-500 uppercase tracking-wide">
+        <p class="w-fit text-[11px] font-medium text-gray-500 uppercase tracking-wide"  v-tooltip="languagesTo?.name">
           {{ langLabel }}
         </p>
 
@@ -144,6 +144,7 @@ const generateTranslateAI = async () => {
             @click="generateTranslateAI"
             class="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50"
             v-tooltip="trans('get translation from AI')"
+            v-if="fieldData.main"
           >
             <FontAwesomeIcon v-if="!loading" :icon="faLanguage" class="h-3.5 w-3.5" />
             <LoadingIcon v-else />

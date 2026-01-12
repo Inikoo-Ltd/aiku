@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Events\TranslateProgressEvent;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
@@ -83,6 +82,7 @@ class Translate extends OrgAction
      */
     public function asController(string $languageFrom, string $languageTo, ActionRequest $request): string
     {
+        set_time_limit(100);
 
         $this->initialisationFromGroup(group(), $request);
         $languageFrom = Language::where('code', $languageFrom)->first();
