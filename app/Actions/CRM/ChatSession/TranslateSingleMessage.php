@@ -2,11 +2,11 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatMessage;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Actions\CRM\ChatSession\TranslateChatMessage;
+use App\Http\Resources\CRM\Livechat\ChatMessageResource;
 
 class TranslateSingleMessage
 {
@@ -25,20 +25,25 @@ class TranslateSingleMessage
         TranslateChatMessage::run($chatMessage, $targetLanguageId);
     }
 
-    public function asController(Request $request, ChatMessage $chatMessage): JsonResponse
+    public function asController(ActionRequest $request, ChatMessage $chatMessage): JsonResponse
     {
-        $request->validate([
-            'target_language_id' => 'required|exists:languages,id',
-        ]);
+        $validated = $request->validated();
 
-        $this->handle($chatMessage, $request->target_language_id);
+        $this->handle($chatMessage, $validated['target_language_id']);
 
-        $chatMessage->load('translations.targetLanguage');
+        $chatMessage->load(['translations.targetLanguage', 'originalLanguage']);
 
         return response()->json([
             'success' => true,
             'message' => 'Message translation processing started',
-            'data'    => $chatMessage
+            'data'    => new ChatMessageResource($chatMessage)
         ]);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'target_language_id' => 'required|exists:languages,id',
+        ];
     }
 }
