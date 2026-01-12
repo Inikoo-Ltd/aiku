@@ -69,12 +69,6 @@ class EditSubDepartment extends OrgAction
             'EditModel',
             [
                 'title'       => __('Sub-department'),
-                'warning' => $subDepartment->masterProductCategory ? [
-                    'type'  =>  'warning',
-                    'title' =>  'warning',
-                    'text'  =>  __('Changing name or description may affect master sub department.'),
-                    'icon'  => ['fas', 'fa-exclamation-triangle']
-                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
                     $request->route()->getName(),
@@ -86,6 +80,7 @@ class EditSubDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'   => $subDepartment->code,
+                    'model'   => __('Sub-department'),
                     'iconRight' => $urlMaster ? [
                         'icon'  => "fab fa-octopus-deploy",
                         'color' => "#4B0082",
@@ -130,7 +125,7 @@ class EditSubDepartment extends OrgAction
                                         'main' => $subDepartment->masterProductCategory->name,
                                         'languages' => $languages,
                                         'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('name_i8n')
+                                        'value' => $subDepartment->name
                                     ] : [
                                         'type'  => 'input',
                                         'label' => __('Name'),
@@ -144,7 +139,7 @@ class EditSubDepartment extends OrgAction
                                         'main' => $subDepartment->masterProductCategory->description_title,
                                         'languages' => $languages,
                                         'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('description_title_i8n')
+                                        'value' => $subDepartment->description_title
                                     ] : [
                                         'type'  => 'input',
                                         'label' => __('Description Title'),
@@ -158,7 +153,7 @@ class EditSubDepartment extends OrgAction
                                         'main' => $subDepartment->masterProductCategory->description,
                                         'languages' => $languages,
                                         'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('description_i8n')
+                                        'value' => $subDepartment->description
                                     ] : [
                                         'type'  => 'textEditor',
                                         'label' => __('Description'),
@@ -172,7 +167,7 @@ class EditSubDepartment extends OrgAction
                                         'main' => $subDepartment->masterProductCategory->description_extra,
                                         'languages' => $languages,
                                         'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('description_extra_i8n')
+                                        'value' => $subDepartment->description_extra
                                     ] : [
                                          'type'  => 'textEditor',
                                         'label' => __('Extra Description'),
