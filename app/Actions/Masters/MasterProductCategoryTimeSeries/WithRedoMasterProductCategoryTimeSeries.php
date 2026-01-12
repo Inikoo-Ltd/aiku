@@ -32,7 +32,7 @@ trait WithRedoMasterProductCategoryTimeSeries
 
         $from = null;
 
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction}_id", $masterProductCategory->id)->min('date');
+        $firstInvoicedDate = DB::table('invoice_transactions')->where("master_{$this->restriction}_id", $masterProductCategory->id)->min('date');
 
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $masterProductCategory->created_at)) {
@@ -51,7 +51,7 @@ trait WithRedoMasterProductCategoryTimeSeries
             $to = $masterProductCategory->discontinued_at;
 
             $lastInvoicedDate = DB::table('invoice_transactions')
-                ->where("{$this->restriction}_id", $masterProductCategory->id)
+                ->where("master_{$this->restriction}_id", $masterProductCategory->id)
                 ->max('date');
 
             if (!$to && !$lastInvoicedDate) {
