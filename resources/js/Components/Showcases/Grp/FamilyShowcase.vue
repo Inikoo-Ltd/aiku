@@ -9,6 +9,7 @@ import { faAlbumCollection } from "@fal";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
+import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
 import { faExternalLink } from '@far';
 
@@ -21,7 +22,7 @@ const props = withDefaults(defineProps<{
             save_route: routeType
         }
         family: {
-            data: {},
+            data: any,
         },
         routeList: {
             collectionRoute: routeType
@@ -129,6 +130,9 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
                 <!-- Sales Analytics Compact -->
                 <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
+
+                <!-- Product State Stats -->
+                <ProductCategoryStats v-if="data.family.data.stats" :stats="data.family.data.stats" />
 
                 <!-- Review Content -->
                 <ReviewContent v-if="!isMaster" :data="data.family.data"  />

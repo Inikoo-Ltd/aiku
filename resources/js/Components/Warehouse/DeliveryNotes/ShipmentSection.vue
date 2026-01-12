@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router, useForm } from "@inertiajs/vue3"
@@ -158,6 +158,10 @@ const onOpenModalTrackingNumber = async () => {
 			)
 		)
 		optionShippingList.value = xxx?.data?.data || []
+
+		if (optionShippingList.value?.filter((shipment) => shipment.api_shipper ).length < 1) {
+			selectedShipment.value	= 'other_options'
+		}
 	} catch (error) {
 		console.error(error)
 		notify({
@@ -376,6 +380,12 @@ const onCopyDataCustomer = (field: string) => {
 		copyDeliveryAddress.value.email = props.customer.email
 	}
 }
+
+const compOptionsCreateLabel = computed(() => {
+	return optionShippingList.value?.filter(
+									(shipment) => shipment.api_shipper
+								)
+})
 </script>
 
 <template>
@@ -554,7 +564,7 @@ const onCopyDataCustomer = (field: string) => {
                 </div> -->
 
 				<!-- Section: Create label -->
-				<div class="w-full mt-3">
+				<div v-if="compOptionsCreateLabel.length" class="w-full mt-3">
 					<div class="text-xs px-1 my-2">
 						<RadioButton
 							v-model="selectedShipment"
@@ -575,9 +585,7 @@ const onCopyDataCustomer = (field: string) => {
 								class="skeleton w-full max-w-52 h-20 rounded"></div>
 							<div
 								v-else
-								v-for="(shipment, index) in optionShippingList.filter(
-									(shipment) => shipment.api_shipper
-								)"
+								v-for="(shipment, index) in compOptionsCreateLabel"
 								@click="
 									() => (
 										set(formTrackingNumber, ['errors', 'address'], null),

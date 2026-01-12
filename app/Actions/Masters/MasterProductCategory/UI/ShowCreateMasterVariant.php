@@ -74,6 +74,17 @@ class ShowCreateMasterVariant extends OrgAction
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
+        $perfectFamily = $masterFamily->status;
+        $masterProducts = $masterFamily->masterAssets->pluck('code');
+        if ($perfectFamily) {
+            foreach ($masterFamily->productCategories as $productCategory) {
+                $products = $productCategory->getProducts()->pluck('code');
+                if (array_diff($masterProducts->toArray(), $products->toArray())) {
+                    abort(404);
+                }
+            }
+        }
+
         return $masterFamily;
     }
 

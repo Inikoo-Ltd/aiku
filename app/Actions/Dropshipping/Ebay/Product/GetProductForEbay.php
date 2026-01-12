@@ -8,7 +8,9 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,7 +21,7 @@ class GetProductForEbay
     use AsAction;
     use WithAttributes;
 
-    public $commandSignature = 'dropshipping:ebay:product:get {ebay}';
+    public $commandSignature = 'dropshipping:ebay:product:get {customerSalesChannel}';
 
     /**
      * @throws \Exception
@@ -55,5 +57,12 @@ class GetProductForEbay
     public function asController(EbayUser $ebayUser, ActionRequest $request): array
     {
         return $this->handle($ebayUser);
+    }
+
+    public function asCommand(Command $command): array
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+
+        return $this->handle($customerSalesChannel->user);
     }
 }

@@ -27,7 +27,7 @@ class TrackWebsiteVisitor
                 website: $request->get('website'),
                 webUser: $request->user('retina'),
                 userAgent: $request->userAgent(),
-                ip: $request->ip(),
+                ips: $request->ips(),
                 currentUrl: $request->fullUrl(),
                 referrer: $request->header('referer'),
             );
@@ -36,6 +36,10 @@ class TrackWebsiteVisitor
 
     protected function shouldTrack(Request $request): bool
     {
+        if (app()->environment('local')) {
+            return false;
+        }
+
         if (!$request->get('website')) {
             return false;
         }

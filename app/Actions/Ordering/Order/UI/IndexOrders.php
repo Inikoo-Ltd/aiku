@@ -81,7 +81,7 @@ class IndexOrders extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('orders.reference', $value)
-                ->orWhereWith('orders.tracking_number', $value);
+                    ->orWhereWith('orders.tracking_number', $value);
             });
         });
 
@@ -149,6 +149,8 @@ class IndexOrders extends OrgAction
         } elseif ($this->bucket == 'dispatched_today') {
             $query->where('orders.state', OrderStateEnum::DISPATCHED)
                 ->where('dispatched_at', Carbon::today());
+        } elseif ($this->bucket == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value) {
+            $query->where('orders.with_replacement', true);
         } elseif ($this->bucket == 'all') {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $query->whereElementGroup(
@@ -159,7 +161,6 @@ class IndexOrders extends OrgAction
                 );
             }
         }
-
 
 
         $shipmentsExpr =
@@ -203,6 +204,7 @@ class IndexOrders extends OrgAction
                 'orders.to_be_paid_by',
                 'orders.tracking_number',
                 'orders.shipping_data',
+                'orders.with_replacement',
                 $shipmentsSelect,
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
@@ -248,7 +250,7 @@ class IndexOrders extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withLabelRecord([__('order'),__('orders')])
+                ->withLabelRecord([__('order'), __('orders')])
                 ->withEmptyState(
                     [
                         'title' => $noResults,
@@ -416,6 +418,23 @@ class IndexOrders extends OrgAction
                     fn () => OrdersResource::collection($orders)
                     : Inertia::lazy(fn () => OrdersResource::collection($orders)),
 
+                OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value => $this->tab == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
+                    ?
+                    fn () => OrdersResource::collection(
+                        IndexOrders::run(
+                            $shop,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
+                        )
+                    )
+                    : Inertia::lazy(fn () => OrdersResource::collection(
+                        IndexOrders::run(
+                            $shop,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
+                        )
+                    )),
+
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
                     fn () => GetLastOrders::run($shop)
                     : Inertia::lazy(fn () => GetLastOrders::run($shop)),
@@ -426,6 +445,8 @@ class IndexOrders extends OrgAction
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)
+        )->table(
+            $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value, OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value)
         )->table(IndexOrdersExcessPayment::make()->tableStructure($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value));
     }
 

@@ -42,6 +42,15 @@ class MasterDepartmentsResource extends JsonResource
             'name'             => $this->name,
             'image_thumbnail'  => Arr::get($this->web_images, 'main.thumbnail'),
             'description'      => $this->description,
+            'status_icon'            => $this->status ? [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-400'
+            ] : [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-400'
+            ],
             'master_shop_slug' => $this->master_shop_slug,
             'master_shop_code' => $this->master_shop_code,
             'master_shop_name' => $this->master_shop_name,
@@ -51,6 +60,29 @@ class MasterDepartmentsResource extends JsonResource
             'sub_departments'  => $this->sub_departments,
             'collections'      => $this->collections,
             'show_in_website'  => $this->show_in_website,
+            'currency_code'    => $this->currency_code,
+            'sales'            => $this->sales ?? 0,
+            'sales_ly'         => $this->sales_ly ?? 0,
+            'sales_delta'      => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'invoices'         => $this->invoices ?? 0,
+            'invoices_ly'      => $this->invoices_ly ?? 0,
+            'invoices_delta'   => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+        ];
+    }
+
+    private function calculateDelta($current, $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 }

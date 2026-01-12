@@ -11,6 +11,8 @@ namespace App\Models\Catalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Models\Discounts\Offer;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
@@ -261,6 +263,23 @@ class ProductCategory extends Model implements Auditable, HasMedia
         };
     }
 
+    public function getProductsDistinctVariant(): LaravelCollection // This is to fetch non-variant products. If it's a variant, will fetch only the leader.
+    {
+        $column = match ($this->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => 'department_id',
+            ProductCategoryTypeEnum::FAMILY => 'family_id',
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department_id',
+        };
+
+        return Product::where($column, $this->id)
+            ->where(function ($query) {
+                $query
+                    ->where('products.is_minion_variant', false)
+                    ->orWhere('is_variant_leader', true);
+            })
+            ->get();
+    }
+
     public function getActiveProducts(): LaravelCollection
     {
         return match ($this->type) {
@@ -301,4 +320,16 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(MasterProductCategory::class);
     }
 
+    public function getOffers(): HasMany
+    {
+        return $this->hasMany(Offer::class, 'trigger_id')
+            ->where('trigger_type', class_basename(ProductCategory::class));
+    }
+
+    public function getActiveOffers(): HasMany
+    {
+        return $this->hasMany(Offer::class, 'trigger_id')
+            ->where('trigger_type', class_basename(ProductCategory::class))
+            ->where('state', OfferStateEnum::ACTIVE);
+    }
 }

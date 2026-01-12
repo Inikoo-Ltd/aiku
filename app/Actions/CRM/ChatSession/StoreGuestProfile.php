@@ -47,7 +47,7 @@ class StoreGuestProfile
         $chatMessage = ChatMessage::create([
             'chat_session_id' => $chatSession->id,
             'message_type'    => ChatMessageTypeEnum::TEXT->value,
-            'sender_type'     => ChatSenderTypeEnum::SYSTEM->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
             'sender_id'       => null,
             'message_text'    => $summary,
             'is_read'         => false,

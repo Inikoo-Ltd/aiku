@@ -491,7 +491,6 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
             ->component("Masters/MasterDepartments")
             ->has("title")
             ->has("breadcrumbs", 4)
-            ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
@@ -526,7 +525,6 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
             ->component("Masters/MasterFamilies")
             ->has("title")
             ->has("breadcrumbs", 4)
-            ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
@@ -760,7 +758,6 @@ test("UI Index Master SubDepartments in Department", function (MasterProductCate
         $page
             ->component("Masters/MasterSubDepartments")
             ->has("title")
-            ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>

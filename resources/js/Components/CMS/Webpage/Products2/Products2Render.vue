@@ -21,6 +21,7 @@ import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import Discount from '@/Components/Utils/Label/Discount.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -129,7 +130,7 @@ const toggleBackInStock = () =>
                     </slot>
 
                     <!-- FAVOURITE -->
-                    <template v-if="layout?.iris?.is_logged_in">
+                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
                         <div v-if="isLoadingFavourite" class="absolute top-1 right-2 text-gray-500 text-xl z-10">
                             <LoadingIcon />
                         </div>
@@ -196,25 +197,37 @@ const toggleBackInStock = () =>
                     </span>
                 </div>
             </div>
+            
+            <!-- Section: Discounts -->
+            <div v-if="Object.keys(product.offers_data || {})?.length" class="w-full px-3">
+                <Discount :offers_data="product.offers_data" class="text-xxs w-full justify-center" />
+            </div>
 
             <!-- PRICE + BUTTON (FIXED AT BOTTOM) -->
             <div  v-if="layout?.iris?.is_logged_in" class="relative px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
                 <div class="">
                     <div class="font-extrabold text-black text-sm">
                         {{ trans("Price") }}:
-                        {{ locale.currencyFormat(currency?.code, product.price) }}
+                        <template v-if="Object.keys(product.offers_data || {})?.length">
+                            <span class="text-green-600">{{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}</span>
+                            <span class="ml-1.5 line-through text-gray-500 text-xs font-normal opacity-60">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
+                        </template>
+                        <span v-else class="text-black">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
                     </div>
 
                     <div class="mt-1 mr-9">
-                        <span class="price_per_unit">
-                            ( {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}<span class="text-gray-600">/{{ product.unit }}</span> )
+                        <span v-if="Object.keys(product.offers_data || {})?.length" v-tooltip="trans('Discounted from :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.price_per_unit) })" class="text-green-600">
+                            ({{ locale.currencyFormat(currency?.code, product.offer_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
+                        </span>
+                        <span v-else class="">
+                            ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}<span class="">/{{ product.unit }}</span>)
                         </span>
                     </div>
                 </div>
 
                 <!-- BUTTON -->
                 <div class="absolute right-2 bottom-1 flex items-center justify-end">
-                    <template v-if="layout?.iris?.is_logged_in">
+                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
                         <!-- In stock -->
                         <NewAddToCartButton
                             v-if="product.stock > 0 && basketButton && !product.is_coming_soon"
@@ -229,7 +242,7 @@ const toggleBackInStock = () =>
 
                         <!-- Back in stock notify -->
                          
-                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'" @click.prevent="toggleBackInStock"
+                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.is_variant" @click.prevent="toggleBackInStock"
                             class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all shadow-lg"
                             v-tooltip="product.is_back_in_stock
                                 ? trans('You will be notified')
@@ -245,7 +258,7 @@ const toggleBackInStock = () =>
 
         </div>
 
-        <!-- LOGIN CTA -->
+        <!-- LOGIN  -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
             <a :href="urlLoginWithRedirect()" class="w-full">
                 <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />

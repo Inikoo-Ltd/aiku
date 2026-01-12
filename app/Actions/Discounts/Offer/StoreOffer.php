@@ -39,11 +39,9 @@ class StoreOffer extends OrgAction
      */
     public function handle(OfferCampaign $offerCampaign, array $modelData): Offer
     {
-
-        $modelData = $this->prepareOfferData($offerCampaign, $modelData);
+        $modelData  = $this->prepareOfferData($offerCampaign, $modelData);
         $allowances = Arr::pull($modelData, 'allowances', []);
-        $offer = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
-
+        $offer      = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
             /** @var Offer $offer */
             $offer = $offerCampaign->offers()->create($modelData);
             $offer->stats()->create();
@@ -92,6 +90,7 @@ class StoreOffer extends OrgAction
                 'alpha_dash'
             ],
             'name'         => ['required', 'max:250', 'string'],
+            'label'        => ['sometimes', 'nullable', 'max:1028', 'string'],
             'data'         => ['sometimes', 'required'],
             'settings'     => ['sometimes', 'required'],
             'trigger_data' => ['sometimes', 'required'],
@@ -103,14 +102,14 @@ class StoreOffer extends OrgAction
             'duration'     => ['sometimes', OfferDurationEnum::class],
         ];
         if (!$this->strict) {
-            $rules['start_at']  = ['sometimes', 'nullable', 'date'];
-            $rules['finish_at'] = ['sometimes', 'nullable', 'date'];
-            $rules['state']     = ['sometimes', Rule::enum(OfferStateEnum::class)];
+            $rules['start_at']         = ['sometimes', 'nullable', 'date'];
+            $rules['finish_at']        = ['sometimes', 'nullable', 'date'];
+            $rules['state']            = ['sometimes', Rule::enum(OfferStateEnum::class)];
             $rules['is_discretionary'] = ['sometimes', 'boolean'];
-            $rules['is_locked'] = ['sometimes', 'boolean'];
-            $rules['source_data'] = ['sometimes', 'array'];
-
-            $rules = $this->noStrictStoreRules($rules);
+            $rules['is_locked']        = ['sometimes', 'boolean'];
+            $rules['source_data']      = ['sometimes', 'array'];
+            $rules['label']            = ['sometimes', 'max:1028', 'string'];
+            $rules                     = $this->noStrictStoreRules($rules);
         }
 
         return $rules;

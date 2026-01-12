@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -50,15 +51,18 @@ class StoreMasterVariant extends OrgAction
 
             $masterVariant->refresh();
 
-            foreach ($masterVariant->allProduct() as $masterAsset) {
+            foreach ($masterVariant->fetchProductFromData() as $masterAsset) {
+                $isLeader = $masterVariant->leader_id == $masterAsset->id;
                 $masterAsset->updateQuietly([
                     'master_variant_id' => $masterVariant->id,
-                    'is_variant_leader' => $masterVariant->leader_id == $masterAsset->id,
+                    'is_main'           => $isLeader,
+                    'is_variant_leader' => $isLeader,
+                    'is_minion_variant' => !$isLeader,
                 ]);
             }
 
             foreach ($masterVariant->masterFamily->productCategories as $productCategory) {
-                if (!$productCategory->shop) {
+                if (!$productCategory->shop || $productCategory->shop->state == ShopStateEnum::CLOSED) {
                     continue;
                 }
                 StoreVariantFromMaster::make()->action(

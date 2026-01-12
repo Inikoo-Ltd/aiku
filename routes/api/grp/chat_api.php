@@ -3,6 +3,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Actions\CRM\ChatSession\GetChatAgents;
+use App\Actions\CRM\ChatSession\HandleChatRead;
 use App\Actions\CRM\ChatSession\StoreChatAgent;
 use App\Actions\CRM\ChatSession\GetChatActivity;
 use App\Actions\CRM\ChatSession\GetChatMessages;
@@ -13,6 +14,7 @@ use App\Actions\CRM\ChatSession\HandleChatTyping;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\StoreGuestProfile;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
+use App\Actions\CRM\ChatSession\DownloadChatAttachment;
 use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
 
 Route::get('/ping', function () {
@@ -47,3 +49,9 @@ Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.upda
 
 Route::post('/typing', HandleChatTyping::class, 'typing')
     ->name('typing');
+
+Route::post('/read', HandleChatRead::class, 'read')
+    ->name('read');
+
+Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)
+    ->name('chat.attachment.download');

@@ -20,7 +20,7 @@ import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
-import { faShapes, faStar } from "@fas"
+import { faShapes, faStar, faTriangle, faEquals } from "@fas"
 
 const props = defineProps<{
     data: {}
@@ -237,6 +237,27 @@ function getClassColorIcon(varSlug: string) {
     return color ? { color: `${color} !important` } : {};
 }
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return {
+            icon: faTriangle
+        }
+    } else if (!isPositive) {
+        return {
+            icon: faTriangle,
+            class: 'rotate-180'
+        }
+    }
+}
+
+const getIntervalStateColor = (isPositive: boolean) => {
+    if (isPositive) {
+        return 'text-green-500'
+    } else if (!isPositive) {
+        return 'text-red-500'
+    }
+}
+
 </script>
 
 <template>
@@ -286,6 +307,19 @@ function getClassColorIcon(varSlug: string) {
                 {{ masterProduct["code"] }}
             </Link>
         </template>
+
+        <template #cell(code_product)="{ item: masterProduct }">
+            <FontAwesomeIcon :icon="masterProduct.is_variant_leader ? faStar : faShapes" class="shrink-0 mx-2" :class="masterProduct.is_variant_leader
+                ? 'text-yellow-500'
+                : 'text-gray-500'" />
+
+            <Link v-if="masterProduct.code" v-tooltip="masterProduct.code"
+                :href="masterProductRoute(masterProduct) as string" class="secondaryLink">
+                {{ masterProduct.code }}
+            </Link>
+        </template>
+
+
 
         <template #cell(variant_slug)="{ item: masterProduct }">
             <Link v-if="masterProduct.variant_slug" :href="masterVarinatRoute(masterProduct) as string"
@@ -364,6 +398,82 @@ function getClassColorIcon(varSlug: string) {
 
             </div>
 
+        </template>
+
+        <template #cell(sales)="{ item: product }">
+            <span class="tabular-nums">{{ locale.currencyFormat(product.currency_code, product.sales) }}</span>
+        </template>
+
+        <template #cell(sales_delta)="{ item }">
+            <div v-if="item.sales_delta">
+                <span>{{ item.sales_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #cell(invoices_delta)="{ item }">
+            <div v-if="item.invoices_delta">
+                <span>{{ item.invoices_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.invoices_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
         </template>
 
         <template #cell(actions)="{ item: item}">

@@ -11,10 +11,13 @@ namespace App\Actions\Catalogue\Variant;
 
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
+use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
+use Illuminate\Support\Facades\DB;
 
 class UpdateVariant extends OrgAction
 {
@@ -28,26 +31,52 @@ class UpdateVariant extends OrgAction
      */
     public function handle(Variant $variant, array $modelData): Variant
     {
-        $variant->update($modelData);
-        $variant->refresh();
+        /** @var Variant $variant */
+        $variant = DB::transaction(function () use ($modelData, $variant) {
+            $variant->update($modelData);
+            $variant->refresh();
 
-        $products = $variant->allProduct();
-        $productIds = $products->pluck('id');
+            $products = $variant->allProduct();
+            $productIds = $products->pluck('id');
 
-        Product::where('variant_id', $variant->id)
-            ->whereNotIn('id', $productIds)
-            ->update([
-                'variant_id' => null,
-                'is_variant_leader' => false,
-            ]);
+            // Detach other product not in variant
+            Product::where('variant_id', $variant->id)
+                ->whereNotIn('id', $productIds)
+                ->update([
+                    'is_main'           => true,
+                    'variant_id'        => null,
+                    'is_variant_leader' => false,
+                    'is_minion_variant' => false
+                ]);
+            // Attach minion
+            Product::whereIn('id', $productIds)
+                ->update([
+                    'is_main'           => false,
+                    'variant_id'        => $variant->id,
+                    'is_variant_leader' => false,
+                    'is_minion_variant' => true
+                ]);
+            // Attach leader
+            Product::where('id', $variant->leader_id)
+                ->update([
+                    'is_main' => true,
+                    'is_variant_leader' => true,
+                    'is_minion_variant' => false
+                ]);
 
-        Product::whereIn('id', $productIds)->update([
-            'variant_id' => $variant->id,
-            'is_variant_leader' => false,
-        ]);
+            foreach ($products->get() as $product) {
+                if ($product->webpage()->exists()) {
+                    UpdateWebpage::make()->action($product->webpage()->first(), [
+                         'state_data' => [
+                             'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
+                             'redirect_webpage_id'   => $variant->leaderProduct->webpage->id
+                         ]
+                    ]);
+                }
+            }
 
-        Product::where('id', $variant->leader_id)
-            ->update(['is_variant_leader' => true]);
+            return $variant;
+        });
 
         return $variant;
     }

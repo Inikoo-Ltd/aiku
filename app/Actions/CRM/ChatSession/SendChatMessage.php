@@ -17,6 +17,9 @@ use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use Illuminate\Validation\Rules\File;
+use Illuminate\Http\UploadedFile;
+use App\Actions\Helpers\Media\StoreMediaFromFile;
 
 class SendChatMessage
 {
@@ -26,7 +29,7 @@ class SendChatMessage
     {
         $exists = ChatMessage::where('chat_session_id', $chatSession->id)
             ->where('sender_type', $modelData['sender_type'])
-            ->where('message_text', $modelData['message_text'])
+            ->where('message_text', $modelData['message_text'] ?? '')
             ->whereBetween('created_at', [now()->subSeconds(1), now()])
             ->first();
 
@@ -34,12 +37,21 @@ class SendChatMessage
             return $exists;
         }
 
+        // $originalLanguageId = $modelData['original_language_id'] ?? null;
+        // if (!$originalLanguageId) {
+        //     if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+        //         $originalLanguageId = $chatSession->agent_language_id;
+        //     } else {
+        //         $originalLanguageId = $chatSession->active_user_language_id ?? $chatSession->user_language_id;
+        //     }
+        // }
+
         $chatMessageData = [
             'chat_session_id' => $chatSession->id,
             'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
             'sender_type'     => $modelData['sender_type'],
             'sender_id'       => $modelData['sender_id'] ?? null,
-            'message_text'    => $modelData['message_text'],
+            'message_text'    => $modelData['message_text'] ?? null,
             'media_id'        => $modelData['media_id'] ?? null,
             'is_read'         => false,
             'created_at'      => now(),
@@ -47,6 +59,13 @@ class SendChatMessage
         ];
 
         $chatMessage = ChatMessage::create($chatMessageData);
+
+        if (isset($modelData['image']) && $modelData['image'] instanceof UploadedFile) {
+            $this->processMessageImage($chatMessage, $modelData['image']);
+        }
+        if (isset($modelData['file']) && $modelData['file'] instanceof UploadedFile) {
+            $this->processMessageFile($chatMessage, $modelData['file']);
+        }
 
         $this->updateSessionTimestamps(
             $chatSession,
@@ -64,6 +83,44 @@ class SendChatMessage
         BroadcastChatListEvent::dispatch();
 
         return $chatMessage;
+    }
+
+    protected function processMessageImage(ChatMessage $chatMessage, UploadedFile $file): void
+    {
+        $imageData = [
+            'path'         => $file->getPathName(),
+            'originalName' => $file->getClientOriginalName(),
+            'extension'    => $file->getClientOriginalExtension(),
+            'checksum'     => md5_file($file->getPathName()),
+        ];
+
+        $media = StoreMediaFromFile::run($chatMessage, $imageData, 'chat_images', 'image');
+
+        $chatMessage->updateQuietly([
+            'media_id'     => $media->id,
+            'message_type' => ChatMessageTypeEnum::IMAGE,
+        ]);
+
+        $chatMessage->refresh();
+    }
+
+    protected function processMessageFile(ChatMessage $chatMessage, UploadedFile $file): void
+    {
+        $fileData = [
+            'path'         => $file->getPathName(),
+            'originalName' => $file->getClientOriginalName(),
+            'extension'    => $file->getClientOriginalExtension(),
+            'checksum'     => md5_file($file->getPathName()),
+        ];
+
+        $media = StoreMediaFromFile::run($chatMessage, $fileData, 'chat_attachments', 'file');
+
+        $chatMessage->updateQuietly([
+            'media_id'     => $media->id,
+            'message_type' => ChatMessageTypeEnum::FILE,
+        ]);
+
+        $chatMessage->refresh();
     }
 
     protected function updateSessionTimestamps(ChatSession $chatSession, string $senderType): void
@@ -105,7 +162,8 @@ class SendChatMessage
     {
         return [
             'message_text' => [
-                'required_without:media_id',
+                'required_without_all:image,file',
+                'nullable',
                 'string',
                 'max:5000'
             ],
@@ -122,15 +180,33 @@ class SendChatMessage
                 'sometimes',
                 Rule::enum(ChatSenderTypeEnum::class)
             ],
-            'media_id' => [
+            'image' => [
                 'sometimes',
-                'exists:media,id'
+                'nullable',
+                File::image()->max(10 * 1024)
             ],
+            'file' => [
+                'sometimes',
+                'nullable',
+                File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
+                    ->max(20 * 1024)
+            ]
         ];
     }
 
-    public function asController(Request $request, string $ulid, ?string $organisation = null): array
+    public function asController(Request $request): array
     {
+        /** @var Organisation|null $organisation */
+        $organisation = $request->route('organisation');
+
+        /** @var ChatSession|string $chatSession */
+        $chatSession = $request->route('chatSession');
+
+        $ulid = is_string($chatSession)
+            ? $chatSession
+            : $chatSession->ulid;
+
+
         $this->validateUlid($ulid);
 
         $validated = $request->validate($this->rules());

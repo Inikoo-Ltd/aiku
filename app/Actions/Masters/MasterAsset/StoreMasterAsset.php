@@ -46,6 +46,18 @@ class StoreMasterAsset extends OrgAction
      */
     public function handle(MasterProductCategory $masterFamily, array $modelData): MasterAsset
     {
+
+        $isMain = Arr::get($modelData, 'is_main', true);
+        $isMinionVariant = false;
+        if (Arr::has($modelData, 'is_minion_variant')) {
+            $isMinionVariant = Arr::get($modelData, 'is_minion_variant', false);
+            $isMain = !$isMinionVariant;
+        }
+
+        data_set($modelData, 'is_main', $isMain);
+        data_set($modelData, 'is_minion_variant', $isMinionVariant);
+
+
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
@@ -89,7 +101,6 @@ class StoreMasterAsset extends OrgAction
             if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT  && count($shopProducts) > 0) {
                 StoreProductFromMasterProduct::make()->action($masterAsset, [
                     'shop_products'     => $shopProducts,
-                    'is_minion_variant' => data_get($modelData, 'is_minion_variant'),
                 ]);
             }
 

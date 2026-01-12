@@ -21,9 +21,9 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
     use AsAction;
     use WithWebEditAuthorisation;
 
-    public function getJobUniqueId(Website $website): string
+    public function getJobUniqueId($websiteId): string
     {
-        return $website->id;
+        return $websiteId;
     }
 
     public function handle(Website $website, WebBlockType $newWebBlock, string $marginal, array $fieldValue): WebBlockType

@@ -257,7 +257,7 @@ onMounted(() => {
                 />
                 <span class="text-sm text-gray-500">
                     {{ trans("Collection") }}
-                    <InformationIcon :information="trans('Select this if you want to come to our premisses to collect the order')" class="align-middle" />
+                    <InformationIcon :information="trans('Select this option if you would like to collect the order yourself or arrange your courier company to collect from our premises')" class="align-middle" />
                 </span>
             </div>
 

@@ -135,6 +135,7 @@ const resetImage = () => {
     if (fileInput.value) fileInput.value.value = ""
 }
 
+
 const getTableData = (data) => {
     if (debounceTimer) clearTimeout(debounceTimer)
 
@@ -156,11 +157,10 @@ const getTableData = (data) => {
                 item.quantity = item.ds_quantity;
             }
         }
-
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
-                    masterProductCategory: props.masterProductCategory,
+                    masterProductCategory: props.masterProductCategoryId,
                 }),
                 { trade_units: form.trade_units, shop_products: finalDataTable },
                 { signal: abortController.signal }
@@ -515,7 +515,7 @@ const successEditTradeUnit = (data) => {
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <div :class="layout?.app?.environment != 'local' ? 'col-span-2' : ''">
+                        <div :class="'col-span-2'">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
@@ -524,8 +524,7 @@ const successEditTradeUnit = (data) => {
                                 {{ form.errors.code.join(", ") }}
                             </small>
                         </div>
-
-                        <div v-if="layout?.app?.environment === 'local'">
+                        <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">
                                 {{trans('Is Follower')}} 
                                 <FontAwesomeIcon

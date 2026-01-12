@@ -54,21 +54,41 @@ class IndexProducts extends OrgAction
 
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
-        // Use reusable time series aggregation method
-        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
-            timeSeriesTable: 'asset_time_series',
-            timeSeriesRecordsTable: 'asset_time_series_records',
-            foreignKey: 'asset_id',
-            aggregateColumns: [
-                'customers_invoiced' => 'customers_invoiced',
-                'sales_grp_currency' => 'sales',
-                'invoices' => 'invoices'
-            ],
-            frequency: TimeSeriesFrequencyEnum::DAILY->value,
-            prefix: $prefix,
-            includeLY: true,
-            localKey: 'asset_id'
-        );
+        $selects = [
+            'products.id',
+            'products.code',
+            'products.name',
+            'products.state',
+            'products.price',
+            'products.created_at',
+            'products.updated_at',
+            'products.slug',
+        ];
+
+        if ($prefix === 'sales') {
+            // Use reusable time series aggregation method
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'asset_time_series',
+                timeSeriesRecordsTable: 'asset_time_series_records',
+                foreignKey: 'asset_id',
+                aggregateColumns: [
+                    'customers_invoiced' => 'customers_invoiced',
+                    'sales_grp_currency' => 'sales',
+                    'invoices'           => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true,
+                localKey: 'asset_id'
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced'];
+            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
 
         if ($bucket == 'current') {
             $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
@@ -97,33 +117,8 @@ class IndexProducts extends OrgAction
 
         $queryBuilder
             ->defaultSort('products.code')
-            ->select([
-                'products.id',
-                'products.code',
-                'products.name',
-                'products.state',
-                'products.price',
-                'products.created_at',
-                'products.updated_at',
-                'products.slug',
-                $timeSeriesData['selectRaw']['customers_invoiced'],
-                $timeSeriesData['selectRaw']['customers_invoiced_ly'],
-                $timeSeriesData['selectRaw']['sales'],
-                $timeSeriesData['selectRaw']['invoices'],
-                $timeSeriesData['selectRaw']['sales_ly'],
-                $timeSeriesData['selectRaw']['invoices_ly'],
-            ])
-            ->selectRaw("'{$shop->currency->code}' as currency_code")
-            ->groupBy([
-                'products.id',
-                'products.code',
-                'products.name',
-                'products.state',
-                'products.price',
-                'products.created_at',
-                'products.updated_at',
-                'products.slug',
-            ]);
+            ->select($selects)
+            ->selectRaw("'{$shop->currency->code}' as currency_code");
 
         return $queryBuilder->allowedSorts([
                 'code',

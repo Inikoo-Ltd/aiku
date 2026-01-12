@@ -88,7 +88,14 @@ trait WithIrisProductsInWebpage
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
-        $queryBuilder->where('products.is_for_sale', true);
+        $queryBuilder
+            ->where(function ($query) {
+                $query
+                    ->where('products.is_minion_variant', false)
+                    ->where('products.is_for_sale', true)
+                    ->orWhere('products.is_variant_leader', true); // If is_variant_leader is true, ignore is_for_sale. Otherwise can't display the item at all
+            });
+
         if ($stockMode == 'in_stock') {
             $queryBuilder->where('products.available_quantity', '>', 0);
         } elseif ($stockMode == 'out_of_stock') {
@@ -131,7 +138,7 @@ trait WithIrisProductsInWebpage
         return [$globalSearch, $priceRangeFilter, $newArrivalsFilter, $brandsFilter, $tagsFilter];
     }
 
-    public function getSelect(): array
+    public function getSelect($additionalColumns = []): array
     {
         $select = [
             'products.id',
@@ -150,19 +157,22 @@ trait WithIrisProductsInWebpage
             'products.updated_at',
             'products.units',
             'products.unit',
+            'products.variant_id',
             'products.top_seller',
             'products.web_images',
             'webpages.url',
             'webpages.canonical_url',
             'webpages.website_id',
             'webpages.id as webpage_id',
-
+            ...$additionalColumns
         ];
 
         $customer = request()->user()?->customer;
         if ($customer && $customer->orderInBasket) {
             $select[] = 'transactions.id as transaction_id';
             $select[] = 'transactions.quantity_ordered as quantity_ordered';
+            $select[] = 'transactions.offers_data as offers_data';
+            $select[] = 'transactions.net_amount as net_amount';
         }
 
         return $select;

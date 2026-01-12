@@ -16,6 +16,7 @@ import { routeType } from '@/types/route'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { toInteger } from 'lodash-es'
 import LabelComingSoon from './LabelComingSoon.vue'
+import axios from 'axios'
 
 
 interface ProductResource {
@@ -65,61 +66,58 @@ const layout = inject('layout', retinaLayoutStructure)
 const channelList = ref(layout?.user?.customerSalesChannels || [])
 // Section: Add to all Portfolios
 const isLoadingAllPortfolios = ref(false)
-const onAddToAllPortfolios = (product: ProductResource) => {
-    // Section: Submit
-    router.post(
-        route(props.routeToAllPortfolios.name, props.routeToAllPortfolios.parameters),
-        {
-            item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingAllPortfolios.value = true
-                // Luigi: event add to cart
-                window?.dataLayer?.push({
-                    event: "add_to_cart",
-                    ecommerce: {
-                        currency: layout?.iris?.currency?.code,
-                        value: product.price,
-                        channel: 'all',
-                        items: [
-                            {
-                                item_id: product?.luigi_identity,
-                            }
-                        ]
-                    }
-                })
-            },
-            onSuccess: () => {
-                const keys = Object.keys(channelList.value).map(key => Number(key))
-                productHasPortfolioList.value = keys
+const onAddToAllPortfolios = async (product: ProductResource) => {
+    isLoadingAllPortfolios.value = true
 
-                notify({
-                    title: trans("Success"),
-                    text: trans("Added to all portfolios"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add to portfolio"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingAllPortfolios.value = false
-            },
+    // Luigi: event add to cart
+    window?.dataLayer?.push({
+        event: "add_to_cart",
+        ecommerce: {
+            currency: layout?.iris?.currency?.code,
+            value: product.price,
+            channel: 'all',
+            items: [
+                {
+                    item_id: product?.luigi_identity,
+                }
+            ]
         }
-    )
-}
+    })
 
+    try {
+        const response = await axios.post(
+            route(props.routeToAllPortfolios.name, props.routeToAllPortfolios.parameters),
+            {
+                item_id: [product.id]
+            }
+        )
+
+        // Update portfolio list to include all channel IDs
+        const keys = Object.keys(channelList.value).map(key => Number(key))
+        productHasPortfolioList.value = keys
+
+        notify({
+            title: trans("Success"),
+            text: trans("Added to all portfolios"),
+            type: "success"
+        })
+
+        return response.data
+    } catch (errors: any) {
+        console.error(errors)
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to add to portfolio"),
+            type: "error"
+        })
+    } finally {
+        isLoadingAllPortfolios.value = false
+    }
+}
 // Section: Add to a specific Portfolios channel
 const isRecentlyAddPortfolio = ref(false)
 const isLoadingSpecificChannel = ref([])
-const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) => {
+const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel: any) => {
     if (!channel || typeof channel.id === 'undefined') {
         console.warn('Channel ID is undefined', channel)
         return
@@ -128,61 +126,60 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
     const channelId = Number(channel.id)
     console.log(`Adding product with ID ${product.id} to portfolio for channel ID ${channelId}`)
 
-    router.post(
-        route(props.routeToSpecificChannel.name, props.routeToSpecificChannel.parameters),
-        {
-            customer_sales_channel_ids: [channelId],
-            item_id: [product.id]
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSpecificChannel.value.push(channelId)
-                // Luigi: event add to cart
-                window?.dataLayer?.push({
-                        event: "add_to_cart",
-                        ecommerce: {
-                            currency: layout?.iris?.currency?.code,
-                            value: product.price,
-                            channel: channel?.platform_slug || null,
-                            items: [
-                                {
-                                    item_id: product?.luigi_identity,
-                                }
-                            ]
-                        }
-                    })
-            },
-            onSuccess: () => {
-                if (!productHasPortfolioList.value?.includes(channelId)) {
-                    productHasPortfolioList.value = [...productHasPortfolioList.value, channelId]
-                }
+    // Start loading
+    isLoadingSpecificChannel.value.push(channelId)
 
-                notify({
-                    title: trans("Success"),
-                    text: trans(`Added product ${product.name}`),
-                    type: "success"
-                })
-            },
-            onError: (errors) => {
-                console.error(errors)
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add to portfolio"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                const idx = isLoadingSpecificChannel.value.indexOf(channelId)
-                if (idx !== -1) {
-                    isLoadingSpecificChannel.value.splice(idx, 1)
+    // Luigi: event add to cart
+    window?.dataLayer?.push({
+        event: "add_to_cart",
+        ecommerce: {
+            currency: layout?.iris?.currency?.code,
+            value: product.price,
+            channel: channel?.platform_slug || null,
+            items: [
+                {
+                    item_id: product?.luigi_identity,
                 }
-            }
+            ]
         }
-    )
-}
+    })
 
+    try {
+        const response = await axios.post(
+            route(props.routeToSpecificChannel.name, props.routeToSpecificChannel.parameters),
+            {
+                customer_sales_channel_ids: [channelId],
+                item_id: [product.id]
+            }
+        )
+
+        // Update portfolio list if not already included
+        if (!productHasPortfolioList.value?.includes(channelId)) {
+            productHasPortfolioList.value = [...productHasPortfolioList.value, channelId]
+        }
+
+        notify({
+            title: trans("Success"),
+            text: trans(`Added product ${product.name}`),
+            type: "success"
+        })
+
+        return response.data
+    } catch (errors: any) {
+        console.error(errors)
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to add to portfolio"),
+            type: "error"
+        })
+    } finally {
+        // Remove loading state
+        const idx = isLoadingSpecificChannel.value.indexOf(channelId)
+        if (idx !== -1) {
+            isLoadingSpecificChannel.value.splice(idx, 1)
+        }
+    }
+}
 
 const _popover = ref()
 
@@ -216,16 +213,13 @@ watch(
 </script>
 
 <template>
-
-   <!--  <pre>{{ layout?.user?.customerSalesChannels }}</pre> -->
-    <!-- Bottom Section (fixed position in layout) -->
     <div v-if="layout?.iris?.is_logged_in" class="w-full">
         <div v-if="product.is_coming_soon">
             <LabelComingSoon v-if="product.is_coming_soon" :product="product" class="w-full inline-block text-center" />
 
         </div>
 
-        <div v-else-if="product.stock > 0" class="flex items-center gap-2 xmt-2">
+        <div v-else-if="product.state != 'discontinued'" class="flex items-center gap-2 xmt-2">
             <div class="flex gap-2  w-full">
                 <div class="w-full flex flex-nowrap relative">
 
@@ -285,7 +279,7 @@ watch(
         </div>
 
         <div v-else>
-            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+            <Button :label="trans('Product Discontinued')" type="tertiary" disabled full />
         </div>
     </div>
 

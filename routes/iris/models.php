@@ -7,6 +7,7 @@
  * copyright 2025
 */
 
+use App\Actions\Iris\Basket\FetchIrisEcomSingleItemInBasket;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Iris\Basket\UpdateEcomBasketTransaction;
 use App\Actions\Iris\CRM\DeleteIrisBackInStockReminder;
@@ -35,6 +36,8 @@ Route::delete('un-favourite/{product:id}', DeleteIrisPortfolioFavourites::class)
 
 Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings();
 Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings();
+Route::get('{transaction:id}/fetch-transaction', FetchIrisEcomSingleItemInBasket::class)->name('transaction.fetch_product.product_list')->withoutScopedBindings();
+Route::get('{transaction:id}/fetch-transaction/product-page', [FetchIrisEcomSingleItemInBasket::class, 'inProductPage'])->name('transaction.fetch_product.product_page')->withoutScopedBindings();
 
 Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();

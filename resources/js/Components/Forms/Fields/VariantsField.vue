@@ -69,7 +69,7 @@ const sanitizeVariants = (raw: any) => {
 
   Object.entries(raw.products ?? {}).forEach(([id, p]: any) => {
     const keyOnly = Object.entries(p)
-      .filter(([k]) => !["product", "is_leader"].includes(k))
+      .filter(([k]) => !["product", "is_leader", "all_child_has_webpage"].includes(k))
       .reduce((a, [k, v]) => ({ ...a, [k]: v }), {})
 
     if (
@@ -81,7 +81,8 @@ const sanitizeVariants = (raw: any) => {
     products[id] = {
       ...keyOnly,
       product: p.product,
-      is_leader: !!p.is_leader
+      is_leader: !!p.is_leader,
+      all_child_has_webpage: p.all_child_has_webpage,
     }
   })
 

@@ -17,13 +17,14 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationTriangle } from '@fas'
+import { faSignIn } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { initialiseRetinaApp } from '@/Composables/initialiseRetinaApp'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
-library.add(faExclamationTriangle)
+library.add(faExclamationTriangle, faSignIn)
 
 initialiseIrisApp()  // Init Iris app
 initialiseRetinaApp()  // Init Retina app

@@ -75,7 +75,6 @@ class IndexSubDepartmentWebpages extends OrgAction
 
     public function handle(Website $parent, Webpage|null $scope = null, $prefix = null, $bucket = null): LengthAwarePaginator
     {
-
         if ($bucket) {
             $this->bucket = $bucket;
         }
@@ -137,7 +136,7 @@ class IndexSubDepartmentWebpages extends OrgAction
                 'product_category_stats.number_current_families',
                 'product_category_stats.number_current_products',
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url', 'number_current_families', 'number_current_products'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'number_current_families', 'number_current_products', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -149,7 +148,7 @@ class IndexSubDepartmentWebpages extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
             if (!($parent instanceof Group)) {
@@ -173,8 +172,8 @@ class IndexSubDepartmentWebpages extends OrgAction
                     ]
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], tooltip: __('State'), sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
-            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: false, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_families', label: __('Families'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
@@ -247,6 +246,7 @@ class IndexSubDepartmentWebpages extends OrgAction
         };
         /** @var Website $website */
         $website = request()->route()->parameter('website');
+
         return match ($routeName) {
             'grp.org.shops.show.web.webpages.index.sub_type.sub_department' =>
             array_merge(

@@ -108,3 +108,9 @@ const promoData = computed(() => {
   </section>
 
 </template>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+</style>
