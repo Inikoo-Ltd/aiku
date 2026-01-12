@@ -102,7 +102,7 @@ const percentageOff = props.data.allowance_signature?.match(/percentage_off:([0-
         
                 <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
                     <dd class="">
-                        {{ data.trigger_data.order_number - 1 }}
+                        {{ data.trigger_data.order_number }}
                     </dd>
                 </div>
             </div>
