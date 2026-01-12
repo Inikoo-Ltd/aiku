@@ -42,7 +42,6 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 const propsAnnouncementsTopbar = ref([])
 const propsAnnouncementsBottomMenu =  ref([])
 const propsAnnouncementsTopFooter =  ref([])
-console.log('usePage',usePage().props)
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer

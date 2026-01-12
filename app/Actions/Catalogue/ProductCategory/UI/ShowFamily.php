@@ -185,24 +185,22 @@ class ShowFamily extends OrgAction
                 : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
         ];
 
-        if (app()->environment('local')) {
-            $tabs[FamilyTabsEnum::VARIANTS->value] =
-                $this->tab === FamilyTabsEnum::VARIANTS->value
-                    ? fn () => VariantsResource::collection(
+        $tabs[FamilyTabsEnum::VARIANTS->value] =
+            $this->tab === FamilyTabsEnum::VARIANTS->value
+                ? fn () => VariantsResource::collection(
+                    IndexVariant::run(
+                        $family,
+                        FamilyTabsEnum::VARIANTS->value
+                    )
+                )
+                : Inertia::lazy(
+                    fn () => VariantsResource::collection(
                         IndexVariant::run(
                             $family,
                             FamilyTabsEnum::VARIANTS->value
                         )
                     )
-                    : Inertia::lazy(
-                        fn () => VariantsResource::collection(
-                            IndexVariant::run(
-                                $family,
-                                FamilyTabsEnum::VARIANTS->value
-                            )
-                        )
-                    );
-        }
+                );
 
         return Inertia::render(
             'Org/Catalogue/Family',

@@ -95,6 +95,7 @@ class UpdateOffer extends OrgAction
                 'alpha_dash'
             ],
             'name'                       => ['sometimes', 'max:250', 'string'],
+            'label'                      => ['sometimes', 'max:1028', 'string'],
             'data'                       => ['sometimes', 'required'],
             'settings'                   => ['sometimes', 'required'],
             'trigger_data'               => ['sometimes', 'required'],

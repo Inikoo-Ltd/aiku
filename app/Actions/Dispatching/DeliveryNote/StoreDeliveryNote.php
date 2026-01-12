@@ -83,6 +83,12 @@ class StoreDeliveryNote extends OrgAction
                     'is_premium_dispatch' => $order->is_premium_dispatch,
                     'has_extra_packing'   => $order->has_extra_packing
                 ]);
+            } else {
+                $order->update(
+                    [
+                        'with_replacement' => true
+                    ]
+                );
             }
 
 
@@ -166,6 +172,7 @@ class StoreDeliveryNote extends OrgAction
             $rules['cancelled_at']     = ['sometimes', 'date'];
             $rules['submitted_at']     = ['sometimes', 'date'];
             $rules['source_id']        = ['sometimes', 'string', 'max:64'];
+            $rules['type']             = ['required', new Enum(DeliveryNoteTypeEnum::class)];
         }
 
         return $rules;

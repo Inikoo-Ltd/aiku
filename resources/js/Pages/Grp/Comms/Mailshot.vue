@@ -15,6 +15,7 @@ import { faEnvelope, faStop } from "@fas";
 import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
+import ComsDashboard from "@/Components/Coms/ComsDashboard.vue";
 import TableMailshotRecipients from "@/Components/Tables/TableMailshotRecipients.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import axios from "axios"
@@ -27,7 +28,7 @@ import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime";
 
-library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
+library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane,  faBullhorn, faClock);
 
 
 const props = defineProps<{
@@ -221,7 +222,7 @@ const component = computed(() => {
         email_preview: EmailPreview,
         history: TableHistories,
         dispatched_emails: TableDispatchedEmails,
-        recipients: TableMailshotRecipients
+        recipients: ComsDashboard,
     };
     return components[currentTab.value];
 });

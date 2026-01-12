@@ -26,6 +26,18 @@ class ChatMessageResource extends JsonResource
             'is_ai' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AI->value,
             'is_read' => $chatMessage->is_read,
             'media_url' => $chatMessage->imageSources(0, 0, 'attachment'),
+            'original_url' => $chatMessage->attachment ? $chatMessage->attachment->getUrl() : null,
+            'file_name' => $chatMessage->attachment ? $chatMessage->attachment->file_name : null,
+            'file_size' => $chatMessage->attachment ? $chatMessage->attachment->size : null,
+            'file_mime' => $chatMessage->attachment ? $chatMessage->attachment->mime_type : null,
+            'download_route' => $chatMessage->attachment ? [
+                'name'       => 'grp.api.chats.chat.attachment.download',
+                'parameters' => [
+                    'ulid' => $chatMessage->attachment->ulid,
+                ],
+                'method'     => 'get',
+                'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
+            ] : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'timestamp' => $chatMessage->created_at->timestamp

@@ -62,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $bracket
  * @property string|null $trigger_sub_type
  * @property \Illuminate\Support\Carbon|null $last_suspended_at
+ * @property string|null $label
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -92,18 +93,18 @@ class Offer extends Model implements Auditable
     use HasUniversalSearch;
 
     protected $casts = [
-        'data'            => 'array',
-        'settings'        => 'array',
-        'trigger_data'    => 'array',
-        'source_data'     => 'array',
+        'data'              => 'array',
+        'settings'          => 'array',
+        'trigger_data'      => 'array',
+        'source_data'       => 'array',
         'begin_at'          => 'datetime',
         'end_at'            => 'datetime',
         'last_suspended_at' => 'datetime',
         'fetched_at'        => 'datetime',
-        'last_fetched_at' => 'datetime',
-        'status'          => 'boolean',
-        'state'           => OfferStateEnum::class,
-        'duration'        => OfferDurationEnum::class,
+        'last_fetched_at'   => 'datetime',
+        'status'            => 'boolean',
+        'state'             => OfferStateEnum::class,
+        'duration'          => OfferDurationEnum::class,
     ];
 
     protected $attributes = [
@@ -123,6 +124,7 @@ class Offer extends Model implements Auditable
     protected array $auditInclude = [
         'code',
         'name',
+        'label',
         'type',
         'status',
         'state',

@@ -11,15 +11,20 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
 use App\Models\Catalogue\Collection;
-use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisPortfoliosInCollection extends IrisAction
 {
-    public function handle(Customer $customer, Collection $collection): array
+    public function handle(Collection $collection): array
     {
-        $query = DB::table('portfolios');
+        $portfoliosData = [];
+        if (!request()->user) {
+            return [];
+        }
+
+        $customer = request()->user()->customer;
+        $query    = DB::table('portfolios');
         $query->where('customer_id', $customer->id);
         $query->leftJoin('products', function ($join) {
             $join->on('portfolios.item_id', '=', 'products.id');
@@ -31,13 +36,12 @@ class GetIrisPortfoliosInCollection extends IrisAction
         });
 
 
-
         $query->selectRaw('products.id,array_agg(customer_sales_channel_id) as customer_channels')->groupBy('products.id');
 
-        $portfoliosData = [];
+
         foreach ($query->get() as $data) {
             // Convert psql array string to a PHP array
-            $channels = json_decode(str_replace(['{', '}'], ['[', ']'], $data->customer_channels), true);
+            $channels                  = json_decode(str_replace(['{', '}'], ['[', ']'], $data->customer_channels), true);
             $portfoliosData[$data->id] = $channels;
         }
 
@@ -50,7 +54,7 @@ class GetIrisPortfoliosInCollection extends IrisAction
     {
         $this->initialisation($request);
 
-        return $this->handle(customer: $request->user()->customer, collection: $collection);
+        return $this->handle($collection);
     }
 
     public function jsonResponse($portfolios): array

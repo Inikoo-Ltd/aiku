@@ -106,6 +106,11 @@ class StoreReplacementDeliveryNote extends OrgAction
                 }
             }
 
+            $order->update(
+                [
+                    'with_replacement' => true
+                ]
+            );
 
             return $replacement;
         });

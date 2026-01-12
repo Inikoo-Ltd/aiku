@@ -146,6 +146,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property array<array-key, mixed> $categories_data
+ * @property bool $with_replacement
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -241,7 +242,8 @@ class Order extends Model implements HasMedia, Auditable
         'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
         'shipping_engine'     => OrderShippingEngineEnum::class,
         'charges_engine'      => OrderChargesEngineEnum::class,
-        'to_be_paid_by'       => OrderToBePaidByEnum::class
+        'to_be_paid_by'       => OrderToBePaidByEnum::class,
+        'with_replacement'    => 'boolean',
     ];
 
     protected $attributes = [
