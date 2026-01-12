@@ -107,24 +107,6 @@ class IndexMasterDepartments extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-
-            $queryBuilder->groupBy([
-                'master_product_categories.id',
-                'master_product_categories.slug',
-                'master_product_categories.code',
-                'master_product_categories.name',
-                'master_product_categories.status',
-                'master_product_categories.description',
-                'master_product_categories.created_at',
-                'master_product_categories.updated_at',
-                'master_product_categories.web_images',
-                'master_product_category_stats.number_current_departments',
-                'master_product_category_stats.number_current_master_product_categories_type_family',
-                'master_product_category_stats.number_current_master_assets_type_product',
-                'master_product_category_stats.number_current_master_product_categories_type_sub_department',
-                'master_product_category_stats.number_collections_state_active',
-                'currencies.code',
-            ]);
         }
 
         $queryBuilder->select($selects);
