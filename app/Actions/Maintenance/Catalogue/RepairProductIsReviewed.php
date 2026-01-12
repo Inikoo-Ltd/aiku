@@ -2,24 +2,24 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 12 Jan 2026 11:39:47 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 12 Jan 2026 17:33:36 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Product;
 use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
-class RepairProductCategoryIsReviewed
+class RepairProductIsReviewed
 {
     use WithActionUpdate;
 
 
-    public string $commandSignature = 'product_categories:repair_reviewed_fields';
+    public string $commandSignature = 'products:repair_reviewed_fields';
 
     public function asCommand(Command $command): void
     {
@@ -31,17 +31,18 @@ class RepairProductCategoryIsReviewed
         ];
 
         $english = Language::where('code', 'en')->first();
-        $totalProductCategories = ProductCategory::whereNotNull('master_product_category_id')->count();
-        $progressBar            = $command->getOutput()->createProgressBar($totalProductCategories);
+
+        $totalProducts = Product::whereNotNull('master_product_id')->count();
+        $progressBar   = $command->getOutput()->createProgressBar($totalProducts);
         $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $progressBar->start();
 
-        ProductCategory::whereNotNull('master_product_category_id')
+        Product::whereNotNull('master_product_id')
             ->orderBy('id')
-            ->chunk(100, function (Collection $productCategories) use ($command, $fields, $english, $progressBar) {
-                foreach ($productCategories as $productCategory) {
+            ->chunk(100, function (Collection $products) use ($command, $fields, $english, $progressBar) {
+                foreach ($products as $product) {
 
-                    $shop = $productCategory->shop;
+                    $shop = $product->shop;
 
                     if (!$shop->language_id == $english->id) {
                         continue;
@@ -55,8 +56,8 @@ class RepairProductCategoryIsReviewed
 
 
                     foreach ($fields as $field) {
-                        if ($productCategory->{$field} == '') {
-                            $productCategory->update(
+                        if ($product->{$field} == '') {
+                            $product->update(
                                 [
                                     'is_'.$field.'_reviewed' => false
                                 ]
@@ -65,15 +66,15 @@ class RepairProductCategoryIsReviewed
                     }
 
 
-                    $masterProductCategory = $productCategory->masterProductCategory;
-                    if (!$masterProductCategory) {
+                    $masterProduct = $product->masterProduct;
+                    if (!$masterProduct) {
                         continue;
                     }
 
 
                     foreach ($fields as $field) {
-                        if ($productCategory->{$field} == $masterProductCategory->{$field}) {
-                            $productCategory->update(
+                        if ($product->{$field} == $masterProduct->{$field}) {
+                            $product->update(
                                 [
                                     'is_'.$field.'_reviewed' => false
                                 ]
@@ -81,17 +82,14 @@ class RepairProductCategoryIsReviewed
                             break;
                         }
 
-                        if ($masterProductCategory->{$field} == '' && $productCategory->{$field} != '') {
-                            $productCategory->update(
+                        if ($masterProduct->{$field} == '' && $product->{$field} != '') {
+                            $product->update(
                                 [
                                     'is_'.$field.'_reviewed' => true
                                 ]
                             );
                             break;
                         }
-
-
-
 
                     }
 
@@ -102,4 +100,5 @@ class RepairProductCategoryIsReviewed
         $progressBar->finish();
         $command->newLine();
     }
+
 }
