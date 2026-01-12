@@ -28,6 +28,10 @@ class GetShopifyProducts extends OrgAction
             foreach (Arr::get($product, 'variants.edges', []) as $variant) {
                 $variant = Arr::get($variant, 'node');
 
+                if (! Arr::get($variant, 'sku')) {
+                    return;
+                }
+
                 if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
                     continue;
                 }
@@ -35,7 +39,7 @@ class GetShopifyProducts extends OrgAction
                 $product = StoreProduct::make()->action($shop, [
                     'code' => $variant['sku'],
                     'name' => $product['title'],
-                    'description' => Arr::get($product, 'description') ?? $product['title'],
+                    'description' => $product['title'],
                     'rrp' => $variant['price'],
                     'price' => $variant['price'],
                     'unit' => 'Piece',

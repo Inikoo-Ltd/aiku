@@ -1,220 +1,257 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/thumbs'
-import { Navigation, Autoplay, Thumbs } from 'swiper/modules'
+import { Navigation, Thumbs } from 'swiper/modules'
+
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import {
-    faChevronCircleLeft,
-    faChevronCircleRight,
-} from '@fal'
+import { faChevronCircleLeft, faChevronCircleRight } from '@fal'
 import { faVideo } from '@fas'
-import { ulid } from 'ulid'
+
 import Image from '@/Components/Image.vue'
 import Dialog from 'primevue/dialog'
 
 const props = defineProps<{
-    images: { source: string; thumbnail: string }[]
-    video?: string
-    breakpoints?: {
-        [key: number]: { slidesPerView: number }
-    }
+  images: { source: string; thumbnail: string }[]
+  video?: string
 }>()
 
-const keySwiperMain = ref(ulid())
-const keySwiperThumb = ref(ulid())
+/* ---------------- SWIPER INSTANCE ---------------- */
+const mainSwiper = ref<any>(null)
+const thumbsSwiper = ref<any>(null)
 
-const thumbsSwiper = ref(null)
-const prevEl = ref<HTMLElement | null>(null)
-const nextEl = ref<HTMLElement | null>(null)
-const navigation = ref({ prevEl: null, nextEl: null })
+/* ---------------- NAV ELEMENTS ---------------- */
+const mainPrevEl = ref<HTMLElement | null>(null)
+const mainNextEl = ref<HTMLElement | null>(null)
+const thumbPrevEl = ref<HTMLElement | null>(null)
+const thumbNextEl = ref<HTMLElement | null>(null)
 
+/* ---------------- REACTIVE NAV ---------------- */
+const mainNavigation = ref({
+  prevEl: null as HTMLElement | null,
+  nextEl: null as HTMLElement | null,
+})
+
+const thumbNavigation = ref({
+  prevEl: null as HTMLElement | null,
+  nextEl: null as HTMLElement | null,
+})
+
+/* ---------------- MODAL ---------------- */
 const showModal = ref(false)
-const selectedIndex = ref(0)
 const showVideoModal = ref(false)
+const selectedIndex = ref(0)
 
-function openImageModal(index: number) {
-    selectedIndex.value = index
-    showVideoModal.value = false
-    showModal.value = true
+/* ---------------- ACTIONS ---------------- */
+const openImageModal = (index: number) => {
+  selectedIndex.value = index
+  showVideoModal.value = false
+  showModal.value = true
 }
 
-function openVideoModal() {
-    showVideoModal.value = true
-    showModal.value = true
+const openVideoModal = () => {
+  showVideoModal.value = true
+  showModal.value = true
 }
 
-function closeImageModal() {
-    showModal.value = false
-    showVideoModal.value = false
+const closeModal = () => {
+  showModal.value = false
+  showVideoModal.value = false
 }
 
 const onPrevNavigation = () => {
-    selectedIndex.value = (selectedIndex.value - 1 + props.images.length) % props.images.length
+  selectedIndex.value =
+    (selectedIndex.value - 1 + props.images.length) % props.images.length
 }
 
-const onRightNavigation = () => {
-    selectedIndex.value = (selectedIndex.value + 1) % props.images.length
+const onNextNavigation = () => {
+  selectedIndex.value =
+    (selectedIndex.value + 1) % props.images.length
+}
+
+/* ---------------- LIFECYCLE ---------------- */
+const handleKeydown = (e: KeyboardEvent) => {
+  if (!showModal.value) return
+
+  if (e.key === 'Escape') closeModal()
+  if (!showVideoModal.value) {
+    if (e.key === 'ArrowLeft') onPrevNavigation()
+    if (e.key === 'ArrowRight') onNextNavigation()
+  }
 }
 
 onMounted(async () => {
-    await nextTick()
-    navigation.value = {
-        prevEl: prevEl.value,
-        nextEl: nextEl.value
-    }
+  await nextTick()
 
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' || e.key === 'Esc') closeImageModal()
-        if (showModal.value && !showVideoModal.value) {
-            if (e.key === 'ArrowLeft') onPrevNavigation()
-            if (e.key === 'ArrowRight') onRightNavigation()
-        }
-    })
+  mainNavigation.value.prevEl = mainPrevEl.value
+  mainNavigation.value.nextEl = mainNextEl.value
+
+  thumbNavigation.value.prevEl = thumbPrevEl.value
+  thumbNavigation.value.nextEl = thumbNextEl.value
+
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
 <template>
-    <div class="w-full flex flex-col items-center relative isolate">
-        <!-- Main Swiper -->
-        <Swiper :key="keySwiperMain" :slides-per-view="1" :loop="true" :autoplay="false" :navigation="navigation"
-            :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
-            class="aspect-square w-full rounded-lg mb-4">
-            <!-- Shared Navigation Buttons -->
-            <div class="absolute inset-0 pointer-events-none z-50">
-                <div ref="prevEl"
-                    class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-                    <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
-                </div>
-                <div ref="nextEl"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-                    <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
-                </div>
-            </div>
-
-            <!-- Image Slides -->
-            <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
-                class="flex justify-center items-center">
-                <div class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
-                    @click="openImageModal(index)">
-                    <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
-                </div>
-            </SwiperSlide>
-
-            <!-- Video Slide -->
-            <SwiperSlide v-if="props.video" key="video">
-                <div class="w-full aspect-square flex items-center justify-center bg-black rounded-lg overflow-hidden cursor-pointer"
-                    @click="openVideoModal">
-                    <div class="relative w-full h-full flex items-center justify-center">
-                        <FontAwesomeIcon :icon="faVideo" class="text-5xl text-white/80 absolute" />
-                        <iframe class="w-full h-full opacity-50 pointer-events-none" :src="props.video" frameborder="0"
-                            allow="autoplay; fullscreen" allowfullscreen></iframe>
-                    </div>
-                </div>
-            </SwiperSlide>
-        </Swiper>
-
-        <!-- Thumbnail Swiper (Bigger thumbnails, only 2 items) -->
-        <!-- Thumbnail Swiper (Now with navigation buttons) -->
-        <Swiper :key="keySwiperThumb" :space-between="12" watch-slides-progress :modules="[Thumbs, Navigation]"
-            @swiper="(swiper) => (thumbsSwiper = swiper)" :breakpoints="{
-                0: { slidesPerView: 2 },
-                640: { slidesPerView: 2 }
-            }" :navigation="{
-    prevEl: '.thumb-prev-btn',
-    nextEl: '.thumb-next-btn'
-}" class="w-full relative">
-            <!-- Navigation Buttons for Thumbnails -->
-            <div class="absolute inset-0 pointer-events-none z-50">
-                <div
-                    class="thumb-prev-btn absolute left-0 top-1/2 -translate-y-1/2 text-2xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-                    <FontAwesomeIcon :icon="faChevronCircleLeft" />
-                </div>
-
-                <div
-                    class="thumb-next-btn absolute right-0 top-1/2 -translate-y-1/2 text-2xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-                    <FontAwesomeIcon :icon="faChevronCircleRight" />
-                </div>
-            </div>
-
-            <!-- Image Thumbnail Slides -->
-            <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
-                class="cursor-pointer rounded overflow-hidden border border-gray-300">
-                <div class="aspect-[4/3] w-full">
-                    <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
-                </div>
-            </SwiperSlide>
-
-            <!-- Video Thumbnail -->
-            <SwiperSlide v-if="props.video" key="thumb-video"
-                class="cursor-pointer rounded overflow-hidden border border-gray-300" @click="openVideoModal">
-                <div class="aspect-[4/3] w-full flex items-center justify-center bg-gray-200 relative">
-                    <FontAwesomeIcon :icon="faVideo" class="text-3xl text-gray-600" />
-                    <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">Video</span>
-                </div>
-            </SwiperSlide>
-        </Swiper>
-
-
-        <!-- PrimeVue Dialog (Replaces Custom Modal) -->
-        <Dialog v-model:visible="showModal" modal dismissable-mask :closable="false"
-            class="w-full max-w-3xl !bg-transparent !shadow-none !border-0 !border-transparent">
-            <div class="relative w-full flex flex-col items-center justify-center">
-                <!-- Close Button -->
-                <!-- <button
-          class="absolute top-0 right-4 text-white text-3xl z-50"
-          @click="closeImageModal"
-          aria-label="Close image viewer"
+  <div class="w-full flex flex-col items-center relative isolate">
+    <!-- ================= MAIN SWIPER ================= -->
+    <Swiper
+      v-if="props.images.length"
+      :modules="[Navigation, Thumbs]"
+      :slides-per-view="1"
+      :loop="props.images.length > 1"
+      :navigation="mainNavigation"
+      :thumbs="{ swiper: thumbsSwiper }"
+      class="aspect-square w-full rounded-lg mb-4"
+      @swiper="swiper => (mainSwiper = swiper)"
+    >
+      <!-- NAV -->
+      <div class="absolute inset-0 pointer-events-none z-50">
+        <div
+          ref="mainPrevEl"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto"
         >
-          <FontAwesomeIcon :icon="faTimesCircle" />
-        </button> -->
+          <FontAwesomeIcon :icon="faChevronCircleLeft" />
+        </div>
 
-                <!-- Image Viewer -->
-                <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
-                    <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
-                        :style="{ objectFit: 'contain' }" :imageCover="true" />
-                </div>
+        <div
+          ref="mainNextEl"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto"
+        >
+          <FontAwesomeIcon :icon="faChevronCircleRight" />
+        </div>
+      </div>
 
-                <!-- Video Viewer -->
-                <div v-else class="w-full aspect-video flex items-center justify-center">
-                    <iframe class="w-full h-full rounded-lg" :src="props.video" frameborder="0"
-                        allow="autoplay; fullscreen" allowfullscreen></iframe>
-                </div>
+      <!-- IMAGE SLIDES -->
+      <SwiperSlide
+        v-for="(image, index) in props.images"
+        :key="index"
+        class="flex justify-center items-center"
+      >
+        <div
+          class="bg-gray-100 w-full aspect-square overflow-hidden rounded-lg cursor-pointer"
+          @click="openImageModal(index)"
+        >
+          <Image
+            :src="image.source"
+            :alt="`Image ${index + 1}`"
+            class="w-full h-full object-cover"
+          />
+        </div>
+      </SwiperSlide>
 
-                <!-- Navigation (for image only) -->
-                <template v-if="!showVideoModal">
-                    <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-                        @click="onPrevNavigation">
-                        <FontAwesomeIcon :icon="faChevronCircleLeft" />
-                    </button>
-                    <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-                        @click="onRightNavigation">
-                        <FontAwesomeIcon :icon="faChevronCircleRight" />
-                    </button>
-                </template>
-            </div>
-        </Dialog>
-    </div>
+      <!-- VIDEO -->
+      <SwiperSlide v-if="props.video">
+        <div
+          class="w-full aspect-square flex items-center justify-center bg-black rounded-lg cursor-pointer"
+          @click="openVideoModal"
+        >
+          <FontAwesomeIcon
+            :icon="faVideo"
+            class="text-5xl text-white/80 absolute"
+          />
+          <iframe
+            class="w-full h-full opacity-50 pointer-events-none"
+            :src="props.video"
+            allowfullscreen
+          />
+        </div>
+      </SwiperSlide>
+    </Swiper>
+
+    <!-- ================= THUMBS ================= -->
+    <Swiper
+      v-if="props.images.length"
+      :modules="[Thumbs, Navigation]"
+      watch-slides-progress
+      :loop="props.images.length > 1"
+      :space-between="12"
+      :navigation="thumbNavigation"
+      :breakpoints="{ 0: { slidesPerView: 2.5 } }"
+      class="w-full relative"
+      @swiper="swiper => (thumbsSwiper = swiper)"
+    >
+      <div class="absolute inset-0 pointer-events-none z-50">
+        <div
+          ref="thumbPrevEl"
+          class="absolute left-0 top-1/2 -translate-y-1/2 text-2xl pointer-events-auto"
+        >
+          <FontAwesomeIcon :icon="faChevronCircleLeft" />
+        </div>
+
+        <div
+          ref="thumbNextEl"
+          class="absolute right-0 top-1/2 -translate-y-1/2 text-2xl pointer-events-auto"
+        >
+          <FontAwesomeIcon :icon="faChevronCircleRight" />
+        </div>
+      </div>
+
+      <SwiperSlide
+        v-for="(image, index) in props.images"
+        :key="index"
+        class="cursor-pointer border rounded"
+      >
+        <div class="aspect-square bg-gray-100">
+          <Image
+            :src="image.source"
+            :alt="`Thumbnail ${index + 1}`"
+            class="w-full h-full object-contain"
+          />
+        </div>
+      </SwiperSlide>
+    </Swiper>
+
+    <!-- ================= MODAL ================= -->
+    <Dialog
+      v-model:visible="showModal"
+      modal
+      dismissable-mask
+      :closable="false"
+      class="w-full max-w-4xl !bg-transparent !shadow-none"
+    >
+      <div class="relative w-full flex justify-center items-center">
+        <div v-if="!showVideoModal" class="w-full max-h-[80vh]">
+          <Image
+            :src="props.images[selectedIndex]?.source"
+            :imageCover="true"
+            :style="{ objectFit: 'contain' }"
+          />
+        </div>
+
+        <div v-else class="w-full aspect-video">
+          <iframe class="w-full h-full" :src="props.video" allowfullscreen />
+        </div>
+
+        <button
+          v-if="!showVideoModal"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl"
+          @click="onPrevNavigation"
+        >
+          <FontAwesomeIcon :icon="faChevronCircleLeft" />
+        </button>
+
+        <button
+          v-if="!showVideoModal"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl"
+          @click="onNextNavigation"
+        >
+          <FontAwesomeIcon :icon="faChevronCircleRight" />
+        </button>
+      </div>
+    </Dialog>
+  </div>
 </template>
 
-<style scoped lang="scss">
-.swiper {
-    touch-action: pan-y;
-}
-
-button {
-    outline: none;
-}
-
+<style scoped>
 :deep(.p-dialog-mask) {
-    background-color: rgba(0, 0, 0, 0.9) !important;
-}
-
-:deep(.p-dialog) {
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
+  background: rgba(0, 0, 0, 0.9);
 }
 </style>

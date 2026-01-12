@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Traits\Actions\WithNavigation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -182,7 +183,7 @@ trait IsInvoiceUI
                     ? [
                     'supervisor' => true,
                     'type'       => 'button',
-                    'label' => __('Delete'),
+                    'label'      => __('Delete'),
                     'style'      => 'red_outline',
                     'tooltip'    => __('Delete'),
                     'icon'       => $trashIcon,
@@ -225,7 +226,7 @@ trait IsInvoiceUI
                     'supervisor' => true,
                     'type'       => 'button',
                     'style'      => 'edit',
-                    'class' =>  ['color' => 'red !important'],
+                    'class'      => ['color' => 'red !important'],
                     'tooltip'    => __('Delete'),
                     'label'      => __('Delete'),
                     'icon'       => $trashIcon,
@@ -287,7 +288,7 @@ trait IsInvoiceUI
                 [
                     'type'  => 'button',
                     'style' => 'edit',
-                    'icon' => 'fal fa-plus',
+                    'icon'  => 'fal fa-plus',
                     'label' => __('Create refund'),
                     'route' => [
                         'method'     => 'post',
@@ -309,7 +310,6 @@ trait IsInvoiceUI
 
         return $wrappedActions;
     }
-
 
 
     public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
@@ -337,6 +337,7 @@ trait IsInvoiceUI
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.ordering.orders.show.invoices.show' => $this->getOrderBreadcrumbs($invoice, $routeName, $routeParameters),
             'grp.org.accounting.invoices.all_invoices.show',
             => array_merge(
                 ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
@@ -467,6 +468,31 @@ trait IsInvoiceUI
             ),
             default => []
         };
+    }
+
+    private function getOrderBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters): array
+    {
+        $order = $invoice->order;
+
+        return array_merge(
+            ShowOrder::make()->getBreadcrumbs(
+                $order,
+                preg_replace('/\.invoices\.show$/', '', $routeName),
+                Arr::except($routeParameters, 'invoice')
+            ),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name' => $routeName,
+                            'parameters' => $routeParameters
+                        ],
+                        'label' => __('Invoice').' '.$invoice->reference,
+                    ],
+                ],
+            ]
+        );
     }
 
 }

@@ -170,28 +170,22 @@ class ShowMasterFamily extends GrpAction
         ];
 
         $navigation = MasterFamilyTabsEnum::navigation();
-        if (app()->environment('local')) {
-            $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
-                $this->tab === MasterFamilyTabsEnum::VARIANTS->value
-                    ? fn () => MasterVariantsResource::collection(
+        $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
+            $this->tab === MasterFamilyTabsEnum::VARIANTS->value
+                ? fn () => MasterVariantsResource::collection(
+                    IndexMasterVariant::run(
+                        $masterFamily,
+                        MasterFamilyTabsEnum::VARIANTS->value
+                    )
+                )
+                : Inertia::lazy(
+                    fn () => MasterVariantsResource::collection(
                         IndexMasterVariant::run(
                             $masterFamily,
                             MasterFamilyTabsEnum::VARIANTS->value
                         )
                     )
-                    : Inertia::lazy(
-                        fn () => MasterVariantsResource::collection(
-                            IndexMasterVariant::run(
-                                $masterFamily,
-                                MasterFamilyTabsEnum::VARIANTS->value
-                            )
-                        )
-                    );
-        }
-
-        if (app()->environment('production')) {
-            $navigation = data_forget($navigation, MasterFamilyTabsEnum::VARIANTS->value);
-        }
+                );
 
 
         return Inertia::render(
@@ -292,9 +286,10 @@ class ShowMasterFamily extends GrpAction
                                 'label'   => __('Master Product'),
                             ]
                             : false,
-                        $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' && app()->environment('local') ? [
+                        $this->canEdit && $masterFamily->masterShop->type->value  != 'dropshipping' ? [
                             'type'    => 'button',
                             'style'   => 'create',
+                            'key'     => 'variants',
                             'tooltip' => __('Create a variants group for this family'),
                             'label'   => __('Variants'),
                             'route'   => [

@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -61,7 +62,7 @@ class StoreMasterVariant extends OrgAction
             }
 
             foreach ($masterVariant->masterFamily->productCategories as $productCategory) {
-                if (!$productCategory->shop) {
+                if (!$productCategory->shop || $productCategory->shop->state == ShopStateEnum::CLOSED) {
                     continue;
                 }
                 StoreVariantFromMaster::make()->action(

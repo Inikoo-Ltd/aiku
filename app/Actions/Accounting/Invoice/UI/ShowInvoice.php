@@ -56,7 +56,7 @@ class ShowInvoice extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request)
+    public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $organisation;
 

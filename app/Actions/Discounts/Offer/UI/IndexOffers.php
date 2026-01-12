@@ -103,13 +103,11 @@ class IndexOffers extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'state', label: '', type: 'icon', canBeHidden: false, sortable: false, searchable: false);
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'state', label: '', type: 'icon');
+            $table->column(key: 'name', label: __('Name'), sortable: true, );
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'organisation_name', label: __('organisation'), sortable: true, )
+                        ->column(key: 'shop_name', label: __('Shop'), sortable: true, );
             }
             $table->defaultSort('id');
         };
@@ -157,7 +155,6 @@ class IndexOffers extends OrgAction
                 'title'       => __('Offers'),
                 'pageHead'    => [
                     'title'      => $title,
-                    'model'      => __('Offers'),
                     'afterTitle' => $afterTitle,
                     'iconRight'  => $iconRight,
                     'icon'       => $icon,

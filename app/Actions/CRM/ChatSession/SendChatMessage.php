@@ -66,6 +66,9 @@ class SendChatMessage
         if (isset($modelData['image']) && $modelData['image'] instanceof UploadedFile) {
             $this->processMessageImage($chatMessage, $modelData['image']);
         }
+        if (isset($modelData['file']) && $modelData['file'] instanceof UploadedFile) {
+            $this->processMessageFile($chatMessage, $modelData['file']);
+        }
 
         $this->updateSessionTimestamps(
             $chatSession,
@@ -100,6 +103,25 @@ class SendChatMessage
         $chatMessage->updateQuietly([
             'media_id'     => $media->id,
             'message_type' => ChatMessageTypeEnum::IMAGE,
+        ]);
+
+        $chatMessage->refresh();
+    }
+
+    protected function processMessageFile(ChatMessage $chatMessage, UploadedFile $file): void
+    {
+        $fileData = [
+            'path'         => $file->getPathName(),
+            'originalName' => $file->getClientOriginalName(),
+            'extension'    => $file->getClientOriginalExtension(),
+            'checksum'     => md5_file($file->getPathName()),
+        ];
+
+        $media = StoreMediaFromFile::run($chatMessage, $fileData, 'chat_attachments', 'file');
+
+        $chatMessage->updateQuietly([
+            'media_id'     => $media->id,
+            'message_type' => ChatMessageTypeEnum::FILE,
         ]);
 
         $chatMessage->refresh();
@@ -144,7 +166,8 @@ class SendChatMessage
     {
         return [
             'message_text' => [
-                'required_without:media_id',
+                'required_without_all:image,file',
+                'nullable',
                 'string',
                 'max:5000'
             ],
@@ -165,6 +188,12 @@ class SendChatMessage
                 'sometimes',
                 'nullable',
                 File::image()->max(10 * 1024)
+            ],
+            'file' => [
+                'sometimes',
+                'nullable',
+                File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
+                    ->max(20 * 1024)
             ]
         ];
     }

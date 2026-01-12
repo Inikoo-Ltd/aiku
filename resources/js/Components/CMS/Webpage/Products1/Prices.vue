@@ -4,6 +4,7 @@ import { inject } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
+import Discount from "@/Components/Utils/Label/Discount.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
 const locale = useLocaleStore()
@@ -48,8 +49,9 @@ defineProps<{
 </script>
 
 <template>
-  <div v-if="layout?.iris?.is_logged_in" class="border-t border-b border-gray-200 p-1 px-0 mb-1
-         flex flex-col gap-1 text-gray-800 tabular-nums text-xs">
+    <div v-if="layout?.iris?.is_logged_in" class="border-t border-b border-gray-200 p-1 px-0 mb-1
+    flex flex-col gap-1 text-gray-800 tabular-nums text-xs">
+    <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" />
     <div class="flex flex-col md:flex-row md:items-center md:justify-between">
       <span class="font-medium">
         {{ trans("Retail") }} :
@@ -96,16 +98,44 @@ defineProps<{
       <!-- Value row -->
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
         <!-- Outer price -->
-        <span class="font-semibold">
-          {{ locale.currencyFormat(currency?.code, product.price) }}
-          / {{ trans("outer") }}
-        </span>
+        <div>
+          <template v-if="Object.keys(product.offers_data || {})?.length">
+            <span class="line-through text-xxs opacity-60">
+              {{ locale.currencyFormat(currency?.code, product.price) }}
+              / {{ trans("outer") }}
+            </span>
+            
+            <span class="font-semibold block text-green-600">
+              {{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}
+              / {{ trans("outer") }}
+            </span>
+          </template>
+
+          <span v-else class="font-semibold">
+              {{ locale.currencyFormat(currency?.code, product.price) }}
+              / {{ trans("outer") }}
+            </span>
+        </div>
 
         <!-- Per unit price -->
-        <span class="text-gray-600 text-xs">
-          {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
-          / {{ product.unit }}
-        </span>
+        <div class="text-right">
+          <template v-if="Object.keys(product.offers_data || {})?.length">
+            <span class="line-through text-xxs opacity-60">
+              {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
+              / {{ product.unit }}
+            </span>
+
+            <span class="text-green-600 text-xs block">
+              {{ locale.currencyFormat(currency?.code, product.offer_price_per_unit) }}
+              / {{ product.unit }}
+            </span>
+          </template>
+
+          <span v-else class="text-gray-600 text-xs">
+            {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
+            / {{ product.unit }}
+          </span>
+        </div>
       </div>
     </div>
   </div>

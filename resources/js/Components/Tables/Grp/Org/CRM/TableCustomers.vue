@@ -51,17 +51,17 @@ function shopRoute(customer: FulfilmentCustomer) {
 }
 
 function tagColorClass(scope?: string) {
-    const normalized = (scope || '').toLowerCase()
+    const normalized = (scope || "").toLowerCase()
 
     switch (normalized) {
-        case 'system customer':
-            return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-        case 'admin customer':
-            return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-        case 'user customer':
-            return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+        case "system customer":
+            return "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+        case "admin customer":
+            return "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+        case "user customer":
+            return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
         default:
-            return 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+            return "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
     }
 }
 </script>

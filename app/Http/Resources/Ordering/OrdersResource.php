@@ -51,6 +51,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $tracking_urls
  * @property mixed $combined_label_url
  * @property mixed $shipping_data
+ * @property bool $with_replacement
  *
  */
 class OrdersResource extends JsonResource
@@ -107,6 +108,7 @@ class OrdersResource extends JsonResource
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
             'shipping_data'               => $this->shipping_data,
+            'with_replacement'            => $this->with_replacement,
         ];
     }
 }
