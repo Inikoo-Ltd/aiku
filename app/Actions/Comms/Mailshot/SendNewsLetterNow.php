@@ -18,7 +18,7 @@ use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Comms\Outbox;
 
-class SendNewsLetter extends OrgAction
+class SendNewsLetterNow extends OrgAction
 {
     use AsCommand;
     use AsAction;
@@ -39,7 +39,10 @@ class SendNewsLetter extends OrgAction
 
         $mailshot->update($modelData);
 
-        ProcessSendNewsletter::dispatch($mailshot);
+        //
+        ProcessSendNewsletterNew::dispatch($mailshot);
+
+        //  update
 
         return $mailshot;
     }

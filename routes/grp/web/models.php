@@ -73,7 +73,7 @@ use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
-use App\Actions\Comms\Mailshot\SendNewsLetter;
+use App\Actions\Comms\Mailshot\SendNewsLetterNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
@@ -765,7 +765,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
-        Route::post('newsletter/{mailshot:id}/send', SendNewsLetter::class)->name('newsletter.send')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/send', SendNewsLetterNow::class)->name('newsletter.send')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('newsletter.cancel-schedule')->withoutScopedBindings();
     });
@@ -789,7 +789,7 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
-        Route::post('newsletter/{mailshot:id}/send', SendNewsLetter::class)->name('newsletter.send')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/send', SendNewsLetterNow::class)->name('newsletter.send')->withoutScopedBindings();
     });
 });
 
