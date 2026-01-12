@@ -19,14 +19,13 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Throwable;
 
 class UpdateFamilyDescriptionFromAurora
 {
     use AsAction;
     use WithOrganisationSource;
 
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop, Command $command): void
     {
         $organisation             = $shop->organisation;
         $this->organisationSource = $this->getOrganisationSource($organisation);
@@ -43,7 +42,7 @@ class UpdateFamilyDescriptionFromAurora
 
             //    ->where('id',31890)
             ->orderBy('id')
-            ->chunkById(1000, function ($families) {
+            ->chunkById(1000, function ($families) use ($command) {
                 foreach ($families as $family) {
                     $description = '';
 
@@ -90,16 +89,24 @@ class UpdateFamilyDescriptionFromAurora
 
                     if ($description) {
                         $masterCategory = $family->masterProductCategory;
+                        $family->update([
+                            'description'             => $description,
+                            'is_description_reviewed' => true
+                        ]);
+                        if ($family->wasChanged('description')) {
+                            $command->info("Description changed $family->code");
+                        }
 
-                        //  dd($family->shop->language->code);
-                        print "==== $family->id $family->slug    $masterCategory?->slug    ==============\n";
-
-                        $family->update(['description' => $description]);
                         $family
                             ->setTranslation('description_i8n', $family->shop->language->code, $description)
                             ->save();
 
-                        $family->update(['description_extra' => '']);
+                        $family->update(
+                            [
+                                'description_extra'             => '',
+                                'is_description_extra_reviewed' => true
+                            ]
+                        );
                         $family
                             ->setTranslation('description_extra_i8n', $family->shop->language->code, '')
                             ->save();
@@ -118,6 +125,29 @@ class UpdateFamilyDescriptionFromAurora
                                 ->save();
                         }
                     }
+
+                    // get family name
+
+                    $shopSourceData = explode(':', $family->shop->source_id);
+                    $auroraStoreKey = $shopSourceData[1];
+
+                    $auFamData = DB::connection('aurora')->table('Category Dimension')
+                        ->where('Category Scope', 'Product')
+                        ->where('Category Store Key', $auroraStoreKey)
+                        ->whereRaw('LOWER(`Category Code`) != LOWER(`Category Label`)')
+                        ->whereRaw('LOWER(`Category Code`) = ?', [strtolower($family->code)])
+                        ->first();
+                    if ($auFamData) {
+                        $family->update(
+                            [
+                                'name'             => $auFamData->{'Category Label'},
+                                'is_name_reviewed' => true
+                            ]
+                        );
+                        if ($family->wasChanged('name')) {
+                            $command->info("Name changed $family->code $family->name");
+                        }
+                    }
                 }
             }, 'id');
     }
@@ -125,21 +155,13 @@ class UpdateFamilyDescriptionFromAurora
 
     public function getCommandSignature(): string
     {
-        return 'maintenance:update_family_descriptions_from_aurora {shop_id}';
+        return 'maintenance:update_family_descriptions_from_aurora {shop}';
     }
 
     public function asCommand(Command $command): int
     {
-        $shop = Shop::find($command->argument('shop_id'));
-
-        // try {
-        $this->handle($shop);
-
-        //        } catch (Throwable $e) {
-        //            $command->error($e->getMessage());
-        //            return 1;
-        //        }
-
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
+        $this->handle($shop, $command);
 
         return 0;
     }

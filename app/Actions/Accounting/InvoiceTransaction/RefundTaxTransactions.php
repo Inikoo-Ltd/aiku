@@ -31,7 +31,7 @@ class RefundTaxTransactions extends OrgAction
             foreach ($chunkedTransactions as $transaction) {
                 $taxAmount = $transaction->taxCategory?->rate * ($transaction->model?->price * $transaction->quantity);
 
-                $tasks[] = fn() => StoreRefundInvoiceTransaction::run($refund, $transaction, [
+                $tasks[] = fn () => StoreRefundInvoiceTransaction::run($refund, $transaction, [
                     'net_amount' => 0,
                     'refund_all' => false,
                     'is_tax_only' => true,
