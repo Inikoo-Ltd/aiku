@@ -38,7 +38,12 @@ class ProcessSendNewsletter
     public function handle(Mailshot $mailshot): void
     {
         $counter      = 0;
-        $queryBuilder = $this->getNewsletterRecipientsQueryBuilder($mailshot);
+        $queryBuilder = QueryBuilder::for(Customer::class)
+            ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
+            ->where('shop_id', $mailshot->shop_id)
+            ->where('customer_comms.is_subscribed_to_newsletter', true)
+            ->where('customers.email', '!=', null)
+            ->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
 
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
@@ -52,21 +57,14 @@ class ProcessSendNewsletter
                 );
                 SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
 
-                //  for what should store new delivery channel
+                // Note: create new delivery channel for next batch
                 $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
                 $counter             = 0;
             }
 
             //  make sure this section
             $recipientExists = $mailshot->recipients()->where('recipient_id', $recipient->id)->where('recipient_type', class_basename($recipient))->exists();
-            if (!$recipientExists) {
-                if (!app()->environment('production') and config('mail.devel.rewrite_mailshot_recipients_email', true)) {
-                    $prefixes     = ['success' => 50, 'bounce' => 30, 'complaint' => 20];
-                    $prefix       = $this->getRandomElementWithProbabilities($prefixes);
-                    $emailAddress = "$prefix+$recipient->slug@simulator.amazonses.com";
-                } else {
-                    $emailAddress = $recipient->email;
-                }
+            if (!$recipientExists && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
 
                 $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first();
                 $dispatchedEmail = StoreDispatchedEmail::run(
@@ -112,6 +110,8 @@ class ProcessSendNewsletter
                 'recipients_stored_at' => now()
             ]
         );
+
+        // TODO: check another hydrator
         MailshotHydrateDispatchedEmails::run($mailshot);
     }
 
@@ -129,16 +129,6 @@ class ProcessSendNewsletter
         }
 
         return array_key_first($prefixes);
-    }
-
-    private function getNewsletterRecipientsQueryBuilder(Mailshot $mailshot)
-    {
-        return QueryBuilder::for(Customer::class)
-            ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
-            ->where('shop_id', $mailshot->shop_id)
-            ->where('customer_comms.is_subscribed_to_newsletter', true)
-            ->where('customers.email', '!=', null)
-            ->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';
