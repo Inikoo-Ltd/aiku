@@ -40,7 +40,10 @@ const layout: any = inject("layout", {})
 					<Image :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'"
 						class="w-full h-full object-cover md:absolute md:inset-0"
-						:imgAttributes="fieldValue.image.attributes" />
+						:imgAttributes="fieldValue.image.attributes"
+						:height="getStyles(fieldValue?.image?.properties, screenType, false)?.height"
+						:width="getStyles(fieldValue?.image?.properties, screenType, false)?.width"
+						/>
 				</div>
 
 

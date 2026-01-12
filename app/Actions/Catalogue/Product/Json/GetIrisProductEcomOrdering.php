@@ -28,6 +28,7 @@ class GetIrisProductEcomOrdering extends IrisAction
             $basket              = $customer->orderInBasket;
             $quantityOrdered     = null;
             $transactionId       = null;
+            $offersData           = [];
             if ($basket) {
                 $transaction = DB::table('transactions')->where('order_id', $basket->id)
                     ->where('model_id', $product->id)->where('model_type', 'Product')
@@ -43,6 +44,7 @@ class GetIrisProductEcomOrdering extends IrisAction
                     $quantityOrdered = $transaction->quantity_ordered;
                     $transactionId   = $transaction->id;
                 }
+                $offersData = json_decode($transaction->offers_data, 1);
             }
 
             $offerNetAmountPerQuantity = (int)$transaction->quantity_ordered ? ($transaction->net_amount / ((int)$transaction->quantity_ordered ?? null)) : null;
@@ -55,7 +57,7 @@ class GetIrisProductEcomOrdering extends IrisAction
                 'transaction_id'                    => $transactionId,
                 'stock'                             => $product->available_quantity,
                 'quantity_ordered_new'              => $quantityOrdered ? (int) $quantityOrdered : null,    
-                'offers_data'                       => $product->offers_data,
+                'offers_data'                       => $offersData,
                 'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
                 'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $product->units : null,
             ];
