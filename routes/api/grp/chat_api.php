@@ -16,6 +16,9 @@ use App\Actions\CRM\ChatSession\StoreGuestProfile;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
 use App\Actions\CRM\ChatSession\DownloadChatAttachment;
 use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
+use App\Actions\CRM\ChatSession\TranslateSingleMessage;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\CRM\ChatSession\TranslateSessionMessages;
 
 Route::get('/ping', function () {
     return 'pong';
@@ -55,3 +58,7 @@ Route::post('/read', HandleChatRead::class, 'read')
 
 Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)
     ->name('chat.attachment.download');
+
+Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
+Route::post('/messages/{chatMessage}/translate', TranslateSingleMessage::class)->name('messages.translate');
+Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::class)->name('sessions.translate');
