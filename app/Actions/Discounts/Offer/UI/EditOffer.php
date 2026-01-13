@@ -104,9 +104,9 @@ class EditOffer extends OrgAction
                                         'full'    => true,
                                         'offer'         => $offer,
                                         'value'       => [
-                                            'min_volume' => 5,
-                                            'min_order' => 5,
-                                            'min_amount' => 5,
+                                            'trigger_item_quantity' => $offer->trigger_data['item_quantity'] ?? 0,
+                                            // 'min_order' => 5,
+                                            // 'min_amount' => 5,
                                             'percentage_off' => $percentage_off,
                                         ],
                                     ],

@@ -46,20 +46,56 @@ class UpdateOffer extends OrgAction
         if (isset($modelData['edit_offer'])) {
             $editOffer = $modelData['edit_offer'];
 
-            // set percentage_off to allowance_signature
+            // Set percentage_off to allowance_signature
             if (!empty($editOffer['percentage_off'])) {
-                $percentage_off = $editOffer['percentage_off']/100;
-                $modelData['allowance_signature'] = preg_replace(
+                $percentage_off = ((float) $editOffer['percentage_off']) / 100; // Convert 25 → 0.25
+
+                $signature = trim((string) $offer['allowance_signature']);
+
+                // Try to replace existing percentage_off
+                $newSignature = preg_replace(
                     '/(percentage_off:)[0-9.]+/',
                     '${1}' . $percentage_off,
-                    $offer['allowance_signature']
+                    $signature,
+                    -1,
+                    $count
                 );
+
+                // If percentage_off does not exist, append it
+                if ($count === 0) {
+                    // Remove trailing colon if any
+                    $signature = rtrim($signature, ':');
+
+                    if ($signature === '') {
+                        // Signature is empty → don't prefix with colon
+                        $newSignature = 'percentage_off:' . $percentage_off;
+                    } else {
+                        $newSignature = $signature . ':percentage_off:' . $percentage_off;
+                    }
+                }
+
+                $modelData['allowance_signature'] = $newSignature;
+            }
+
+            // Set to trigger_data.item_quantity
+            if (isset($editOffer['trigger_item_quantity']) && $editOffer['trigger_item_quantity'] !== '') {
+                $triggerData = $offer['trigger_data'];
+
+                // Make sure it is an array
+                if (!is_array($triggerData)) {
+                    $triggerData = [];
+                }
+
+                // Set or update item_quantity
+                $triggerData['item_quantity'] = (int) $editOffer['trigger_item_quantity'];
+
+                // Assign back (Laravel will re-encode it to JSON automatically)
+                $modelData['trigger_data'] = $triggerData;
             }
 
             // Remove edit_offer from modelData
             unset($modelData['edit_offer']);
         }
-
 
 
         $offer = $this->update($offer, $modelData);

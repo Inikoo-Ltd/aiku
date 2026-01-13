@@ -19,7 +19,12 @@ import { InputNumber } from "primevue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 const props = defineProps<{
-    form: any
+    form: {
+        [key: string]: {
+            percentage_off: number
+            trigger_item_quantity: number
+        } 
+    }
     fieldName: string
     options?: any
     fieldData?: {
@@ -88,12 +93,11 @@ const offerType = props.fieldData.offer.type
                 </div>
 
                 <div class="col-span-4">
-                    <PureInput
-                        v-model="value"
-                        :inputName="fieldName"
-                        :readonly="fieldData?.readonly"
-                        :type="fieldData?.type ?? 'text'"
-                        :placeholder="fieldData?.placeholder"
+                    <InputNumber
+                        v-model="form[fieldName].trigger_item_quantity"
+                        inputId="trigger_item_quantity"
+                        :min="1"
+                        placeholder="Enter a number"
                     />
                 </div>
             </div>
