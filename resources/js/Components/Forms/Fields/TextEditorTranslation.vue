@@ -118,11 +118,11 @@ const generateTranslateAI = async () => {
 
             <p class="text-[11px] font-semibold text-gray-500
            uppercase tracking-wide shrink-0 pt-1" v-tooltip="languagesTo?.name">
-              {{ langLabel }}
+              {{ langLabel }} 
             </p>
 
-            <div class="flex-1 pr-10 p-4 rounded-md border ">
-              <div class="bg-gray-50">
+            <div class="flex-1 pr-10  rounded-md  ">
+              <div class="bg-gray-50 border p-2 rounded-md">
                 <EditorV2 v-model="props.form[props.fieldName]" :key="key">
                   <template #editor-content="{ editor }">
                     <EditorContent :editor="editor" class="focus:outline-none text-sm text-gray-700
