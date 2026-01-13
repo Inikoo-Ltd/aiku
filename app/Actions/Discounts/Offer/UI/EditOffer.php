@@ -10,6 +10,8 @@
 namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\OrgAction;
+use App\Http\Resources\Catalogue\OfferResource;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
@@ -25,6 +27,17 @@ class EditOffer extends OrgAction
      */
     public function handle(Offer $offer, ActionRequest $request): Response
     {
+        
+        $getCategoryId = $this->getCategoryId($offer->allowance_signature);
+        
+        $productCategory = null;
+        if ($getCategoryId) {
+            $productCategory = ProductCategory::find($getCategoryId);
+        }
+        
+        $offerResource = OfferResource::make($offer)->resolve();
+        $percentage_off = $offerResource['data_allowance_signature']['percentage_off'] * 100;
+
         return Inertia::render(
             'EditModel',
             [
@@ -56,6 +69,16 @@ class EditOffer extends OrgAction
                                         ],
                                         'value' => $offer->type
                                     ],
+                                    'category'      => $productCategory ? [
+                                        'label' => __('Product category'),
+                                        'type'  => 'select',
+                                        'readonly' => true,
+                                        'required' => true,
+                                        'options'   => [
+                                            $productCategory->name
+                                        ],
+                                        'value' => $productCategory->name
+                                    ] : null,
                                     'name'        => [
                                         'type'        => 'input',
                                         'label'       => __('Name'),
@@ -65,18 +88,27 @@ class EditOffer extends OrgAction
                                     ],
                                     'label'        => [
                                         'type'        => 'input',
+                                        'information' => __('Label to put on the discount coupon, if empty will take offer name'),
                                         'label'       => __('Label'),
                                         'placeholder' => __('Label'),
                                         'required'    => true,
                                         'value'       => $offer->label,
                                     ],
-                                    'trigger_data_item_quantity'        => [
-                                        'type'        => 'input_number',
-                                        'label'       => __('Product quantity'),
+                                    'editOffer'        => [
+                                        'type'        => 'editOffer',
+                                        'label'       => __('Settings'),
                                         'information'   => __('Total quantity of all products'),
                                         'placeholder' => __('Quantity'),
                                         'required'    => true,
-                                        'value'       => $offer->trigger_data['item_quantity'] ?? '',
+                                        'noSaveButton' => true,
+                                        'full'    => true,
+                                        'offer'         => $offer,
+                                        'value'       => [
+                                            'min_volume' => 5,
+                                            'min_order' => 5,
+                                            'min_amount' => 5,
+                                            'percentage_off' => $percentage_off,
+                                        ],
                                     ],
                                 ]
                             ],
@@ -91,6 +123,14 @@ class EditOffer extends OrgAction
 
             ]
         );
+    }
+
+    public function getCategoryId(String $str): String|null
+    {
+        if (preg_match('/^all_products_in_product_category(?::(\d+))?:/', $str, $m)) {
+            return $m[1] ?? null;
+        }
+        return null;
     }
 
     public function authorize(ActionRequest $request): bool

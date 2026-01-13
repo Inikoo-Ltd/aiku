@@ -81,7 +81,7 @@ class ShowOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Offers'),
+                'title'       => __('Offer') . ' ' . $offer->code,
                 'pageHead'    => [
                     'title'      => $title,
                     'model'      => __('Offers'),
