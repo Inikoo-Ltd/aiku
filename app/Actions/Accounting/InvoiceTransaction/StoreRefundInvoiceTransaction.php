@@ -83,9 +83,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
             $quantity = $netAmount / $unitNetPrice;
         }
 
-
-        data_set($modelData, 'quantity', $quantity);
-
+        if(! Arr::has($modelData, 'quantity')) {
+            data_set($modelData, 'quantity', $quantity);
+        }
 
         data_set($modelData, 'invoice_id', $refund->id);
         data_set($modelData, 'group_id', $invoiceTransaction->group_id);
