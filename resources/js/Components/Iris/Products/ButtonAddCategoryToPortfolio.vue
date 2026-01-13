@@ -196,7 +196,7 @@ const fetchProductExistInChannel = async () => {
                 props.routeGetCategoryChannels.name,
                 {
                     ...props.routeGetCategoryChannels.parameters,
-                    customer: layout?.iris_variables?.id,
+                    customer: layout?.iris_variables?.customer_id,
                 }
             )
         )
@@ -220,8 +220,9 @@ const fetchProductExistInChannel = async () => {
 }
 
 onMounted(() => {
-    if(layout?.iris?.is_logged_in)
-    fetchProductExistInChannel()
+    if(layout?.iris?.is_logged_in) {
+        fetchProductExistInChannel()
+    }
 })
 
 </script>
