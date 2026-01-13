@@ -9,7 +9,7 @@ import {Link, router} from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import {Product} from "@/types/product"
 import {library} from "@fortawesome/fontawesome-svg-core"
-import {inject, onMounted, ref, computed} from "vue"
+import {inject, onMounted, ref, computed, watch, nextTick} from "vue"
 import {trans} from "laravel-vue-i18n"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -340,6 +340,7 @@ const onSubmitVariant = () => {
 
 const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
+
 const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = true
     try {
@@ -347,6 +348,10 @@ const fetchRoute = async () => {
             customerSalesChannel: props.customerSalesChannel?.id,
             query: querySearchPortfolios.value
         }))
+        
+        if (!Array.isArray(www.data) || www.data.length < 50) {
+            hasMore.value = false;
+        }
 
         resultOfFetchPlatformProduct.value = www.data
         // console.log('qweqw', www)
@@ -356,6 +361,7 @@ const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = false
 
 }
+
 const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
 
 const openEditModal = (item) => {
@@ -461,6 +467,52 @@ const submitUpdateAndUploadProduct = (sel, state: 'draft' | 'publish') => {
 const calculateVat = (price: number) => {
     return (price * 1) + (price * props.customerSalesChannel.vat_rate);
 }
+  
+let observer = null;
+const sentinel = ref(null);
+const currentOffset = ref(0);
+const hasMore = ref(true);
+const isLoadingMore = ref(false);
+
+if (props.platform_data?.type === 'ebay') {
+    watch(sentinel,
+        async (element) => {
+            if (!element) return;
+            await nextTick();
+            observer = new IntersectionObserver(([entry]) => {
+                if (entry.isIntersecting && hasMore) {
+                    loadMore();
+                }
+            });
+            observer.observe(element);
+        }
+    );
+
+    const loadMore = async () => {
+        if(resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value)  {
+            hasMore.value = false; 
+            return;
+        }
+        currentOffset.value += 50;
+        isLoadingMore.value = true
+        try {
+            const www = await axios.get(route(props.routes.fetch_products.name, {
+                customerSalesChannel: props.customerSalesChannel?.id,
+                offset: currentOffset.value,
+            }))
+            if (!Array.isArray(www.data) || www.data.length < 50) {
+                console.log("Doesn't have more");
+                hasMore.value = false;
+            }
+            isLoadingMore.value = false
+            resultOfFetchPlatformProduct.value = [...resultOfFetchPlatformProduct.value, ...www.data]
+        } catch (e) {
+            console.error("Error processing products", e)
+            isLoadingMore.value = false
+        }
+    }
+}
+
 </script>
 
 <template>
@@ -878,10 +930,9 @@ const calculateVat = (price: number) => {
 
     <!-- <pre>{{ data.data[0] }}</pre> -->
 
-    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []}">
+    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []; currentOffset = 0; hasMore = true}">
         <div class="relative isolate">
-
-            <div v-if="isLoadingSubmit"
+            <div v-if="isLoadingSubmit || isLoadingMore"
                  class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
                 <LoadingIcon/>
             </div>
@@ -893,8 +944,7 @@ const calculateVat = (price: number) => {
             </div>
 
             <div class="mb-2 relative">
-                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()"
-                           :placeholder="trans('Search in :platform', { platform: platform_data.name })"/>
+                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()" :placeholder="trans('Search in :platform', { platform: platform_data.name })" :disabled="isLoadingFetchPlatformProduct"/>
                 <div v-if="isLoadingFetchPlatformProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
                     <LoadingIcon/>
                 </div>
@@ -914,7 +964,7 @@ const calculateVat = (price: number) => {
                             <div v-if="isLoadingFetchPlatformProduct" class="text-center text-gray-500 col-span-3">
                                 <LoadingIcon class="ml-1"/> {{ trans("Fetching your :_storetype product list", {_storetype: platform_data.name}) }}
                             </div>
-                            <template v-else-if="resultOfFetchPlatformProduct?.length > 0">
+                            <template ref="list"  v-else-if="resultOfFetchPlatformProduct?.length > 0">
                                 <div v-for="(item, index) in resultOfFetchPlatformProduct" :key="index"
                                      @click="() => {selectedVariant = item}"
                                      class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
@@ -932,8 +982,7 @@ const calculateVat = (price: number) => {
 <!--                                        <Image v-if="item.images?.src" :src="item.images?.src"
                                                class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                                :alt="item.name"/>-->
-                                        <div
-                                            class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
+                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
                                             <img :src="item.images?.[0]?.src" class="shadow"/>
                                         </div>
                                         <div class="flex flex-col justify-between">
@@ -962,6 +1011,12 @@ const calculateVat = (price: number) => {
                                             </div>
                                         </div>
                                     </slot>
+                                </div>
+                                <div ref="sentinel" class="col-span-2 justify-items-center flex mx-auto">
+                                    <LoadingIcon v-if="hasMore" />
+                                </div>
+                                <div v-if="!hasMore && platform_data.type == 'ebay'" class="col-span-2 text-center">
+                                    {{ trans("You've reached the end of item list") }}
                                 </div>
                             </template>
                             <div v-else class="text-center text-gray-500 col-span-3">

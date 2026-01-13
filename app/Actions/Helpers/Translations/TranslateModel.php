@@ -31,16 +31,16 @@ class TranslateModel
         if ($model instanceof Product && Arr::get($translationData, 'unit') && (!$model->unit || $overwrite)) {
             data_set($modelData, 'unit', Translate::run($translationData['unit'], $english, $shopLanguage));
         }
-        if (Arr::get($translationData, 'name') && (!$model->name || $overwrite)) {
+        if (Arr::get($translationData, 'name') && (!$model->is_name_reviewed || $overwrite)) {
             data_set($modelData, 'name', Translate::run($translationData['name'], $english, $shopLanguage));
         }
-        if (Arr::get($translationData, 'description') && (!$model->description || $overwrite)) {
+        if (Arr::get($translationData, 'description') && (!$model->is_description_reviewed || $overwrite)) {
             data_set($modelData, 'description', Translate::run($translationData['description'], $english, $shopLanguage));
         }
-        if (Arr::get($translationData, 'description_title') && (!$model->description_title || $overwrite)) {
+        if (Arr::get($translationData, 'description_title') && (!$model->is_description_title_reviewed || $overwrite)) {
             data_set($modelData, 'description_title', Translate::run($translationData['description_title'], $english, $shopLanguage));
         }
-        if (Arr::get($translationData, 'description_extra') && (!$model->description_extra || $overwrite)) {
+        if (Arr::get($translationData, 'description_extra') && (!$model->is_description_extra_reviewed || $overwrite)) {
             data_set($modelData, 'description_extra', Translate::run($translationData['description_extra'], $english, $shopLanguage));
         }
 

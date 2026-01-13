@@ -46,6 +46,16 @@ class EditOffer extends OrgAction
                             [
                                 'title'  => __('Properties'),
                                 'fields' => [
+                                    'type'      => [
+                                        'label' => __('Offer type'),
+                                        'type'  => 'select',
+                                        'readonly' => true,
+                                        'required' => true,
+                                        'options'   => [
+                                            $offer->type
+                                        ],
+                                        'value' => $offer->type
+                                    ],
                                     'name'        => [
                                         'type'        => 'input',
                                         'label'       => __('Name'),

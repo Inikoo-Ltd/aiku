@@ -29,16 +29,24 @@ class OfferResource extends JsonResource
 
         $percentage_off = $matches[1] ?? null;
 
+        // dd($this);
         return [
             'shop_id'           => $this->shop_id,
             'offer_campaign_id' => $this->offer_campaign_id,
             'slug'              => $this->slug,
+            'type'              => $this->type,
             'code'              => $this->code,
             'name'              => $this->name,
             'data'              => $this->data,
+            'trigger_type'              => $this->trigger_type,
+            'trigger_data'              => $this->trigger_data,
+            'allowance_signature'       => $this->allowance_signature,
+            'settings'              => $this->settings,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
-            'percentage_off'    => $percentage_off,
+            'data_allowance_signature' => [
+                'percentage_off'    => $percentage_off,
+            ]
         ];
     }
 }
