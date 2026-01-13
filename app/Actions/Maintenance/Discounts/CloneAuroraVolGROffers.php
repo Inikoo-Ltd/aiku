@@ -39,11 +39,11 @@ class CloneAuroraVolGROffers
 
         $fromShop = Shop::where('organisation_id', $organisation->id)->where('slug', $command->argument('from_shop'))->firstOrFail();
         $toShop   = Shop::where('organisation_id', $organisation->id)->where('slug', $command->argument('to_shop'))->firstOrFail();
-//        if ($fromShop->id == $toShop->id) {
-//            $command->error('From and To shops must be different.');
-//
-//            return 1;
-//        }
+        //        if ($fromShop->id == $toShop->id) {
+        //            $command->error('From and To shops must be different.');
+        //
+        //            return 1;
+        //        }
 
         $fromShopSource = explode(':', $fromShop->source_id);
 

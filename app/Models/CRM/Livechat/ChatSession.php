@@ -31,6 +31,9 @@ use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
  * @property int|null $shop_id
+ * @property int|null $active_user_language_id
+ * @property int|null $user_language_id
+ * @property int|null $agent_language_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatAssignment> $assignments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatEvent> $chatEvents
  * @property-read Language $language

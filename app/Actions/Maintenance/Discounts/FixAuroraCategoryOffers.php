@@ -58,7 +58,7 @@ class FixAuroraCategoryOffers
             $sourceData = explode(':', $offer->source_id);
 
             $auroraDealData          = DB::connection('aurora')->table('Deal Dimension')->where('Deal Key', $sourceData[1])->first();
-            if(!$auroraDealData){
+            if (!$auroraDealData) {
                 continue;
             }
 

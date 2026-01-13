@@ -122,6 +122,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool|null $has_insurance
  * @property bool $is_re recargo de equivalencia
  * @property string|null $external_id
+ * @property string $tax_total
+ * @property bool $is_tax_only
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
