@@ -10,24 +10,31 @@
 namespace App\Actions\Accounting\InvoiceTransaction;
 
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\Invoice\UI\CreateRefund;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Laravel\Octane\Facades\Octane;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundTaxTransactions extends OrgAction
 {
     use WithActionUpdate;
-
+    private array $referralRoute = [
+        'name' => 'dashboard',
+        'parameters' => []
+    ];
     /**
      * @throws \Throwable
      */
-    public function handle(Invoice $refund): Invoice
+    public function handle(Invoice $invoice): Invoice
     {
-        /** @var Invoice $originalInvoice */
-        $originalInvoice = $refund->originalInvoice;
+        $originalInvoice = $invoice;
+        $refund = CreateRefund::run($invoice);
 
         $transactions = $originalInvoice->invoiceTransactions->where('net_amount', '>', 0);
         $tasks        = [];
@@ -60,13 +67,35 @@ class RefundTaxTransactions extends OrgAction
         return $refund;
     }
 
+    public function htmlResponse(Invoice $refund, ActionRequest $request): RedirectResponse
+    {
+        return Redirect::route(
+            $this->referralRoute['name'].'.refunds.show',
+            array_merge($this->referralRoute['parameters'], [$refund->slug])
+        );
+    }
+
+    public function rules(): array
+    {
+        return [
+            'referral_route' => ['sometimes','array'],
+            'referral_route.name' => ['required','string'],
+            'referral_route.parameters' => ['required','array'],
+        ];
+    }
+
     /**
      * @throws \Throwable
      */
-    public function asController(Invoice $refund, ActionRequest $request): void
+    public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
-        $this->initialisationFromShop($refund->shop, $request);
-        $this->handle($refund);
+        $this->initialisationFromShop($invoice->shop, $request);
+
+        if (Arr::has($this->validatedData, 'referral_route')) {
+            $this->referralRoute = $this->validatedData['referral_route'];
+        }
+
+        return $this->handle($invoice);
     }
 
     /**
