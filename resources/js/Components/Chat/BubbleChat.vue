@@ -18,7 +18,7 @@ interface Message {
     id?: number
     _status?: MessageStatus
     original?: Translation
-    translations?: Translation | Record<string, Translation>
+    translations?: Translation[]
 }
 
 interface Translation {
@@ -62,7 +62,6 @@ const bubbleClass = computed(() => ({
     "bubble-system": props.message.sender_type === "system",
 }))
 
-
 const time = computed(() =>
     new Date(props.message.created_at).toLocaleTimeString([], {
         hour: "2-digit",
@@ -89,7 +88,14 @@ const activeMessage = computed<Message>(() => {
     return localMessage.value ?? props.message
 })
 
-const canTranslate = computed(() => props.viewerType === "agent" && props.message.sender_type === "guest")
+const canTranslate = computed(() =>
+    props.viewerType === "agent" &&
+    (
+        props.message.sender_type === "guest" ||
+        props.message.sender_type === "user"
+    )
+)
+
 
 const latestTranslation = computed<Translation | null>(() => {
     const list = activeMessage.value.translations

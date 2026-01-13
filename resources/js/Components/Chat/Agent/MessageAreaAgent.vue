@@ -25,6 +25,12 @@ type LocalChatMessage = ChatMessage & {
     _tempId?: string
 }
 
+interface GetMessagesParams {
+    limit: number
+    request_from: string
+    cursor?: string | null
+}
+
 const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
@@ -104,7 +110,9 @@ const sendMessage = async () => {
     typingUser.value = null
     try {
         await emit("send-message", text)
+
         const msg = messagesLocal.value.find((m) => m._tempId === tempId)
+
         if (msg) msg._status = "sending"
     } catch {
         const msg = messagesLocal.value.find((m) => m._tempId === tempId)
@@ -125,14 +133,17 @@ const resendMessage = async (msg: LocalChatMessage) => {
     }
 }
 
+
+
 const getMessages = async (loadMore = false) => {
     if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
 
     isLoadingMore.value = loadMore
 
-    const params = {
-        limit: loadMore && nextCursor.value ? 50 : 10,
+    const params: GetMessagesParams = {
+        limit: 10,
         request_from: "agent",
+        cursor: nextCursor.value
     }
 
     if (loadMore && nextCursor.value) {
@@ -378,7 +389,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </button>
 
             <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
-                <Image v-if="session.image" :src="session.image" class="w-full h-full rounded-full object-cover" />
+                <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
 
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
             </div>
@@ -411,7 +422,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <ModalConfirmationDelete :routeDelete="{
                         name: 'grp.org.crm.agents.sessions.close',
-                        parameters: [session.organisation.id, session?.ulid],
+                        parameters: [session?.organisation.id, session?.ulid],
                         method: 'patch',
                     }" :title="trans('Are you sure you want to close this session?')"
                         @success="$emit('close-session')">
@@ -469,7 +480,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 }
             " @blur="
                 () => {
-                    isTyping.value = false
+                    isTyping = false
                     sendTypingStatus(false)
                 }
             " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
