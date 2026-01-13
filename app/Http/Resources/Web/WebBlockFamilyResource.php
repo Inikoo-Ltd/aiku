@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Http\Resources\Catalogue\OfferResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -34,7 +35,6 @@ class WebBlockFamilyResource extends JsonResource
             $imageSources = GetPictureSources::run($image);
         }
 
-
         return [
             'slug'              => $family->slug,
             'code'              => $family->code,
@@ -45,6 +45,7 @@ class WebBlockFamilyResource extends JsonResource
             'id'                => $family->id,
             'image'             => $imageSources,
             'url'               => $family->webpage->url,
+            'active_offers'     => OfferResource::collection($family->getActiveOffers)->resolve(),
             'offers_data'       => $family->offers_data,
         ];
     }

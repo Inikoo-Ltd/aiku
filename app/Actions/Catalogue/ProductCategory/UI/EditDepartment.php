@@ -127,15 +127,16 @@ class EditDepartment extends OrgAction
                                                 'full'          => true,
                                                 'main'          => $department->masterProductCategory->name,
                                                 'languages'     => $languages,
-                                                'value'         => $department->getTranslations('name_i8n'),
-                                                'mode'          => 'single'
+                                                'mode'          => 'single',
+                                                'value'         => $department->name,
+                                                'reviewed'      => $department->is_name_reviewed
                                             ]
                                             : [
                                                 'type'  => 'input',
                                                 'label' => __('Name'),
                                                 'value' => $department->name
                                             ],
-                                        'description_title' => $department->masterProductCategory
+                                      /*   'description_title' => $department->masterProductCategory
                                             ? [
                                                 'type'          => 'input_translation',
                                                 'label'         => __('description title'),
@@ -143,14 +144,16 @@ class EditDepartment extends OrgAction
                                                 'full'          => true,
                                                 'main'          => $department->masterProductCategory->description_title,
                                                 'languages'     => $languages,
-                                                'value'         => $department->getTranslations('description_title_i8n'),
-                                                'mode'          => 'single'
+                                                'mode'          => 'single',
+                                                'value'         => $department->description_title,
+                                                'reviewed'      => $department->is_description_title_reviewed
+
                                             ]
                                             : [
                                                 'type'  => 'input',
                                                 'label' => __('description title'),
                                                 'value' => $department->description_title
-                                            ],
+                                            ], */
                                         'description'       => $department->masterProductCategory
                                             ? [
                                                 'type'          => 'textEditor_translation',
@@ -159,8 +162,9 @@ class EditDepartment extends OrgAction
                                                 'full'          => true,
                                                 'main'          => $department->masterProductCategory->description,
                                                 'languages'     => $languages,
-                                                'value'         => $department->getTranslations('description_i8n'),
-                                                'mode'          => 'single'
+                                                'mode'          => 'single',
+                                                'value'         => $department->description,
+                                                'reviewed'      => $department->is_description_reviewed
                                             ]
                                             : [
                                                 'type'  => 'textEditor',
@@ -175,8 +179,10 @@ class EditDepartment extends OrgAction
                                                 'full'          => true,
                                                 'main'          => $department->masterProductCategory->description_extra,
                                                 'languages'     => $languages,
-                                                'value'         => $department->getTranslations('description_extra_i8n'),
-                                                'mode'          => 'single'
+                                                'mode'          => 'single',
+                                                'value'         => $department->description_extra,
+                                                'reviewed'      => $department->is_description_extra_reviewed
+
                                             ]
                                             : [
                                                 'type'  => 'textEditor',

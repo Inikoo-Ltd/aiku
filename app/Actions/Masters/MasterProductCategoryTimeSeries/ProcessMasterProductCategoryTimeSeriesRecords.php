@@ -64,7 +64,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
         $results = DB::table('invoice_transactions')
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
-            ->where($categoryColumn, $timeSeries->product_category_id);
+            ->where($categoryColumn, $timeSeries->master_product_category_id);
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(

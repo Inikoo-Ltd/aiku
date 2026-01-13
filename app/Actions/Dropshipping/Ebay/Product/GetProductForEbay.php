@@ -8,7 +8,9 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,7 +21,7 @@ class GetProductForEbay
     use AsAction;
     use WithAttributes;
 
-    public $commandSignature = 'dropshipping:ebay:product:get {ebay}';
+    public $commandSignature = 'dropshipping:ebay:product:get {customerSalesChannel}';
 
     /**
      * @throws \Exception
@@ -39,21 +41,29 @@ class GetProductForEbay
         ];
     }
 
-    public function handle(EbayUser $ebayUser, $query = ''): array
+    public function handle(EbayUser $ebayUser, $query = '', $offset = 0): array
     {
-        if (! blank($query)) {
+        if (!blank($query)) {
             $product = $ebayUser->getProduct($query);
             $products = [$product];
         } else {
-            $rawProducts = $ebayUser->getProducts();
+            $rawProducts = $ebayUser->getProducts(offset: $offset);
             $products = Arr::get($rawProducts, 'inventoryItems', []);
         }
+        $hasErrors = collect($products)->contains(fn ($product) => isset($product['errors']));
 
-        return array_map([$this, 'transformToStandardFormat'], $products);
+        return $hasErrors ? [] : array_map([$this, 'transformToStandardFormat'], $products);
     }
 
     public function asController(EbayUser $ebayUser, ActionRequest $request): array
     {
         return $this->handle($ebayUser);
+    }
+
+    public function asCommand(Command $command): array
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+
+        return $this->handle($customerSalesChannel->user);
     }
 }

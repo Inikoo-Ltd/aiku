@@ -28,26 +28,39 @@ class GetIrisProductEcomOrdering extends IrisAction
             $basket              = $customer->orderInBasket;
             $quantityOrdered     = null;
             $transactionId       = null;
+            $offerNetAmountPerQuantity = null;
+            $offersData           = [];
             if ($basket) {
                 $transaction = DB::table('transactions')->where('order_id', $basket->id)
                     ->where('model_id', $product->id)->where('model_type', 'Product')
                     ->whereNull('deleted_at')
-                    ->select('id', 'quantity_ordered')
+                    ->select([
+                        'id',
+                        'quantity_ordered',
+                        'offers_data',
+                        'net_amount',
+                    ])
                     ->first();
                 if ($transaction) {
                     $quantityOrdered = $transaction->quantity_ordered;
                     $transactionId   = $transaction->id;
+                    $offersData                 = json_decode($transaction->offers_data, 1);
+                    $offerNetAmountPerQuantity  = (int)$transaction->quantity_ordered ? ($transaction->net_amount / ((int)$transaction->quantity_ordered ?? null)) : null;
                 }
             }
 
+
             $response = [
-                'is_favourite'        => (bool)$favourite,
-                'back_in_stock'       => $back_in_stock,
-                'back_in_stock_id'    => $back_in_stock_id,
-                'quantity_ordered'    => $quantityOrdered,
-                'transaction_id'      => $transactionId,
-                'stock'               => $product->available_quantity,
-                'quantity_ordered_new'  => $quantityOrdered ? (int) $quantityOrdered : null,
+                'is_favourite'                      => (bool)$favourite,
+                'back_in_stock'                     => $back_in_stock,
+                'back_in_stock_id'                  => $back_in_stock_id,
+                'quantity_ordered'                  => $quantityOrdered,
+                'transaction_id'                    => $transactionId,
+                'stock'                             => $product->available_quantity,
+                'quantity_ordered_new'              => $quantityOrdered ? (int) $quantityOrdered : null,
+                'offers_data'                       => $offersData,
+                'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
+                'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $product->units : null,
             ];
         }
 

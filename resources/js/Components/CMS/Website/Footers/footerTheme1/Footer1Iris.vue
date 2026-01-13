@@ -43,14 +43,14 @@ const onSubmitSubscribe = async () => {
     // }
 
 
-    if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
+    if (!layout?.iris?.website?.id) {
         console.log('--1')
         setTimeout(() => {
             inputEmail.value = ""
             currentState.value = 'success'
             isLoadingSubmit.value = false
         }, 700)
-    } else {  // If in Iris or Retina
+    } else { 
         try {
             await axios.post(
                 window.origin + '/app/webhooks/subscribe-newsletter',
@@ -118,8 +118,14 @@ const getValueColumn4Transleted = (value: string) => {
             <div>
                 <component v-if="modelValue?.logo?.source" :is="'span'" rel="noopener noreferrer"
                     class="mx-auto md:mx-0 block w-fit h-auto pt-3">
-                    <Image :style="getStyles(modelValue.logo.properties, screenType)" :alt="modelValue?.logo?.alt"
-                        :imageCover="true" :src="modelValue?.logo?.source">
+                    <Image 
+                        :style="getStyles(modelValue.logo.properties, screenType)" 
+                        :alt="modelValue?.logo?.alt" 
+                        :imageCover="true" 
+                        :src="modelValue?.logo?.source"
+                        :height="getStyles(modelValue.logo.properties, screenType,false).height"
+                        :width="getStyles(modelValue.logo.properties, screenType,false).width"
+                    >
                     </Image>
                 </component>
             </div>
@@ -343,8 +349,14 @@ const getValueColumn4Transleted = (value: string) => {
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
                         <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
-                            <img :src="payment.image" :alt="payment.alt"
-                                class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
+                            <img 
+                                :src="payment.image" 
+                                :alt="payment.alt"
+                                class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain"
+                                :srcset="`${payment.image} 1x, ${payment.image} 2x`"
+                                sizes="(max-width: 768px) 50px, 100px"
+                                loading="lazy"
+                            />
                         </div>
                     </div>
                 </div>

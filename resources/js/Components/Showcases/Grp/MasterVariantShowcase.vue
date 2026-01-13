@@ -276,6 +276,7 @@ watch(
 
     <aside class="col-span-12 lg:col-span-3 space-y-3">
       <SalesAnalyticsCompact
+        v-if="selectedProduct.salesData"
         :salesData="selectedProduct.salesData" />
     </aside>
 

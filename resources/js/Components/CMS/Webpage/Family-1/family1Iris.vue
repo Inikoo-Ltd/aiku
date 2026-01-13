@@ -18,7 +18,16 @@ const props = defineProps<{
       description?: string
       description_extra?: string
       images: { source: string }[]
-    }[]
+      active_offers: {
+
+      }[]
+      offers_data?: {
+        vol_gr: {
+            volume: number
+            discount: number
+        }
+      }
+    }
   }
   webpageData?: any
   blockData?: Object
@@ -49,12 +58,50 @@ const promoData = computed(() => {
 <template>
 
   <div id="family-1">
+    <!-- <pre>{{ props.fieldValue?.family?.active_offers }}</pre> -->
+        <section v-if="promoData && layout.iris.is_logged_in"
+            class="relative mx-[10px]  sm:mx-[50px] mt-6 overflow-hidden rounded-md p-6 shadow-md"
+            aria-label="Colorful Volume Promotion">
+            <!-- Gradient Background -->
+            <div class="absolute inset-0 bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-400 opacity-90"></div>
+
+            <!-- Decorative Blurs -->
+            <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-yellow-300 opacity-30 blur-3xl"></div>
+            <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-cyan-300 opacity-30 blur-3xl"></div>
+
+            <!-- Content -->
+            <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-white">
+
+                <div>
+                    <p class="text-xs uppercase tracking-wide font-semibold opacity-90 mb-1">
+                        {{ promoData.title }}
+                    </p>
+
+                    <h2 class="text-xl font-bold leading-tight">
+                        {{ promoData.headline }}
+                    </h2>
+
+                    <p class="text-sm mt-1 max-w-[520px] opacity-90">
+                        {{ promoData.description }}
+                    </p>
+                </div>
+
+                <a href="#list-products-ecom-iris" class="flex-shrink-0">
+                    <Button :label="promoData.cta">
+                    </Button>
+                </a>
+
+            </div>
+        </section>
+
+  
+
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
 
       <!-- Description Title (SEO: Heading) -->
-      <h1 v-if="fieldValue.family.description_title" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
-        {{ fieldValue.family.description_title }}
+      <h1 v-if="fieldValue.family.name" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
+        {{ fieldValue.family.name }}
       </h1>
 
       <!-- Main Description -->
@@ -73,38 +120,12 @@ const promoData = computed(() => {
     </div>
   </div>
 
-   <section v-if="promoData && layout.iris.is_logged_in"  class="relative mx-[10px]  sm:mx-[50px] mb-6 overflow-hidden rounded-2xl p-6 shadow-md"
-    aria-label="Colorful Volume Promotion">
-    <!-- Gradient Background -->
-    <div class="absolute inset-0 bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-400 opacity-90"></div>
-
-    <!-- Decorative Blurs -->
-    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-yellow-300 opacity-30 blur-3xl"></div>
-    <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-cyan-300 opacity-30 blur-3xl"></div>
-
-    <!-- Content -->
-    <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-white">
-
-      <div>
-        <p class="text-xs uppercase tracking-wide font-semibold opacity-90 mb-1">
-          {{ promoData.title }}
-        </p>
-
-        <h2 class="text-xl font-bold leading-tight">
-          {{ promoData.headline }}
-        </h2>
-
-        <p class="text-sm mt-1 max-w-[520px] opacity-90">
-          {{ promoData.description }}
-        </p>
-      </div>
-
-      <a href="#list-products-ecom-iris" class="flex-shrink-0">
-        <Button :label="promoData.cta">
-        </Button>
-      </a>
-
-    </div>
-  </section>
+  
 
 </template>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+</style>

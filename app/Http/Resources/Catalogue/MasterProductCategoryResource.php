@@ -52,6 +52,7 @@ class MasterProductCategoryResource extends JsonResource
             'description_i8n'       => $this->getTranslations('description_i8n'),
             'description_title_i8n' => $this->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
+            'stats' => $this->stats
         ];
     }
 }

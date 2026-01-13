@@ -38,7 +38,10 @@ const layout: any = inject("layout", {})
 					<Image :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'"
 						class="absolute inset-0 w-full h-full object-fill"
-						:imgAttributes="fieldValue.image.attributes" />
+						:imgAttributes="fieldValue.image.attributes" 
+						:height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
+						:width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
+						/>
 				</div>
 
 				<div class="flex flex-col justify-center m-auto p-4"
