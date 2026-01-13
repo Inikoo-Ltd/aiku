@@ -12,7 +12,6 @@ use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +32,7 @@ class FixAuroraOffersStatus
 
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
-        $organisation=$shop->organisation;
+        $organisation = $shop->organisation;
 
         $organisationSource = $this->getOrganisationSource($organisation);
         $organisationSource->initialisation($organisation);

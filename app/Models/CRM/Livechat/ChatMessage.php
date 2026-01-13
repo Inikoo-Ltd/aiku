@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property int|null $original_language_id
+ * @property string|null $original_text
  * @property-read Media|null $attachment
  * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
  * @property-read Media|null $image

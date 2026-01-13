@@ -50,9 +50,9 @@ class StorePortfolio extends OrgAction
         $pricingType = Arr::get($customerSalesChannel->settings, 'pricing.type');
         $pricingValue = Arr::get($customerSalesChannel->settings, 'pricing.value');
 
-        if($pricingType && $pricingValue) {
+        if ($pricingType && $pricingValue) {
             $addedValue = $pricingValue;
-            if($pricingType === 'percent') {
+            if ($pricingType === 'percent') {
                 $addedValue = $rrp * (1 + $pricingValue / 100);
             }
 
