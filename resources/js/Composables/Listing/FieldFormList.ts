@@ -69,6 +69,7 @@ import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue
 import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
 import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
+import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -139,7 +140,8 @@ export const componentsList: { [key: string]: Component } = {
     'input_twin': InputTwin,
     'list-selector-trade-unit': ListSelectorTradeUnit,
     'file_upload': FileUpload,
-    'input-variant' : VariantsField
+    'input-variant' : VariantsField,
+    'editOffer' : EditOffer,
 }
 
 export const getComponent = (componentName: string) => {
