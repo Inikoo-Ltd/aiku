@@ -26,17 +26,19 @@ class RefundTaxTransactions extends OrgAction
         $originalInvoice = $refund->originalInvoice;
 
         $transactions = $originalInvoice->invoiceTransactions->where('net_amount', '>', 0);
-        $tasks = [];
+        $tasks        = [];
         foreach ($transactions->chunk(100) as $chunkedTransactions) {
             foreach ($chunkedTransactions as $transaction) {
-                $taxAmount = $transaction->taxCategory?->rate * ($transaction->model?->price * $transaction->quantity);
 
-                $tasks[] = fn () => StoreRefundInvoiceTransaction::run($refund, $transaction, [
-                    'net_amount' => 0,
-                    'refund_all' => false,
+                $taxAmount = $transaction->taxCategory?->rate * $transaction->net_amount;
+
+                $tasks[] = fn() => StoreRefundInvoiceTransaction::run($refund, $transaction, [
+                    'net_amount'  => 0,
+                    'refund_all'  => false,
                     'is_tax_only' => true,
-                    'quantity' => 1,
-                    'tax_amount' => $taxAmount
+                    'quantity'    => 1,
+                    'tax_amount'  => $taxAmount,
+                    'amount_total'  => $taxAmount
                 ]);
             }
             Octane::concurrently($tasks);
@@ -63,6 +65,7 @@ class RefundTaxTransactions extends OrgAction
     public function action(Invoice $refund): Invoice
     {
         $this->initialisationFromShop($refund->shop, []);
+
         return $this->handle($refund);
     }
 
