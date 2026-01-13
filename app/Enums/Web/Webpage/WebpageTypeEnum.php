@@ -19,6 +19,7 @@ enum WebpageTypeEnum: string
     case CATALOGUE = "catalogue";
     case CONTENT = "content";
     case BLOG = "blog";
+    case SYSTEM = "system";
 
     public static function labels(): array
     {
@@ -26,7 +27,8 @@ enum WebpageTypeEnum: string
             "storefront" => __("storefront"),
             "catalogue" => __("catalogue"),
             "content" => __("content"),
-            "blog" => __("blog")
+            "blog" => __("blog"),
+            "system" => __("system")
         ];
     }
 
@@ -71,6 +73,16 @@ enum WebpageTypeEnum: string
             ],
             "blog" => [
                 "tooltip" => __("Blog"),
+                "icon" => "fal fa-newspaper",
+                "class" => "text-red-500",
+                "color" => "slate",
+                "app" => [
+                    "name" => "newspaper",
+                    "type" => "font-awesome-5",
+                ],
+            ],
+            "system" => [
+                "tooltip" => __("System"),
                 "icon" => "fal fa-newspaper",
                 "class" => "text-red-500",
                 "color" => "slate",

@@ -104,6 +104,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/content', [IndexWebpages::class, 'content'])->name('index.type.content');
     Route::get('/type/info', [IndexWebpages::class, 'info'])->name('index.type.info');
 
+    Route::get('/type/systems', [IndexWebpages::class, 'systems'])->name('index.type.systems');
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');
     Route::get('/sub-type/department', IndexDepartmentWebpages::class)->name('index.sub_type.department');
     Route::get('/sub-type/department/{scope}/sub-departments', [IndexSubDepartmentWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.sub_departments');

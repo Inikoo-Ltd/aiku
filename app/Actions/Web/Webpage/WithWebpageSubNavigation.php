@@ -99,6 +99,18 @@ trait WithWebpageSubNavigation
                     "tooltip" => __("Operations webpages"),
                 ],
             ],
+            [
+                "number"   => $website->webStats->number_webpages_type_systems,
+                "label"    => __("Systems"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.webpages.index.type.systems",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-cog"],
+                    "tooltip" => __("Systems webpages"),
+                ],
+            ],
 
             // [
             //     "number"   => $website->webStats->number_webpages_type_blog,

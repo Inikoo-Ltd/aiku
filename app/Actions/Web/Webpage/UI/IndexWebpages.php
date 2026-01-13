@@ -172,6 +172,17 @@ class IndexWebpages extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function systems(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'systems';
+        $this->parent = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+
+        return $this->handle(parent: $this->parent, bucket: $this->bucket);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function operationsInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'operations';
@@ -252,6 +263,8 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($bucket == 'storefront') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
+        } elseif($bucket == 'systems') {
+            $queryBuilder->where('webpages.type', WebpageTypeEnum::SYSTEM);
         } else {
             $queryBuilder->whereNot('webpages.type', WebpageTypeEnum::BLOG);
         }
@@ -532,6 +545,24 @@ class IndexWebpages extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         trim('('.__('Operations').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.systems':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.systems',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Systems').') '.$suffix)
                     )
                 );
             case 'grp.org.shops.show.web.webpages.index.type.blog':
