@@ -28,22 +28,7 @@ class ProcessCreditBalanceNotification extends OrgAction
             $previousCreditBalance = $creditBalances->last();
             $currentCreditBalance = $creditBalances->first();
         }
-        $additionalDataForCustomer = [
-            'previous_balance' => $previousCreditBalance?->running_amount ?? 0,
-            'balance' => $currentCreditBalance->running_amount,
-        ];
 
-        // $previewAmount = $currentCreditBalance?->amount ?? 0;
-        // $currency = $currentCreditBalance?->currency;
-        // $currencySymbol = $currency?->symbol ?? '$';
-        // $fractionDigit = $currency?->fraction_digit ?? 2;
-        // $amountColor = $previewAmount < 0 ? '#E74C3C' : '#27AE60';
-        // $previewAmountHtml = '<span style="color: ' . $amountColor . '; font-weight: 600;">' . ($previewAmount < 0 ? '-' : '') . $currencySymbol . number_format(abs($previewAmount), $fractionDigit) . '</span>';
-
-        // $previewBalanceAmountHtml = '<span style="color: ' . $amountColor . '; font-weight: 600;">' . $currencySymbol . number_format(abs($previewAmount), $fractionDigit) . '</span>';
-
-        // $symbol = $previewAmount > 0 ? '+' : '-';
-        // $paymentBalancePreview = '<span style="color: #333;">' . $currencySymbol . number_format(abs($previousCreditBalance?->running_amount ?? 0), $fractionDigit) . '</span> ' . $symbol . ' <span style="color: ' . $amountColor . '; font-weight: 600;">' . $previewBalanceAmountHtml . '</span> <span margin: 0 8px;">→</span> <span style="color: #333; font-weight: bold;">' . $currencySymbol . number_format(abs($currentCreditBalance->running_amount), $fractionDigit) . '</span>';
         // Extract currency information
         $currency = $currentCreditBalance?->currency;
         $currencySymbol = $currency?->symbol ?? '$';
@@ -96,20 +81,7 @@ class ProcessCreditBalanceNotification extends OrgAction
                 $customer->slug
             ]);
 
-        //  $customer->shop->fulfilment
-        //     ? route('grp.org.fulfilments.show.crm.customers.show', [
-        //         $customer->organisation->slug,
-        //         $customer->shop->fulfilment->slug,
-        //         $customer->fulfilmentCustomer->slug
-        //     ])
-        //     : route('grp.org.shops.show.crm.customers.show', [
-        //         $customer->organisation->slug,
-        //         $customer->shop->slug,
-        //         $customer->slug
-        //     ])
-
         $additionalDataForUser = [
-            'previous_balance' => $previousCreditBalance?->running_amount ?? 0,
             'balance' => $currentCreditBalance->running_amount,
             'customer_name' => $customer->name,
             'customer_link' => $customerLink,
@@ -118,6 +90,13 @@ class ProcessCreditBalanceNotification extends OrgAction
             'payment_reason' => $currentCreditBalance?->reason?->label() ?? 'N/A',
             'payment_balance_preview' => $paymentBalancePreview,
             'preview_amount' => $previewAmountHtml,
+        ];
+
+        $additionalDataForCustomer = [
+            'payment_type' => $currentCreditBalance?->type?->label() ?? 'N/A',
+            'payment_reason' => $currentCreditBalance?->reason?->label() ?? 'N/A',
+            'payment_note' => $currentCreditBalance?->notes ?? 'N/A',
+            'payment_balance_preview' => $paymentBalancePreview,
         ];
 
         SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
