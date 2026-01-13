@@ -20,16 +20,16 @@ const page = usePage()
 
 // Get currency from page props (organization or shop currency)
 const currency = computed(() => {
-    return page.props?.auth?.organisation?.currency?.code || 
-           page.props?.shop?.currency?.code || 
+    return page.props?.auth?.organisation?.currency?.code ||
+           page.props?.shop?.currency?.code ||
            'USD'
 })
 </script>
 
 <template>
-    <Table 
-        :resource="data" 
-        :name="tab" 
+    <Table
+        :resource="data"
+        :name="tab"
         class="mt-5"
     >
         <template #cell(period)="{ item }">
