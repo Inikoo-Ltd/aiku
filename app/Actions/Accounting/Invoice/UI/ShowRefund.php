@@ -282,6 +282,12 @@ class ShowRefund extends OrgAction
                 ]),
                 [
                     [
+                        'label'       => __('Net'),
+                        'price_total' => $refund->net_amount
+                    ]
+                ],
+                [
+                    [
                         'label'       => __('Tax'),
                         'price_total' => $refund->tax_amount
                     ]
