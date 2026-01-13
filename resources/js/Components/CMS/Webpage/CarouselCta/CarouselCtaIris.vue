@@ -53,9 +53,15 @@ const layout: any = inject("layout", {})
             <div class="grid grid-cols-1 md:grid-cols-2 w-full">
               <div class="relative w-full cursor-pointer overflow-hidden h-[250px] md:h-[400px]"
                   :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
-                <Image :src="data.image.source" :imageCover="true" :alt="data.image.alt || 'Image preview'"
-                  :imgAttributes="data.image.attributes" class="absolute inset-0 w-full h-full object-cover"
-                   />
+                <Image 
+                  :src="data.image.source" 
+                  :imageCover="true" 
+                  :alt="data.image.alt || 'Image preview'"
+                  :imgAttributes="data.image.attributes" 
+                  class="absolute inset-0 w-full h-full object-cover"
+                  :height="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.height"
+                  :width="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.width"
+                />
               </div>
 
               <div class="flex flex-col justify-center m-auto p-4"
