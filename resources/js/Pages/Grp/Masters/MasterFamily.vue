@@ -36,8 +36,8 @@ import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
 import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
-import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue"
 import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 
 library.add(
     faFolder,
@@ -45,7 +45,7 @@ library.add(
     faCameraRetro,
     faTag,
     faBullhorn,
-    faProjectDiagram,  
+    faProjectDiagram,
     faUser,
     faMoneyBillWave,
     faBrowser, faExclamationTriangle
@@ -65,9 +65,10 @@ const props = defineProps<{
     showcase: object
     details: object
     history?: object;
-    families?: object   
+    families?: object
     is_orphan?: boolean
     sales?:object
+    salesData?:object
     currency?:Object
     url_master?:routeType
     shopsData? :any
@@ -94,7 +95,7 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images : ImagesManagement,
-        sales: ProductCategorySales,
+        sales: ProductCategoryTimeSeriesTable,
         variants: TableMasterVariants,
     }
     return components[currentTab.value] ?? ModelDetails
@@ -124,7 +125,7 @@ const showDialog = ref(false);
             </Link>
             </div>
         </template>
-        
+
         <template #button-variants>
             <div v-if="!isPerfectFamily">
                 <Button :style="'create'" :label="trans('Variants')" :tooltip="trans('Unable to create new variant. Please fix data that are related to this Master Family')" :disabled="true"/>
@@ -137,7 +138,7 @@ const showDialog = ref(false);
 				@click="() => (isModalUploadOpen = true)"
 				:style="create"
 				:icon="faUpload"
-				v-tooltip="'upload excel'" 
+				v-tooltip="'upload excel'"
                 label="Upload Excel"
             />
 		</template>
@@ -171,11 +172,11 @@ const showDialog = ref(false);
         </Breadcrumb>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" />
 
-    <FormCreateMasterProduct 
-        :showDialog="showDialog" 
-        :storeProductRoute="storeProductRoute" 
+    <FormCreateMasterProduct
+        :showDialog="showDialog"
+        :storeProductRoute="storeProductRoute"
         @update:show-dialog="(value) => showDialog = value"
         :master-currency="currency"
         :shopsData="shopsData"
