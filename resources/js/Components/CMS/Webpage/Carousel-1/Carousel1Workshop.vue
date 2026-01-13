@@ -230,7 +230,6 @@ const responsiveOptions = computed(() => {
 
 .image-container {
   justify-content: v-bind('ImageContainer?.justifyContent || "center"') !important;
-  ;
 }
 
 .fade-enter-active,
