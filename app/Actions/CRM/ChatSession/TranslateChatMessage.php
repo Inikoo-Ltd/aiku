@@ -2,7 +2,6 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-
 use OpenAI;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Facades\Log;
@@ -22,8 +21,8 @@ class TranslateChatMessage
     public function handle(
         int $messageId,
         ?int $targetLanguageId = null,
-        ?string $requestFrom = null): void
-    {
+        ?string $requestFrom = null
+    ): void {
 
         $message = ChatMessage::find($messageId);
 
@@ -174,11 +173,14 @@ class TranslateChatMessage
                     'translated_text' => $translatedText
                 ]
             );
-            if($requestFrom !== 'agent'){
+
+            if (!in_array($requestFrom, ['translate-session', 'translate-single'])) {
                 $message->update(['message_text' => $translatedText]);
             }
 
-            BroadcastRealtimeChat::dispatch($message);
+            if ($requestFrom !== 'translate-session') {
+                BroadcastRealtimeChat::dispatch($message);
+            }
         }
     }
 

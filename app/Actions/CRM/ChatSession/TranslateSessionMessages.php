@@ -3,7 +3,10 @@
 namespace App\Actions\CRM\ChatSession;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Bus;
+use App\Events\BroadcastRealtimeChat;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -14,6 +17,7 @@ class TranslateSessionMessages
 
     public function handle(ChatSession $chatSession, int $targetLanguageId): void
     {
+
         $messages = $chatSession->messages()
             ->whereIn('sender_type', [ChatSenderTypeEnum::USER, ChatSenderTypeEnum::GUEST])
             ->whereDoesntHave('translations', function ($query) use ($targetLanguageId) {
@@ -25,9 +29,27 @@ class TranslateSessionMessages
             return;
         }
 
+        $jobs = [];
+
         foreach ($messages as $message) {
-            TranslateChatMessage::dispatch(messageId: $message->id, targetLanguageId: $targetLanguageId, requestFrom: 'agent');
+            $jobs[] = TranslateChatMessage::makeJob(
+                $message->id,
+                $targetLanguageId,
+                'translate-session'
+            );
         }
+
+        $messageIds = $messages->pluck('id')->toArray();
+
+        $jobs[] = function () use ($messageIds) {
+            $translatedMessages = ChatMessage::whereIn('id', $messageIds)->get();
+
+            foreach ($translatedMessages as $msg) {
+                BroadcastRealtimeChat::dispatch($msg);
+            }
+        };
+
+        Bus::chain($jobs)->dispatch();
     }
 
     public function asController(ActionRequest $request, ChatSession $chatSession): JsonResponse
