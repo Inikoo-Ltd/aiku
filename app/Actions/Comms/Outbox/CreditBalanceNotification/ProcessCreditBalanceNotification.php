@@ -88,15 +88,16 @@ class ProcessCreditBalanceNotification extends OrgAction
             'payment_type' => $currentCreditBalance?->type?->label() ?? 'N/A',
             'payment_note' => $currentCreditBalance?->notes ?? 'N/A',
             'payment_reason' => $currentCreditBalance?->reason?->label() ?? 'N/A',
-            'payment_balance_preview' => $paymentBalancePreview,
-            'preview_amount' => $previewAmountHtml,
+            'payment_balance_preview' => $paymentBalancePreview ?? 'N/A',
+            'preview_amount' => $previewAmountHtml ?? 'N/A',
         ];
 
         $additionalDataForCustomer = [
             'payment_type' => $currentCreditBalance?->type?->label() ?? 'N/A',
             'payment_reason' => $currentCreditBalance?->reason?->label() ?? 'N/A',
             'payment_note' => $currentCreditBalance?->notes ?? 'N/A',
-            'payment_balance_preview' => $paymentBalancePreview,
+            'payment_balance_preview' => $paymentBalancePreview ?? 'N/A',
+            'preview_amount' => $previewAmountHtml ?? 'N/A',
         ];
 
         SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
