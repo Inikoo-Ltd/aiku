@@ -211,6 +211,10 @@ class ShowMasterCollection extends GrpAction
                     fn () => GetMasterCollectionShowcase::run($masterCollection)
                     : Inertia::lazy(fn () => GetMasterCollectionShowcase::run($masterCollection)),
 
+                'salesData' => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
+                    fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)
+                    : Inertia::lazy(fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)),
+
                 MasterCollectionTabsEnum::FAMILIES->value => $this->tab == MasterCollectionTabsEnum::FAMILIES->value ?
                     fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))
                     : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))),
