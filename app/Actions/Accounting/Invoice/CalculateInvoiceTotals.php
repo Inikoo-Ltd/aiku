@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 
 class CalculateInvoiceTotals extends OrgAction
@@ -39,10 +40,14 @@ class CalculateInvoiceTotals extends OrgAction
         $chargeNet     = $transactions->where('model_type', 'Charge')->sum('net_amount');
         $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
 
-
         $netAmount   = $rentalNet + $goodsNet + $serviceNet + $shippingNet + $chargeNet;
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross;
         $taxAmount   = $netAmount * $taxRate;
+
+        if($invoice->type === InvoiceTypeEnum::REFUND) {
+            $taxAmount = -$invoice->originalInvoice?->tax_amount;
+        }
+
         $totalAmount = $netAmount + $taxAmount;
 
         data_set($modelData, 'rental_amount', $rentalNet);

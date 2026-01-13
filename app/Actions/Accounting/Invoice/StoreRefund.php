@@ -45,16 +45,17 @@ class StoreRefund extends OrgAction
             $reference = $invoice->reference.'-refund-'.$count;
         }
 
+        $amount = -$invoice->tax_amount;
 
         data_set($modelData, 'reference', $reference);
         data_set($modelData, 'type', InvoiceTypeEnum::REFUND);
-        data_set($modelData, 'total_amount', 0);
-        data_set($modelData, 'gross_amount', 0);
+        data_set($modelData, 'total_amount', $amount);
+        data_set($modelData, 'gross_amount', $amount);
         data_set($modelData, 'goods_amount', 0);
-        data_set($modelData, 'net_amount', 0);
-        data_set($modelData, 'grp_net_amount', 0);
-        data_set($modelData, 'org_net_amount', 0);
-        data_set($modelData, 'tax_amount', $invoice->tax_amount);
+        data_set($modelData, 'net_amount', $amount);
+        data_set($modelData, 'grp_net_amount', $amount);
+        data_set($modelData, 'org_net_amount', $amount);
+        data_set($modelData, 'tax_amount', $amount);
         data_set($modelData, 'in_process', true);
         data_set($modelData, 'original_invoice_id', $invoice->id);
         data_set($modelData, 'customer_id', $invoice->customer_id);
