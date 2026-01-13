@@ -38,6 +38,7 @@ class EditOffer extends OrgAction
         $offerResource = OfferResource::make($offer)->resolve();
         $percentage_off = $offerResource['data_allowance_signature']['percentage_off'] * 100;
 
+        // dd($offer);
         return Inertia::render(
             'EditModel',
             [
@@ -102,11 +103,12 @@ class EditOffer extends OrgAction
                                         'required'    => true,
                                         // 'noSaveButton' => true,
                                         'full'    => true,
+                                        'currency_code' => $this->organisation->currency->code,
                                         'offer'         => $offer,
                                         'value'       => [
                                             'trigger_item_quantity' => $offer->trigger_data['item_quantity'] ?? 0,
-                                            // 'min_order' => 5,
-                                            // 'min_amount' => 5,
+                                            'trigger_order_number' => $offer->trigger_data['order_number'] ?? 0,
+                                            'trigger_min_amount' => $offer->trigger_data['min_amount'] ?? 0,
                                             'percentage_off' => $percentage_off,
                                         ],
                                     ],

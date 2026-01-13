@@ -33,6 +33,7 @@ const props = defineProps<{
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
+        currency_code: string
     }
 }>()
 
@@ -113,11 +114,14 @@ const offerType = props.fieldData.offer.type
 
                 <div class="col-span-4">
                     <InputNumber
-                        vxmodel="value"
-                        :modelValue="5"
-                        inputId="minmax"
-                        :min="0"
-                        placeholder="Enter between 0-100"
+                        :modelValue="get(form, [fieldName, 'trigger_min_amount'], 1)"
+                        @input="(e) => set(form, [fieldName, 'trigger_min_amount'], e.value)"
+                        inputId="trigger_min_amount"
+                        :min="1"
+                        placeholder="Enter a number"
+                        mode="currency"
+                        :currency="props.fieldData?.currency_code || ''"
+                        :max-fraction-digits="2"
                     />
                 </div>
             </div>
@@ -131,11 +135,12 @@ const offerType = props.fieldData.offer.type
 
                 <div class="col-span-4">
                     <InputNumber
-                        vxmodel="value"
-                        :modelValue="5"
-                        inputId="minmax"
+                        :modelValue="get(form, [fieldName, 'trigger_order_number'], 1)"
+                        @input="(e) => set(form, [fieldName, 'trigger_order_number'], e.value)"
+                        inputId="trigger_order_number"
                         :min="1"
-                        placeholder="Enter between 0-100"
+                        placeholder="Enter a number"
+                        :suffix="' ' + (get(form, [fieldName, 'trigger_order_number'], 1) > 1 ? trans('orders') : trans('order'))"
                     />
                 </div>
             </div>

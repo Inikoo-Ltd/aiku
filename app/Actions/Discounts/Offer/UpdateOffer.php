@@ -34,6 +34,7 @@ class UpdateOffer extends OrgAction
     public function handle(Offer $offer, array $modelData): Offer
     {
         // dd($offer);
+        $newTriggerData = null;
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(
                 $offer->trigger_data,
@@ -79,7 +80,7 @@ class UpdateOffer extends OrgAction
 
             // Set to trigger_data.item_quantity
             if (isset($editOffer['trigger_item_quantity']) && $editOffer['trigger_item_quantity'] !== '') {
-                $triggerData = $offer['trigger_data'];
+                $triggerData = $newTriggerData;
 
                 // Make sure it is an array
                 if (!is_array($triggerData)) {
@@ -90,13 +91,46 @@ class UpdateOffer extends OrgAction
                 $triggerData['item_quantity'] = (int) $editOffer['trigger_item_quantity'];
 
                 // Assign back (Laravel will re-encode it to JSON automatically)
-                $modelData['trigger_data'] = $triggerData;
+                $newTriggerData = $triggerData;
+            }
+
+            // Set to trigger_data.min_amount
+            if (isset($editOffer['trigger_min_amount']) && $editOffer['trigger_min_amount'] !== '') {
+                $triggerData = $newTriggerData;
+
+                // Make sure it is an array
+                if (!is_array($triggerData)) {
+                    $triggerData = [];
+                }
+
+                // Set or update min_amount
+                $triggerData['min_amount'] = (int) $editOffer['trigger_min_amount'];
+
+                // Assign back (Laravel will re-encode it to JSON automatically)
+                $newTriggerData = $triggerData;
+            }
+
+            // Set to trigger_data.order_number
+            if (isset($editOffer['trigger_order_number']) && $editOffer['trigger_order_number'] !== '') {
+                $triggerData = $newTriggerData;
+
+                // Make sure it is an array
+                if (!is_array($triggerData)) {
+                    $triggerData = [];
+                }
+
+                // Set or update order_number
+                $triggerData['order_number'] = (int) $editOffer['trigger_order_number'];
+
+                // Assign back (Laravel will re-encode it to JSON automatically)
+                $newTriggerData = $triggerData;
             }
 
             // Remove edit_offer from modelData
+            $modelData['trigger_data'] = $newTriggerData;
             unset($modelData['edit_offer']);
         }
-
+// dd($modelData);
 
         $offer = $this->update($offer, $modelData);
 
