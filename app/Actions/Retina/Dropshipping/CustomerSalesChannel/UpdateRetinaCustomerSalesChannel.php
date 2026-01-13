@@ -68,7 +68,10 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
             'return_accepted' => ['sometimes', 'boolean'],
             'return_payer' => ['sometimes', 'string'],
             'return_within' => ['sometimes', 'integer'],
-            'return_description' => ['nullable', 'string']
+            'return_description' => ['nullable', 'string'],
+
+            'pricing_type' => ['sometimes', 'string'],
+            'pricing_value' => ['sometimes', 'string']
         ];
     }
 
