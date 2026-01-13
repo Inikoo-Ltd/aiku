@@ -25,7 +25,6 @@ enum OutboxMergeTagsEnum: string
     case UNSUBSCRIBE = 'Unsubscribe';
     case REJECTED_NOTES = 'Rejected Notes';
     case PRODUCTS = 'Products';
-    case BALANCE = 'Balance';
     case PAYMENT_BALANCE_PREVIEW = 'Payment Balance Preview';
     case PAYMENT_NOTE = 'Payment Note';
     case PAYMENT_REASON = 'Payment Reason';
@@ -78,10 +77,6 @@ enum OutboxMergeTagsEnum: string
             [
                 'name'  => __('Products'),
                 'value' => '[Products]'
-            ],
-            [
-                'name'  => __('Balance'),
-                'value' => '[Balance]'
             ],
             [
                 'name'  => __('Preview Amount'),
