@@ -47,6 +47,18 @@ class StorePortfolio extends OrgAction
     {
         $rrp = $item->rrp ?? 0;
 
+        $pricingType = Arr::get($customerSalesChannel->settings, 'pricing.type');
+        $pricingValue = Arr::get($customerSalesChannel->settings, 'pricing.value');
+
+        if($pricingType && $pricingValue) {
+            $addedValue = $pricingValue;
+            if($pricingType === 'percent') {
+                $addedValue = $rrp * (1 + $pricingValue / 100);
+            }
+
+            $rrp = $rrp + $addedValue;
+        }
+
         data_set($modelData, 'last_added_at', now(), overwrite: false);
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
         data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
