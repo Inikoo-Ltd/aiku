@@ -43,14 +43,12 @@ const emits = defineEmits<{
   (e: 'onLoadImage'): void
 }>()
 
-/* ---------------- DPR ---------------- */
 
 const dpr =
   typeof window !== 'undefined'
     ? Math.min(window.devicePixelRatio || 1, MAX_DPR)
     : 1
 
-/* ---------------- Utils ---------------- */
 
 const parsePx = (value?: string): number | undefined => {
   if (!value) return undefined
@@ -62,7 +60,6 @@ const parsePx = (value?: string): number | undefined => {
 const baseWidth = computed(() => parsePx(props.width))
 const baseHeight = computed(() => parsePx(props.height))
 
-/* ---------------- Responsive widths ---------------- */
 
 const responsiveWidths = computed<ResponsiveSize>(() => {
   if (props.responsive) return props.responsive
@@ -91,7 +88,6 @@ const responsiveWidths = computed<ResponsiveSize>(() => {
   }
 })
 
-/* ---------------- Responsive heights ---------------- */
 
 const responsiveHeights = computed(() => {
   const ratio =
@@ -107,7 +103,6 @@ const responsiveHeights = computed(() => {
   )
 })
 
-/* ---------------- Cloudflare URL ---------------- */
 
 const buildCFUrl = (url: string, width?: number, height?: number) => {
   const params = new URLSearchParams()
@@ -121,7 +116,7 @@ const buildCFUrl = (url: string, width?: number, height?: number) => {
   return `${url}?${params.toString()}`
 }
 
-/* ---------------- SrcSet ---------------- */
+
 
 const buildSrcSet = (url?: string) => {
   if (!props.responsiveEnabled || !url) return undefined
@@ -139,7 +134,7 @@ const avif = computed(() => buildSrcSet(props.src?.avif))
 const webp = computed(() => buildSrcSet(props.src?.webp))
 const original = computed(() => buildSrcSet(props.src?.original))
 
-/* ---------------- Default src ---------------- */
+
 
 const defaultSrc = computed(() => {
   const w = responsiveWidths.value.desktop
@@ -152,7 +147,6 @@ const defaultSrc = computed(() => {
   )
 })
 
-/* ---------------- Sizes ---------------- */
 
 const sizes = computed(() => {
   if (!props.responsiveEnabled) return undefined

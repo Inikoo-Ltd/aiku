@@ -45,6 +45,7 @@ class MasterProductsResource extends JsonResource
         // Add this check so that this won't disturb usage in other place. Needed this for the checks done during variant creation.
         if (isset($this->is_variant_leader)) {
             $allChildHasWeb = true;
+            $hasValidProduct = false;
             foreach ($this->products as $product) {
                 if (!$product->shop || $product->shop->state == ShopStateEnum::CLOSED) {
                     continue;
