@@ -48,8 +48,8 @@ enum OutboxCodeEnum: string
     case PALLET_DELETED = 'pallet_deleted';
     case INVITE = 'invite';
     case TEST = 'test';
-    case CREDIT_BALANCE_MODIFIED_TO_CUSTOMER = 'credit_balance_modified_to_customer';
-    case CREDIT_BALANCE_MODIFIED_TO_USER = 'credit_balance_modified_to_user';
+    case CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER = 'credit_balance_notification_for_customer';
+    case CREDIT_BALANCE_NOTIFICATION_FOR_USER = 'credit_balance_notification_for_user';
 
 
     public function type(): OutboxTypeEnum
@@ -75,7 +75,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -97,7 +97,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER
             => OutboxTypeEnum::USER_NOTIFICATION,
             OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH
             => OutboxTypeEnum::PUSH,
@@ -139,8 +139,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELIVERY_DELETED => 'Pallet delivery deleted',
             OutboxCodeEnum::PALLET_RETURN_DELETED => 'Pallet return deleted',
             OutboxCodeEnum::PALLET_DELETED => 'Pallet deleted',
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER => 'Credit balance modified to user',
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER => 'Credit balance modified to customer',
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER => 'Credit balance notification for user',
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER => 'Credit balance notification for customer',
         };
     }
 
@@ -180,8 +180,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELIVERY_DELETED => 'Pallet delivery deleted',
             OutboxCodeEnum::PALLET_RETURN_DELETED => 'Pallet return deleted',
             OutboxCodeEnum::PALLET_DELETED => 'Pallet deleted',
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER => 'Credit balance modified to user',
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER => 'Credit balance modified to customer',
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER => 'Credit balance notification for customer',
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER => 'Credit balance notification for user',
         };
     }
 
@@ -208,8 +208,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVITE,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             // NOTE: need confirm to raul
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             => ['Fulfilment', 'Shop'],
 
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
@@ -233,9 +233,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::PASSWORD_REMINDER,
             //NOTE: need confirm to raul
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER,
-
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             => ['b2b', 'b2c', 'dropshipping', 'fulfilment'],
 
             OutboxCodeEnum::REGISTRATION,
@@ -288,7 +287,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             => OutboxBuilderEnum::BLADE,
             default => null
         };
@@ -324,9 +323,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER,
-
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -361,8 +359,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             => EmailOngoingRunTypeEnum::TRANSACTIONAL,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -400,7 +398,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
 
@@ -409,7 +407,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::NEW_ORDER,
             OutboxCodeEnum::NEW_CUSTOMER,
-            OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             => PostRoomCodeEnum::USER_NOTIFICATION,
 
             OutboxCodeEnum::INVITE
@@ -429,6 +427,4 @@ enum OutboxCodeEnum: string
             => PostRoomCodeEnum::TEST,
         };
     }
-
-
 }

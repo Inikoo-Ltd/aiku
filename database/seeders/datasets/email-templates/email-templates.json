@@ -422,10 +422,10 @@
   },
    {
     "outboxes": [
-      "credit_balance_modified_to_customer"
+      "credit_balance_notification_for_customer"
     ],
-    "name": "Credit balance modified to customer",
-    "content": "beefree_credit_balance_modified_to_customer.json",
+    "name": "Credit balance notification for customer",
+    "content": "beefree_credit_balance_notification_for_customer.json",
     "builder": "beefree",
     "arguments": [
       "customer"
@@ -433,10 +433,10 @@
   },
    {
     "outboxes": [
-      "credit_balance_modified_to_user"
+      "credit_balance_notification_for_user"
     ],
-    "name": "Credit balance modified to user",
-    "content": "credit_balance_modified_to_user.blade.php",
+    "name": "Credit balance notification for user",
+    "content": "credit_balance_notification_for_user.blade.php",
     "builder": "blade",
     "arguments": [
       "customer"
