@@ -2,13 +2,13 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Bus;
 use Lorisleiva\Actions\ActionRequest;
+use App\Events\TranslationChatIndicator;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 
 class TranslateSessionMessages
 {
@@ -24,12 +24,33 @@ class TranslateSessionMessages
             ->get();
 
         if ($messages->isEmpty()) {
-            return;
+            TranslationChatIndicator::dispatch($chatSession, $targetLanguageId);
         }
 
+        $jobs = [];
+
         foreach ($messages as $message) {
-            TranslateChatMessage::run($message, $targetLanguageId);
+            $jobs[] = TranslateChatMessage::makeJob(
+                $message->id,
+                $targetLanguageId,
+                'translate-session'
+            );
         }
+
+
+        $chatSessionId = $chatSession->id;
+
+        $jobs[] = function () use ($chatSessionId, $targetLanguageId) {
+
+
+            $session = ChatSession::find($chatSessionId);
+
+            if ($session) {
+                TranslationChatIndicator::dispatch($session, $targetLanguageId);
+            }
+        };
+
+        Bus::chain($jobs)->dispatch();
     }
 
     public function asController(ActionRequest $request, ChatSession $chatSession): JsonResponse

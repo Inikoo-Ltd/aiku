@@ -9,7 +9,6 @@ use App\Events\BroadcastRealtimeChat;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
@@ -17,8 +16,20 @@ class TranslateChatMessage
 {
     use AsAction;
 
-    public function handle(ChatMessage $message, ?int $targetLanguageId = null): void
-    {
+    public string $jobQueue = 'analytics';
+
+    public function handle(
+        int $messageId,
+        ?int $targetLanguageId = null,
+        ?string $requestFrom = null
+    ): void {
+
+        $message = ChatMessage::find($messageId);
+
+        if (!$message) {
+            Log::warning('Message not found', ['id' => $messageId]);
+            return;
+        }
 
         if (empty($message->original_text) && empty($message->message_text)) {
             return;
@@ -27,26 +38,27 @@ class TranslateChatMessage
         $textToProcess = $message->original_text ?? $message->message_text;
         $session = $message->chatSession;
 
-
         if ($this->isUserMessage($message)) {
             $this->handleUserLanguageDetection($message, $session, $textToProcess);
         }
 
-
-        $targetLangId = $this->determineTargetLanguage($message, $session, $targetLanguageId);
+        $targetLangId = $this->determineTargetLanguage(
+            $message,
+            $session,
+            $targetLanguageId
+        );
 
 
         if (!$targetLangId) {
             return;
         }
 
-
-        if ($message->original_language_id && $targetLangId == $message->original_language_id) {
+        if ($message->original_language_id === $targetLangId) {
             return;
         }
 
+        $this->performTranslation($message, $textToProcess, $targetLangId, $requestFrom);
 
-        $this->performTranslation($message, $textToProcess, $targetLangId);
     }
 
     /**
@@ -54,7 +66,7 @@ class TranslateChatMessage
      */
     protected function isUserMessage(ChatMessage $message): bool
     {
-        return $message->isFromUser() || $message->sender_type === ChatSenderTypeEnum::GUEST;
+        return $message->isFromUser() || $message->isFromGuest();
     }
 
     /**
@@ -90,7 +102,6 @@ class TranslateChatMessage
      */
     protected function updateSessionLanguage(ChatSession $session, int $languageId): void
     {
-
         if ($session->active_user_language_id !== $languageId) {
             $session->update([
                 'user_language_id' => $languageId,
@@ -107,7 +118,6 @@ class TranslateChatMessage
         if ($explicitTargetId) {
             return $explicitTargetId;
         }
-
 
         if ($this->isUserMessage($message)) {
 
@@ -139,7 +149,7 @@ class TranslateChatMessage
     /**
      *
      */
-    protected function performTranslation(ChatMessage $message, string $text, int $targetLangId): void
+    protected function performTranslation(ChatMessage $message, string $text, int $targetLangId, ?string $requestFrom = null): void
     {
         $targetLang = Language::find($targetLangId);
         $originalLang = Language::find($message->original_language_id);
@@ -164,8 +174,13 @@ class TranslateChatMessage
                 ]
             );
 
-            $message->update(['message_text' => $translatedText]);
-            // BroadcastRealtimeChat::dispatch($message);
+            if (!in_array($requestFrom, ['translate-session', 'translate-single'])) {
+                $message->update(['message_text' => $translatedText]);
+            }
+
+            if ($requestFrom !== 'translate-session') {
+                BroadcastRealtimeChat::dispatch($message);
+            }
         }
     }
 
