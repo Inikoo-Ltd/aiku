@@ -36,6 +36,8 @@ class IndexRefundTransactions extends OrgAction
         $queryBuilder->where('invoice_id', $refund->id);
         $queryBuilder->leftJoin('historic_assets', 'invoice_transactions.historic_asset_id', 'historic_assets.id');
         $queryBuilder->leftJoin('products', 'invoice_transactions.model_id', 'products.id');
+        $queryBuilder->leftJoin('invoices', 'invoice_transactions.invoice_id', 'invoices.id');
+        $queryBuilder->leftJoin('currencies', 'invoices.currency_id', 'currencies.id');
 
         $queryBuilder->select(
             [
@@ -43,6 +45,8 @@ class IndexRefundTransactions extends OrgAction
                 'invoice_transactions.in_process',
                 'invoice_transactions.historic_asset_id',
                 'invoice_transactions.tax_amount',
+                'currencies.code as currency_code',
+                'invoice_transactions.is_tax_only',
                 'invoice_transactions.is_tax_only',
                 'historic_assets.asset_id',
                 'historic_assets.code',
