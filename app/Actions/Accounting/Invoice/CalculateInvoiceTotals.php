@@ -13,14 +13,13 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 
 class CalculateInvoiceTotals extends OrgAction
 {
     public function handle(Invoice $invoice): Invoice
     {
-        if($invoice->is_tax_only){
+        if ($invoice->is_tax_only) {
             return CalculateInvoiceTotalsTaxOnly::run($invoice);
         }
 

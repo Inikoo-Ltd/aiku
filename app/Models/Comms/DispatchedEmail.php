@@ -56,9 +56,9 @@ use Illuminate\Support\Facades\Auth;
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
  * @property-read \App\Models\Comms\EmailCopy|null $emailCopy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailTrackingEvent> $emailTrackingEvents
- * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
- * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Model|\Eloquent $parent
  * @property-read Model|\Eloquent|null $recipient
