@@ -73,7 +73,7 @@ class SendChatMessage
             $chatMessage
         );
 
-        TranslateChatMessage::run($chatMessage);
+        TranslateChatMessage::dispatch(messageId: $chatMessage->id);
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch();
 

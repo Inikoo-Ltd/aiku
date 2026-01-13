@@ -2,13 +2,11 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 
 class TranslateSessionMessages
 {
@@ -28,7 +26,7 @@ class TranslateSessionMessages
         }
 
         foreach ($messages as $message) {
-            TranslateChatMessage::run($message, $targetLanguageId);
+            TranslateChatMessage::dispatch(messageId: $message->id, targetLanguageId: $targetLanguageId, requestFrom: 'agent');
         }
     }
 

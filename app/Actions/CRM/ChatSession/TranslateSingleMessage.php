@@ -22,7 +22,7 @@ class TranslateSingleMessage
             return;
         }
 
-        TranslateChatMessage::run($chatMessage, $targetLanguageId);
+        TranslateChatMessage::dispatch(messageId: $chatMessage->id, targetLanguageId: $targetLanguageId, requestFrom: 'agent');
     }
 
     public function asController(ActionRequest $request, ChatMessage $chatMessage): JsonResponse

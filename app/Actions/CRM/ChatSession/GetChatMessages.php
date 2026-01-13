@@ -19,6 +19,7 @@ class GetChatMessages
     {
         return [
             'is_read' => ['sometimes', 'boolean'],
+            'translation_language_id' => ['sometimes', 'integer', 'exists:languages,id'],
             'sender_type' => [
                 'sometimes',
                 Rule::in(array_column(ChatSenderTypeEnum::cases(), 'value')),
