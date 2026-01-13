@@ -46,7 +46,7 @@ class EditOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit Offer'),
+                'title'       => __('Edit Offer') . ' ' . $offer->code,
                 'pageHead'    => [
                     'title' => $offer->name,
                     'model' => __('Edit Offer'),

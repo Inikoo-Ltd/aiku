@@ -94,10 +94,12 @@ const offerType = props.fieldData.offer.type
 
                 <div class="col-span-4">
                     <InputNumber
-                        v-model="form[fieldName].trigger_item_quantity"
+                        :modelValue="get(form, [fieldName, 'trigger_item_quantity'], 1)"
+                        @input="(e) => set(form, [fieldName, 'trigger_item_quantity'], e.value)"
                         inputId="trigger_item_quantity"
                         :min="1"
                         placeholder="Enter a number"
+                        :suffix="' ' + (get(form, [fieldName, 'trigger_item_quantity'], 1) > 1 ? trans('items') : trans('item'))"
                     />
                 </div>
             </div>
@@ -147,7 +149,8 @@ const offerType = props.fieldData.offer.type
 
                 <div class="col-span-4">
                     <InputNumber
-                        v-model="form[fieldName]['percentage_off']"
+                        :modelValue="get(form, [fieldName, 'percentage_off'], 0)"
+                        @input="(e) => set(form, [fieldName, 'percentage_off'], e.value)"
                         inputId="percentage_off"
                         :min="0"
                         :max="100"
