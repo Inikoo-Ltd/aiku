@@ -23,8 +23,8 @@ class CalculateInvoiceTotalsTaxOnly extends OrgAction
         $taxAmount   = $transactions->sum('tax_amount');
         $totalAmount   = $transactions->sum('amount_total');
 
-        data_set($modelData, 'tax_amount', $taxAmount);
-        data_set($modelData, 'total_amount', $totalAmount);
+        data_set($modelData, 'tax_amount', -$taxAmount);
+        data_set($modelData, 'total_amount', -$totalAmount);
 
         $invoice->update($modelData);
 
