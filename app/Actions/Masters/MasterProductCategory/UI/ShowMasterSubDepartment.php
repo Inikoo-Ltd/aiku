@@ -27,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
+use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 
 class ShowMasterSubDepartment extends GrpAction
 {
@@ -196,6 +197,14 @@ class ShowMasterSubDepartment extends GrpAction
                     fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))
                     : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))),
 
+                'salesData' => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
+                    fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)),
+
+                MasterSubDepartmentTabsEnum::SALES->value => $this->tab == MasterSubDepartmentTabsEnum::SALES->value ?
+                    fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterSubDepartment, MasterSubDepartmentTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterSubDepartment, MasterSubDepartmentTabsEnum::SALES->value))),
+
                 MasterSubDepartmentTabsEnum::HISTORY->value => $this->tab == MasterSubDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment, MasterSubDepartmentTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment, MasterSubDepartmentTabsEnum::HISTORY->value))),
@@ -208,6 +217,7 @@ class ShowMasterSubDepartment extends GrpAction
             ]
         )
             ->table(IndexSubDepartments::make()->tableStructure(parent: $masterSubDepartment, prefix: MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value))
+            ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterSubDepartmentTabsEnum::SALES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterSubDepartmentTabsEnum::HISTORY->value));
     }
 
