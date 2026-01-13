@@ -29,6 +29,7 @@ interface GetMessagesParams {
     limit: number
     request_from: string
     cursor?: string | null
+    translation_language_id?: number
 }
 
 const props = defineProps<{
@@ -133,8 +134,6 @@ const resendMessage = async (msg: LocalChatMessage) => {
     }
 }
 
-
-
 const getMessages = async (loadMore = false) => {
     if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
 
@@ -148,6 +147,10 @@ const getMessages = async (loadMore = false) => {
 
     if (loadMore && nextCursor.value) {
         params.cursor = nextCursor.value
+    }
+
+    if (selectedLanguageId.value) {
+        params.translation_language_id = selectedLanguageId.value
     }
 
     const { data } = await axios.get(
@@ -201,9 +204,11 @@ const stopSocket = () => {
     chatChannel?.stopListening(".message")
     chatChannel?.stopListening(".typing")
     chatChannel?.stopListening(".messages.read")
+    chatChannel?.stopListening(".translation")
     chatChannel = null
 }
 
+const isTranslatingAll = ref(false)
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
 
@@ -220,9 +225,15 @@ const initSocket = () => {
         )
 
         if (index !== -1) {
-            messagesLocal.value[index] = { ...message, _status: "sent" }
+            messagesLocal.value[index] = {
+                ...message,
+                _status: "sent",
+            }
         } else {
-            messagesLocal.value.push({ ...message, _status: "sent" })
+            messagesLocal.value.push({
+                ...message,
+                _status: "sent",
+            })
         }
 
         if (message.sender_type !== "agent") {
@@ -261,6 +272,12 @@ const initSocket = () => {
         remoteTypingTimeout = setTimeout(() => {
             remoteTypingUser.value = null
         }, 800)
+    })
+
+    chatChannel.listen(".translation", async (event: any) => {
+        isTranslatingAll.value = false
+
+        await getMessages()
     })
 }
 
@@ -348,7 +365,7 @@ const translateAllMessage = async () => {
         canLoadMore.value = false
 
         await getMessages()
-
+        isTranslatingAll.value = true
     } catch (e) {
         console.error("Translate failed", e)
     } finally {
@@ -370,6 +387,7 @@ onUnmounted(() => {
 
 watch(selectedLanguage, (code) => {
     if (!code) return
+    initSocket()
     translateAllMessage()
 })
 
@@ -441,6 +459,21 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </header>
 
+        <div v-if="isTranslatingAll" class="sticky top-0 z-10 bg-white/90 backdrop-blur
+            border-b border-gray-200 px-4 py-3">
+
+            <div class="flex items-center justify-center gap-3 text-sm text-gray-600">
+                <LoadingIcon class="w-4 h-4 animate-spin" />
+                <div class="flex flex-col leading-tight">
+                    <span class="font-medium">Updating translations</span>
+                    <span class="text-xs text-gray-400">
+                        Messages will refresh automatically
+                    </span>
+                </div>
+            </div>
+        </div>
+
+
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
             <template v-for="(msgs, date) in groupedMessages" :key="date">
@@ -467,6 +500,8 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </template>
         </div>
+
+
 
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
             {{ remoteTypingUser }} {{ trans("is typing...") }}
