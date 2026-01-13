@@ -44,10 +44,6 @@ class CalculateInvoiceTotals extends OrgAction
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross;
         $taxAmount   = $netAmount * $taxRate;
 
-        if($invoice->type === InvoiceTypeEnum::REFUND) {
-            $taxAmount = -$invoice->originalInvoice?->tax_amount;
-        }
-
         $totalAmount = $netAmount + $taxAmount;
 
         data_set($modelData, 'rental_amount', $rentalNet);
