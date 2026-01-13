@@ -23,6 +23,6 @@ class SendCreditBalanceEmailToCustomer extends OrgAction
 
     public function handle(Customer $customer, array $additionalData = []): DispatchedEmail
     {
-        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_CUSTOMER, $additionalData);
+        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER, $additionalData);
     }
 }

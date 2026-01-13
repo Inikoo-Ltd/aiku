@@ -22,7 +22,7 @@ class SendCreditBalanceEmailToUser extends OrgAction
 
     public function handle(Customer $customer, array $additionalData = []): void
     {
-        $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::CREDIT_BALANCE_MODIFIED_TO_USER)->first();
+        $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER)->first();
         $this->sendOutboxEmailToSubscribers($outbox, $additionalData);
     }
 }
