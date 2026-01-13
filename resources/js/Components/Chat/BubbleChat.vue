@@ -9,23 +9,22 @@ type MessageStatus = "sending" | "sent" | "failed"
 type ViewerType = "user" | "agent"
 
 interface Message {
-    sender_type: SenderType
-    message_text: string
-    created_at: string
-    is_read?: boolean
-    _status?: MessageStatus
+	sender_type: SenderType
+	message_text: string
+	created_at: string
+	is_read?: boolean
+	_status?: MessageStatus
 }
 
-const props = defineProps<{ 
-    message: Message 
-    viewerType: ViewerType
+const props = defineProps<{
+	message: Message
+	viewerType: ViewerType
 }>()
 
 const layout = inject<any>("layout")
 
-const isUser = computed(() =>
-    props.message.sender_type === "guest" ||
-    props.message.sender_type === "user"
+const isUser = computed(
+	() => props.message.sender_type === "guest" || props.message.sender_type === "user"
 )
 
 const isFromViewer = computed(() => {
@@ -44,24 +43,20 @@ const bubbleClass = computed(() => ({
 	"bubble-system": props.message.sender_type === "system",
 }))
 
-
 const time = computed(() =>
-    new Date(props.message.created_at).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-    })
+	new Date(props.message.created_at).toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+	})
 )
 
-const readIcon = computed(() =>
-    props.message.is_read ? faCheckDouble : faCheck
-)
+const readIcon = computed(() => (props.message.is_read ? faCheckDouble : faCheck))
 </script>
 
 <template>
 	<div
 		class="flex flex-col gap-0.5 text-sm leading-snug shadow-sm max-w-[78%] px-2.5 py-1.5 rounded-xl"
-		:class="bubbleClass"
-	>
+		:class="bubbleClass">
 		<p class="whitespace-pre-wrap break-words">
 			{{ message.message_text }}
 		</p>
@@ -75,13 +70,12 @@ const readIcon = computed(() =>
 				<LoadingIcon />
 			</span>
 
-			<span v-if="isUser && !isSending" class="leading-none">
+			<span v-if="!isSending && isFromViewer" class="leading-none">
 				<FontAwesomeIcon :icon="readIcon" />
 			</span>
 		</div>
 	</div>
 </template>
-
 
 <style scoped>
 .bubble-primary {
