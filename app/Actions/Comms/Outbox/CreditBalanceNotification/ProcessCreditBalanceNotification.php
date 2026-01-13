@@ -33,32 +33,90 @@ class ProcessCreditBalanceNotification extends OrgAction
             'balance' => $currentCreditBalance->running_amount,
         ];
 
-        $previewAmount = $currentCreditBalance?->amount ?? 0;
-        $currencySymbol = $currentCreditBalance?->currency?->symbol ?? '$';
-        $amountColor = $previewAmount < 0 ? '#E74C3C' : '#27AE60';
-        $previewAmountHtml = '<span style="color: ' . $amountColor . '; font-weight: 600;">' . ($previewAmount < 0 ? '-' : '') . $currencySymbol . number_format(abs($previewAmount), 2) . '</span>';
+        // $previewAmount = $currentCreditBalance?->amount ?? 0;
+        // $currency = $currentCreditBalance?->currency;
+        // $currencySymbol = $currency?->symbol ?? '$';
+        // $fractionDigit = $currency?->fraction_digit ?? 2;
+        // $amountColor = $previewAmount < 0 ? '#E74C3C' : '#27AE60';
+        // $previewAmountHtml = '<span style="color: ' . $amountColor . '; font-weight: 600;">' . ($previewAmount < 0 ? '-' : '') . $currencySymbol . number_format(abs($previewAmount), $fractionDigit) . '</span>';
+
+        // $previewBalanceAmountHtml = '<span style="color: ' . $amountColor . '; font-weight: 600;">' . $currencySymbol . number_format(abs($previewAmount), $fractionDigit) . '</span>';
+
+        // $symbol = $previewAmount > 0 ? '+' : '-';
+        // $paymentBalancePreview = '<span style="color: #333;">' . $currencySymbol . number_format(abs($previousCreditBalance?->running_amount ?? 0), $fractionDigit) . '</span> ' . $symbol . ' <span style="color: ' . $amountColor . '; font-weight: 600;">' . $previewBalanceAmountHtml . '</span> <span margin: 0 8px;">→</span> <span style="color: #333; font-weight: bold;">' . $currencySymbol . number_format(abs($currentCreditBalance->running_amount), $fractionDigit) . '</span>';
+        // Extract currency information
+        $currency = $currentCreditBalance?->currency;
+        $currencySymbol = $currency?->symbol ?? '$';
+        $fractionDigit = $currency?->fraction_digit ?? 2;
+
+        // Extract and calculate amounts
+        $currentAmount = $currentCreditBalance?->amount ?? 0;
+        $previousAmount = $previousCreditBalance?->running_amount ?? 0;
+        $runningAmount = $currentCreditBalance->running_amount;
+
+        // Determine styling based on amount
+        $amountColor = $currentAmount < 0 ? '#E74C3C' : '#27AE60';
+        $amountSign = $currentAmount < 0 ? '-' : '';
+        $changeSymbol = $currentAmount > 0 ? '+' : '-';
+
+        // Format amounts
+        $formattedCurrentAmount = number_format(abs($currentAmount), $fractionDigit);
+        $formattedPreviousAmount = number_format(abs($previousAmount), $fractionDigit);
+        $formattedRunningAmount = number_format(abs($runningAmount), $fractionDigit);
+
+        // Build HTML components
+        $previewAmountHtml = '<span style="color: ' . $amountColor . '; font-weight: 600;">'
+            . $amountSign . $currencySymbol . $formattedCurrentAmount
+            . '</span>';
+
+        $previewBalanceAmountHtml = '<span style="color: ' . $amountColor . '; font-weight: 600;">'
+            . $currencySymbol . $formattedCurrentAmount
+            . '</span>';
+
+        $paymentBalancePreview = '<span style="color: #333;">'
+            . $currencySymbol . $formattedPreviousAmount
+            . '</span> '
+            . $changeSymbol . ' '
+            . $previewBalanceAmountHtml
+            . ' <span style="margin: 0 8px;">→</span> '
+            . '<span style="color: #333; font-weight: bold;">'
+            . $currencySymbol . $formattedRunningAmount
+            . '</span>';
+
+        // Generate customer link
+        $customerLink = $customer->shop->fulfilment
+            ? route('grp.org.fulfilments.show.crm.customers.show', [
+                $customer->organisation->slug,
+                $customer->shop->fulfilment->slug,
+                $customer->fulfilmentCustomer->slug
+            ])
+            : route('grp.org.shops.show.crm.customers.show', [
+                $customer->organisation->slug,
+                $customer->shop->slug,
+                $customer->slug
+            ]);
+
+        //  $customer->shop->fulfilment
+        //     ? route('grp.org.fulfilments.show.crm.customers.show', [
+        //         $customer->organisation->slug,
+        //         $customer->shop->fulfilment->slug,
+        //         $customer->fulfilmentCustomer->slug
+        //     ])
+        //     : route('grp.org.shops.show.crm.customers.show', [
+        //         $customer->organisation->slug,
+        //         $customer->shop->slug,
+        //         $customer->slug
+        //     ])
 
         $additionalDataForUser = [
             'previous_balance' => $previousCreditBalance?->running_amount ?? 0,
             'balance' => $currentCreditBalance->running_amount,
             'customer_name' => $customer->name,
-            'customer_link' => $customer->shop->fulfilment
-                ? route('grp.org.fulfilments.show.crm.customers.show', [
-                    $customer->organisation->slug,
-                    $customer->shop->fulfilment->slug,
-                    $customer->fulfilmentCustomer->slug
-                ])
-                : route('grp.org.shops.show.crm.customers.show', [
-                    $customer->organisation->slug,
-                    $customer->shop->slug,
-                    $customer->slug
-                ]),
+            'customer_link' => $customerLink,
             'payment_type' => $currentCreditBalance?->type?->label() ?? 'N/A',
             'payment_note' => $currentCreditBalance?->notes ?? 'N/A',
-            'payment_balance_preview' => 'test This will show Preview',
             'payment_reason' => $currentCreditBalance?->reason?->label() ?? 'N/A',
-            // TODO: make sure this path
-            'payment_balance_preview' => '<span style="color: #333;">' . $currencySymbol . number_format(abs($previousCreditBalance?->running_amount ?? 0), 2) . '</span> <span style="color: #dc3545;">- ' . $previewAmountHtml . '</span> <span style="color: #dc3545; margin: 0 8px;">→</span> <span style="color: #333; font-weight: bold;">' . $currencySymbol . number_format(abs($currentCreditBalance->running_amount), 2) . '</span>',
+            'payment_balance_preview' => $paymentBalancePreview,
             'preview_amount' => $previewAmountHtml,
         ];
 

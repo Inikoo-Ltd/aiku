@@ -118,6 +118,10 @@ trait WithSendBulkEmails
             'balance' => Arr::get($additionalData, 'balance'),
             'products' => Arr::get($additionalData, 'products'),
             'previous-balance' => Arr::get($additionalData, 'previous_balance'),
+            'payment-reason' => Arr::get($additionalData, 'payment_reason'),
+            'payment-note' => Arr::get($additionalData, 'payment_note'),
+            'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
+            'preview-amount' => Arr::get($additionalData, 'preview_amount'),
 
             default => $originalPlaceholder,
         };
