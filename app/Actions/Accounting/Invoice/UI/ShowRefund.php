@@ -219,7 +219,7 @@ class ShowRefund extends OrgAction
                 $actions[] = [
                     'type'  => 'button',
                     'style' => 'secondary',
-                    'label' => __('Refund Tax'),
+                    'label' => __('Refund Tax Only'),
                     'key'   => 'refund_all',
                     'route' => [
                         'method'     => 'post',
