@@ -46,7 +46,7 @@ const props = defineProps<{
 const { modelValue, webpageData, blockData } = toRefs(props)
 
 const departmentEdit = ref(false)
-const descriptionTitle = ref(modelValue.value.family.description_title || '')
+const name = ref(modelValue.value.family.name || '')
 const showExtra = ref(false)
 const layout: any = inject("layout", {})
 
@@ -72,10 +72,11 @@ const saveDescription = debounce(async (key: string, value: string) => {
   }
 }, 1000)
 
-watch(descriptionTitle, (val) => {
-  modelValue.value.family.description_title = val
-  saveDescription('description_title', val)
+watch(name, (val) => {
+  modelValue.value.family.name = val
+  saveDescription('name', val)
 })
+
 </script>
 
 <template>
@@ -84,7 +85,7 @@ watch(descriptionTitle, (val) => {
       class="py-4  px-[10px] sm:px-[50px]">
 
       <!-- Description Title -->
-      <input v-model="descriptionTitle" type="text" placeholder="Family Description Title"
+      <input v-model="name" type="text" placeholder="Family Title"
         class="w-full appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none" />
 
 

@@ -113,52 +113,57 @@ class IndexCollections extends OrgAction
             ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
 
-        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
-            timeSeriesTable: 'collection_time_series',
-            timeSeriesRecordsTable: 'collection_time_series_records',
-            foreignKey: 'collection_id',
-            aggregateColumns: [
-                'sales_grp_currency' => 'sales',
-                'invoices' => 'invoices'
-            ],
-            frequency: TimeSeriesFrequencyEnum::DAILY->value,
-            prefix: $prefix,
-            includeLY: true
-        );
+        $selects = [
+            'collections.id',
+            'collections.code',
+            'collections.state',
+            'collections.products_status',
+            'collections.name',
+            'collections.description',
+            'collections.created_at',
+            'collections.updated_at',
+            'collections.slug',
+            'collections.web_images',
+            'collections.master_collection_id',
+            'collection_stats.number_families',
+            'collection_stats.number_products',
+            'collection_stats.number_parents',
+            'shops.slug as shop_slug',
+            'shops.code as shop_code',
+            'shops.name as shop_name',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+            'webpages.id as webpage_id',
+            'webpages.state as webpage_state',
+            'webpages.url as webpage_url',
+            'webpages.slug as webpage_slug',
+            'websites.slug as website_slug',
+            'currencies.code as currency_code',
+        ];
+
+        if ($prefix === CollectionsTabsEnum::SALES->value) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'collection_time_series',
+                timeSeriesRecordsTable: 'collection_time_series_records',
+                foreignKey: 'collection_id',
+                aggregateColumns: [
+                    'sales_grp_currency' => 'sales',
+                    'invoices'           => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
 
         $queryBuilder
             ->defaultSort('collections.code')
-            ->select([
-                'collections.id',
-                'collections.code',
-                'collections.state',
-                'collections.products_status',
-                'collections.name',
-                'collections.description',
-                'collections.created_at',
-                'collections.updated_at',
-                'collections.slug',
-                'collections.web_images',
-                'collections.master_collection_id',
-                'collection_stats.number_families',
-                'collection_stats.number_products',
-                'collection_stats.number_parents',
-                'shops.slug as shop_slug',
-                'shops.code as shop_code',
-                'shops.name as shop_name',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-                'webpages.id as webpage_id',
-                'webpages.state as webpage_state',
-                'webpages.url as webpage_url',
-                'webpages.slug as webpage_slug',
-                'websites.slug as website_slug',
-                'currencies.code as currency_code',
-                $timeSeriesData['selectRaw']['sales'],
-                $timeSeriesData['selectRaw']['sales_ly'],
-                $timeSeriesData['selectRaw']['invoices'],
-                $timeSeriesData['selectRaw']['invoices_ly'],
-            ])
+            ->select($selects)
             ->selectRaw(
                 '(
         SELECT concat(string_agg(product_categories.slug,\',\'),\'|\',string_agg(product_categories.type,\',\'),\'|\',string_agg(product_categories.code,\',\'),\'|\',string_agg(product_categories.name,\',\')) FROM model_has_collections
@@ -168,35 +173,7 @@ class IndexCollections extends OrgAction
         AND model_has_collections.model_type = ?
     ) as parents_data',
                 ['ProductCategory',]
-            )
-            ->groupBy([
-                'collections.id',
-                'collections.code',
-                'collections.state',
-                'collections.products_status',
-                'collections.name',
-                'collections.description',
-                'collections.created_at',
-                'collections.updated_at',
-                'collections.slug',
-                'collections.web_images',
-                'collections.master_collection_id',
-                'collection_stats.number_families',
-                'collection_stats.number_products',
-                'collection_stats.number_parents',
-                'shops.slug',
-                'shops.code',
-                'shops.name',
-                'organisations.name',
-                'organisations.slug',
-                'organisations.code',
-                'webpages.id',
-                'webpages.state',
-                'webpages.url',
-                'webpages.slug',
-                'websites.slug',
-                'currencies.code',
-            ]);
+            );
 
 
         return $queryBuilder

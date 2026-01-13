@@ -98,74 +98,55 @@ class IndexSubDepartments extends OrgAction
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', 'organisations.id');
         $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
 
-        // Use reusable time series aggregation method
-        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
-            timeSeriesTable: 'product_category_time_series',
-            timeSeriesRecordsTable: 'product_category_time_series_records',
-            foreignKey: 'product_category_id',
-            aggregateColumns: [
-                'sales_grp_currency' => 'sales',
-                'invoices' => 'invoices'
-            ],
-            frequency: TimeSeriesFrequencyEnum::DAILY->value,
-            prefix: $prefix,
-            includeLY: true
-        );
+        $selects = [
+            'product_categories.id',
+            'product_categories.slug',
+            'product_categories.code',
+            'product_categories.name',
+            'product_categories.state',
+            'product_categories.description',
+            'product_categories.master_product_category_id',
+            'product_categories.created_at',
+            'product_categories.updated_at',
+            'product_categories.web_images',
+            'departments.slug as department_slug',
+            'departments.code as department_code',
+            'departments.name as department_name',
+            'shops.slug as shop_slug',
+            'shops.code as shop_code',
+            'shops.name as shop_name',
+            'currencies.code as currency_code',
+            'organisations.slug as organisation_slug',
+            'organisations.code as organisation_code',
+            'organisations.name as organisation_name',
+            'product_category_stats.number_current_families as number_families',
+            'product_category_stats.number_current_products as number_products',
+        ];
+
+        if ($prefix === ProductCategoryTabsEnum::SALES->value) {
+            // Use reusable time series aggregation method
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'product_category_time_series',
+                timeSeriesRecordsTable: 'product_category_time_series_records',
+                foreignKey: 'product_category_id',
+                aggregateColumns: [
+                    'sales_grp_currency' => 'sales',
+                    'invoices'           => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
+
+        $queryBuilder->select($selects);
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
-            ->select([
-                'product_categories.id',
-                'product_categories.slug',
-                'product_categories.code',
-                'product_categories.name',
-                'product_categories.state',
-                'product_categories.description',
-                'product_categories.master_product_category_id',
-                'product_categories.created_at',
-                'product_categories.updated_at',
-                'product_categories.web_images',
-                'departments.slug as department_slug',
-                'departments.code as department_code',
-                'departments.name as department_name',
-                'shops.slug as shop_slug',
-                'shops.code as shop_code',
-                'shops.name as shop_name',
-                'currencies.code as currency_code',
-                'organisations.slug as organisation_slug',
-                'organisations.code as organisation_code',
-                'organisations.name as organisation_name',
-                'product_category_stats.number_current_families as number_families',
-                'product_category_stats.number_current_products as number_products',
-                $timeSeriesData['selectRaw']['sales'],
-                $timeSeriesData['selectRaw']['sales_ly'],
-                $timeSeriesData['selectRaw']['invoices'],
-                $timeSeriesData['selectRaw']['invoices_ly'],
-            ])
-            ->groupBy([
-                'product_categories.id',
-                'product_categories.slug',
-                'product_categories.code',
-                'product_categories.name',
-                'product_categories.state',
-                'product_categories.description',
-                'product_categories.master_product_category_id',
-                'product_categories.created_at',
-                'product_categories.updated_at',
-                'product_categories.web_images',
-                'departments.slug',
-                'departments.code',
-                'departments.name',
-                'shops.slug',
-                'shops.code',
-                'shops.name',
-                'currencies.code',
-                'organisations.slug',
-                'organisations.code',
-                'organisations.name',
-                'product_category_stats.number_current_families',
-                'product_category_stats.number_current_products',
-            ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
@@ -228,25 +209,25 @@ class IndexSubDepartments extends OrgAction
                 ->withModelOperations($modelOperations);
 
             if ($sales) {
-                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                $table->column(key: 'code', label: __('Code'), sortable: true)
+                    ->column(key: 'sales', label: __('Sales'), sortable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right');
             } else {
                 if ($parent instanceof Organisation) {
-                    $table->column(key: 'shop_code', label: __('Shop'), sortable: true, searchable: true);
-                    $table->column(key: 'department_code', label: __('department'), sortable: true, searchable: true);
+                    $table->column(key: 'shop_code', label: __('Shop'), sortable: true);
+                    $table->column(key: 'department_code', label: __('Department'), sortable: true);
                 }
 
                 if (class_basename($parent) == 'MasterProductCategory') {
-                    $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'shop_code', label: __('Shop'), sortable: true);
                 }
                 $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
-                $table->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
-                    ->column(key: 'number_families', label: __('families'), sortable: true)
-                    ->column(key: 'number_products', label: __('products'), sortable: true);
+                $table->column(key: 'code', label: __('Code'), sortable: true)
+                    ->column(key: 'name', label: __('Name'), sortable: true)
+                    ->column(key: 'number_families', label: __('Families'), sortable: true)
+                    ->column(key: 'number_products', label: __('Products'), sortable: true);
             }
         };
     }
@@ -339,7 +320,7 @@ class IndexSubDepartments extends OrgAction
                     fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
                     : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
-        )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+        )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))
         ->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))
         ->table(IndexSubDepartmentsNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
     }

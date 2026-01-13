@@ -30,7 +30,6 @@ class EditSubDepartment extends OrgAction
     }
 
 
-
     public function inOrganisation(Organisation $organisation, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
         $this->initialisation($organisation, $request);
@@ -46,6 +45,7 @@ class EditSubDepartment extends OrgAction
         return $this->handle($subDepartment);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
@@ -55,7 +55,7 @@ class EditSubDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $subDepartment, ActionRequest $request): Response
     {
-        $urlMaster                              = null;
+        $urlMaster = null;
         if ($subDepartment->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',
@@ -65,16 +65,11 @@ class EditSubDepartment extends OrgAction
             ];
         }
         $languages = [$subDepartment->shop->language_id => LanguageResource::make($subDepartment->shop->language)->resolve()];
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Sub-department'),
-                'warning' => $subDepartment->masterProductCategory ? [
-                    'type'  =>  'warning',
-                    'title' =>  'warning',
-                    'text'  =>  __('Changing name or description may affect master sub department.'),
-                    'icon'  => ['fas', 'fa-exclamation-triangle']
-                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
                     $request->route()->getName(),
@@ -85,14 +80,15 @@ class EditSubDepartment extends OrgAction
                     'next'     => $this->getNextModel($subDepartment, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $subDepartment->code,
+                    'title'     => $subDepartment->code,
+                    'model'     => __('Sub-department'),
                     'iconRight' => $urlMaster ? [
                         'icon'  => "fab fa-octopus-deploy",
                         'color' => "#4B0082",
                         'class' => 'opacity-70 hover:opacity-100',
                         'url'   => $urlMaster
                     ] : [],
-                    'actions' => [
+                    'actions'   => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -122,73 +118,86 @@ class EditSubDepartment extends OrgAction
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
-                                    'name' =>  $subDepartment->masterProductCategory ? [
-                                        'type'  => 'input_translation',
-                                        'label' => __('Name'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $subDepartment->masterProductCategory->name,
-                                        'languages' => $languages,
-                                        'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('name_i8n')
-                                    ] : [
-                                        'type'  => 'input',
-                                        'label' => __('Name'),
-                                        'value' => $subDepartment->name
-                                    ],
-                                    'description_title' => $subDepartment->masterProductCategory ? [
-                                        'type'  => 'input_translation',
-                                        'label' => __('Description Title'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $subDepartment->masterProductCategory->description_title,
-                                        'languages' => $languages,
-                                        'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('description_title_i8n')
-                                    ] : [
-                                        'type'  => 'input',
-                                        'label' => __('Description Title'),
-                                        'value' => $subDepartment->description_title
-                                    ],
-                                    'description' => $subDepartment->masterProductCategory ? [
-                                        'type'  => 'textEditor_translation',
-                                        'label' => __('Description'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $subDepartment->masterProductCategory->description,
-                                        'languages' => $languages,
-                                        'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('description_i8n')
-                                    ] : [
-                                        'type'  => 'textEditor',
-                                        'label' => __('Description'),
-                                        'value' => $subDepartment->description
-                                    ],
-                                    'description_extra' => $subDepartment->masterProductCategory ? [
-                                        'type'  => 'textEditor_translation',
-                                        'label' => __('Extra Description'),
-                                        'language_from' => 'en',
-                                        'full' => true,
-                                        'main' => $subDepartment->masterProductCategory->description_extra,
-                                        'languages' => $languages,
-                                        'mode' => 'single',
-                                        'value' => $subDepartment->getTranslations('description_extra_i8n')
-                                    ] : [
-                                         'type'  => 'textEditor',
-                                        'label' => __('Extra Description'),
-                                        'value' => $subDepartment->description_extra
-                                    ],
+                                    'name'              => $subDepartment->masterProductCategory
+                                        ? [
+                                            'type'          => 'input_translation',
+                                            'label'         => __('Name'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $subDepartment->masterProductCategory->name,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $subDepartment->name,
+                                            'reviewed'      => $subDepartment->is_name_reviewed
+                                        ]
+                                        : [
+                                            'type'  => 'input',
+                                            'label' => __('Name'),
+                                            'value' => $subDepartment->name
+                                        ],
+                                  /*   'description_title' => $subDepartment->masterProductCategory
+                                        ? [
+                                            'type'          => 'input_translation',
+                                            'label'         => __('Description Title'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $subDepartment->masterProductCategory->description_title,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $subDepartment->description_title,
+                                            'reviewed'      => $subDepartment->is_description_title_reviewed
+                                        ]
+                                        : [
+                                            'type'  => 'input',
+                                            'label' => __('Description Title'),
+                                            'value' => $subDepartment->description_title
+                                        ], */
+                                    'description'       => $subDepartment->masterProductCategory
+                                        ? [
+                                            'type'          => 'textEditor_translation',
+                                            'label'         => __('Description'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $subDepartment->masterProductCategory->description,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $subDepartment->description,
+                                            'reviewed'      => $subDepartment->is_description_reviewed
+
+                                        ]
+                                        : [
+                                            'type'  => 'textEditor',
+                                            'label' => __('Description'),
+                                            'value' => $subDepartment->description
+                                        ],
+                                    'description_extra' => $subDepartment->masterProductCategory
+                                        ? [
+                                            'type'          => 'textEditor_translation',
+                                            'label'         => __('Extra Description'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'main'          => $subDepartment->masterProductCategory->description_extra,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $subDepartment->description_extra,
+                                            'reviewed'      => $subDepartment->is_description_extra_reviewed
+                                        ]
+                                        : [
+                                            'type'  => 'textEditor',
+                                            'label' => __('Extra Description'),
+                                            'value' => $subDepartment->description_extra
+                                        ],
                                 ]
                             ],
                             [
                                 'label'  => __('Properties'),
                                 'icon'   => 'fa-light fa-fingerprint',
                                 'fields' => [
-                                    "image"         => [
-                                        "type"    => "crop-image-full",
-                                        "label"   => __("Image"),
-                                        "value"   => $subDepartment->imageSources(720, 480),
-                                        "required" => false,
+                                    "image" => [
+                                        "type"         => "crop-image-full",
+                                        "label"        => __("Image"),
+                                        "value"        => $subDepartment->imageSources(720, 480),
+                                        "required"     => false,
                                         'noSaveButton' => true,
                                         "full"         => true
                                     ],
@@ -199,15 +208,15 @@ class EditSubDepartment extends OrgAction
                                 'icon'   => 'fa-light fa-money-bill',
                                 'fields' => [
                                     'cost_price_ratio' => [
-                                        'type'          => 'input_number',
-                                        'bind' => [
+                                        'type'        => 'input_number',
+                                        'bind'        => [
                                             'maxFractionDigits' => 3
                                         ],
-                                        'label'         => __('Pricing ratio'),
-                                        'placeholder'   => __('Cost price ratio'),
-                                        'required'      => true,
-                                        'value'         => $subDepartment->cost_price_ratio,
-                                        'min'           => 0
+                                        'label'       => __('Pricing ratio'),
+                                        'placeholder' => __('Cost price ratio'),
+                                        'required'    => true,
+                                        'value'       => $subDepartment->cost_price_ratio,
+                                        'min'         => 0
                                     ],
                                 ]
                             ],
@@ -215,26 +224,26 @@ class EditSubDepartment extends OrgAction
                                 'label'  => __('Department'),
                                 'icon'   => 'fa-light fa-box',
                                 'fields' => [
-                                    'department_id'  =>  [
-                                        'type'    => 'select_infinite',
-                                        'label'   => __('Department'),
-                                        'options'   => [
+                                    'department_id' => [
+                                        'type'       => 'select_infinite',
+                                        'label'      => __('Department'),
+                                        'options'    => [
                                             [
-                                                'id' => $subDepartment->department?->id,
+                                                'id'   => $subDepartment->department?->id,
                                                 'code' => $subDepartment->department?->code
                                             ]
                                         ],
-                                        'fetchRoute'    => [
+                                        'fetchRoute' => [
                                             'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                             'parameters' => [
                                                 'organisation' => $this->organisation->slug,
-                                                'shop' => $this->shop->slug
+                                                'shop'         => $this->shop->slug
                                             ]
                                         ],
-                                        'valueProp' => 'id',
-                                        'labelProp' => 'code',
-                                        'required' => false,
-                                        'value'   => $subDepartment->department->id ?? null,
+                                        'valueProp'  => 'id',
+                                        'labelProp'  => 'code',
+                                        'required'   => false,
+                                        'value'      => $subDepartment->department->id ?? null,
                                     ]
                                 ],
                             ],

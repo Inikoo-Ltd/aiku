@@ -114,7 +114,7 @@ const fetchProduct = async (transId?: string|number|null) => {
 
     try {
         const response = await axios.get(
-            route('iris.models.transaction.fetch_product', {transaction: transId})
+            route('iris.models.transaction.fetch_product.product_list', {transaction: transId})
         )
 
         const newProduct = response.data

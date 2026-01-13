@@ -19,7 +19,9 @@ const props = defineProps<{
         duration: string  // 'permanent'
         created_at: string
         end_at: string
-        percentage_off: string
+        data_allowance_signature: {
+            percentage_off: string
+        }
     }[]
     currency_code: string
 }>()
@@ -41,7 +43,7 @@ const isOfferExpired = (endAt: string) => {
             :class="isOfferExpired(offer.end_at) ? 'bg-gradient-to-l from-gray-100 to-gray-300/90 text-black/40' : 'bg-gradient-to-l from-purple-300 to-purple-500/90 text-white'"
         >
             <div class="text-center text-base w-[88px] flex flex-col justify-center px-1">
-                <span class="text-2xl font-black">{{ Number(offer.percentage_off ?? 0)*100 }}%</span>
+                <span class="text-2xl font-black">{{ Number(offer.data_allowance_signature?.percentage_off ?? 0)*100 }}%</span>
                 <span class="text-xxs tracking-[0.2em]">
                     {{ trans("Discount") }}
                 </span>

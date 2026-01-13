@@ -26,6 +26,7 @@ import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
+import Discount from "@/Components/Utils/Label/Discount.vue"
 
 
 // Register icons
@@ -102,7 +103,7 @@ watch(
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'" id="product-1"
+    <div v-if="screenType !== 'mobile'" id="product-iris-1-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -128,6 +129,8 @@ watch(
 
             <!-- RIGHT: Product Info -->
             <div class="col-span-5 self-start">
+                <Discount v-if="customerData?.offers_data && Object.keys(customerData?.offers_data).length" :offers_data="customerData.offers_data" class="w-full justify-center" />
+                
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
                         <h1 class="text-3xl font-bold">
@@ -184,7 +187,13 @@ watch(
                 </div>
 
                 <!-- PRICE -->
-                <ProductPrices :field-value="fieldValue" :key="product.code" />
+                <ProductPrices
+                    :field-value="fieldValue"
+                    :key="product.code"
+                    :offers_data="customerData?.offers_data"
+                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
+                    :offer_price_per_unit="customerData?.offer_price_per_unit"
+                />
 
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
