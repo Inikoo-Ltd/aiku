@@ -287,7 +287,7 @@ const isModalProductForSale = ref(false)
 		</div>
 
         <!-- Sales Analytics - right sidebar -->
-        <div v-if="salesData && salesData.yearly_sales && salesData.yearly_sales.length > 0">
+        <div v-if="salesData">
             <SalesAnalyticsCompact :salesData="salesData" class="mr-2" />
         </div>
 
