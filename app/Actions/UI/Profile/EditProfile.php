@@ -42,38 +42,51 @@ class EditProfile
             "formData" => [
                 "blueprint" => [
                     [
-                        "label"   => __("profile"),
+                        "label"   => __("Profile"),
                         "icon"    => "fa-light fa-user-circle",
                         "current" => true,
                         "fields"  => [
-                            "email"  => [
+                            "email"     => [
                                 "type"  => "input",
-                                "label" => __("email"),
+                                "label" => __("Email"),
                                 "value" => $user->email,
                             ],
-                            "password" => [
+                            "password"  => [
                                 "type"  => "password",
-                                "label" => __("password"),
+                                "label" => __("Password"),
                                 "value" => "",
                             ],
-                            "about"  => [
+                            "about"     => [
                                 "type"          => "textarea",
-                                "label"         => __("about"),
+                                "label"         => __("About"),
                                 "value"         => $user->about,
                                 "maxLength"     => 48,
                                 "counter"       => true,
                                 "rows"          => 5,
                                 "placeholder"   => __('Enter up to 50 characters')
                             ],
-                            "image" => [
+                            "image"     => [
                                 "type"  => "image_crop_square",
                                 "label" => __("Logo"),
                                 "value" => $user->imageSources(320, 320)
                             ],
                         ],
                     ],
-
-
+                    [
+                        "label"   => __("Two Factor Authentication"),
+                        "icon"    => "fal fa-user-lock",
+                        "current" => true,
+                        "fields"  => [
+                            "enable_2fa"       => [
+                                "type"          => "toggle2fa",
+                                "label"         => __("Enable 2FA"),
+                                "value"         => [
+                                    'has_2fa'   => $user->two_factor_enabled ? true : false,
+                                    'secretKey' => $user->google2fa_secret
+                                ],
+                            ],
+                        ]
+                    ]
                 ],
                 "args"      => [
                     "updateRoute" => [
