@@ -16,19 +16,13 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import { useChatLanguages } from "@/Composables/useLanguages"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
     _status?: LocalMessageStatus
     _tempId?: string
-}
-interface LanguageOption {
-    id: number
-    name: string
-    code: string
-    flag: string
-    native_name: string
 }
 
 const props = defineProps<{
@@ -51,7 +45,6 @@ const baseUrl = layout?.appUrl ?? ""
 const messagesLocal = ref<LocalChatMessage[]>([])
 const newMessage = ref("")
 
-const fileInput = ref<HTMLInputElement>()
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
 
@@ -66,11 +59,11 @@ const menuRef = ref<HTMLElement | null>(null)
 
 const isTyping = ref(false)
 let typingTimeout: ReturnType<typeof setTimeout> | null = null
-
 const remoteTypingUser = ref<string | null>(null)
 let remoteTypingTimeout: ReturnType<typeof setTimeout> | null = null
-
 const typingUser = ref<string | null>(null)
+
+const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
 const scrollBottom = () =>
     nextTick(() => {
@@ -318,22 +311,14 @@ const handleTyping = () => {
 
     typingUser.value = "agent"
 }
-const languages = ref<LanguageOption[]>([])
-const selectedLanguage = ref("")
 
-const fetchLanguages = async () => {
-    try {
-        const { data } = await axios.get(`${baseUrl}/app/api/chats/languages`)
-        languages.value = data?.data ?? data ?? []
-    } catch (e) {
-        console.error("Failed to fetch languages", e)
-    }
-}
+const selectedLanguage = ref("")
+const isTranslating = ref(false)
+
 const selectedLanguageId = computed(() =>
-    languages.value.find(l => l.code === selectedLanguage.value)?.id
+    getLanguageIdByCode(selectedLanguage.value)
 )
 
-const isTranslating = ref(false)
 const translateAllMessage = async () => {
     if (!chatSession.value?.ulid || !selectedLanguageId.value) return
 
@@ -362,7 +347,7 @@ const translateAllMessage = async () => {
 
 onMounted(async () => {
     await getMessages()
-    fetchLanguages()
+    await fetchLanguages()
     initSocket()
     document.addEventListener("click", handleClickOutside)
 })
@@ -405,7 +390,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </span>
 
             <select v-if="languages.length" v-model="selectedLanguage" :disabled="isTranslating"
-                class="text-xs px-2 py-1 rounded border bg-white focus:outline-none">
+                class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-white text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
                 <option value="" disabled>
                     Translate To..
                 </option>
@@ -451,7 +436,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <div v-for="msg in msgs" :key="msg.id" class="flex"
                     :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="msg" viewerType="agent" :languages="languages" />
+                    <BubbleChat :message="msg" viewerType="agent" />
 
                     <!-- 	<div class="px-3 py-2 rounded-lg max-w-[75%] text-sm flex items-center gap-2 cursor-default" :class="msg.sender_type === 'agent'
 						? 'bubble-chat text-white'
@@ -475,15 +460,8 @@ const handleClickOutside = (e: MouseEvent) => {
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
             {{ remoteTypingUser }} {{ trans("is typing...") }}
         </div>
-        <!-- Footer -->
-        <footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
-            <!-- Attachment -->
-            <!-- <button @click="fileInput?.click()"
-				class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 shrink-0">
-				<FontAwesomeIcon :icon="faPaperclip" />
-			</button> -->
 
-            <!-- Message Input -->
+        <footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
             <textarea ref="messageInput" v-model="newMessage" @input="
                 () => {
                     autoResize()
@@ -497,7 +475,6 @@ const handleClickOutside = (e: MouseEvent) => {
             " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
                 class="flex-1 resize-none border rounded-lg px-3 py-2 text-sm leading-5 focus:outline-none" />
 
-            <!-- Send -->
             <Button @click="sendMessage" :icon="faPaperPlane"></Button>
         </footer>
     </div>

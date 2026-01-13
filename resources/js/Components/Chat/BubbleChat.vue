@@ -4,6 +4,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCheckDouble, faLanguage } from "@far"
 import axios from "axios"
+import { useChatLanguages } from "@/Composables/useLanguages"
 
 type SenderType = "guest" | "user" | "agent" | "system"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -14,6 +15,7 @@ interface Message {
     message_text: string
     created_at: string
     is_read?: boolean
+    id?: number
     _status?: MessageStatus
     original?: Translation
     translations?: Translation | Record<string, Translation>
@@ -26,19 +28,7 @@ interface Translation {
     language_name: string
     language_code: string
     language_flag: string | null
-}
-
-interface Originals {
     text: string
-    language_name: string | null
-    language_flag: string | null
-}
-interface LanguageOption {
-    id: number
-    name: string
-    code: string
-    flag: string
-    native_name: string
 }
 
 const props = defineProps<{
@@ -48,6 +38,8 @@ const props = defineProps<{
 
 const layout = inject<any>("layout")
 const baseUrl = layout?.appUrl ?? ""
+
+const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
 const isUser = computed(() =>
     props.message.sender_type === "guest" ||
@@ -84,11 +76,14 @@ const readIcon = computed(() =>
 
 // feature translation
 const localMessage = ref<Message | null>(null)
-const languages = ref<LanguageOption[]>([])
 const selectedLanguage = ref("")
 const isTranslating = ref<boolean>(false)
 const showTranslation = ref(true)
 const showLanguageSelect = ref(false)
+
+const selectedLanguageId = computed(() =>
+    getLanguageIdByCode(selectedLanguage.value)
+)
 
 const activeMessage = computed<Message>(() => {
     return localMessage.value ?? props.message
@@ -96,13 +91,11 @@ const activeMessage = computed<Message>(() => {
 
 const canTranslate = computed(() => props.viewerType === "agent" && props.message.sender_type === "guest")
 
-
 const latestTranslation = computed<Translation | null>(() => {
     const list = activeMessage.value.translations
     if (!Array.isArray(list) || list.length === 0) return null
     return list[list.length - 1]
 })
-
 
 const isLongText = computed(() =>
     latestTranslation.value?.translated_text.length
@@ -113,19 +106,6 @@ const isLongText = computed(() =>
 watch(latestTranslation, () => {
     showTranslation.value = !isLongText.value
 })
-
-const selectedLanguageId = computed(() =>
-    languages.value.find(l => l.code === selectedLanguage.value)?.id
-)
-
-const fetchLanguages = async () => {
-    try {
-        const { data } = await axios.get(`${baseUrl}/app/api/chats/languages`)
-        languages.value = data?.data ?? data ?? []
-    } catch (e) {
-        console.error("Failed to fetch languages", e)
-    }
-}
 
 const translateMessage = async () => {
     if (!props.message.id || !selectedLanguageId.value) return
@@ -147,7 +127,7 @@ const translateMessage = async () => {
 
         localMessage.value = {
             ...props.message,
-            translations: [lastTranslation], // ⬅️ PENTING
+            translations: [lastTranslation],
         }
 
         showTranslation.value = true
@@ -179,7 +159,7 @@ watch(selectedLanguage, async (val) => {
     <div class="flex flex-col gap-0.5 text-sm leading-snug shadow-sm max-w-[78%] px-2.5 py-1.5 rounded-xl"
         :class="bubbleClass">
         <p class="whitespace-pre-wrap break-words">
-            {{ activeMessage.original.text }}
+            {{ activeMessage.original?.text }}
         </p>
 
         <div v-if="(latestTranslation || isTranslating)" class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
@@ -211,11 +191,13 @@ watch(selectedLanguage, async (val) => {
         </div>
 
         <div v-if="canTranslate" class="mt-1">
-            <small v-if="!showLanguageSelect" @click="showLanguageSelect = true" class="text-gray-500">Choose
-                Language</small>
-            <select v-else v-model="selectedLanguage" :disabled="isTranslating" class="text-[10px] h-[16px] px-1 rounded border border
-                       bg-transparent opacity-70 focus:outline-none
-                       appearance-none disabled:opacity-40">
+            <button v-if="!showLanguageSelect" @click="showLanguageSelect = true"
+                class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline">
+                <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" />
+                Translate
+            </button>
+            <select v-else v-model="selectedLanguage" :disabled="isTranslating"
+                class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-transparent text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
                 <option value="" disabled>
                     Translate To..
                 </option>
