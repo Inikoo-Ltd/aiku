@@ -33,6 +33,7 @@ class UpdateOffer extends OrgAction
 
     public function handle(Offer $offer, array $modelData): Offer
     {
+        // dd($offer);
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(
                 $offer->trigger_data,
@@ -41,6 +42,25 @@ class UpdateOffer extends OrgAction
             unset($modelData['trigger_data_item_quantity']);
             $modelData['trigger_data'] = $newTriggerData;
         }
+
+        if (isset($modelData['edit_offer'])) {
+            $editOffer = $modelData['edit_offer'];
+
+            // set percentage_off to allowance_signature
+            if (!empty($editOffer['percentage_off'])) {
+                $percentage_off = $editOffer['percentage_off']/100;
+                $modelData['allowance_signature'] = preg_replace(
+                    '/(percentage_off:)[0-9.]+/',
+                    '${1}' . $percentage_off,
+                    $offer['allowance_signature']
+                );
+            }
+
+            // Remove edit_offer from modelData
+            unset($modelData['edit_offer']);
+        }
+
+
 
         $offer = $this->update($offer, $modelData);
 
@@ -102,6 +122,7 @@ class UpdateOffer extends OrgAction
             'trigger_data_item_quantity' => ['sometimes', 'integer'],
             'start_at'                   => ['sometimes', 'date'],
             'end_at'                     => ['sometimes', 'nullable', 'date'],
+            'edit_offer'                 => ['sometimes', 'nullable']
         ];
 
         if (!$this->strict) {

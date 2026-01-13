@@ -94,13 +94,13 @@ class EditOffer extends OrgAction
                                         'required'    => true,
                                         'value'       => $offer->label,
                                     ],
-                                    'editOffer'        => [
+                                    'edit_offer'        => [
                                         'type'        => 'editOffer',
                                         'label'       => __('Settings'),
                                         'information'   => __('Total quantity of all products'),
                                         'placeholder' => __('Quantity'),
                                         'required'    => true,
-                                        'noSaveButton' => true,
+                                        // 'noSaveButton' => true,
                                         'full'    => true,
                                         'offer'         => $offer,
                                         'value'       => [
