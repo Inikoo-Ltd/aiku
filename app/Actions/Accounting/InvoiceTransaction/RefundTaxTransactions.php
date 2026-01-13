@@ -10,13 +10,17 @@
 namespace App\Actions\Accounting\InvoiceTransaction;
 
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Laravel\Octane\Facades\Octane;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundTaxTransactions extends OrgAction
 {
+    use WithActionUpdate;
+
     /**
      * @throws \Throwable
      */
@@ -27,12 +31,17 @@ class RefundTaxTransactions extends OrgAction
 
         $transactions = $originalInvoice->invoiceTransactions->where('net_amount', '>', 0);
         $tasks        = [];
+
+        $refund = $this->update($refund, [
+            'is_tax_only' => true
+        ]);
+
         foreach ($transactions->chunk(100) as $chunkedTransactions) {
             foreach ($chunkedTransactions as $transaction) {
 
-                $taxAmount = $transaction->taxCategory?->rate * $transaction->net_amount;
+                $taxAmount = $transaction->taxCategory->rate * $transaction->net_amount;
 
-                $tasks[] = fn() => StoreRefundInvoiceTransaction::run($refund, $transaction, [
+                $tasks[] = fn () => StoreRefundInvoiceTransaction::run($refund, $transaction, [
                     'net_amount'  => 0,
                     'refund_all'  => false,
                     'is_tax_only' => true,
@@ -46,6 +55,7 @@ class RefundTaxTransactions extends OrgAction
         }
 
         CalculateInvoiceTotals::run($refund);
+        FinaliseRefund::run($refund);
 
         return $refund;
     }

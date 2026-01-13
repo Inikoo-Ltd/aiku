@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
                             <div class="my-2 pt-4 space-y-5 transition-all duration-1000 ease-in-out" :class="fieldGroupAnimateSection">
                                 <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                     <!-- Field: is not hidden = true -->
-                                    <div v-if="!fieldData?.hidden" class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
+                                    <div v-if="fieldData && !fieldData?.hidden" class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
                                         <Action v-if="fieldData.type==='action'" :action="fieldData.action" :dataToSubmit="fieldData.action?.data" />
                                         <FieldForm v-else :key="index" :field="fieldName" :fieldData="fieldData" :args="formData.args" />
                                     </div>

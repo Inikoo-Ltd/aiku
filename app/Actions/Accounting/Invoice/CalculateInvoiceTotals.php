@@ -19,10 +19,9 @@ class CalculateInvoiceTotals extends OrgAction
 {
     public function handle(Invoice $invoice): Invoice
     {
-
-//        if($invoice->is_tax_only){
-//           return  CalculateInvoiceTotalsTaxOnly::run($invoice);
-//        }
+        if($invoice->is_tax_only){
+            return CalculateInvoiceTotalsTaxOnly::run($invoice);
+        }
 
         $transactions = $invoice->invoiceTransactions;
 
