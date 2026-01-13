@@ -4,9 +4,8 @@ namespace App\Actions\CRM\ChatSession;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Bus;
-use App\Events\BroadcastRealtimeChat;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\CRM\Livechat\ChatMessage;
+use App\Events\TranslationChatIndicator;
 use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -17,7 +16,6 @@ class TranslateSessionMessages
 
     public function handle(ChatSession $chatSession, int $targetLanguageId): void
     {
-
         $messages = $chatSession->messages()
             ->whereIn('sender_type', [ChatSenderTypeEnum::USER, ChatSenderTypeEnum::GUEST])
             ->whereDoesntHave('translations', function ($query) use ($targetLanguageId) {
@@ -26,7 +24,7 @@ class TranslateSessionMessages
             ->get();
 
         if ($messages->isEmpty()) {
-            return;
+            TranslationChatIndicator::dispatch($chatSession, $targetLanguageId);
         }
 
         $jobs = [];
@@ -39,13 +37,16 @@ class TranslateSessionMessages
             );
         }
 
-        $messageIds = $messages->pluck('id')->toArray();
 
-        $jobs[] = function () use ($messageIds) {
-            $translatedMessages = ChatMessage::whereIn('id', $messageIds)->get();
+        $chatSessionId = $chatSession->id;
 
-            foreach ($translatedMessages as $msg) {
-                BroadcastRealtimeChat::dispatch($msg);
+        $jobs[] = function () use ($chatSessionId, $targetLanguageId) {
+
+
+            $session = ChatSession::find($chatSessionId);
+
+            if ($session) {
+                TranslationChatIndicator::dispatch($session, $targetLanguageId);
             }
         };
 
