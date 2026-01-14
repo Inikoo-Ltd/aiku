@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class RetrieveShopifyAssignedOrders extends OrgAction
 {
@@ -34,10 +35,10 @@ class RetrieveShopifyAssignedOrders extends OrgAction
         foreach ($fulfillmentOrders as $edge) {
             $fulfillmentOrder = $edge['node'];
 
-            if (!isset($fulfillmentOrder['destination'])) {
-                RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], __("Order don't have shipping information"));
-            } else {
-                AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
+            $fulfillmentOrderRequested = SplitShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
+
+            if(Arr::has($fulfillmentOrderRequested, 'id')) {
+                AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrderRequested);
             }
         }
 
