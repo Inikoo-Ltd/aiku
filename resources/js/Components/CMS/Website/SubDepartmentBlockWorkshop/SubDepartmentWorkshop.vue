@@ -15,6 +15,7 @@ import DepartmentListTree from "./DepartmentListTree.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import ScreenView from "@/Components/ScreenView.vue";
 import { setColorStyleRootByEl } from "@/Composables/useApp"
+import { trans } from "laravel-vue-i18n";
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop);
 
@@ -144,7 +145,7 @@ console.log("LAYOUT STATE:", layoutState);
 <template>
   <div class="pt-4">
     <div class="mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
-      *This block usually showed in Department page
+      {{trans('*This block usually showed in Department page')}}
     </div>
 
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
@@ -178,9 +179,9 @@ console.log("LAYOUT STATE:", layoutState);
           style="height: 100%;">
           <div class="flex flex-col items-center gap-2">
             <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
-            <h3 class="text-lg font-semibold">No department selected</h3>
+            <h3 class="text-lg font-semibold">{{trans('No department selected')}}</h3>
             <p class="text-sm max-w-xs">
-              Please pick a department to preview its data here.
+              {{trans('Please pick a department to preview its data here.')}}
             </p>
           </div>
           <Button :label="'Pick a department as a data preview'" @click="visibleDrawer = true" />
@@ -192,8 +193,8 @@ console.log("LAYOUT STATE:", layoutState);
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">Department Overview</h2>
-        <p class="text-xs text-gray-500">Choose a department to preview</p>
+        <h2 class="text-base font-semibold">{{trans('Department Overview')}}</h2>
+        <p class="text-xs text-gray-500">{{trans('Choose a department to preview')}}</p>
       </div>
     </template>
 

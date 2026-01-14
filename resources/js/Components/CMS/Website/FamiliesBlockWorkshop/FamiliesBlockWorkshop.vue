@@ -158,7 +158,7 @@ onMounted(() => {
 <template>
   <div class="pt-4">
     <div class="mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
-      *This block usually showed in Sub Department page
+     {{  trans("*This block usually showed in Sub Department page")}}
     </div>
 
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
@@ -204,9 +204,9 @@ onMounted(() => {
         <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]" style="height: 100%;">
           <div class="flex flex-col items-center gap-2">
             <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
-            <h3 class="text-lg font-semibold">No sub-department selected</h3>
+            <h3 class="text-lg font-semibold">{{ trans("No sub-department selected")}}</h3>
             <p class="text-sm max-w-xs">
-              Please pick a sub-department to preview its data here.
+              {{ trans("Please pick a sub-department to preview its data here.")}}
             </p>
           </div>
           <Button :label="'Pick a sub-department as a data preview'" @click="visibleDrawer = true" />
@@ -218,8 +218,8 @@ onMounted(() => {
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">Sub-Department Overview</h2>
-        <p class="text-xs text-gray-500">Choose a Sub-department to preview</p>
+        <h2 class="text-base font-semibold">{{ trans("Sub-Department Overview")}}</h2>
+        <p class="text-xs text-gray-500">{{ trans("Choose a Sub-department to preview")}}</p>
       </div>
     </template>
 
