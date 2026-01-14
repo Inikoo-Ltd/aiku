@@ -229,62 +229,49 @@ watch(
 </script>
 
 <template>
-    <div class="flex items-center gap-2 relative">
-        <div class="flex items-center border rounded-lg overflow-hidden min-w-28 max-w-32">
-            <button class="px-2.5 py-2" :disabled="isLoadingSubmitQuantityProduct" @click="decrementQty">
+    <div class="qty-root">
+        <div class="qty-control">
+            <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="decrementQty">
                 <FontAwesomeIcon icon="fas fa-minus" />
             </button>
 
-            <input type="number" class="w-full h-10 text-center outline-none" :disabled="isLoadingSubmitQuantityProduct"
+            <input type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
                 :value="customer.quantity_ordered_new ?? customer.quantity_ordered ?? 0" @input="onManualInput" />
 
-            <button class="px-2.5 py-2" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
+            <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
                 <FontAwesomeIcon icon="fas fa-plus" />
             </button>
         </div>
 
-        <ConditionIcon :state="status" class="absolute -right-7 top-1/2 -translate-y-1/2" />
+        <ConditionIcon class="qty-status" :state="status" />
 
-        <Button v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" class="ml-8" icon="fas fa-plus"
-            :label="trans('Add to basket')" type="primary" size="lg" :loading="isLoadingSubmitQuantityProduct"
-            :inject-style="buttonStyle" @click="onAddToBasket(product, 1)" />
+        <Button v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" class="qty-add-btn"
+            icon="fas fa-plus" :label="trans('Add to basket')" type="primary" size="lg"
+            :loading="isLoadingSubmitQuantityProduct" @click="onAddToBasket(product, 1)" />
 
-        <div v-if="customer.quantity_ordered" class="ml-2 text-gray-700 flex flex-col gap-0.5 text-xs sm:text-sm">
-            <span class="text-gray-500">
+        <div v-if="customer.quantity_ordered" class="qty-info">
+            <span class="qty-info-label">
                 {{ trans('Current amount in basket') }}:
             </span>
 
             <!-- WITH OFFER -->
-            <strong v-if="customer?.offer_price_per_unit && Object.keys(customer.offers_data).length" class="flex flex-wrap items-baseline gap-1">
-                <span class="line-through opacity-60 text-gray-600 text-[10px] sm:text-xs">
-                    {{
-                        locale.currencyFormat(
-                            layout?.iris?.currency?.code,
-                            product.price * customer.quantity_ordered)
-                    }}
+            <strong v-if="customer?.offer_price_per_unit && Object.keys(customer.offers_data).length"
+                class="qty-price qty-price--offer">
+                <span class="qty-price-old">
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.price * customer.quantity_ordered) }}
                 </span>
 
-                <span class=" font-semibold text-green-600 text-base md:text-xl sm:text-lg">
-                    {{
-                        locale.currencyFormat(
-                            layout?.iris?.currency?.code,
-                            customer.offer_net_amount_per_quantity * customer.quantity_ordered
-                    )
-                    }}
+                <span class="qty-price-new">
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, customer.offer_net_amount_per_quantity *
+                        customer.quantity_ordered) }}
                 </span>
             </strong>
 
             <!-- NO OFFER -->
-            <strong v-else class=" font-semibold text-gray-800text-sm sm:text-base md:text-lg">
-                {{
-                    locale.currencyFormat(
-                        layout?.iris?.currency?.code,
-                        product.price * customer.quantity_ordered
-                )
-                }}
+            <strong v-else class="qty-price">
+                {{ locale.currencyFormat(layout?.iris?.currency?.code, product.price * customer.quantity_ordered) }}
             </strong>
         </div>
-
     </div>
 </template>
 
@@ -297,5 +284,65 @@ input[type='number']::-webkit-outer-spin-button {
 
 input[type='number'] {
     -moz-appearance: textfield;
+}
+
+
+.qty-root {
+  @apply flex items-center gap-2 relative;
+}
+
+.qty-control {
+  @apply flex items-center border border-gray-200 rounded-lg overflow-hidden min-w-28 max-w-32;
+}
+
+.qty-btn {
+  @apply px-2.5 py-2 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.qty-input {
+  @apply w-full h-10 text-center outline-none;
+}
+
+/* remove spinner */
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qty-input {
+  -moz-appearance: textfield;
+}
+
+.qty-status {
+  @apply absolute -right-7 top-1/2 -translate-y-1/2;
+}
+
+.qty-add-btn {
+  @apply ml-8;
+}
+
+.qty-info {
+  @apply ml-2 text-gray-700 flex flex-col gap-0.5 text-xs sm:text-sm;
+}
+
+.qty-info-label {
+  @apply text-gray-500;
+}
+
+.qty-price {
+  @apply font-semibold text-gray-800 text-sm sm:text-base md:text-lg;
+}
+
+.qty-price--offer {
+  @apply flex flex-wrap items-baseline gap-1;
+}
+
+.qty-price-old {
+  @apply line-through opacity-60 text-gray-600 text-[10px] sm:text-xs;
+}
+
+.qty-price-new {
+  @apply font-semibold text-green-600 text-base sm:text-lg md:text-xl;
 }
 </style>

@@ -361,6 +361,7 @@ const idxProductLoading = ref<number | null>(null)
                                             <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52" @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
                                                 <span v-if="product.units > 1" class="mr-1">{{ product.units }}x</span>{{ product.name }}
                                             </LinkIris>
+                                            <div class="text-xxs text-gray-400">{{ product.code }}</div>
                                         </div>
                                     </div>
 
