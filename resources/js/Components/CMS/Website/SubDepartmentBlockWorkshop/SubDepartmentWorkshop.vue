@@ -2,7 +2,7 @@
 import { faCube, faLink } from "@fal";
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop, faInfoCircle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { ref, provide, inject, toRaw, watch } from "vue";
+import { ref, provide, inject, toRaw, watch , onMounted} from "vue";
 import SideMenuSubDepartmentWorkshop from "./SideMenuSubDepartmentWorkshop.vue";
 import { getComponent } from "@/Composables/getWorkshopComponents";
 import { router } from "@inertiajs/vue3";
@@ -14,6 +14,7 @@ import Drawer from 'primevue/drawer';
 import DepartmentListTree from "./DepartmentListTree.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import ScreenView from "@/Components/ScreenView.vue";
+import { setColorStyleRootByEl } from "@/Composables/useApp"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop);
 
@@ -27,7 +28,7 @@ const props = defineProps<{
   };
 }>();
 
-
+const rootRef = ref<HTMLElement | null>(null)
 const layoutState = ref(JSON.parse(JSON.stringify(props.data.layout)));
 
 
@@ -129,6 +130,13 @@ const onPickTemplate = (template: any) => {
   autosave();
 };
 
+
+onMounted(() => {
+  if (rootRef.value && props.layout_theme?.color) {
+    setColorStyleRootByEl(rootRef.value, props.layout_theme.color)
+  }
+})
+
 console.log("LAYOUT STATE:", layoutState);
 </script>
 
@@ -156,7 +164,7 @@ console.log("LAYOUT STATE:", layoutState);
             <span v-else>Pick The department</span>
           </div>
         </div>
-        <div v-if="props.data.layout?.code" :class="['border-2 border-t-0', iframeClass]">
+        <div v-if="props.data.layout?.code" ref="rootRef" :class="['border-2 border-t-0', iframeClass]">
           <component class="flex-1 overflow-auto active-block"
             :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" :screenType="currentView"
             :modelValue="{
@@ -195,8 +203,4 @@ console.log("LAYOUT STATE:", layoutState);
 </template>
 
 <style scoped>
-.selected-bg {
-  background-color: v-bind('layoutTheme?.app?.theme[0]') !important;
-  color: v-bind('layoutTheme?.app?.theme[1]') !important;
-}
 </style>

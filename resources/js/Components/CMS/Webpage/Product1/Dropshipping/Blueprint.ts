@@ -90,7 +90,7 @@ export default {
 			],
 		},
 		{
-            name: "Button Add to basket / portofolio",
+            name: "Button Add to portofolio",
             key: ["button", "properties"],
             replaceForm: [
                     {

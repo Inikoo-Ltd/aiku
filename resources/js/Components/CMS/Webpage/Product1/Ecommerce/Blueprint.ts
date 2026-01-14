@@ -1,5 +1,4 @@
 import BlueprintSideInformation from "@/Components/CMS/Webpage/Product1/BlueprintSideInformation"
-
 export default {
 	blueprint: [
 		{
@@ -89,8 +88,8 @@ export default {
 				},
 			],
 		},
-		{
-            name: "Button Add to basket / portofolio",
+		/* {
+            name: "Button Add to basket",
             key: ["button", "properties"],
             replaceForm: [
                     {
@@ -108,7 +107,7 @@ export default {
                         type: "border",
                     },
                 ],
-        },
+        }, */
 		{
             name: "Button login",
             key: ["buttonLogin", "properties"],

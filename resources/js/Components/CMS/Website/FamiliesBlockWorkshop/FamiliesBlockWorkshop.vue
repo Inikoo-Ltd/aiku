@@ -1,49 +1,81 @@
 <script setup lang="ts">
-import { faCube, faInfoCircle, faLink } from "@fal"
-import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, watch, provide, inject, toRaw } from "vue"
-import { getComponent } from "@/Composables/getWorkshopComponents"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { ref, provide, inject, computed, toRaw, onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
-import { routeType } from "@/types/route"
-import SideMenuSubDepartmentWorkshop from "./SideMenuFamiliesBlockWorkshop.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
-import Drawer from 'primevue/drawer'
-import SubDepartmentListTree from "./SubDepartmentListTree.vue"
-import ScreenView from "@/Components/ScreenView.vue"
+import Drawer from "primevue/drawer"
+
+import {
+  faCube,
+  faInfoCircle,
+  faLink
+} from "@fal"
+import {
+  faStar,
+  faCircle,
+  faChevronLeft,
+  faChevronRight,
+  faDesktop
+} from "@fas"
+
+import { getComponent } from "@/Composables/getWorkshopComponents"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { setColorStyleRootByEl } from "@/Composables/useApp"
 import { trans } from "laravel-vue-i18n"
 
-library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
+import SideMenuSubDepartmentWorkshop from "./SideMenuFamiliesBlockWorkshop.vue"
+import SubDepartmentListTree from "./SubDepartmentListTree.vue"
+import ScreenView from "@/Components/ScreenView.vue"
+
+import type { routeType } from "@/types/route"
+
+library.add(
+  faCube,
+  faLink,
+  faStar,
+  faCircle,
+  faChevronLeft,
+  faChevronRight,
+  faDesktop
+)
+
 
 const props = defineProps<{
   data: {
-    web_block_types: any;
-    autosaveRoute: routeType;
-    layout: any;
-    sub_departments: any[];
-    update_family_route: routeType;
+    web_block_types: any
+    autosaveRoute: routeType
+    layout: any
+    sub_departments: any[]
+    update_family_route: routeType
   }
+  layout_theme: Array<any>
 }>()
 
-const layoutTheme = inject('layout', layoutStructure)
-const isModalOpen = ref(false)
-const isLoadingSave = ref(false)
-const visibleDrawer = ref(false)
-provide("visibleDrawer", visibleDrawer)
 
-const currentView = ref("desktop")
+
+const layoutTheme = inject("layout", layoutStructure)
+
+const rootRef = ref<HTMLElement | null>(null)
+
+const visibleDrawer = ref(false)
+const isLoadingSave = ref(false)
+const currentView = ref<"desktop" | "tablet" | "mobile">("desktop")
+
+provide("visibleDrawer", visibleDrawer)
 provide("currentView", currentView)
 
-const iframeClass = ref("w-full h-full")
-
-watch(currentView, (newVal) => {
-  iframeClass.value = setIframeView(newVal)
+const dataPicked = ref<{
+  sub_department: any | null
+  families: any[]
+}>({
+  sub_department: null,
+  families: []
 })
 
-const setIframeView = (view: string) => {
-  switch (view) {
+
+const iframeClass = computed(() => {
+  switch (currentView.value) {
     case "mobile":
       return "w-[375px] h-[667px] mx-auto"
     case "tablet":
@@ -51,73 +83,77 @@ const setIframeView = (view: string) => {
     default:
       return "w-full h-full"
   }
-}
+})
 
-// === Handle pick template ===
+
 const onPickTemplate = (template: any) => {
-  isModalOpen.value = false
   props.data.layout = {
     ...template,
     data: {
       ...template.data,
       fieldValue: {
-        container : {
-          properties : null
+        container: {
+          properties: null
         }
       }
     }
   }
+
   autosave()
 }
 
-const dataPicked = ref({
-  sub_department : null,
-  families : []
-})
-// === Handle change sub-department ===
-const onChangeDepartment = (value: any) => {
-    dataPicked.value.sub_department = value.sub_department
-    dataPicked.value.families = value.families || []
+const onChangeDepartment = (payload: any) => {
+  dataPicked.value = {
+    sub_department: payload.sub_department,
+    families: payload.families || []
+  }
 }
 
-// === Autosave logic ===
-const autosave = () => {
-  const payload = JSON.parse(JSON.stringify(toRaw(props.data.layout)))
 
-  if (payload.data?.fieldValue) {
+const autosave = () => {
+  const payload = structuredClone(toRaw(props.data.layout))
+
+  if (payload?.data?.fieldValue) {
     delete payload.data.fieldValue.families
     delete payload.data.fieldValue.sub_department
   }
 
   router.patch(
-    route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
+    route(
+      props.data.autosaveRoute.name,
+      props.data.autosaveRoute.parameters
+    ),
     { layout: payload },
     {
-      onStart: () => { isLoadingSave.value = true },
-      onFinish: () => { isLoadingSave.value = false },
-      onSuccess: () => {},
+      onStart: () => (isLoadingSave.value = true),
+      onFinish: () => (isLoadingSave.value = false),
       onError: (errors) => {
         notify({
-          title: 'Autosave Failed',
-          text: errors?.message || 'Unknown error occurred.',
-          type: 'error',
+          title: "Autosave Failed",
+          text: errors?.message ?? "Unknown error occurred",
+          type: "error"
         })
       }
     }
   )
 }
 
-// === Debounce helper ===
-function debounce(fn: Function, delay = 800) {
-  let timer: any
-  return (...args: any[]) => {
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(() => fn(...args), delay)
-  }
-}
-const debouncedAutosave = debounce(autosave)
 
+let autosaveTimer: number | null = null
+const debouncedAutosave = () => {
+  if (autosaveTimer) clearTimeout(autosaveTimer)
+  autosaveTimer = window.setTimeout(autosave, 800)
+}
+
+
+
+onMounted(() => {
+  if (rootRef.value && props.layout_theme?.color) {
+    setColorStyleRootByEl(rootRef.value, props.layout_theme.color)
+  }
+})
 </script>
+
 
 <template>
   <div class="pt-4">
@@ -151,7 +187,7 @@ const debouncedAutosave = debounce(autosave)
           </div>
         </div>
 
-        <div v-if="data.layout?.code" :class="['border-2 border-t-0 overflow-auto', iframeClass]">
+        <div v-if="data.layout?.code" ref="rootRef" :class="['border-2 border-t-0 overflow-auto', iframeClass]">
           <component
             class="flex-1 active-block"
             :is="getComponent(data.layout.code, { shop_type: layoutTheme?.shopState?.type })"
@@ -196,8 +232,4 @@ const debouncedAutosave = debounce(autosave)
 </template>
 
 <style scoped>
-.selected-bg {
-  background-color: v-bind('layoutTheme?.app?.theme[0]') !important;
-  color: v-bind('layoutTheme?.app?.theme[1]') !important;
-}
 </style>
