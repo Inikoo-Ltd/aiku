@@ -16,10 +16,6 @@ class ChatMessageResource extends JsonResource
 
         $translations = $chatMessage->translations;
 
-        if ($request->has('translation_language_id')) {
-            $translations = $translations->where('target_language_id', $request->translation_language_id);
-        }
-
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,

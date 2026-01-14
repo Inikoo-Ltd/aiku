@@ -79,7 +79,12 @@ class GetChatMessages
         $query = $chatSession->messages()
             ->with([
                 'media',
-                'translations.targetLanguage',
+                'translations' => function ($query) use ($filters) {
+                    $query->with('targetLanguage');
+                    if (!empty($filters['translation_language_id'])) {
+                        $query->where('target_language_id', $filters['translation_language_id']);
+                    }
+                },
                 'originalLanguage',
                 'attachment',
                 'chatSession.assignments.chatAgent.user'
