@@ -77,7 +77,13 @@ class GetChatMessages
     public function handle(ChatSession $chatSession, array $filters)
     {
         $query = $chatSession->messages()
-            ->with(['media'])
+            ->with([
+                'media',
+                'translations.targetLanguage',
+                'originalLanguage',
+                'attachment',
+                'chatSession.assignments.chatAgent.user'
+            ])
             ->orderBy('created_at', 'desc');
 
         if (!empty($filters['cursor'])) {
@@ -94,7 +100,7 @@ class GetChatMessages
 
         $limit = $filters['limit'] ?? 20;
 
-        return $query->limit($limit)->get()->sortBy('created_at');
+        return $query->limit($limit)->get()->sortBy('created_at')->values();
     }
 
 
@@ -106,6 +112,9 @@ class GetChatMessages
             'data' => [
                 'session_ulid'   => $result['chatSession']->ulid,
                 'session_status' => $result['chatSession']->status->value,
+                'assigned_agent' => $result['chatSession']->assignments->last()?->chatAgent?->user?->contact_name
+                    ?? $result['chatSession']->assignments->last()?->chatAgent?->user?->username
+                    ?? null,
                 'rating'         => $result['chatSession']->rating,
                 'messages'       => ChatMessageResource::collection($result['messages']),
                 'pagination'     => $result['pagination'],
