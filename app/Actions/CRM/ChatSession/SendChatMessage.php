@@ -27,9 +27,17 @@ class SendChatMessage
 
     public function handle(ChatSession $chatSession, array $modelData): ChatMessage
     {
+        $rawMessage = $modelData['message_text'] ?? '';
+        if ($rawMessage !== null) {
+            $sanitizedMessage = strip_tags($rawMessage);
+            $sanitizedMessage = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $sanitizedMessage);
+            $sanitizedMessage = trim($sanitizedMessage);
+        } else {
+            $sanitizedMessage = null;
+        }
         $exists = ChatMessage::where('chat_session_id', $chatSession->id)
             ->where('sender_type', $modelData['sender_type'])
-            ->where('message_text', $modelData['message_text'] ?? '')
+            ->where('message_text', $sanitizedMessage ?? '')
             ->whereBetween('created_at', [now()->subSeconds(1), now()])
             ->first();
 
@@ -43,9 +51,9 @@ class SendChatMessage
             'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
             'sender_type'     => $modelData['sender_type'],
             'sender_id'       => $modelData['sender_id'] ?? null,
-            'message_text'    => $modelData['message_text'] ?? null,
+            'message_text'    => $sanitizedMessage,
             'media_id'        => $modelData['media_id'] ?? null,
-            'original_text'        => $modelData['message_text'] ?? null,
+            'original_text'   => $sanitizedMessage,
             'media_id'        => $modelData['media_id'] ?? null,
             'is_read'         => false,
             'created_at'      => now(),
