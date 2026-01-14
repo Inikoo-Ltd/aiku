@@ -81,7 +81,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $picking_session_id
  * @property string|null $original_quantity_required
  * @property string|null $batch_code
- * @property string|null $expiry_date
+ * @property \Illuminate\Support\Carbon|null $expiry_date
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock

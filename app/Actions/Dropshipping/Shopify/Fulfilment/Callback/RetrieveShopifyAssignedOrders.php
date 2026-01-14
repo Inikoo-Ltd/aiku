@@ -37,7 +37,7 @@ class RetrieveShopifyAssignedOrders extends OrgAction
 
             $fulfillmentOrderRequested = SplitShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
 
-            if(Arr::has($fulfillmentOrderRequested, 'id')) {
+            if (Arr::has($fulfillmentOrderRequested, 'id')) {
                 AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrderRequested);
             }
         }

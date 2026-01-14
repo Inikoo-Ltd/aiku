@@ -21,9 +21,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $orders
  * @property int|null $delivery_notes
  * @property int|null $customers_invoiced
- * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $from
  * @property \Illuminate\Support\Carbon|null $to
+ * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferTimeSeriesRecord newModelQuery()

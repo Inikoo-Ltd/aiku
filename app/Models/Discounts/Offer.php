@@ -50,7 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_locked
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $start_at
+ * @property \Illuminate\Support\Carbon|null $start_at
  * @property \Illuminate\Support\Carbon|null $end_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
@@ -71,10 +71,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read Model|\Eloquent|null $trigger
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferTimeSeries> $timeSeries
  * @method static \Database\Factories\Discounts\OfferFactory factory($count = null, $state = [])
  * @method static Builder<static>|Offer newModelQuery()
  * @method static Builder<static>|Offer newQuery()

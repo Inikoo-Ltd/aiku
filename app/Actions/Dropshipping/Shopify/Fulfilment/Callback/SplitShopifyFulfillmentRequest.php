@@ -32,7 +32,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
                 $portfolio = $shopifyUser->customerSalesChannel->portfolios()
                     ->where('platform_product_id', $productId)->exists();
 
-                if($portfolio) {
+                if ($portfolio) {
                     $fulfillmentOrderItemsDefined[] = [
                         'id' => $lineItem['id'],
                         'quantity' => $lineItem['remainingQuantity']
@@ -42,19 +42,19 @@ class SplitShopifyFulfillmentRequest extends OrgAction
 
             $destination = isset($fulfillmentOrder['destination']);
 
-            if(count($fulfillmentOrderItemsDefined) === count($lineItems) && $destination) {
+            if (count($fulfillmentOrderItemsDefined) === count($lineItems) && $destination) {
                 return $fulfillmentOrder;
             }
 
             $rejectMsg = __("The items can't be fulfilled because you don't have the items in your portfolio.");
 
-            if(! $destination) {
+            if (! $destination) {
                 $rejectMsg = __("Order don't have shipping information");
             }
 
             RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], $rejectMsg);
 
-            if(! $destination) {
+            if (! $destination) {
                 return ['error' => $rejectMsg];
             }
 
@@ -115,7 +115,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
 
             $remainingFulfillmentOrder = Arr::get($body, 'data.fulfillmentOrderSplit.fulfillmentOrderSplits.0.remainingFulfillmentOrder');
 
-            if(!Arr::has($remainingFulfillmentOrder, 'id')) {
+            if (!Arr::has($remainingFulfillmentOrder, 'id')) {
                 return [];
             }
 
