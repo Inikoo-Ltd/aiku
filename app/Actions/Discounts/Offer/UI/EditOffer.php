@@ -98,11 +98,7 @@ class EditOffer extends OrgAction
                                     'edit_offer'        => [
                                         'type'        => 'editOffer',
                                         'label'       => __('Settings'),
-                                        'information'   => __('Total quantity of all products'),
-                                        'placeholder' => __('Quantity'),
                                         'required'    => true,
-                                        // 'noSaveButton' => true,
-                                        'full'    => true,
                                         'currency_code' => $this->organisation->currency->code,
                                         'offer'         => $offer,
                                         'value'       => [

@@ -58,9 +58,8 @@ class ShowOffer extends OrgAction
 
     public function htmlResponse(Offer $offer, ActionRequest $request): Response
     {
-        $title      = $this->offer->slug;
+        $afterTitle      = $offer->code;
         $icon       = ['fal', 'fa-badge-percent'];
-        $afterTitle = null;
         $iconRight  = null;
 
         if ($this->parent instanceof Shop) {
@@ -83,9 +82,12 @@ class ShowOffer extends OrgAction
                 ),
                 'title'       => __('Offer') . ' ' . $offer->code,
                 'pageHead'    => [
-                    'title'      => $title,
-                    'model'      => __('Offers'),
-                    'afterTitle' => $afterTitle,
+                    'title'      => $offer->name,
+                    'model'      => __('Offer'),
+                    // 'titleRight'    => $afterTitle,
+                    // 'afterTitle' => [
+                    //     'label' => $afterTitle
+                    // ],
                     'iconRight'  => $iconRight,
                     'icon'       => $icon,
                     'actions'    => $actions

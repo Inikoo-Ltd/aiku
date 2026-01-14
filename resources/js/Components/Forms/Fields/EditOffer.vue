@@ -81,95 +81,96 @@ const offerType = props.fieldData.offer.type
 
 
 <template>
-    <div class="relative">
+    <div class="relative max-w-2xl w-full">
 
-        <div class="max-w-2xl space-y-3">
-            <div>
-                Trigger
+        <div v-if="['Amount AND Order Number', 'Category Quantity Ordered'].includes(offerType)" class="border-b border-gray-300 border-dashed pb-4 mb-2">
+            <div class="font-bold text-orange-600 text-lg">
+                {{ trans("Trigger") }}
             </div>
 
-            <div v-if="['Category Quantity Ordered'].includes(offerType)" class="grid grid-cols-7 gap-x-4 gap-y-2">
-                <div class="col-span-3">
-                    Minimum quantity
+            <div class="pl-4">
+                <div v-if="['Category Quantity Ordered'].includes(offerType)" class="flex flex-col grid-cols-7 gap-x-4">
+                    <div class="col-span-3">
+                        {{ trans("Minimum quantity") }}
+                    </div>
+                    <div class="col-span-4">
+                        <InputNumber
+                            :modelValue="get(form, [fieldName, 'trigger_item_quantity'], 1)"
+                            @input="(e) => set(form, [fieldName, 'trigger_item_quantity'], e.value)"
+                            inputId="trigger_item_quantity"
+                            :min="1"
+                            placeholder="Enter a number"
+                            :suffix="' ' + (get(form, [fieldName, 'trigger_item_quantity'], 1) > 1 ? trans('items') : trans('item'))"
+                        />
+                    </div>
                 </div>
-
-                <div class="col-span-4">
-                    <InputNumber
-                        :modelValue="get(form, [fieldName, 'trigger_item_quantity'], 1)"
-                        @input="(e) => set(form, [fieldName, 'trigger_item_quantity'], e.value)"
-                        inputId="trigger_item_quantity"
-                        :min="1"
-                        placeholder="Enter a number"
-                        :suffix="' ' + (get(form, [fieldName, 'trigger_item_quantity'], 1) > 1 ? trans('items') : trans('item'))"
-                    />
+                <!-- Section: Amounts -->
+                <div v-if="['Amount AND Order Number'].includes(offerType)" class="flex flex-col">
+                    <div class="col-span-3">
+                        {{ trans("Order amount") }}
+                        <InformationIcon information="Minimum of amount of the order" />
+                    </div>
+                    <div class="col-span-4">
+                        <InputNumber
+                            :modelValue="get(form, [fieldName, 'trigger_min_amount'], 1)"
+                            @input="(e) => set(form, [fieldName, 'trigger_min_amount'], e.value)"
+                            inputId="trigger_min_amount"
+                            :min="1"
+                            placeholder="Enter a number"
+                            mode="currency"
+                            :currency="props.fieldData?.currency_code || ''"
+                            :max-fraction-digits="2"
+                        />
+                    </div>
                 </div>
-            </div>
-
-            <!-- Section: Amounts -->
-            <div v-if="['Amount AND Order Number'].includes(offerType)" class="grid grid-cols-7 gap-x-4 gap-y-2">
-                <div class="col-span-3">
-                    Order amount
-                    <InformationIcon information="Minimum of amount of the order" />
-                </div>
-
-                <div class="col-span-4">
-                    <InputNumber
-                        :modelValue="get(form, [fieldName, 'trigger_min_amount'], 1)"
-                        @input="(e) => set(form, [fieldName, 'trigger_min_amount'], e.value)"
-                        inputId="trigger_min_amount"
-                        :min="1"
-                        placeholder="Enter a number"
-                        mode="currency"
-                        :currency="props.fieldData?.currency_code || ''"
-                        :max-fraction-digits="2"
-                    />
-                </div>
-            </div>
-
-            <!-- Section: Minimum order -->
-            <div v-if="['Amount AND Order Number'].includes(offerType)" class="grid grid-cols-7 gap-x-4 gap-y-2">
-                <div class="col-span-3">
-                    Min. order
-                    <InformationIcon information="The order count required to activate the discount (e.g., 7 = 7th order)" />
-                </div>
-
-                <div class="col-span-4">
-                    <InputNumber
-                        :modelValue="get(form, [fieldName, 'trigger_order_number'], 1)"
-                        @input="(e) => set(form, [fieldName, 'trigger_order_number'], e.value)"
-                        inputId="trigger_order_number"
-                        :min="1"
-                        placeholder="Enter a number"
-                        :suffix="' ' + (get(form, [fieldName, 'trigger_order_number'], 1) > 1 ? trans('orders') : trans('order'))"
-                    />
+                <!-- Section: Minimum order -->
+                <div v-if="['Amount AND Order Number'].includes(offerType)" class="flex flex-col">
+                    <div class="col-span-3">
+                        {{ trans("Min. order") }}
+                        <InformationIcon information="The order count required to activate the discount (e.g., 7 = 7th order)" />
+                    </div>
+                    <div class="col-span-4">
+                        <InputNumber
+                            :modelValue="get(form, [fieldName, 'trigger_order_number'], 1)"
+                            @input="(e) => set(form, [fieldName, 'trigger_order_number'], e.value)"
+                            inputId="trigger_order_number"
+                            :min="1"
+                            placeholder="Enter a number"
+                            :suffix="' ' + (get(form, [fieldName, 'trigger_order_number'], 1) > 1 ? trans('orders') : trans('order'))"
+                        />
+                    </div>
                 </div>
             </div>
 
-            <!-- Section: discounts -->
-            <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType)" class="grid grid-cols-7 gap-x-4 gap-y-2 text-green-500">
+        </div>
+
+        <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType)" class="w-full">
+            <div class="font-bold xtext-center text-green-600 text-lg">
+                {{ trans("Discount") }}
+            </div>
+
+            <div class="pl-4">
+                <!-- Section: discounts -->
+                <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType)" class="flex flex-col">
                 
-                <div class="col-span-3">
-                    Discounts
-                </div>
-
-                <div class="col-span-4">
-                    <InputNumber
-                        :modelValue="get(form, [fieldName, 'percentage_off'], 0)"
-                        @input="(e) => set(form, [fieldName, 'percentage_off'], e.value)"
-                        inputId="percentage_off"
-                        :min="0"
-                        :max="100"
-                        suffix="%"
-                        placeholder="Enter between 0-100"
-                    />
+                    <div class="col-span-3">
+                        {{ trans("Percentage off") }}
+                    </div>
+                    <div class="col-span-4">
+                        <InputNumber
+                            :modelValue="get(form, [fieldName, 'percentage_off'], 0)"
+                            @input="(e) => set(form, [fieldName, 'percentage_off'], e.value)"
+                            inputId="percentage_off"
+                            :min="0"
+                            :max="100"
+                            suffix="%"
+                            placeholder="Enter between 0-100"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
     
-    </div>
-    
-    <div class="relative">
-        <pre>{{ form[fieldName] }}</pre>
     </div>
 
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
