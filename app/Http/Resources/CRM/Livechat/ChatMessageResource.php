@@ -14,9 +14,33 @@ class ChatMessageResource extends JsonResource
     {
         $chatMessage = $this;
 
+        $translations = $chatMessage->translations;
+
+        if ($request->has('translation_language_id')) {
+            $translations = $translations->where('target_language_id', $request->translation_language_id);
+        }
+
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,
+            'original' => [
+                'text'          => $chatMessage->original_text,
+                'language_name' => $chatMessage->originalLanguage?->name,
+                'language_code' => $chatMessage->originalLanguage?->code,
+                'language_flag' => $chatMessage->originalLanguage?->flag ? asset('flags/' . $chatMessage->originalLanguage->flag) : null,
+            ],
+
+            'translations' => $translations->map(function ($translation) {
+                return [
+                    'chat_translation_id' => $translation->id,
+                    'language_id'     => $translation->targetLanguage?->id,
+                    'translated_text' => $translation->translated_text,
+                    'language_name'   => $translation->targetLanguage?->name,
+                    'language_code'   => $translation->targetLanguage?->code,
+                    'language_flag'   => $translation->targetLanguage?->flag ? asset('flags/' . $translation->targetLanguage->flag) : null,
+                ];
+            })->values(),
+
             'message_type' => $chatMessage->message_type->value,
             'sender_type' => $chatMessage->sender_type->value,
             'is_agent' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AGENT->value,

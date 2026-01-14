@@ -45,6 +45,7 @@ class UpdateAgent extends OrgAction
                 'is_online',
                 'is_available',
                 'current_chat_count',
+                'language_id',
             ];
 
             $updateData = array_intersect_key(
@@ -128,6 +129,12 @@ class UpdateAgent extends OrgAction
             'is_online' => [
                 'sometimes',
                 'boolean',
+            ],
+
+            'language_id' => [
+                'sometimes',
+                'integer',
+                'exists:languages,id',
             ],
 
             'is_available' => [

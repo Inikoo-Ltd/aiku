@@ -3,12 +3,14 @@
 namespace App\Actions\CRM\ChatSession;
 
 use Exception;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Livechat\ChatAgent;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
 
 class UpdateChatAgent
 {
@@ -17,33 +19,42 @@ class UpdateChatAgent
     public function rules(): array
     {
         return [
-            'user_id' => [
-                'sometimes',
-                'required',
-                'exists:users,id',
-            ],
-            'max_concurrent_chats' => 'sometimes|required|integer|min:1|max:50',
+            'max_concurrent_chats' => 'sometimes|required|integer|min:1|max:100',
             'is_online'            => 'sometimes|required|boolean',
             'is_available'         => 'sometimes|required|boolean',
             'current_chat_count'   => 'sometimes|required|integer|min:0',
             'specialization'       => 'sometimes|nullable|array',
-            'specialization.*'     => 'string|max:50',
+            'specialization.*'     => [
+                'string',
+                'max:50',
+                Rule::in(ChatAgentSpecializationEnum::getValues())
+            ],
             'auto_accept'          => 'sometimes|required|boolean',
+            'language_id' => [
+                'sometimes',
+                'integer',
+                'exists:languages,id',
+            ],
         ];
     }
+    // public function authorize(ActionRequest $request, ChatAgent $chatAgent): bool
+    // {
+    //     return true;
+    // }
 
-
-
-
-
-    public function authorize(ActionRequest $request, ChatAgent $chatAgent): bool
+    public function asController(ActionRequest $request, $userId): ChatAgent
     {
-        return true;
-    }
+        $chatAgent = ChatAgent::where('user_id', $userId)->first();
 
+        if (! $chatAgent) {
+            throw new HttpResponseException(
+                response()->json([
+                    'success' => false,
+                    'message' => 'Chat agent profile not found for this user.'
+                ], 404)
+            );
+        }
 
-    public function asController(ActionRequest $request, ChatAgent $chatAgent): ChatAgent
-    {
         $validated = $request->validated();
 
         return $this->handle($chatAgent, $validated);
@@ -53,27 +64,9 @@ class UpdateChatAgent
 
     public function handle(ChatAgent $chatAgent, array $data): ChatAgent
     {
-
         DB::beginTransaction();
 
         try {
-
-            if (isset($data['user_id']) && $data['user_id'] !== $chatAgent->user_id) {
-                $exists = ChatAgent::where('user_id', $data['user_id'])
-                    ->where('id', '!=', $chatAgent->id)
-                    ->whereNull('deleted_at')
-                    ->exists();
-
-                if ($exists) {
-                    throw new HttpResponseException(
-                        response()->json([
-                            'success' => false,
-                            'message' => 'User already has an active chat agent profile.'
-                        ], 422)
-                    );
-                }
-            }
-
             if (isset($data['is_available']) && !$data['is_available']) {
                 $data['current_chat_count'] = 0;
             }
@@ -90,7 +83,6 @@ class UpdateChatAgent
             DB::commit();
 
             return $chatAgent->fresh();
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -105,7 +97,7 @@ class UpdateChatAgent
 
     public function jsonResponse(ChatAgent $chatAgent): JsonResponse
     {
-        $chatAgent->load('user');
+        $chatAgent->load('user', 'language');
 
         return response()->json([
             'success' => true,
@@ -118,11 +110,12 @@ class UpdateChatAgent
                     'email' => $chatAgent->user->email,
                 ],
                 'max_concurrent_chats' => $chatAgent->max_concurrent_chats,
-                'is_online' => $chatAgent->is_online,
                 'is_available' => $chatAgent->is_available,
-                'current_chat_count' => $chatAgent->current_chat_count,
                 'specialization' => $chatAgent->specialization,
-                'auto_accept' => $chatAgent->auto_accept,
+                'language' => [
+                    'id' => $chatAgent->language?->id,
+                    'name' => $chatAgent->language?->name,
+                ],
                 'updated_at' => $chatAgent->updated_at->toISOString(),
             ]
         ]);

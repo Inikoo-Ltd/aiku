@@ -10,28 +10,28 @@ import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 
 interface ChatMessage {
-	id: number
-	chat_session_id?: number
-	message_type: string
-	sender_type: "guest" | "agent" | "system" | "user"
-	sender_id?: number
-	message_text: string
-	is_read?: boolean
-	created_at: string
+    id: number
+    chat_session_id?: number
+    message_type: string
+    sender_type: "guest" | "agent" | "system" | "user"
+    sender_id?: number
+    message_text: string
+    is_read?: boolean
+    created_at: string
 }
 
 interface ChatSessionData {
-	ulid: string
-	guest_identifier?: string
-	session_id?: number
-	contact_name?: string
+    ulid: string
+    guest_identifier?: string
+    session_id?: number
+    contact_name?: string
 }
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
-	_tempId?: string
-	_status?: LocalMessageStatus
+    _tempId?: string
+    _status?: LocalMessageStatus
 }
 
 const layout: any = inject("layout", {})
@@ -70,397 +70,387 @@ let websocketInitialized = false
 const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const syncLoginState = () => {
-	const iris = JSON.parse(localStorage.getItem("iris") || "{}")
-	isLoggedIn.value = iris?.is_logged_in === true
+    const iris = JSON.parse(localStorage.getItem("iris") || "{}")
+    isLoggedIn.value = iris?.is_logged_in === true
 }
 
 const saveChatSession = (sessionData: ChatSessionData) => {
-	localStorage.setItem(
-		"chat",
-		JSON.stringify({ ...sessionData, saved_at: new Date().toISOString() })
-	)
+    localStorage.setItem(
+        "chat",
+        JSON.stringify({ ...sessionData, saved_at: new Date().toISOString() })
+    )
 }
 
 const loadChatSession = () => {
-	try {
-		const raw = localStorage.getItem("chat")
-		if (!raw) return null
-		const parsed = JSON.parse(raw)
-		return parsed?.ulid ? parsed : null
-	} catch {
-		return null
-	}
+    try {
+        const raw = localStorage.getItem("chat")
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        return parsed?.ulid ? parsed : null
+    } catch {
+        return null
+    }
 }
 
 const createSession = async (): Promise<ChatSessionData | null> => {
-	const existing = loadChatSession()
-	if (existing) {
-		chatSession.value = existing
-		return existing
-	}
+    const existing = loadChatSession()
+    if (existing) {
+        chatSession.value = existing
+        return existing
+    }
 
-	loading.value = true
-	try {
-		const payload: any = {
-			language_id: 64,
-			priority: "normal",
-			shop_id: layout?.iris?.shop?.id,
-		}
+    loading.value = true
+    try {
+        const payload: any = {
+            language_id: 64,
+            priority: "normal",
+            shop_id: layout?.iris?.shop?.id,
+        }
 
-		if (isLoggedIn.value) {
-			payload.web_user_id = layout.user?.id
-		}
+        if (isLoggedIn.value) {
+            payload.web_user_id = layout.user?.id
+        }
 
-		const res = await axios.post(`${baseUrl}/app/api/chats/sessions`, payload)
-		if (res.data?.data?.ulid) {
-			saveChatSession(res.data.data)
-			chatSession.value = res.data.data
-			return res.data.data
-		}
-		return null
-	} finally {
-		loading.value = false
-	}
+        const res = await axios.post(`${baseUrl}/app/api/chats/sessions`, payload)
+        if (res.data?.data?.ulid) {
+            saveChatSession(res.data.data)
+            chatSession.value = res.data.data
+            return res.data.data
+        }
+        return null
+    } finally {
+        loading.value = false
+    }
 }
 
 const markAsRead = async () => {
-	if (!chatSession.value?.ulid) return
-	try {
-		const requestFrom = isLoggedIn.value ? "user" : "guest"
-		await axios.post(`${baseUrl}/app/api/chats/read`, {
-			session_ulid: chatSession.value.ulid,
-			request_from: requestFrom,
-		})
-	} catch (e) {
-		console.error("Failed to mark read", e)
-	}
+    if (!chatSession.value?.ulid) return
+    try {
+        const requestFrom = isLoggedIn.value ? "user" : "guest"
+        await axios.post(`${baseUrl}/app/api/chats/read`, {
+            session_ulid: chatSession.value.ulid,
+            request_from: requestFrom,
+        })
+    } catch (e) {
+        console.error("Failed to mark read", e)
+    }
 }
 
 const getMessages = async (loadMore = false) => {
-	if (!chatSession.value?.ulid) return
+    if (!chatSession.value?.ulid) return
 
-	try {
-		if (loadMore) isLoadingMore.value = true
+    try {
+        if (loadMore) isLoadingMore.value = true
 
-		const requestFrom = isLoggedIn.value ? "user" : "guest"
-		let url = `${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages?request_from=${requestFrom}`
+        const requestFrom = isLoggedIn.value ? "user" : "guest"
+        let url = `${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages?request_from=${requestFrom}`
 
-		if (loadMore && messagesLocal.value.length) {
-			url += `?cursor=${messagesLocal.value[0].created_at}&limit=100`
-		}
+        if (loadMore && messagesLocal.value.length) {
+            url += `?cursor=${messagesLocal.value[0].created_at}&limit=100`
+        }
 
-		const res = await axios.get(url)
+        const res = await axios.get(url)
 
-		const fetched =
-			res.data?.data?.messages?.map((m: ChatMessage) => ({
-				...m,
-				_status: "sent",
-			})) ?? []
+        const fetched =
+            res.data?.data?.messages?.map((m: ChatMessage) => ({
+                ...m,
+                _status: "sent",
+            })) ?? []
 
-		if (!loadMore) {
-			messagesLocal.value = fetched
-		} else {
-			messagesLocal.value.unshift(...fetched)
-		}
+        if (!loadMore) {
+            messagesLocal.value = fetched
+        } else {
+            messagesLocal.value.unshift(...fetched)
+        }
 
-		if (res.data?.data?.session_status === "closed") {
-			isRating.value = true
-			rating.value = res.data?.data?.rating ?? 0
-		}
-	} finally {
-		isLoadingMore.value = false
-	}
+        if (res.data?.data?.session_status === "closed") {
+            isRating.value = true
+            rating.value = res.data?.data?.rating ?? 0
+        }
+    } finally {
+        isLoadingMore.value = false
+    }
 }
 
 const sendMessage = async (text: string) => {
-	if (!chatSession.value?.ulid) return
+    if (!chatSession.value?.ulid) return
 
-	const tempId = `tmp-${crypto.randomUUID()}`
+    const tempId = `tmp-${crypto.randomUUID()}`
 
-	const localMessage: LocalChatMessage = {
-		id: -1,
-		_tempId: tempId,
-		message_text: text,
-		message_type: "text",
-		sender_type: isLoggedIn.value ? "user" : "guest",
-		created_at: new Date().toISOString(),
-		_status: "sending",
-	}
+    const localMessage: LocalChatMessage = {
+        id: -1,
+        _tempId: tempId,
+        message_text: text,
+        message_type: "text",
+        sender_type: isLoggedIn.value ? "user" : "guest",
+        created_at: new Date().toISOString(),
+        _status: "sending",
+    }
 
-	// optimistic UI → langsung tampil
-	messagesLocal.value.push(localMessage)
+    // optimistic UI → langsung tampil
+    messagesLocal.value.push(localMessage)
 
-	try {
-		const payload: any = {
-			message_text: text,
-			message_type: "text",
-		}
+    try {
+        const payload: any = {
+            message_text: text,
+            message_type: "text",
+            sender_type: isLoggedIn.value ? "user" : "guest",
+        }
 
-		if (isLoggedIn.value) {
-			payload.sender_id = layout.user?.id
-		}
+        // if (isLoggedIn.value) {
+        //     payload.sender_id = layout.user?.id
+        // }
 
-		const res = await axios.post(
-			`${baseUrl}/app/api/chats/messages/${chatSession.value.ulid}/send`,
-			payload
-		)
+        const res = await axios.post(
+            `${baseUrl}/app/api/chats/messages/${chatSession.value.ulid}/send`,
+            payload
+        )
 
-		const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
-		if (index !== -1) {
-			messagesLocal.value[index]._status = "sent"
-		}
-	} catch {
-		const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
-		if (index !== -1) {
-			messagesLocal.value[index]._status = "failed"
-		}
-	}
+        const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
+        if (index !== -1) {
+            messagesLocal.value[index]._status = "sent"
+            messagesLocal.value.splice(index, 1)
+        }
+    } catch {
+        const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
+        if (index !== -1) {
+            messagesLocal.value[index]._status = "failed"
+
+        }
+    }
 }
 
 const stopChatWebSocket = () => {
-	if (currentChannelName && window.Echo) {
-		window.Echo.leave(currentChannelName)
-	}
-	chatChannel = null
-	websocketInitialized = false
+    if (currentChannelName && window.Echo) {
+        window.Echo.leave(currentChannelName)
+    }
+    chatChannel = null
+    websocketInitialized = false
 }
 
+
 const initWebSocket = () => {
-	if (!chatSession.value?.ulid || !window.Echo) return
+    if (!chatSession.value?.ulid || !window.Echo) return
 
-	const channelName = `chat-session.${chatSession.value.ulid}`
+    const channelName = `chat-session.${chatSession.value.ulid}`
 
-	if (currentChannelName === channelName && websocketInitialized) return
+    if (currentChannelName === channelName && websocketInitialized) return
 
-	stopChatWebSocket()
+    stopChatWebSocket()
 
-	currentChannelName = channelName
-	chatChannel = window.Echo.channel(channelName)
-	websocketInitialized = true
+    currentChannelName = channelName
+    chatChannel = window.Echo.channel(channelName)
+    websocketInitialized = true
 
-	chatChannel.listen(".message", (e: any) => {
-		const msg = e.message
-		if (!msg) return
+    const notifiedMessageIds = new Set<number>()
 
-		const index = messagesLocal.value.findIndex(
-			(m) =>
-				m._status === "sending" &&
-				m.message_text === msg.message_text &&
-				m.sender_type === msg.sender_type
-		)
+    chatChannel.listen(".message", (e: any) => {
+        console.log("e customer message", e);
+        const msg = e.message
+        if (!msg) return
 
-		if (index !== -1) {
-			messagesLocal.value[index] = { ...msg, _status: "sent" }
-		} else {
-			messagesLocal.value.push({ ...msg, _status: "sent" })
-		}
+        messagesLocal.value = messagesLocal.value.filter(
+            (m) => !(m._status === "sending" && m.sender_type === msg.sender_type)
+        )
 
-		if (msg.sender_type === "agent") {
-			playNotificationSoundFile(soundUrl)
-			markAsRead()
-		}
+        const index = messagesLocal.value.findIndex(
+            (m) => m.id === msg.id
+        )
 
-		if (e.session_status === "closed") {
-			isRating.value = true
-		}
+        const isNewMessage = index === -1
 
-		forceScrollBottom()
-	})
+        if (index !== -1) {
+            messagesLocal.value[index] = {
+                ...messagesLocal.value[index],
+                ...msg,
+                _status: "sent",
+            }
+        } else {
+            messagesLocal.value.push({
+                ...msg,
+                _status: "sent",
+            })
+        }
 
-	chatChannel.listen(".messages.read", (event: any) => {
-		console.log("read event", event)
-		if (event.reader_type === "agent") {
-			messagesLocal.value.forEach((msg) => {
-				if (event.message_ids.includes(msg.id)) {
-					msg.is_read = true
-				}
-			})
-		}
-	})
+        if (
+            isNewMessage &&
+            msg.sender_type === "agent" &&
+            !notifiedMessageIds.has(msg.id)
+        ) {
+            playNotificationSoundFile(soundUrl)
+            notifiedMessageIds.add(msg.id)
+            markAsRead()
+        }
+
+        if (e.session_status === "closed") {
+            isRating.value = true
+        }
+
+        forceScrollBottom()
+    })
+
+    chatChannel.listen(".messages.read", (event: any) => {
+        if (event.reader_type === "agent") {
+            messagesLocal.value.forEach((msg) => {
+                if (event.message_ids.includes(msg.id)) {
+                    msg.is_read = true
+                }
+            })
+        }
+    })
 }
 
 const forceScrollBottom = () => {
-	setTimeout(() => {
-		const el = document.querySelector(".messages-container")
-		if (el) el.scrollTop = el.scrollHeight
-	}, 120)
+    setTimeout(() => {
+        const el = document.querySelector(".messages-container")
+        if (el) el.scrollTop = el.scrollHeight
+    }, 120)
 }
 
 const initChat = async () => {
-	const session = await createSession()
-	if (!session) return
-	await getMessages()
-	initWebSocket()
-	forceScrollBottom()
+    const session = await createSession()
+    if (!session) return
+    await getMessages()
+    initWebSocket()
+    forceScrollBottom()
 }
 
 const toggle = () => {
-	open.value = !open.value
-	if (open.value) initChat()
+    open.value = !open.value
+    if (open.value) initChat()
 }
 
 const loadUserSessions = async () => {
-	if (!layout?.user?.id) return
-	isLoadingHistory.value = true
-	try {
-		const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
-			params: { web_user_id: layout.user.id },
-		})
-		userSessions.value = res.data?.data?.sessions ?? []
-	} finally {
-		isLoadingHistory.value = false
-	}
+    if (!layout?.user?.id) return
+    isLoadingHistory.value = true
+    try {
+        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
+            params: { web_user_id: layout.user.id },
+        })
+        userSessions.value = res.data?.data?.sessions ?? []
+    } finally {
+        isLoadingHistory.value = false
+    }
 }
 
 const openSessionFromHistory = async (ulid: string) => {
-	stopChatWebSocket()
-	messages.value = []
-	isRating.value = false
-	chatSession.value = { ulid }
-	localStorage.setItem("chat", JSON.stringify({ ulid, saved_at: new Date().toISOString() }))
-	await getMessages(false)
-	initWebSocket()
-	forceScrollBottom()
+    stopChatWebSocket()
+    messages.value = []
+    isRating.value = false
+    chatSession.value = { ulid }
+    localStorage.setItem("chat", JSON.stringify({ ulid, saved_at: new Date().toISOString() }))
+    await getMessages(false)
+    initWebSocket()
+    forceScrollBottom()
 }
 
 const startNewSession = async () => {
-	localStorage.removeItem("chat")
-	stopChatWebSocket()
-	messages.value = []
-	isRating.value = false
+    localStorage.removeItem("chat")
+    stopChatWebSocket()
+    messages.value = []
+    isRating.value = false
 
-	const session = await createSession()
-	if (!session) return
+    const session = await createSession()
+    if (!session) return
 
-	await getMessages()
-	initWebSocket()
-	forceScrollBottom()
+    await getMessages()
+    initWebSocket()
+    forceScrollBottom()
 }
 
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
 onMounted(() => {
-	syncLoginState()
-	window.addEventListener("storage", syncLoginState)
+    syncLoginState()
+    window.addEventListener("storage", syncLoginState)
 
-	document.addEventListener("mousedown", (e) => {
-		if (
-			open.value &&
-			panelRef.value &&
-			!panelRef.value.contains(e.target as Node) &&
-			!buttonRef.value?.contains(e.target as Node)
-		) {
-			open.value = false
-		}
-	})
+    document.addEventListener("mousedown", (e) => {
+        if (
+            open.value &&
+            panelRef.value &&
+            !panelRef.value.contains(e.target as Node) &&
+            !buttonRef.value?.contains(e.target as Node)
+        ) {
+            open.value = false
+        }
+    })
 })
 
 onBeforeUnmount(stopChatWebSocket)
 
 defineExpose({
-	messages,
-	sendMessage,
-	chatSession,
-	loading,
-	isInitialLoad,
-	isLoadingMore,
+    messages,
+    sendMessage,
+    chatSession,
+    loading,
+    isInitialLoad,
+    isLoadingMore,
 })
 </script>
 
 <template>
-	<div>
-		<button
-			ref="buttonRef"
-			@click="toggle"
-			class="fixed bottom-20 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
-			<FontAwesomeIcon :icon="faMessage" class="text-base" />
-		</button>
+    <div>
+        <button ref="buttonRef" @click="toggle"
+            class="fixed bottom-20 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
+            <FontAwesomeIcon :icon="faMessage" class="text-base" />
+        </button>
 
-		<transition
-			enter-active-class="transition duration-150"
-			enter-from-class="opacity-0 scale-95"
-			enter-to-class="opacity-100 scale-100"
-			leave-active-class="transition duration-150"
-			leave-from-class="opacity-100 scale-100"
-			leave-to-class="opacity-0 scale-95"
-			id="chat">
-			<div
-				v-if="open"
-				ref="panelRef"
-				class="fixed bottom-[9rem] right-5 z-[70] w-[350px] h-fit bg-[#f6f6f7] rounded-md overflow-hidden border">
-				<div
-					class="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold">
-					<span>{{ trans("Chat Support") }}</span>
+        <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
+            leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
+            <div v-if="open" ref="panelRef"
+                class="fixed bottom-[9rem] right-5 z-[70] w-[350px] h-fit bg-[#f6f6f7] rounded-md overflow-hidden border">
+                <div class="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold">
+                    <span>{{ trans("Chat Support") }}</span>
 
-					<div v-if="isLoggedIn" class="flex gap-1 capitalize">
-						<button
-							v-for="m in ['chat', 'history']"
-							:key="m"
-							@click="activeMenu = m"
-							class="px-2 py-1 rounded text-xs transition"
-							:class="activeMenu === m ? 'text-white' : 'bg-gray-100 text-gray-600'"
-							:style="
-								activeMenu === m
-									? {
-											backgroundColor: layout.app.theme[4],
-											color: layout.app.theme[5],
-									  }
-									: {}
-							">
-							{{ m }}
-						</button>
-					</div>
-				</div>
+                    <div v-if="isLoggedIn" class="flex gap-1 capitalize">
+                        <button v-for="m in ['chat', 'history']" :key="m" @click="activeMenu = m"
+                            class="px-2 py-1 rounded text-xs transition"
+                            :class="activeMenu === m ? 'text-white' : 'bg-gray-100 text-gray-600'" :style="activeMenu === m
+                                ? {
+                                    backgroundColor: layout.app.theme[4],
+                                    color: layout.app.theme[5],
+                                }
+                                : {}
+                                ">
+                            {{ m }}
+                        </button>
+                    </div>
+                </div>
 
-				<MessageArea
-					v-if="activeMenu == 'chat'"
-					:messages="messagesLocal"
-					:session="chatSession"
-					:loading="loading"
-					:isRating="isRating"
-					:rating="rating"
-					:isLoggedIn="isLoggedIn"
-					@send-message="sendMessage"
-					@reload="(loadMore: any) => getMessages(loadMore)"
-					@mounted="forceScrollBottom"
-					@new-session="startNewSession" />
+                <MessageArea v-if="activeMenu == 'chat'" :messages="messagesLocal" :session="chatSession"
+                    :loading="loading" :isRating="isRating" :rating="rating" :isLoggedIn="isLoggedIn"
+                    @send-message="sendMessage" @reload="(loadMore: any) => getMessages(loadMore)"
+                    @mounted="forceScrollBottom" @new-session="startNewSession" />
 
-				<div
-					v-if="activeMenu === 'history'"
-					class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
-					<MessageHistory
-						v-if="selectedHistory"
-						:sessionUlid="selectedHistory.ulid"
-						:session="selectedHistory"
-						@back="selectedHistory = null"
-						viewerType="user" />
+                <div v-if="activeMenu === 'history'"
+                    class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
+                    <MessageHistory v-if="selectedHistory" :sessionUlid="selectedHistory.ulid"
+                        :session="selectedHistory" @back="selectedHistory = null" viewerType="user" />
 
-					<div v-else>
-						<HistoryChatList
-							:data="userSessions"
-							:loading="isLoadingHistory"
-							@click-session="selectedHistory = $event" />
-					</div>
-				</div>
-			</div>
-		</transition>
-	</div>
+                    <div v-else>
+                        <HistoryChatList :data="userSessions" :loading="isLoadingHistory"
+                            @click-session="selectedHistory = $event" />
+                    </div>
+                </div>
+            </div>
+        </transition>
+    </div>
 </template>
 
 <style scoped>
 .buttonPrimary {
-	background-color: v-bind("layout?.app?.theme[4]") !important;
-	color: v-bind("layout?.app?.theme[5]") !important;
-	border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
+    background-color: v-bind("layout?.app?.theme[4]") !important;
+    color: v-bind("layout?.app?.theme[5]") !important;
+    border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
 
-	&:hover {
-		background-color: v-bind(
-			"`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`"
-		) !important;
-	}
+    &:hover {
+        background-color: v-bind("`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`"
+        ) !important;
+    }
 
-	&:focus {
-		box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
-	}
+    &:focus {
+        box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
+    }
 }
 </style>
