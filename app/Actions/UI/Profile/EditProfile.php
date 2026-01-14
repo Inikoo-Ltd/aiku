@@ -80,6 +80,7 @@ class EditProfile
                             "enable_2fa"       => [
                                 "type"          => "toggle2fa",
                                 "label"         => __("Enable 2FA"),
+                                "noSaveButton"  => true,
                                 "value"         => [
                                     'has_2fa'   => (bool)$user->google2fa_secret,
                                     'secretKey' => $user->google2fa_secret
