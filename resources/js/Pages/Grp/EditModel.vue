@@ -123,7 +123,8 @@ library.add(
     faFolder,
     faCartArrowDown,
     faWeight,
-    faCommentAlt
+    faCommentAlt,
+    faUserLock
 )
 
 const props = defineProps<{
