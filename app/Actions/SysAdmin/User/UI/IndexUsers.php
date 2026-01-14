@@ -20,6 +20,7 @@ use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -127,11 +128,10 @@ class IndexUsers extends OrgAction
             }
         }
 
-
         return $queryBuilder
             ->defaultSort('username')
-            ->select(['users.username', 'users.email', 'users.contact_name', 'users.image_id', 'users.status', 'user_stats.*'])
-            ->allowedSorts(['username', 'email', 'contact_name'])
+            ->select(['users.username', 'users.email', 'users.contact_name', 'users.image_id', 'users.status', 'user_stats.*', DB::raw("NULLIF(users.google2fa_secret, '') IS NOT NULL AS has_2fa"), 'users.is_two_factor_required'])
+            ->allowedSorts(['username', 'email', 'contact_name', 'has_2fa', 'is_two_factor_required'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -160,10 +160,12 @@ class IndexUsers extends OrgAction
                 ->withLabelRecord([__('user'),__('users')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->column(key: 'status', label: ['data' => ['fal', 'fa-yin-yang'], 'type' => 'icon', 'tooltip' => __('status')], type: 'icon')
-                ->column(key: 'image', label: ['data' => ['fal', 'fa-user-circle'], 'type' => 'icon', 'tooltip' => __('avatar')], type: 'avatar')
+                ->column(key: 'status', label: ['data' => ['fal', 'fa-yin-yang'], 'type' => 'icon', 'tooltip' => __('Status')], type: 'icon')
+                ->column(key: 'image', label: ['data' => ['fal', 'fa-user-circle'], 'type' => 'icon', 'tooltip' => __('Avatar')], type: 'avatar')
                 ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'has_2fa', label: ['data' => ['far', 'fa-shield-alt'], 'type' => 'icon', 'tooltip' => __('Has 2FA Enabled')], type: 'icon', sortable: true)
+                ->column(key: 'is_two_factor_required', label: ['data' => ['far', 'fa-user-shield'], 'type' => 'icon', 'tooltip' => __('Is Required to have 2FA')], type: 'icon', sortable: true)
                 ->defaultSort('username');
         };
     }
