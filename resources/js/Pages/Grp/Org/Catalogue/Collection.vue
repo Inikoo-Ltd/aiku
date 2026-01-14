@@ -27,6 +27,7 @@ import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 library.add(faPlus)
 
@@ -39,6 +40,7 @@ const props = defineProps<{
     products?: {}
     collections?: {}
     history?: {};
+    sales?: object
     routes: {
         families: { dataList: routeType, submitAttach: routeType, detach: routeType }
         products: { dataList: routeType, submitAttach: routeType, detach: routeType }
@@ -72,7 +74,8 @@ const component = computed(() => {
         families: TableFamilies,
         products: TableProducts,
         collections: TableCollections,
-        history: TableHistories
+        history: TableHistories,
+        sales: ProductCategoryTimeSeriesTable,
     }
     return components[currentTab.value]
 })
