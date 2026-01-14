@@ -116,14 +116,13 @@ class EmailOngoingRun extends Model
 
     public function sender(): string
     {
-        if (app()->environment('production')) {
-            /** @var Shop $parent */
-            $parent = $this->shop;
-            $sender = $parent->senderEmail?->email_address ?? $parent->email;
-        } else {
-            $sender = config('app.email_address_in_non_production_env');
-        }
+        /** @var Shop $parent */
+        $parent = $this->shop;
 
-        return $sender;
+        $email = app()->environment('production')
+            ? ($parent->senderEmail?->email_address ?? $parent->email)
+            : config('app.email_address_in_non_production_env');
+
+        return "{$parent->name} <{$email}>";
     }
 }
