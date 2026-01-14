@@ -74,6 +74,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read Model|\Eloquent|null $trigger
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferTimeSeries> $timeSeries
  * @method static \Database\Factories\Discounts\OfferFactory factory($count = null, $state = [])
  * @method static Builder<static>|Offer newModelQuery()
  * @method static Builder<static>|Offer newQuery()
@@ -148,6 +149,11 @@ class Offer extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(OfferStats::class);
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(OfferTimeSeries::class);
     }
 
     public function offerCampaign(): BelongsTo
