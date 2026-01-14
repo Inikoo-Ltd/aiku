@@ -7,7 +7,7 @@ import { trans } from 'laravel-vue-i18n'
 import { onMounted, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
-import Layout from '@/Layouts/GrpAuth.vue'
+import Layout from '@/Layouts/Grp2FA.vue'
 import { useLayoutStore } from '@/Stores/layout'
 defineOptions({ layout: Layout })
 
