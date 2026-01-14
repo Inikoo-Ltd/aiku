@@ -14,10 +14,6 @@ use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use PragmaRX\Google2FAQRCode\Google2FA;
-use BaconQrCode\Writer;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 
 class View2FAProfile
 {
@@ -31,7 +27,7 @@ class View2FAProfile
         $secret = $user->google2fa_secret;
 
         // If secret doesn't exist on DB, generate new one
-        if(!$secret) {
+        if (!$secret) {
             $secret = $google2fa->generateSecretKey(32);
         }
 
@@ -51,7 +47,7 @@ class View2FAProfile
 
         return [
             'qrUrl'     => $qrInline,
-            'secretKey' => $secret   
+            'secretKey' => $secret
         ];
     }
 

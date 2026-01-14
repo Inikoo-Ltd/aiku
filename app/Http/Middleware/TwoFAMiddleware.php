@@ -17,7 +17,7 @@ class TwoFAMiddleware
     public function handle($request, Closure $next)
     {
         $authenticator = new Authenticator($request);
-        
+
         // Importantly, all of this check is needed, otherwise it will break and causes infinity loop. Please do not remove any of them
         $isAccessing2FA = $request->routeIs('grp.login.show2fa', 'grp.login.auth2fa');
 

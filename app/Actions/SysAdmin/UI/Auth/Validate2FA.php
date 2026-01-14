@@ -38,10 +38,10 @@ class Validate2FA
                 'one_time_password' => trans('Invalid OTP is given. Please check your Authenticator App'),
             ]);
         }
-        
+
         return Inertia::location(route('grp.dashboard.show'));
     }
-    
+
     public function rules(): array
     {
         return [

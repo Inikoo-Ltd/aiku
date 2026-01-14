@@ -13,7 +13,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\Concerns\AsController;
-use PragmaRX\Google2FALaravel\Support\Authenticator;
 
 class Show2FA
 {
