@@ -98,7 +98,7 @@ class Offer extends Model implements Auditable
         'settings'          => 'array',
         'trigger_data'      => 'array',
         'source_data'       => 'array',
-        'begin_at'          => 'datetime',
+        'start_at'          => 'datetime',
         'end_at'            => 'datetime',
         'last_suspended_at' => 'datetime',
         'fetched_at'        => 'datetime',
