@@ -20,6 +20,7 @@ use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
 use App\Actions\CRM\ChatSession\TranslateSingleMessage;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\CRM\ChatSession\TranslateSessionMessages;
+use App\Actions\CRM\ChatSession\GetChatAgentSpecializations;
 
 Route::get('/ping', function () {
     return 'pong';
@@ -44,6 +45,7 @@ Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail:
     ->name('sessions.sync_by_email');
 
 Route::get('agents', GetChatAgents::class)->name('agents.index');
+Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');
