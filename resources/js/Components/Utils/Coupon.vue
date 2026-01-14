@@ -6,6 +6,11 @@ import { inject } from 'vue'
 
 import { isBefore, parseISO } from 'date-fns'
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faBadgeDollar } from "@fad"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faBadgeDollar)
+
 
 const props = defineProps<{
     offer: {
@@ -44,10 +49,16 @@ const isOfferExpired = (endAt: string) => {
     <section class="card w-96 relative isolate"
         :class="isOfferExpired(offer.end_at) ? 'bg-gradient-to-l from-gray-100 to-gray-300/90 text-black/40' : 'bg-gradient-to-l from-purple-300 to-purple-500/90 text-white'"
     >
-        <div class="text-center text-base w-[88px] flex flex-col justify-center px-1">
-            <span class="text-2xl font-black">{{ Number(offer.data_allowance_signature?.percentage_off ?? 0)*100 }}%</span>
-            <span class="text-xxs tracking-[0.2em]">
-                {{ trans("Discount") }}
+    <div class="text-center text-base w-[88px] flex flex-col justify-center px-1">
+            <!-- Section: discount percentage -->
+            <template v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offer.type)">
+                <span class="text-2xl font-black">{{ Number(offer.data_allowance_signature?.percentage_off ?? 0)*100 }}%</span>
+                <span class="text-xxs tracking-[0.2em]">
+                    {{ trans("Discount") }}
+                </span>
+            </template>
+            <span v-else>
+                <FontAwesomeIcon icon="fad fa-badge-dollar" class="text-4xl" fixed-width aria-hidden="true" />
             </span>
         </div>
 
@@ -70,13 +81,13 @@ const isOfferExpired = (endAt: string) => {
             </p>
             
             <div class="my-2 grid grid-cols-2 gap-x-2 gap-y-0">
-                <div class="text-xxs">
+                <div v-if="['Amount AND Order Number'].includes(offer.type)" class="text-xxs">
                     {{ trans("Min. amount") }}: {{ locale.currencyFormat(currency_code, offer.trigger_data?.min_amount ?? 0) }}
                 </div>
-                <div class="text-xxs">
+                <div v-if="['Amount AND Order Number'].includes(offer.type)" class="text-xxs">
                     {{ trans("Min. order") }}: {{ offer.trigger_data?.order_number ?? '-' }}
                 </div>
-                <div class="text-xxs">
+                <div v-if="['Category Quantity Ordered'].includes(offer.type)" class="text-xxs">
                     {{ trans("Min. quantity") }}: {{ offer.trigger_data?.item_quantity ?? '-' }}
                 </div>
             </div>
