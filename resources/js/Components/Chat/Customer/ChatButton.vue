@@ -246,19 +246,26 @@ const initWebSocket = () => {
         const msg = e.message
         if (!msg) return
 
+        messagesLocal.value = messagesLocal.value.filter(
+            (m) => !(m._status === "sending" && m.sender_type === msg.sender_type)
+        )
+
         const index = messagesLocal.value.findIndex(
-            (m) =>
-                m._status === "sending" &&
-                m.message_text === msg.message_text &&
-                m.sender_type === msg.sender_type
+            (m) => m.id === msg.id
         )
 
         if (index !== -1) {
-            messagesLocal.value[index] = { ...msg, _status: "sent" }
+            messagesLocal.value[index] = {
+                ...messagesLocal.value[index],
+                ...msg,
+                _status: "sent",
+            }
         } else {
-            messagesLocal.value.push({ ...msg, _status: "sent" })
+            messagesLocal.value.push({
+                ...msg,
+                _status: "sent",
+            })
         }
-
         if (msg.sender_type === "agent") {
             playNotificationSoundFile(soundUrl)
             markAsRead()

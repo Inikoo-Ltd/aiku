@@ -142,7 +142,7 @@ const getMessages = async (loadMore = false) => {
     const params: GetMessagesParams = {
         limit: 10,
         request_from: "agent",
-        cursor: nextCursor.value
+        // cursor: nextCursor.value
     }
 
     if (loadMore && nextCursor.value) {
@@ -217,15 +217,17 @@ const initSocket = () => {
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
     // Message
     chatChannel.listen(".message", ({ message }: any) => {
+        messagesLocal.value = messagesLocal.value.filter(
+            (m) => !(m._status === "sending" && m.sender_type === "agent")
+        )
+
         const index = messagesLocal.value.findIndex(
-            (m) =>
-                m._status === "sending" &&
-                m.message_text === message.message_text &&
-                m.sender_type === "agent"
+            (m) => m.id === message.id
         )
 
         if (index !== -1) {
             messagesLocal.value[index] = {
+                ...messagesLocal.value[index],
                 ...message,
                 _status: "sent",
             }
@@ -361,8 +363,6 @@ const translateAllMessage = async () => {
         )
 
         messagesLocal.value = []
-        nextCursor.value = null
-        canLoadMore.value = false
 
         await getMessages()
         isTranslatingAll.value = true
@@ -473,7 +473,6 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </div>
 
-
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
             <template v-for="(msgs, date) in groupedMessages" :key="date">
@@ -500,8 +499,6 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </template>
         </div>
-
-
 
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
             {{ remoteTypingUser }} {{ trans("is typing...") }}
