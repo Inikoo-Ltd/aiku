@@ -186,6 +186,7 @@ class ShowWebsiteWorkshop extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'primary',
+                            'key'   => 'Publish',
                             'icon'  => ["fas", "fa-save"],
                             'label' => __('Publish'),
                             'route' => $publishRoute

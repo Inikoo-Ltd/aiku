@@ -55,7 +55,7 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
-        if (Arr::has($modelData, 'sub_department_id')) {
+        if (Arr::has($modelData, 'sub_department_id') && data_get($modelData, 'sub_department_id')) { // Null handling. If key is present but value is null, will be ignored. HELP-1083 fix.
             $subDepartmentId = Arr::pull($modelData, 'sub_department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
                 $productCategory = UpdateFamilySubDepartment::make()->action($productCategory, [
