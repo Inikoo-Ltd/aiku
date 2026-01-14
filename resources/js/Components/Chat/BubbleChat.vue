@@ -159,6 +159,18 @@ watch(selectedLanguage, async (val) => {
     await translateMessage()
     showLanguageSelect.value = false
 })
+
+const canShowTranslation = computed(() => {
+    if (
+        props.viewerType === "user" &&
+        props.message.sender_type === "guest"
+    ) {
+        return false
+    }
+
+    return true
+})
+
 </script>
 
 <template>
@@ -168,7 +180,8 @@ watch(selectedLanguage, async (val) => {
             {{ activeMessage.original?.text }}
         </p>
 
-        <div v-if="(latestTranslation || isTranslating)" class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
+        <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
+            class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
             <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
                 <LoadingIcon />
                 <span>Translating…</span>
