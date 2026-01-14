@@ -135,7 +135,7 @@ class StoreMasterProductCategory extends GrpAction
 
         GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
 
-        SendSlackNotification::dispatch($masterProductCategory);
+        //SendSlackNotification::dispatch($masterProductCategory);
 
         return $masterProductCategory;
     }

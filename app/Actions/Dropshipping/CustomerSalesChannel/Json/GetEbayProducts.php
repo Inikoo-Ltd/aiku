@@ -25,7 +25,7 @@ class GetEbayProducts extends OrgAction
         if ($query === null) {
             $query = '';
         }
-        
+
         return GetProductForEbay::run($customerSalesChannel->user, $query, $offset);
     }
 

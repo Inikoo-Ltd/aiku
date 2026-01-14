@@ -23,6 +23,7 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
+        $queryBuilder->whereNotNull('products.webpage_id');
         $queryBuilder
             ->where(function ($query) {
                 $query

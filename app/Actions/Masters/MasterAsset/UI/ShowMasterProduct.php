@@ -28,8 +28,8 @@ use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Masters\MasterAssetTimeSeriesResource;
 use App\Http\Resources\Masters\MasterProductResource;
-use App\Http\Resources\Masters\MasterProductSalesResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -252,8 +252,8 @@ class ShowMasterProduct extends GrpAction
                     : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
 
                 MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
-                    fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterProductSalesResource::collection(IndexMasterProductsSales::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+                    fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
 
                 MasterAssetTabsEnum::HISTORY->value => $this->tab == MasterAssetTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))
@@ -266,7 +266,7 @@ class ShowMasterProduct extends GrpAction
 
             ]
         )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value))
-            ->table(IndexMasterProductsSales::make()->tableStructure(prefix: MasterAssetTabsEnum::SALES->value))
+            ->table(IndexMasterAssetTimeSeries::make()->tableStructure(MasterAssetTabsEnum::SALES->value))
             ->table(IndexMailshots::make()->tableStructure($masterAsset))
             ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterAssetTabsEnum::HISTORY->value));

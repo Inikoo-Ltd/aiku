@@ -32,25 +32,25 @@ class RepairWebpageSeoData
      */
     public function handle(Webpage $webpage, Command $command): void
     {
-//        if ($webpage->model_type == 'Product') {
-//            /** @var Product $product */
-//            $product = $webpage->model;
-//            $webpage->update([
-//                'breadcrumb_label' => $product->name
-//            ]);
-//        } elseif ($webpage->model_type == 'ProductCategory') {
-//            /** @var ProductCategory $productCategory */
-//            $productCategory = $webpage->model;
-//            $webpage->update([
-//                'breadcrumb_label' => $productCategory->name
-//            ]);
-//        } elseif ($webpage->model_type == 'Collection') {
-//            /** @var \App\Models\Catalogue\Collection $collection */
-//            $collection = $webpage->model;
-//            $webpage->update([
-//                'breadcrumb_label' => $collection->name
-//            ]);
-//        }
+        //        if ($webpage->model_type == 'Product') {
+        //            /** @var Product $product */
+        //            $product = $webpage->model;
+        //            $webpage->update([
+        //                'breadcrumb_label' => $product->name
+        //            ]);
+        //        } elseif ($webpage->model_type == 'ProductCategory') {
+        //            /** @var ProductCategory $productCategory */
+        //            $productCategory = $webpage->model;
+        //            $webpage->update([
+        //                'breadcrumb_label' => $productCategory->name
+        //            ]);
+        //        } elseif ($webpage->model_type == 'Collection') {
+        //            /** @var \App\Models\Catalogue\Collection $collection */
+        //            $collection = $webpage->model;
+        //            $webpage->update([
+        //                'breadcrumb_label' => $collection->name
+        //            ]);
+        //        }
 
         $seoData = $webpage->seo_data;
 
@@ -62,7 +62,7 @@ class RepairWebpageSeoData
                         'structured_data' => $structuredData
                     ]
                 );
-                if($webpage->wasChanged('structured_data')){
+                if ($webpage->wasChanged('structured_data')) {
                     $command->info("Structured data changed for $webpage->code");
                 }
             }
@@ -73,7 +73,7 @@ class RepairWebpageSeoData
                     'seo_title' => $seoTitle
                 ]
             );
-            if($webpage->wasChanged('seo_title')){
+            if ($webpage->wasChanged('seo_title')) {
                 $command->info("SEO title changed for $webpage->code");
             }
         }
@@ -84,7 +84,7 @@ class RepairWebpageSeoData
                     'seo_description' => $seoDescription
                 ]
             );
-            if($webpage->wasChanged('seo_description')){
+            if ($webpage->wasChanged('seo_description')) {
                 $command->info("SEO description (A) changed for $webpage->code");
             }
         }
@@ -100,7 +100,7 @@ class RepairWebpageSeoData
                 ->where('Page Key', $auSource[1])
                 ->first();
             if ($auData) {
-                if($auData->{'Webpage Meta Description'}!='') {
+                if ($auData->{'Webpage Meta Description'} != '') {
                     $webpage->update(
                         [
                             'seo_description' => $auData->{'Webpage Meta Description'}
@@ -128,25 +128,25 @@ class RepairWebpageSeoData
     public function asCommand(Command $command): void
     {
 
-//        $webpage = Webpage::where('slug','aclb-06-ace')->first();
+        //        $webpage = Webpage::where('slug','aclb-06-ace')->first();
         //        $this->handle($webpage, $command);
         //        exit;
 
-      $shop=Shop::where('slug',$command->argument('shop'))->first();
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
 
-            $count = Webpage::where('shop_id',$shop->id)->count();
+        $count = Webpage::where('shop_id', $shop->id)->count();
 
-            $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
-            $bar->start();
+        $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat('debug');
+        $bar->start();
 
-            Webpage::where('shop_id',$shop->id)->orderBy('id')
-                ->chunk(100, function (Collection $models) use ($bar, $command) {
-                    foreach ($models as $model) {
-                        $this->handle($model, $command);
-                        $bar->advance();
-                    }
-                });
+        Webpage::where('shop_id', $shop->id)->orderBy('id')
+            ->chunk(100, function (Collection $models) use ($bar, $command) {
+                foreach ($models as $model) {
+                    $this->handle($model, $command);
+                    $bar->advance();
+                }
+            });
 
     }
 

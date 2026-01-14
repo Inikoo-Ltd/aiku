@@ -19,16 +19,17 @@ class FixOffersStatus
     use AsAction;
     use WithOrganisationSource;
 
-    public string $commandSignature = 'repair:offers_status';
+    public string $commandSignature = 'repair:offers_status {shop}';
 
     /**
      * @throws \Exception
      */
     public function asCommand(\Illuminate\Console\Command $command): void
     {
-        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
-        $offers = Offer::whereIn('shop_id', $aikuShops)->get();
+        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+
+        $offers = Offer::where('shop_id', $shop->id)->get();
 
         $progressBar = $command->getOutput()->createProgressBar($offers->count());
         $progressBar->start();

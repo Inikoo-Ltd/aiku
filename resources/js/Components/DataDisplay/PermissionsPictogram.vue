@@ -140,7 +140,7 @@ const organisationPositionCounts = ref<{
         <div class="flex gap-x-2">
             <Fieldset :legend="trans('Group permissions')" class="w-full max-w-4xl">
                 <div>
-                    <template v-for="(jobGroup) in groupPositionList" :key="departmentName + idxJobGroup">
+                    <template v-for="(jobGroup, departmentName, idxJobGroup) in groupPositionList" :key="departmentName + idxJobGroup">
                         <div class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-100 transition-all duration-200 ease-in-out">
                             <!-- Section: Department label -->
                             <div class="flex items-center gap-x-1.5">

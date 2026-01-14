@@ -215,22 +215,6 @@ class ShowRefund extends OrgAction
                 ]
             ];
 
-            if ($refund->tax_amount > 0) {
-                $actions[] = [
-                    'type'  => 'button',
-                    'style' => 'secondary',
-                    'label' => __('Refund Tax'),
-                    'key'   => 'refund_all',
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.refund.refund_tax',
-                        'parameters' => [
-                            'refund' => $refund->id,
-                        ]
-                    ]
-                ];
-            }
-
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
@@ -296,6 +280,12 @@ class ShowRefund extends OrgAction
                         'price_total' => $refund->rental_amount
                     ] : [],
                 ]),
+                [
+                    [
+                        'label'       => __('Net'),
+                        'price_total' => $refund->net_amount
+                    ]
+                ],
                 [
                     [
                         'label'       => __('Tax'),

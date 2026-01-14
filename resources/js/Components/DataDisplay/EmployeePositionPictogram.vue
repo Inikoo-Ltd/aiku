@@ -598,7 +598,9 @@ watch(() => newForm, () => {
                 </template>
                 
                 <!-- To grouping the Shop into same area -->
-                <div v-if="shopsLength" :id="'scopeShop' + orgSlug" class="overflow-hidden mt-2 border-t border-gray-300 ">
+                <div :id="'scopeShop' + orgSlug" class="overflow-hidden mt-2 border-t border-gray-300 "
+                    :class="shopsLength ? '' : 'hidden'"
+                >
             
                 </div>
             </div>

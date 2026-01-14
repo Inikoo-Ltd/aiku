@@ -35,6 +35,7 @@ import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 
 library.add(
     faFolder,
@@ -73,6 +74,8 @@ const props = defineProps<{
     storeRoute: routeType
     shopsData: {}
     images?: object
+    sales?: object
+    salesData?: object
     mini_breadcrumbs: any
 }>()
 
@@ -88,7 +91,8 @@ const component: Component = computed(() => {
         sub_departments: TableSubDepartments,
         details: ModelDetails,
         history: TableHistories,
-        images: ImagesManagement
+        images: ImagesManagement,
+        sales: ProductCategoryTimeSeriesTable
     }
     return components[currentTab.value]
 
@@ -125,7 +129,7 @@ const showDialog = ref(false)
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData"></component>
     <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="storeRoute"
                             @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData" />
 </template>

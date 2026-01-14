@@ -40,6 +40,7 @@ import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 import Breadcrumb from 'primevue/breadcrumb'
 import axios from "axios"
 import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 
 library.add(
     faFolder,
@@ -75,6 +76,8 @@ const props = defineProps<{
     content?: object
     url_master?:routeType
     images?:object
+    sales?: object
+    salesData?: object
     mini_breadcrumbs?: any[]
 
     delete_route?: routeType;
@@ -99,6 +102,7 @@ const component = computed(() => {
         history: TableHistories,
         images: ImagesManagement,
         content : MasterContentProductCategory,
+        sales: ProductCategoryTimeSeriesTable
     };
     return components[currentTab.value];
 
@@ -188,7 +192,7 @@ function masterDepartmentRoute(department: Department) {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData"></component>
 </template>
 
 <style scoped>

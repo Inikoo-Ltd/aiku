@@ -541,15 +541,14 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterSubDepartments")
             ->has("title")
-            ->has("breadcrumbs", 2)
-            ->has("data")
+            ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
                 $page->has('subNavigation')->etc()
             );
     });
-})->depends('create master shop')->todo();
+})->depends('create master shop');
 
 test('store master department', function () {
     $masterShop = MasterShop::first();

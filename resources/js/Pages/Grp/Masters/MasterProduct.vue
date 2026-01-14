@@ -26,7 +26,7 @@ import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
 import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import axios from "axios";
-import ProductSales from "@/Components/Product/ProductSales.vue"
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { notify } from "@kyvg/vue3-notification"
 
 library.add(
@@ -45,8 +45,8 @@ const props = defineProps<{
     history?: {}
     language?: {}
     products?: {}
+    sales?: {}
     trade_units?: {}
-    sales: {}
     salesData?: {}
     images?: {}
     mini_breadcrumbs?: any[]
@@ -81,7 +81,7 @@ const component = computed(() => {
         images: TradeUnitImagesManagement,
         trade_units: TableTradeUnits,
         attachments: AttachmentManagement,
-        sales: ProductSales,
+        sales: ProductCategoryTimeSeriesTable,
     }
     return components[currentTab.value]
 })
