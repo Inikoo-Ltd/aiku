@@ -42,6 +42,7 @@ const props = defineProps<{
     shop_collections?: {}
     history?: {};
     images?:{};
+    salesData?: object
     routes: {
         families: { dataList: routeType, submitAttach: routeType, detach: routeType }
         products: { dataList: routeType, submitAttach: routeType, detach: routeType }
@@ -178,6 +179,7 @@ const onSubmitAttach = async ({
         :data="props[currentTab as keyof typeof props]"
         :tab="currentTab"
         :routes="props.routes?.[currentTab]"
+        :salesData="salesData"
     />
 
     <!-- Modal: Products -->

@@ -7,3 +7,9 @@ export const useOrdinalSuffix = (n: number) => {
     }
     return n + (s[(v % 10)] || s[0])
 }
+
+
+export function formatPercentage(value?: string): string {
+  if (!value) return ""
+  return value.replace(/\.0%$/, "%")
+}

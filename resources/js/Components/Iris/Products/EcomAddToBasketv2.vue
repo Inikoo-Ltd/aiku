@@ -5,7 +5,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import { inject, ref, watch } from 'vue'
-import { debounce,  set } from 'lodash-es'
+import { debounce, set } from 'lodash-es'
 import axios from 'axios'
 
 import { ProductResource } from '@/types/Iris/Products'
@@ -164,7 +164,7 @@ const onUpdateQuantity = async () => {
 
         fetchCustomerOrderingProduct()
         layout.reload_handle()
-        
+
         setStatus('success')
     } catch (error: any) {
         setStatus('error')
@@ -235,13 +235,8 @@ watch(
                 <FontAwesomeIcon icon="fas fa-minus" />
             </button>
 
-            <input
-                type="number"
-                class="w-full h-10 text-center outline-none"
-                :disabled="isLoadingSubmitQuantityProduct"
-                :value="customer.quantity_ordered_new ?? customer.quantity_ordered ?? 0"
-                @input="onManualInput"
-            />
+            <input type="number" class="w-full h-10 text-center outline-none" :disabled="isLoadingSubmitQuantityProduct"
+                :value="customer.quantity_ordered_new ?? customer.quantity_ordered ?? 0" @input="onManualInput" />
 
             <button class="px-2.5 py-2" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
                 <FontAwesomeIcon icon="fas fa-plus" />
@@ -250,24 +245,46 @@ watch(
 
         <ConditionIcon :state="status" class="absolute -right-7 top-1/2 -translate-y-1/2" />
 
-        <Button
-            v-if="!customer.quantity_ordered && !customer.quantity_ordered_new"
-            class="ml-8"
-            icon="fas fa-plus"
-            :label="trans('Add to basket')"
-            type="primary"
-            size="lg"
-            :loading="isLoadingSubmitQuantityProduct"
-            :inject-style="buttonStyle"
-            @click="onAddToBasket(product, 1)"
-        />
+        <Button v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" class="ml-8" icon="fas fa-plus"
+            :label="trans('Add to basket')" type="primary" size="lg" :loading="isLoadingSubmitQuantityProduct"
+            :inject-style="buttonStyle" @click="onAddToBasket(product, 1)" />
 
-        <div v-if="customer.quantity_ordered" class="text-sm text-gray-700 ml-2">
-            {{ trans('Current amount in basket') }}:
-            <strong>
-                {{ locale.currencyFormat(layout?.iris?.currency?.code, product.price * customer.quantity_ordered) }}
+        <div v-if="customer.quantity_ordered" class="ml-2 text-gray-700 flex flex-col gap-0.5 text-xs sm:text-sm">
+            <span class="text-gray-500">
+                {{ trans('Current amount in basket') }}:
+            </span>
+
+            <!-- WITH OFFER -->
+            <strong v-if="customer?.offer_price_per_unit && Object.keys(customer.offers_data).length" class="flex flex-wrap items-baseline gap-1">
+                <span class="line-through opacity-60 text-gray-600 text-[10px] sm:text-xs">
+                    {{
+                        locale.currencyFormat(
+                            layout?.iris?.currency?.code,
+                            product.price * customer.quantity_ordered)
+                    }}
+                </span>
+
+                <span class=" font-semibold text-green-600 text-base md:text-xl sm:text-lg">
+                    {{
+                        locale.currencyFormat(
+                            layout?.iris?.currency?.code,
+                            customer.offer_net_amount_per_quantity * customer.quantity_ordered
+                    )
+                    }}
+                </span>
+            </strong>
+
+            <!-- NO OFFER -->
+            <strong v-else class=" font-semibold text-gray-800text-sm sm:text-base md:text-lg">
+                {{
+                    locale.currencyFormat(
+                        layout?.iris?.currency?.code,
+                        product.price * customer.quantity_ordered
+                )
+                }}
             </strong>
         </div>
+
     </div>
 </template>
 
@@ -277,6 +294,7 @@ input[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
+
 input[type='number'] {
     -moz-appearance: textfield;
 }

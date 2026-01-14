@@ -103,7 +103,7 @@ const props = defineProps<{
         }
     }
     webpage_canonical_url?: string
-    sales: {}
+    sales?: {}
     salesData?: object
     is_single_trade_unit?: boolean
     trade_unit_slug?: string

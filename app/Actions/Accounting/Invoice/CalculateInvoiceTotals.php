@@ -19,7 +19,7 @@ class CalculateInvoiceTotals extends OrgAction
 {
     public function handle(Invoice $invoice): Invoice
     {
-        if($invoice->is_tax_only){
+        if ($invoice->is_tax_only) {
             return CalculateInvoiceTotalsTaxOnly::run($invoice);
         }
 
@@ -39,10 +39,10 @@ class CalculateInvoiceTotals extends OrgAction
         $chargeNet     = $transactions->where('model_type', 'Charge')->sum('net_amount');
         $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
 
-
         $netAmount   = $rentalNet + $goodsNet + $serviceNet + $shippingNet + $chargeNet;
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross;
         $taxAmount   = $netAmount * $taxRate;
+
         $totalAmount = $netAmount + $taxAmount;
 
         data_set($modelData, 'rental_amount', $rentalNet);
