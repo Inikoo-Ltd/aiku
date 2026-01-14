@@ -67,6 +67,10 @@ let chatChannel: any = null
 let currentChannelName: string | null = null
 let websocketInitialized = false
 
+// count notif
+const unreadCount = ref(0)
+const unreadMessageIds = new Set<number>()
+
 const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const syncLoginState = () => {
@@ -136,6 +140,8 @@ const markAsRead = async () => {
     }
 }
 
+const assignedAgent = ref<string | null>(null)
+
 const getMessages = async (loadMore = false) => {
     if (!chatSession.value?.ulid) return
 
@@ -150,6 +156,8 @@ const getMessages = async (loadMore = false) => {
         }
 
         const res = await axios.get(url)
+
+        assignedAgent.value = res.data?.data?.assigned_agent ?? null
 
         const fetched =
             res.data?.data?.messages?.map((m: ChatMessage) => ({
@@ -187,7 +195,6 @@ const sendMessage = async (text: string) => {
         _status: "sending",
     }
 
-    // optimistic UI → langsung tampil
     messagesLocal.value.push(localMessage)
 
     try {
@@ -245,7 +252,6 @@ const initWebSocket = () => {
     const notifiedMessageIds = new Set<number>()
 
     chatChannel.listen(".message", (e: any) => {
-        console.log("e customer message", e);
         const msg = e.message
         if (!msg) return
 
@@ -270,6 +276,15 @@ const initWebSocket = () => {
                 ...msg,
                 _status: "sent",
             })
+        }
+
+        if (
+            isNewMessage &&
+            msg.sender_type === "agent" &&
+            !msg.is_read
+        ) {
+            unreadMessageIds.add(msg.id)
+            unreadCount.value = unreadMessageIds.size
         }
 
         if (
@@ -317,7 +332,11 @@ const initChat = async () => {
 
 const toggle = () => {
     open.value = !open.value
-    if (open.value) initChat()
+    if (open.value) {
+        unreadMessageIds.clear()
+        unreadCount.value = 0
+        initChat()
+    }
 }
 
 const loadUserSessions = async () => {
@@ -393,6 +412,11 @@ defineExpose({
         <button ref="buttonRef" @click="toggle"
             class="fixed bottom-20 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
             <FontAwesomeIcon :icon="faMessage" class="text-base" />
+            <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
+               bg-red-500 text-white text-[10px] font-semibold
+               rounded-full flex items-center justify-center">
+                {{ unreadCount }}
+            </span>
         </button>
 
         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
@@ -421,7 +445,7 @@ defineExpose({
                 <MessageArea v-if="activeMenu == 'chat'" :messages="messagesLocal" :session="chatSession"
                     :loading="loading" :isRating="isRating" :rating="rating" :isLoggedIn="isLoggedIn"
                     @send-message="sendMessage" @reload="(loadMore: any) => getMessages(loadMore)"
-                    @mounted="forceScrollBottom" @new-session="startNewSession" />
+                    @mounted="forceScrollBottom" @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
                 <div v-if="activeMenu === 'history'"
                     class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">

@@ -34,6 +34,7 @@ interface Translation {
 const props = defineProps<{
     message: Message
     viewerType: ViewerType
+    agentName?: string | null
 }>()
 
 const layout = inject<any>("layout")
@@ -72,6 +73,10 @@ const time = computed(() =>
 const readIcon = computed(() =>
     props.message.is_read ? faCheckDouble : faCheck
 )
+
+const agentDisplayName = computed(() => {
+    return props.agentName ?? "Agent"
+})
 
 // feature translation
 const localMessage = ref<Message | null>(null)
@@ -173,70 +178,78 @@ const canShowTranslation = computed(() => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-0.5 text-sm leading-snug shadow-sm max-w-[78%] px-2.5 py-1.5 rounded-xl"
-        :class="bubbleClass">
-        <p class="whitespace-pre-wrap break-words">
-            {{ activeMessage.original?.text || props.message.message_text }}
-        </p>
+    <div class="flex flex-col w-full" :class="isFromViewer ? 'items-end' : 'items-start'">
+        <div class="mb-0.5 text-[11px] text-gray-500 px-1 max-w-[78%]"
+            v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
+            {{ agentDisplayName }} (Agent)
+        </div>
+        <div class="flex flex-col gap-0.5 text-sm leading-snug shadow-sm max-w-[78%] px-2.5 py-1.5 rounded-xl"
+            :class="bubbleClass">
 
-        <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
-            class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
-            <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
-                <LoadingIcon />
-                <span>Translating…</span>
+            <p class="whitespace-pre-wrap break-words">
+                {{ activeMessage.original?.text || props.message.message_text }}
+            </p>
+
+            <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
+                class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
+                <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
+                    <LoadingIcon />
+                    <span>Translating…</span>
+                </div>
+
+                <template v-else>
+                    <div v-if="showTranslation">
+                        {{ latestTranslation!.translated_text }}
+                    </div>
+
+                    <span v-else class="cursor-pointer underline text-gray-500" @click="showTranslation = true">
+                        Show translation
+                    </span>
+
+                    <div v-if="showTranslation"
+                        class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
+                        <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
+                            class="w-3 h-3 rounded-sm" />
+                        <FontAwesomeIcon :icon="faLanguage" />
+                        <span>{{ latestTranslation!.language_name }}</span>
+
+                        <span v-if="isLongText" class="ml-2 cursor-pointer underline" @click="showTranslation = false">
+                            Hide
+                        </span>
+                    </div>
+                </template>
             </div>
 
-            <template v-else>
-                <div v-if="showTranslation">
-                    {{ latestTranslation!.translated_text }}
-                </div>
+            <div v-if="canTranslate" class="mt-1">
+                <button v-if="!showLanguageSelect" @click="showLanguageSelect = true"
+                    class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline">
+                    <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" />
+                    Translate
+                </button>
+                <select v-else v-model="selectedLanguage" :disabled="isTranslating"
+                    class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-transparent text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
+                    <option value="" disabled>
+                        Translate To..
+                    </option>
+                    <option v-for="lang in languages" :key="lang.id" :value="lang.code">
+                        {{ lang.native_name }}
+                    </option>
+                </select>
+            </div>
 
-                <span v-else class="cursor-pointer underline text-gray-500" @click="showTranslation = true">
-                    Show translation
+            <div class="flex items-center justify-end gap-1 text-[10px] opacity-70 min-h-[14px]">
+                <span v-if="!isSending" class="leading-none">
+                    {{ time }}
                 </span>
 
-                <div v-if="showTranslation" class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
-                    <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
-                        class="w-3 h-3 rounded-sm" />
-                    <FontAwesomeIcon :icon="faLanguage" />
-                    <span>{{ latestTranslation!.language_name }}</span>
+                <span v-else class="flex items-center animate-pulse">
+                    <LoadingIcon />
+                </span>
 
-                    <span v-if="isLongText" class="ml-2 cursor-pointer underline" @click="showTranslation = false">
-                        Hide
-                    </span>
-                </div>
-            </template>
-        </div>
-
-        <div v-if="canTranslate" class="mt-1">
-            <button v-if="!showLanguageSelect" @click="showLanguageSelect = true"
-                class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline">
-                <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" />
-                Translate
-            </button>
-            <select v-else v-model="selectedLanguage" :disabled="isTranslating"
-                class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-transparent text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
-                <option value="" disabled>
-                    Translate To..
-                </option>
-                <option v-for="lang in languages" :key="lang.id" :value="lang.code">
-                    {{ lang.native_name }}
-                </option>
-            </select>
-        </div>
-
-        <div class="flex items-center justify-end gap-1 text-[10px] opacity-70 min-h-[14px]">
-            <span v-if="!isSending" class="leading-none">
-                {{ time }}
-            </span>
-
-            <span v-else class="flex items-center animate-pulse">
-                <LoadingIcon />
-            </span>
-
-            <span v-if="isFromViewer && !isSending" class="leading-none">
-                <FontAwesomeIcon :icon="readIcon" />
-            </span>
+                <span v-if="isFromViewer && !isSending" class="leading-none">
+                    <FontAwesomeIcon :icon="readIcon" />
+                </span>
+            </div>
         </div>
     </div>
 </template>
