@@ -53,7 +53,8 @@ class SendResetPasswordEmail extends OrgAction
             $outbox->emailOngoingRun?->email?->subject,
             $emailHtmlBody,
             '',
-            passwordToken: $modelData['url']
+            passwordToken: $modelData['url'],
+            senderName: $outbox->emailOngoingRun->senderName(),
         );
     }
 

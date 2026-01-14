@@ -56,7 +56,8 @@ trait WithSendCustomerOutboxEmail
             $unsubscribeUrl,
             $passwordToken,
             $invoiceUrl,
-            $additionalData
+            $additionalData,
+            senderName: $outbox->emailOngoingRun->senderName()
         );
     }
 }
