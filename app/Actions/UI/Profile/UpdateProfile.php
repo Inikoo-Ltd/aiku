@@ -43,7 +43,6 @@ class UpdateProfile extends OrgAction
         }
         
         if ($twoFa = Arr::pull($modelData, 'enable_2fa')) {
-            data_set($modelData, 'two_factor_enabled', data_get($twoFa, 'has_2fa'));
             if(data_get($twoFa, 'has_2fa')) {
                 data_set($modelData, 'google2fa_secret', data_get($twoFa, 'secretKey'));
             } else {
