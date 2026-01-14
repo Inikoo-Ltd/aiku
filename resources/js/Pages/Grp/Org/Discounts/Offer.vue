@@ -42,7 +42,8 @@ const locale = inject('locale', aikuLocaleStructure)
         <div class="">
             Type: <span class="font-bold">{{ data.type }}</span>
         </div>
-        <Coupon :first_order_bonus="[data]" :currency_code="currency_code" class="py-2" />
+        
+        <Coupon :offer="data" :currency_code="currency_code" />
     </div>
 
     
