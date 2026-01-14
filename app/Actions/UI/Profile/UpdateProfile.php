@@ -41,6 +41,15 @@ class UpdateProfile extends OrgAction
             $printerId                                     = Arr::pull($modelData, 'preferred_printer');
             $modelData['settings']['preferred_printer_id'] = $printerId;
         }
+        
+        if ($twoFa = Arr::pull($modelData, 'enable_2fa')) {
+            if(data_get($twoFa, 'has_2fa')) {
+                data_set($modelData, 'google2fa_secret', data_get($twoFa, 'secretKey'));
+            } else {
+                // Remove from DB if it is false
+                data_set($modelData, 'google2fa_secret', '');
+            }
+        }
 
         $user = $this->processProfileAvatar($modelData, $user);
         if (Arr::exists($modelData, 'app_theme')) {
@@ -83,6 +92,7 @@ class UpdateProfile extends OrgAction
                     ->max(12 * 1024)
             ],
             'timezones'         => ['sometimes', 'array'],
+            'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
         ];
     }
