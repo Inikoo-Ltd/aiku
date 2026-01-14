@@ -111,15 +111,18 @@ class GetChatMessages
 
     public function jsonResponse($result): JsonResponse
     {
+        $fullName = $result['chatSession']->assignments->last()?->chatAgent?->user?->contact_name
+            ?? $result['chatSession']->assignments->last()?->chatAgent?->user?->username
+            ?? null;
+
+        $firstName = $fullName ? explode(' ', trim($fullName))[0] : null;
         return response()->json([
             'success' => true,
             'message' => 'Chat messages retrieved successfully',
             'data' => [
                 'session_ulid'   => $result['chatSession']->ulid,
                 'session_status' => $result['chatSession']->status->value,
-                'assigned_agent' => $result['chatSession']->assignments->last()?->chatAgent?->user?->contact_name
-                    ?? $result['chatSession']->assignments->last()?->chatAgent?->user?->username
-                    ?? null,
+                'assigned_agent' => $firstName,
                 'rating'         => $result['chatSession']->rating,
                 'messages'       => ChatMessageResource::collection($result['messages']),
                 'pagination'     => $result['pagination'],
