@@ -228,6 +228,7 @@ const stopChatWebSocket = () => {
     websocketInitialized = false
 }
 
+
 const initWebSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
 
@@ -240,6 +241,8 @@ const initWebSocket = () => {
     currentChannelName = channelName
     chatChannel = window.Echo.channel(channelName)
     websocketInitialized = true
+
+    const notifiedMessageIds = new Set<number>()
 
     chatChannel.listen(".message", (e: any) => {
         console.log("e customer message", e);
@@ -254,6 +257,8 @@ const initWebSocket = () => {
             (m) => m.id === msg.id
         )
 
+        const isNewMessage = index === -1
+
         if (index !== -1) {
             messagesLocal.value[index] = {
                 ...messagesLocal.value[index],
@@ -266,8 +271,14 @@ const initWebSocket = () => {
                 _status: "sent",
             })
         }
-        if (msg.sender_type === "agent") {
+
+        if (
+            isNewMessage &&
+            msg.sender_type === "agent" &&
+            !notifiedMessageIds.has(msg.id)
+        ) {
             playNotificationSoundFile(soundUrl)
+            notifiedMessageIds.add(msg.id)
             markAsRead()
         }
 
