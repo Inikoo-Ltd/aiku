@@ -14,6 +14,7 @@ use App\Actions\CRM\ChatSession\HandleChatTyping;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\StoreGuestProfile;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
+use App\Actions\CRM\ChatSession\GetChatAgentByUserId;
 use App\Actions\CRM\ChatSession\DownloadChatAttachment;
 use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
 use App\Actions\CRM\ChatSession\TranslateSingleMessage;
@@ -47,8 +48,9 @@ Route::get('agents', GetChatAgents::class)->name('agents.index');
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');
 
-Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.update')
-    ->name('agents.update');
+Route::put('/agents/{id}/update', UpdateChatAgent::class)->name('agents.update');
+
+Route::get('/agents/{id}', GetChatAgentByUserId::class)->name('agent.show');
 
 Route::post('/typing', HandleChatTyping::class, 'typing')
     ->name('typing');
