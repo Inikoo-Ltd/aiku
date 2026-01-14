@@ -48,6 +48,8 @@ class IndexDeliveryNoteItems extends OrgAction
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
                 'delivery_note_items.is_handled',
+                'delivery_note_items.batch_code',
+                'delivery_note_items.expiry_date',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
