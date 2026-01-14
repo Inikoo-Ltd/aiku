@@ -142,7 +142,6 @@ const getMessages = async (loadMore = false) => {
     const params: GetMessagesParams = {
         limit: 10,
         request_from: "agent",
-        // cursor: nextCursor.value
     }
 
     if (loadMore && nextCursor.value) {
@@ -176,7 +175,9 @@ const getMessages = async (loadMore = false) => {
     nextCursor.value = page?.next_cursor ?? null
 
     isLoadingMore.value = false
-    scrollBottom()
+    if (!loadMore) {
+        scrollBottom()
+    }
 }
 
 const groupedMessages = computed(() => {
@@ -475,6 +476,17 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
+
+            <div class="flex justify-center" v-if="canLoadMore && nextCursor">
+                <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
+               border rounded-full hover:bg-gray-100 disabled:opacity-50">
+                    <FontAwesomeIcon v-if="isLoadingMore" :icon="faSpinner" class="animate-spin text-[10px]" />
+                    <span>
+                        {{ isLoadingMore ? 'Loading messages…' : 'Load older messages' }}
+                    </span>
+                </button>
+            </div>
+
             <template v-for="(msgs, date) in groupedMessages" :key="date">
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <div v-for="msg in msgs" :key="msg.id" class="flex"
