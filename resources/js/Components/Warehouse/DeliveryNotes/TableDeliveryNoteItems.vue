@@ -24,8 +24,11 @@ import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton, InputNumber } from "primevue"
+import { RadioButton, DatePicker } from "primevue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
 
@@ -164,6 +167,59 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
 
 const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps', 'warehouse', 'shipments_routes', 'address', 'navigation', 'breadcrumbs']
 
+// Section: Modal for edit expiry date and batch code
+const selectedItemToEditExpiryDate = ref(null)
+const isModalEditExpiryDate = ref(false)
+const onCloseModalExpiryDate = () => {
+    isModalEditExpiryDate.value = false
+
+    setTimeout(() => {
+        selectedItemToEditExpiryDate.value = null
+    }, 300);
+}
+const isLoadingSubmitExpiryDate = ref(false)
+const onSubmitEditExpiryDate = () => {
+
+    if (!selectedItemToEditExpiryDate.value) {
+        console.log('No item expiry date selected')
+        return
+    }
+
+    router.patch(
+        route('grp.models.delivery_note_item.update', {
+            deliveryNoteItem: selectedItemToEditExpiryDate.value?.id
+        }),
+        {
+            expiry_date: selectedItemToEditExpiryDate.value?.expiry_date,
+            batch_code: selectedItemToEditExpiryDate.value?.batch_code,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmitExpiryDate.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully set expiry date and batch code"),
+                    type: "success"
+                })
+                onCloseModalExpiryDate()
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set expiry date and batch code. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitExpiryDate.value = false
+            },
+        }
+    )
+}
 
 </script>
 
@@ -179,6 +235,37 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
             {{ deliveryNoteItem.org_stock_code }}
             </Link>
+        </template>
+
+        <!-- Column: Name -->
+        <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
+            <div>{{ deliveryNoteItem.org_stock_name }}</div>
+            <div>
+                <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code) && (deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
+                <template v-if="deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed">
+                    <Button
+                        v-if="deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code"
+                        @click="() => (isModalEditExpiryDate = true, selectedItemToEditExpiryDate = deliveryNoteItem)"
+                        type="transparent"
+                        v-tooltip="trans('Edit expiry date and batch code')"
+                        size="xs"
+                        icon="fal fa-pencil"
+                    />
+                    <Button v-else
+                        @click="() => (isModalEditExpiryDate = true, selectedItemToEditExpiryDate = deliveryNoteItem)"
+                        type="tertiary"
+                        vxtooltip="trans('Add expiry date and batch code')"
+                        size="xs"
+                        :label="trans('Add expiry date and batch code')"
+                        icon="fas fa-plus"
+                        key="1"
+                    >
+                        <template #iconRight="">
+                            <FontAwesomeIcon icon="fad fa-viruses" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </template>
+            </div>
         </template>
 
         <!-- Column: Quantity Required -->
@@ -290,8 +377,10 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
 
         <!-- Column: to do actions -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
-
             <div class="hidden">
+                <div><span class="bg-yellow-400">itemValue.is_picked</span>: {{ itemValue.is_picked }}</div>
+                <div><span class="bg-yellow-400">itemValue.is_handled</span>: {{ itemValue.is_handled }}</div>
+                <div><span class="bg-yellow-400">itemValue.is_packed</span>: {{ itemValue.is_packed }}</div>
                 <div><span class="bg-yellow-400">itemValue.quantity_to_pick</span>: {{ itemValue.quantity_to_pick }}</div>
                 <div><span class="bg-yellow-400">itemValue.locations</span>: {{ itemValue.locations }}</div>
                 <div><span class="bg-yellow-400">proxyItem.hehe</span>: {{ proxyItem.hehe }}</div>
@@ -426,13 +515,12 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
             </div>
 
             <div v-else>
-                <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="Set as not picked"
+                <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="No quantity to pick available. Click to set as not picked."
                     icon="fal fa-debug" :size="screenType == 'desktop' ? 'sm' : 'lg'"
                     :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
                 
                 <span class="hidden text-gray-400 italic text-xs">{{ trans("No quantity to pick") }}</span>
             </div>
-
 
         </template>
     </Table>
@@ -523,6 +611,65 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
                             }}</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Edit expiry date & batch code -->
+    <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">
+        <div class="text-center mb-4">
+            <div class="font-semibold text-2xl">Update for {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
+            <div class="opacity-80 italic text-sm">
+                {{ selectedItemToEditExpiryDate?.org_stock_name }}
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-full ">
+                <label class="block text-sm font-medium mb-2">
+                    {{ trans("Expiry Date") }}:
+                </label>
+                <DatePicker
+                    :modelValue="get(selectedItemToEditExpiryDate, 'expiry_date', null) ? new Date(get(selectedItemToEditExpiryDate, 'expiry_date', '')) : null"
+                    @update:modelValue="(e) => set(selectedItemToEditExpiryDate, 'expiry_date', e)"
+                    fluid
+                    dateFormat="dd M yy"
+                    :disabled="isLoadingSubmitExpiryDate"
+                />
+            </div>
+
+            <div class="w-full ">
+                <label class="block text-sm font-medium mb-2">
+                    {{ trans("Batch code") }}:
+                </label>
+                <PureInput
+                    :modelValue="get(selectedItemToEditExpiryDate, 'batch_code', '')"
+                    @update:modelValue="(e) => set(selectedItemToEditExpiryDate, 'batch_code', e)"
+                    :disabled="isLoadingSubmitExpiryDate"
+                />
+            </div>
+
+            <div class="w-full flex gap-4 mt-4">
+                <Button
+                    type="negative"
+                    size="md"
+                    :disabled="isLoadingSubmitExpiryDate"
+                    icon="far fa-arrow-left"
+                    @click="onCloseModalExpiryDate"
+                    :label="trans('Cancel')"
+                >
+                </Button>
+
+                <Button
+                    type="primary"
+                    size="md"
+                    :loading="isLoadingSubmitExpiryDate"
+                    icon="fad fa-save"
+                    @click="onSubmitEditExpiryDate"
+                    full
+                    label="Save"
+                >
+                </Button>
             </div>
         </div>
     </Modal>

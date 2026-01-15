@@ -20,27 +20,33 @@ class View2FAProfile
     use AsAction;
     use WithInertia;
 
+    /**
+     * @throws \PragmaRX\Google2FA\Exceptions\IncompatibleWithGoogleAuthenticatorException
+     * @throws \PragmaRX\Google2FAQRCode\Exceptions\MissingQrCodeServiceException
+     * @throws \PragmaRX\Google2FA\Exceptions\InvalidCharactersException
+     * @throws \PragmaRX\Google2FA\Exceptions\SecretKeyTooShortException
+     */
     public function handle(User $user): array
     {
         $google2fa = new Google2FA();
 
         $secret = $user->google2fa_secret;
 
-        // If secret doesn't exist on DB, generate new one
+        // If a secret doesn't exist on DB, generate a new one
         if (!$secret) {
             $secret = $google2fa->generateSecretKey(32);
         }
 
         // Generate the URL (for the QR)
         $google2fa->getQRCodeUrl(
-            env('APP_NAME'),
-            $user->email,
+            'aiku',
+            $user->username,
             $secret
         );
         // Generate the QR
         $qrInline = $google2fa->getQRCodeInline(
-            env('APP_NAME'),
-            $user->email,
+            'aiku',
+            $user->username,
             $secret,
             360
         );
@@ -51,6 +57,12 @@ class View2FAProfile
         ];
     }
 
+    /**
+     * @throws \PragmaRX\Google2FA\Exceptions\IncompatibleWithGoogleAuthenticatorException
+     * @throws \PragmaRX\Google2FAQRCode\Exceptions\MissingQrCodeServiceException
+     * @throws \PragmaRX\Google2FA\Exceptions\InvalidCharactersException
+     * @throws \PragmaRX\Google2FA\Exceptions\SecretKeyTooShortException
+     */
     public function asController(ActionRequest $request): array
     {
         return $this->handle($request->user());

@@ -10,6 +10,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Models\HumanResources\Employee;
 use App\Actions\Helpers\Shop\UI\GetShopOptions;
 use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 
 class CreateAgent extends OrgAction
@@ -103,6 +104,15 @@ class CreateAgent extends OrgAction
                                     'valueProp' => 'value',
                                 ],
 
+                                'language_id' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Language'),
+                                    'placeholder' => __('Select language'),
+                                    'required'    => true,
+                                    'options'     => GetLanguagesOptions::make()->translated(),
+                                    'labelProp' => 'label',
+                                    'valueProp' => 'value',
+                                ],
 
                                 'max_concurrent_chats' => [
                                     'type'     => 'input_number',
