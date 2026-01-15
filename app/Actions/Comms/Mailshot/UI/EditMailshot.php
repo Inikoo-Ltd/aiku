@@ -50,7 +50,7 @@ class EditMailshot extends OrgAction
                         'label'    => __('Type'),
                         'required' => false,
                         'value'    => $mailshot->type,
-                        'options'  => Options::forEnum(MailshotTypeEnum::class)->reject(fn ($option) => $option->value === MailshotTypeEnum::NEWSLETTER->value),
+                        'options'  => Options::forEnum(MailshotTypeEnum::class)->reject(fn($option) => $option->value === MailshotTypeEnum::NEWSLETTER->value),
                     ],
                     'recipient_type' => [
                         'type'     => 'radio',
@@ -111,17 +111,28 @@ class EditMailshot extends OrgAction
                 ),
                 'title'       => __('Edit mailshot'),
                 'pageHead'    => [
-                    'title' => __('Edit mailshot')
+                    'title' => __('Edit mailshot'),
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'label' => __('Exit edit'),
+                            'route' => [
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ],
                 ],
                 'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
+                    [
                         [
-                            [
-                                'title'  => __('Name'),
-                                'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
-                            ]
-                        ],
+                            'title'  => __('Name'),
+                            'fields' => array_merge(...array_map(fn($item) => $item['fields'], $fields))
+                        ]
+                    ],
                     'args'       => [
                         'updateRoute' => [
                             'name'       => 'grp.models.shop.mailshot.update',
@@ -158,7 +169,7 @@ class EditMailshot extends OrgAction
             mailshot: $mailshot,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 }
