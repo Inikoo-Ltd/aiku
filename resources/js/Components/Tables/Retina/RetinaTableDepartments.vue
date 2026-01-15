@@ -12,6 +12,7 @@ import { faSeedling } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Tag from "@/Components/Tag.vue";
 import { Department } from "@/types/department";
+import Image from "@/Components/Image.vue";
 
 library.add(faSeedling);
 
@@ -33,6 +34,12 @@ function departmentRoute(department: Department): string {
 
 <template>
   <Table :resource="data" :name="tab" class="mt-5">
+     <template #cell(image)="{ item: product }">
+            <div class="flex justify-center">
+                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
+
     <template #cell(state)="{ item: department }">
       <Tag :label="department.state.label" v-tooltip="department.state.label">
         <template #label>

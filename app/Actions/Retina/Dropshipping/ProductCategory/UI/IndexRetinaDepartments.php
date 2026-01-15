@@ -109,17 +109,17 @@ class IndexRetinaDepartments extends RetinaAction
             }
 
 
-
+            $table->column(key: 'image', label: __('Image'), type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
 
             if (class_basename($parent) != 'Collection') {
-                $table->column(key: 'number_current_sub_departments', label: __('sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'number_current_collections', label: __('collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_current_sub_departments', label: __('Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_current_collections', label: __('Collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
 
-                $table->column(key: 'number_current_families', label: __('families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'number_current_products', label: __('products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_current_families', label: __('Families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'number_current_products', label: __('Products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if (class_basename($parent) == 'Collection') {
