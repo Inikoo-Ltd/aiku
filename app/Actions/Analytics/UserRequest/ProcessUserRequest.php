@@ -50,8 +50,7 @@ class ProcessUserRequest extends GrpAction
             'device'                 => $parsedUserAgent->deviceType(),
             'browser'                => explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown',
             'ip_address'             => $ip,
-            'location'               => json_encode($this->getLocation($ip)),
-           // 'location'               => json_encode($geoLocation),
+            'location'               => json_encode($geoLocation),
         ];
 
 
