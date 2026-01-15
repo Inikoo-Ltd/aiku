@@ -67,7 +67,7 @@ class SendEmailDeliveryChannel
             // create redirect Url
             // redirect URL will handle which website should be opened
 
-            $unsubscribeUrl = route('iris.unsubscribe.show', $recipient->dispatchedEmail->id);
+            $unsubscribeUrl = route('grp.helpers.redirect_unsubscribe', $recipient->dispatchedEmail->uuid);
 
             $this->sendEmailWithMergeTags(
                 $recipient->dispatchedEmail,
