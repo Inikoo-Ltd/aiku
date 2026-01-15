@@ -50,6 +50,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
+                'delivery_note_items.batch_code',
+                'delivery_note_items.expiry_date',
                 'delivery_note_items.is_handled',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',

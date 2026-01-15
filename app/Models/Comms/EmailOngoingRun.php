@@ -126,4 +126,9 @@ class EmailOngoingRun extends Model
 
         return $sender;
     }
+
+    public function senderName(): string
+    {
+        return $this->shop?->name ?? '';
+    }
 }

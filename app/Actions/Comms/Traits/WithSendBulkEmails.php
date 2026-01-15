@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
 {
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, string $unsubscribeUrl = null, string $passwordToken = null, string $invoiceUrl = null, array $additionalData = []): DispatchedEmail
+    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, string $unsubscribeUrl = null, string $passwordToken = null, string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null): DispatchedEmail
     {
         $html = $emailHtmlBody;
 
@@ -52,7 +52,8 @@ trait WithSendBulkEmails
             emailHtmlBody: $html,
             dispatchedEmail: $dispatchedEmail,
             sender: $sender,
-            unsubscribeUrl: $unsubscribeUrl
+            unsubscribeUrl: $unsubscribeUrl,
+            senderName: $senderName
         );
     }
 

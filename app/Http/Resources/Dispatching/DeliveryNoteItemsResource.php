@@ -24,6 +24,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_dispatched
  * @property mixed $packed_in
  * @property mixed $org_stock_slug
+ * @property mixed $batch_code
+ * @property mixed $expiry_date
  */
 class DeliveryNoteItemsResource extends JsonResource
 {
@@ -66,6 +68,8 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_name'                 => $this->org_stock_name,
             'org_stock_slug'                 => $this->org_stock_slug,
             'org_stock_id'                   => $this->org_stock_id,
+            'batch_code'                     => $this->batch_code,
+            'expiry_date'                    => $this->expiry_date,
         ];
     }
 }

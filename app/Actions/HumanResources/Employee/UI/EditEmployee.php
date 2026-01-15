@@ -13,7 +13,6 @@ use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;

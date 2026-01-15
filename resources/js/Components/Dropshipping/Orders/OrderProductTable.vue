@@ -10,7 +10,7 @@ import { faPencil, faTimes, faTrashAlt } from '@far'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import { debounce } from 'lodash-es'
+import { debounce, get, set } from 'lodash-es'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import { ulid } from 'ulid'
@@ -20,6 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from '@/Components/Utils/Label/Discount.vue'
+import { InputNumber } from 'primevue'
 library.add(faBadgePercent)
 
 type ProductRow = {
@@ -254,6 +255,59 @@ defineExpose({
 
 })
 
+// Section: Discretionary discount
+const selectedItemToEditNetAmount = ref(null)
+const onCloseModalNetAmount = () => {
+    isOpenModalEditNetAmount.value = false
+
+    setTimeout(() => {
+        selectedItemToEditNetAmount.value = null
+    }, 300);
+}
+const isLoadingSubmitNetAmount = ref(false)
+const isOpenModalEditNetAmount = ref(false)
+const onSubmitEditNetAmount = () => {
+
+  console.log('ccc', selectedItemToEditNetAmount.value)
+  if (!selectedItemToEditNetAmount.value) {
+      console.log('No item net amount selected')
+      return
+  }
+
+  router.patch(
+      route('grp.models.transaction.update_discretionary_discount', {
+          transaction: selectedItemToEditNetAmount.value?.id
+      }),
+      {
+          discretionary_discount_percentage: selectedItemToEditNetAmount.value?.discretionary_discount_percentage
+      },
+      {
+          preserveScroll: true,
+          preserveState: true,
+          onStart: () => { 
+              isLoadingSubmitNetAmount.value = true
+          },
+          onSuccess: () => {
+              notify({
+                  title: trans("Success"),
+                  text: trans("Successfully set discretionary discount percentage"),
+                  type: "success"
+              })
+              onCloseModalNetAmount()
+          },
+          onError: errors => {
+              notify({
+                  title: trans("Something went wrong"),
+                  text: errors?.discretionary_discount_percentage || trans("Failed to set discretionary discount percentage. Try again"),
+                  type: "error"
+              })
+          },
+          onFinish: () => {
+              isLoadingSubmitNetAmount.value = false
+          },
+      }
+  )
+}
 </script>
 
 <template>
@@ -347,6 +401,16 @@ defineExpose({
               <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
                   <span v-if="item.gross_amount != item.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                   <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
+                  <Button
+                    v-if="layout.app.environment === 'local'"
+                    @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
+                    v-tooltip="trans('Edit discretionary discount')"
+                    type="transparent"
+                    size="xs"
+                    key="1"
+                    icon="fal fa-pencil"
+                    class="ml-1 !px-1"
+                  />
               </p>
           </div>
         </div>
@@ -382,6 +446,52 @@ defineExpose({
 
     </Table>
 
+    <!-- Section: Modal edit discretionary discount -->
+    <Modal :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
+        <div class="text-center mb-4">
+            <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
+            <div class="opacity-80 italic text-sm">
+                <pre>{{ selectedItemToEditNetAmount?.asset_name }}</pre>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-full ">
+                <label class="block text-sm font-medium mb-2">
+                    {{ trans("Discretionary discount percentage") }}:
+                </label>
+                <InputNumber
+                  :modelValue="get(selectedItemToEditNetAmount, 'discretionary_discount_percentage', 0)"
+                  @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_discount_percentage', e?.value)"
+                  suffix="%"
+                />
+            </div>
+
+            <div class="w-full flex gap-4 mt-4">
+                <Button
+                    type="negative"
+                    size="md"
+                    :disabled="isLoadingSubmitNetAmount"
+                    icon="far fa-arrow-left"
+                    @click="onCloseModalNetAmount"
+                    :label="trans('Cancel')"
+                >
+                </Button>
+
+                <Button
+                    type="primary"
+                    size="md"
+                    :loading="isLoadingSubmitNetAmount"
+                    icon="fad fa-save"
+                    @click="onSubmitEditNetAmount"
+                    full
+                    label="Save"
+                >
+                </Button>
+            </div>
+        </div>
+    </Modal>
+    
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
       <ProductsSelectorAutoSelect
         :headLabel="trans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"

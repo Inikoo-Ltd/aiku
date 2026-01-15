@@ -146,7 +146,8 @@ class Kernel extends HttpKernel
             //LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+            \App\Http\Middleware\TwoFAMiddleware::class, // Middleware to Handle 2FA
         ],
         'web_errors'  => [
             EncryptCookies::class,

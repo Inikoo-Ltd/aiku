@@ -38,8 +38,8 @@ trait WithIrisInertia
             $isFooterActive  = Arr::get($footerLayout, 'status');
             $menuLayout      = Arr::get($website->published_layout, 'menu');
             $isMenuActive    = Arr::get($menuLayout, 'status');
-            $sidebarLayout   = Arr::get($website->published_layout, 'menu');
-            $isSidebarActive = Arr::get($sidebarLayout, 'status');
+            /*  $sidebarLayout   = Arr::get($website->published_layout, 'menu'); */
+            /*   $isSidebarActive = Arr::get($sidebarLayout, 'status'); */
 
             $migrationRedirect = null;
             if ($website->is_migrating) {

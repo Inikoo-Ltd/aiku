@@ -19,6 +19,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Rules\IUnique;
@@ -51,6 +52,14 @@ class StoreOffer extends OrgAction
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
             UpdateOfferAllowanceSignature::run($offer);
+
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                $offer->timeSeries()->create(
+                    [
+                        'frequency' => $frequency,
+                    ]
+                );
+            }
 
             return $offer;
         });

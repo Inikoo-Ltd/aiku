@@ -22,7 +22,7 @@ class DashboardOffersResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => 'Dummy',
+                    'formatted_value' => $this->resource['name'] ?? $this->resource['code'] ?? 'Unknown',
                     'align'           => 'left'
                 ]
             ],
@@ -33,8 +33,8 @@ class DashboardOffersResource extends JsonResource
         );
 
         return [
-            'slug'      => 'dummy',
-            'state'     => 'active',
+            'slug'      => $this->resource['slug'] ?? 'unknown',
+            'state'     => $this->resource['state'] ?? 'active',
             'columns'   => $columns,
             'colour'    => ''
         ];

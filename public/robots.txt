@@ -18,7 +18,6 @@ Disallow: /app/basket
 Disallow: /app/back-in-stocks
 Disallow: /email-protection
 
-Sitemap: /sitemap.xml
 Sitemap: /sitemaps/products.xml
 Sitemap: /sitemaps/departments.xml
 Sitemap: /sitemaps/sub_departments.xml

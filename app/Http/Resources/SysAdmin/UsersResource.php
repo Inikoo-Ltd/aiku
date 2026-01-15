@@ -60,8 +60,8 @@ class UsersResource extends JsonResource
             'number_expired_api_tokens' => $this->number_expired_api_tokens,
             'parent_type'               => $this->parent_type,
             'contact_name'              => $this->contact_name,
-
-
+            'has_2fa'                   => $this->has_2fa,
+            'is_two_factor_required'    => $this->is_two_factor_required,
         ];
     }
 }

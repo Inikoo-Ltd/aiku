@@ -135,7 +135,7 @@ console.log(props.modelValue)
 <template>
       <!-- DESKTOP -->
     <div v-if="screenType !== 'mobile'" id="product-1"
-        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
+        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block pointer-events-none" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
             marginRight: 'auto'

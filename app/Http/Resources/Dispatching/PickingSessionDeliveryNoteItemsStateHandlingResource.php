@@ -35,6 +35,14 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $picking_position
  * @property mixed $warehouse_area_code
  * @property mixed $warehouse_area_picking_position
+ * @property mixed $delivery_note_customer_notes
+ * @property mixed $delivery_note_public_notes
+ * @property mixed $delivery_note_internal_notes
+ * @property mixed $delivery_note_shipping_notes
+ * @property mixed $delivery_note_is_premium_dispatch
+ * @property mixed $delivery_note_has_extra_packing
+ * @property mixed $batch_code
+ * @property mixed $expiry_date
  */
 class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -107,37 +115,39 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 
 
         return [
-            'id'                           => $this->id,
-            'is_picked'                    => $isPicked,
-            'state'                        => $this->state,
-            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'            => $this->quantity_required,
-            'quantity_to_pick'             => $quantityToPick,
-            'quantity_to_pick_fractional'  => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in),
-            'quantity_picked'              => $this->quantity_picked,
-            'quantity_not_picked'          => $this->quantity_not_picked,
-            'quantity_packed'              => $this->quantity_packed,
-            'quantity_dispatched'          => $this->quantity_dispatched,
-            'org_stock_code'               => $this->org_stock_code,
-            'org_stock_slug'               => $this->org_stock_slug,
-            'org_stock_name'               => $this->org_stock_name,
-            'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
-            'pickings'                     => PickingResource::collection($pickings),
-            'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-            'warning'                      => $fullWarning,
-            'is_handled'                   => $this->is_handled,
-            'delivery_note_reference'      => $this->delivery_note_reference,
-            'delivery_note_slug'           => $this->delivery_note_slug,
-            'delivery_note_id'             => $this->delivery_note_id,
-            'delivery_note_state'          => $this->delivery_note_state,
-            'delivery_note_customer_notes'   => $this->delivery_note_customer_notes,
-            'delivery_note_public_notes'     => $this->delivery_note_public_notes,
-            'delivery_note_internal_notes'   => $this->delivery_note_internal_notes,
-            'delivery_note_shipping_notes'   => $this->delivery_note_shipping_notes,
-            'delivery_note_is_premium_dispatch'          => $this->delivery_note_is_premium_dispatch,
-            'delivery_note_has_extra_packing'            => $this->delivery_note_has_extra_packing,
-            'is_packed'                    => $isPacked,
-            'quantity_required_fractional' => $requiredFactionalData,
+            'id'                                => $this->id,
+            'is_picked'                         => $isPicked,
+            'state'                             => $this->state,
+            'state_icon'                        => $this->state->stateIcon()[$this->state->value],
+            'quantity_required'                 => $this->quantity_required,
+            'quantity_to_pick'                  => $quantityToPick,
+            'quantity_to_pick_fractional'       => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in),
+            'quantity_picked'                   => $this->quantity_picked,
+            'quantity_not_picked'               => $this->quantity_not_picked,
+            'quantity_packed'                   => $this->quantity_packed,
+            'quantity_dispatched'               => $this->quantity_dispatched,
+            'org_stock_code'                    => $this->org_stock_code,
+            'org_stock_slug'                    => $this->org_stock_slug,
+            'org_stock_name'                    => $this->org_stock_name,
+            'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'pickings'                          => PickingResource::collection($pickings),
+            'packings'                          => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'warning'                           => $fullWarning,
+            'is_handled'                        => $this->is_handled,
+            'delivery_note_reference'           => $this->delivery_note_reference,
+            'delivery_note_slug'                => $this->delivery_note_slug,
+            'delivery_note_id'                  => $this->delivery_note_id,
+            'delivery_note_state'               => $this->delivery_note_state,
+            'delivery_note_customer_notes'      => $this->delivery_note_customer_notes,
+            'delivery_note_public_notes'        => $this->delivery_note_public_notes,
+            'delivery_note_internal_notes'      => $this->delivery_note_internal_notes,
+            'delivery_note_shipping_notes'      => $this->delivery_note_shipping_notes,
+            'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,
+            'delivery_note_has_extra_packing'   => $this->delivery_note_has_extra_packing,
+            'is_packed'                         => $isPacked,
+            'quantity_required_fractional'      => $requiredFactionalData,
+            'batch_code'                        => $this->batch_code,
+            'expiry_date'                       => $this->expiry_date,
 
             'warehouse_area'       => $warehouseArea,
             'upsert_picking_route' => [

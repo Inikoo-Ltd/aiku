@@ -180,7 +180,15 @@ const getMessages = async (loadMore = false) => {
     }
 }
 
-const sendMessage = async (text: string) => {
+const sendMessage = async ({
+    text,
+    type,
+    file,
+}: {
+    text: string
+    type: "text" | "image" | "file"
+    file?: File | null
+}) => {
     if (!chatSession.value?.ulid) return
 
     const tempId = `tmp-${crypto.randomUUID()}`
@@ -188,29 +196,29 @@ const sendMessage = async (text: string) => {
     const localMessage: LocalChatMessage = {
         id: -1,
         _tempId: tempId,
-        message_text: text,
-        message_type: "text",
+        message_text: text ?? "",
+        message_type: type,
+        media_url:
+            type === "image" && file ? URL.createObjectURL(file) : null,
         sender_type: isLoggedIn.value ? "user" : "guest",
         created_at: new Date().toISOString(),
         _status: "sending",
     }
-
     messagesLocal.value.push(localMessage)
 
     try {
-        const payload: any = {
-            message_text: text,
-            message_type: "text",
-            sender_type: isLoggedIn.value ? "user" : "guest",
+        const formData = new FormData()
+        formData.append("message_text", text ?? "")
+        formData.append("message_type", type)
+        formData.append("sender_type", isLoggedIn.value ? "user" : "guest")
+
+        if (file) {
+            formData.append(type === "image" ? "image" : "file", file)
         }
 
-        // if (isLoggedIn.value) {
-        //     payload.sender_id = layout.user?.id
-        // }
-
-        const res = await axios.post(
+        await axios.post(
             `${baseUrl}/app/api/chats/messages/${chatSession.value.ulid}/send`,
-            payload
+            formData
         )
 
         const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
@@ -222,7 +230,6 @@ const sendMessage = async (text: string) => {
         const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
         if (index !== -1) {
             messagesLocal.value[index]._status = "failed"
-
         }
     }
 }
@@ -234,7 +241,6 @@ const stopChatWebSocket = () => {
     chatChannel = null
     websocketInitialized = false
 }
-
 
 const initWebSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
@@ -376,7 +382,6 @@ const startNewSession = async () => {
     initWebSocket()
     forceScrollBottom()
 }
-
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
 onMounted(() => {

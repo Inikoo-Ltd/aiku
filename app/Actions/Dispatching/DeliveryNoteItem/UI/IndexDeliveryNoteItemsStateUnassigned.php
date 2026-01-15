@@ -43,6 +43,8 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
                 'delivery_note_items.id',
                 'delivery_note_items.state',
                 'delivery_note_items.quantity_required',
+                'delivery_note_items.batch_code',
+                'delivery_note_items.expiry_date',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.code as org_stock_code',
