@@ -26,15 +26,14 @@ class LogUserRequestMiddleware
         }
 
 
-
         $ip          = $request->ip();
         $geoLocation = [
-            'country_code' => $request->header('CF-IPCountry'),
-            'city'         => $request->header('CF-IPCity'),
-            'longitude'    => $request->header('CF-IPLongitude'),
-            'latitude'     => $request->header('CF-IPLatitude'),
-            'region'       => $request->header('CF-Region'),
-            'postal_code'  => $request->header('CF-Postal-Code'),
+            'c'  => $request->header('CF-IPCountry'),
+            't'  => $request->header('CF-IPCity'),
+            'lo' => $request->header('CF-IPLongitude'),
+            'la' => $request->header('CF-IPLatitude'),
+            'r'  => $request->header('CF-Region'),
+            'p'  => $request->header('CF-Postal-Code'),
         ];
 
         /* @var User $user */
