@@ -29,7 +29,7 @@ class SendSesEmail
 
     public mixed $message;
 
-    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, string $unsubscribeUrl = null): DispatchedEmail
+    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, string $unsubscribeUrl = null, ?string $senderName = null): DispatchedEmail
     {
         if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
             return $dispatchedEmail;
@@ -83,7 +83,8 @@ class SendSesEmail
             $sender,
             $emailTo,
             $emailHtmlBody,
-            $unsubscribeUrl
+            $unsubscribeUrl,
+            $senderName
         );
 
 
@@ -162,7 +163,7 @@ class SendSesEmail
         return $this->getSesClient()->sendRawEmail($this->getRawEmail($emailData));
     }
 
-    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null): array
+    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null): array
     {
         $message = [
             'Message' => [
@@ -186,6 +187,7 @@ class SendSesEmail
 
         return [
             'Source'      => $sender,
+            'SourceName'  => $senderName,
             'Destination' => [
                 'ToAddresses' => [
                     $to
@@ -204,7 +206,7 @@ class SendSesEmail
         $mail = new PHPMailer();
 
         $mail->addAddress($emailData['Destination']['ToAddresses'][0]);
-        $mail->setFrom($emailData['Source']);
+        $mail->setFrom($emailData['Source'], $emailData['SourceName'] ?? '');
 
         foreach (Arr::get($emailData, 'Headers', []) as $key => $header) {
             $mail->addCustomHeader($key, $header);
