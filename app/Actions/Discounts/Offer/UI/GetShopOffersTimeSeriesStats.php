@@ -13,7 +13,7 @@ class GetShopOffersTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Shop $shop): array
+    public function handle(Shop $shop, $from_date = null, $to_date = null): array
     {
         // Get all active offers for the shop
         $offers = Offer::where('shop_id', $shop->id)
@@ -45,7 +45,9 @@ class GetShopOffersTimeSeriesStats
                 [
                     'customers' => 'customers_invoiced',
                     'orders' => 'orders'
-                ]
+                ],
+                $from_date,
+                $to_date
             );
         }
 
