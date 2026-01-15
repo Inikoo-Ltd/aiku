@@ -20,7 +20,6 @@ const baseUrl = layout?.appUrl ?? ""
 const contacts = ref<Contact[]>([])
 const selectedSession = ref<SessionAPI | null>(null)
 const messages = ref<ChatMessage[]>([])
-
 const activeTab = ref("waiting")
 const isAssigning = ref<Record<string, boolean>>({})
 const errorPerContact = ref<Record<string, string>>({})
@@ -160,15 +159,27 @@ const back = () => {
     selectedSession.value = null
 }
 
-const handleSendMessage = async (text: string) => {
+const handleSendMessage = async ({ text, image, message_type, tempId }: {
+    text: string
+    image?: File | null
+    message_type: "text" | "image" | "file"
+    tempId: number
+}) => {
     if (!selectedSession.value?.ulid) return
 
     try {
         const organisation = route().params?.organisation ?? "aw"
-        const payload = {
-            message_text: text,
-            message_type: "text",
-            sender_type: "agent",
+
+        const formData = new FormData()
+        formData.append("message_text", text ?? "")
+        formData.append("message_type", message_type)
+        formData.append("sender_type", "agent")
+
+        if (image) {
+            formData.append(
+                message_type === "image" ? "image" : "file",
+                image
+            )
         }
 
         const assignRoute: routeType = {
@@ -177,7 +188,8 @@ const handleSendMessage = async (text: string) => {
             method: "post",
         }
 
-        await axios.post(route(assignRoute.name, assignRoute.parameters), payload, {
+        await axios.post(route(assignRoute.name, assignRoute.parameters), formData, {
+            headers: { "Content-Type": "multipart/form-data" },
             withCredentials: true,
         })
     } catch (error) {
@@ -283,7 +295,6 @@ const tabClass = (tab: string) => {
                 <SettingChat :contact="selectedContact" @close="chatSettingVisible = false" />
             </div>
         </Dialog>
-
 
         <!-- Tabs -->
         <div class="flex border-b text-xs">
