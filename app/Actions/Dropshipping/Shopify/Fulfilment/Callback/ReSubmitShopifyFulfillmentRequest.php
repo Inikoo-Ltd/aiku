@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Support\Arr;
 use Sentry;
 
 class ReSubmitShopifyFulfillmentRequest extends OrgAction
