@@ -33,10 +33,9 @@ class ShowUnsubscribeMailshot
 
 
 
-
-        return Inertia::render('Utils/Unsubscribe', [
+        return Inertia::render('UnsubscribeMailshot', [
             'title'           => __("Unsubscribe"),
-            'dispatchedEmail' => DispatchedEmailsResource::make($dispatchedEmail)->getArray(),
+            // 'dispatchedEmail' => DispatchedEmailsResource::make($firstDispatchedEmail)->getArray(),
             'message'         => [
                 'confirmationTitle'       => __("Are you sure to unsubscribe?"),
                 'successTitle'            => __("Unsubscription successful"),

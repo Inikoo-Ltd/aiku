@@ -63,9 +63,11 @@ class SendEmailDeliveryChannel
                 return;
             }
 
-            //todo this is wrong
-            $unsubscribeUrl = $recipient->dispatchedEmail->ulid;
-            // route('org.unsubscribe.mailshot.show', $recipient->dispatchedEmail->ulid);
+            //TODO:
+            // create redirect Url
+            // redirect URL will handle which website should be opened
+
+            $unsubscribeUrl = route('iris.unsubscribe.show', $recipient->dispatchedEmail->id);
 
             $this->sendEmailWithMergeTags(
                 $recipient->dispatchedEmail,
@@ -134,5 +136,4 @@ class SendEmailDeliveryChannel
 
         return 0;
     }
-
 }
