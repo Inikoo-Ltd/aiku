@@ -55,9 +55,9 @@ console.log("RetinaTableProducts.vue", layout)
         </template>
 
         <template #cell(code)="{ item: product }">
-            <Link :href="productRoute(product)" class="primaryLink whitespace-nowrap">
+            <a :href="product.iris_url" class="primaryLink whitespace-nowrap">
             {{ product["code"] }}
-            </Link>
+            </a>
         </template>
 
         <!-- Column: Stock -->

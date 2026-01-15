@@ -99,6 +99,7 @@ class ProductsResource extends JsonResource
             'variant_slug'              => $this->variant_slug,
             'is_variant_leader'         => $this->is_variant_leader,
             'variant_code'              => $this->variant_code,
+            'iris_url'                  => $this->webpage?->canonical_url
         ];
     }
 
