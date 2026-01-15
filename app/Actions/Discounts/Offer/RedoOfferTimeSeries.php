@@ -36,9 +36,10 @@ class RedoOfferTimeSeries
         $offerId = (string) $offer->id;
 
         $sql = "
-            SELECT MIN(date) as first_used_at, MAX(date) as last_used_at
-            FROM transactions
-            WHERE offers_data->'o'->>'o' = ?
+            SELECT MIN(t.date) as first_used_at, MAX(t.date) as last_used_at
+            FROM transaction_has_offer_allowances thoa
+            JOIN transactions t ON thoa.transaction_id = t.id
+            WHERE thoa.offer_id = ?
         ";
 
         $results = DB::select($sql, [$offerId]);

@@ -53,10 +53,10 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(OfferTimeSeries $timeSeries, string $from, string $to, int $offerId): void
     {
         $results = DB::table('invoice_transactions')
-            ->join('transactions', 'invoice_transactions.transaction_id', '=', 'transactions.id')
+            ->join('transaction_has_offer_allowances', 'invoice_transactions.transaction_id', '=', 'transaction_has_offer_allowances.transaction_id')
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
-            ->whereRaw("transactions.offers_data->'o'->>'o' = ?", [(string) $offerId]);
+            ->where('transaction_has_offer_allowances.offer_id', $offerId);
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
