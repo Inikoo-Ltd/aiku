@@ -29,7 +29,7 @@ class LogUserRequestMiddleware
         $ip          = $request->ip();
         $geoLocation = [
             $request->header('CF-IPCountry') ?? 'XX',
-            $request->header('CF-Region-Code'),
+            $request->header('CF-Region'),
             $request->header('CF-IPCity'),
             $request->header('CF-IPLongitude'),
             $request->header('CF-IPLatitude'),
