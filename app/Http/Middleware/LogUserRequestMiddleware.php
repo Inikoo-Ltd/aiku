@@ -17,7 +17,6 @@ class LogUserRequestMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-
         if (!config('app.log_user_requests')) {
             return $next($request);
         }
@@ -27,6 +26,9 @@ class LogUserRequestMiddleware
         }
 
 
+        $ipAddresses = $request->ips();
+
+        $ip = end($ipAddresses);
 
         /* @var User $user */
         $user = $request->user();
@@ -39,11 +41,9 @@ class LogUserRequestMiddleware
                     'arguments' => $request->route()->originalParameters(),
                     'url'       => $request->path(),
                 ],
-                $request->ip(),
+                $ip,
                 $request->header('User-Agent')
             );
-
-
         }
 
         return $next($request);
