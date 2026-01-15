@@ -43,6 +43,7 @@ class StoreAgent extends OrgAction
                     'max_concurrent_chats'  => $modelData['max_concurrent_chats'],
                     'specialization'        => $modelData['specialization'] ?? null,
                     'auto_accept'           => $modelData['auto_accept'] ?? true,
+                    'language_id'           => $modelData['language_id'],
                     'is_online'             => false,
                     'is_available'          => false,
                     'current_chat_count'    => 0,
@@ -77,6 +78,12 @@ class StoreAgent extends OrgAction
                 'required',
                 'integer',
                 'exists:users,id',
+            ],
+
+            'language_id' => [
+                'required',
+                'integer',
+                'exists:languages,id',
             ],
 
             'max_concurrent_chats' => [

@@ -4,6 +4,7 @@ namespace App\Models\CRM\Livechat;
 
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -53,6 +54,7 @@ class ChatAgent extends Model
         'auto_accept' => 'boolean',
         'is_available' => 'integer',
         'specialization' => 'array',
+        'language_id'    => 'integer',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -128,6 +130,11 @@ class ChatAgent extends Model
         return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
             ->withPivot(['shop_id'])
             ->withTimestamps();
+    }
+
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(Language::class);
     }
 
 

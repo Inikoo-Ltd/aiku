@@ -108,10 +108,10 @@ export interface Contact {
 
 export interface ChatMessage {
 	id: string
-	message: string
-	ulid: string
+	message?: string
+	ulid?: string
 	message_text: string
 	sender_type: "guest" | "user" | "agent" | "system"
 	created_at: string
-	is_read: boolean
+	is_read?: boolean
 }

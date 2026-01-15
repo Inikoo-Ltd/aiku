@@ -75,6 +75,8 @@ class ShowDiscountsDashboard extends OrgAction
         $routeParameters = $request->route()->originalParameters();
 
 
+        $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop);
+
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
             [
@@ -118,8 +120,8 @@ class ShowDiscountsDashboard extends OrgAction
                     'tables'      => [
                         'offers' => [
                             'header' => json_decode(DashboardHeaderOffersResource::make($this->shop)->toJson(), true),
-                            'body'   => json_decode(DashboardOffersResource::collection(GetShopOffersTimeSeriesStats::run($this->shop))->toJson(), true),
-                            'totals' => json_decode(DashboardTotalOffersResource::make(GetShopOffersTimeSeriesStats::run($this->shop))->toJson(), true),
+                            'body'   => json_decode(DashboardOffersResource::collection($timeSeriesStats)->toJson(), true),
+                            'totals' => json_decode(DashboardTotalOffersResource::make($timeSeriesStats)->toJson(), true),
                         ],
                     ],
                 ],
