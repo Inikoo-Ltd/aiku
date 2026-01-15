@@ -38,7 +38,7 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         $shippingService = Arr::pull($modelData, 'shipping_service');
         $shippingPrice = (string) Arr::pull($modelData, 'shipping_price');
         $shippingDispatchTime = (string) Arr::pull($modelData, 'shipping_max_dispatch_time');
-        
+
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
         }
@@ -79,7 +79,7 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         if ($returnDescription) {
             data_set($modelData, 'settings.return.description', $returnDescription);
         }
-        
+
         data_forget($modelData, 'tax_category_id');
         data_forget($modelData, 'is_vat_adjustment');
 

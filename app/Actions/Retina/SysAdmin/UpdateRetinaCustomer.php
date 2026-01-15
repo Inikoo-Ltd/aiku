@@ -18,7 +18,7 @@ use App\Models\CRM\Customer;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Lorisleiva\Actions\ActionRequest;
-Use App\Traits\SanitizeInputs;
+use App\Traits\SanitizeInputs;
 
 class UpdateRetinaCustomer extends RetinaAction
 {
@@ -42,7 +42,7 @@ class UpdateRetinaCustomer extends RetinaAction
 
         return $this->customer->id = $request->route()->parameter('customer')->id && $request->user()->is_root;
     }
-    
+
 
     public function prepareForValidation(ActionRequest $request)
     {

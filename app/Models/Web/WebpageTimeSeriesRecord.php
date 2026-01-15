@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $visitors
  * @property int|null $page_views
  * @property int|null $add_to_baskets
- * @property float|null $conversion_rate
+ * @property numeric|null $conversion_rate
  * @property int|null $avg_time_on_page
  * @property \Illuminate\Support\Carbon|null $from
  * @property \Illuminate\Support\Carbon|null $to

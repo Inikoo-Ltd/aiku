@@ -23,7 +23,7 @@ class RegisterRetinaFromStandalone extends IrisAction
     public function asController(ActionRequest $request): void
     {
         $this->enableSanitize();
-        $this->setSanitizeFields([    
+        $this->setSanitizeFields([
             'email',
             'password',
             'contact_name',

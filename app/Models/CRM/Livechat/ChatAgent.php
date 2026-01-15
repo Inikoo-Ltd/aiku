@@ -24,7 +24,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property int|null $language_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatAssignment> $assignments
+ * @property-read Language|null $language
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ShopHasChatAgent> $shopAssignments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops

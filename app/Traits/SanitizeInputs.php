@@ -9,16 +9,14 @@
 
 namespace App\Traits;
 
-use Lorisleiva\Actions\ActionRequest;
-
 trait SanitizeInputs
 {
     /**
      * Fields that should be sanitized.
      * Need to be declared in Classes that uses it
-     * 
+     *
     */
-    
+
     protected $doSanitize = false;
     protected array $sanitizeFields = [];
 
@@ -27,7 +25,7 @@ trait SanitizeInputs
         $this->doSanitize = true;
     }
 
-    protected function setSanitizeFields(Array $fields): void
+    protected function setSanitizeFields(array $fields): void
     {
         $this->sanitizeFields = $fields;
     }
