@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faFilter, faSearch, faLayerGroup } from "@fas";
 import { ref, computed, inject, watch } from "vue";
-import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue";
 import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";

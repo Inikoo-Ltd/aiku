@@ -8,6 +8,7 @@
 
 namespace App\Console;
 
+use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
@@ -439,6 +440,18 @@ class Kernel extends ConsoleKernel
             type: 'command',
             scheduledAt: now()->format('H:i')
         );
+
+
+        if (app()->environment('local')) {
+            $this->logSchedule(
+                $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunNewsletterScheduled',
+                ),
+                name: 'RunNewsletterScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+        }
     }
 
     protected function commands(): void

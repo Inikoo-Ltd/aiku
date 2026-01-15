@@ -48,6 +48,7 @@ class SendInvoiceToFulfilmentCustomerEmail extends OrgAction
             $outbox->emailOngoingRun?->email?->subject,
             $emailHtmlBody,
             invoiceUrl: $this->getInvoiceLink($invoice),
+            senderName: $outbox->emailOngoingRun->senderName(),
         );
     }
 

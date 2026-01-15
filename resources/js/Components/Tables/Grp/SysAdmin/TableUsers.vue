@@ -12,11 +12,12 @@ import { trans } from "laravel-vue-i18n"
 import Image from "@/Components/Image.vue"
 import Icon from '@/Components/Icon.vue'
 
-import { faCheck, faTimes, faUserCircle, faYinYang, faKey } from "@fal"
+import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faCheckCircle, faTimesCircle } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { faShieldAlt, faUserShield } from "@far"
 
-library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey)
+library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey,faUserShield, faShieldAlt)
 
 defineProps<{
     data: {}
@@ -54,15 +55,22 @@ function userRoute(user: User) {
             </div>
             <div v-if="user.number_current_api_tokens > 0 || user.number_expired_api_tokens>0 " v-tooltip="trans('Api keys')" class="ml-3 inline w-fit">
                 <FontAwesomeIcon icon="fal fa-key" class="text-gray-400 mr-1" fixed-width aria-hidden="true" />
-                <span  v-if="user.number_current_api_tokens > 0"  v-tooltip="trans('active')">{{ user.number_current_api_tokens}}</span>   <span   v-tooltip="trans('expired')" class="text-red-700 ml-2"  v-if="user.number_expired_api_tokens > 0" >{{ user.number_expired_api_tokens}}</span>
+                <span  v-if="user.number_current_api_tokens > 0"  v-tooltip="trans('active')">{{ user.number_current_api_tokens}}</span>   <span v-tooltip="trans('expired')" class="text-red-700 ml-2"  v-if="user.number_expired_api_tokens > 0" >{{ user.number_expired_api_tokens}}</span>
             </div>
-
-
+        </template>
+        
+        <template #cell(has_2fa)="{ item: user }">
+            <FontAwesomeIcon v-if="user.has_2fa" :icon="faCheckCircle" class="text-green-500"/>
+            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"/>
+        </template>
+        
+        <template #cell(is_two_factor_required)="{ item: user }">
+            <FontAwesomeIcon v-if="user.is_two_factor_required" :icon="faCheckCircle" class="text-green-500"/>
+            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"/>
         </template>
 
         <!-- Column: Image -->
         <template #cell(image)="{ item: user }">
-
             <div class="flex justify-center">
                 <Image :src="user['image']" class="w-6 aspect-square rounded-full overflow-hidden shadow"
                     :alt="user.username" />

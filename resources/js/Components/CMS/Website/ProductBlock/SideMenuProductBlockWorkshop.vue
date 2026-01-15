@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { ref, computed, inject } from "vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
@@ -19,7 +19,7 @@ import {
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
-import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
+import { getBlueprintProduct } from "@/Composables/getBlueprintWorkshop"
 
 library.add(
 	faChevronRight,
@@ -47,6 +47,8 @@ const props = defineProps<{
 		data: Array<any>
 	}
 }>()
+
+const layout = inject('layout')
 
 const emits = defineEmits<{
     (e: 'setUpTemplate', value: string | number): void
@@ -110,7 +112,7 @@ const onPickBlock = (value: object) => {
         <TabPanel v-if="data?.data?.fieldValue" class="xp-4">
           <SideEditor 
             v-model="data.data.fieldValue" 
-            :blueprint="getBlueprint(data.code)"
+            :blueprint="getBlueprintProduct(data.code, layout?.shopState?.type)"
             @update:modelValue="(e) => { data.data.fieldValue = e, emits('autoSave') }"
             :uploadImageRoute="null" 
           />

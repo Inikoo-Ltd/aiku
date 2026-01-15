@@ -80,6 +80,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property DeliveryNoteItemCancelStateEnum|null $cancel_state
  * @property int|null $picking_session_id
  * @property string|null $original_quantity_required
+ * @property string|null $batch_code
+ * @property \Illuminate\Support\Carbon|null $expiry_date
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
@@ -101,9 +103,9 @@ class DeliveryNoteItem extends Model
     protected $table = 'delivery_note_items';
 
     protected $casts = [
-        'data'       => 'array',
-        'state'      => DeliveryNoteItemStateEnum::class,
-        'sales_type' => DeliveryNoteItemSalesTypeEnum::class,
+        'data'         => 'array',
+        'state'        => DeliveryNoteItemStateEnum::class,
+        'sales_type'   => DeliveryNoteItemSalesTypeEnum::class,
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
         'date'               => 'datetime',
@@ -117,7 +119,7 @@ class DeliveryNoteItem extends Model
         'cancelled_at'       => 'datetime',
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
-
+        'expiry_date'        => 'date',
         'revenue_amount'     => 'decimal:2',
         'org_revenue_amount' => 'decimal:2',
         'grp_revenue_amount' => 'decimal:2',

@@ -48,6 +48,9 @@ import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Bl
 import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
 
+import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
+import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/Blueprint'
+
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
 import { blueprint as LuigiTrends1Blueprint  } from "@/Components/CMS/Webpage/LuigiTrends1/Blueprint"
@@ -160,3 +163,15 @@ export const getHiddenPermissions = (data: PermissionData) => hasPermission(data
 
 // try to bulid rename fitur
 export const getRenamePermision = (data: PermissionData) => hasPermission(data, 'edit')
+
+
+
+export const getBlueprintProduct = (componentName: string, shop_type?: string) => {
+	const components: Record<string, any> = {
+		"product-1":  shop_type == 'b2b' ?  Product1EcomBlueprint.blueprint : Product1DSBlueprint.blueprint, 
+		"product-2": Product2.blueprint,
+	}
+
+	const blueprint = components[componentName]
+	return typeof blueprint === "function" ? blueprint() : blueprint ?? []
+}

@@ -62,13 +62,19 @@ use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
+use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
+use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
+use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
+use App\Actions\Comms\Mailshot\PublishMailShot;
+use App\Actions\Comms\Mailshot\SendNewsLetterNow;
+use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
@@ -90,6 +96,7 @@ use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Box\StoreBox;
 use App\Actions\Dispatching\Box\UpdateBox;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
@@ -352,9 +359,11 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
+use App\Actions\UI\Profile\View2FAProfile;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
+Route::get('/profile/2fa-qrcode', View2FAProfile::class)->name('profile.2fa-qrcode');
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 
 Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name('notifications.read');
@@ -759,6 +768,15 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/send', SendNewsLetterNow::class)->name('newsletter.send')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('newsletter.cancel-schedule')->withoutScopedBindings();
+    });
+
+    Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
+        Route::patch('/workshop', UpdateWorkshopMailShot::class)->name('workshop.update')->withoutScopedBindings();
+        Route::post('publish', PublishMailshot::class)->name('publish')->withoutScopedBindings();
+        Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
     });
 });
 
@@ -1083,6 +1101,8 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
+
+Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 
 
 require __DIR__.'/models/inventory/warehouse.php';
