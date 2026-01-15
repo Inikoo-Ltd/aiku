@@ -85,6 +85,7 @@ class TransactionsResource extends JsonResource
             'available_quantity'  => $this->available_quantity ?? 0,
             'webpage_url'         => $webpageUrl,
             'offers_data'         => $this->offers_data,
+            'discretionary_discount_percentage' => $this->discretionary_discount_percentage,  // TODO: Raul INI-815
 
 
             'deleteRoute' => $request->user() instanceof User
