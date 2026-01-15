@@ -62,13 +62,19 @@ use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
+use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
+use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
+use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
+use App\Actions\Comms\Mailshot\PublishMailShot;
+use App\Actions\Comms\Mailshot\SendNewsLetterNow;
+use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
@@ -762,6 +768,15 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/send', SendNewsLetterNow::class)->name('newsletter.send')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('newsletter.cancel-schedule')->withoutScopedBindings();
+    });
+
+    Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
+        Route::patch('/workshop', UpdateWorkshopMailShot::class)->name('workshop.update')->withoutScopedBindings();
+        Route::post('publish', PublishMailshot::class)->name('publish')->withoutScopedBindings();
+        Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
     });
 });
 

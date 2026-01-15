@@ -64,7 +64,8 @@ class SendEmailDeliveryChannel
             }
 
             //todo this is wrong
-            $unsubscribeUrl = route('org.unsubscribe.mailshot.show', $recipient->dispatchedEmail->ulid);
+            $unsubscribeUrl = $recipient->dispatchedEmail->ulid;
+            // route('org.unsubscribe.mailshot.show', $recipient->dispatchedEmail->ulid);
 
             $this->sendEmailWithMergeTags(
                 $recipient->dispatchedEmail,
@@ -72,6 +73,7 @@ class SendEmailDeliveryChannel
                 $model->subject,
                 $emailHtmlBody,
                 $unsubscribeUrl,
+                senderName: $model->senderName()
             );
         }
 
