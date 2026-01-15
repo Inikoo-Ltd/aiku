@@ -48,4 +48,8 @@ enum EmailOngoingRunCodeEnum: string
     case PALLET_RETURN_DELETED = 'pallet_return_deleted';
     case PALLET_DELETED = 'pallet_deleted';
 
+    case CREDIT_BALANCE_NOTIFICATION_FOR_USER = 'credit_balance_notification_for_user';
+    case CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER = 'credit_balance_notification_for_customer';
+
+
 }

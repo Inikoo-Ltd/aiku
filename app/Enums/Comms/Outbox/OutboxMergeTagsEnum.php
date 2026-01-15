@@ -25,6 +25,11 @@ enum OutboxMergeTagsEnum: string
     case UNSUBSCRIBE = 'Unsubscribe';
     case REJECTED_NOTES = 'Rejected Notes';
     case PRODUCTS = 'Products';
+    case PAYMENT_BALANCE_PREVIEW = 'Payment Balance Preview';
+    case PAYMENT_NOTE = 'Payment Note';
+    case PAYMENT_REASON = 'Payment Reason';
+    case PAYMENT_TYPE = 'Payment Type';
+
 
     public static function tags(): array
     {
@@ -73,6 +78,27 @@ enum OutboxMergeTagsEnum: string
                 'name'  => __('Products'),
                 'value' => '[Products]'
             ],
+            [
+                'name'  => __('Preview Amount'),
+                'value' => '[Preview Amount]'
+            ],
+            [
+                'name'  => __('Payment Balance Preview'),
+                'value' => '[Payment Balance Preview]'
+            ],
+            [
+                'name'  => __('Payment Note'),
+                'value' => '[Payment Note]'
+            ],
+            [
+                'name'  => __('Payment Reason'),
+                'value' => '[Payment Reason]'
+            ],
+            [
+                'name'  => __('Payment Type'),
+                'value' => '[Payment Type]'
+            ],
+
         ];
     }
 }

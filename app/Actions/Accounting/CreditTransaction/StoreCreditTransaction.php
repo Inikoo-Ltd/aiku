@@ -21,6 +21,7 @@ use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Comms\Outbox\CreditBalanceNotification\ProcessCreditBalanceNotification;
 
 class StoreCreditTransaction extends OrgAction
 {
@@ -44,6 +45,7 @@ class StoreCreditTransaction extends OrgAction
 
         CustomerHydrateCreditTransactions::run($customer->id);
 
+        ProcessCreditBalanceNotification::run($customer);
 
         ShopHydrateCreditTransactions::dispatch($creditTransaction->shop)->delay($this->hydratorsDelay);
         OrganisationHydrateCreditTransactions::dispatch($creditTransaction->organisation)->delay($this->hydratorsDelay);
