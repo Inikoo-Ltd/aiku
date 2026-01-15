@@ -21,7 +21,7 @@ class GetIrisProductsInCollection extends IrisAction
     public function handle(Collection $collection, $stockMode = 'all'): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode);
-
+        $queryBuilder->whereNotNull('products.webpage_id');
         $queryBuilder->join('collection_has_models', function ($join) use ($collection) {
             $join->on('products.id', '=', 'collection_has_models.model_id')
                 ->where('collection_has_models.model_type', '=', 'Product')

@@ -1,15 +1,26 @@
 <script setup lang="ts">
-import { ref, provide, toRaw, watch, computed, inject } from "vue"
+import { ref, provide, toRaw, watch, computed, inject, reactive, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop, faThLarge, faPaintBrushAlt, faMedal } from "@fas"
+import {
+  faCube,
+  faLink,
+  faStar,
+  faCircle,
+  faChevronLeft,
+  faChevronRight,
+  faDesktop,
+  faThLarge,
+  faPaintBrushAlt,
+  faMedal,
+} from "@fas"
 import { router } from "@inertiajs/vue3"
-import { debounce } from "lodash-es"
+import { debounce, cloneDeep } from "lodash-es"
 import { notify } from "@kyvg/vue3-notification"
-import ToggleSwitch from 'primevue/toggleswitch';
-
+import ToggleSwitch from "primevue/toggleswitch"
 
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { routeType } from "@/types/route"
+import { setColorStyleRootByEl } from "@/Composables/useApp"
 
 import SideMenuFamilyWorkshop from "./SideMenuProductsWorkshop.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
@@ -17,22 +28,27 @@ import ScreenView from "@/Components/ScreenView.vue"
 
 import "@/../css/Iris/editor.css"
 
-library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop, faMedal)
+library.add(
+  faCube,
+  faLink,
+  faStar,
+  faCircle,
+  faChevronLeft,
+  faChevronRight,
+  faDesktop,
+  faThLarge,
+  faPaintBrushAlt,
+  faMedal
+)
 
-
-interface LayoutData {
+interface LayoutPayload {
   code?: string
   data?: {
     fieldValue?: Record<string, any>
   }
 }
 
-interface TemplateData {
-  code?: string
-  data?: {
-    fieldValue?: Record<string, any>
-  }
-}
+interface TemplatePayload extends LayoutPayload {}
 
 interface FamilyData {
   id: number | string
@@ -40,69 +56,88 @@ interface FamilyData {
   [key: string]: any
 }
 
-interface Props {
+
+const props = defineProps<{
   data: {
     web_block_types: any
     autosaveRoute: routeType
-    layout: LayoutData
-    family: FamilyData
-    families?: FamilyData[]
+    layout: LayoutPayload
     products: any[]
     top_seller: any[]
+    families: FamilyData[]
+    family: FamilyData
   }
+  currency: {
+    code: string
+    name: string
+  }
+  layout_theme: {
+    color: string[]
+  }
+}>()
+
+
+const parentLayout = inject<any>("layout")
+
+const rootRef = ref<HTMLElement | null>(null)
+
+const layout = reactive(cloneDeep(parentLayout))
+layout.app.theme = props.layout_theme.color
+layout.iris = {
+  ...layout.iris,
+  is_logged_in: true,
 }
 
-const props = defineProps<Props>()
-const layout = inject("layout", {});
-layout.iris = {
-  is_logged_in: true,
-  currency : layout?.group?.currency
-}
-const selectedTab = ref(props.data.layout.data ? 1 : 0)
-const isLoadingSave = ref(false)
-const iframeClass = ref("w-full h-full")
+provide("layout", layout)
+
+
+const selectedTab = ref(props.data.layout?.data ? 1 : 0)
+const isSaving = ref(false)
 const currentView = ref<"desktop" | "tablet" | "mobile">("desktop")
+const iframeClass = ref("w-full h-full")
 
 provide("currentView", currentView)
 
-/* -------------------------------
-   📘 Tabs Configuration
----------------------------------- */
+
 const tabs = [
   { label: "Templates", icon: faThLarge, tooltip: "template" },
   { label: "Settings", icon: faPaintBrushAlt, tooltip: "setting" },
   { label: "Bestseller", icon: faMedal, tooltip: "bestseller" },
 ]
 
-/* -------------------------------
-   📘 Functions
----------------------------------- */
-const setIframeView = (view: string) => {
-  switch (view) {
-    case "mobile":
-      return "w-[375px] h-[667px] mx-auto"
-    case "tablet":
-      return "w-[768px] h-[1024px] mx-auto"
-    default:
-      return "w-full h-full"
-  }
-}
+const availableTabs = computed(() =>
+  props.data.layout?.data ? tabs : [tabs[0]]
+)
 
-const doAutosave = () => {
+
+const previewData = computed(() => ({
+  ...props.data.layout?.data?.fieldValue,
+  products:
+    selectedTab.value === 2
+      ? props.data.top_seller
+      : props.data.products,
+  model_type: "family",
+  model_id: props.data.family.id,
+  model_slug: props.data.family.slug,
+}))
+
+
+const saveLayout = () => {
   const payload = toRaw(props.data.layout)
-  delete payload.data?.fieldValue?.layout
-  delete payload.data?.fieldValue?.sub_departments
+
+  delete payload?.data?.fieldValue?.layout
+  delete payload?.data?.fieldValue?.sub_departments
 
   router.patch(
     route(props.data.autosaveRoute.name, props.data.autosaveRoute.parameters),
     { layout: payload },
     {
-      onStart: () => (isLoadingSave.value = true),
-      onFinish: () => (isLoadingSave.value = false),
+      onStart: () => (isSaving.value = true),
+      onFinish: () => (isSaving.value = false),
       onError: (errors) => {
         notify({
           title: "Autosave Failed",
-          text: errors?.message || "Unknown error occurred.",
+          text: errors?.message || "Unknown error occurred",
           type: "error",
         })
       },
@@ -110,77 +145,87 @@ const doAutosave = () => {
   )
 }
 
-const autosave = debounce(doAutosave, 800)
+const autosave = debounce(saveLayout, 800)
 
-const onPickTemplate = (template: TemplateData) => {
- props.data.layout = {
+const pickTemplate = (template: TemplatePayload) => {
+  props.data.layout = {
+    ...template,
     data: {
       fieldValue: {
-        container: {
-          properties: null,
-        },
+        container: { properties: null },
       },
-        ...template.data,
+      ...template.data,
     },
-    ...template,
   }
+
   autosave()
 }
 
+const resolveIframeClass = (view: typeof currentView.value) => {
+  if (view === "mobile") return "w-[375px] h-[667px] mx-auto"
+  if (view === "tablet") return "w-[768px] h-[1024px] mx-auto"
+  return "w-full h-full"
+}
 
-const computedTabs = computed(() => {
-  return props.data.layout.data ? tabs : [tabs[0]]
+watch(currentView, (view) => {
+  iframeClass.value = resolveIframeClass(view)
 })
 
-const computedDataProduct = computed(() => ({
-  ...props.data.layout.data?.fieldValue,
-  products: selectedTab.value !== 2 ? props.data.products : props.data.top_seller,
-  model_type: "family",
-  model_id: props.data.family.id,
-  model_slug: props.data.family.slug,
-}))
 
-watch(currentView, (newValue) => {
-  iframeClass.value = setIframeView(newValue)
+onMounted(() => {
+  if (rootRef.value && props.layout_theme?.color) {
+    setColorStyleRootByEl(rootRef.value, props.layout_theme.color)
+  }
 })
 </script>
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuFamilyWorkshop :data="data.layout" :webBlockTypes="data.web_block_types" :dataList="data.families"
-        v-model:selectedTab="selectedTab" :tabs="computedTabs" @auto-save="autosave" @set-up-template="onPickTemplate"
-        @update:selectedTab="(e) => (selectedTab = e)" />
-    </div>
+    <!-- SIDEBAR -->
+    <aside class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+      <SideMenuFamilyWorkshop
+        :data="data.layout"
+        :webBlockTypes="data.web_block_types"
+        :dataList="data.families"
+        :tabs="availableTabs"
+        v-model:selectedTab="selectedTab"
+        @auto-save="autosave"
+        @set-up-template="pickTemplate"
+      />
+    </aside>
 
-    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">
-
-      <!-- HEADER (fixed / tidak scroll) -->
-      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b shrink-0">
-        <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
-          <ScreenView @screenView="(e) => (currentView = e)" v-model="currentView" />
+    <!-- PREVIEW -->
+    <section class="col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">
+      <!-- HEADER -->
+      <header class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b shrink-0">
+        <div class="hidden lg:block">
+          <ScreenView v-model="currentView" />
         </div>
         <div class="flex items-center gap-3">
           <span class="text-sm font-medium">Login</span>
           <ToggleSwitch v-model="layout.iris.is_logged_in" />
         </div>
-      </div>
+      </header>
 
-      <!-- AREA SCROLL -->
+      <!-- CONTENT -->
       <div class="flex-1 overflow-auto">
         <div v-if="data.layout?.code" class="editor-class">
-          <div :class="['border-2 border-t-0 overflow-auto', iframeClass]">
-            <component :screenType="currentView" class="flex-1 overflow-auto active-block" :code="data.layout.code"
-              :is="getComponent(data.layout.code,  { shop_type: layout?.shopState?.type })" :modelValue="computedDataProduct" />
+          <div
+            ref="rootRef"
+            :class="['border-2 border-t-0 overflow-auto', iframeClass]"
+          >
+            <component
+              class="flex-1 overflow-auto active-block"
+              :is="getComponent(data.layout.code, { shop_type: layout?.shopState?.type })"
+              :code="data.layout.code"
+              :screenType="currentView"
+              :modelValue="previewData"
+            />
           </div>
         </div>
 
-        <div v-else>
-          <EmptyState />
-        </div>
+        <EmptyState v-else />
       </div>
-
-    </div>
-
+    </section>
   </div>
 </template>

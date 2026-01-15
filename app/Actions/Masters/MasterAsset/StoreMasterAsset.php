@@ -118,7 +118,7 @@ class StoreMasterAsset extends OrgAction
             MasterFamilyHydrateMasterAssets::dispatch($masterAsset->masterFamily)->delay($this->hydratorsDelay);
         }
 
-        SendSlackNotification::dispatch($masterAsset);
+        //SendSlackNotification::dispatch($masterAsset);
 
         return $masterAsset;
     }

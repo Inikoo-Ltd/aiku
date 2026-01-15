@@ -35,7 +35,7 @@ const layout: any = inject("layout", {})
             <div class="flex-1">
               <div v-html="faq.label"></div>
             </div>
-            <DisclosureButton class="ml-2 flex h-8 w-8 items-center justify-center  transition">
+            <DisclosureButton class="ml-2 flex h-8 w-8 items-center justify-center  transition" :name="'disclosure-button-' + index">
               <font-awesome-icon :icon="open ? 'minus' : 'plus'" />
             </DisclosureButton>
           </dt>

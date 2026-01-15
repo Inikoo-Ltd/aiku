@@ -26,7 +26,7 @@ import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
-import Discount from "@/Components/Utils/Label/Discount.vue"
+
 
 
 // Register icons
@@ -94,9 +94,12 @@ watch(
     () => props.product,
     (newProduct) => {
        product.value = newProduct
+       console.log('product',product.value)
     },
     { deep: true }
 )
+
+
 
 </script>
 
@@ -129,7 +132,7 @@ watch(
 
             <!-- RIGHT: Product Info -->
             <div class="col-span-5 self-start">
-                <Discount v-if="customerData?.offers_data && Object.keys(customerData?.offers_data).length" :offers_data="customerData.offers_data" class="w-full justify-center" />
+                
                 
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
@@ -184,7 +187,7 @@ watch(
                             <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
                         </div>
                     </div>
-                </div>
+                </div>       
 
                 <!-- PRICE -->
                 <ProductPrices

@@ -43,15 +43,30 @@ class DeleteWebpage extends OrgAction
                 DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
                 DB::table('redirects')->where('from_webpage_id', $webpage->id)->update(['from_webpage_id' => null]);
                 DB::table('model_has_web_blocks')->where('webpage_id', $webpage->id)->delete();
-                DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-                DB::table('product_categories')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-                DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+                if ($webpage->model_type == 'Product') {
+                    DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+                }
+                if ($webpage->model_type == 'ProductCategory') {
+                    DB::table('product_categories')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+                }
+                if ($webpage->model_type == 'Collection') {
+                    DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+                }
                 $webpage->forceDelete();
 
                 return $webpage;
             });
         } else {
             $webpage->delete();
+            if ($webpage->model_type == 'Product') {
+                DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+            }
+            if ($webpage->model_type == 'ProductCategory') {
+                DB::table('product_categories')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+            }
+            if ($webpage->model_type == 'Collection') {
+                DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+            }
         }
 
         WebpageRecordSearch::run($webpage);

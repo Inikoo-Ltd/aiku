@@ -49,7 +49,7 @@ class RedoProductCategoryTranslationsFromMaster
                     foreach ($fields as $field) {
                         if ($masterProductCategory->{$field} != '') {
                             $command->info("Repairing category $field $productCategory->slug  from  $masterProductCategory->slug ");
-                            TranslateModel::dispatch(
+                            TranslateModel::run(
                                 model: $productCategory,
                                 translationData: [
                                     $field => $masterProductCategory->{$field}

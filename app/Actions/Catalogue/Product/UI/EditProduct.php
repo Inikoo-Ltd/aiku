@@ -19,6 +19,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Helpers\LanguageResource;
 
 class EditProduct extends OrgAction
 {
@@ -181,37 +182,75 @@ class EditProduct extends OrgAction
 
 
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
-
+        $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 
         $nameFields = [
-            'name'              => [
-                'type'        => 'input',
-                'label'       => __('Name'),
-                'information' => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
-                'options'     => [
-                    'counter' => true,
+            'name'              => $product->masterProduct
+                ? [
+                    'type'          => 'input_translation',
+                    'label'         => __('Name'),
+                    'language_from' => 'en',
+                    'full'          => true,
+                    'main'          => $product->masterProduct->name,
+                    'languages'     => $languages,
+                    'mode'          => 'single',
+                    'value'         => $product->name,
+                    'reviewed'      => $product->is_name_reviewed,
+                    'information' => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
+                ]
+                : [
+                    'type'        => 'input',
+                    'label'       => __('Name'),
+                    'information' => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $product->name
                 ],
-                'value'       => $product->name
-            ],
-            'description'       => [
-                'type'        => 'textEditor',
-                'label'       => __('Description'),
-                'information' => __('This show in product webpage'),
-                'options'     => [
-                    'counter' => true,
+            'description'       => $product->masterProduct
+                ? [
+                    'type'          => 'textEditor_translation',
+                    'label'         => __('Description'),
+                    'language_from' => 'en',
+                    'full'          => true,
+                    'main'          => $product->masterProduct->description,
+                    'languages'     => $languages,
+                    'mode'          => 'single',
+                    'value'         => $product->description,
+                    'reviewed'      => $product->is_description_reviewed,
+                    'information' => __('This show in product webpage'),
+                ]
+                : [
+                    'type'        => 'textEditor',
+                    'label'       => __('Description'),
+                    'information' => __('This show in product webpage'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $product->description
                 ],
-                'value'       => $product->description
-            ],
-            'description_extra' => [
-                'type'        => 'textEditor',
-                'label'       => __('Extra description'),
-                'information' => __('This above product specification in product webpage'),
-                'options'     => [
-                    'counter' => true,
-                ],
-                'value'       => $product->description_extra
-            ],
+            'description_extra' => $product->masterProduct
+                ? [
+                    'type'          => 'textEditor_translation',
+                    'label'         => __('Extra description'),
+                    'language_from' => 'en',
+                    'full'          => true,
+                    'main'          => $product->masterProduct->description_extra,
+                    'languages'     => $languages,
+                    'mode'          => 'single',
+                    'value'         => $product->description_extra,
+                    'reviewed'      => $product->is_description_extra_reviewed,
+                    'information' => __('This above product specification in product webpage'),
 
+                ] : [
+                    'type'        => 'textEditor',
+                    'label'       => __('Extra description'),
+                    'information' => __('This above product specification in product webpage'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $product->description_extra
+                ]
         ];
 
         if ($product->webpage) {

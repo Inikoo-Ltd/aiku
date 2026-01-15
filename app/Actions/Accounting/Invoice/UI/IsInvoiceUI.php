@@ -305,6 +305,27 @@ trait IsInvoiceUI
                         ]
                     ],
                 ];
+            $wrappedActions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'icon'  => 'fal fa-plus',
+                    'label' => __('Create tax only refund'),
+                    'route' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.refund.refund_tax',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
+
+                        ],
+                        'body'       => [
+                            'referral_route' => [
+                                'name'       => $request->route()->getName(),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ],
+                ];
         }
 
 

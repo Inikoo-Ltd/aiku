@@ -31,11 +31,14 @@ class RepairProductCategoryIsReviewed
         ];
 
         $english = Language::where('code', 'en')->first();
-
+        $totalProductCategories = ProductCategory::whereNotNull('master_product_category_id')->count();
+        $progressBar            = $command->getOutput()->createProgressBar($totalProductCategories);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $progressBar->start();
 
         ProductCategory::whereNotNull('master_product_category_id')
             ->orderBy('id')
-            ->chunk(100, function (Collection $productCategories) use ($command, $fields, $english) {
+            ->chunk(100, function (Collection $productCategories) use ($command, $fields, $english, $progressBar) {
                 foreach ($productCategories as $productCategory) {
 
                     $shop = $productCategory->shop;
@@ -92,8 +95,11 @@ class RepairProductCategoryIsReviewed
 
                     }
 
+                    $progressBar->advance();
                 }
             });
-    }
 
+        $progressBar->finish();
+        $command->newLine();
+    }
 }

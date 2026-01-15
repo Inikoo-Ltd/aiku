@@ -20,25 +20,28 @@ class GetEbayProducts extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array|null
     {
         $query = Arr::get($modelData, 'query', '');
+        $offset = Arr::get($modelData, 'offset', '');
 
         if ($query === null) {
             $query = '';
         }
 
-        return GetProductForEbay::run($customerSalesChannel->user, $query);
+        return GetProductForEbay::run($customerSalesChannel->user, $query, $offset);
     }
 
     public function rules(): array
     {
         return [
-            'query' => ['nullable', 'string'],
+            'query'     => ['nullable', 'string'],
+            'offset'    => ['nullable', 'numeric']
         ];
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
         $request->merge([
-            'query' => $request->get('query')
+            'query' => $request->get('query'),
+            'offset' => $request->get('offset'),
         ]);
     }
 

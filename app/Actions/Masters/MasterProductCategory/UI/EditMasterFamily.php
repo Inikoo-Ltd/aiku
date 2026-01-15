@@ -169,15 +169,15 @@ class EditMasterFamily extends OrgAction
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
                                     'value' => $masterProductCategory->getTranslations('name_i8n')
                                 ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate description title'),
-                                    'language_from' => 'en',
-                                    'full' => true,
-                                    'main' => $masterProductCategory->description_title,
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
-                                ],
+//                                'description_title_i8n' => [
+//                                    'type'  => 'input_translation',
+//                                    'label' => __('translate description title'),
+//                                    'language_from' => 'en',
+//                                    'full' => true,
+//                                    'main' => $masterProductCategory->description_title,
+//                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+//                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
+//                                ],
                                 'description_i8n' => [
                                     'type'  => 'textEditor_translation',
                                     'label' => __('translate description'),

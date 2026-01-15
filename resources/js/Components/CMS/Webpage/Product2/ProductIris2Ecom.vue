@@ -40,6 +40,7 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import { Link } from "@inertiajs/vue3"
+import Discount from "@/Components/Utils/Label/Discount.vue"
 
 library.add(
     faCube,
@@ -184,7 +185,7 @@ const baseUrl = `${window.location.origin}/`
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'" id="product-1"
+    <div v-if="screenType !== 'mobile'" id="product-iris-2-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -276,26 +277,32 @@ const baseUrl = `${window.location.origin}/`
                     </div>
                 </div>
 
+                <!-- Section: Discounts -->
+                <div v-if="Object.keys(customerData?.offers_data || {})?.length" class="w-full my-2">
+                    <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" />
+                </div>
+
 
                 <div class='flex justify-between'>
+                    <!-- Section: Price -->
                     <div>
                         <div class="text-xl font-bold">
                             {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                         </div>
                         <div class="text-sm font-medium">
-                            ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit
-                            }})
+                            ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit }})
                         </div>
                     </div>
 
+                    <!-- Section: RRP -->
                     <div>
                         <div class="text-xs font-medium border-b-2 border-gray-900 p-1.5 text-right ">
-                            <p>Retail Price:</p>
+                            <p>{{ trans("Retail Price") }}:</p>
                             <p>{{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                             </p>
                         </div>
                         <div class="p-1.5 text-right">
-                            <span class="text-base font-medium">Profit:</span>
+                            <span class="text-base font-medium">{{ trans("Profit") }}:</span>
 
                             <div class="flex items-center justify-end text-xs font-bold">
                                 <span>{{ locale.currencyFormat(currency?.code, product.profit || 0) }} &nbsp;</span>
@@ -309,9 +316,7 @@ const baseUrl = `${window.location.origin}/`
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product"
-                            :customerData="customerData" :key="keyCustomer"
-                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                        <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product" :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"  class="button-basket"/>
                         <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
                     </div>
 
@@ -362,28 +367,26 @@ const baseUrl = `${window.location.origin}/`
                 </div>
 
 
+
                 <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"
                     :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type"
-                    class="
-                        group
-                        flex items-center gap-3
-                        py-2 px-4 mt-4 w-full
-                        border rounded-lg bg-gray-50
-                        transition
-                        hover:bg-gray-100 hover:border-gray-300
-                        my-2
-                    ">
-                    <FontAwesomeIcon :icon="faMapMarkerAlt"
-                        class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+                    class="">
+                    <div
+                        class="group flex items-center gap-3 py-2 px-4 mt-4 w-full border rounded-lg bg-gray-50 transition hover:bg-gray-100 hover:border-gray-300  my-2">
+                        <FontAwesomeIcon :icon="faMapMarkerAlt"
+                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
 
-                    <span class="
+                        <span class="
                              font-medium text-sm underline text-gray-800
                             truncate max-w-[420px]
                         " :title="`${trans('Download Marketing Materials for')} ${product.name}`">
-                        <div v-html="fieldValue?.appointment_data?.text"></div>
-                    </span>
+                            <div v-html="fieldValue?.appointment_data?.text"></div>
+                        </span>
+                    </div>
+
                 </LinkIris>
 
+                
 
 
                 <div v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment" class="text-sm font-medium">
@@ -586,8 +589,7 @@ const baseUrl = `${window.location.origin}/`
             </button>
 
             <!-- ADD TO CART -->
-            <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product" :customerData="customerData"
-                :key="keyCustomer" class="w-full" />
+            <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product" :customerData="customerData" :key="keyCustomer" class="w-full button-basket" />
             <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
 
             <!-- DOWNLOAD -->
@@ -617,10 +619,11 @@ const baseUrl = `${window.location.origin}/`
 
             <!-- APPOINTMENT -->
             <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"
-                :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type"
-                class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-gray-50">
-                <FontAwesomeIcon :icon="faMapMarkerAlt" />
-                <div v-html="fieldValue?.appointment_data?.text" class="text-sm underline" />
+                :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
+                <div class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-gray-50">
+                    <FontAwesomeIcon :icon="faMapMarkerAlt" />
+                    <div v-html="fieldValue?.appointment_data?.text" class="text-sm underline" />
+                </div>
             </LinkIris>
 
             <!-- DELIVERY -->
@@ -635,17 +638,86 @@ const baseUrl = `${window.location.origin}/`
             </div>
 
             <!-- PRODUCT SPECS -->
-            <div v-if="fieldValue?.setting?.product_specs" class="border rounded-lg p-4 bg-gray-50">
-                <div class="font-bold mb-2">Product Specification</div>
-                <div class="space-y-1 text-sm">
-                    <div v-if="product.specifications.origin">
-                        Origin: {{ product.specifications.origin }}
-                    </div>
-                    <div v-if="product.specifications.barcode">
-                        Barcode: {{ product.specifications.barcode }}
+                <div v-if="fieldValue?.setting?.product_specs">
+                    <div class="flex flex-wrap items-center gap-6 py-2 border bg-gray-50 p-4">
+                        <div class="font-bold text-xl">Product Specification</div>
+
+                        <div class="w-full space-y-1">
+
+                            <!-- Origin -->
+                            <div v-if="product?.specifications?.origin" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans('Origin') }}</div>
+                                <div class="p-2 text-sm font-thin">{{ product.specifications.origin }}</div>
+                            </div>
+
+                            <!-- Net Weight -->
+                            <div v-if="product?.specifications?.marketing_weight" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans('Net Weight') }}</div>
+                                <div class="p-2 text-sm font-thin">
+                                    {{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}
+                                </div>
+                            </div>
+
+                            <!-- Shipping Weight -->
+                            <div v-if="product?.specifications?.gross_weight" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans("Shipping Weight") }}</div>
+                                <div class="p-2 text-sm font-thin">{{ product.specifications.gross_weight }} g</div>
+                            </div>
+
+                            <!-- Dimensions -->
+                            <div v-if="product?.specifications?.dimensions" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans("Dimensions") }}</div>
+                                <div class="p-2 text-sm font-thin">{{ product.specifications.dimensions }}</div>
+                            </div>
+
+                            <!-- Ingredients -->
+                            <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans('Materials/Ingredients') }}</div>
+                                <div class="p-2 text-sm font-thin">{{ product.specifications.ingredients }}</div>
+                            </div>
+
+                            <!-- Barcode -->
+                            <div v-if="product?.specifications?.barcode" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans('Barcode') }}</div>
+                                <div class="p-2 text-sm font-thin">{{ product.specifications.barcode }}</div>
+                            </div>
+
+                            <!-- CPNP -->
+                            <div v-if="product?.specifications?.cpnp" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans('cpnp') }}</div>
+                                <div class="p-2 text-sm font-thin">{{ product.specifications.cpnp }}</div>
+                            </div>
+
+                            <!-- Origin Country -->
+                            <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
+
+                                <div class="p-2 flex items-center gap-2 font-thin text-sm">
+                                    <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
+                                        :alt="product.specifications.country_of_origin.name"
+                                        :title="product.specifications.country_of_origin.name" class="h-4 w-auto" />
+                                    <span>{{ product.specifications.country_of_origin.name }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Attachments -->
+                            <div v-for="(items, label) in groupedAttachments" :key="label" class="grid grid-cols-2">
+                                <div class="p-2 text-sm font-thin">{{ label }}</div>
+
+                                <div class="p-2 space-y-1">
+                                    <div v-for="item in items" :key="item.caption"
+                                        class="text-xs font-thin text-blue-600 underline cursor-pointer flex items-center">
+                                        <a :href="item.url" target="_blank" class="flex items-center">
+                                            <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
+                                                class="mr-1" />
+                                            {{ item.caption }}.{{ extractFileType(item.mime_type) }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             <!-- DESCRIPTION -->
             <div class="text-xs">
@@ -658,3 +730,10 @@ const baseUrl = `${window.location.origin}/`
         </div>
     </div>
 </template>
+
+
+<style scoped>
+.button-basket :deep(.qty-price-new) {
+  @apply font-semibold text-red-700 text-base sm:text-lg md:text-xl;
+}
+</style>

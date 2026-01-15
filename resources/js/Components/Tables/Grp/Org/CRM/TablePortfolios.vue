@@ -9,7 +9,7 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, onMounted, ref, computed } from "vue"
+import { inject, onMounted, ref, computed, watch, nextTick } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -47,6 +47,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import { routeType } from "@/types/route";
+import PureCheckbox from "@/Components/Pure/PureCheckbox.vue"
 
 
 library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
@@ -147,6 +148,9 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 
 const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
+
+const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
+
 const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = true
     isLoadingSubmit.value = true
@@ -156,6 +160,9 @@ const fetchRoute = async () => {
             customerSalesChannel: props.customerSalesChannel?.id,
             query: querySearchPortfolios.value
         }))
+        if (!Array.isArray(www.data) || www.data.length < 50) {
+            hasMore.value = false;
+        }
         isLoadingSubmit.value = false
         resultOfFetchPlatformProduct.value = www.data
     } catch (e) {
@@ -165,9 +172,6 @@ const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = false
 
 }
-
-
-
 
 const onChangeCheked = (checked: boolean, item) => {
     if (!selectedProducts.value) return
@@ -197,7 +201,50 @@ const onDisableCheckbox = (item) => {
     if (item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
     return false
 }
+ 
+let observer = null;
+const sentinel = ref(null);
+const currentOffset = ref(0);
+const hasMore = ref(true);
+const isLoadingMore = ref(false);
 
+if (props.customerSalesChannel?.platform?.name === 'Ebay') {
+    watch(sentinel,
+        async (element) => {
+            if (!element) return;
+            await nextTick();
+            observer = new IntersectionObserver(([entry]) => {
+                if (entry.isIntersecting && hasMore) {
+                    loadMore();
+                }
+            });
+            observer.observe(element);
+        }
+    );
+
+    const loadMore = async () => {
+        if(resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value)  {
+            hasMore.value = false; 
+            return;
+        }
+        currentOffset.value += 50;
+        isLoadingMore.value = true
+        try {
+            const www = await axios.get(route(props.routes.fetch_products.name, {
+                customerSalesChannel: props.customerSalesChannel?.id,
+                offset: currentOffset.value,
+            }))
+            if (!Array.isArray(www.data) || www.data.length < 50) {
+                hasMore.value = false;
+            }
+            isLoadingMore.value = false
+            resultOfFetchPlatformProduct.value = [...resultOfFetchPlatformProduct.value, ...www.data]
+        } catch (e) {
+            console.error("Error processing products", e)
+            isLoadingMore.value = false
+        }
+    }
+}
 
 </script>
 
@@ -255,7 +302,6 @@ const onDisableCheckbox = (item) => {
         <template #cell(matches)="{ item }">
             <template v-if="item.customer_sales_channel_platform_status">
                 <template v-if="!item.platform_status">
-
                     <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
                         :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
@@ -343,10 +389,9 @@ const onDisableCheckbox = (item) => {
     </Table>
 
 
-    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []}">
+    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []; currentOffset = 0; hasMore = true}">
         <div class="relative isolate">
-
-            <div v-if="isLoadingSubmit"
+            <div v-if="isLoadingSubmit || isLoadingMore"
                 class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
                 <LoadingIcon />
             </div>
@@ -358,13 +403,10 @@ const onDisableCheckbox = (item) => {
             </div>
 
             <div class="mb-2 relative">
-                <PureInput v-model="querySearchPortfolios" aupdate:modelValue="() => debounceGetPortfoliosList()"
-                    :placeholder="trans('Search in :platform', { platform: customerSalesChannel.platform.name })"/>
+                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()" :placeholder="trans('Search in :platform', { platform: customerSalesChannel.platform.name })" :disabled="isLoadingFetchPlatformProduct"/>
                 <div v-if="isLoadingFetchPlatformProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
                     <LoadingIcon/>
                 </div>
-                <slot name="afterInput">
-                </slot>
             </div>
 
             <div class="xh-full xmd:h-[570px] text-base font-normal">
@@ -379,7 +421,7 @@ const onDisableCheckbox = (item) => {
                             <div v-if="isLoadingFetchPlatformProduct" class="text-center text-gray-500 col-span-3">
                                 <LoadingIcon class="ml-1"/> {{ trans("Fetching your :_storetype product list", {_storetype: customerSalesChannel.platform.name }) }}
                             </div>
-                            <template v-else-if="resultOfFetchPlatformProduct?.length > 0">
+                            <template ref="list" v-else-if="resultOfFetchPlatformProduct?.length > 0">
                                 <div v-for="(item, index) in resultOfFetchPlatformProduct" :key="index"
                                     @click="() => {selectedVariant = item}"
                                     class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
@@ -423,6 +465,12 @@ const onDisableCheckbox = (item) => {
                                             </div>
                                         </div>
                                     </slot>
+                                </div>
+                                <div ref="sentinel" class="col-span-2 justify-items-center flex mx-auto">
+                                    <LoadingIcon v-if="hasMore" />
+                                </div>
+                                <div v-if="!hasMore && customerSalesChannel.platform.name == 'Ebay'" class="col-span-2 text-center">
+                                    {{ trans("You've reached the end of item list") }}
                                 </div>
                             </template>
                             <div v-else class="text-center text-gray-500 col-span-3">

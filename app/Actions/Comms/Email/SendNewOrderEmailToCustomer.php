@@ -65,7 +65,8 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 'customer_note' => $order->customer_notes,
                 'order_number' => $this->getOrderLinkHtml($order),
                 'order_reference' => $this->getOrderLinkHtml($order),
-            ]
+            ],
+            senderName: $outbox->emailOngoingRun->senderName(),
         );
     }
 

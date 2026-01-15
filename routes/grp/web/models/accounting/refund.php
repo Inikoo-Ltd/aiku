@@ -14,10 +14,12 @@ use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
 use App\Actions\Accounting\InvoiceTransaction\CreateFullRefundInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\RefundAllInvoiceTransactions;
+use App\Actions\Accounting\InvoiceTransaction\RefundTaxTransactions;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/refund/{invoice:id}', CreateRefund::class)->name('refund.create');
+Route::post('/refund-tax/{invoice:id}', RefundTaxTransactions::class)->name('refund.refund_tax');
 
 Route::name('refund.')->prefix('refund/{refund:id}')->group(function () {
     Route::post('/finalise', FinaliseRefund::class)->name('finalise')->withoutScopedBindings();

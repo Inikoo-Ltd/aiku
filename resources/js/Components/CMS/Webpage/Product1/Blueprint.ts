@@ -1,4 +1,4 @@
-import BlueprintSideInformation from "./BlueprintSideInformation"
+import BlueprintSideInformation from "@/Components/CMS/Webpage/Product1/BlueprintSideInformation"
 
 export default {
 	blueprint: [
@@ -6,12 +6,6 @@ export default {
 			name: "Settings",
 			key: ["setting"],
 			replaceForm: [
-				/* {
-					key: ["faqs"],
-					type: "switch",
-					label: "Show Faqs",
-					props_data: {},
-				}, */
 				{
 					key: ["product_specs"],
 					type: "switch",
@@ -135,25 +129,5 @@ export default {
                     },
                 ],
         },
-		/* {
-			name: "Layout",
-			key: ["container", "properties"],
-			replaceForm: [
-				{
-					key: ["padding"],
-					type: "padding",
-					label: "Padding",
-					useIn: ["desktop", "tablet", "mobile"],
-					props_data: {},
-				},
-				{
-					key: ["margin"],
-					type: "margin",
-					label: "Margin",
-					useIn: ["desktop", "tablet", "mobile"],
-					props_data: {},
-				},
-			],
-		}, */
 	],
 }

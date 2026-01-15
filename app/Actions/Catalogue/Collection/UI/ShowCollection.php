@@ -23,6 +23,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\CollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionResource;
 use App\Http\Resources\Catalogue\CollectionsResource;
+use App\Http\Resources\Catalogue\CollectionTimeSeriesResource;
 use App\Http\Resources\Catalogue\FamiliesInCollectionResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -308,6 +309,10 @@ class ShowCollection extends OrgAction
                     fn () => GetCollectionTimeSeriesData::run($collection)
                     : Inertia::lazy(fn () => GetCollectionTimeSeriesData::run($collection)),
 
+                CollectionTabsEnum::SALES->value => $this->tab == CollectionTabsEnum::SALES->value ?
+                    fn () => CollectionTimeSeriesResource::collection(IndexCollectionTimeSeries::run($collection, CollectionTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => CollectionTimeSeriesResource::collection(IndexCollectionTimeSeries::run($collection, CollectionTabsEnum::SALES->value))),
+
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
                     fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))
@@ -342,7 +347,8 @@ class ShowCollection extends OrgAction
                     collection: $collection,
                     prefix: CollectionTabsEnum::COLLECTIONS->value,
                 )
-            )->table(IndexHistory::make()->tableStructure(prefix: CollectionTabsEnum::HISTORY->value));
+            )->table(IndexHistory::make()->tableStructure(prefix: CollectionTabsEnum::HISTORY->value))
+            ->table(IndexCollectionTimeSeries::make()->tableStructure(prefix: CollectionTabsEnum::SALES->value));
     }
 
     public function jsonResponse(Collection $collection): CollectionResource

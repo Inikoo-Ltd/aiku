@@ -29,6 +29,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableMasterCollections from '@/Components/Tables/Grp/Goods/TableMasterCollections.vue'
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 library.add(faPlus)
 
 const props = defineProps<{
@@ -42,6 +43,8 @@ const props = defineProps<{
     shop_collections?: {}
     history?: {};
     images?:{};
+    salesData?: object
+    sales?: object
     routes: {
         families: { dataList: routeType, submitAttach: routeType, detach: routeType }
         products: { dataList: routeType, submitAttach: routeType, detach: routeType }
@@ -76,6 +79,7 @@ const component = computed(() => {
         shop_collections: TableCollections,
         history: TableHistories,
         images: ImagesManagement,
+        sales: ProductCategoryTimeSeriesTable,
     }
     return components[currentTab.value]
 })
@@ -178,6 +182,7 @@ const onSubmitAttach = async ({
         :data="props[currentTab as keyof typeof props]"
         :tab="currentTab"
         :routes="props.routes?.[currentTab]"
+        :salesData="salesData"
     />
 
     <!-- Modal: Products -->
