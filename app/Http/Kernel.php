@@ -143,7 +143,7 @@ class Kernel extends HttpKernel
             BindGroupInstance::class,
             SubstituteBindings::class,
             SetLocale::class,
-            //LogUserRequestMiddleware::class,
+            LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             InspectorOctaneMiddleware::class,
