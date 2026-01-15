@@ -10,7 +10,9 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\Outbox;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetMailshotAsScheduled
@@ -26,7 +28,7 @@ class SetMailshotAsScheduled
         ], $modelData);
 
         if ($mailshot->state == MailshotStateEnum::IN_PROCESS) {
-            $updateData['ready_at'] = $modelData['schedule_at'];
+            $updateData['ready_at'] = $modelData['scheduled_at'];
         }
 
         $mailshot->update($updateData);
@@ -34,20 +36,20 @@ class SetMailshotAsScheduled
         return $mailshot;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->isAction) {
-            return true;
-        }
+    // public function authorize(ActionRequest $request): bool
+    // {
+    //     if ($this->isAction) {
+    //         return true;
+    //     }
 
-        return $request->user()->authTo("websites.edit");
-    }
+    //     return $request->user()->authTo("websites.edit");
+    // }
 
     public function rules(): array
     {
         return [
-            'publisher_id'   => ['sometimes','exists:organisation_users,id'],
-            'schedule_at'    => ['required', 'string']
+            // 'publisher_id'   => ['sometimes','exists:organisation_users,id'],
+            'scheduled_at'    => ['required', 'string', 'date_format:Y-m-d H:i:s']
         ];
     }
 
@@ -60,12 +62,10 @@ class SetMailshotAsScheduled
         );
     }
 
-    public function asController(Mailshot $mailshot, ActionRequest $request): string
+    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
         $request->validate();
-        $this->handle($mailshot, $request->validated());
-
-        return "🫡";
+        return $this->handle($mailshot, $request->validated());
     }
 
     public function action(Mailshot $mailshot, $modelData): Mailshot

@@ -419,5 +419,19 @@
     "arguments": [
       "customer"
     ]
+  },
+  {
+    "outboxes": [
+      "newsletter",
+      "marketing",
+      "invite",
+      "abandoned_cart"
+    ],
+    "name": "Mailshot",
+    "content": "beefree_mailshot.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
   }
 ]

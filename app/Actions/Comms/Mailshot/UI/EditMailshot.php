@@ -37,67 +37,69 @@ class EditMailshot extends OrgAction
                     'required'    => false,
                     'value'       => $mailshot->subject,
                 ],
-                'type'           => [
-                    'type'     => 'select',
-                    'label'    => __('Type'),
-                    'required' => false,
-                    'value'    => $mailshot->type,
-                    'options'  => Options::forEnum(MailshotTypeEnum::class),
-                ],
-                'recipient_type' => [
-                    'type'     => 'radio',
-                    'label'    => __('Recipient Type'),
-                    'required' => true,
-                    'value'    => 'query',
-                    'options'  => [
-                        [
-                            "label" => "Query",
-                            "value" => "query"
-                        ],
-                        [
-                            "label" => "custom",
-                            "value" => "custom"
-                        ],
-                        [
-                            "label" => "Prospect",
-                            "value" => "prospect"
-                        ],
-                    ]
-                ],
             ]
         ];
 
 
-        $fields[] = [
-            'title'  => '',
-            'fields' => [
-                'recipients_recipe' => [
-                    'type'     => 'mailshotRecipient',
-                    'label'    => __('recipients'),
-                    'required' => true,
-                    'options'  => [
-                        'query'                  => IndexProspects::run(parent: $mailshot->shop, prefix: null, scope: 'all'),
-                        'custom_prospects_query' => '',
+        if ($mailshot->type == MailshotTypeEnum::MARKETING) {
+            $fields[] = [
+                'title'  => '',
+                'fields' => [
+                    'type'           => [
+                        'type'     => 'select',
+                        'label'    => __('Type'),
+                        'required' => false,
+                        'value'    => $mailshot->type,
+                        'options'  => Options::forEnum(MailshotTypeEnum::class)->reject(fn ($option) => $option->value === MailshotTypeEnum::NEWSLETTER->value),
                     ],
-                    'full'     => true,
-                    'value'    => [
-                        'query'                  => $mailshot->recipients_recipe['query'] ?? null,
-                        'custom_prospects_query' => [
-                            "tags"         => [
-                                "tag_ids"          => $mailshot->recipients_recipe['custom_prospects_query']['tags']['tag_ids'] ?? null,
-                                "logic"            => 'all',
-                                "negative_tag_ids" => $mailshot->recipients_recipe['custom_prospects_query']['tags']['negative_tag_ids'] ?? null
+                    'recipient_type' => [
+                        'type'     => 'radio',
+                        'label'    => __('Recipient Type'),
+                        'required' => true,
+                        'value'    => 'query',
+                        'options'  => [
+                            [
+                                "label" => "Query",
+                                "value" => "query"
                             ],
-                            "last_contact" => [
-                                "use_contact" => false,
-                                "interval"    => $mailshot->recipients_recipe['custom_prospects_query']['last_contact']['interval'] ?? null
-                            ]
+                            [
+                                "label" => "custom",
+                                "value" => "custom"
+                            ],
+                            [
+                                "label" => "Prospect",
+                                "value" => "prospect"
+                            ],
+                        ]
+                    ],
+                    'recipients_recipe' => [
+                        'type'     => 'mailshotRecipient',
+                        'label'    => __('recipients'),
+                        'required' => true,
+                        'options'  => [
+                            'query'                  => IndexProspects::run(parent: $mailshot->shop, prefix: null, scope: 'all'),
+                            'custom_prospects_query' => '',
                         ],
-                        'prospects'              => $mailshot->recipients_recipe['query'] ?? null,
-                    ]
-                ],
-            ]
-        ];
+                        'full'     => true,
+                        'value'    => [
+                            'query'                  => $mailshot->recipients_recipe['query'] ?? null,
+                            'custom_prospects_query' => [
+                                "tags"         => [
+                                    "tag_ids"          => $mailshot->recipients_recipe['custom_prospects_query']['tags']['tag_ids'] ?? null,
+                                    "logic"            => 'all',
+                                    "negative_tag_ids" => $mailshot->recipients_recipe['custom_prospects_query']['tags']['negative_tag_ids'] ?? null
+                                ],
+                                "last_contact" => [
+                                    "use_contact" => false,
+                                    "interval"    => $mailshot->recipients_recipe['custom_prospects_query']['last_contact']['interval'] ?? null
+                                ]
+                            ],
+                            'prospects'              => $mailshot->recipients_recipe['query'] ?? null,
+                        ]
+                    ],
+                ]
+            ];
+        }
 
         return Inertia::render(
             'EditModel',

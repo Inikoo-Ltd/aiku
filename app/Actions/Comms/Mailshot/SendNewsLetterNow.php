@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 30 Oct 2023 16:11:55 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Tuesday, 6 Jan 2026 11:52:02 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
  */
 
 namespace App\Actions\Comms\Mailshot;
@@ -11,14 +11,14 @@ namespace App\Actions\Comms\Mailshot;
 use App\Actions\Comms\Traits\WithMailshotStateOps;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Models\Comms\Mailshot;
-use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsCommand;
+use App\Actions\OrgAction;
+use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Comms\Outbox;
-use App\Actions\OrgAction;
 
-class SendMailshot extends OrgAction
+class SendNewsLetterNow extends OrgAction
 {
     use AsCommand;
     use AsAction;
@@ -29,12 +29,17 @@ class SendMailshot extends OrgAction
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
         }
+
+        //  NOTE: only allow sending if mailshot is in READY state
+        if ($mailshot->state != MailshotStateEnum::READY) {
+            return $mailshot;
+        }
+
         data_set($modelData, 'state', MailshotStateEnum::SENDING);
 
         $mailshot->update($modelData);
 
-        //  TODO: make sure ProcessSendMailshot is implemented
-        // ProcessSendMailshot::dispatch($mailshot);
+        ProcessSendNewsletter::dispatch($mailshot);
 
         return $mailshot;
     }

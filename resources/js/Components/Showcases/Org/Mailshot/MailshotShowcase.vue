@@ -67,7 +67,7 @@ const dataSet = {
   <div class="card p-4">
     <div class="col-span-2 w-full pb-4 border-gray-300">
       <div class="mt-4 sm:mt-0 pb-2">
-        <Timeline :options="data.mailshot.data.timeline" :state="'sent'" :slidesPerView="6" />
+        <Timeline :options="data.mailshot.data.timeline" :state="data.mailshot.data.state" :slidesPerView="6" />
       </div>
     </div>
 
