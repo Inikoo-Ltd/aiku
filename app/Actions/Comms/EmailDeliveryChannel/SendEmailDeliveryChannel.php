@@ -72,7 +72,6 @@ class SendEmailDeliveryChannel
                 $model->subject,
                 $emailHtmlBody,
                 $unsubscribeUrl,
-                senderName: $model->senderName(),
             );
         }
 
