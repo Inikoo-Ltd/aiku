@@ -441,14 +441,17 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'RunNewsletterScheduled',
-            ),
-            name: 'RunNewsletterScheduled',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
+
+        if (app()->environment('local')) {
+            $this->logSchedule(
+                $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunNewsletterScheduled',
+                ),
+                name: 'RunNewsletterScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+        }
     }
 
     protected function commands(): void
