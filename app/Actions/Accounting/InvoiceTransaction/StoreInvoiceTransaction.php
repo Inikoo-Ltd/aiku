@@ -260,7 +260,7 @@ class StoreInvoiceTransaction extends OrgAction
             }
         }
 
-        if ($invoiceTransaction->transaction->offer->id) {
+        if ($invoiceTransaction->transaction && $invoiceTransaction->transaction->offer) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 ProcessOfferTimeSeriesRecords::dispatch(
                     $invoiceTransaction->transaction->offer->id,
