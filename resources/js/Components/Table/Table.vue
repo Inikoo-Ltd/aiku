@@ -629,7 +629,7 @@ const isLoading = ref<string | boolean>(false)
     <Transition>
         <!--suppress JSValidateTypes -->
         <slot name='emptyState' :emptyState="queryBuilderProps.emptyState"
-            v-if="queryBuilderProps.emptyState?.count === 0 && compResourceMeta.total === 0">
+            v-if="queryBuilderProps.emptyState?.count === 0 && compResourceMeta.total === 0 && !queryBuilderProps.globalSearch.value">
             <EmptyState :data="queryBuilderProps.emptyState">
                 <template #button-empty-state>
                     <slot name="button-empty-state" :action="queryBuilderProps.emptyState?.action">
