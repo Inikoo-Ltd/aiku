@@ -6,9 +6,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
     faArrowLeft,
+    faImage,
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
+    faPaperclip, faXmark, faFilePdf
 } from "@fortawesome/free-solid-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -17,6 +19,7 @@ import Image from "@/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
+import { notify } from "@kyvg/vue3-notification"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -30,6 +33,7 @@ interface GetMessagesParams {
     request_from: string
     cursor?: string | null
     translation_language_id?: number
+    media_url?: string | null
 }
 
 const props = defineProps<{
@@ -55,6 +59,30 @@ const newMessage = ref("")
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
 
+// file upload
+const imageInput = ref<HTMLInputElement>()
+const fileInput = ref<HTMLInputElement>()
+
+const IMAGE_TYPES = [
+    "image/webp",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/avif",
+]
+
+const FILE_TYPES = [
+    "application/pdf",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]
+
+const getMessageTypeFromFile = (file: File): "image" | "file" => {
+    return IMAGE_TYPES.includes(file.type) ? "image" : "file"
+}
+
+const MAX_SIZE = 10 * 1024 * 1024
+
 const isMenuOpen = ref(false)
 const isLoadingMore = ref(false)
 const canLoadMore = ref(false)
@@ -72,6 +100,77 @@ const typingUser = ref<string | null>(null)
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
+const selectedFile = ref<File | null>(null)
+const previewUrl = ref<string | null>(null)
+const previewType = ref<"image" | "file" | null>(null)
+
+const handleImageSelect = (e: Event) => {
+    const file = (e.target as HTMLInputElement)?.files?.[0]
+    if (!file) return
+
+    if (!IMAGE_TYPES.includes(file.type)) {
+        notify({
+            title: "Failed",
+            text: "Image format not supported",
+            type: "error",
+        })
+        return
+    }
+
+    if (file.size > MAX_SIZE) {
+        notify({
+            title: "Failed",
+            text: "Maximum image size 10MB",
+            type: "error",
+        })
+        return
+    }
+
+    selectedFile.value = file
+    previewType.value = "image"
+    previewUrl.value = URL.createObjectURL(file)
+}
+
+const handleDocSelect = (e: Event) => {
+    const file = (e.target as HTMLInputElement)?.files?.[0]
+    if (!file) return
+
+    if (!FILE_TYPES.includes(file.type)) {
+        notify({
+            title: "Failed",
+            text: "File format not supported",
+            type: "error",
+        })
+        return
+    }
+
+    if (file.size > MAX_SIZE) {
+        notify({
+            title: "Failed",
+            text: "Maximum file size 10MB",
+            type: "error",
+        })
+        return
+    }
+
+    selectedFile.value = file
+    previewType.value = "file"
+    previewUrl.value = null
+}
+
+const removeFile = () => {
+    if (previewUrl.value) {
+        URL.revokeObjectURL(previewUrl.value)
+    }
+
+    selectedFile.value = null
+    previewUrl.value = null
+    previewType.value = null
+
+    if (imageInput.value) imageInput.value.value = ""
+    if (fileInput.value) fileInput.value.value = ""
+}
+
 const scrollBottom = () =>
     nextTick(() => {
         if (messagesContainer.value) {
@@ -86,18 +185,28 @@ const autoResize = () => {
 }
 
 const sendMessage = async () => {
-    if (!newMessage.value.trim()) return
+    const hasText = !!newMessage.value.trim()
+    const hasFile = !!selectedFile.value
+
+    if (!hasText && !hasFile) return
 
     sendTypingStatus(false)
     isTyping.value = false
 
     const tempId = `tmp-${Date.now()}`
 
+    const messageType = hasFile
+        ? getMessageTypeFromFile(selectedFile.value!)
+        : "text"
+
     const optimisticMessage: LocalChatMessage = {
         id: tempId as any,
         _tempId: tempId,
-        message_text: newMessage.value,
+        message_text: newMessage.value ?? "",
+        media_url:
+            messageType === "image" ? previewUrl.value : null,
         sender_type: "agent",
+        message_type: messageType,
         created_at: new Date().toISOString(),
         _status: "sending",
     }
@@ -110,11 +219,23 @@ const sendMessage = async () => {
     autoResize()
     typingUser.value = null
     try {
-        await emit("send-message", text)
-
+        emit("send-message", {
+            text: text,
+            image: selectedFile.value,
+            message_type: messageType,
+            tempId,
+        })
+        removeFile()
         const msg = messagesLocal.value.find((m) => m._tempId === tempId)
 
         if (msg) msg._status = "sending"
+        // const index = messagesLocal.value.findIndex(
+        //     (m) => m._tempId === tempId
+        // )
+
+        // if (index !== -1) {
+        //     messagesLocal.value.splice(index, 1)
+        // }
     } catch {
         const msg = messagesLocal.value.find((m) => m._tempId === tempId)
         if (msg) msg._status = "failed"
@@ -134,13 +255,37 @@ const resendMessage = async (msg: LocalChatMessage) => {
     }
 }
 
+const getMediaUrl = async (sessionUlid: string) => {
+    const { data } = await axios.get(`${baseUrl}/app/api/chats/sessions/${sessionUlid}/messages`, {
+        params: {
+            limit: 10,
+            request_from: "agent",
+        },
+    })
+
+    const messages = data?.data?.messages ?? []
+
+    const imageMessage = messages
+        .filter((m: any) => m.message_type === "image" && m.sender_type === "agent" && m.media_url)
+        .sort((a: any, b: any) => +new Date(b.created_at) - +new Date(a.created_at))[0]
+
+    if (!imageMessage) return null
+
+    const media = imageMessage.media_url.webp || null
+
+    return {
+        ...imageMessage,
+        image_url: media,
+    }
+}
+
 const getMessages = async (loadMore = false) => {
     if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
 
     isLoadingMore.value = loadMore
 
     const params: GetMessagesParams = {
-        limit: 10,
+        limit: loadMore && nextCursor.value ? 50 : 10,
         request_from: "agent",
     }
 
@@ -216,6 +361,7 @@ const initSocket = () => {
     stopSocket()
 
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
+
     // Message
     chatChannel.listen(".message", ({ message }: any) => {
         messagesLocal.value = messagesLocal.value.filter(
@@ -309,6 +455,7 @@ watch(
         stopSocket()
         messagesLocal.value = []
         await getMessages()
+        await getMediaUrl(chatSession.value!.ulid)
         initSocket()
     }
 )
@@ -377,6 +524,7 @@ const translateAllMessage = async () => {
 onMounted(async () => {
     await getMessages()
     await fetchLanguages()
+    await getMediaUrl(chatSession.value!.ulid)
     initSocket()
     document.addEventListener("click", handleClickOutside)
 })
@@ -476,7 +624,6 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
-
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
@@ -492,31 +639,58 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div v-for="msg in msgs" :key="msg.id" class="flex"
                     :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                     <BubbleChat :message="msg" viewerType="agent" />
-
-                    <!-- 	<div class="px-3 py-2 rounded-lg max-w-[75%] text-sm flex items-center gap-2 cursor-default" :class="msg.sender_type === 'agent'
-						? 'bubble-chat text-white'
-						: 'bg-gray-200'">
-						<span>{{ msg.message_text }}</span>
-
-						<span v-if="msg._status === 'sending'" class="text-xs opacity-70 animate-pulse">
-							<LoadingIcon />
-						</span>
-
-
-						<button v-if="msg._status === 'failed'" @click="resendMessage(msg)"
-							class="text-xs text-red-300 hover:text-red-500" title="Click to resend">
-							<FontAwesomeIcon :icon="faExclamation" />
-						</button>
-					</div> -->
                 </div>
             </template>
         </div>
-
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
             {{ remoteTypingUser }} {{ trans("is typing...") }}
         </div>
 
+        <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
+            <div class="relative inline-block">
+                <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
+                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
+                    <FontAwesomeIcon :icon="faXmark" />
+                </button>
+            </div>
+        </div>
+
+        <div v-if="previewType === 'file' && selectedFile" class="px-3 pb-2">
+            <div class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0">
+                <div class="text-2xl">
+                    <FontAwesomeIcon :icon="faFilePdf" />
+                </div>
+                <div class="flex-1 min-w-0 overflow-hidden">
+                    <div class="text-sm font-medium truncate">
+                        {{ selectedFile.name }}
+                    </div>
+                    <div class="text-xs text-gray-400">
+                        {{ (selectedFile.size / 1024).toFixed(1) }} KB
+                    </div>
+                </div>
+                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
+                    <FontAwesomeIcon :icon="faXmark" />
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
         <footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
+            <button @click="imageInput?.click()"
+                class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100" title="Upload image">
+                <FontAwesomeIcon :icon="faImage" />
+            </button>
+
+            <button @click="fileInput?.click()"
+                class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100" title="Upload file">
+                <FontAwesomeIcon :icon="faPaperclip" />
+            </button>
+
+            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+                @change="handleImageSelect" />
+
+            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
+
             <textarea ref="messageInput" v-model="newMessage" @input="
                 () => {
                     autoResize()
@@ -534,7 +708,6 @@ const handleClickOutside = (e: MouseEvent) => {
         </footer>
     </div>
 </template>
-
 <style scoped>
 .menu-item {
     display: flex;

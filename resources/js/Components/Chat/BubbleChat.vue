@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCheckDouble, faLanguage } from "@far"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
+import Image from "primevue/image"
 
 type SenderType = "guest" | "user" | "agent" | "system"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -14,6 +15,17 @@ interface Message {
     sender_type: SenderType
     message_text: string
     created_at: string
+    media_url?: {
+        original: string
+        mime: string
+        name?: string
+        size?: number
+    } | null
+    message_type?: "text" | "image" | "file"
+    file_name?: string | null
+    download_route?: {
+        url: string
+    } | null
     is_read?: boolean
     id?: number
     _status?: MessageStatus
@@ -27,7 +39,6 @@ interface Translation {
     translated_text: string
     language_name: string
     language_code: string
-    language_flag: string | null
     text: string
 }
 
@@ -37,14 +48,13 @@ const props = defineProps<{
     agentName?: string | null
 }>()
 
-const layout = inject<any>("layout")
+const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
-const isUser = computed(() =>
-    props.message.sender_type === "guest" ||
-    props.message.sender_type === "user"
+const isUser = computed(
+    () => props.message.sender_type === "guest" || props.message.sender_type === "user"
 )
 
 const isFromViewer = computed(() => {
@@ -77,6 +87,33 @@ const readIcon = computed(() =>
 const agentDisplayName = computed(() => {
     return props.agentName ?? "Agent"
 })
+
+const isFile = computed(() => props.message.message_type === "file")
+
+const fileIcon = computed(() => {
+    const mime = props.message.media_url?.mime ?? ""
+
+    if (mime.includes("pdf")) return "📕"
+    if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    return "📄"
+})
+
+const isOpening = ref(false)
+
+const openFile = () => {
+    if (isOpening.value) return
+
+    isOpening.value = true
+
+    const url = props.message.download_route?.url
+    if (url) {
+        window.open(url, "_blank")
+    }
+
+    setTimeout(() => {
+        isOpening.value = false
+    }, 1500)
+}
 
 // feature translation
 const localMessage = ref<Message | null>(null)
@@ -190,6 +227,27 @@ const canShowTranslation = computed(() => {
                 {{ activeMessage.original?.text || props.message.message_text }}
             </p>
 
+            <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
+                imageClass="rounded-lg max-w-full cursor-pointer" class="mt-1" />
+
+            <div v-if="isFile && message.media_url" @click="openFile"
+                class="mt-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
+                    ? 'opacity-60 cursor-not-allowed'
+                    : 'cursor-pointer hover:bg-gray-50'">
+                <div class="text-2xl">
+                    {{ fileIcon }}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate text-gray-400">
+                        {{ message.file_name || message.media_url.name }}
+                    </div>
+                    <div class="text-xs opacity-60 text-red-600">
+                        Click to download
+                    </div>
+                </div>
+            </div>
+
             <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
                 class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
                 <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
@@ -253,7 +311,6 @@ const canShowTranslation = computed(() => {
         </div>
     </div>
 </template>
-
 
 <style scoped>
 .bubble-primary {
