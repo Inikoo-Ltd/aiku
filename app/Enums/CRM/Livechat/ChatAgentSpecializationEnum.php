@@ -41,4 +41,11 @@ enum ChatAgentSpecializationEnum: string
             ->values()
             ->toArray();
     }
+
+    public static function getValues(): array
+    {
+        return collect(self::cases())
+            ->pluck('value')
+            ->toArray();
+    }
 }
