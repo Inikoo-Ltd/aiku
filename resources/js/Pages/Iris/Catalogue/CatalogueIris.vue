@@ -5,6 +5,9 @@ import { router } from '@inertiajs/vue3'
 import RetinaTableDepartments from '@/Components/Tables/Iris/TableIrisDepartment.vue'
 
 import Table from '@/Components/Rental/Table.vue'
+import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue';
+import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue';
+import TableIrisFamilies from '@/Components/Tables/Iris/TableIrisFamilies.vue';
 
 const props = defineProps<{
     tabs: {
@@ -43,9 +46,9 @@ const changeTab = (key: string) => {
 
 
 const componentMap: Record<string, any> = {
-    departments: RetinaTableDepartments,
-    sub_departments: RetinaTableDepartments,
-    families: RetinaTableDepartments,
+    departments: TableIrisDepartment,
+    sub_departments: TableIrisSubDepartment,
+    families: TableIrisFamilies,
     products: null,
 }
 

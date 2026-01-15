@@ -50,6 +50,7 @@ class IndexIrisDepartments extends RetinaAction
         $queryBuilder->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value]);
 
 
+
         return $queryBuilder
             ->defaultSort('product_categories.code')
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
