@@ -26,12 +26,20 @@ class LogUserRequestMiddleware
         }
 
 
-        $ipAddresses = $request->ips();
 
-        $ip = end($ipAddresses);
+        $ip          = $request->ip();
+        $geoLocation = [
+            'country_code' => $request->header('CF-IPCountry'),
+            'city'         => $request->header('CF-IPCity'),
+            'longitude'    => $request->header('CF-IPLongitude'),
+            'latitude'     => $request->header('CF-IPLatitude'),
+            'region'       => $request->header('CF-Region'),
+            'postal_code'  => $request->header('CF-Postal-Code'),
+        ];
 
         /* @var User $user */
         $user = $request->user();
+
         if (!app()->runningUnitTests() && $user) {
             ProcessUserRequest::dispatch(
                 $user,
@@ -42,7 +50,8 @@ class LogUserRequestMiddleware
                     'url'       => $request->path(),
                 ],
                 $ip,
-                $request->header('User-Agent')
+                $request->header('User-Agent'),
+                $geoLocation
             );
         }
 
