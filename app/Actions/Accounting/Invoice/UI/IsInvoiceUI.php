@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -357,6 +358,7 @@ trait IsInvoiceUI
             ];
         };
 
+
         return match ($routeName) {
             'grp.org.shops.show.ordering.orders.show.invoices.show' => $this->getOrderBreadcrumbs($invoice, $routeName, $routeParameters),
             'grp.org.accounting.invoices.all_invoices.show',
@@ -482,6 +484,23 @@ trait IsInvoiceUI
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'invoice'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            'grp.org.shops.show.dashboard.invoices.show', => array_merge(
+                ShowShop::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'shop'])),
+                $headCrumb(
+                    $invoice,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.dashboard.invoices.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.dashboard.invoices.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'invoice'])
                         ]
                     ],
                     $suffix
