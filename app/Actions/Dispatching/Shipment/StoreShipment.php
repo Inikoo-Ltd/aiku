@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\Shipment;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
+use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdSkShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsEsShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
@@ -61,6 +62,7 @@ class StoreShipment extends OrgAction
                 'gls-es' => CallApiGlsEsShipping::run($parent, $shipper),
                 'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
+                'dpd-sk' => CallApiDpdSkShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
                 default => [
                     'status'    => 'error',
