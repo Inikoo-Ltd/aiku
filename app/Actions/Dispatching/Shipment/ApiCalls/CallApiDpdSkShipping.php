@@ -206,7 +206,7 @@ class CallApiDpdSkShipping extends OrgAction
         }
 
         $note = Str::limit(strip_tags(Arr::get($parentResource, 'shipping_notes')), 35, '');
-        if (app()->environment('local')) {
+        if (!app()->environment('production')) {
             $note = 'Test do not dispatch '.$note;
             $note = Str::limit($note, 35, '');
         }
