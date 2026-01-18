@@ -26,7 +26,6 @@ class CallApiDpdSkShipping extends OrgAction
     use WithAttributes;
 
 
-
     public function getBaseUrl(): string
     {
         return 'https://api.dpd.sk/shipment/json';
@@ -60,13 +59,12 @@ class CallApiDpdSkShipping extends OrgAction
         $params = $this->prepareShipmentParams($shipper, $parentResource, $parcels);
 
 
-
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
         ])
             ->retry(3, 100)
             ->post($this->getBaseUrl(), $params);
-        dd($response);
+
 
         $apiResponse = $response->json();
         $statusCode  = $response->status();
@@ -90,12 +88,16 @@ class CallApiDpdSkShipping extends OrgAction
             $modelData['label_urls']         = [Arr::get($apiResponse, 'label')];
         } else {
             $status = 'fail';
-            $errors = Arr::get($apiResponse, 'error', []);
+            $error  = Arr::get($apiResponse, 'error', []);
 
-            if (!empty($errors)) {
-                foreach ($errors as $error) {
-                    $this->processError($error, $errorData);
+
+            if (!empty($error)) {
+                $errorMessage = Arr::get($error, 'message', 'Unknown error');
+
+                if (Str::contains($errorMessage, 'Phone number')) {
+                    $errorMessage         = __('Invalid phone number');
                 }
+                $errorData['address'] = $errorMessage;
             }
         }
 
@@ -107,27 +109,7 @@ class CallApiDpdSkShipping extends OrgAction
     }
 
 
-    protected function processError(array $error, array &$errorData): void
-    {
-        $obj          = Arr::get($error, 'obj', '');
-        $errorMessage = Arr::get($error, 'errorMessage', 'Unknown error');
 
-        if (Str::contains($obj, 'consignment.networkCode')) {
-            $errorMessage         = 'Invalid network code';
-            $errorData['service'] = $errorMessage;
-        } elseif (Str::contains($obj, 'address')) {
-            $errorMessage         = 'Invalid address';
-            $errorData['address'] = $errorMessage;
-        } elseif (Str::contains($obj, 'contact')) {
-            $errorMessage         = 'Invalid contact details';
-            $errorData['contact'] = $errorMessage;
-        } else {
-            $errorData['others'][] = $errorMessage;
-        }
-        if (!isset($errorData['message'])) {
-            $errorData['message'] = $errorMessage;
-        }
-    }
 
     protected function prepareShipmentParams(Shipper $shipper, array $parentResource, array $parcels): array
     {

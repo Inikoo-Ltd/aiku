@@ -57,6 +57,10 @@ class GetShippingDeliveryNoteData
         $address = $deliveryNote->deliveryAddress;
 
         $toPhone       = $deliveryNote->phone ?? '';
+        if (strlen($toPhone) < 5) {
+            $toPhone = '';
+        }
+
         $toEmail       = $deliveryNote->email ?? '';
         $toCompanyName = $deliveryNote->company_name ?? '';
         $contactName   = $deliveryNote->contact_name ?? '';
