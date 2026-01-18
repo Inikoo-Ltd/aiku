@@ -29,7 +29,7 @@ class CallApiDpdSkShipping extends OrgAction
 
     public function getBaseUrl(): string
     {
-        return 'https://api.dpdportal.sk/shipment';
+        return 'https://api.dpd.sk/shipment/json';
     }
 
     public function getAccessToken(Shipper $shipper): array
@@ -60,12 +60,13 @@ class CallApiDpdSkShipping extends OrgAction
         $params = $this->prepareShipmentParams($shipper, $parentResource, $parcels);
 
 
+
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
         ])
             ->retry(3, 100)
             ->post($this->getBaseUrl(), $params);
-
+        dd($response);
 
         $apiResponse = $response->json();
         $statusCode  = $response->status();
