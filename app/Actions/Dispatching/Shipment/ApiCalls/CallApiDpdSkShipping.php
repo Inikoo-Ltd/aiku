@@ -80,6 +80,7 @@ class CallApiDpdSkShipping extends OrgAction
         Sentry::captureMessage("status to GSL SK " . $statusCode);
 
         if ($statusCode == 200 && Arr::get($apiResponse, 'result.result.success')) {
+            Sentry::captureMessage("A");
             $status = 'success';
 
 
@@ -90,7 +91,9 @@ class CallApiDpdSkShipping extends OrgAction
             $modelData['combined_label_url'] = Arr::get($apiResponse, 'result.result.label');
             $modelData['trackings']          = [$trackingNumber];
             $modelData['label_urls']         = [Arr::get($apiResponse, 'result.result.label')];
+            Sentry::captureMessage("A2");
         } else {
+            Sentry::captureMessage("B");
             $status = 'fail';
             $error  = Arr::get($apiResponse, 'error', []);
 
@@ -103,9 +106,16 @@ class CallApiDpdSkShipping extends OrgAction
                 }
                 $errorData['address'] = $errorMessage;
             } else {
-                $errorData['address'] = Arr::get($apiResponse, 'result.result.messages');;
+                $errorData['address'] = Arr::get($apiResponse, 'result.result.messages');
             }
+            Sentry::captureMessage("B2");
         }
+
+        Sentry::captureMessage("status to GSL SK " . json_encode([
+                'status'    => $status,
+                'modelData' => $modelData,
+                'errorData' => $errorData,
+            ]));
 
         return [
             'status'    => $status,
