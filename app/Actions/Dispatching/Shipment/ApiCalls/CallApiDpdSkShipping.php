@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class CallApiDpdSkShipping extends OrgAction
 {
@@ -74,6 +75,9 @@ class CallApiDpdSkShipping extends OrgAction
             'api_response' => $apiResponse,
         ];
         $errorData = [];
+
+        Sentry::captureMessage("answer to GSL SK " . json_encode($apiResponse));
+        Sentry::captureMessage("status to GSL SK " . $statusCode);
 
         if ($statusCode == 200 && Arr::get($apiResponse, 'result.result.success')) {
             $status = 'success';
