@@ -142,6 +142,7 @@ trait WithIrisProductsInWebpage
     {
         $select = [
             'products.id',
+            'products.family_id as family_id',
             'products.image_id',
             'products.code',
             'products.group_id',
