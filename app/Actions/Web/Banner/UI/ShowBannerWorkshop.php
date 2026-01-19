@@ -10,7 +10,7 @@ namespace App\Actions\Web\Banner\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
-use App\Http\Resources\Web\BannerResource;
+use App\Http\Resources\Web\BannerResourceForWorkshop;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -90,7 +90,7 @@ class ShowBannerWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'banner'            => BannerResource::make($banner)->getArray(),
+                'banner'            => BannerResourceForWorkshop::make($banner)->getArray(),
                 'autoSaveRoute'     => [
                     'name'       => 'grp.models.banner.layout.update',
                     'parameters' => [

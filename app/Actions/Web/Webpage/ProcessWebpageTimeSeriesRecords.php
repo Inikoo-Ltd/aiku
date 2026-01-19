@@ -103,7 +103,11 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             $addToBaskets = $conversions->add_to_baskets ?? 0;
 
             // Calculate Conversion Rate (based on visitors)
-            $conversionRate = $visitors > 0 ? ($addToBaskets / $visitors) * 100 : 0;
+            $conversionRate = $pageViews > 0 ? ($addToBaskets / $pageViews) * 100 : 0;
+
+            if ($conversionRate > 999.99) {
+                $conversionRate = 999.99;
+            }
 
             $timeSeries->records()->updateOrCreate(
                 [
@@ -201,7 +205,11 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             // Sum(visitors) is not Unique Visitors for the month, but it is the sum of Daily Unique Visitors.
             // Sum(add_to_baskets) is correct total.
             // So Conversion Rate = (Total Add / Total Daily Visitors) * 100. This is an approximation of "Average Daily Conversion Rate" or just "Conversion Rate based on Visits".
-            $conversionRate = $result->visitors > 0 ? ($result->add_to_baskets / $result->visitors) * 100 : 0;
+            $conversionRate = $result->page_views > 0 ? ($result->add_to_baskets / $result->visitors) * 100 : 0;
+
+            if ($conversionRate > 999.99) {
+                $conversionRate = 999.99;
+            }
 
             $timeSeries->records()->updateOrCreate(
                 [

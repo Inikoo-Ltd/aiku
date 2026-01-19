@@ -65,7 +65,7 @@ const fetchRecommenders = async () => {
                     "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
                     "recommendation_type": "item_detail_alternatives",
                     "recommender_client_identifier": "item_detail_alternatives",
-                    "size": 12,
+                    "size": 25,
                     "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
