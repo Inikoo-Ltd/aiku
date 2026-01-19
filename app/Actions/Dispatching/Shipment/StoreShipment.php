@@ -88,8 +88,6 @@ class StoreShipment extends OrgAction
             data_set($modelData, 'tracking_urls', []);
         }
 
-        Sentry::captureMessage("shipment created for parent " . json_encode($modelData));
-
         /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);
         $shipment->refresh();
