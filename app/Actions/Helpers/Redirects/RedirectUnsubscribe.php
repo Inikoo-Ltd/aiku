@@ -26,10 +26,10 @@ class RedirectUnsubscribe extends OrgAction
         }
 
         if ($baseUrl) {
-            return Redirect::away($baseUrl . '/unsubscribe/' . $dispatchedEmail->id);
+            return Redirect::away($baseUrl . '/unsubscribe/' . $dispatchedEmail->uuid);
         }
 
-        return Redirect::route('iris.unsubscribe.show', $dispatchedEmail->id);
+        return Redirect::route('iris.unsubscribe.show', $dispatchedEmail->uuid);
     }
 
     public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): RedirectResponse
