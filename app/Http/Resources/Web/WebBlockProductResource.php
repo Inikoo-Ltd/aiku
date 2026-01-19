@@ -75,7 +75,6 @@ class WebBlockProductResource extends JsonResource
             }
         }
 
-        $gr_offer = $this->family->getGROffer;
 
         return [
             'luigi_identity'                    => $product->getLuigiIdentity(),
@@ -112,10 +111,6 @@ class WebBlockProductResource extends JsonResource
             'is_on_demand'                      => $isOnDemand,
             'is_back_in_stock'                  => $product->backInStockReminders,
             'back_in_stock'                     => $back_in_stock,
-            'available_gr_offer_to_use'             => $gr_offer ? [
-                'slug'          => $gr_offer->slug,
-                'trigger_data'  => $gr_offer->trigger_data,
-            ] : [],
             ...$offers
         ];
     }
