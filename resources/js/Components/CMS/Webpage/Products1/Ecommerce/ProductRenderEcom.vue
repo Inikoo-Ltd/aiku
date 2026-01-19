@@ -212,6 +212,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 v-if="
                     (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
                     && product.available_gr_offer_to_use?.trigger_data?.item_quantity
+                    && !layout?.user?.gr_data?.customer_is_gr
                     && product.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
                 "
                 :product

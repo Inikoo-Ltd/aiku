@@ -222,7 +222,10 @@ watch(
                 </div>
 
                 <AvailableGROfferLabel
-                    v-if="product.available_gr_offer_to_use?.trigger_data?.item_quantity
+                    v-if="
+                        product.stock  // Same as button add to basket conditions
+                        && product.available_gr_offer_to_use?.trigger_data?.item_quantity
+                        && !layout?.user?.gr_data?.customer_is_gr
                         && customerData?.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
                     "
                     :product

@@ -35,9 +35,9 @@ class OrganisationHydrateOrderStateHandling implements ShouldBeUnique
         }
         $stats = [
 
-            'number_orders_state_handling'              => $organisation->orders()->where('state', OrderStateEnum::HANDLING)->count(),
-            'orders_state_handling_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::HANDLING)->sum('org_net_amount'),
-            'orders_state_handling_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::HANDLING)->sum('grp_net_amount'),
+            'number_orders_state_handling'              => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::HANDLING)->count(),
+            'orders_state_handling_amount_org_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::HANDLING)->sum('org_net_amount'),
+            'orders_state_handling_amount_grp_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::HANDLING)->sum('grp_net_amount'),
 
 
         ];
