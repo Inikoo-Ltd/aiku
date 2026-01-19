@@ -26,6 +26,7 @@ import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
+import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel.vue"
 
 
 
@@ -219,6 +220,14 @@ watch(
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
                 </div>
+
+                <AvailableGROfferLabel
+                    v-if="product.available_gr_offer_to_use?.trigger_data?.item_quantity
+                        && customerData?.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
+                    "
+                    :product
+                    class="w-fit"
+                />
 
                 <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
                     <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{

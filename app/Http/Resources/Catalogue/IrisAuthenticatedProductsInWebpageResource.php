@@ -121,8 +121,9 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'offers_data'          => $this->offers_data,
             'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
             'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
-            'available_gr_offer'             => $gr_offer ? [
-                'slug'  => $gr_offer->slug,
+            'available_gr_offer_to_use'             => $gr_offer ? [
+                'slug'          => $gr_offer->slug,
+                'trigger_data'  => $gr_offer->trigger_data,
             ] : [],
         ];
     }
