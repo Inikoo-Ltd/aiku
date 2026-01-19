@@ -79,13 +79,13 @@ class CallApiDpdSkShipping extends OrgAction
             $status = 'success';
 
 
-            $trackingNumber = substr(Arr::get($apiResponse, 'mpsid'), 0, -8);
+            $trackingNumber = substr(Arr::get($apiResponse, 'result.result.mpsid'), 0, -8);
 
 
             $modelData['tracking']           = $trackingNumber;
-            $modelData['combined_label_url'] = Arr::get($apiResponse, 'label');
+            $modelData['combined_label_url'] = Arr::get($apiResponse, 'result.result.label');
             $modelData['trackings']          = [$trackingNumber];
-            $modelData['label_urls']         = [Arr::get($apiResponse, 'label')];
+            $modelData['label_urls']         = [Arr::get($apiResponse, 'result.result.label')];
         } else {
             $status = 'fail';
             $error  = Arr::get($apiResponse, 'error', []);
