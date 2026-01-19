@@ -76,49 +76,36 @@ class CallApiDpdSkShipping extends OrgAction
         ];
         $errorData = [];
 
-        Sentry::captureMessage("answer to GSL SK " . json_encode($apiResponse));
-        Sentry::captureMessage("status to GSL SK " . $statusCode);
-
-        if ($statusCode == 200 && Arr::get($apiResponse, 'result.result.success')) {
-            Sentry::captureMessage("A");
+        if ($statusCode == 200 && Arr::get($apiResponse, 'result.result.0.success')) {
             $status = 'success';
 
 
-            $trackingNumber = substr(Arr::get($apiResponse, 'result.result.mpsid'), 0, -8);
+            $trackingNumber = substr(Arr::get($apiResponse, 'result.result.0.mpsid'), 0, -8);
 
 
             $modelData['tracking']           = $trackingNumber;
-            $modelData['combined_label_url'] = Arr::get($apiResponse, 'result.result.label');
+            $modelData['combined_label_url'] = Arr::get($apiResponse, 'result.result.0.label');
             $modelData['trackings']          = [$trackingNumber];
-            $modelData['label_urls']         = [Arr::get($apiResponse, 'result.result.label')];
-            Sentry::captureMessage("A2");
+            $modelData['label_urls']         = [Arr::get($apiResponse, 'result.result.0.label')];
         } else {
-            Sentry::captureMessage("B");
             $status = 'fail';
             $error  = Arr::get($apiResponse, 'error', []);
 
 
             if (!empty($error)) {
                 $errorMessage = Arr::get($error, 'message', 'Unknown error');
-
-                if (Str::contains($errorMessage, 'Phone number')) {
-                    $errorMessage = __('Invalid phone number');
-                }
-                $errorData['address'] = $errorMessage;
             } else {
-                Sentry::captureMessage("Error 1: ". json_encode(Arr::get($apiResponse, 'result','X1')));
-                Sentry::captureMessage("Error 2: ". json_encode(Arr::get($apiResponse, 'result.result','X2')));
-                Sentry::captureMessage("Error 3: ". Arr::get($apiResponse, 'result.result.messages.0','Unknown error'));
-                $errorData['address'] = Arr::get($apiResponse, 'result.result.messages.0','Unknown error');
+                $errorMessage = Arr::get($apiResponse, 'result.result.0.messages.0', 'Unknown error');
             }
-            Sentry::captureMessage("B2");
-        }
 
-        Sentry::captureMessage("status to GSL SK " . json_encode([
-                'status'    => $status,
-                'modelData' => $modelData,
-                'errorData' => $errorData,
-            ]));
+
+            if (Str::contains($errorMessage, 'Phone number')) {
+                $errorMessage = __('Invalid phone number');
+            } elseif (Str::contains($errorMessage, 'Invalid ZIP')) {
+                $errorMessage = __('Invalid postal code');
+            }
+            $errorData['address'] = $errorMessage;
+        }
 
         return [
             'status'    => $status,
@@ -226,7 +213,7 @@ class CallApiDpdSkShipping extends OrgAction
                     'SecurityToken' => $this->getAccessToken($shipper),
                 ),
                 'shipment'    => [
-                    'reference'        => Arr::get($parentResource, 'reference'),
+                    'reference'        => Arr::get($parentResource, 'reference').'x',
                     'delisId'          => Arr::get($shipper->settings, 'delisId'),
                     'note'             => $note,
                     'product'          => 1,
