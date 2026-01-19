@@ -11,7 +11,7 @@ class CalculateTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(array $timeSeriesIds, array $metricsMapping): array
+    public function handle(array $timeSeriesIds, array $metricsMapping, $from_date = null, $to_date = null): array
     {
         if (empty($timeSeriesIds)) {
             return [];
@@ -21,6 +21,24 @@ class CalculateTimeSeriesStats
         $bindings = [];
         $intervals = DateIntervalEnum::cases();
         $now = now();
+
+        if ($from_date && $to_date) {
+            $start = Carbon::parse($from_date);
+            $end = Carbon::parse($to_date);
+            foreach ($metricsMapping as $outputKey => $column) {
+                $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm";
+                $bindings[] = $start;
+                $bindings[] = $end;
+            }
+            $startLy = $start->copy()->subYear();
+            $endLy = $end->copy()->subYear();
+
+            foreach ($metricsMapping as $outputKey => $column) {
+                $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm_ly";
+                $bindings[] = $startLy;
+                $bindings[] = $endLy;
+            }
+        }
 
         foreach ($intervals as $interval) {
             if ($interval === DateIntervalEnum::CUSTOM) {
@@ -59,7 +77,7 @@ class CalculateTimeSeriesStats
             ->get();
 
         // Key results by offer_time_series_id
-        return $results->keyBy('offer_time_series_id')->map(fn($item) => (array) $item)->toArray();
+        return $results->keyBy('offer_time_series_id')->map(fn ($item) => (array) $item)->toArray();
     }
 
     protected function getIntervalRange(DateIntervalEnum $interval, Carbon $now): ?array

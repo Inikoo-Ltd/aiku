@@ -55,10 +55,6 @@ class ShowDiscountsDashboard extends OrgAction
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $saved_interval = DateIntervalEnum::ALL;
-        }
-
         $hasFirstOrderCampaign = OfferCampaign::where('shop_id', $this->shop->id)
             ->where('type', OfferCampaignTypeEnum::FIRST_ORDER)
             ->exists();
@@ -75,7 +71,18 @@ class ShowDiscountsDashboard extends OrgAction
         $routeParameters = $request->route()->originalParameters();
 
 
-        $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop);
+        $timeSeriesStats = [];
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
+                if (count($dates) === 2) {
+                    $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop, $dates[0], $dates[1]);
+                }
+            }
+        } else {
+            $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop);
+        }
 
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',

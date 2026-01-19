@@ -29,7 +29,7 @@ class ProcessUserRequest extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(User $user, Carbon $datetime, array $routeData, string $ip, string $userAgent): UserRequest|null
+    public function handle(User $user, Carbon $datetime, array $routeData, string $ip, string $userAgent, array $geoLocation = []): UserRequest|null
     {
         if ($routeData['name'] == 'grp.search.index') {
             return null;
@@ -38,9 +38,10 @@ class ProcessUserRequest extends GrpAction
         $section                = GetSectionRoute::run($routeData['name'], $routeData['arguments']);
         $aiku_scoped_section_id = $section?->id ?? null;
 
-
         $parsedUserAgent = (new Browser())->parse($userAgent);
-        $modelData       = [
+
+
+        $modelData = [
             'date'                   => $datetime,
             'route_name'             => $routeData['name'],
             'route_params'           => json_encode($routeData['arguments']),
@@ -49,7 +50,7 @@ class ProcessUserRequest extends GrpAction
             'device'                 => $parsedUserAgent->deviceType(),
             'browser'                => explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown',
             'ip_address'             => $ip,
-            'location'               => json_encode($this->getLocation($ip)),
+            'location'               => json_encode($geoLocation),
         ];
 
 

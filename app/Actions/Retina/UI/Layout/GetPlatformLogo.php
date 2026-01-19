@@ -16,7 +16,7 @@ trait GetPlatformLogo
             'shopify' => 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png',
             'tiktok' => 'https://cdn-icons-png.flaticon.com/64/3046/3046126.png',
             'woocommerce' => 'https://cdn-icons-png.flaticon.com/512/15466/15466279.png',
-            'manual' => 'https://aw.aurora.systems/art/aurora_log_v2_orange.png',
+            'manual' => 'https://aiku.io/art/aurora.png',
             'ebay' => 'https://cdn-icons-png.flaticon.com/512/888/888848.png',
             'amazon' => 'https://cdn-icons-png.flaticon.com/512/14079/14079391.png',
             'magento' => 'https://cdn-icons-png.flaticon.com/512/825/825535.png',

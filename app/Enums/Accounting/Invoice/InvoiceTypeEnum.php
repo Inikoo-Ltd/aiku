@@ -24,6 +24,14 @@ enum InvoiceTypeEnum: string
         ];
     }
 
+    public static function capitalizedLabels(): array
+    {
+        return [
+            'invoice'      => __('Invoice'),
+            'refund'       => __('Refund'),
+        ];
+    }
+
     public static function typeIcon(): array
     {
         return [

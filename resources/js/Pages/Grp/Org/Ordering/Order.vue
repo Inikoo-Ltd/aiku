@@ -1344,9 +1344,12 @@ const setShippingToAuto = () => {
                                 class="flex justify-between">
                                 <div class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
                                     <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
-                                        class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
+                                        class="text-gray-500 secondaryLink" v-tooltip="invoice?.type_label">
                                     {{ invoice?.reference }}
                                     </Link>
+                                    <FontAwesomeIcon v-if="invoice?.in_process" icon="fal fa-seedling" fixed-width aria-hidden="true"
+                                                     class="text-green-500"  v-tooltip="trans('In Process')" />
+
                                 </div>
 
                                 <a v-if="invoice?.routes?.download?.name"

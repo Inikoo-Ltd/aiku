@@ -97,9 +97,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read HistoricAsset|null $historicAsset
  * @property-read Invoice|null $invoice
  * @property-read Model|\Eloquent|null $model
- * @property-read Collection<int, Offer> $offer
  * @property-read Collection<int, OfferAllowance> $offerAllowances
- * @property-read Collection<int, OfferCampaign> $offerCampaign
+ * @property-read Collection<int, OfferCampaign> $offerCampaigns
+ * @property-read Collection<int, Offer> $offers
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Shop $shop
@@ -194,12 +194,12 @@ class Transaction extends Model
         return $this->morphToMany(Feedback::class, 'model', 'model_has_feedbacks');
     }
 
-    public function offerCampaign(): BelongsToMany
+    public function offerCampaigns(): BelongsToMany
     {
         return $this->belongsToMany(OfferCampaign::class, 'transaction_has_offer_allowances');
     }
 
-    public function offer(): BelongsToMany
+    public function offers(): BelongsToMany
     {
         return $this->belongsToMany(Offer::class, 'transaction_has_offer_allowances');
     }
