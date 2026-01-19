@@ -36,6 +36,7 @@
     "darkaonline/l5-swagger": "^9.0",
     "deepseek-php/deepseek-php-client": "^2.0",
     "elasticsearch/elasticsearch": "^8.8",
+    "ezyang/htmlpurifier": "^4.19",
     "google/apiclient": "^2.15.0",
     "guzzlehttp/guzzle": "^7.2",
     "hisorange/browser-detect": "^4.5",

@@ -8,6 +8,7 @@ import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import StickerLabel from '@/Components/Utils/Iris/StickerLabel.vue'
 
 library.add(faCube, faLink, faStar, faCircle, faBadgePercent, faChevronCircleLeft, faChevronCircleRight)
 
@@ -74,36 +75,39 @@ console.log('ssss',props)
       
         <!-- Section: listing Offers -->
         <div v-if="fieldValue?.family?.offers_data && layout.iris.is_logged_in"
-            class="grid gap-x-4 mt-4 gap-y-2"
+            class="grid gap-x-4 mt-4 gap-y-2 mb-3"
             :class="fieldValue?.family?.offers_data?.length > 1 ? 'md:grid-cols-2' : ''"
         >
             <section v-for="offer in fieldValue?.family?.offers_data"
-                class="relative xmx-[10px] sm:xmx-[50px] overflow-hidden rounded-md px-6 py-3 shadow-md mb-2"
+                class="relative overflow-hidden rounded-md pl-4 pr-6 py-1 shadow-md mb-2 bg-[#f1c40f]"
                 aria-label="Colorful Volume Promotion">
-                <!-- Gradient Background -->
-                <div class="absolute inset-0 bg-gradient-to-br from-pink-400 via-purple-400 to-purple-200 opacity-90"></div>
-                <!-- Decorative Blurs -->
-                <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-yellow-300 opacity-30 blur-3xl"></div>
-                <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-cyan-300 opacity-30 blur-3xl"></div>
+                
                 <!-- Content -->
-                <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-white">
+                <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 xtext-white">
                     <div>
                         <div class="">
-                            <span v-for="(allowance, idx) in offer.allowances" class="text-xs">
+                            <!-- <span v-for="(allowance, idx) in offer.allowances" class="text-xs">
                                 <span v-if="idx != 0"> | </span>
                                 {{ allowance.label }}
-                            </span>
+                            </span> -->
+                        <!-- <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" v-tooltip="trans('Offer with percentage off')" icon="fas fa-badge-percent" class="text-2xl xopacity-60 align-middle" fixed-width aria-hidden="true" /> -->
+
                         </div>
-                        <p class="text-sm uppercase tracking-wide font-semibold xopacity-90 mb-1">
+
+                        <p class="text-2xl font-bold align-middle">
+                            <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" v-tooltip="trans('Offer with percentage off')" icon="fas fa-badge-percent" class="text-xl xopacity-60 xalign-middle" fixed-width aria-hidden="true" />
                             {{ offer.label }}
                         </p>
+
                         <p v-if="offer.note" class="text-xs mt-1 max-w-[520px] opacity-90">
                             {{ offer.note }}
                         </p>
                     </div>
+                    
                     <div>
-                        <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" v-tooltip="trans('Offer with percentage off')" icon="fas fa-badge-percent" class="text-2xl xopacity-60 align-middle" fixed-width aria-hidden="true" />
+                        <!-- <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" v-tooltip="trans('Offer with percentage off')" icon="fas fa-badge-percent" class="text-2xl xopacity-60 align-middle" fixed-width aria-hidden="true" /> -->
                         <!-- <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" icon="fas fa-badge-dollar" class="text-2xl opacity-60" fixed-width aria-hidden="true" /> -->
+                        <StickerLabel v-for="allowance in offer.allowances" :label="allowance.label" class="text-4xl" />
                     </div>
                 </div>
             </section>

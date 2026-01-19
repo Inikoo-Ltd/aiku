@@ -9,6 +9,8 @@
 
 namespace App\Traits;
 
+use App\Services\HTMLSanitizer;
+
 trait SanitizeInputs
 {
     /**
@@ -58,5 +60,10 @@ trait SanitizeInputs
         }
 
         return $value;
+    }
+
+    protected function sanitizeHtml($fieldName): void
+    {
+        $this->set($fieldName, app(HTMLSanitizer::class)->cleanHTML($this->get($fieldName)));
     }
 }

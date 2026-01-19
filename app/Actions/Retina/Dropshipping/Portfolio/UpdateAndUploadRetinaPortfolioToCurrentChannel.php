@@ -54,6 +54,8 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
             'price',
         ]);
         $this->sanitizeInputs();
+        $this->sanitizeHtml('description');
+
         $this->set('customer_product_name', $request->input('title'));
         $this->set('customer_price', (string) $request->input('price'));
         $this->set('customer_description', $request->input('description'));
