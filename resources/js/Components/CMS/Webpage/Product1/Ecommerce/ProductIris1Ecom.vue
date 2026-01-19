@@ -107,7 +107,7 @@ watch(
 <template>
     <!-- DESKTOP -->
     <div v-if="screenType !== 'mobile'" id="product-iris-1-ecom"
-        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
+        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
             marginRight: 'auto'
@@ -412,11 +412,10 @@ watch(
 
         <!-- CONTENTS -->
         <div class="mt-4">
-            <ProductContentsIris :product="product" :setting="fieldValue.setting"
-                :styleData="fieldValue?.information_style" />
-            <InformationSideProduct v-if="fieldValue?.information?.length" :informations="fieldValue.information"
-                :styleData="fieldValue?.information_style" />
-
+            <ProductContentsIris :product="product" :setting="fieldValue.setting" :styleData="fieldValue?.information_style" />
+            <div v-if="fieldValue.setting?.information" class="mt-2">
+                <InformationSideProduct v-if="fieldValue?.information?.length" :informations="fieldValue.information" :styleData="fieldValue?.information_style" />
+            </div>
             <h2 class="text-base font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
