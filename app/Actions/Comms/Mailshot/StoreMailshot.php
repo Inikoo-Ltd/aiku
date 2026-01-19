@@ -77,10 +77,9 @@ class StoreMailshot extends OrgAction
     {
         $rules = [
             'subject'           => ['required', 'string', 'max:255'],
-            'type'              => ['required', Rule::enum(MailshotTypeEnum::class)],
+            'type'              => ['sometimes', Rule::enum(MailshotTypeEnum::class)],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
             'recipients_recipe' => ['sometimes', 'array']
-
         ];
 
         if (!$this->strict) {
@@ -151,7 +150,7 @@ class StoreMailshot extends OrgAction
 
         $routeName = match ($mailshot->type) {
             MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
-            MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.index',
+            MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.recipients',
             MailshotTypeEnum::INVITE => 'grp.org.shops.show.marketing.mailshots.index',
             MailshotTypeEnum::ABANDONED_CART => 'grp.org.shops.show.marketing.mailshots.index',
             default => null
@@ -159,7 +158,8 @@ class StoreMailshot extends OrgAction
 
         return Inertia::location(route($routeName, [
             'organisation' => $mailshot->shop->organisation->slug,
-            'shop'         => $mailshot->shop->slug
+            'shop'         => $mailshot->shop->slug,
+            'mailshot'     => $mailshot->slug
         ]));
     }
 }

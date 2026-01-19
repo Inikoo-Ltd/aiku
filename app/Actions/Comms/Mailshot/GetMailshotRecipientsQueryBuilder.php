@@ -8,17 +8,17 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
-use App\Actions\Helpers\Query\WithQueryCompiler;
-use App\Actions\Traits\WithCheckCanContactByEmail;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Models\Comms\Mailshot;
+use Illuminate\Support\Arr;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\Helpers\Query;
-use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\AsObject;
+use App\Models\Comms\Mailshot;
 use Spatie\QueryBuilder\QueryBuilder;
+use Lorisleiva\Actions\Concerns\AsObject;
+use App\Actions\Helpers\Query\WithQueryCompiler;
+use App\Actions\Traits\WithCheckCanContactByEmail;
+use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
+use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
 
 class GetMailshotRecipientsQueryBuilder
 {
@@ -31,12 +31,15 @@ class GetMailshotRecipientsQueryBuilder
      */
     public function handle(Mailshot $mailshot): ?QueryBuilder
     {
-        return match (Arr::get($mailshot->recipients_recipe, 'recipient_builder_type')) {
-            'query' => $this->getRecipientsFromQuery($mailshot),
-            'prospects' => $this->getRecipientsFromProspectsList(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.prospects')),
-            'custom_prospects_query' => $this->getRecipientsFromCustomQuery($mailshot),
-            default => null
-        };
+        if (Arr::has($mailshot->recipients_recipe, 'customer_query')) {
+            return $this->getRecipientsFromCustomQuery($mailshot);
+        }
+        // return match (Arr::get($mailshot->recipients_recipe, 'recipient_builder_type')) {
+        //     'query' => $this->getRecipientsFromQuery($mailshot),
+        //     'prospects' => $this->getRecipientsFromProspectsList(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.prospects')),
+        //     'custom_prospects_query' => $this->getRecipientsFromCustomQuery($mailshot),
+        //     default => null
+        // };
     }
 
     /**
@@ -69,14 +72,52 @@ class GetMailshotRecipientsQueryBuilder
      */
     private function getRecipientsFromCustomQuery(Mailshot $mailshot): QueryBuilder
     {
-        $modelClass = match ($mailshot->type) {
-            MailshotTypeEnum::INVITE => Prospect::class,
-            default => Customer::class
-        };
+        $modelClass = Customer::class;
 
-        $compiledQueryData = $this->compileConstrains(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.custom_prospects_query'));
+        $query = QueryBuilder::for($modelClass);
 
-        return GetQueryEloquentQueryBuilder::make()->buildQuery($modelClass, $mailshot->parent, $compiledQueryData);
+
+        if ($mailshot->shop_id) {
+            $query->where('shop_id', $mailshot->shop_id);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+        $query->whereNotNull('email');
+        $filters = Arr::get($mailshot->recipients_recipe, 'customer_query', []);
+
+        $regNeverOrdered = Arr::get($filters, 'registered_never_ordered');
+        $isRegNeverOrderedActive = is_array($regNeverOrdered) ? ($regNeverOrdered['value'] ?? false) : $regNeverOrdered;
+
+        if ($isRegNeverOrderedActive) {
+            $options = [];
+
+            if (is_array($regNeverOrdered) && isset($regNeverOrdered['value'])) {
+                $val = $regNeverOrdered['value'];
+
+                if (is_array($val) && isset($val['date_range'])) {
+                    $rawDateRange = $val['date_range'];
+
+                    if (is_array($rawDateRange) && count($rawDateRange) >= 2) {
+                        $options['date_range'] = [
+                            'start' => $rawDateRange[0],
+                            'end'   => $rawDateRange[1]
+                        ];
+                    }
+                }
+            }
+
+            (new FilterRegisteredNeverOrdered())->apply($query, $options);
+        }
+
+        $familyFilter = Arr::get($filters, 'by_family_never_ordered');
+        $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
+        if ($familyId) {
+            $query->whereDoesntHave('orders.items.product', function ($q) use ($familyId) {
+                $q->where('category_id', $familyId);
+            });
+        }
+
+        return $query;
     }
 
 }

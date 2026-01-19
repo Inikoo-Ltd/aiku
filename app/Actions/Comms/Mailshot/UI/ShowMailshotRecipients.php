@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Actions\Comms\Mailshot\UI;
+
+use Inertia\Inertia;
+use Inertia\Response;
+use App\Actions\OrgAction;
+use App\Models\Catalogue\Shop;
+use App\Models\Comms\Mailshot;
+use App\Models\SysAdmin\Organisation;
+use Lorisleiva\Actions\ActionRequest;
+use App\Models\Catalogue\ProductCategory;
+use Illuminate\Pagination\LengthAwarePaginator;
+use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
+
+class ShowMailshotRecipients extends OrgAction
+{
+    public function handle(Mailshot $mailshot, ActionRequest $request): Response
+    {
+        $requestFilters = $request->input('filters', []);
+        $savedFilters = $mailshot->recipients_recipe['customer_query'] ?? [];
+        $currentFilters = empty($requestFilters) ? $savedFilters : $requestFilters;
+
+        $previewMailshot = $mailshot->replicate();
+        $previewMailshot->id = $mailshot->id;
+        $previewMailshot->recipients_recipe = array_merge(
+            $mailshot->recipients_recipe ?? [],
+            ['customer_query' => $currentFilters]
+        );
+
+        $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
+
+        $customers = $queryBuilder ? $queryBuilder->paginate(15)->withQueryString() : new LengthAwarePaginator([], 0, 15);
+
+        $productFamilies = ProductCategory::query()
+            ->where('type', 'family')
+            ->where('shop_id', $mailshot->shop_id)
+            ->whereIn('state', ['active', 'discontinuing'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->toArray();
+
+        $filtersStructure = [
+            'marketing' => [
+                'title'   => 'Email Marketing Targeting',
+                'filters' => [
+                    'registered_never_ordered' => [
+                        'label'       => 'Registered Never Ordered',
+                        'type'        => 'boolean',
+                        'description' => 'Targets customers who have created an account but have never placed an order.',
+                        'options'     => [
+                            'date_range' => [
+                                'type'        => 'daterange',
+                                'label'       => 'Registration Date Range',
+                                'placeholder' => 'Select date range'
+                            ]
+                        ]
+                    ],
+                    'by_family_never_ordered' => [
+                        'label'       => 'By Family Never Ordered',
+                        'type'        => 'select',
+                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+                        'multiple'    => false,
+                        'options'     => $productFamilies,
+                    ],
+                    'orders_in_basket'         => [
+                        'label'       => 'Orders In Basket',
+                        'type'        => 'boolean',
+                        'description' => 'Targets customers who currently have an order in their basket that has not been completed.',
+                        'sub_filters' => [
+                            'basket_age'   => [
+                                'type'    => 'select',
+                                'label'   => 'Basket Age',
+                                'options' => [
+                                    'all'      => 'All Baskets',
+                                    '1-3_days' => '1–3 days ago',
+                                    '7_days'   => '7 days ago',
+                                    '14_days'  => '14 days ago',
+                                    'custom'   => 'Custom Range'
+                                ]
+                            ],
+                            'basket_value' => [
+                                'type'            => 'range',
+                                'label'           => 'Basket Value Range (£)',
+                                'min_placeholder' => 'Min',
+                                'max_placeholder' => 'Max'
+                            ]
+                        ]
+                    ],
+                    'orders_collection'        => [
+                        'label'       => 'Orders Collection',
+                        'type'        => 'boolean',
+                        'description' => 'Targets customers who have ever selected "Collection" and collected an order from the warehouse.'
+                    ],
+                    'by_subdepartment'         => [
+                        'label'            => 'By Sub-department',
+                        'type'             => 'multiselect',
+                        'description'      => 'Enable email targeting based on product sub-departments.',
+                        'options_source'   => \App\Models\Catalogue\Collection::class,
+                        'multiple'         => true,
+                        'behavior_options' => [
+                            'purchased'        => [
+                                'label' => 'Purchased products from these sub-departments in the past',
+                                'type'  => 'checkbox'
+                            ],
+                            'basket_abandoned' => [
+                                'label' => 'Added products from these sub-departments to basket but did not complete checkout',
+                                'type'  => 'checkbox'
+                            ]
+                        ],
+                        'logic'            => 'OR'
+                    ],
+                    'non_gold_reward_members'  => [
+                        'label'            => 'Non-Gold Reward Members',
+                        'type'             => 'boolean',
+                        'description'      => 'Targets customers who are NOT Gold Reward members (last invoiced > 30 days ago).',
+                        'logic'            => 'AND',
+                        'mutual_exclusive' => 'gold_reward_members'
+                    ],
+                    'gold_reward_members'      => [
+                        'label'            => 'Gold Reward Members',
+                        'type'             => 'boolean',
+                        'description'      => 'Targets customers with active Gold Reward status (last invoiced <= 30 days ago).',
+                        'logic'            => 'AND',
+                        'mutual_exclusive' => 'non_gold_reward_members'
+                    ],
+                    'by_interest'              => [
+                        'label'          => 'By Interest',
+                        'type'           => 'multiselect',
+                        'description'    => 'Targets customers who have selected at least one of the chosen interests in their profile.',
+                        'options_source' => \App\Models\Helpers\Tag::class,
+                        'multiple'       => true,
+                        'logic'          => 'OR'
+                    ],
+                    'by_showroom_orders'       => [
+                        'label'       => 'By Showroom Orders',
+                        'type'        => 'boolean',
+                        'description' => 'Targets customers who have placed at least one order in the showroom in the past.'
+                    ],
+                    'by_location'              => [
+                        'label'       => 'By Location',
+                        'type'        => 'location',
+                        'description' => 'Enable email targeting based on customer location with radius.',
+                        'fields'      => [
+                            'location' => [
+                                'type'        => 'input',
+                                'label'       => 'Location (Postcode, City, etc.)',
+                                'placeholder' => 'Enter location'
+                            ],
+                            'radius'   => [
+                                'type'    => 'select',
+                                'label'   => 'Radius',
+                                'options' => [
+                                    '5km'    => '5 km',
+                                    '10km'   => '10 km',
+                                    '25km'   => '25 km',
+                                    'custom' => 'Custom'
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+        return Inertia::render(
+            'Comms/MailshotRecipients',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $mailshot,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'mailshot' => $mailshot,
+                'title'    => __('Setup Recipients'),
+                'pageHead' => [
+                    'title' => __('Setup Recipients')
+                ],
+                'filtersStructure' => $filtersStructure,
+                'filters'          => $currentFilters,
+                'customers'        => $customers,
+            ]
+        );
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+    }
+
+    public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($mailshot, $request);
+    }
+
+    public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters): array
+    {
+        return ShowMailshot::make()->getBreadcrumbs(
+            mailshot: $mailshot,
+            routeName: preg_replace('/recipients$/', 'show', $routeName),
+            routeParameters: $routeParameters,
+            suffix: '(' . __('Recipients') . ')'
+        );
+    }
+
+
+}

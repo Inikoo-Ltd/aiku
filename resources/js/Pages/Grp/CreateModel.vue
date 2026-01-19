@@ -29,6 +29,7 @@ const props = defineProps<{
     formData: {
         submitButton?: String
         fullLayout?: Boolean
+        submitLabel?: String
         submitPosition?:String
         blueprint: {
             title?: string
@@ -138,6 +139,7 @@ const onSelectSubmitChange = (value) => {
                     v-if="!formData.submitButton"
                     :disabled="form.processing"
                     type="save"
+                    :label="formData.submitLabel"
                     @click="handleFormSubmit"
                     :loading="isLoading"
                 />
@@ -172,7 +174,7 @@ const onSelectSubmitChange = (value) => {
                             leave-to-class="transform scale-95 opacity-0">
                             <MenuItems
                                 class="absolute z-50 right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/10 focus:outline-none"
-                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'"    
+                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'"
                             >
                                 <div class="px-1 py-1">
                                     <div v-for="(item, index) in formData.route">
@@ -262,7 +264,7 @@ const onSelectSubmitChange = (value) => {
                                                 class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
                                         </div>
                                     </dt>
-                                    
+
                                     <!-- Field (Full: to full the component field i.e create Prospects Mailshot) -->
                                     <dd :class="fieldData.full ? 'sm:col-span-3' : 'sm:col-span-2'">
                                         <div class="mt-1 flex text-sm text-gray-700 sm:mt-0">
@@ -287,6 +289,7 @@ const onSelectSubmitChange = (value) => {
                         v-if="!formData.submitButton"
                         :loading="isLoading"
                         type="save"
+                        :label="formData.submitLabel"
                         @click="handleFormSubmit"
                     />
 
