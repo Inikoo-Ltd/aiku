@@ -106,7 +106,8 @@ class CallApiDpdSkShipping extends OrgAction
                 }
                 $errorData['address'] = $errorMessage;
             } else {
-                $errorData['address'] = Arr::get($apiResponse, 'result.result.messages');
+                Sentry::captureMessage("Error: ". Arr::get($apiResponse, 'result.result.messages.0','Unknown error'));
+                $errorData['address'] = Arr::get($apiResponse, 'result.result.messages.0','Unknown error');
             }
             Sentry::captureMessage("B2");
         }
