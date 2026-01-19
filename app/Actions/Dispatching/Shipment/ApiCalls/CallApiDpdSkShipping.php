@@ -75,7 +75,7 @@ class CallApiDpdSkShipping extends OrgAction
         ];
         $errorData = [];
 
-        if ($statusCode == 200 && Arr::get($apiResponse, 'error') == null) {
+        if ($statusCode == 200 && Arr::get($apiResponse, 'result.result.success')) {
             $status = 'success';
 
 
