@@ -44,7 +44,7 @@ $w: rgba(255, 255, 255, 0.2);
     display: inline-grid;
     grid-template-areas: "text";
     place-items: center;
-    font-family: "Alegreya Sans SC", sans-serif;
+    // font-family: "Alegreya Sans SC", sans-serif;
     font-weight: 900;
     font-style: italic;
     // font-size: clamp(3rem, 15vw, 10rem);
