@@ -2,12 +2,12 @@
 import { ref, watch } from "vue"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
-import Button from "primevue/button"
+import Button from "@/Components/Elements/Buttons/Button.vue";
 
 const props = defineProps<{ show: boolean; currentUrl?: string }>()
 const emit = defineEmits(["close", "update"])
 
-const inputLinkRef = ref<string>("")
+const inputLinkRef = ref<string>(props.currentUrl)
 const visible = ref(props.show)
 
 watch(
@@ -32,6 +32,7 @@ function update() {
 </script>
 
 <template>
+ 
   <Dialog
     v-model:visible="visible"
     header="Link"
@@ -57,14 +58,12 @@ function update() {
       <div class="flex justify-end gap-3">
         <Button
           label="Cancel"
-          text
-          severity="secondary"
+          type="tertiary"
           @click="closeDialog"
         />
         <Button
           label="Save"
-          icon="pi pi-check"
-          type="submit"
+          type="save"
         />
       </div>
     </form>

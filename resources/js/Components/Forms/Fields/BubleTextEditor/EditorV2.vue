@@ -40,6 +40,7 @@ import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
 import {CustomImage} from './CustomResizeImage/CustomImageSetting'
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
+import Link from "@tiptap/extension-link"
 
 import {
     faUndo,
@@ -147,9 +148,9 @@ const editorInstance = useEditor({
         FontFamily.configure({
             types: ['textStyle'],
         }),
-       /*  Link.configure({
+        Link.configure({
             openOnClick: false
-        }), */
+        }),
         customLink.extend({
             addProseMirrorPlugins() {
                 return [

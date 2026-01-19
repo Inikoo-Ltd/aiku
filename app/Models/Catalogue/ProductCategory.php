@@ -157,8 +157,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'       => '{}',
-        'web_images' => '{}',
+        'data'        => '{}',
+        'web_images'  => '{}',
         'offers_data' => '{}',
     ];
 
