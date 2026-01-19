@@ -31,7 +31,7 @@ class CreateNewsletter extends OrgAction
             'fields' => [
                 'subject' => [
                     'type'        => 'input',
-                    'label'       => __('subject'),
+                    'label'       => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required'    => true,
                     'value'       => '',
@@ -57,12 +57,12 @@ class CreateNewsletter extends OrgAction
                 'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
+                    [
                         [
-                            [
-                                'title'  => __('Name'),
-                                'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
-                            ]
-                        ],
+                            // 'title'  => __('Name'),
+                            'fields' => array_merge(...array_map(fn($item) => $item['fields'], $fields))
+                        ]
+                    ],
                     'route'      => [
                         'name'       => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
@@ -104,5 +104,4 @@ class CreateNewsletter extends OrgAction
             ]
         );
     }
-
 }
