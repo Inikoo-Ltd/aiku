@@ -32,7 +32,7 @@ class EditMailshot extends OrgAction
             'fields' => [
                 'subject'        => [
                     'type'        => 'input',
-                    'label'       => __('subject'),
+                    'label'       => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required'    => false,
                     'value'       => $mailshot->subject,
@@ -130,7 +130,7 @@ class EditMailshot extends OrgAction
                     [
                         [
                             'title'  => __('Name'),
-                            'fields' => array_merge(...array_map(fn($item) => $item['fields'], $fields))
+                            'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                         ]
                     ],
                     'args'       => [
