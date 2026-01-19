@@ -143,6 +143,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
+ * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
  * @property-read LaravelCollection<int, Adjustment> $adjustments
