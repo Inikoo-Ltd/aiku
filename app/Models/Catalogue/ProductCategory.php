@@ -157,8 +157,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
     ];
 
     protected $attributes = [
-        'data'       => '{}',
-        'web_images' => '{}',
+        'data'        => '{}',
+        'web_images'  => '{}',
         'offers_data' => '{}',
     ];
 
@@ -331,5 +331,13 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->hasMany(Offer::class, 'trigger_id')
             ->where('trigger_type', class_basename(ProductCategory::class))
             ->where('state', OfferStateEnum::ACTIVE);
+    }
+
+    public function getGROffer(): HasOne
+    {
+        return $this->hasOne(Offer::class, 'trigger_id')
+            ->where('trigger_type', class_basename(ProductCategory::class))
+            ->where('state', OfferStateEnum::ACTIVE)
+            ->where('type', 'Category Quantity Ordered Order Interval');
     }
 }

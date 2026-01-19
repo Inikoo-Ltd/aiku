@@ -22,6 +22,7 @@ import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.v
 import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import AvailableGROfferLabel from '@/Components/Utils/Iris/AvailableGROfferLabel.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -159,7 +160,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name}}
                 </div>
 
-                <!-- Price Card -->
+                <!-- Section: code, stock, 'Coming Soon' -->
                 <div
                     class="text-xs text-gray-600 mb-1 w-full grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1 items-center">
                     <!-- Product Code -->
@@ -187,7 +188,6 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                             </span>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -206,6 +206,17 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
                 </a>
             </div>
+
+            <!-- Section: GR Offer information -->
+            <AvailableGROfferLabel
+                v-if="
+                    (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
+                    && product.available_gr_offer_to_use?.trigger_data?.item_quantity
+                    && !layout?.user?.gr_data?.customer_is_gr
+                    && product.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
+                "
+                :product
+            />
         </div>
     </div>
 </template>

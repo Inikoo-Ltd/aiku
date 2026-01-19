@@ -129,8 +129,9 @@ const updateNavigationFromDrawer = (value: any) => {
 		/>
 	</div>
 
+
 	<draggable
-		:list="navigation"
+		v-model="navigation"
 		item-key="id"
 		class="space-y-2"
 		ghost-class="ghost"
@@ -138,7 +139,7 @@ const updateNavigationFromDrawer = (value: any) => {
 		drag-class="dragging"
 		:fallbackOnBody="true"
 		:move="allowMove"
-		@update="onDragUpdate"
+		@update:modelValue="onDragUpdate"
 	>
 		<template #item="{ element, index }">
 			<div

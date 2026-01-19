@@ -159,7 +159,7 @@ onMounted(async () => {
         class="cursor-pointer rounded overflow-hidden border border-gray-300"
       >
         <div class="aspect-square w-full">
-          <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
+          <Image :src="image.source" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
         </div>
       </SwiperSlide>
 

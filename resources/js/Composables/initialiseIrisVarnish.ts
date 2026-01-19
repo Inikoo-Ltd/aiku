@@ -20,7 +20,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         }
     
         const isAppRoute = window.location.pathname.startsWith('/app')
-        const selectedUrl = !isAppRoute ? '/json/first-hit' : '/app/json/first-hit'
+        const selectedUrl = !isAppRoute ? '/json/first-hit' : '/app/json/first-hit'  // HasIrisUserData
         const currentUrl = new URL(window.location.href)
         const headers = {
             'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
@@ -58,7 +58,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
         console.log('Initial Varnish Response:', varnish)
 
-        // --- Handle Not Logged In ---
+        // --- Handle logged-out ---
         if (!varnish.is_logged_in) {
             localStorage.setItem('iris', JSON.stringify({
                 ...storageIris,
@@ -77,7 +77,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
             return
         }
 
-        // --- Handle Logged In ---
+        // --- Handle logged-in ---
         if (varnish.is_logged_in) {
             // Data: Iris Variables
             if (varnish?.variables) {
@@ -101,6 +101,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
             }))
 
             layout.user = varnish.auth?.user || null
+            layout.user.gr_data = varnish.gr_data || null
             if (varnish.auth?.customerSalesChannels) {
                 layout.user.customerSalesChannels = varnish.auth.customerSalesChannels
             }
