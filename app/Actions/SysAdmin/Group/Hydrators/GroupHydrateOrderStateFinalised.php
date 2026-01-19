@@ -37,12 +37,12 @@ class GroupHydrateOrderStateFinalised implements ShouldBeUnique
         $stats = [
 
 
-            'number_orders_state_finalised'              => $group->orders()->where('state', OrderStateEnum::FINALISED)->count(),
-            'orders_state_finalised_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::FINALISED)->sum('grp_net_amount'),
+            'number_orders_state_finalised'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::FINALISED)->count(),
+            'orders_state_finalised_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::FINALISED)->sum('grp_net_amount'),
 
 
-            'number_orders_finalised_today'              => $group->orders()->whereDate('finalised_at', Carbon::today())->count(),
-            'orders_finalised_today_amount_grp_currency' => $group->orders()->whereDate('finalised_at', Carbon::today())->sum('grp_net_amount'),
+            'number_orders_finalised_today'              => $group->orderFromActiveShops()->whereDate('finalised_at', Carbon::today())->count(),
+            'orders_finalised_today_amount_grp_currency' => $group->orderFromActiveShops()->whereDate('finalised_at', Carbon::today())->sum('grp_net_amount'),
 
 
         ];
