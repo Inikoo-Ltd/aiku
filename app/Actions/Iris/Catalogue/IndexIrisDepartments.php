@@ -34,7 +34,7 @@ class IndexIrisDepartments extends RetinaAction
         return $this->handle(parent: $this->shop);
     }
 
-    public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|ProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -48,7 +48,6 @@ class IndexIrisDepartments extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
         $queryBuilder->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value]);
-
 
 
         return $queryBuilder

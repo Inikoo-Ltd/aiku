@@ -22,6 +22,11 @@ const props = defineProps<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+         <template #cell(code)="{ item: department }">
+            <span class="primaryLink" @click="$emit('select-department', department.slug)">
+                {{ department.code }}
+            </span>
+        </template>
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image :src="item['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />

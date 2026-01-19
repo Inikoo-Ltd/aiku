@@ -31,29 +31,24 @@ class ShowIrisCatalogue
     {
         $website = $request->get('website');
 
-       
+
 
         $scope     = $request->query('scope', 'departments');
         $parent    = $request->query('parent');
-        $parentKey = $request->query('parent_key');
 
         $this->context = $website->shop;
 
-        if ($parent && $parentKey) {
-            $this->context = $this->resolveParent(
-                $parent,
-                (int) $parentKey,
-                $website->shop_id
-            );
+        if ($parent && $category = ProductCategory::where('slug', $parent)->first()) {
+            $this->context = $category;
         }
 
+       /*  dd(  $this->context); */
         return [
             'scope'           => $scope,
             'parent'          => $parent,
-            'parent_key'      => $parentKey,
-            'departments'     => IndexIrisDepartments::run($this->context,'departments'),
-            'sub_departments' => IndexIrisSubDepartments::run($this->context),
-            'families'        => IndexIrisFamilies::run($this->context),
+            'departments'     => $scope  == 'departments'  ? IndexIrisDepartments::run($this->context) : collect(),
+            'sub_departments' => $scope  == 'sub_departments'  ? IndexIrisSubDepartments::run($this->context) : collect(),
+            'families'        => $scope  == 'families'  ? IndexIrisFamilies::run($this->context) : collect(),
             'products'        => collect(),
             'collections'     => collect(),
         ];
@@ -64,6 +59,23 @@ class ShowIrisCatalogue
 
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
+        $payload = [
+            'collections' => $data['collections'],
+            'products'    => $data['products'],
+        ];
+
+        if (!in_array($data['scope'], ['sub_departments', 'families', 'products'])) {
+            $payload['departments'] = IrisDepartmentResource::collection($data['departments']);
+        }
+
+        if (!in_array($data['scope'], ['families', 'products'])) {
+            $payload['sub_departments'] = IrisSubDepartmentResource::collection($data['sub_departments']);
+        }
+
+        if ($data['scope'] !== 'products') {
+            $payload['families'] = IrisFamilyResource::collection($data['families']);
+        }
+
         $response = Inertia::render('Catalogue/CatalogueIris', [
             'tabs' => [
                 'current' => $data['scope'],
@@ -74,24 +86,17 @@ class ShowIrisCatalogue
                     ['key' => 'products', 'label' => 'Products'],
                 ],
             ],
-
-            'data'            => [
-                    'departments'     => IrisDepartmentResource::collection($data['departments']),
-                    'sub_departments' => IrisSubDepartmentResource::collection($data['sub_departments']),
-                    'families'        => IrisFamilyResource::collection($data['families']),
-                    'collections'     => $data['collections'],
-                    'products'        => $data['products'],
-            ]
-          
+            'data' => $payload,
         ]);
 
         return match ($data['scope']) {
-            'departments' => $response->table(IndexIrisDepartments::make()->tableStructure($this->context, prefix: 'departments')),
+          'departments' => $response->table(IndexIrisDepartments::make()->tableStructure($this->context, prefix: 'departments')),
             'sub_departments' =>$response->table(IndexIrisSubDepartments::make() ->tableStructure(prefix: 'sub_departments')),
             'families' => $response->table(IndexIrisFamilies::make()->tableStructure($this->context, prefix: 'families')),
             default => $response,
         };
     }
+
 
     public function resolveParent(string $parent, int $parentKey, int $shopId): Model
     {

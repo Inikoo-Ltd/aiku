@@ -45,6 +45,12 @@ const props = defineProps<{
             {{ family["current_products"] }}
         </template>
 
+         <template #cell(code)="{ item: department }">
+            <span class="primaryLink" @click="$emit('select-department', department.slug)">
+                {{ department.code }}
+            </span>
+        </template>
+
         <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
             {{ family["department_code"] }}

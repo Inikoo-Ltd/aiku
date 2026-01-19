@@ -49,12 +49,12 @@ const activeComponent = computed(() => {
 })
 
 
-const onSelectDepartment = (department: any) => {
+const onSelectParent = (scope : string, parent: any) => {
     router.get(
         route(route().current() as string),
         {
-            scope: 'sub_departments',
-            parent: department,
+            scope: scope,
+            parent: parent,
         },
         {
             preserveState: true,
@@ -92,7 +92,10 @@ const onSelectDepartment = (department: any) => {
                     :is="activeComponent" 
                     :data="data[tabs.current]"
                     :tab="tabs.current" 
-                    @select-department="onSelectDepartment"
+                    @select-department="(parent:string)=>onSelectParent('sub_departments',parent)"
+                    @select-family="(parent:string)=>onSelectParent('family',parent)"
+                    @select-sub-department="(parent:string)=>onSelectParent('product',parent)"
+
                 />
             </div>
 
