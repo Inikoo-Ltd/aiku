@@ -1194,7 +1194,7 @@ it('hydrates order tracking numbers from multiple delivery notes and shipments',
         'warehouse_id'     => $this->warehouse->id
     ]);
 
-    // Create a shipper
+    /** @var Shipper $shipper */
     $shipper = Shipper::factory()->create([
         'organisation_id' => $this->organisation->id,
         'group_id' => $this->organisation->group_id,

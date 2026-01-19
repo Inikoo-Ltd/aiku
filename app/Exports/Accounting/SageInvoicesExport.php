@@ -59,10 +59,19 @@ class SageInvoicesExport implements FromQuery, WithMapping, WithHeadings, Should
         ];
     }
 
-    /** @var Invoice $invoice */
-    public function map($invoice): array
+
+    public function map($row): array
     {
+        /** @var Invoice $invoice */
+        $invoice = $row;
+
         $customer = $invoice->customer;
+        $order    = $invoice->order;
+
+        $orderReference = '';
+        if ($order) {
+            $orderReference = $order->reference;
+        }
 
         if (!$customer) {
             return $this->emptyRow();
@@ -77,7 +86,7 @@ class SageInvoicesExport implements FromQuery, WithMapping, WithHeadings, Should
         $taxCode = $this->mapTaxCode($invoice->taxCategory);
 
         // Format amounts (negative for credit notes)
-        $isRefund = $invoice->type === InvoiceTypeEnum::REFUND;
+        $isRefund  = $invoice->type === InvoiceTypeEnum::REFUND;
         $netAmount = $isRefund ? -abs((float)$invoice->net_amount) : (float)$invoice->net_amount;
         $taxAmount = $isRefund ? -abs((float)$invoice->tax_amount) : (float)$invoice->tax_amount;
 
@@ -93,7 +102,7 @@ class SageInvoicesExport implements FromQuery, WithMapping, WithHeadings, Should
             $taxCode,                                           // Tax Code
             number_format($taxAmount, 2, '.', ''),              // Tax Amount
             '1.00',                                             // Exchange Rate
-            $invoice->reference,                                // Extra Reference
+            $orderReference,                                // Extra Reference
             'Aiku Sales',                                       // User Name
             '',                                                 // Project Refn
             '',                                                 // Cost Code Refn
@@ -113,20 +122,20 @@ class SageInvoicesExport implements FromQuery, WithMapping, WithHeadings, Should
         }
 
         // Check if UK credit customer (non-fulfilment)
-        if ($customer->is_credit_customer && !$customer->is_fulfilment) {
+        if ($customer->is_credit_customer) {
             return ['4008', '19'];
         }
 
         // Map based on accounting reference
         $mappings = [
-            'DS01' => ['4000', '20'],
-            'EX01' => ['4002', '22'],
-            'UK01' => ['4000', '21'],
-            'WH01' => ['4012', '7'],
-            'AC01' => ['4000', '12'],
+            'DS01'  => ['4000', '20'],
+            'EX01'  => ['4002', '22'],
+            'UK01'  => ['4000', '21'],
+            'WH01'  => ['4012', '7'],
+            'AC01'  => ['4000', '12'],
             'ESG01' => ['4005', '23'],
             'SLG01' => ['4003', '24'],
-            'AR05' => ['4007', '25'],
+            'AR05'  => ['4007', '25'],
         ];
 
         return $mappings[$accountingRef] ?? ['4000', '1'];

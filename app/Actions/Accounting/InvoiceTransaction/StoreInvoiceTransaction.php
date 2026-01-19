@@ -260,21 +260,29 @@ class StoreInvoiceTransaction extends OrgAction
             }
         }
 
-        if ($invoiceTransaction->transaction->offer->id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessOfferTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->transaction->offer->id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
-                    },
-                    now()->toDateString()
-                )->delay(1800);
+        if ($invoiceTransaction->transaction) {
+
+            /** @var Transaction $transaction */
+            $transaction = $invoiceTransaction->transaction;
+            foreach ($transaction->offers as $offer) {
+                foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                    ProcessOfferTimeSeriesRecords::dispatch(
+                        $offer->id,
+                        $frequency,
+                        match ($frequency) {
+                            TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                            TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                            TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                            TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                            TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                        },
+                        now()->toDateString()
+                    )->delay(1800);
+                }
             }
+
+
+
         }
 
         return $invoiceTransaction;
