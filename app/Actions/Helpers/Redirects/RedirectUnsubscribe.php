@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Author: Jonathan Lopez Sanchez <jonathan@ancientwisdom.biz>
+ * Author: Eka yudinata <ekayudinata@gmail.com>
  * Created: Wed, 15 Jan 2026 16:22:00 Central European Standard Time, Malaga, Spain
  * Copyright (c) 2026, Inikoo LTD
  */
@@ -18,8 +18,6 @@ class RedirectUnsubscribe extends OrgAction
 {
     public function handle(DispatchedEmail $dispatchedEmail): RedirectResponse
     {
-        // TODO: Fix this redirect URL
-
         $baseUrl = null;
         if ($dispatchedEmail->shop && $dispatchedEmail->shop->website) {
             $baseUrl = $dispatchedEmail->shop->website->getUrl();
@@ -29,7 +27,7 @@ class RedirectUnsubscribe extends OrgAction
             return Redirect::away($baseUrl . '/unsubscribe/' . $dispatchedEmail->uuid);
         }
 
-        return Redirect::route('iris.unsubscribe.show', $dispatchedEmail->uuid);
+        abort(404, 'Shop website not found');
     }
 
     public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): RedirectResponse

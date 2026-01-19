@@ -64,8 +64,9 @@ class UnsubscribeMailshot
 
         $dispatchedEmail->emailTrackingEvents()->create($eventData);
 
+        $dispatchedEmail->refresh();
 
-        return $this->update($dispatchedEmail, ['state' => DispatchedEmailStateEnum::UNSUBSCRIBED]);
+        return $dispatchedEmail;
     }
 
     public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail

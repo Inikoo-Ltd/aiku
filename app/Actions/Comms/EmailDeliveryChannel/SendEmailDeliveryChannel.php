@@ -63,10 +63,7 @@ class SendEmailDeliveryChannel
                 return;
             }
 
-            //TODO:
-            // create redirect Url
-            // redirect URL will handle which website should be opened
-
+            // Send redirect URL
             $unsubscribeUrl = route('grp.helpers.redirect_unsubscribe', $recipient->dispatchedEmail->uuid);
 
             $this->sendEmailWithMergeTags(
