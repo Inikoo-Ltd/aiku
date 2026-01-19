@@ -24,7 +24,7 @@ Share your love with the rest of the CSS community by contributing to Style Stag
 **/
 
 $t: rgba(255, 0, 0, 0);
-$w: rgba(255, 255, 255, 0.98);
+$w: rgba(255, 255, 255, 0.2);
 
 * {
     box-sizing: border-box;
