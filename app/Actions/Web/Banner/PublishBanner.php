@@ -61,8 +61,6 @@ class PublishBanner extends OrgAction
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
                 'comment'        => Arr::get($modelData, 'comment'),
 
-
-
             ],
             $slides
         );
@@ -91,6 +89,12 @@ class PublishBanner extends OrgAction
         }
 
         $banner->update($updateData);
+
+        // Must update unpublished too for workshop. Otherwise the 'missing banner' bug will always come. This is a patch.
+        // Unpublished must be 1:1 with published, as it will be used for workshop
+        $unpublishedSnapshot = $banner->unpublishedSnapshot;
+        $unpublishedSnapshot->update(['layout' => $unpublishedSnapshot->compiledLayout()]);
+
         BannerRecordSearch::dispatch($banner);
         UpdateBannerImage::run($banner);
 
