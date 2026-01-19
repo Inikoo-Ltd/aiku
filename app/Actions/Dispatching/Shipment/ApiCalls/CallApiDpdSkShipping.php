@@ -95,9 +95,11 @@ class CallApiDpdSkShipping extends OrgAction
                 $errorMessage = Arr::get($error, 'message', 'Unknown error');
 
                 if (Str::contains($errorMessage, 'Phone number')) {
-                    $errorMessage         = __('Invalid phone number');
+                    $errorMessage = __('Invalid phone number');
                 }
                 $errorData['address'] = $errorMessage;
+            } else {
+                $errorData['address'] = Arr::get($apiResponse, 'result.result.messages');;
             }
         }
 
@@ -107,8 +109,6 @@ class CallApiDpdSkShipping extends OrgAction
             'errorData' => $errorData,
         ];
     }
-
-
 
 
     protected function prepareShipmentParams(Shipper $shipper, array $parentResource, array $parcels): array
