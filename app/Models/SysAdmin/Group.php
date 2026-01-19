@@ -10,6 +10,7 @@ namespace App\Models\SysAdmin;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
@@ -610,6 +611,16 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function shops(): HasMany
     {
         return $this->hasMany(Shop::class);
+    }
+
+    public function activeShops(): HasMany
+    {
+        return $this->hasMany(Shop::class)->where('state', ShopStateEnum::OPEN);
+    }
+
+    public function orderFromActiveShops(): Builder
+    {
+        return Order::whereIn('shop_id', $this->activeShops()->get()->pluck('id'));
     }
 
     public function warehouses(): HasMany

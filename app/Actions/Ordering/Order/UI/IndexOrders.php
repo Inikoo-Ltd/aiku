@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -108,7 +109,7 @@ class IndexOrders extends OrgAction
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
-        $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
+        $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')->where('shops.state', ShopStateEnum::OPEN);
 
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
             $query->where('orders.state', OrderStateEnum::CREATING);

@@ -10,6 +10,7 @@ namespace App\Models\SysAdmin;
 
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
@@ -93,6 +94,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -462,6 +464,16 @@ class Organisation extends Model implements HasMedia, Auditable
     public function shops(): HasMany
     {
         return $this->hasMany(Shop::class);
+    }
+
+    public function activeShops(): HasMany
+    {
+        return $this->hasMany(Shop::class)->where('state', ShopStateEnum::OPEN);
+    }
+
+    public function orderFromActiveShops(): Builder
+    {
+        return Order::whereIn('shop_id', $this->activeShops()->get()->pluck('id'));
     }
 
     public function productions(): HasMany
