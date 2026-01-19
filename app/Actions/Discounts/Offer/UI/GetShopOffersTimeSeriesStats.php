@@ -3,6 +3,7 @@
 namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
@@ -12,34 +13,49 @@ class GetShopOffersTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Shop $shop): array
+    public function handle(Shop $shop, $from_date = null, $to_date = null): array
     {
-        // Get all offers for the shop
-        $offers = Offer::where('shop_id', $shop->id)->get();
+        // Get all active offers for the shop
+        $offers = Offer::where('shop_id', $shop->id)
+            ->where('state', OfferStateEnum::ACTIVE)
+            ->get();
 
-        // Load daily time series and their records
-        // This assumes that the 'timeSeries' relationship exists on the Offer model
+        // Load only the timeSeries relationship (we don't need records hydrated anymore)
         $offers->load(['timeSeries' => function ($query) {
-            $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)
-                  ->with('records');
+            $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
         }]);
+
+        // Collect all time series IDs
+        $timeSeriesIds = [];
+        $offerToTimeSeriesMap = [];
+
+        foreach ($offers as $offer) {
+            $dailyTimeSeries = $offer->timeSeries->first();
+            if ($dailyTimeSeries) {
+                $timeSeriesIds[] = $dailyTimeSeries->id;
+                $offerToTimeSeriesMap[$offer->id] = $dailyTimeSeries->id;
+            }
+        }
+
+        // Calculate stats in one batch query
+        $allStats = [];
+        if (!empty($timeSeriesIds)) {
+            $allStats = CalculateTimeSeriesStats::run(
+                $timeSeriesIds,
+                [
+                    'customers' => 'customers_invoiced',
+                    'orders' => 'orders'
+                ],
+                $from_date,
+                $to_date
+            );
+        }
 
         $results = [];
 
         foreach ($offers as $offer) {
-            $dailyTimeSeries = $offer->timeSeries->first();
-
-            $stats = [];
-
-            if ($dailyTimeSeries && $dailyTimeSeries->records->isNotEmpty()) {
-                $stats = CalculateTimeSeriesStats::run(
-                    $dailyTimeSeries->records,
-                    [
-                        'customers' => 'customers_invoiced',
-                        'orders' => 'orders'
-                    ]
-                );
-            }
+            $timeSeriesId = $offerToTimeSeriesMap[$offer->id] ?? null;
+            $stats = $allStats[$timeSeriesId] ?? [];
 
             // Skip if no stats generated or all stats are zero
             if (empty($stats) || collect($stats)->every(fn ($value) => $value == 0)) {
@@ -47,7 +63,6 @@ class GetShopOffersTimeSeriesStats
             }
 
             // Merge offer attributes with stats
-            // The resource expects keys like 'customers_mtd', 'orders_1y' mixed with offer data
             $results[] = array_merge($offer->toArray(), $stats);
         }
 

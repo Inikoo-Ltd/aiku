@@ -12,13 +12,22 @@ use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
 use App\Rules\ValidAddress;
+use App\Traits\SanitizeInputs;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaOrderDeliveryAddress extends RetinaAction
 {
+    use SanitizeInputs;
+
     public function handle(Order $order, array $modelData): Order
     {
         return UpdateOrderDeliveryAddress::run($order, $modelData);
+    }
+
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields(['address']);
+        $this->sanitizeInputs();
     }
 
     public function rules(): array
@@ -41,6 +50,7 @@ class UpdateRetinaOrderDeliveryAddress extends RetinaAction
 
     public function asController(Order $order, ActionRequest $request): void
     {
+        $this->enableSanitize();
         $this->initialisation($request);
 
         $this->handle($order, $this->validatedData);

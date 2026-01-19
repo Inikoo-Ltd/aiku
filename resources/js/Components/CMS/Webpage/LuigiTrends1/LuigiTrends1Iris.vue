@@ -62,7 +62,7 @@ const fetchRecommenders = async () => {
                     "item_ids": [],
                     "recommendation_type": "trends",
                     "recommender_client_identifier": "trends",
-                    "size": 12,
+                    "size": 25,
                     "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,
                     "category": undefined,
                     "brand": undefined,

@@ -43,6 +43,9 @@ Route::prefix('orders/{order}')->group(function () {
     Route::get('edit', EditOrder::class)->name('orders.edit');
     Route::get('invoices/{invoice}', [ShowInvoice::class, 'inOrderShop'])->name('orders.show.invoices.show');
     Route::get('invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrderInShop'])->name('orders.show.invoices.show.refunds.show');
+    Route::get('refunds/{refund}', [ShowRefund::class, 'inOrderShop'])->name('orders.show.refunds.show');
+
+
     Route::get('delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInShop'])->name('orders.show.delivery-note');
     Route::get('replacement', CreateReplacementDeliveryNote::class)->name('orders.show.replacement.create');
     Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order.uploads.templates');

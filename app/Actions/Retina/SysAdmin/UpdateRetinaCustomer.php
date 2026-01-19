@@ -18,12 +18,14 @@ use App\Models\CRM\Customer;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Lorisleiva\Actions\ActionRequest;
+use App\Traits\SanitizeInputs;
 
 class UpdateRetinaCustomer extends RetinaAction
 {
     use WithActionUpdate;
     use WithModelAddressActions;
     use WithPrepareTaxNumberValidation;
+    use SanitizeInputs;
 
     private bool $action = false;
 
@@ -39,6 +41,19 @@ class UpdateRetinaCustomer extends RetinaAction
         }
 
         return $this->customer->id = $request->route()->parameter('customer')->id && $request->user()->is_root;
+    }
+
+
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields([
+            'contact_name',
+            'company_name',
+            'email',
+            'contact_address',
+            'tax_number',
+        ]);
+        $this->sanitizeInputs();
     }
 
     public function rules(): array
@@ -60,6 +75,7 @@ class UpdateRetinaCustomer extends RetinaAction
 
     public function asController(Customer $customer, ActionRequest $request): Customer
     {
+        $this->enableSanitize();
         $this->initialisation($request);
 
         return $this->handle($customer, $this->validatedData);

@@ -55,10 +55,6 @@ class ShowDiscountsDashboard extends OrgAction
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $saved_interval = DateIntervalEnum::ALL;
-        }
-
         $hasFirstOrderCampaign = OfferCampaign::where('shop_id', $this->shop->id)
             ->where('type', OfferCampaignTypeEnum::FIRST_ORDER)
             ->exists();
@@ -74,6 +70,19 @@ class ShowDiscountsDashboard extends OrgAction
 
         $routeParameters = $request->route()->originalParameters();
 
+
+        $timeSeriesStats = [];
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
+                if (count($dates) === 2) {
+                    $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop, $dates[0], $dates[1]);
+                }
+            }
+        } else {
+            $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop);
+        }
 
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
@@ -118,8 +127,8 @@ class ShowDiscountsDashboard extends OrgAction
                     'tables'      => [
                         'offers' => [
                             'header' => json_decode(DashboardHeaderOffersResource::make($this->shop)->toJson(), true),
-                            'body'   => json_decode(DashboardOffersResource::collection(GetShopOffersTimeSeriesStats::run($this->shop))->toJson(), true),
-                            'totals' => json_decode(DashboardTotalOffersResource::make(GetShopOffersTimeSeriesStats::run($this->shop))->toJson(), true),
+                            'body'   => json_decode(DashboardOffersResource::collection($timeSeriesStats)->toJson(), true),
+                            'totals' => json_decode(DashboardTotalOffersResource::make($timeSeriesStats)->toJson(), true),
                         ],
                     ],
                 ],

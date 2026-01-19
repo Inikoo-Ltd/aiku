@@ -66,14 +66,14 @@ console.log("Discounts Dashboard Props: ", props);
     <PageHeading :data="pageHead" />
 <!--    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
 <!--    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
-    <SimpleBox v-if="stats && layout.app.environment === 'production'" :box_stats="stats" />
+    <SimpleBox v-if="stats" :box_stats="stats" />
     <DashboardSettings
         :intervals="intervals"
         :settings="settings"
         :currentTab="blocks.current_tab"
     />
     <DashboardTable
-        v-if="blocks && (layout.app.environment === 'local' || layout.app.environment === 'staging')"
+        v-if="blocks"
         class="border-t border-gray-200"
         idTable="discounts_dashboard_tab"
         :tableData="blocks"
@@ -81,11 +81,8 @@ console.log("Discounts Dashboard Props: ", props);
         :settings="settings"
         :currentTab="blocks.current_tab"
     />
-    
+
     <Coupon v-if="first_order_bonus" :first_order_bonus="[first_order_bonus]" :currency_code="data.currency.code" />
 
     <!-- <pre>{{ first_order_bonus }}</pre> -->
 </template>
-
-
-
