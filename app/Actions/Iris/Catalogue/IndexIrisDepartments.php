@@ -70,7 +70,7 @@ class IndexIrisDepartments extends RetinaAction
             ])
             ->where('product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
             ->where('product_categories.shop_id', $parent->id)
-            ->allowedSorts(['code', 'name', 'state', 'shop_code', 'number_current_families', 'number_current_products', 'number_current_collections', 'number_current_sub_departments'])
+            ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -84,19 +84,19 @@ class IndexIrisDepartments extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
+            $table->withGlobalSearch();
 
 
-            $table->column(key: 'image', label: __('Image'), type: 'icon');
+            $table->column(key: 'image', label: '', type: 'avatar');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                  ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
 
             if (class_basename($parent) != 'Collection') {
-                $table->column(key: 'number_current_sub_departments', label: __('Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'number_current_collections', label: __('Collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
-
-                $table->column(key: 'number_current_families', label: __('Families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'number_current_products', label: __('Products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_current_sub_departments', label: __('Sub-departments'), tooltip: __('current sub departments'));
+                $table->column(key: 'number_current_collections', label: __('Collections'), tooltip: __('current collections'));
+                $table->column(key: 'number_current_families', label: __('Families'), tooltip: __('current families'))
+                    ->column(key: 'number_current_products', label: __('Products'), tooltip: __('current products'));
             }
 
             if (class_basename($parent) == 'Collection') {

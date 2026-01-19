@@ -22,6 +22,10 @@ defineProps<{
 }>();
 
 
+const emit = defineEmits<{
+    (e: 'select-department', department: any): void
+}>()
+
 </script>
 
 <template>
@@ -32,7 +36,6 @@ defineProps<{
                     class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
-
         <template #cell(state)="{ item: department }">
             <Tag :label="department.state.label" v-tooltip="department.state.label">
                 <template #label>
@@ -40,6 +43,11 @@ defineProps<{
                         }}</span>
                 </template>
             </Tag>
+        </template>
+        <template #cell(code)="{ item: department }">
+            <span class="primaryLink" @click="$emit('select-department', department.slug)">
+                {{ department.code }}
+            </span>
         </template>
         <template #cell(number_current_families)="{ item: department }">
             {{ department["number_current_families"] }}

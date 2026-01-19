@@ -25,8 +25,10 @@ class IrisFamilyResource extends JsonResource
             'code'                          => $family->code,
             'show_in_website'               => $family->show_in_website,
             'name'                          => $family->name,
-            'department_name'               => $family->parent?->name ?? null,
-            'department_id'                 => $family->parent?->id ?? null,
+            'department_name'               => $family->department_name,
+            'department_slug'               => $family->department_slug,
+            'sub_department_name'           => $family->sub_department_name,
+            'sub_department_slug'           => $family->sub_department_slug,
             'state'                         => [
                 'value' => $family->state->value ?? null,
                 'label' => $family->state->labels()[$family->state->value] ?? ucfirst($family->state->value),
@@ -37,7 +39,8 @@ class IrisFamilyResource extends JsonResource
             'image'                         => $family->imageSources(720, 480),
             'created_at'                    => $family->created_at,
             'updated_at'                    => $family->updated_at,
-            'stats'                         => $family->stats
+            'stats'                         => $family->stats,
+            'number_current_products'       => $family->number_current_products
         ];
     }
 }

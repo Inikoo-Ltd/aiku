@@ -103,10 +103,13 @@ class IndexIrisSubDepartments extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
-            $table->column(key: 'image', label: __('Image'), type: 'icon');
+            $table->withGlobalSearch();
+
+            $table->column(key: 'image', label: "", type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_families', label: __('Families'), canBeHidden: false);
+                ->column(key: 'department_name', label: __('Department'))
+                ->column(key: 'number_families', label: __('Families'));
         };
     }
 

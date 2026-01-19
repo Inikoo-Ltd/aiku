@@ -313,4 +313,5 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
 iframe#launcher {
     bottom: 30px !important;
 }
+
 </style>

@@ -105,6 +105,8 @@ class IndexIrisFamilies extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
+            $table->withGlobalSearch();
+
             $table
                 ->defaultSort('code')
                 ->withEmptyState(
@@ -117,14 +119,13 @@ class IndexIrisFamilies extends RetinaAction
                     }
                 )
                 ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'image', label: __('Image'), type: 'icon');
+            $table->column(key: 'image', label: "", type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sub_department_name', label: __('Sub department'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'department_name', label: __('Department'))
+                ->column(key: 'sub_department_name', label: __('Sub department'));
 
 
             if (class_basename($parent) != 'Collection') {

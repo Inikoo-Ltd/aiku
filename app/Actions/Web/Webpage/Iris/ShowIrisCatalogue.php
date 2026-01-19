@@ -51,7 +51,7 @@ class ShowIrisCatalogue
             'scope'           => $scope,
             'parent'          => $parent,
             'parent_key'      => $parentKey,
-            'departments'     => IndexIrisDepartments::run($this->context),
+            'departments'     => IndexIrisDepartments::run($this->context,'departments'),
             'sub_departments' => IndexIrisSubDepartments::run($this->context),
             'families'        => IndexIrisFamilies::run($this->context),
             'products'        => collect(),
