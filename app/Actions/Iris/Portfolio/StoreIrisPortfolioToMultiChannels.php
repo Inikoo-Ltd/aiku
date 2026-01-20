@@ -46,7 +46,7 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
         $existingPortfolios = $channels->flatMap(function ($channel) use ($items) {
             return $channel->portfolios()
                 ->whereIn('item_id', $items->pluck('id'))
-                ->where('item_type', $items->first()->getMorphClass())
+                ->where('item_type', 'Product')
                 ->get(['item_id', 'customer_sales_channel_id'])
                 ->map(fn ($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
         })->unique()->values()->toArray();

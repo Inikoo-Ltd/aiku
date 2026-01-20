@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\WebUsersResource;
@@ -19,6 +20,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -28,6 +30,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
+
 class IndexWebUsersInCRM extends OrgAction
 {
     use WithCRMAuthorisation;
@@ -35,10 +38,10 @@ class IndexWebUsersInCRM extends OrgAction
     use WithCustomersSubNavigation;
 
 
-    private Shop|Customer $parent;
+    private Shop|Customer|Group $parent;
 
 
-    public function handle(Shop|Customer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|Customer|Group $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -53,8 +56,10 @@ class IndexWebUsersInCRM extends OrgAction
 
         if ($parent instanceof Customer) {
             $queryBuilder->where('customer_id', $parent->id);
-        } else {
+        } elseif ($parent instanceof Shop) {
             $queryBuilder->where('shop_id', $parent->id);
+        } else {
+            $queryBuilder->where('web_users.group_id', $parent->id);
         }
 
         $queryBuilder
@@ -93,6 +98,7 @@ class IndexWebUsersInCRM extends OrgAction
         $afterTitle = null;
         $iconRight  = null;
 
+        $subNavigation = null;
 
         if ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
@@ -109,7 +115,7 @@ class IndexWebUsersInCRM extends OrgAction
 
                 'label' => __('Web Users')
             ];
-        } else {
+        } elseif ($this->parent instanceof Shop) {
             $subNavigation = $this->getSubNavigation($request);
         }
 
@@ -147,7 +153,7 @@ class IndexWebUsersInCRM extends OrgAction
         )->table($this->tableStructure(parent: $this->parent));
     }
 
-    public function tableStructure(Shop|Customer $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Shop|Customer|Group $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
             if ($prefix) {
@@ -209,6 +215,13 @@ class IndexWebUsersInCRM extends OrgAction
         return $this->handle(parent: $customer);
     }
 
+    public function inGroup(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = app('group');
+        $this->initialisationFromGroup($this->parent, $request);
+
+        return $this->handle(parent: $this->parent);
+    }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -227,6 +240,18 @@ class IndexWebUsersInCRM extends OrgAction
 
 
         return match ($routeName) {
+            'grp.overview.crm.web-users.index' =>
+            array_merge(
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+
+                )
+            ),
+
             'grp.org.shops.show.crm.web_users.index' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs(
