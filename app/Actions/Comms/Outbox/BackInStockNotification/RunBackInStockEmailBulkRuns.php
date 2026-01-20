@@ -176,19 +176,77 @@ class RunBackInStockEmailBulkRuns
 
     public function generateProductLinks(array $productData): string
     {
-        $links = [];
+        $html = '';
+
+        $html .= '<table width="100%" cellpadding="8" cellspacing="0"
+        style="font-family: Helvetica, Arial, sans-serif;
+               font-size: 14px;
+               border-collapse: collapse;">';
+
+
+        $html .= '
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <th align="left" style="color:#555;">Product</th>
+            <th align="center" style="color:#555;">Back in stock</th>
+        </tr>';
 
         foreach ($productData as $product) {
             $dataProduct = Product::find($product['product_id']);
-            $productImage = Arr::get($dataProduct->imageSources(200, 200), 'original');
+
+            $productImage = Arr::get(
+                $dataProduct->imageSources(200, 200),
+                'original'
+            );
+
+            $stock = $dataProduct->available_quantity ?? 0;
+
 
             if ($dataProduct && $dataProduct->webpage) {
-                $url = $dataProduct->webpage->getCanonicalUrl();
+                $url  = $dataProduct->webpage->getCanonicalUrl();
                 $name = $dataProduct->name;
-                $links[] = "<a ses:no-track href=\"$url\">$name</a>";
+
+                $html .= '
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="vertical-align:middle;">
+                        <table cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding-right:12px;">';
+
+                if ($productImage) {
+                    $html .= '
+                    <img src="' . $productImage . '"
+                         width="60"
+                         height="60"
+                         style="display:block;
+                                border-radius:6px;
+                                object-fit:cover;" />';
+                }
+
+                $html .= '
+                                </td>
+                                <td style="vertical-align:middle;">
+                                    <a ses:no-track href="' . $url . '"
+                                       style="color:#111;
+                                              text-decoration:none;
+                                              font-weight:600;">'
+                    . $name .
+                    '</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+
+                    <td align="center"
+                        style="font-weight:600;
+                               color:#16a34a;">'
+                    . $stock .
+                    '</td>
+                </tr>';
             }
         }
 
-        return implode(', ', $links);
+        $html .= '</table>';
+
+        return $html;
     }
 }
