@@ -19,7 +19,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 
 class GetWebBlockTypes extends OrgAction
 {
@@ -33,33 +32,33 @@ class GetWebBlockTypes extends OrgAction
 
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
-    $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-        $query->where(function ($query) use ($value) {
-            $query->whereAnyWordStartWith('web_block_types.code', $value);
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('web_block_types.code', $value);
+            });
         });
-    });
 
-    if ($prefix) {
-        InertiaTable::updateQueryBuilderParameters($prefix);
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+        $queryBuilder = QueryBuilder::for(WebBlockType::class)
+            ->where('group_id', $group->id)
+            ->where('fixed', false)
+            ->where('scope', 'webpage');
+
+
+
+        return $queryBuilder
+            ->defaultSort('web_block_types.code')
+            ->allowedSorts(['code', 'name'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator(
+                $prefix,
+                tableName: request()->route()->getName()
+            )
+            ->withQueryString();
     }
-
-    $queryBuilder = QueryBuilder::for(WebBlockType::class)
-        ->where('group_id', $group->id)
-        ->where('fixed', false)
-        ->where('scope', 'webpage');
-
-
-
-    return $queryBuilder
-        ->defaultSort('web_block_types.code')
-        ->allowedSorts(['code', 'name'])
-        ->allowedFilters([$globalSearch])
-        ->withPaginator(
-            $prefix,
-            tableName: request()->route()->getName()
-        )
-        ->withQueryString();
-}
 
     public function jsonResponse(LengthAwarePaginator $webBlockTypes): AnonymousResourceCollection
     {

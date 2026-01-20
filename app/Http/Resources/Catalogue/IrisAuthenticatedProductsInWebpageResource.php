@@ -78,7 +78,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
         }
 
 
-    
+
         $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
         $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
@@ -86,10 +86,10 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
         $gr_offer = $this->family->getGROffer;
         $gr_price = null;
         $gr_price_per_unit = null;
-        if($gr_offer){
+        if ($gr_offer) {
             $allowances = $gr_offer->offerAllowances;
             $gr_price = $this->price;
-            foreach($allowances as $allowance){
+            foreach ($allowances as $allowance) {
                 $gr_price -= round((float) $this->price * $allowance->data['percentage_off'], 2);
             }
             $gr_price_per_unit = $gr_price / max(1, (int) $units);

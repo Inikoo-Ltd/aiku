@@ -36,7 +36,7 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
                     $q->orWhereRaw("published_layout->'web_blocks' @> '[{\"name\": \"$name\"}]'");
                 }
             })->orderBy('id');
-            
+
         $progress = 0;
         $lastPercent = 0;
         $total = (clone $webpages)->count();

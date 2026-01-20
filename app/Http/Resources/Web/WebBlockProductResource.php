@@ -75,7 +75,7 @@ class WebBlockProductResource extends JsonResource
                 }
             }
         }
-        $gr_offer=null;
+        $gr_offer = null;
         if ($this->family) {
             $gr_offer = $this->family->getGROffer;
         }

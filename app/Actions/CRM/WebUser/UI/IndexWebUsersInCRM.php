@@ -30,7 +30,6 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-
 class IndexWebUsersInCRM extends OrgAction
 {
     use WithCRMAuthorisation;
@@ -248,7 +247,6 @@ class IndexWebUsersInCRM extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-
                 )
             ),
 

@@ -594,7 +594,7 @@ trait WithWooCommerceApiRequest
             }
 
             $result = $this->makeWooCommerceRequest('GET', 'settings');
-            if($result === null){
+            if ($result === null) {
                 return false;
             }
             return count($result) > 0;
