@@ -85,7 +85,16 @@ class ShowMarketingDashboard extends OrgAction
                             'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
                             'parameters' => $request->route()->originalParameters()
                         ]
-                    ]
+                    ],
+                    [
+                        'name' => __('Templates'),
+                        'value' => 2,// need to adjustment the value to be dynamic
+                        'icon'  => ['fal', 'fa-newspaper'], // Nedd to change the icon
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.templates.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
                 ]
 
 

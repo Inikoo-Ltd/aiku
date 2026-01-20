@@ -9,6 +9,7 @@
 use App\Actions\Comms\Mailshot\UI\CreateMailshot;
 use App\Actions\Comms\Mailshot\UI\CreateNewsletter;
 use App\Actions\Comms\Mailshot\UI\EditMailshot;
+use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
 use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\Comms\Mailshot\UI\ShowMailshot;
@@ -42,4 +43,8 @@ Route::name("notifications.")->prefix('notifications')
         Route::get('create', CreateDummy::class)->name('create');
         Route::get('{mailshot}', ShowDummy::class)->name('show');
         Route::get('{mailshot}/edit', EditDummy::class)->name('edit');
+    });
+Route::name("templates.")->prefix('templates')
+    ->group(function () {
+        Route::get('', IndexMailshotTemplates::class)->name('index');
     });

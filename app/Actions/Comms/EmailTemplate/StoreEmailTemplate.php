@@ -35,6 +35,7 @@ class StoreEmailTemplate extends OrgAction
             'builder'     => ['required', Rule::enum(EmailTemplateBuilderEnum::class)],
             'language_id' => ['required', 'exists:languages,id'],
             'data'        => ['sometimes', 'array'],
+            'shop_id'     => ['sometimes', 'nullable', 'exists:shops,id'],
         ];
 
         if (!$this->strict) {
