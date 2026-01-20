@@ -21,6 +21,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Arr;
 
 class RunBackInStockEmailBulkRuns
 {
@@ -114,19 +115,19 @@ class RunBackInStockEmailBulkRuns
                 }
 
                 // get the product canonical url
-                $product = Product::find($customer->product_id);
-                $canonicalUrl = null;
-                if ($product) {
-                    $webPage = $product->webpage ?? null;
-                    if ($webPage) {
-                        $canonicalUrl = $webPage->getCanonicalUrl();
-                    }
-                }
+                // $product = Product::find($customer->product_id);
+                // $canonicalUrl = null;
+                // if ($product) {
+                //     $webPage = $product->webpage ?? null;
+                //     if ($webPage) {
+                //         $canonicalUrl = $webPage->getCanonicalUrl();
+                //     }
+                // }
 
                 $productData[] = [
                     'product_id' => $customer->product_id,
-                    'product_name' => $customer->product_name,
-                    'canonical_url' => $canonicalUrl,
+                    // 'product_name' => $customer->product_name,
+                    // 'canonical_url' => $canonicalUrl,
                 ];
 
                 if ($processedCount === $totalCustomers) {
@@ -178,10 +179,14 @@ class RunBackInStockEmailBulkRuns
         $links = [];
 
         foreach ($productData as $product) {
-            $url = $product['canonical_url'];
-            $name = $product['product_name'];
+            $dataProduct = Product::find($product['product_id']);
+            $productImage = Arr::get($dataProduct->imageSources(200, 200), 'original');
 
-            $links[] = "<a ses:no-track href=\"$url\">$name</a>";
+            if ($dataProduct && $dataProduct->webpage) {
+                $url = $dataProduct->webpage->getCanonicalUrl();
+                $name = $dataProduct->name;
+                $links[] = "<a ses:no-track href=\"$url\">$name</a>";
+            }
         }
 
         return implode(', ', $links);
