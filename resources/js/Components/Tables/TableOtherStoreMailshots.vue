@@ -29,8 +29,8 @@ import Icon from "../Icon.vue";
 import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { RouteParams } from "@/types/route-params";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import axios from "axios";
 
 library.add(
     faSpellCheck,
@@ -88,7 +88,7 @@ const useTemplate = async (id: number) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state)="{ item }">
-            <Icon v-if="item.state" :data="item.state" />
+            <Icon v-if="item.state" :data="sent" />
         </template>
         <template #cell(actions)="{ item }">
             <div class="flex items-center justify-between gap-2">

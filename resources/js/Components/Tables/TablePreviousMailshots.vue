@@ -29,8 +29,8 @@ import Icon from "../Icon.vue";
 import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { RouteParams } from "@/types/route-params";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import axios from "axios";
 
 library.add(
     faSpellCheck,
