@@ -28,7 +28,6 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
 
     public function handle(Website $website, WebBlockType $newWebBlock, string $marginal, array $fieldValue): WebBlockType
     {
-        $progress = 0;
         $type  = $marginal === 'products' ? 'list_products' : $marginal;
         $names = WebBlockType::where('category', $type)->pluck('name')->toArray();
         $webpages = $website->webpages()
@@ -37,48 +36,47 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
                     $q->orWhereRaw("published_layout->'web_blocks' @> '[{\"name\": \"$name\"}]'");
                 }
             })->orderBy('id');
-
+            
+        $progress = 0;
         $lastPercent = 0;
         $total = (clone $webpages)->count();
 
-        $webpages->chunk(500, function ($webpages) use ($names, $newWebBlock, $fieldValue, $website, &$progress, &$total, &$lastPercent) {
-            foreach ($webpages as $webpage) {
-                $modified = $this->modifyLayout($webpage->published_layout, $names, $newWebBlock->slug, $fieldValue);
-                $progress++;
-                if (empty($modified)) {
-                    continue;
-                }
-
-                $webpage->updateQuietly(['published_layout' => $modified['layout']]);
-
-                $blockId = data_get($modified['layout'], "web_blocks.{$modified['index']}.web_block.id");
-
-                $targetWebBlock = $webpage->webBlocks()->find($blockId);
-                if ($layout = $targetWebBlock?->layout) {
-                    data_set($layout, 'data.fieldValue', $fieldValue);
-                    $targetWebBlock->updateQuietly([
-                        'web_block_type_id' => $newWebBlock->id,
-                        'layout'            => $layout
-                    ]);
-                }
-
-                if (($live = $webpage->liveSnapshot) && $targetWebBlock?->layout) {
-                    $liveLayout = $this->applyIndexChange($live->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
-                    $live->updateQuietly(['layout' => $liveLayout]);
-                }
-
-                if (($unpublished = $webpage->unpublishedSnapshot) && $targetWebBlock?->layout) {
-                    $unLayout = $this->applyIndexChange($unpublished->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
-                    $unpublished->updateQuietly(['layout' => $unLayout]);
-                }
-
-                $percent = intval(($progress / $total) * 100);
-                if ($percent >= $lastPercent + 10) {
-                    $lastPercent = $percent;
-                    BroadcastUpdateWeblocks::dispatch($percent, $website);
-                }
+        foreach ($webpages->get() as $webpage) {
+            $modified = $this->modifyLayout($webpage->published_layout, $names, $newWebBlock->slug, $fieldValue);
+            $progress++;
+            if (empty($modified)) {
+                continue;
             }
-        });
+
+            $webpage->updateQuietly(['published_layout' => $modified['layout']]);
+
+            $blockId = data_get($modified['layout'], "web_blocks.{$modified['index']}.web_block.id");
+
+            $targetWebBlock = $webpage->webBlocks()->find($blockId);
+            if ($layout = $targetWebBlock?->layout) {
+                data_set($layout, 'data.fieldValue', $fieldValue);
+                $targetWebBlock->updateQuietly([
+                    'web_block_type_id' => $newWebBlock->id,
+                    'layout'            => $layout
+                ]);
+            }
+
+            if (($live = $webpage->liveSnapshot) && $targetWebBlock?->layout) {
+                $liveLayout = $this->applyIndexChange($live->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
+                $live->updateQuietly(['layout' => $liveLayout]);
+            }
+
+            if (($unpublished = $webpage->unpublishedSnapshot) && $targetWebBlock?->layout) {
+                $unLayout = $this->applyIndexChange($unpublished->layout, $modified['index'], $newWebBlock->slug, $targetWebBlock->layout);
+                $unpublished->updateQuietly(['layout' => $unLayout]);
+            }
+
+            $percent = intval(($progress / $total) * 100);
+            if ($percent >= $lastPercent + 10) {
+                $lastPercent = $percent;
+                BroadcastUpdateWeblocks::dispatch($percent, $website);
+            }
+        }
 
         BroadcastUpdateWeblocks::dispatch(100, $website);
 

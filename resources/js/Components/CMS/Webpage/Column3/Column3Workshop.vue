@@ -20,7 +20,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-	<div class="grid grid-cols-1 md:grid-cols-2 gap-4"
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4"
 		:style="getStyles(modelValue?.container?.properties,screenType)"
 	>
 		<ColumnWebppage
@@ -39,5 +39,12 @@ const emits = defineEmits<{
 			:screenType="screenType"
 		/>
 
+		<ColumnWebppage
+			v-model="modelValue.column_3"
+			@update:modelValue="() => emits('autoSave')"
+			:webpageData="webpageData"
+			:blockData="blockData"
+			:screenType="screenType"
+		/>
 	</div>
 </template>

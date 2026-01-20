@@ -67,6 +67,7 @@ import RenderEcommerceProductWorkshop from '@/Components/CMS/Webpage/Product/Eco
 import Product1WorkshopEcom from '@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'
 import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
 import ProductWorkshop2 from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
+import Column3Workshop from '@/Components/CMS/Webpage/Column3/Column3Workshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -135,6 +136,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'pricing': Pricing,
         'button' : Button,
         'column-layout-2': ColumnWorkshop,
+        'column-layout-3': Column3Workshop,
         'disclosure': DisclosureWorkshop,
         'timeline' : Timeline,
         'step-1' : Step2Workshop,
