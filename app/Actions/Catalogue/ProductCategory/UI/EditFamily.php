@@ -18,6 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Helpers\LanguageResource;
+use App\Http\Resources\Catalogue\BasicOfferDataResource;
 
 class EditFamily extends OrgAction
 {
@@ -95,6 +96,7 @@ class EditFamily extends OrgAction
             ];
         }
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
+        $offers = $family->getActiveOffers()->with('offerAllowances')->get();
 
         return Inertia::render(
             'EditModel',
@@ -302,6 +304,10 @@ class EditFamily extends OrgAction
                                 'label'  => __('Discounts'),
                                 'icon'   => 'fa-light fa-badge-percent',
                                 'fields' => [
+                                    'offers'      => [
+                                        'label'  => 'Offer List',
+                                        'value'  => BasicOfferDataResource::collection($offers),
+                                    ],
                                     'vol_gr' => [
                                         'label'  => 'Vol / GR',
                                         'type'   => 'input_twin',
