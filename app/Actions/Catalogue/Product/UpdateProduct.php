@@ -320,6 +320,8 @@ class UpdateProduct extends OrgAction
                     'master_asset_id' => $product->master_product_id
                 ]
             );
+            //todo create an action to add this product to a existing variant as minion or a leader (check master product to see id applicable)
+
         }
 
         if (Arr::has($changed, 'price')) {
