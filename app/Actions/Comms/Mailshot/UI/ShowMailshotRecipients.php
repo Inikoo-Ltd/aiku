@@ -64,27 +64,22 @@ class ShowMailshotRecipients extends OrgAction
                         'multiple'    => false,
                         'options'     => $productFamilies,
                     ],
-                    'orders_in_basket'         => [
+                    'orders_in_basket' => [
                         'label'       => 'Orders In Basket',
                         'type'        => 'boolean',
-                        'description' => 'Targets customers who currently have an order in their basket that has not been completed.',
-                        'sub_filters' => [
-                            'basket_age'   => [
-                                'type'    => 'select',
-                                'label'   => 'Basket Age',
-                                'options' => [
-                                    'all'      => 'All Baskets',
-                                    '1-3_days' => '1–3 days ago',
-                                    '7_days'   => '7 days ago',
-                                    '14_days'  => '14 days ago',
-                                    'custom'   => 'Custom Range'
-                                ]
+                        'description' => 'Targets customers who currently have an order in their basket.',
+                        'options'     => [
+                            'date_range' => [
+                                'type'        => 'daterange',
+                                'label'       => 'Basket Age',
+                                'placeholder' => 'Select time frame (e.g. last 7 days)',
                             ],
-                            'basket_value' => [
-                                'type'            => 'range',
-                                'label'           => 'Basket Value Range (£)',
-                                'min_placeholder' => 'Min',
-                                'max_placeholder' => 'Max'
+                            'amount_range' => [
+                                'type'        => 'number_range',
+                                'label'       => 'Basket Value Range (Net Amount)',
+                                'min_label'   => 'Min Value',
+                                'max_label'   => 'Max Value',
+                                'currency'    => $mailshot->shop->currency->symbol ?? '£',
                             ]
                         ]
                     ],

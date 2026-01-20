@@ -18,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Query\WithQueryCompiler;
 use App\Actions\Traits\WithCheckCanContactByEmail;
 use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
+use App\Actions\Comms\Mailshot\Filters\FilterOrdersInBasket;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
 use App\Actions\Comms\Mailshot\Filters\FilterByFamilyNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
@@ -87,6 +88,7 @@ class GetMailshotRecipientsQueryBuilder
         $query->whereNotNull('email');
         $filters = Arr::get($mailshot->recipients_recipe, 'customer_query', []);
 
+        // Filter Registered Never Ordered
         $regNeverOrdered = Arr::get($filters, 'registered_never_ordered');
         $isRegNeverOrderedActive = is_array($regNeverOrdered) ? ($regNeverOrdered['value'] ?? false) : $regNeverOrdered;
 
@@ -110,18 +112,46 @@ class GetMailshotRecipientsQueryBuilder
 
             (new FilterRegisteredNeverOrdered())->apply($query, $options);
         }
-
+        // Filter By Family Never Ordered
         $familyFilter = Arr::get($filters, 'by_family_never_ordered');
         $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
         if ($familyId) {
             (new FilterByFamilyNeverOrdered())->apply($query, $familyId);
         }
-
+        // Filter Gold Reward Status
         $goldFilter = Arr::get($filters, 'gold_reward_status');
         $goldStatus = is_array($goldFilter) ? ($goldFilter['value'] ?? null) : $goldFilter;
 
         if ($goldStatus) {
             (new FilterGoldRewardStatus())->apply($query, $goldStatus);
+        }
+
+        // Filter Orders In Basket
+        $basketFilter = Arr::get($filters, 'orders_in_basket');
+        $isBasketActive = is_array($basketFilter) ? ($basketFilter['value'] ?? false) : $basketFilter;
+
+        if ($isBasketActive) {
+            $options = [];
+
+            if (is_array($basketFilter) && isset($basketFilter['value'])) {
+                $val = $basketFilter['value'];
+
+                if (isset($val['date_range']) && is_array($val['date_range']) && count($val['date_range']) >= 2) {
+                    $options['date_range'] = [
+                        'start' => $val['date_range'][0],
+                        'end'   => $val['date_range'][1]
+                    ];
+                }
+
+                if (isset($val['amount_range']) && is_array($val['amount_range'])) {
+                    $options['amount_range'] = [
+                        'min' => $val['amount_range']['min'] ?? null,
+                        'max' => $val['amount_range']['max'] ?? null,
+                    ];
+                }
+            }
+
+            (new FilterOrdersInBasket())->apply($query, $options);
         }
 
         return $query;

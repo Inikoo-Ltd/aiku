@@ -41,7 +41,13 @@ const availableFilters = computed(() => {
 const addFilter = (filterKey: string, filterConfig: any) => {
     let value: any = true
 
-    if (filterConfig.type === 'daterange') {
+    if (filterKey === 'orders_in_basket') {
+        value = {
+            value: true,
+            date_range: null,
+            amount_range: { min: null, max: null }
+        }
+    } else if (filterConfig.type === 'daterange') {
         value = { date_range: null }
     } else if (filterConfig.type === 'boolean' && filterConfig.options && filterConfig.options.date_range) {
          value = { value: true, date_range: null }
@@ -58,6 +64,43 @@ const addFilter = (filterKey: string, filterConfig: any) => {
     activeFilters.value[filterKey] = {
         value: value,
         config: filterConfig
+    }
+}
+
+const setDatePreset = (filter: any, days: number | string) => {
+    const end = new Date();
+    const start = new Date();
+
+    if (days === 'custom') {
+        return;
+    }
+
+    if (typeof days === 'number') {
+        start.setDate(end.getDate() - days);
+        filter.value.date_range = [start, end];
+    }
+}
+
+const onPresetChange = (filter: any, event: Event) => {
+    const target = event.target as HTMLSelectElement;
+    const value = target.value;
+
+
+    filter._ui_preset = value;
+
+    if (value === 'custom') {
+
+        if (!filter.value.date_range) {
+             filter.value.date_range = null;
+        }
+    } else {
+        const days = parseInt(value);
+        if (!isNaN(days)) {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - days);
+            filter.value.date_range = [start, end];
+        }
     }
 }
 
@@ -160,22 +203,50 @@ watch(activeFilters, () => {
                     <div class="mt-2">
                         <!-- Boolean Filter -->
                         <div v-if="filter.config.type === 'boolean'" class="space-y-3">
-                            <div class="flex items-center">
-                                <span class="text-sm text-gray-600">Active</span>
-                            </div>
+                            <span
+                                class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                Active
+                            </span>
 
                             <div v-if="filter.config.options && filter.config.options.date_range">
                                 <label class="block text-xs font-medium text-gray-500 mb-1">
                                     {{ filter.config.options.date_range.label }}
                                 </label>
-                                <VueDatePicker
-                                    v-model="filter.value.date_range"
-                                    range
-                                    :enable-time-picker="false"
-                                    placeholder="Select registration date range"
-                                    auto-apply
-                                    :format="'yyyy-MM-dd'"
-                                />
+
+                                <div v-if="key === 'orders_in_basket'">
+                                    <select
+                                        class="block w-full rounded-md border-0 py-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6"
+                                        @change="onPresetChange(filter, $event)"
+                                    >
+                                        <option value="" disabled selected>Select time frame</option>
+                                        <option :value="3">1-3 Days ago</option>
+                                        <option :value="7">Last 7 Days</option>
+                                        <option :value="14">Last 14 Days</option>
+                                        <option value="custom">Custom Range</option>
+                                    </select>
+
+                                    <div v-if="filter._ui_preset === 'custom' || (filter.value.date_range && !filter._ui_preset)">
+                                         <VueDatePicker
+                                            v-model="filter.value.date_range"
+                                            range
+                                            :enable-time-picker="false"
+                                            :placeholder="filter.config.options.date_range.placeholder || 'Select range'"
+                                            auto-apply
+                                            :format="'yyyy-MM-dd'"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div v-else>
+                                    <VueDatePicker
+                                        v-model="filter.value.date_range"
+                                        range
+                                        :enable-time-picker="false"
+                                        :placeholder="filter.config.options.date_range.placeholder || 'Select range'"
+                                        auto-apply
+                                        :format="'yyyy-MM-dd'"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -188,6 +259,8 @@ watch(activeFilters, () => {
                                 </option>
                              </select>
                         </div>
+
+
 
                     </div>
                 </div>
