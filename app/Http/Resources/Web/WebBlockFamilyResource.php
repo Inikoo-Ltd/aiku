@@ -24,6 +24,7 @@ class WebBlockFamilyResource extends JsonResource
         /** @var ProductCategory $family */
         $family = $this;
 
+        // delete this later
         $imageSources = null;
         $media        = Media::find($family->image_id);
         if ($media) {
@@ -34,6 +35,7 @@ class WebBlockFamilyResource extends JsonResource
             $image        = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
+        //==========
 
         return [
             'slug'              => $family->slug,
@@ -44,9 +46,13 @@ class WebBlockFamilyResource extends JsonResource
             'description_extra' => $family->description_extra,
             'id'                => $family->id,
             'image'             => $imageSources,
+
+            //'image'=>$family->web_images['main']['gallery'], <-- use ths oe
+
             'url'               => $family->webpage->url,
             'active_offers'     => OfferResource::collection($family->getActiveOffers)->resolve(),
             'offers_data'       => $family->offers_data,
+
         ];
     }
 }
