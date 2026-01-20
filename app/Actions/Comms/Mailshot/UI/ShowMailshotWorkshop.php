@@ -22,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\UI\Mail\EmailTemplateTabsEnum;
 use App\Actions\Comms\EmailTemplate\UI\IndexEmailTemplates;
+use App\Http\Resources\Comms\MailshotTemplatesResource;
 
 class ShowMailshotWorkshop extends OrgAction
 {
@@ -79,26 +80,27 @@ class ShowMailshotWorkshop extends OrgAction
 
                 ],
                 EmailTemplateTabsEnum::TEMPLATES->value => $this->tab == EmailTemplateTabsEnum::TEMPLATES->value ?
-                    fn() => GetMailshotShowcase::run($mailshot)
-                    : Inertia::lazy(fn() => GetMailshotShowcase::run($mailshot)),
+                    fn () => MailshotTemplatesResource::collection(IndexEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value))
+                    : Inertia::lazy(fn () => MailshotTemplatesResource::collection(IndexEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value))),
+
 
                 EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value => $this->tab == EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value ?
-                    fn() => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, EmailTemplateTabsEnum::RECIPIENTS->value))
-                    : Inertia::lazy(fn() => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, EmailTemplateTabsEnum::RECIPIENTS->value))),
+                    fn () => MailshotTemplatesResource::collection(IndexEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value))
+                    : Inertia::lazy(fn () => MailshotTemplatesResource::collection(IndexEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value))),
 
 
                 EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value => $this->tab == EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value
                     ?
-                    fn() => DispatchedEmailsResource::collection(
-                        IndexDispatchedEmails::run(
-                            parent: $mailshot,
+                    fn () => MailshotTemplatesResource::collection(
+                        IndexEmailTemplates::run(
+                            $mailshot->shop,
                             prefix: EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn() => LocationResource::collection(
-                        IndexDispatchedEmails::run(
-                            parent: $mailshot,
-                            prefix: EmailTemplateTabsEnum::DISPATCHED_EMAILS->value
+                    : Inertia::lazy(fn () => MailshotTemplatesResource::collection(
+                        IndexEmailTemplates::run(
+                            $mailshot->shop,
+                            prefix: EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value
                         )
                     )),
                 'unpublished_layout' => $email->unpublishedSnapshot->layout,
@@ -138,17 +140,14 @@ class ShowMailshotWorkshop extends OrgAction
             ]
         )->table(
             IndexEmailTemplates::make()->tableStructure(
-                parent: $mailshot,
                 prefix: EmailTemplateTabsEnum::TEMPLATES->value
             )
         )->table(
             IndexEmailTemplates::make()->tableStructure(
-                parent: $mailshot,
                 prefix: EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value
             )
         )->table(
             IndexEmailTemplates::make()->tableStructure(
-                parent: $mailshot,
                 prefix: EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value
             )
         );

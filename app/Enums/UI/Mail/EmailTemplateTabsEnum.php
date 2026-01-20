@@ -11,27 +11,27 @@ namespace App\Enums\UI\Mail;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 
-enum MailshotTabsEnum: string
+enum EmailTemplateTabsEnum: string
 {
     use EnumHelperTrait;
     use HasTabs;
 
     case TEMPLATES = 'templates';
     case PREVIOUS_MAILSHOTS = 'previous_mailshots';
-    case OTHER_STORE_MAILSHOTs = 'other_store_mailshots';
+    case OTHER_STORE_MAILSHOTS = 'other_store_mailshots';
 
     public function blueprint(): array
     {
         return match ($this) {
-            MailshotTabsEnum::TEMPLATES => [
+            EmailTemplateTabsEnum::TEMPLATES => [
                 'title' => __('Templates'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
-            MailshotTabsEnum::PREVIOUS_MAILSHOTS => [
+            EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS => [
                 'title' => __('Previous Mailshots'),
                 'icon'  => 'fal fa-users',
             ],
-            MailshotTabsEnum::OTHER_STORE_MAILSHOTs => [
+            EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS => [
                 'title' => __('Other Store Mailshots'),
                 'icon'  => 'fal fa-paper-plane',
             ],

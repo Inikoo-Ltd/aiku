@@ -61,7 +61,7 @@ class IndexEmailTemplates extends OrgAction
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon', sortable: true);
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
             $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
-            $table->column(key: 'snapshot_layout', label: __('Layout'), canBeHidden: false, sortable: true);
+            // $table->column(key: 'snapshot_layout', label: __('Layout'), canBeHidden: false, sortable: true);
             $table->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true);
             $table->defaultSort('-created_at');
         };
