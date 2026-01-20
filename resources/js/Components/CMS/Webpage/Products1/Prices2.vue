@@ -58,7 +58,7 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
 
 <template>
     <div class="border-t xborder-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
-        <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" />
+        <!-- <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" /> -->
         <div>
             <div class="flex justify-between">
                 <div>
@@ -67,11 +67,11 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
                         {{ locale.currencyFormat(currency?.code, product.price) }}/<span class="font-normal">{{ product.unit}}</span>
                     </div>
                     <div v-else class="font-bold text-base">
-                        {{ locale.currencyFormat(currency?.code, product.price) }} ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}/<span class="font-normal">{{ product.unit}}</span>)
+                        {{ locale.currencyFormat(currency?.code, product.price) }} <span v-if="product.price_per_unit > 0">({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/<span class="font-normal">{{ product.unit}}</span>)</span>
                     </div>
                 </div>
 
-                <div v-tooltip="trans('Recommended retail price')" class="flex flex-col text-right">
+                <div v-if="product?.rrp_per_unit > 0" v-tooltip="trans('Recommended retail price')" class="flex flex-col text-right">
                     <div class="text-xs">{{ trans("RRP") }} ({{ trans("Excl. Vat") }}):</div>
                     <div class="font-bold text-xs">
                         {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}/<span class="font-normal">{{ product.unit}}</span>
@@ -81,12 +81,17 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
 
             <!-- Price: Gold Member -->
             <div class="text-orange-500 font-bold text-sm">
-                {{ locale.currencyFormat(currency?.code, product.gr_price) }} ({{ locale.currencyFormat(currency?.code, product.gr_price_per_unit) }}/<span class="font-normal">{{ product.unit }}</span>)
+                <span v-if="product.units == 1">
+                    {{ locale.currencyFormat(currency?.code, product.gr_price) }}/<span class="font-normal">{{ product.unit }}</span>
+                </span>
+                <span v-else>
+                    {{ locale.currencyFormat(currency?.code, product.gr_price) }} ({{ locale.currencyFormat(currency?.code, product.gr_price_per_unit) }}/<span class="font-normal">{{ product.unit }}</span>)
+                </span>
             </div>
 
-            <!-- Section: Gold Reward Member -->
+            <!-- Section: Profit, label Gold Reward Member -->
             <div class="mt-4 flex justify-between">
-                <div v-if="isGoldMember" class="relative w-fit">
+                <div v-if="layout?.user?.gr_data?.customer_is_gr" class="relative w-fit">
                     <div class="bg-orange-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
                     <img src="/assets/promo/gr.png" alt="Gold Reward logo" class="absolute -right-9 -top-1 inline-block h-10 ml-1 align-middle" />
                 </div>
@@ -109,7 +114,8 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
                     />
                 </div>
 
-                <div class="flex justify-end text-right flex-col">
+                <!-- Section: Profit -->
+                <div v-if="product?.margin" class="flex justify-end text-right flex-col">
                     <div>
                         <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
                         {{ trans("Profit") }}:
@@ -118,7 +124,7 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
                         ({{ product?.margin }})
                     </div>
                     <div class="italic">
-                        {{ locale.currencyFormat(currency?.code, product?.profit_per_unit) }}/{{ product.unit }}
+                        {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}/{{ product.unit }}
                     </div>
                 </div>
             </div>
