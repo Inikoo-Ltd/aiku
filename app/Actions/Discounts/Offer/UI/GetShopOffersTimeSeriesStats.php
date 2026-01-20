@@ -46,6 +46,8 @@ class GetShopOffersTimeSeriesStats
                     'customers' => 'customers_invoiced',
                     'orders' => 'orders'
                 ],
+                'offer_time_series_records',
+                'offer_time_series_id',
                 $from_date,
                 $to_date
             );
