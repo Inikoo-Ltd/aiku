@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
@@ -51,7 +52,6 @@ Route::prefix("unsubscribe")
 
 Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
 
-
 Route::prefix("json")
     ->name("json.")
     ->group(__DIR__ . "/json.php");
@@ -62,6 +62,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         ->name("models.")
         ->group(__DIR__ . "/models.php");
 
+
+    Route::get('attachment/{media:ulid}/download', DownloadRetinaAttachment::class)->name('attach.download')->withoutScopedBindings();
 
     Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
     Route::get('{productCategory}/data-feed.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.data_feed');
