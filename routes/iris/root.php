@@ -22,6 +22,10 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 
+Route::get('{path}', function ($path) {
+    return redirect('/image_not_found.png');
+})->where('path', '.*\.(png|jpe?g|gif)$');
+
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
 Route::name('webhooks.')->group(function () {
