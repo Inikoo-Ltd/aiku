@@ -203,12 +203,6 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </div> -->
                 </div>
             </div>
-
-            <div 
-                v-if="idxSlideLoading"
-                class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
-                <LoadingIcon />
-            </div>
         </div>
 
         
@@ -226,6 +220,12 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <Button :label="trans('Login or Register for Wholesale Prices')" class="rounded-none" full :injectStyle="buttonStyleLogin" />
                 </a>
             </div>
+        </div>
+
+        <div 
+            v-if="idxSlideLoading"
+            class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+            <LoadingIcon />
         </div>
     </div>
 </template>
