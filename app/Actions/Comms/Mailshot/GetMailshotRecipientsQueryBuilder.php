@@ -18,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Query\WithQueryCompiler;
 use App\Actions\Traits\WithCheckCanContactByEmail;
 use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
+use App\Actions\Comms\Mailshot\Filters\FilterByFamilyNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
 
 class GetMailshotRecipientsQueryBuilder
@@ -112,9 +113,7 @@ class GetMailshotRecipientsQueryBuilder
         $familyFilter = Arr::get($filters, 'by_family_never_ordered');
         $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
         if ($familyId) {
-            $query->whereDoesntHave('orders.items.product', function ($q) use ($familyId) {
-                $q->where('category_id', $familyId);
-            });
+            (new FilterByFamilyNeverOrdered())->apply($query, $familyId);
         }
 
         return $query;
