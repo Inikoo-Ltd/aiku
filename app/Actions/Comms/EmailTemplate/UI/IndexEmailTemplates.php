@@ -42,7 +42,6 @@ class IndexEmailTemplates extends OrgAction
                 'mailshots.state',
                 'mailshots.subject',
                 'shops.name',
-                'snapshots.layout as snapshot_layout',
                 'mailshots.created_at'
             ])
             ->allowedSorts(['created_at', 'subject', 'state'])
@@ -61,7 +60,6 @@ class IndexEmailTemplates extends OrgAction
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon', sortable: true);
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
             $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
-            // $table->column(key: 'snapshot_layout', label: __('Layout'), canBeHidden: false, sortable: true);
             $table->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true);
             $table->defaultSort('-created_at');
         };

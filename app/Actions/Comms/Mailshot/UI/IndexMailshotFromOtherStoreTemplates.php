@@ -45,7 +45,6 @@ class IndexMailshotFromOtherStoreTemplates extends OrgAction
                 'mailshots.state',
                 'mailshots.subject',
                 'shops.name',
-                'snapshots.layout as snapshot_layout',
                 'mailshots.created_at',
                 'mailshots.sent_at'
             ])
@@ -65,7 +64,6 @@ class IndexMailshotFromOtherStoreTemplates extends OrgAction
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon', sortable: true);
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
             $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
-            // $table->column(key: 'snapshot_layout', label: __('Layout'), canBeHidden: false, sortable: true);
             $table->column(key: 'sent_at', label: __('Sent At'), canBeHidden: false, sortable: true);
             $table->defaultSort('-sent_at');
         };
