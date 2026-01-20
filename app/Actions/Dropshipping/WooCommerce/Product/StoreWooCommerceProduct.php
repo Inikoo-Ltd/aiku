@@ -22,6 +22,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\Media;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -133,6 +134,11 @@ class StoreWooCommerceProduct extends RetinaAction
             if ($portfolio->platform_status) {
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+            } else {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $result
                 ]);
             }
 
