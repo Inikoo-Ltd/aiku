@@ -2,7 +2,6 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -144,7 +143,7 @@ trait WithWooCommerceApiRequest
      *
      * @return array|null Response data
      */
-    protected function makeWooCommerceRequest(string $method, string $endpoint, array $params = [], bool $useCache = false): array|bool|null
+    protected function makeWooCommerceRequest(string $method, string $endpoint, array $params = [], bool $useCache = false): ?array
     {
         if (!$this->woocommerceConsumerKey) {
             $this->initWooCommerceApi();
@@ -174,10 +173,6 @@ trait WithWooCommerceApiRequest
                 'DELETE' => $response->delete($url, $params),
                 default => throw new \InvalidArgumentException("Unsupported HTTP method: $method"),
             };
-
-            if($response->status()==401){
-                return null;
-            }
 
             if ($response->successful()) {
                 $data = $response->json();

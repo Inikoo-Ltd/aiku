@@ -100,13 +100,17 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
                 :type="typeOfLink" class="block w-full mb-1 rounded xsm:h-[305px] xh-[180px] aspect-square relative"
-                @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
+                @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false"
+            >
                 <slot name="image" :product="product">
                     <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery" :alt="product.name"
-                        :style="{ objectFit: 'contain' }" />
+                        :style="{ objectFit: 'contain' }"
+                        :class="product.available_quantity > 0 ? '' : 'grayscale hover:grayscale-0'"
+                    />
                     <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width aria-hidden="true" />
                 </slot>
 
+                <!-- Section: Favourite -->
                 <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
                     <div v-if="isLoadingFavourite" class="absolute bottom-2 left-2 text-gray-500 text-xl z-10">
                         <LoadingIcon />
@@ -173,8 +177,10 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     <div class="flex items-center w-full">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center "/>
                         <div v-else
+                            v-tooltip="trans('Available product stocks')"
                             class="flex items-center gap-1 py-1 font-medium w-fit break-words leading-snug"
-                            :class="(product.stock > 0 ) ? 'xbg-green-50 xtext-green-700' : 'bg-red-50 text-red-600'">
+                            :class="(product.stock > 0 ) ? 'xbg-green-50 xtext-green-700' : 'bg-red-50 text-red-600'"
+                        >
                             <FontAwesomeIcon :icon="faCircle" class="xtext-[6px] shrink-0" fixed-width :class="(product.stock > 0 ) ? 'text-green-600' : 'bg-red-50 text-red-600'" />
                             <span>
                                 ({{

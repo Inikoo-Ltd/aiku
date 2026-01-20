@@ -57,7 +57,7 @@ class CallbackRetinaEbayUser extends RetinaAction
                     ->orderBy('updated_at', 'desc')
                     ->first();
 
-                if( ! $ebayUser) {
+                if (! $ebayUser) {
                     return route('retina.dropshipping.platform.ebay_callback.success');
                 }
 
