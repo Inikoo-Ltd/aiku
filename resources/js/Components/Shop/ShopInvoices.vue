@@ -21,6 +21,9 @@ const invoicesRefundRatio = computed(() => {
 
 
 const getYoYComparison = (metric: string) => {
+    if (props.interval === 'all') {
+        return null;
+    }
     const delta = props.data[`${metric}_delta`]?.[props.interval];
     if (!delta || delta.raw_value === 9999999) return null;
 
@@ -33,7 +36,7 @@ const getYoYComparison = (metric: string) => {
 </script>
 
 <template>
-    <div :class="['flex items-center gap-4 h-32 p-4 bg-gray-50 border shadow-sm rounded-lg', { hidden: (props.data.sales_org_currency?.[props.interval].raw_value || 0) <= 0 }]">
+    <div :class="['flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105', { hidden: (Number(props.data.invoices?.[props.interval].raw_value) || 0) <= 0 }]">
         <div class="text-sm w-full">
             <p class="text-lg font-bold mb-1">{{ trans('Invoices') }}</p>
             <p class="flex flex-col">
