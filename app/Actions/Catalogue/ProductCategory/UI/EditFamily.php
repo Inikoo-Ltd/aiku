@@ -306,9 +306,10 @@ class EditFamily extends OrgAction
                                 'fields' => [
                                     'offers'      => [
                                         'label'  => 'Offer List',
-                                        'value'  => BasicOfferDataResource::collection($offers),
-                                    ],
-                                    'vol_gr' => [
+                                        'value'  =>  $family->offers_data,
+                                        'type'   =>  'offer_fields'
+                                    ]
+                                   /*  'vol_gr' => [
                                         'label'  => 'Vol / GR',
                                         'type'   => 'input_twin',
                                         'value'  => [
@@ -335,7 +336,7 @@ class EditFamily extends OrgAction
                                                 'suffix'      => '%'
                                             ]
                                         ]
-                                    ],
+                                    ], */
                                 ],
                             ],
                         ]
