@@ -7,7 +7,7 @@ use HTMLPurifier_Config;
 
 class HTMLSanitizer
 {
-    private function baseConfig(string $definitionId): HTMLPurifier_Config
+    private function baseConfig(): HTMLPurifier_Config
     {
         $config = HTMLPurifier_Config::createDefault();
 
@@ -24,27 +24,70 @@ class HTMLSanitizer
         return $config;
     }
 
-    public function cleanHTML(string $html): string
+    public function cleanHTML(string|null $html): string
     {
-        $config = $this->baseConfig('customer');
+        if ($html === null) {
+            $html = '';
+        }
+
+        $config = $this->baseConfig();
 
         $config->set('Cache.DefinitionImpl', null);
         $config->set('HTML.Allowed', implode(',', [
-            'h1','h2','h3','p','span','strong','em','u','mark','ul','ol','li','blockquote','hr','table','thead','tbody','tr','th','td','colgroup','col','div','iframe','img'
+            'h1',
+            'h2',
+            'h3',
+            'p',
+            'span',
+            'strong',
+            'em',
+            'u',
+            'mark',
+            'ul',
+            'ol',
+            'li',
+            'blockquote',
+            'hr',
+            'table',
+            'thead',
+            'tbody',
+            'tr',
+            'th',
+            'td',
+            'colgroup',
+            'col',
+            'div',
+            'iframe',
+            'img'
         ]));
 
         $config->set('HTML.AllowedAttributes', [
             '*.style',
             // table attributes
-            'th.colspan','th.rowspan',
-            'td.colspan','td.rowspan',
+            'th.colspan',
+            'th.rowspan',
+            'td.colspan',
+            'td.rowspan',
             // iFrame attributes
-            'iframe.src', 'iframe.width', 'iframe.height',
-            'iframe.allowfullscreen', 'iframe.disablekbcontrols', 'iframe.enableiframeapi', 'iframe.loop',
-            'iframe.start', 'iframe.endtime', 'iframe.ivloadpolicy','iframe.rel',
-            'iframe.modestbranding', 'iframe.origin', 'iframe.playlist',
+            'iframe.src',
+            'iframe.width',
+            'iframe.height',
+            'iframe.allowfullscreen',
+            'iframe.disablekbcontrols',
+            'iframe.enableiframeapi',
+            'iframe.loop',
+            'iframe.start',
+            'iframe.endtime',
+            'iframe.ivloadpolicy',
+            'iframe.rel',
+            'iframe.modestbranding',
+            'iframe.origin',
+            'iframe.playlist',
             // IMG attributes
-            'img.src', 'img.alt', 'img.width', 'img.height',
+            'img.src',
+            'img.alt',
+            'img.width',
+            'img.height',
             // Mark attributes
             'mark.data-color',
             // Div attributes
@@ -52,7 +95,7 @@ class HTMLSanitizer
         ]);
 
         $config->set('URI.AllowedSchemes', [
-            'http' => true,
+            'http'  => true,
             'https' => true
         ]);
 
@@ -109,7 +152,7 @@ class HTMLSanitizer
                 'Inline',
                 'Common',
                 [
-                    'style' => 'Text',
+                    'style'      => 'Text',
                     'data-color' => 'Text',
                 ]
             );
