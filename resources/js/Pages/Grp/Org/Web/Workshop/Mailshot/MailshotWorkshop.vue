@@ -245,10 +245,12 @@ const activeSnapshot = ref(props.snapshot)
 const page = usePage()
 const tabs = computed(() => page.props.tabs)
 const currentTab = ref<string>(tabs.value.current)
+const isBeefreeReady = ref(false)
 
 const tabData = computed(() => {
     return page.props[currentTab.value]?.data ?? []
 })
+
 const handleTabUpdate = (tabSlug: string) =>
     useTabChange(tabSlug, currentTab)
 
@@ -282,7 +284,7 @@ watch(
         <template #otherBefore>
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faPlus" />
+                :icon="faPlus" :disabled="!isBeefreeReady" />
         </template>
     </PageHeading>
 
@@ -295,7 +297,8 @@ watch(
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree" />
+        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
+        @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"

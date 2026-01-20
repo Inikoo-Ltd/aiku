@@ -26,7 +26,7 @@ import {
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "../Icon.vue";
-import { inject } from "vue";
+import { inject, ref } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -70,14 +70,12 @@ const useTemplate = async (id: number) => {
             })
         )
 
-        const html = data.page
-
-        if (!html) {
+        if (!data) {
             console.warn("HTML kosong")
             return
         }
 
-        emits("select-snapshot", html)
+        emits("select-snapshot", data)
 
     } catch (error) {
         console.error("Gagal ambil template", error)

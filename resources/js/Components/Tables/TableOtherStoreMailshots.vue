@@ -31,6 +31,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { RouteParams } from "@/types/route-params";
 import Button from "@/Components/Elements/Buttons/Button.vue";
+import axios from "axios";
 
 library.add(
     faSpellCheck,
@@ -70,15 +71,12 @@ const useTemplate = async (id: number) => {
             })
         )
 
-        const html = data.page
-
-        if (!html) {
+        if (!data) {
             console.warn("HTML kosong")
             return
         }
 
-        emits("select-snapshot", html)
-
+        emits("select-snapshot", data)
     } catch (error) {
         console.error("Gagal ambil template", error)
     }
@@ -88,7 +86,7 @@ const useTemplate = async (id: number) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state)="{ item }">
-            <Icon v-if="item.state" :data="sent" />
+            <Icon v-if="item.state" :data="item.state" />
         </template>
         <template #cell(actions)="{ item }">
             <div class="flex items-center justify-between gap-2">
