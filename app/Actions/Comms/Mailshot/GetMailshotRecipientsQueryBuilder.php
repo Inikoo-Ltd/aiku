@@ -18,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Query\WithQueryCompiler;
 use App\Actions\Traits\WithCheckCanContactByEmail;
 use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
+use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
 use App\Actions\Comms\Mailshot\Filters\FilterByFamilyNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
 
@@ -114,6 +115,13 @@ class GetMailshotRecipientsQueryBuilder
         $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
         if ($familyId) {
             (new FilterByFamilyNeverOrdered())->apply($query, $familyId);
+        }
+
+        $goldFilter = Arr::get($filters, 'gold_reward_status');
+        $goldStatus = is_array($goldFilter) ? ($goldFilter['value'] ?? null) : $goldFilter;
+
+        if ($goldStatus) {
+            (new FilterGoldRewardStatus())->apply($query, $goldStatus);
         }
 
         return $query;

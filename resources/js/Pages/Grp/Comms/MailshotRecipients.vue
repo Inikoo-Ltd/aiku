@@ -46,7 +46,13 @@ const addFilter = (filterKey: string, filterConfig: any) => {
     } else if (filterConfig.type === 'boolean' && filterConfig.options && filterConfig.options.date_range) {
          value = { value: true, date_range: null }
     } else if (filterConfig.type === 'select') {
-        value = null
+        if (filterConfig.options && filterConfig.options.length > 0) {
+            value = filterConfig.options[0].value
+        } else {
+            value = null
+        }
+    } else if (filterConfig.type === 'multiselect') {
+        value = []
     }
 
     activeFilters.value[filterKey] = {
@@ -176,7 +182,7 @@ watch(activeFilters, () => {
                          <div v-else-if="filter.config.type === 'select'">
                              <select v-model="filter.value"
                                      class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-                                <option :value="null" disabled>Select Family</option>
+                                <option :value="null" disabled>Select {{ filter.config.label }}</option>
                                 <option v-for="opt in filter.config.options" :key="opt.value" :value="opt.value">
                                     {{ opt.label }}
                                 </option>

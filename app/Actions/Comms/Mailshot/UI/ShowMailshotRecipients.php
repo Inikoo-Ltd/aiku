@@ -111,19 +111,15 @@ class ShowMailshotRecipients extends OrgAction
                         ],
                         'logic'            => 'OR'
                     ],
-                    'non_gold_reward_members'  => [
-                        'label'            => 'Non-Gold Reward Members',
-                        'type'             => 'boolean',
-                        'description'      => 'Targets customers who are NOT Gold Reward members (last invoiced > 30 days ago).',
-                        'logic'            => 'AND',
-                        'mutual_exclusive' => 'gold_reward_members'
-                    ],
-                    'gold_reward_members'      => [
-                        'label'            => 'Gold Reward Members',
-                        'type'             => 'boolean',
-                        'description'      => 'Targets customers with active Gold Reward status (last invoiced <= 30 days ago).',
-                        'logic'            => 'AND',
-                        'mutual_exclusive' => 'non_gold_reward_members'
+                    'gold_reward_status' => [
+                        'label'       => 'Gold Reward Membership',
+                        'type'        => 'select',
+                        'description' => 'Filter customers based on their Gold Reward status (Last purchase within 30 days).',
+                        'multiple'    => false,
+                        'options'     => [
+                            ['value' => 'gold', 'label' => 'Gold Reward Members (Active < 30 days)'],
+                            ['value' => 'non_gold', 'label' => 'Non-Gold Reward Members (Inactive > 30 days)'],
+                        ],
                     ],
                     'by_interest'              => [
                         'label'          => 'By Interest',
