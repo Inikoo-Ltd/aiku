@@ -254,24 +254,32 @@ const onRenameBlock = () => {
 }
 
 const saveRename = (index: number) => {
-	const block = props.webpage.layout.web_blocks[index]
-	if (!block) return
+  const block = props.webpage.layout.web_blocks[index]
+  if (!block) return
 
-	const value = renameValue.value.trim()
+  const value = renameValue.value.trim()
 
-	const fieldValue = (block.web_block.layout.data.fieldValue ??= {})
+  const fieldValue = (block.web_block.layout.data.fieldValue ??= {})
 
-	fieldValue.blocks ??= {}
+  if (
+    !fieldValue.blocks ||
+    Array.isArray(fieldValue.blocks) ||
+    typeof fieldValue.blocks !== 'object'
+  ) {
+    fieldValue.blocks = {}
+  }
 
-	if (!value) {
-		delete fieldValue.blocks.name
-	} else {
-		fieldValue.blocks.name = value
-	}
+  if (!value) {
+    delete fieldValue.blocks.name
+  } else {
+    fieldValue.blocks.name = value
+  }
 
-	sendBlockUpdate(block)
-	editingIndex.value = null
+  console.log(block)
+  sendBlockUpdate(block)
+  editingIndex.value = null
 }
+
 
 const cancelRename = () => {
 	editingIndex.value = null
