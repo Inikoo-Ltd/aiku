@@ -64,6 +64,7 @@ class IndexPreviousMailshotTemplates extends OrgAction
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
             $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
             $table->column(key: 'sent_at', label: __('Sent At'), canBeHidden: false, sortable: true);
+            $table->column(key: 'actions', label: __('Action'));
             $table->defaultSort('-sent_at');
         };
     }
