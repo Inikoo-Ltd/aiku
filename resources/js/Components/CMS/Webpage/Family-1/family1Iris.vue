@@ -79,12 +79,12 @@ console.log('ssss',props)
             :class="fieldValue?.family?.offers_data?.length > 1 ? 'md:grid-cols-2' : ''"
         >
             <section v-for="offer in fieldValue?.family?.offers_data"
-                class="relative overflow-hidden rounded-md pl-4 pr-6 py-1 shadow-md mb-2 bg-[#f1c40f]"
+                class="relative flex gap-x-6 justify-between overflow-hidden rounded-md pl-4 pr-6 py-1 shadow-md mb-2 bg-[#f1c40f]"
                 aria-label="Colorful Volume Promotion">
                 
                 <!-- Content -->
-                <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 xtext-white">
-                    <div>
+                <div class="w-full relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-y-0 gap-x-4 xtext-white">
+                    <div class="">
                         <div class="">
                             <!-- <span v-for="(allowance, idx) in offer.allowances" class="text-xs">
                                 <span v-if="idx != 0"> | </span>
@@ -99,16 +99,21 @@ console.log('ssss',props)
                             {{ offer.label }}
                         </p>
 
-                        <p v-if="offer.note" class="text-xs mt-1 max-w-[520px] opacity-90">
-                            {{ offer.note }}
-                        </p>
+                        <!-- <p v-if="offer.triggers_labels?.length" class="text-xs mt-1 max-w-[520px] opacity-90">
+                            {{ offer.triggers_labels.join('. ') }}
+                        </p> -->
                     </div>
                     
-                    <div>
-                        <!-- <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" v-tooltip="trans('Offer with percentage off')" icon="fas fa-badge-percent" class="text-2xl xopacity-60 align-middle" fixed-width aria-hidden="true" /> -->
-                        <!-- <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" icon="fas fa-badge-dollar" class="text-2xl opacity-60" fixed-width aria-hidden="true" /> -->
-                        <StickerLabel v-for="allowance in offer.allowances" :label="allowance.label" class="text-4xl" />
-                    </div>
+                    <p v-if="offer.triggers_labels?.length" class=" text-xs mt-1 max-w-[520px] opacity-90">
+                        {{ offer.triggers_labels.join('/') }}
+                    </p>
+
+                </div>
+
+                <div class="flex items-center gap-2 ">
+                    <!-- <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" v-tooltip="trans('Offer with percentage off')" icon="fas fa-badge-percent" class="text-2xl xopacity-60 align-middle" fixed-width aria-hidden="true" /> -->
+                    <!-- <FontAwesomeIcon v-if="offer.allowances.some((v: { type: string }) => v.type === 'percentage_off')" icon="fas fa-badge-dollar" class="text-2xl opacity-60" fixed-width aria-hidden="true" /> -->
+                    <StickerLabel v-for="allowance in offer.allowances" :label="allowance.label" class="text-4xl" />
                 </div>
             </section>
         </div>

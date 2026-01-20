@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\ValidationException;
+use Sentry;
 
 class StoreShipment extends OrgAction
 {
@@ -86,7 +87,6 @@ class StoreShipment extends OrgAction
             ]);
             data_set($modelData, 'tracking_urls', []);
         }
-
 
         /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);

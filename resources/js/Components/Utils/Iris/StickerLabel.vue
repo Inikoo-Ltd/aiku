@@ -24,7 +24,7 @@ Share your love with the rest of the CSS community by contributing to Style Stag
 **/
 
 $t: rgba(255, 0, 0, 0);
-$w: rgba(255, 255, 255, 0.98);
+$w: rgba(255, 255, 255, 0.2);
 
 * {
     box-sizing: border-box;
@@ -44,7 +44,7 @@ $w: rgba(255, 255, 255, 0.98);
     display: inline-grid;
     grid-template-areas: "text";
     place-items: center;
-    font-family: "Alegreya Sans SC", sans-serif;
+    // font-family: "Alegreya Sans SC", sans-serif;
     font-weight: 900;
     font-style: italic;
     // font-size: clamp(3rem, 15vw, 10rem);

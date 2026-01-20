@@ -66,7 +66,7 @@ class CallApiPacketaShipping extends OrgAction
         $parcels     = $parent->parcels;
         $weight      = collect($parcels)->sum('weight') ?? 0;
         $order       = $parent->orders->first();
-        $countryCode = Arr::get($parentResource, 'to_address.country.code', 'CZ');
+        $countryCode = Arr::get($parentResource, 'to_address.country_code', 'CZ');
         $addressId   = $this->getAddressIdByCountryCode($countryCode, $weight);
         if (is_null($addressId)) {
             return [
