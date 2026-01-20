@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, inject } from "vue";
+import { onMounted, ref, inject, watch } from "vue";
 import axios from "axios"
 import BeefreeSDK from '@beefree.io/sdk'
 import { routeType } from "@/types/route";
@@ -26,20 +26,21 @@ const emits = defineEmits<{
     (e: 'sendTest', value: string | number): void
     (e: 'saveTemplate', value: string | number): void
     (e: 'autoSave', value: string | number): void
+    (e: 'ready', value: boolean): void
 }>()
 
 const initializeBeefree = async () => {
     try {
+        emits('ready', false)
         // Check if organisation prop exists
         if (!props.organisationSlug) {
             console.error('Organisation parameter is required')
             showBee.value = false
+            emits('ready', false)
             return
         }
-
         isLoading.value = true
         showBee.value = true
-
         // Get authentication token
         const response = await axios.post(
             route("grp.json.beefree.authenticate", {
@@ -112,10 +113,11 @@ const initializeBeefree = async () => {
         await beeInstance.value.start(beeConfig, template)
 
         isLoading.value = false
+        emits('ready', true)
     } catch (error) {
         isLoading.value = false
         showBee.value = false
-
+        emits('ready', false)
         console.error('Initialization error:', error)
     }
 }
@@ -123,6 +125,18 @@ const initializeBeefree = async () => {
 onMounted(() => {
     initializeBeefree()
 })
+
+watch(
+    () => props.snapshot,
+    async (newSnapshot) => {
+        if (!beeInstance.value || !newSnapshot) return
+
+        const template = JSON.stringify(newSnapshot)
+        await beeInstance.value.load(template)
+    },
+    { deep: true }
+)
+
 
 defineExpose({
     beeInstance,
@@ -134,18 +148,14 @@ defineExpose({
     <div v-if="showBee" class="beefree-wrapper">
         <!-- Loading Animation -->
         <div v-if="isLoading" class="loading-overlay">
-            <div class="loading-spinner" >
+            <div class="loading-spinner">
                 <LoadingIcon class="text-7xl" />
                 <p class="loading-text">Loading Workshop Editor...</p>
             </div>
         </div>
 
         <!-- Beefree Container -->
-        <div
-            id="beefree-container"
-            ref="containerRef"
-            class="editor-container"
-            :class="{ 'loading': isLoading }">
+        <div id="beefree-container" ref="containerRef" class="editor-container" :class="{ 'loading': isLoading }">
         </div>
     </div>
 
