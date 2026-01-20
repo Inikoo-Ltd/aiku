@@ -23,7 +23,7 @@ class StoreProductFromMasterProduct extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterAsset $masterAsset, array $modelData): void
+    public function handle(MasterAsset $masterAsset, array $modelData, $generateVariant = true): void
     {
         if (!$masterAsset->masterFamily) {
             return;
@@ -95,7 +95,6 @@ class StoreProductFromMasterProduct extends GrpAction
                         continue;
                     }
 
-
                     $product = StoreProduct::run($productCategory, $data);
                     $product->refresh();
                     CloneProductImagesFromTradeUnits::run($product);
@@ -108,7 +107,9 @@ class StoreProductFromMasterProduct extends GrpAction
                         ]);
                     }
 
-                    $product = $this->setVariantData($product, $masterAsset);
+                    if($generateVariant){
+                        $product = $this->setVariantData($product, $masterAsset);
+                    }
 
 
                     TranslateModel::dispatch(
@@ -192,7 +193,7 @@ class StoreProductFromMasterProduct extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function action(MasterAsset $masterAsset, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): void
+    public function action(MasterAsset $masterAsset, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true, $generateVariant = true): void
     {
         if (!$audit) {
             Product::disableAuditing();
@@ -206,7 +207,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
         $this->initialisation($group, $modelData);
 
-        $this->handle($masterAsset, $this->validatedData);
+        $this->handle($masterAsset, $this->validatedData, $generateVariant);
     }
 
 }
