@@ -108,7 +108,7 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         return AllowedFilter::callback('platform_status', function ($query, $value) {
             $query->where('platform_status', $value)
-                ->orWhere('product_state', $value);
+                ->orWhere('products.state', $value);
         });
     }
 

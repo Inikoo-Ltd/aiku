@@ -113,6 +113,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		pricing: async(() => import("@/Components/CMS/Webpage/Pricing/PricingIris.vue")),
 		button: async(() => import("@/Components/CMS/Webpage/Button/ButtonIris.vue")),
 		"column-layout-2": async(() => import("@/Components/CMS/Webpage/Column/ColumnIris.vue")),
+		"column-layout-3": async(() => import("@/Components/CMS/Webpage/Column3/Column3Iris.vue")),
 		disclosure: async(() => import("@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue")),
 		timeline: async(() => import("@/Components/CMS/Webpage/Timeline/TimelineIris.vue")),
 
