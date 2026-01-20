@@ -90,7 +90,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 </script>
 
 <template> 
-    <div  class="text-gray-800 isolate h-full flex flex-col"  comp="product-render-ecom">
+    <div  class="text-gray-800 isolate h-full flex flex-col flex-grow"  comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
@@ -98,7 +98,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
             <!-- Product Image -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
-                :type="typeOfLink" class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
+                :type="typeOfLink" class="block w-full mb-1 rounded xsm:h-[305px] xh-[180px] aspect-square relative"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
                 <slot name="image" :product="product">
                     <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery" :alt="product.name"
@@ -147,13 +147,15 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 </div>
             </component>
 
-            <div class="px-3">
+            <div class="xpx-3 mt-2">
                 <!-- Title -->
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
                     :type="typeOfLink" :id="product?.url?.id">
                     <template #default>
-                        <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
-                        {{ product.name }}
+                        <p class="inline-block leading-4 text-justify">
+                            <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
+                            {{ product.name }}
+                        </p>
                     </template>
                 </LinkIris>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
@@ -199,7 +201,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
         </div>
 
         
-        <div class="px-3 mt-auto">
+        <div class="xpx-3 mt-auto">
             <Prices :product="product" :currency="currency" />
             <div v-if="!layout?.iris?.is_logged_in" class="mt-2">
                 <a :href="urlLoginWithRedirect()" class="w-full">
