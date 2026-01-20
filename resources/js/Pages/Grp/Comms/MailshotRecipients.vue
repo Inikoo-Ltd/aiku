@@ -41,24 +41,30 @@ const availableFilters = computed(() => {
 const addFilter = (filterKey: string, filterConfig: any) => {
     let value: any = true
 
-    if (filterKey === 'orders_in_basket') {
-        value = {
-            value: true,
-            date_range: null,
-            amount_range: { min: null, max: null }
-        }
-    } else if (filterConfig.type === 'daterange') {
+    if (filterConfig.type === 'daterange') {
         value = { date_range: null }
-    } else if (filterConfig.type === 'boolean' && filterConfig.options && filterConfig.options.date_range) {
-         value = { value: true, date_range: null }
     } else if (filterConfig.type === 'select') {
-        if (filterConfig.options && filterConfig.options.length > 0) {
-            value = filterConfig.options[0].value
-        } else {
-            value = null
-        }
+        value = (filterConfig.options && filterConfig.options.length > 0) ? filterConfig.options[0].value : null
     } else if (filterConfig.type === 'multiselect') {
         value = []
+    }
+    else if (filterConfig.type === 'boolean') {
+        if (filterConfig.options) {
+            value = { value: true }
+
+            if (filterConfig.options.date_range) {
+                value.date_range = null
+            }
+
+            if (filterConfig.options.amount_range) {
+                value.amount_range = { min: null, max: null }
+            }
+        }
+
+        if (filterKey === 'orders_in_basket') {
+            if (!value.date_range) value.date_range = null;
+            if (!value.amount_range) value.amount_range = { min: null, max: null };
+        }
     }
 
     activeFilters.value[filterKey] = {
@@ -246,6 +252,35 @@ watch(activeFilters, () => {
                                         auto-apply
                                         :format="'yyyy-MM-dd'"
                                     />
+                                </div>
+                            </div>
+                            <div v-if="filter.config.options && filter.config.options.amount_range">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">
+                                    {{ filter.config.options.amount_range.label }}
+                                </label>
+
+                                <div class="flex items-center space-x-2">
+                                    <div class="relative rounded-md shadow-sm">
+                                        <div
+                                            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
+                                            <span class="text-gray-500 sm:text-xs">{{
+                                                filter.config.options.amount_range.currency }}</span>
+                                        </div>
+                                        <input type="number" v-model="filter.value.amount_range.min"
+                                            :placeholder="filter.config.options.amount_range.placeholder_min || 'Min'"
+                                            class="block w-full rounded-md border-0 py-1.5 pl-6 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6">
+                                    </div>
+                                    <span class="text-gray-400">-</span>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <div
+                                            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
+                                            <span class="text-gray-500 sm:text-xs">{{
+                                                filter.config.options.amount_range.currency }}</span>
+                                        </div>
+                                        <input type="number" v-model="filter.value.amount_range.max"
+                                            :placeholder="filter.config.options.amount_range.placeholder_max || 'Max'"
+                                            class="block w-full rounded-md border-0 py-1.5 pl-6 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6">
+                                    </div>
                                 </div>
                             </div>
                         </div>

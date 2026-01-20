@@ -17,6 +17,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Query\WithQueryCompiler;
 use App\Actions\Traits\WithCheckCanContactByEmail;
+use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
 use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersInBasket;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
@@ -152,6 +153,25 @@ class GetMailshotRecipientsQueryBuilder
             }
 
             (new FilterOrdersInBasket())->apply($query, $options);
+        }
+
+        // FILTER: By Order Value
+        $orderValueFilter = Arr::get($filters, 'by_order_value');
+        $isOrderValueActive = is_array($orderValueFilter) ? ($orderValueFilter['value'] ?? false) : $orderValueFilter;
+
+        if ($isOrderValueActive) {
+            $options = [];
+
+            if (is_array($orderValueFilter) && isset($orderValueFilter['value'])) {
+                $val = $orderValueFilter['value'];
+
+                if (isset($val['amount_range']) && is_array($val['amount_range'])) {
+                    $options['min'] = $val['amount_range']['min'] ?? null;
+                    $options['max'] = $val['amount_range']['max'] ?? null;
+                }
+            }
+
+            (new FilterByOrderValue())->apply($query, $options);
         }
 
         return $query;

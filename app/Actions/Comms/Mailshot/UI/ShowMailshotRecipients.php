@@ -83,6 +83,21 @@ class ShowMailshotRecipients extends OrgAction
                             ]
                         ]
                     ],
+                    'by_order_value' => [
+                        'label'       => 'By Order Value',
+                        'type'        => 'boolean',
+                        'description' => 'Target customers who have placed orders within a specific value range.',
+                        'options'     => [
+                            'amount_range' => [
+                                'type'        => 'number_range',
+                                'label'       => 'Order Value Range',
+                                'min_label'   => 'Min Value',
+                                'max_label'   => 'Max Value',
+                                'currency'    => $mailshot->shop->currency->symbol ?? '£',
+
+                            ]
+                        ]
+                    ],
                     'orders_collection'        => [
                         'label'       => 'Orders Collection',
                         'type'        => 'boolean',
