@@ -151,6 +151,9 @@ class StoreProduct extends OrgAction
         $this->productHydrators($product);
 
 
+        //todo create an action to add this product to a existing variant as minion or a leader (check master product to see id applicable)
+
+
         return $product;
     }
 
