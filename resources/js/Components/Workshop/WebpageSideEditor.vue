@@ -202,6 +202,7 @@ const duplicateBlock = (block: Daum) => {
 }
 
 const onClickBlock = (index) => {
+	console.log(index)
 	if (openedBlockSideEditor.value === index) changeTab(2)
 	else {
 		openedBlockSideEditor.value = index
@@ -364,9 +365,10 @@ const cancelRename = () => {
 													? 'cursor-pointer hover:bg-gray-100'
 													: 'cursor-not-allowed',
 											]">
+										
 											<button
 												class="flex items-center gap-2 w-full"
-												@click="() => onClickBlock(index)"
+												@click.stop="onClickBlock(index)"
 												:disabled="
 													!getEditPermissions(
 														element.web_block.layout.data
@@ -378,8 +380,7 @@ const cancelRename = () => {
 
 												<!-- block Display Name -->
 												<div
-													class="max-w-[240px] overflow-x-auto whitespace-nowrap scrollbar-thin"
-													@click.stop>
+													class="max-w-[240px] overflow-x-auto whitespace-nowrap scrollbar-thin">
 													<input
 														v-if="editingIndex === index"
 														v-model="renameValue"
@@ -388,19 +389,14 @@ const cancelRename = () => {
 														autofocus
 														@keydown.enter.prevent="saveRename(index)"
 														@keydown.esc.prevent="cancelRename"
-														@blur="saveRename(index)" />
+														@blur="saveRename(index)" 
+														@click.stop/>
 
 													<span v-else class="text-sm font-medium">
 														<span class="text-sm font-medium">
 															<template
-																v-if="
-																	element.web_block.layout.data
-																		.fieldValue?.blocks?.name
-																">
-																{{
-																	element.web_block.layout.data
-																		.fieldValue.blocks.name
-																}}
+																v-if="element.web_block.layout.data.fieldValue?.blocks?.name">
+																{{element.web_block.layout.data.fieldValue.blocks.name}}
 															</template>
 															<template v-else>
 																{{ element.name }}

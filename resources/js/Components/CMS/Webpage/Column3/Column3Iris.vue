@@ -14,11 +14,12 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center"
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center"
         :style="getStyles(fieldValue?.container?.properties,screenType)"
     >
         <!-- <pre>{{ fieldValue }}</pre> -->
         <ColumnWebppage :fieldValue="fieldValue.column_1" :screenType="screenType" />
         <ColumnWebppage :fieldValue="fieldValue.column_2" :screenType="screenType"/>
+        <ColumnWebppage :fieldValue="fieldValue.column_3" :screenType="screenType"/>
     </div>
 </template>
