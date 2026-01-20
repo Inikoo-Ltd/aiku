@@ -26,9 +26,10 @@ import {
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "../Icon.vue";
-import { inject, ref } from "vue";
+import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { RouteParams } from "@/types/route-params";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import axios from "axios";
 
@@ -76,7 +77,6 @@ const useTemplate = async (id: number) => {
         }
 
         emits("select-snapshot", data)
-
     } catch (error) {
         console.error("Gagal ambil template", error)
     }
