@@ -21,6 +21,7 @@ class MailshotTemplatesResource extends JsonResource
             'shop_name'         => $this->name,
             'snapshot_layout'   => $this->snapshot_layout,
             'created_at'        => $this->created_at,
+            'sent_at'           => $this->sent_at,
         ];
     }
 }
