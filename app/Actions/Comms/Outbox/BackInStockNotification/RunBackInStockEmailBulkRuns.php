@@ -218,9 +218,9 @@ class RunBackInStockEmailBulkRuns
                                 </td>
                                 <td style="vertical-align:middle;">
                                     <a ses:no-track href="' . $url . '"
-                                       style="color:#111;
-                                              text-decoration:none;
-                                              font-weight:600;">'
+                                       style="color:#2563eb;
+                                        text-decoration:underline;
+                                        font-weight:600;">'
                     . $name .
                     '</a>
                                 </td>
