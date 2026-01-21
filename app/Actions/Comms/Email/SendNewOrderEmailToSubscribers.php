@@ -137,7 +137,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $historicAsset->code ?? 'N/A',
                 $productLink,
                 $historicAsset->name ?? 'N/A',
-                rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.'),
+                rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
                 $currencySymbol,
                 $transaction->net_amount ?? '0'
             );
