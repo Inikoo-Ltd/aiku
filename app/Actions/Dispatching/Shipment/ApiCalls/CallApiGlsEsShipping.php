@@ -20,7 +20,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class CallApiGlsEsShipping extends OrgAction
 {
@@ -45,6 +44,15 @@ class CallApiGlsEsShipping extends OrgAction
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $modelData = $this->createGlsEsShipment($parent, $shipper);
+        if (Arr::has($modelData, 'error')) {
+            return [
+                'status'    => 'fail',
+                'errorData' => [
+                    'message' => Arr::get($modelData, 'error')
+                ],
+                'modelData' => []
+            ];
+        }
 
         return $this->getGlsEsLabel($shipper, $modelData);
     }
@@ -147,8 +155,6 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_POSTFIELDS, $this->getCreateLabelXml($parent, $shipper));
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml; charset=UTF-8"));
 
-        Sentry::captureMessage('GLS ES Shipment XML: '.$this->getCreateLabelXml($parent, $shipper));
-
         $postResult = curl_exec($ch);
         curl_close($ch);
 
@@ -160,6 +166,14 @@ class CallApiGlsEsShipping extends OrgAction
 
 
         $ret = $arr[0]->xpath("//Servicios/Envio");
+
+        $error = (string)$ret[0]->Errores->Error;
+
+        if ($error) {
+            $modelData['error'] = $error;
+
+            return $modelData;
+        }
 
 
         $codExp                      = $ret[0]->xpath("//Servicios/Envio/@codexp");
@@ -235,18 +249,14 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["notes"]           = $shippingNotes;
         $shipmentData["nif"]             = "";
         $shipmentData["portage"]         = "P";
-        $shipmentData["RefC"]            = strtoupper($parent->reference);
+        $shipmentData["RefC"]            = strtoupper($parent->reference).' V2';
 
-        $cashOnDelivery='';
+
         if (Arr::get($parentResource, 'cash_on_delivery')) {
-            $amount=Arr::get($parentResource, 'cash_on_delivery.amount');
-            $amount = str_replace('.', ',', (string)$amount);
-            $cashOnDelivery='<Importes><Reembolso>'.$amount.'</Reembolso></Importes>';
+            $amount               = Arr::get($parentResource, 'cash_on_delivery.amount');
+            $amount               = str_replace('.', ',', (string)$amount);
+            $shipmentData["reem"] = $amount;
         }
-
-        Sentry::captureMessage('CallApiGlsEsShipping: parentRe4source: '.json_encode($parentResource));
-
-        Sentry::captureMessage('CallApiGlsEsShipping: shipmentData: '.$cashOnDelivery);
 
         return '<?xml version="1.0" encoding="utf-8"?>
          <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
@@ -281,8 +291,7 @@ class CallApiGlsEsShipping extends OrgAction
                   <Email>'.$shipmentData["to_email"].'</Email>
                   <NIF>'.$shipmentData["nif"].'</NIF>
                   <Observaciones>'.$shipmentData["notes"].'</Observaciones>
-               </Destinatario>
-               <Referencias>
+               </Destinatario><Referencias>
                   <Referencia tipo="C">'.$shipmentData["RefC"].'</Referencia>
                </Referencias>
             </Envio>
