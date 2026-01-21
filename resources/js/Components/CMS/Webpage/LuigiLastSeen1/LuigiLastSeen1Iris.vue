@@ -13,7 +13,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Autoplay} from 'swiper/modules'
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
+import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -55,7 +55,7 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
-const fetchRecommenders = async () => {
+/* const fetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -91,7 +91,36 @@ const fetchRecommenders = async () => {
         isFetched.value = true
     }
     isLoadingFetch.value = false
+} 
+
+const fetchRecommenders = async () => {
+    try {
+        isLoadingFetch.value = true
+
+        const luigiIdentity = props.fieldValue?.product?.luigi_identity
+
+        if (!luigiIdentity) {
+            listProducts.value = []
+            return
+        }
+
+        const response = await axios.post(
+            route('iris.json.luigi.last_seen'),
+            {
+                luigi_identity: luigiIdentity,
+            }
+        )
+
+        listProducts.value = response.data
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isFetched.value = true
+        isLoadingFetch.value = false
+    }
 }
+
+
 
 onMounted(() => {
     fetchRecommenders()

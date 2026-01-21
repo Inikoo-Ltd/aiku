@@ -37,6 +37,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesCh
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
+use App\Actions\Web\Luigi\LuigiLastSeen;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('product-category/{productCategory:id}/portfolio-data', GetIrisPortfoliosInProductCategory::class)->name('product_category.portfolio_data');
@@ -82,4 +83,5 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
+    Route::post('luigi-last-seen', LuigiLastSeen::class)->name('luigi.last_seen');
 });
