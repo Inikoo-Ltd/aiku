@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import ColumnWebppage from "./ColumnWebppageIris.vue";
+import ColumnWebppage from "@/Components/CMS/Webpage/WorkshopComponentsHelper/ColumnWebppageIris.vue";
 import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faImage)

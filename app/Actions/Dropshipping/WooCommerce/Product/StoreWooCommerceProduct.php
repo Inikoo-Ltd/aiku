@@ -22,6 +22,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\Media;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -44,6 +45,7 @@ class StoreWooCommerceProduct extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
             $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
+            $website = $customerSalesChannel?->shop?->website;
 
             $images = [];
             if (app()->isProduction()) {
@@ -64,7 +66,7 @@ class StoreWooCommerceProduct extends RetinaAction
                     $customAttributes[] = [
                         'id' => (string)$attachment->id,
                         'name' => '<strong>' . Arr::get($tradeUnitAttachment, 'label') . '</strong>',
-                        'option' => '<a href="' . GetImgProxyUrl::run($attachment->getImage()) . '">' .
+                        'option' => '<a href="https://' . $website->domain . '/attachment/'.$attachment->ulid.'/download' . '">' .
                             Arr::get($tradeUnitAttachment, 'label') . '</a>'
                     ];
                 }
@@ -132,6 +134,11 @@ class StoreWooCommerceProduct extends RetinaAction
             if ($portfolio->platform_status) {
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+            } else {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $result
                 ]);
             }
 

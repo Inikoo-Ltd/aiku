@@ -137,6 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $extra_languages
  * @property string|null $ping
  * @property-read \App\Models\SysAdmin\GroupAccountingStats|null $accountingStats
+ * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, Agent> $agents
  * @property-read LaravelCollection<int, AikuSection> $aikuScopedSections

@@ -24,16 +24,6 @@ class WebBlockFamilyResource extends JsonResource
         /** @var ProductCategory $family */
         $family = $this;
 
-        $imageSources = null;
-        $media        = Media::find($family->image_id);
-        if ($media) {
-            $width  = 0;
-            $height = 0;
-
-
-            $image        = $media->getImage()->resize($width, $height);
-            $imageSources = GetPictureSources::run($image);
-        }
 
         return [
             'slug'              => $family->slug,
@@ -43,7 +33,7 @@ class WebBlockFamilyResource extends JsonResource
             'description_title' => $family->description_title,
             'description_extra' => $family->description_extra,
             'id'                => $family->id,
-            'image'             => $imageSources,
+            'image'             => $family->web_images['main']['original'],
             'url'               => $family->webpage->url,
             'active_offers'     => OfferResource::collection($family->getActiveOffers)->resolve(),
             'offers_data'       => $family->offers_data,

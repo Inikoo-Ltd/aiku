@@ -49,7 +49,7 @@ class UpdateProductCategoryOffersData
         $allowances      = [];
         $offerAllowances = $offer->offerAllowances()->where('status', true)->get();
         foreach ($offerAllowances as $offerAllowance) {
-            if($offerAllowance && $offerAllowance->class) {
+            if ($offerAllowance && $offerAllowance->class) {
                 $allowances[] = [
                     'class' => $offerAllowance->class->value,
                     'type'  => $offerAllowance->type->value,
@@ -63,11 +63,22 @@ class UpdateProductCategoryOffersData
         }
 
 
+        $triggerLabels = [];
+
+        if ($offer->type == 'Category Quantity Ordered Order Interval') {
+            $triggerLabels[] = __('Order :n or more', ['n' => $offer->trigger_data['item_quantity']]);
+            $triggerLabels[] = __('Order with in :n days', ['n' => $offer->trigger_data['interval']]);
+        }
+
+
+
+
         $offerData = [
             'state'      => $offer->state->value,
             'duration'   => $offer->duration->value,
             'label'      => $offer->label ?? $offer->name,
             'allowances' => $allowances,
+            'triggers_labels' => $triggerLabels,
             'note'       => ''
         ];
 

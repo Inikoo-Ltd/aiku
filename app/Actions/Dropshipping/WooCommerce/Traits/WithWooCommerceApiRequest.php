@@ -592,11 +592,13 @@ trait WithWooCommerceApiRequest
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
                 $this->initWooCommerceApi();
             }
-
             $result = $this->makeWooCommerceRequest('GET', 'settings');
 
-            return count($result) > 0;
+            if ($result === null) {
+                return false;
+            }
 
+            return count($result) > 0;
         } catch (\Exception $e) {
             \Sentry::captureMessage($e->getMessage());
 

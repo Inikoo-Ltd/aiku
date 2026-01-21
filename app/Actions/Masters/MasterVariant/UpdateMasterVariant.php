@@ -10,7 +10,9 @@ namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\OrgAction;
+use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Masters\MasterVariant;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +31,7 @@ class UpdateMasterVariant extends OrgAction
             $masterVariant->update($modelData);
             $masterVariant->refresh();
 
-            $masterProducts = $masterVariant->allProduct();
+            $masterProducts = $masterVariant->allProduct()->get()->keyBy('code');
             $masterProductIds = $masterProducts->pluck('id');
 
             // Detach other master product not in variant
@@ -55,6 +57,31 @@ class UpdateMasterVariant extends OrgAction
                 ]);
 
             foreach ($masterVariant->variants as $variant) {
+                if (!$variant->shop || $variant->shop->state == ShopStateEnum::CLOSED){
+                    continue;
+                }
+
+                $shop = $variant->shop;
+                $productsCode = $variant->family->getProducts()->whereIn('code', $masterProducts->pluck('code'))->pluck('code');
+                $missingProducts = array_diff($masterProducts->pluck('code')->toArray(), $productsCode->toArray());
+                
+                foreach ($missingProducts as $productCode) {
+                    StoreProductFromMasterProduct::make()->action(
+                            $masterProducts[$productCode],
+                            [
+                                'shop_products' => [
+                                    $shop->id => [
+                                        'price'          => $masterProducts[$productCode]->price,
+                                        'rrp'            => $masterProducts[$productCode]->rrp,
+                                        'create_webpage' => false,
+                                        'create_in_shop' => 'Yes'
+                                    ]
+                                ],
+                            ],
+                            generateVariant: false
+                        );
+                }
+
                 UpdateVariant::make()->action($variant, $modelData);
             }
 

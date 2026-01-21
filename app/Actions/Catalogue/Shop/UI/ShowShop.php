@@ -19,7 +19,6 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
-use App\Http\Resources\Catalogue\Shop\ShopIntervalsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -50,6 +49,19 @@ class ShowShop extends OrgAction
         $customRangeData = $this->setupCustomRange($userSettings, $shop);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        $timeSeriesStats = [];
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
+                if (count($dates) === 2) {
+                    $timeSeriesStats = GetShopTimeSeriesStats::run($shop, $dates[0], $dates[1]);
+                }
+            }
+        } else {
+            $timeSeriesStats = GetShopTimeSeriesStats::run($shop);
+        }
+
         $tabsBox = $this->getTabsBox($shop);
 
         $dashboard = [
@@ -68,7 +80,7 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => array_merge(
                         [
-                            'interval_data' => json_decode(ShopIntervalsResource::make($shop)->setCustomRangeData($customRangeData)->toJson()),
+                            'interval_data' => $timeSeriesStats,
                             'currency_code' => $shop->currency->code,
                         ],
                         $this->getAverageClv($shop)
