@@ -351,7 +351,6 @@ const noteToSubmit = ref({
     selectedNote: "",
     value: ""
 })
-const ellipsis = ref()
 const onSubmitNote = async (closePopup: Function) => {
 
     try {
@@ -364,7 +363,6 @@ const onSubmitNote = async (closePopup: Function) => {
                 onError: (error) => errorNote.value = error,
                 onFinish: () => {
                     isLoadingButton.value = false
-                    ellipsis.value.hide()
                 },
                 onSuccess: () => {
                     closePopup()
@@ -862,28 +860,26 @@ const setShippingToAuto = () => {
                 </template>
             </Popover>
 
-            <!-- Popover: on click ellipsis -->
-            <PopoverPrimevue ref="ellipsis">
-                <div class="flex flex-col gap-2">
-                    <!-- Button: Undispatched -->
-                    <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
-                                             :routeDelete="routes.rollback_dispatch"
-                                             :title="trans('Are you sure you want to rollback the Order??')"
-                                             :description="trans('The state of the Order will go back to finalised state.')"
-                                             isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                        <template #default="{ changeModel }">
-                            <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
-                                    icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
-                        </template>
-                    </ModalConfirmationDelete>
+            <div class="flex flex-col gap-2">
+                <!-- Button: Undispatched -->
+                <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
+                    :routeDelete="routes.rollback_dispatch"
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to finalised state.')"
+                    isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt"
+                >
+                    <template #default="{ changeModel }">
+                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
+                    </template>
+                </ModalConfirmationDelete>
 
-                    <Button
-                        v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
-                        @click="() => isOpenModalProforma = true" type="tertiary"
-                        :label="trans('Proforma Invoice')" icon="fal fa-download" />
+                <!-- Button: Proforma Invoice -->
+                <Button
+                    v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
+                    @click="() => isOpenModalProforma = true" type="tertiary"
+                    :label="trans('Proforma Invoice')" icon="fal fa-download" />
 
-                </div>
-            </PopoverPrimevue>
+            </div>
         </template>
 
         <template #afterTitle2>
