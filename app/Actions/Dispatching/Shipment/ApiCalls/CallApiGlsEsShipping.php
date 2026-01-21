@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class CallApiGlsEsShipping extends OrgAction
 {
@@ -146,6 +147,7 @@ class CallApiGlsEsShipping extends OrgAction
         curl_setopt($ch, CURLOPT_POSTFIELDS, $this->getCreateLabelXml($parent, $shipper));
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml; charset=UTF-8"));
 
+        Sentry::captureMessage('GLS ES Shipment XML: '.$this->getCreateLabelXml($parent, $shipper));
 
         $postResult = curl_exec($ch);
         curl_close($ch);
