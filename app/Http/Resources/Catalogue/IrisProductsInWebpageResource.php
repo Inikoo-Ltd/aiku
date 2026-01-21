@@ -40,6 +40,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_id
  * @property mixed $canonical_url
  * @property mixed $transaction_id
+ * @property mixed $is_on_demand
+ * @property mixed $is_variant
  */
 class IrisProductsInWebpageResource extends JsonResource
 {

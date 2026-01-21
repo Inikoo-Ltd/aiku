@@ -51,7 +51,6 @@ class UpdateProductCategoryOffersData
                     $productOfferData[$offer->id] = $offerData;
                 }
                 $product->update(['offers_data' => $modelOfferData]);
-                $product->refresh();
             }
         }
     }

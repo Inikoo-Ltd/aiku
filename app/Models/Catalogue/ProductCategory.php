@@ -326,12 +326,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->where('trigger_type', class_basename(ProductCategory::class));
     }
 
-    public function getActiveOffers(): HasMany
-    {
-        return $this->hasMany(Offer::class, 'trigger_id')
-            ->where('trigger_type', class_basename(ProductCategory::class))
-            ->where('state', OfferStateEnum::ACTIVE);
-    }
+
 
     public function getGROffer(): HasOne
     {

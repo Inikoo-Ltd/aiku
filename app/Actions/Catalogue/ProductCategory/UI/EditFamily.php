@@ -95,7 +95,6 @@ class EditFamily extends OrgAction
             ];
         }
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
-        $offers = $family->getActiveOffers()->with('offerAllowances')->get();
 
         return Inertia::render(
             'EditModel',
