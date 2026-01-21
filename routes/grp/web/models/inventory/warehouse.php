@@ -14,6 +14,8 @@ use App\Actions\Dispatching\Shipper\UpdateShipper;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Inventory\Location\ImportLocation;
 use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\PickingTrolley\StorePickingTrolley;
+use App\Actions\Inventory\PickingTrolley\UpdatePickingTrolley;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouse;
@@ -32,6 +34,9 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::delete('', DeleteWarehouse::class)->name('delete');
     Route::post('picking-session', StorePickingSession::class)->name('picking_session.store');
     Route::post('queued-picking-session', [StorePickingSession::class, 'inQueued'])->name('queued_picking_session.store');
+
+    Route::post('picking-trolleys', [StorePickingTrolley::class, 'inWarehouse'])->name('picking_trolleys.store');
+    Route::patch('picking-trolleys/{pickingTrolleys:id}', UpdatePickingTrolley::class)->name('picking_trolleys.update')->withoutScopedBindings();
 });
 
 Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();

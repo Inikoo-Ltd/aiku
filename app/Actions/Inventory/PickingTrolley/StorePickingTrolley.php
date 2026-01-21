@@ -5,7 +5,7 @@ namespace App\Actions\Inventory\PickingTrolley;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Models\Inventory\PickingTrolley as PickingTrolleyModel;
+use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
@@ -17,13 +17,13 @@ class StorePickingTrolley extends OrgAction
     use WithNoStrictRules;
     use WithWarehouseEditAuthorisation;
 
-    public function handle(Warehouse $warehouse, array $modelData): PickingTrolleyModel
+    public function handle(Warehouse $warehouse, array $modelData): PickingTrolley
     {
         $modelData['group_id'] = $warehouse->group_id;
         $modelData['organisation_id'] = $warehouse->organisation_id;
         $modelData['warehouse_id'] = $warehouse->id;
 
-        return PickingTrolleyModel::create($modelData);
+        return PickingTrolley::create($modelData);
     }
 
     public function rules(): array
@@ -50,7 +50,7 @@ class StorePickingTrolley extends OrgAction
         return $rules;
     }
 
-    public function inWarehouse(Warehouse $warehouse, ActionRequest $request): PickingTrolleyModel
+    public function inWarehouse(Warehouse $warehouse, ActionRequest $request): PickingTrolley
     {
         $this->warehouse = $warehouse;
         $this->initialisationFromWarehouse($warehouse, $request);
@@ -58,7 +58,7 @@ class StorePickingTrolley extends OrgAction
         return $this->handle($warehouse, $this->validatedData);
     }
 
-    public function htmlResponse(PickingTrolleyModel $pickingTrolley): RedirectResponse
+    public function htmlResponse(PickingTrolley $pickingTrolley): RedirectResponse
     {
         return Redirect::route('grp.org.warehouses.show.infrastructure.picking_trolleys.show', [
             $pickingTrolley->organisation->slug,

@@ -56,7 +56,7 @@ class CreatePickingTrolley extends OrgAction
                         ],
                     ],
                     'route'     => [
-                        'name'       => 'grp.models.warehouse.picking_trolley.store',
+                        'name'       => 'grp.models.warehouse.picking_trolleys.store',
                         'parameters' => $warehouse->id
                     ]
                 ],
@@ -66,7 +66,7 @@ class CreatePickingTrolley extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Response
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouse, $request);
     }

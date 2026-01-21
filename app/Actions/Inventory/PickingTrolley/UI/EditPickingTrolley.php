@@ -68,8 +68,11 @@ class EditPickingTrolley extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.picking_trolley.update',
-                            'parameters' => $pickingTrolley->id
+                            'name'       => 'grp.models.warehouse.picking_trolleys.update',
+                            'parameters' => [
+                                'warehouse' => $pickingTrolley->warehouse_id,
+                                'pickingTrolley' => $pickingTrolley->id
+                            ]
                         ],
                     ]
                 ]
