@@ -52,13 +52,13 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(ShopTimeSeries $timeSeries, string $from, string $to): void
     {
         $results = DB::table('invoices')
-            ->where('invoices.created_at', '>=', $from)
-            ->where('invoices.created_at', '<=', $to)
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
             ->where('invoices.shop_id', $timeSeries->shop_id);
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.created_at) as year'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
@@ -69,11 +69,11 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
                 DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.created_at)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.created_at) as year'),
-                DB::raw('EXTRACT(QUARTER FROM invoices.created_at) as quarter'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
+                DB::raw('EXTRACT(QUARTER FROM invoices.date) as quarter'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
@@ -84,11 +84,11 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
                 DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.created_at)'), DB::raw('EXTRACT(QUARTER FROM invoices.created_at)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(QUARTER FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.created_at) as year'),
-                DB::raw('EXTRACT(MONTH FROM invoices.created_at) as month'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
+                DB::raw('EXTRACT(MONTH FROM invoices.date) as month'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
@@ -99,11 +99,11 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
                 DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.created_at)'), DB::raw('EXTRACT(MONTH FROM invoices.created_at)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(MONTH FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.created_at) as year'),
-                DB::raw('EXTRACT(WEEK FROM invoices.created_at) as week'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
+                DB::raw('EXTRACT(WEEK FROM invoices.date) as week'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
@@ -114,10 +114,10 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
                 DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.created_at)'), DB::raw('EXTRACT(WEEK FROM invoices.created_at)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(WEEK FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
             $results->select(
-                DB::raw('CAST(invoices.created_at AS DATE) as date'),
+                DB::raw('CAST(invoices.date AS DATE) as date'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
@@ -128,7 +128,7 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
                 DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
                 DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('CAST(invoices.created_at AS DATE)'));
+            )->groupBy(DB::raw('CAST(invoices.date AS DATE)'));
         }
 
         $results = $results->get();
@@ -159,8 +159,8 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
             $basketsCreated = DB::table('orders')
                 ->where('shop_id', $timeSeries->shop_id)
                 ->where('state', OrderStateEnum::CREATING)
-                ->where('created_at', '>=', $periodFrom)
-                ->where('created_at', '<=', $periodTo)
+                ->where('date', '>=', $periodFrom)
+                ->where('date', '<=', $periodTo)
                 ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
                 ->first();
 
@@ -174,8 +174,8 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
 
             $deliveryNotes = DB::table('delivery_notes')
                 ->where('shop_id', $timeSeries->shop_id)
-                ->where('created_at', '>=', $periodFrom)
-                ->where('created_at', '<=', $periodTo)
+                ->where('date', '>=', $periodFrom)
+                ->where('date', '<=', $periodTo)
                 ->count();
 
             $registrationsWithOrders = DB::table('customers')

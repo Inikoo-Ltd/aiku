@@ -52,13 +52,13 @@ class WebBlockProductResource extends JsonResource
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
         //==== out thi sin ajax specific action from here
-        $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
+        // $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
 
-        $offers = isset($this->quantity_ordered) ? [
-            'offers_data'                   => $product->offers_data,
-            'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
-            'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
-        ] : [];
+        // $offers = isset($this->quantity_ordered) ? [
+        //     'offers_data'                   => $product->offers_data,
+        //     'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
+        //     'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
+        // ] : [];
 
         $back_in_stock = false;
 
@@ -75,7 +75,7 @@ class WebBlockProductResource extends JsonResource
                 }
             }
         }
-        $gr_offer=null;
+        $gr_offer = null;
         if ($this->family) {
             $gr_offer = $this->family->getGROffer;
         }
@@ -121,7 +121,7 @@ class WebBlockProductResource extends JsonResource
                 'trigger_data'  => $gr_offer->trigger_data,
             ] : [],
 
-            ...$offers
+            // ...$offers
         ];
     }
 }

@@ -134,6 +134,11 @@ class StoreWooCommerceProduct extends RetinaAction
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
+            } else {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $result
+                ]);
             }
 
             return $result;

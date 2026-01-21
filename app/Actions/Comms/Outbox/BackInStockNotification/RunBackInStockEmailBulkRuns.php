@@ -21,6 +21,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Arr;
 
 class RunBackInStockEmailBulkRuns
 {
@@ -113,20 +114,8 @@ class RunBackInStockEmailBulkRuns
                     $updateLastOutBoxSent = $currentDateTime;
                 }
 
-                // get the product canonical url
-                $product = Product::find($customer->product_id);
-                $canonicalUrl = null;
-                if ($product) {
-                    $webPage = $product->webpage ?? null;
-                    if ($webPage) {
-                        $canonicalUrl = $webPage->getCanonicalUrl();
-                    }
-                }
-
                 $productData[] = [
                     'product_id' => $customer->product_id,
-                    'product_name' => $customer->product_name,
-                    'canonical_url' => $canonicalUrl,
                 ];
 
                 if ($processedCount === $totalCustomers) {
@@ -175,15 +164,81 @@ class RunBackInStockEmailBulkRuns
 
     public function generateProductLinks(array $productData): string
     {
-        $links = [];
+        $html = '';
+
+        $html .= '<table width="100%" cellpadding="8" cellspacing="0"
+        style="font-family: Helvetica, Arial, sans-serif;
+               font-size: 14px;
+               border-collapse: collapse;">';
+
+
+        $html .= '
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <th align="left" style="color:#555;">Product</th>
+            <th align="center" style="color:#555;">Back in stock</th>
+        </tr>';
 
         foreach ($productData as $product) {
-            $url = $product['canonical_url'];
-            $name = $product['product_name'];
+            $dataProduct = Product::find($product['product_id']);
 
-            $links[] = "<a ses:no-track href=\"$url\">$name</a>";
+            if (!$dataProduct) {
+                continue;
+            }
+
+            $productImage = Arr::get(
+                $dataProduct->imageSources(200, 200),
+                'original'
+            );
+
+            $stock = $dataProduct->available_quantity ?? 0;
+
+
+            if ($dataProduct->webpage) {
+                $url  = $dataProduct->webpage->getCanonicalUrl();
+                $name = $dataProduct->name;
+
+                $html .= '
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="vertical-align:middle;">
+                        <table cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding-right:12px;">';
+
+                if ($productImage) {
+                    $html .= '
+                    <img src="' . $productImage . '"
+                         width="60"
+                         height="60"
+                         style="display:block;
+                                border-radius:6px;
+                                object-fit:cover;" />';
+                }
+
+                $html .= '
+                                </td>
+                                <td style="vertical-align:middle;">
+                                    <a ses:no-track href="' . $url . '"
+                                       style="color:#111;
+                                              text-decoration:none;
+                                              font-weight:600;">'
+                    . $name .
+                    '</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+
+                    <td align="center"
+                        style="font-weight:600;
+                               color:#16a34a;">'
+                    . $stock .
+                    '</td>
+                </tr>';
+            }
         }
 
-        return implode(', ', $links);
+        $html .= '</table>';
+
+        return $html;
     }
 }

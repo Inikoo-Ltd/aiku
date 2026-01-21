@@ -27,7 +27,7 @@ defineProps<{
 
 function userRoute(user: User) {
     if (route().current() === "grp.sysadmin.users.index") {
-        return route("grp.sysadmin.users.show", [user.username])
+        return route("grp.sysadmin.users.show", [user.slug])
     }
     return null
 }
@@ -45,7 +45,7 @@ function userRoute(user: User) {
 
         <!-- Column: Username -->
         <template #cell(username)="{ item: user }">
-            <Link v-if="userRoute(user)" :href="userRoute(user) as string" class="primaryLink">
+            <Link v-if="userRoute(user)" :href="(userRoute(user) as string)" class="primaryLink">
                 <template v-if="user['username']">{{ user["username"] }}</template>
                 <span v-else class="italic">{{ trans("Not set") }}</span>
             </Link>

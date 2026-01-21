@@ -95,6 +95,7 @@ class EditFamily extends OrgAction
             ];
         }
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
+        $offers = $family->getActiveOffers()->with('offerAllowances')->get();
 
         return Inertia::render(
             'EditModel',
@@ -302,34 +303,11 @@ class EditFamily extends OrgAction
                                 'label'  => __('Discounts'),
                                 'icon'   => 'fa-light fa-badge-percent',
                                 'fields' => [
-                                    'vol_gr' => [
-                                        'label'  => 'Vol / GR',
-                                        'type'   => 'input_twin',
-                                        'value'  => [
-                                            [
-                                                'volume'   => $family->offers_data['vol_gr']['volume'] ?? null,
-                                                'discount' => $family->offers_data['vol_gr']['discount'] ?? null,
-                                            ]
-                                        ],
-                                        'fields' => [
-                                            'volume'   => [
-                                                'key'         => 'volume',
-                                                'placeholder' => __('Minimal Volume'),
-                                                'required'    => true,
-                                                'minValue'    => 0,
-                                                'type'        => 'number',
-                                                'suffix'      => '%'
-                                            ],
-                                            'discount' => [
-                                                'key'         => 'discount',
-                                                'placeholder' => __('Discount %'),
-                                                'required'    => true,
-                                                'minValue'    => 0,
-                                                'type'        => 'number',
-                                                'suffix'      => '%'
-                                            ]
-                                        ]
-                                    ],
+                                    'offers_data'      => [
+                                        'label'  => 'Offer List',
+                                        'value'  =>  $family->offers_data,
+                                        'type'   =>  'offer_fields'
+                                    ]
                                 ],
                             ],
                         ]

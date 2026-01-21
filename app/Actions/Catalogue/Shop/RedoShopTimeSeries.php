@@ -28,7 +28,7 @@ class RedoShopTimeSeries
 
     public function handle(Shop $shop, array $frequencies, Command $command = null, bool $async = true): void
     {
-        $firstInvoicedDate = DB::table('invoices')->where('shop_id', $shop->id)->min('created_at');
+        $firstInvoicedDate = DB::table('invoices')->where('shop_id', $shop->id)->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $shop->created_at)) {
             $shop->update(['created_at' => $firstInvoicedDate]);
@@ -36,7 +36,7 @@ class RedoShopTimeSeries
 
         $from = $shop->created_at->toDateString();
 
-        $to = DB::table('invoices')->where('shop_id', $shop->id)->max('created_at');
+        $to = DB::table('invoices')->where('shop_id', $shop->id)->max('date');
         if (!$to) {
             $to = now();
         }
