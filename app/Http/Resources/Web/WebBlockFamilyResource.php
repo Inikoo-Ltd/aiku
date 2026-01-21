@@ -12,6 +12,7 @@ use App\Http\Resources\Catalogue\OfferResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 class WebBlockFamilyResource extends JsonResource
 {
@@ -31,7 +32,7 @@ class WebBlockFamilyResource extends JsonResource
             'description_title' => $family->description_title,
             'description_extra' => $family->description_extra,
             'id'                => $family->id,
-            'image'             => $family->web_images['main']['original'],
+            'image'             => Arr::get($family->web_images,'main.original'),
             'url'               => $family->webpage->url,
             'offers_data'       => $family->offers_data,
         ];
