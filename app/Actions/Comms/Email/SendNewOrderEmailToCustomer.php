@@ -19,6 +19,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 
 class SendNewOrderEmailToCustomer extends OrgAction
 {
@@ -101,6 +102,11 @@ class SendNewOrderEmailToCustomer extends OrgAction
             ->get();
         $currency            = $order->shop->currency->symbol;
         foreach ($productTransactions as $transaction) {
+
+            $product = $transaction->model;
+            $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
+            $productLink = $product?->webpage?->getCanonicalUrl();
+
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: left; color: #666;">

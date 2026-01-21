@@ -18,6 +18,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Helpers\Currency;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 
 class SendNewOrderEmailToSubscribers extends OrgAction
 {
@@ -96,6 +97,10 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
+            $product = $transaction->model;
+            $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
+            $productLink = "";
+
             $html          .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
@@ -115,5 +120,4 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
         return $html;
     }
-
 }

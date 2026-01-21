@@ -59,7 +59,7 @@ class RunBackInStockEmailBulkRuns
             $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
             $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
             // select options
-            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'products.name as product_name', 'back_in_stock_reminders.id as reminder_id');
+            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'back_in_stock_reminders.id as reminder_id');
 
             // where conditions
             $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
