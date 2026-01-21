@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Comms\Mailshot\UI\CreateMailshot;
+use App\Actions\Comms\Mailshot\UI\CreateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\CreateNewsletter;
 use App\Actions\Comms\Mailshot\UI\EditMailshot;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
@@ -47,4 +48,5 @@ Route::name("notifications.")->prefix('notifications')
 Route::name("templates.")->prefix('templates')
     ->group(function () {
         Route::get('', IndexMailshotTemplates::class)->name('index');
+        Route::get('create', CreateMailshotTemplate::class)->name('create');
     });
