@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import TableWarehouses from "@/Components/Tables/Grp/Org/Inventory/TableWarehouses.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { faBars, faWarehouse } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -15,6 +14,7 @@ import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import TablePickingTrolleys from "@/Components/Tables/Grp/Org/Inventory/TablePickingTrolleys.vue"
 
 
 library.add(faBars, faWarehouse)
@@ -36,7 +36,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components = {
-		trolleys: TableWarehouses,
+		trolleys: TablePickingTrolleys,
 		trolleys_histories: TableHistories
 
     }

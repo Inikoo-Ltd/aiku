@@ -4,6 +4,8 @@ namespace App\Actions\Inventory\PickingTrolley\UI;
 
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Enums\UI\Inventory\PickingTrolleysTabsEnum;
 use App\Enums\UI\Inventory\WarehousesTabsEnum;
 use App\Http\Resources\Inventory\PickingTrolleyResource;
@@ -21,6 +23,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPickingTrolleys extends OrgAction
 {
+    use WithWarehouseEditAuthorisation;
+
     public function handle(Warehouse $warehouse, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -68,7 +72,7 @@ class IndexPickingTrolleys extends OrgAction
                         'tooltip' => __('New picking trolley'),
                         'label'   => __('picking trolley'),
                         'route'   => [
-                            'name'       => 'grp.org.warehouses.show.infrastructure.picking_trolleys.create',
+                            'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.create',
                             'parameters' => [
                                 request()->route('organisation'),
                                 request()->route('warehouse'),
@@ -95,31 +99,31 @@ class IndexPickingTrolleys extends OrgAction
                     'title'  => __('Picking trolleys'),
                     'icon'   => ['fal', 'fa-shopping-cart'],
                     'actions' => [
-                        $this->canEdit ? [
+                        [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Create'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.infrastructure.picking_trolleys.create',
+                                'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.create',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ] : null,
+                        ],
                     ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => PickingTrolleysTabsEnum::navigation(),
                 ],
-                'data'        => PickingTrolleyResource::collection($pickingTrolleys),
+                PickingTrolleysTabsEnum::TROLLEYS->value => PickingTrolleyResource::collection($pickingTrolleys),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure(prefix: PickingTrolleysTabsEnum::TROLLEYS->value));
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickingTrolleysTabsEnum::values());
 
-        return $this->handle($warehouse);
+        return $this->handle($warehouse, PickingTrolleysTabsEnum::TROLLEYS->value);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

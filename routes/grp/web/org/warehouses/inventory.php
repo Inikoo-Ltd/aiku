@@ -34,6 +34,7 @@ use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\PickingTrolley\UI\CreatePickingTrolley;
 use App\Actions\Inventory\PickingTrolley\UI\EditPickingTrolley;
 use App\Actions\Inventory\PickingTrolley\UI\IndexPickingTrolleys;
+use App\Actions\Inventory\PickingTrolley\UI\ShowPickingTrolley;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -193,5 +194,6 @@ Route::prefix('stored-items')->as('stored_items.')->group(function () {
 Route::prefix('picking-trolleys')->as('picking_trolleys.')->group(function () {
     Route::get('', IndexPickingTrolleys::class)->name('index');
     Route::get('create', CreatePickingTrolley::class)->name('create');
+    Route::get('{pickingTrolley}', ShowPickingTrolley::class)->name('show');
     Route::get('{pickingTrolley}/edit', EditPickingTrolley::class)->name('edit');
 });
