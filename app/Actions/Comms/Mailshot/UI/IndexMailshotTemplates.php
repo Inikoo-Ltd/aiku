@@ -99,7 +99,7 @@ class IndexMailshotTemplates extends OrgAction
         $title = __('Templates');
 
         return Inertia::render(
-            'Comms/Mailshots',
+            'Comms/Templates',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
