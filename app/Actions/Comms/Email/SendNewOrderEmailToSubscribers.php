@@ -112,14 +112,15 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                         <tr>
                             <td style="padding-right:12px; vertical-align:top;">%s</td>
                             <td style="vertical-align:top;">
+                                <span style="color:#666;">%s</span>
+                                <br/>
                                 <a href="%s"
                                    target="_blank"
                                    style="color:#2563eb;
                                           text-decoration:underline;
                                           font-weight:600;">
                                     %s
-                                </a><br/>
-                                <span style="color:#666;">%s</span>
+                                </a>
                             </td>
                         </tr>
                     </table>
@@ -133,9 +134,9 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                          height="56"
                          style="display:block;border-radius:6px;object-fit:cover;" />'
                     : '',
+                $historicAsset->code ?? 'N/A',
                 $productLink,
                 $historicAsset->name ?? 'N/A',
-                $historicAsset->code ?? '',
                 rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.'),
                 $currencySymbol,
                 $transaction->net_amount ?? '0'
