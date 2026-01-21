@@ -67,7 +67,18 @@ class ShowPickingTrolley extends OrgAction
                             'title' => __('picking trolley')
                         ],
                     'title'   => $pickingTrolley->name,
-                    'model'   => __('Picking trolley')
+                    'model'   => __('Picking trolley'),
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.edit',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ],
+                        ],
+                    ],
                 ],
 
                 'tabs'     => [

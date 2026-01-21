@@ -5,6 +5,7 @@ namespace App\Actions\Inventory\PickingTrolley\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\PickingTrolley;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,9 +20,9 @@ class EditPickingTrolley extends OrgAction
         return $pickingTrolley;
     }
 
-    public function asController(Organisation $organisation, $warehouse, PickingTrolley $pickingTrolley, ActionRequest $request): PickingTrolley
+    public function asController(Organisation $organisation, Warehouse $warehouse, PickingTrolley $pickingTrolley, ActionRequest $request): PickingTrolley
     {
-        $this->initialisation($pickingTrolley->organisation, $request);
+        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($pickingTrolley);
     }
