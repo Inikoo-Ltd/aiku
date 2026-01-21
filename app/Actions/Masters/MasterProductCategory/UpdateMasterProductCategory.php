@@ -131,9 +131,6 @@ class UpdateMasterProductCategory extends OrgAction
                 if (Arr::has($changed, 'rrp')) {
                     $dataToBeUpdated['rrp'] = $masterProductCategory->rrp;
                 }
-                if (Arr::has($changed, 'offers_data')) {
-                    $dataToBeUpdated['offers_data'] = $masterProductCategory->offers_data;
-                }
 
                 if ($dataToBeUpdated) {
                     UpdateProductCategory::make()->action($productCategory, $dataToBeUpdated);

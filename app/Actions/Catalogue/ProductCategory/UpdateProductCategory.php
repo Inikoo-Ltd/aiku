@@ -21,6 +21,7 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Discounts\Offer;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -114,7 +115,15 @@ class UpdateProductCategory extends OrgAction
                     'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
                 ]
             ]);
+        }
 
+        if (Arr::has($changes, 'offers_data')) {
+            $offers = Offer::whereIn('id', array_keys($modelData['offers_data']))->get();
+            foreach($offers as $offer) {
+                $offer->update([
+                    'label' => data_get($modelData, "offers_data.{$offer->id}.label")
+                ]);
+            }
         }
 
         if (Arr::has($changes, 'description_title')) {
@@ -170,11 +179,6 @@ class UpdateProductCategory extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if ($this->has('vol_gr')) {
-            $offersData = $this->productCategory->offers_data ?? [];
-            $offersData['vol_gr'] = $this->attributes['vol_gr'][0];
-            $this->set('offers_data', $offersData);
-        }
         if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {

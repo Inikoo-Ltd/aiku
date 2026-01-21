@@ -304,39 +304,11 @@ class EditFamily extends OrgAction
                                 'label'  => __('Discounts'),
                                 'icon'   => 'fa-light fa-badge-percent',
                                 'fields' => [
-                                    'offers'      => [
+                                    'offers_data'      => [
                                         'label'  => 'Offer List',
                                         'value'  =>  $family->offers_data,
                                         'type'   =>  'offer_fields'
                                     ]
-                                   /*  'vol_gr' => [
-                                        'label'  => 'Vol / GR',
-                                        'type'   => 'input_twin',
-                                        'value'  => [
-                                            [
-                                                'volume'   => $family->offers_data['vol_gr']['volume'] ?? null,
-                                                'discount' => $family->offers_data['vol_gr']['discount'] ?? null,
-                                            ]
-                                        ],
-                                        'fields' => [
-                                            'volume'   => [
-                                                'key'         => 'volume',
-                                                'placeholder' => __('Minimal Volume'),
-                                                'required'    => true,
-                                                'minValue'    => 0,
-                                                'type'        => 'number',
-                                                'suffix'      => '%'
-                                            ],
-                                            'discount' => [
-                                                'key'         => 'discount',
-                                                'placeholder' => __('Discount %'),
-                                                'required'    => true,
-                                                'minValue'    => 0,
-                                                'type'        => 'number',
-                                                'suffix'      => '%'
-                                            ]
-                                        ]
-                                    ], */
                                 ],
                             ],
                         ]
