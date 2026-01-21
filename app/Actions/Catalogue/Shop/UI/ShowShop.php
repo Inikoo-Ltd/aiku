@@ -49,18 +49,23 @@ class ShowShop extends OrgAction
         $customRangeData = $this->setupCustomRange($userSettings, $shop);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        $performanceDates = [null, null];
         $timeSeriesStats = [];
+
         if ($saved_interval === DateIntervalEnum::CUSTOM) {
             $rangeInterval = Arr::get($userSettings, 'range_interval', '');
             if ($rangeInterval) {
                 $dates = explode('-', $rangeInterval);
                 if (count($dates) === 2) {
+                    $performanceDates = [$dates[0], $dates[1]];
                     $timeSeriesStats = GetShopTimeSeriesStats::run($shop, $dates[0], $dates[1]);
                 }
             }
         } else {
             $timeSeriesStats = GetShopTimeSeriesStats::run($shop);
         }
+
+        $topPerformanceStats = GetShopTopPerformanceStats::run($shop, $performanceDates[0], $performanceDates[1]);
 
         $tabsBox = $this->getTabsBox($shop);
 
@@ -80,8 +85,9 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => array_merge(
                         [
-                            'interval_data' => $timeSeriesStats,
-                            'currency_code' => $shop->currency->code,
+                            'interval_data'   => $timeSeriesStats,
+                            'currency_code'   => $shop->currency->code,
+                            'top_performance' => $topPerformanceStats,
                         ],
                         $this->getAverageClv($shop)
                     ),
