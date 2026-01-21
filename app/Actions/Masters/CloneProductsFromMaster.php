@@ -39,14 +39,14 @@ class CloneProductsFromMaster
     /**
      * @throws \Throwable
      */
-    public function upsertProduct(Shop $shop, MasterAsset $masterProduct, $skipOrgCheck = false, $generateVariant = true): void
+    public function upsertProduct(Shop $shop, MasterAsset $masterProduct): void
     {
         $masterShop = $masterProduct->masterShop;
 
         if (!$shop->products()->where('master_product_id', $masterProduct->id)->exists()) {
             list($hasAllOrgStocks, $hasDiscontinuing, $hasDiscontinued) = $this->getOrgStocksData($shop->organisation, $masterProduct->tradeUnits);
             
-            if (($hasAllOrgStocks && !$hasDiscontinuing && !$hasDiscontinued) || $skipOrgCheck) {
+            if ($hasAllOrgStocks && !$hasDiscontinuing && !$hasDiscontinued) {
                 $anchorShop = $this->getSeederShop($masterShop, $shop->organisation);
 
                 $anchorProduct = $anchorShop->products()->where('master_product_id', $masterProduct->id)->first();
@@ -88,8 +88,7 @@ class CloneProductsFromMaster
                                         'create_in_shop' => 'Yes'
                                     ]
                                 ],
-                            ],
-                            generateVariant: $generateVariant
+                            ]
                         );
                     }
                 }

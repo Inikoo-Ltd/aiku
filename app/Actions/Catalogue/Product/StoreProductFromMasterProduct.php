@@ -83,18 +83,15 @@ class StoreProductFromMasterProduct extends GrpAction
                     $product = Product::where('shop_id', $shop->id)
                         ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])
                         ->first();
-
                     if ($product) {
                         data_set($data, 'family_id', $productCategory->id);
                         data_set($data, 'trade_units', $tradeUnits);
-
 
                         $this->updateFoundProduct($product, $data, $isMain);
 
 
                         continue;
                     }
-
                     $product = StoreProduct::run($productCategory, $data);
                     $product->refresh();
                     CloneProductImagesFromTradeUnits::run($product);

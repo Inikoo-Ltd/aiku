@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\Masters\CloneProductsFromMaster;
 use App\Actions\OrgAction;
@@ -62,8 +63,8 @@ class StoreMasterVariant extends OrgAction
                 ]);
             }
 
-            $masterAssets = MasterAsset::whereIn('id', array_keys(data_get($masterVariant->data, 'products')))->get()->keyBy('code');
-            $masterAssetsCode = (clone $masterAssets)->pluck('code')->toArray();
+            $masterProducts = MasterAsset::whereIn('id', array_keys(data_get($masterVariant->data, 'products')))->get()->keyBy('code');
+            $masterProductsCode = (clone $masterProducts)->pluck('code')->toArray();
 
             foreach ($masterVariant->masterFamily->productCategories as $productCategory) {
                 if (!$productCategory->shop || $productCategory->shop->state == ShopStateEnum::CLOSED) {
@@ -71,11 +72,24 @@ class StoreMasterVariant extends OrgAction
                 }
 
                 $shop = $productCategory->shop;
-                $productsCode = $productCategory->getProducts()->whereIn('code', $masterAssetsCode)->pluck('code');
-                $missingProducts = array_diff($masterAssetsCode, $productsCode->toArray());
+                $productsCode = $productCategory->getProducts()->whereIn('code', $masterProductsCode)->pluck('code');
+                $missingProducts = array_diff($masterProductsCode, $productsCode->toArray());
 
                 foreach ($missingProducts as $productCode) {
-                    CloneProductsFromMaster::make()->upsertProduct($shop, $masterAssets[$productCode], true, false);
+                    StoreProductFromMasterProduct::make()->action(
+                            $masterProducts[$productCode],
+                            [
+                                'shop_products' => [
+                                    $shop->id => [
+                                        'price'          => $masterProducts[$productCode]->price,
+                                        'rrp'            => $masterProducts[$productCode]->rrp,
+                                        'create_webpage' => false,
+                                        'create_in_shop' => 'Yes'
+                                    ]
+                                ],
+                            ],
+                            generateVariant: false
+                        );
                 }
 
                 StoreVariantFromMaster::make()->action(
