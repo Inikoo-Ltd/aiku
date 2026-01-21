@@ -44,6 +44,30 @@ class GetWarehouseShowcase
                         'icon'    => 'fal fa-inventory',
                         'tooltip' => __('Locations')
                     ]
+                ],
+                [
+                    'name'     => trans_choice('picking trolley|picking trolleys', $warehouse->stats->number_picking_trolleys),
+                    'value'   => $warehouse->stats->number_picking_trolleys,
+                    'route'     => [
+                        'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                        'parameters' => array_merge($routeParameters, [$warehouse->slug])
+                    ],
+                    'icon' => [
+                        'icon'    => 'fal fa-inventory',
+                        'tooltip' => __('Picking Trolleys')
+                    ]
+                ],
+                [
+                    'name'     => trans_choice('picked bay|picked bays', $warehouse->stats->number_picked_bays),
+                    'value'   => $warehouse->stats->number_picked_bays,
+                    'route'     => [
+                        'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                        'parameters' => array_merge($routeParameters, [$warehouse->slug])
+                    ],
+                    'icon' => [
+                        'icon'    => 'fal fa-inventory',
+                        'tooltip' => __('Picked Bays')
+                    ]
                 ]
             ],
 
