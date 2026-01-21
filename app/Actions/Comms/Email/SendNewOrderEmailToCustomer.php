@@ -108,56 +108,45 @@ class SendNewOrderEmailToCustomer extends OrgAction
             $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
             $productLink = $product?->webpage?->getCanonicalUrl();
 
-            $productCode = $transaction->historicAsset->code ?? 'N/A';
             $productName = $transaction->historicAsset->name ?? 'N/A';
 
             if ($productLink) {
-                $productNameHtml =
-                    '<a href="' . $productLink . '" target="_blank"
-                    style="color:#3498DB;
-                           text-decoration:underline;
-                           font-weight:500;">'
-                    . $productName .
-                    '</a>';
-            } else {
-                $productNameHtml = $productName;
+                $productName = sprintf(
+                    '<a href="%s" target="_blank"
+                style="color:#3498DB;
+                       text-decoration:underline;
+                       font-weight:500;">%s</a>',
+                    $productLink,
+                    $productName
+                );
             }
 
-            $productImageHtml = '';
-            if ($productImage) {
-                $productImageHtml =
-                    '<img src="' . $productImage . '"
-                     width="48"
-                     height="48"
-                     style="display:block;
-                            border-radius:6px;
-                            object-fit:cover;" />';
-            }
-
-            $html .= '
-                <tr style="border-bottom:1px solid #e9e9e9;">
+            $html .= sprintf(
+                '<tr style="border-bottom: 1px solid #e9e9e9;">
                     <td style="padding:12px 8px; vertical-align:middle;">
-                        <table cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="padding-right:12px;">'
-                . $productImageHtml .
-                '</td>
-                                <td>
-                                    <strong style="color:#555;">' . $productCode . '</strong><br/>
-                                    <span style="color:#888;">' . $productNameHtml . '</span>
-                                </td>
-                            </tr>
-                        </table>
+                        %s
                     </td>
-
-                    <td style="padding:12px 8px; text-align:center; color:#666;">'
-                . rtrim(number_format($transaction->quantity_ordered, 3), '0.') .
-                '</td>
-
-                    <td style="padding:12px 8px; text-align:right; color:#666;">'
-                . $currency . number_format($transaction->net_amount, 2) .
-                '</td>
-            </tr>';
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: left; color: #666;">
+                        <strong style="color: #555;">%s</strong><br/>
+                        <span style="color: #888;">%s</span>
+                    </td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: center; color: #666;">%s</td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: right; color: #666;">%s%s</td>
+                </tr>',
+                $productImage
+                    ? '<img src="' . $productImage . '"
+                   width="48"
+                   height="48"
+                   style="display:block;
+                          border-radius:6px;
+                          object-fit:cover;" />'
+                    : '',
+                $transaction->historicAsset->code ?? 'N/A',
+                $productName,
+                rtrim(number_format($transaction->quantity_ordered, 3), '0.'),
+                $currency,
+                number_format($transaction->net_amount, 2)
+            );
         }
 
         $html .= '</table>';
