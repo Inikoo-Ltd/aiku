@@ -117,7 +117,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
             <template v-if="Object.keys(fieldValue?.family?.offers_data).length">
                 <section
                     v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data"
-                    class="relative flex justify-between w-fit overflow-hidden rounded-lg px-px py-px shadow-md mb-2 bg-[#ff862f]"
+                    class="relative flex justify-between w-full md:w-fit overflow-hidden rounded-lg px-px py-px shadow-md mb-2 bg-[#ff862f]"
                     aria-label="Colorful Volume Promotion"
                 >
                 
