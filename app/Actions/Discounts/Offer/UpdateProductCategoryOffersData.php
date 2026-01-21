@@ -41,6 +41,19 @@ class UpdateProductCategoryOffersData
         }
 
         $model->update(['offers_data' => $modelOfferData]);
+
+        if ($model instanceof ProductCategory) {
+            foreach ($model->getProducts() as $product) {
+                $productOfferData = $product->offers_data ?? [];
+                if (!$productOfferData) {
+                    unset($productOfferData[$offer->id]);
+                } else {
+                    $productOfferData[$offer->id] = $offerData;
+                }
+                $product->update(['offers_data' => $modelOfferData]);
+                $product->refresh();
+            }
+        }
     }
 
 
@@ -71,15 +84,13 @@ class UpdateProductCategoryOffersData
         }
 
 
-
-
         $offerData = [
-            'state'      => $offer->state->value,
-            'duration'   => $offer->duration->value,
-            'label'      => $offer->label ?? $offer->name,
-            'allowances' => $allowances,
+            'state'           => $offer->state->value,
+            'duration'        => $offer->duration->value,
+            'label'           => $offer->label ?? $offer->name,
+            'allowances'      => $allowances,
             'triggers_labels' => $triggerLabels,
-            'note'       => ''
+            'note'            => ''
         ];
 
         if ($offer->duration->value == OfferDurationEnum::INTERVAL) {
