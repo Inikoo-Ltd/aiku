@@ -31,7 +31,7 @@ const layout = inject('layout', retinaLayoutStructure)
 const locale = useLocaleStore()
 
 const props = withDefaults(defineProps<{
-    product: ProductResource
+    product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
     hasInBasket?: any
     basketButton?: boolean
     bestSeller?: any
