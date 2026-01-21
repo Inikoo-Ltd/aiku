@@ -33,7 +33,6 @@ class WebBlockFamilyResource extends JsonResource
             'id'                => $family->id,
             'image'             => $family->web_images['main']['original'],
             'url'               => $family->webpage->url,
-            'active_offers'     => OfferResource::collection($family->getActiveOffers)->resolve(),
             'offers_data'       => $family->offers_data,
         ];
     }
