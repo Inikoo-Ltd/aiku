@@ -41,6 +41,15 @@ class ShowMailshotRecipients extends OrgAction
             ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
+        $subdepartments = ProductCategory::query()
+            ->where('type', 'sub_department')
+            ->where('shop_id', $mailshot->shop_id)
+            ->whereIn('state', ['active', 'discontinuing'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->toArray();
+
         $filtersStructure = [
             'marketing' => [
                 'title'   => 'Email Marketing Targeting',
@@ -103,23 +112,16 @@ class ShowMailshotRecipients extends OrgAction
                         'type'        => 'boolean',
                         'description' => 'Targets customers who have ever selected "Collection" and collected an order from the warehouse.'
                     ],
-                    'by_subdepartment'         => [
-                        'label'            => 'By Sub-department',
-                        'type'             => 'multiselect',
-                        'description'      => 'Enable email targeting based on product sub-departments.',
-                        'options_source'   => \App\Models\Catalogue\Collection::class,
-                        'multiple'         => true,
+                    'by_subdepartment' => [
+                        'label'       => 'By Subdepartment',
+                        'type'        => 'multiselect',
+                        'description' => 'Target customers based on interaction with sub-departments.',
+                        'multiple'    => true,
+                        'options'     => $subdepartments,
                         'behavior_options' => [
-                            'purchased'        => [
-                                'label' => 'Purchased products from these sub-departments in the past',
-                                'type'  => 'checkbox'
-                            ],
-                            'basket_abandoned' => [
-                                'label' => 'Added products from these sub-departments to basket but did not complete checkout',
-                                'type'  => 'checkbox'
-                            ]
-                        ],
-                        'logic'            => 'OR'
+                            ['value' => 'purchased', 'label' => 'Purchased products in the past'],
+                            ['value' => 'in_basket', 'label' => 'Added to basket (not completed)'],
+                        ]
                     ],
                     'gold_reward_status' => [
                         'label'       => 'Gold Reward Membership',

@@ -7,6 +7,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
+import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
 import { debounce } from 'lodash'
 
 // Import Datepicker
@@ -45,6 +47,11 @@ const addFilter = (filterKey: string, filterConfig: any) => {
         value = { date_range: null }
     } else if (filterConfig.type === 'select') {
         value = (filterConfig.options && filterConfig.options.length > 0) ? filterConfig.options[0].value : null
+    } else if (filterConfig.type === 'multiselect' && filterConfig.behavior_options) {
+        value = {
+            ids: [],
+            behaviors: ['purchased']
+        }
     } else if (filterConfig.type === 'multiselect') {
         value = []
     }
@@ -295,7 +302,29 @@ watch(activeFilters, () => {
                              </select>
                         </div>
 
-
+                         <div v-else-if="filter.config.type === 'multiselect' && filter.config.behavior_options">
+                            <div class="mb-3">
+                                <MultiselectTagsInfiniteScroll :form="filter.value" fieldName="ids" :fieldData="{
+                                    options: filter.config.options,
+                                    labelProp: 'label',
+                                    valueProp: 'value',
+                                    placeholder: 'Select sub-departments...'
+                                }" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-xs font-medium text-gray-500">Include customers who:</label>
+                                <div v-for="behavior in filter.config.behavior_options" :key="behavior.value"
+                                    class="flex items-start">
+                                    <div class="flex h-5 items-center">
+                                        <input type="checkbox" :value="behavior.value" v-model="filter.value.behaviors"
+                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+                                    </div>
+                                    <div class="ml-2 text-sm">
+                                        <label class="font-medium text-gray-700">{{ behavior.label }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                     </div>
                 </div>

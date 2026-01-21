@@ -20,6 +20,7 @@ use App\Actions\Traits\WithCheckCanContactByEmail;
 use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
 use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersInBasket;
+use App\Actions\Comms\Mailshot\Filters\FilterBySubdepartment;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
 use App\Actions\Comms\Mailshot\Filters\FilterByFamilyNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
@@ -172,6 +173,38 @@ class GetMailshotRecipientsQueryBuilder
             }
 
             (new FilterByOrderValue())->apply($query, $options);
+        }
+
+        // FILTER: By Subdepartment
+        $subDeptFilter = Arr::get($filters, 'by_subdepartment');
+        if ($subDeptFilter && !empty($subDeptFilter['value'])) {
+            $rawValue = $subDeptFilter['value'];
+            $valueToSend = [
+                'ids' => [],
+                'behaviors' => ['purchased']
+            ];
+
+            if (is_array($rawValue)) {
+
+                if (array_key_exists('ids', $rawValue)) {
+                    $valueToSend['ids'] = $rawValue['ids'] ?? [];
+
+                    if (isset($rawValue['behaviors']) && is_array($rawValue['behaviors'])) {
+                        $valueToSend['behaviors'] = $rawValue['behaviors'];
+                    }
+                } elseif (array_key_exists(0, $rawValue)) {
+                    $valueToSend['ids'] = $rawValue;
+                } elseif (isset($rawValue['behaviors'])) {
+                    $valueToSend['behaviors'] = $rawValue['behaviors'];
+                }
+            } else {
+
+                $valueToSend['ids'] = [$rawValue];
+            }
+
+            if (!empty($valueToSend['ids'])) {
+                (new FilterBySubdepartment())->apply($query, $valueToSend);
+            }
         }
 
         return $query;
