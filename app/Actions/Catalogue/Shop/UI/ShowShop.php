@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
@@ -65,7 +66,7 @@ class ShowShop extends OrgAction
             $timeSeriesStats = GetShopTimeSeriesStats::run($shop);
         }
 
-        $topPerformanceStats = GetShopTopPerformanceStats::run($shop, $performanceDates[0], $performanceDates[1]);
+        $topPerformanceStats = GetTopPerformanceStats::run($shop, $performanceDates[0], $performanceDates[1]);
 
         $tabsBox = $this->getTabsBox($shop);
 
