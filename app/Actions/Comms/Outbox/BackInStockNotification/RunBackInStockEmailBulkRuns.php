@@ -164,6 +164,8 @@ class RunBackInStockEmailBulkRuns
 
     public function generateProductLinks(array $productData): string
     {
+        $date = Carbon::now()->format('d M y');
+
         $html = '';
 
         $html .= '<table width="100%" cellpadding="8" cellspacing="0"
@@ -174,8 +176,8 @@ class RunBackInStockEmailBulkRuns
 
         $html .= '
         <tr style="border-bottom:1px solid #e5e7eb;">
-            <th align="left" style="color:#555;">Product</th>
-            <th align="center" style="color:#555;">Back in stock</th>
+            <th align="left" style="color:#555;">' . __('Product') . '</th>
+            <th align="center" style="color:#555;">' . __('New stock') . ' (' . $date . ')</th>
         </tr>';
 
         foreach ($productData as $product) {
