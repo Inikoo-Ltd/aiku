@@ -114,20 +114,8 @@ class RunBackInStockEmailBulkRuns
                     $updateLastOutBoxSent = $currentDateTime;
                 }
 
-                // get the product canonical url
-                // $product = Product::find($customer->product_id);
-                // $canonicalUrl = null;
-                // if ($product) {
-                //     $webPage = $product->webpage ?? null;
-                //     if ($webPage) {
-                //         $canonicalUrl = $webPage->getCanonicalUrl();
-                //     }
-                // }
-
                 $productData[] = [
                     'product_id' => $customer->product_id,
-                    // 'product_name' => $customer->product_name,
-                    // 'canonical_url' => $canonicalUrl,
                 ];
 
                 if ($processedCount === $totalCustomers) {
@@ -193,6 +181,10 @@ class RunBackInStockEmailBulkRuns
         foreach ($productData as $product) {
             $dataProduct = Product::find($product['product_id']);
 
+            if (!$dataProduct) {
+                continue;
+            }
+
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
                 'original'
@@ -201,7 +193,7 @@ class RunBackInStockEmailBulkRuns
             $stock = $dataProduct->available_quantity ?? 0;
 
 
-            if ($dataProduct && $dataProduct->webpage) {
+            if ($dataProduct->webpage) {
                 $url  = $dataProduct->webpage->getCanonicalUrl();
                 $name = $dataProduct->name;
 
