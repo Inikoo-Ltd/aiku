@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import TableMailshots from "@/Components/Tables/TableMailshots.vue";
+import TableTemplates from "@/Components/Tables/TableTemplates.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -28,5 +28,5 @@ defineProps<{
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <TableMailshots :data="data" />
+    <TableTemplates :data="data" />
 </template>
