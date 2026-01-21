@@ -8,12 +8,10 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Models\Helpers\Media;
 
 class WebBlockFamilyResource extends JsonResource
 {

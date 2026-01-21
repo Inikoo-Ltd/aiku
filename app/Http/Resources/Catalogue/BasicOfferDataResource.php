@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Discounts\Offer;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -28,12 +29,14 @@ class BasicOfferDataResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var Offer $offer
+         */
         $offer = $this;
-        
+
         $allowances      = [];
         $offerAllowances = $offer->offerAllowances->where('status', true);
         foreach ($offerAllowances as $offerAllowance) {
-            if($offerAllowance && $offerAllowance->class) {
+            if ($offerAllowance && $offerAllowance->class) {
                 $allowances[] = [
                     'class' => $offerAllowance->class->value,
                     'type'  => $offerAllowance->type->value,
@@ -54,8 +57,7 @@ class BasicOfferDataResource extends JsonResource
             $offerData['start_at'] = $offer->start_at;
             $offerData['end_at']   = $offer->end_at;
         }
-        preg_match('/percentage_off:([0-9]*\.?[0-9]+)/', $this->allowance_signature, $matches);
-        
+
         return $offerData;
     }
 }

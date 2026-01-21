@@ -57,18 +57,18 @@ class UpdateMasterVariant extends OrgAction
                 ]);
 
             foreach ($masterVariant->variants as $variant) {
-                if (!$variant->shop || $variant->shop->state == ShopStateEnum::CLOSED){
+                if (!$variant->shop || $variant->shop->state == ShopStateEnum::CLOSED) {
                     continue;
                 }
 
                 $shop = $variant->shop;
                 $productsCode = $variant->family->getProducts()->whereIn('code', $masterProducts->pluck('code'))->pluck('code');
                 $missingProducts = array_diff($masterProducts->pluck('code')->toArray(), $productsCode->toArray());
-                
+
                 foreach ($missingProducts as $productCode) {
                     StoreProductFromMasterProduct::make()->action(
-                            $masterProducts[$productCode],
-                            [
+                        $masterProducts[$productCode],
+                        [
                                 'shop_products' => [
                                     $shop->id => [
                                         'price'          => $masterProducts[$productCode]->price,
@@ -78,8 +78,8 @@ class UpdateMasterVariant extends OrgAction
                                     ]
                                 ],
                             ],
-                            generateVariant: false
-                        );
+                        generateVariant: false
+                    );
                 }
 
                 UpdateVariant::make()->action($variant, $modelData);

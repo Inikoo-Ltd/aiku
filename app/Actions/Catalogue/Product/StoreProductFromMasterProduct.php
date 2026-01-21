@@ -104,7 +104,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         ]);
                     }
 
-                    if($generateVariant){
+                    if ($generateVariant) {
                         $product = $this->setVariantData($product, $masterAsset);
                     }
 

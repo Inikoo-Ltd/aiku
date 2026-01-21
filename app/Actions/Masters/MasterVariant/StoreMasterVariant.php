@@ -10,7 +10,6 @@ namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
-use App\Actions\Masters\CloneProductsFromMaster;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -77,8 +76,8 @@ class StoreMasterVariant extends OrgAction
 
                 foreach ($missingProducts as $productCode) {
                     StoreProductFromMasterProduct::make()->action(
-                            $masterProducts[$productCode],
-                            [
+                        $masterProducts[$productCode],
+                        [
                                 'shop_products' => [
                                     $shop->id => [
                                         'price'          => $masterProducts[$productCode]->price,
@@ -88,8 +87,8 @@ class StoreMasterVariant extends OrgAction
                                     ]
                                 ],
                             ],
-                            generateVariant: false
-                        );
+                        generateVariant: false
+                    );
                 }
 
                 StoreVariantFromMaster::make()->action(

@@ -18,7 +18,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Helpers\LanguageResource;
-use App\Http\Resources\Catalogue\BasicOfferDataResource;
 
 class EditFamily extends OrgAction
 {

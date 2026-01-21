@@ -21,7 +21,7 @@ class GetTopPerformanceStats
         if ($fromDate && $toDate) {
             $startDate = Carbon::createFromFormat('Ymd', $fromDate)->startOfDay();
             $endDate = Carbon::createFromFormat('Ymd', $toDate)->endOfDay();
-            
+
             return [
                 'top_packers' => [
                     'ctm' => $this->getTopPackers($model, [$startDate, $endDate])
@@ -39,7 +39,7 @@ class GetTopPerformanceStats
             $packers[$interval->value] = $this->getTopPackers($model, $interval);
             $pickers[$interval->value] = $this->getTopPickers($model, $interval);
         }
-        
+
         return [
             'top_packers' => $packers,
             'top_pickers' => $pickers,

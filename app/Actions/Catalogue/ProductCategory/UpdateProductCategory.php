@@ -119,7 +119,7 @@ class UpdateProductCategory extends OrgAction
 
         if (Arr::has($changes, 'offers_data')) {
             $offers = Offer::whereIn('id', array_keys($modelData['offers_data']))->get();
-            foreach($offers as $offer) {
+            foreach ($offers as $offer) {
                 $offer->update([
                     'label' => data_get($modelData, "offers_data.{$offer->id}.label")
                 ]);
