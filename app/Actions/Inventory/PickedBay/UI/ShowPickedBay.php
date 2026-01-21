@@ -6,16 +6,16 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
-namespace App\Actions\Inventory\PickingTrolley\UI;
+namespace App\Actions\Inventory\PickedBay\UI;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
-use App\Enums\UI\Inventory\PickingTrolleysTabsEnum;
+use App\Enums\UI\Inventory\PickedBaysTabsEnum;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
-use App\Http\Resources\Inventory\PickingTrolleyResource;
-use App\Models\Inventory\PickingTrolley;
+use App\Http\Resources\Inventory\PickedBayResource;
+use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -23,14 +23,14 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowPickingTrolley extends OrgAction
+class ShowPickedBay extends OrgAction
 {
     use WithActionButtons;
     use WithWarehouseAuthorisation;
 
-    public function handle(PickingTrolley $pickingTrolley): PickingTrolley
+    public function handle(PickedBay $pickedBay): PickedBay
     {
-        return $pickingTrolley;
+        return $pickedBay;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -40,41 +40,41 @@ class ShowPickingTrolley extends OrgAction
         return $request->user()->authTo("inventory.{$this->warehouse->id}.view");
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, PickingTrolley $pickingTrolley, ActionRequest $request): PickingTrolley
+    public function asController(Organisation $organisation, Warehouse $warehouse, PickedBay $pickedBay, ActionRequest $request): PickedBay
     {
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseTabsEnum::values());
 
-        return $this->handle($pickingTrolley);
+        return $this->handle($pickedBay);
     }
 
-    public function htmlResponse(PickingTrolley $pickingTrolley, ActionRequest $request): Response
+    public function htmlResponse(PickedBay $pickedBay, ActionRequest $request): Response
     {
         $routeParameters = $request->route()->originalParameters();
 
         return Inertia::render(
-            'Org/Warehouse/PickingTrolley',
+            'Org/Warehouse/PickedBay',
             [
                 'title'       => __('Warehouse'),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'  => [
-                    'previous' => $this->getPrevious($pickingTrolley, $request),
-                    'next'     => $this->getNext($pickingTrolley, $request),
+                    'previous' => $this->getPrevious($pickedBay, $request),
+                    'next'     => $this->getNext($pickedBay, $request),
                 ],
                 'pageHead'    => [
                     'icon'    =>
                         [
-                            'icon'  => ['fal', 'picking trolley'],
-                            'title' => __('picking trolley')
+                            'icon'  => ['fal', 'picked bay'],
+                            'title' => __('picked bay')
                         ],
-                    'title'   => $pickingTrolley->name,
-                    'model'   => __('Picking trolley'),
+                    'title'   => $pickedBay->name,
+                    'model'   => __('Picked bay'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.edit',
+                                'name'       => 'grp.org.warehouses.show.inventory.picked_bays.edit',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
@@ -83,7 +83,7 @@ class ShowPickingTrolley extends OrgAction
 
                 'tabs'     => [
                     'current'    => $this->tab,
-                    'navigation' => PickingTrolleysTabsEnum::navigation(),
+                    'navigation' => PickedBaysTabsEnum::navigation(),
                 ],
 
                 /*WarehouseTabsEnum::SHOWCASE->value => $this->tab == WarehouseTabsEnum::SHOWCASE->value ?
@@ -95,9 +95,9 @@ class ShowPickingTrolley extends OrgAction
     }
 
 
-    public function jsonResponse(Warehouse $warehouse): PickingTrolleyResource
+    public function jsonResponse(Warehouse $warehouse): PickedBayResource
     {
-        return new PickingTrolleyResource($warehouse);
+        return new PickedBayResource($warehouse);
     }
 
     public function getBreadcrumbs(array $routeParameters, $suffix = null): array
@@ -134,35 +134,35 @@ class ShowPickingTrolley extends OrgAction
         );
     }
 
-    public function getPrevious(PickingTrolley $pickingTrolley, ActionRequest $request): ?array
+    public function getPrevious(PickedBay $pickedBay, ActionRequest $request): ?array
     {
-        $previous = PickingTrolley::where('code', '<', $pickingTrolley->code)->where('organisation_id', $pickingTrolley->organisation_id)->orderBy('code', 'desc')->first();
+        $previous = PickedBay::where('code', '<', $pickedBay->code)->where('organisation_id', $pickedBay->organisation_id)->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
-    public function getNext(PickingTrolley $pickingTrolley, ActionRequest $request): ?array
+    public function getNext(PickedBay $pickedBay, ActionRequest $request): ?array
     {
-        $next = PickingTrolley::where('code', '>', $pickingTrolley->code)->where('organisation_id', $pickingTrolley->organisation_id)->orderBy('code')->first();
+        $next = PickedBay::where('code', '>', $pickedBay->code)->where('organisation_id', $pickedBay->organisation_id)->orderBy('code')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-    private function getNavigation(?PickingTrolley $pickingTrolley, string $routeName): ?array
+    private function getNavigation(?PickedBay $pickedBay, string $routeName): ?array
     {
-        if (!$pickingTrolley) {
+        if (!$pickedBay) {
             return null;
         }
 
         return match ($routeName) {
-            'grp.org.warehouses.show.inventory.picking_trolleys.show' => [
-                'label' => $pickingTrolley->name,
+            'grp.org.warehouses.show.inventory.picked_bays.show' => [
+                'label' => $pickedBay->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'warehouse' => $pickingTrolley->warehouse->slug,
-                        'pickingTrolley'    => $pickingTrolley->slug
+                        'warehouse' => $pickedBay->warehouse->slug,
+                        'pickedBay'    => $pickedBay->slug
                     ]
                 ]
             ]
