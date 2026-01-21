@@ -44,12 +44,13 @@ class UpdateOffer extends OrgAction
             $modelData['trigger_data'] = $newTriggerData;
         }
 
-        if (isset($modelData['edit_offer'])) {
-            $editOffer = $modelData['edit_offer'];
+        // Section: edit Discount
+        if (isset($modelData['edit_offer_discount'])) {
+            $editOfferDiscount = $modelData['edit_offer_discount'];
 
             // Set percentage_off to allowance_signature
-            if (!empty($editOffer['percentage_off'])) {
-                $percentage_off = ((float) $editOffer['percentage_off']) / 100; // Convert 25 → 0.25
+            if (!empty($editOfferDiscount['percentage_off'])) {
+                $percentage_off = ((float) $editOfferDiscount['percentage_off']) / 100; // Convert 25 → 0.25
 
                 $signature = trim((string) $offer['allowance_signature']);
 
@@ -75,8 +76,14 @@ class UpdateOffer extends OrgAction
                     }
                 }
 
+                unset($modelData['edit_offer_discount']);
                 $modelData['allowance_signature'] = $newSignature;
             }
+        }
+        
+        // Section: edit Trigger
+        if (isset($modelData['edit_offer_trigger'])) {
+            $editOffer = $modelData['edit_offer_trigger'];
 
             // Set to trigger_data.item_quantity
             if (isset($editOffer['trigger_item_quantity']) && $editOffer['trigger_item_quantity'] !== '') {
@@ -126,9 +133,9 @@ class UpdateOffer extends OrgAction
                 $newTriggerData = $triggerData;
             }
 
-            // Remove edit_offer from modelData
+            // Remove edit_offer_trigger from modelData
             $modelData['trigger_data'] = $newTriggerData;
-            unset($modelData['edit_offer']);
+            unset($modelData['edit_offer_trigger']);
         }
 // dd($modelData);
 
@@ -192,7 +199,8 @@ class UpdateOffer extends OrgAction
             'trigger_data_item_quantity' => ['sometimes', 'integer'],
             'start_at'                   => ['sometimes', 'date'],
             'end_at'                     => ['sometimes', 'nullable', 'date'],
-            'edit_offer'                 => ['sometimes', 'nullable']
+            'edit_offer_trigger'         => ['sometimes', 'nullable'],
+            'edit_offer_discount'         => ['sometimes', 'nullable']
         ];
 
         if (!$this->strict) {

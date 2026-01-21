@@ -83,13 +83,13 @@ const offerType = props.fieldData.offer.type
 <template>
     <div class="relative max-w-2xl w-full">
 
-        <div v-if="['Amount AND Order Number', 'Category Quantity Ordered'].includes(offerType)" class="border-b border-gray-300 border-dashed pb-4 mb-2">
-            <div class="font-bold text-orange-600 text-lg">
+        <div v-if="['Amount AND Order Number', 'Category Quantity Ordered'].includes(offerType)" class="xborder-b border-gray-300 border-dashed pb-4 mb-2">
+            <!-- <div class="font-bold text-orange-600 text-lg">
                 {{ trans("Trigger") }}
-            </div>
+            </div> -->
 
-            <div class="pl-4">
-                <div v-if="['Category Quantity Ordered'].includes(offerType)" class="flex flex-col grid-cols-7 gap-x-4">
+            <div class="xpl-4 space-y-4">
+                <div v-if="['Category Quantity Ordered'].includes(offerType) && form[fieldName].hasOwnProperty('trigger_item_quantity')" class="flex flex-col grid-cols-7 gap-x-4">
                     <div class="col-span-3">
                         {{ trans("Minimum quantity") }}
                     </div>
@@ -104,10 +104,11 @@ const offerType = props.fieldData.offer.type
                         />
                     </div>
                 </div>
+
                 <!-- Section: Amounts -->
-                <div v-if="['Amount AND Order Number'].includes(offerType)" class="flex flex-col">
+                <div v-if="['Amount AND Order Number'].includes(offerType) && form[fieldName].hasOwnProperty('trigger_min_amount')" class="flex flex-col">
                     <div class="col-span-3">
-                        {{ trans("Order amount") }}
+                        {{ trans("Min. order amount") }}
                         <InformationIcon information="Minimum of amount of the order" />
                     </div>
                     <div class="col-span-4">
@@ -123,8 +124,9 @@ const offerType = props.fieldData.offer.type
                         />
                     </div>
                 </div>
+
                 <!-- Section: Minimum order -->
-                <div v-if="['Amount AND Order Number'].includes(offerType)" class="flex flex-col">
+                <div v-if="['Amount AND Order Number'].includes(offerType) && form[fieldName].hasOwnProperty('trigger_order_number')" class="flex flex-col">
                     <div class="col-span-3">
                         {{ trans("Min. order") }}
                         <InformationIcon information="The order count required to activate the discount (e.g., 7 = 7th order)" />
@@ -144,14 +146,14 @@ const offerType = props.fieldData.offer.type
 
         </div>
 
-        <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType)" class="w-full">
-            <div class="font-bold xtext-center text-green-600 text-lg">
+        <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType) && form[fieldName].hasOwnProperty('percentage_off')" class="w-full">
+            <!-- <div class="font-bold xtext-center text-green-600 text-lg">
                 {{ trans("Discount") }}
-            </div>
+            </div> -->
 
-            <div class="pl-4">
+            <!-- <div class="pl-4"> -->
                 <!-- Section: discounts -->
-                <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType)" class="flex flex-col">
+                <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType) && form[fieldName].hasOwnProperty('percentage_off')" class="flex flex-col">
                 
                     <div class="col-span-3">
                         {{ trans("Percentage off") }}
@@ -168,9 +170,9 @@ const offerType = props.fieldData.offer.type
                         />
                     </div>
                 </div>
-            </div>
+            <!-- </div> -->
         </div>
-    
+        <!-- {{ form[fieldName] }} -->
     </div>
 
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">

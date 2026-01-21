@@ -50,6 +50,23 @@ class EditOffer extends OrgAction
             ];
         }
 
+        // Section: Trigger
+        $triggerValue = null;
+        if (in_array($offer->type, ['Category Quantity Ordered'])) {
+            $triggerValue['trigger_item_quantity'] = $offer->trigger_data['item_quantity'] ?? 0;
+        }
+        if (in_array($offer->type, ['Amount AND Order Number'])) {
+            $triggerValue['trigger_order_number'] = $offer->trigger_data['order_number'] ?? 0;
+            $triggerValue['trigger_min_amount'] = $offer->trigger_data['min_amount'] ?? 0;
+        }
+
+        // Section: Discount
+        $discountValue = null;
+        if (in_array($offer->type, ['Category Ordered', 'Category Quantity Ordered'])) {
+            $discountValue['percentage_off'] = $percentage_off;
+        }
+
+
         return Inertia::render(
             'EditModel',
             [
@@ -117,19 +134,22 @@ class EditOffer extends OrgAction
                                         'required'    => true,
                                         'value'       => $offer->label,
                                     ],
-                                    'edit_offer'        => [
+                                    'edit_offer_trigger'        => $triggerValue ? [
                                         'type'        => 'editOffer',
-                                        'label'       => __('Settings'),
+                                        'label'       => __('Trigger'),
                                         'required'    => true,
                                         'currency_code' => $this->organisation->currency->code,
                                         'offer'         => $offer,
-                                        'value'       => [
-                                            'trigger_item_quantity' => $offer->trigger_data['item_quantity'] ?? 0,
-                                            'trigger_order_number' => $offer->trigger_data['order_number'] ?? 0,
-                                            'trigger_min_amount' => $offer->trigger_data['min_amount'] ?? 0,
-                                            'percentage_off' => $percentage_off,
-                                        ],
-                                    ],
+                                        'value'       => $triggerValue,
+                                    ] : null,
+                                    'edit_offer_discount'        => $discountValue ? [
+                                        'type'          => 'editOffer',
+                                        'label'         => __('Discount'),
+                                        'required'      => true,
+                                        'currency_code' => $this->organisation->currency->code,
+                                        'offer'         => $offer,
+                                        'value'         => $discountValue,
+                                    ] : null,
                                 ]
                             ],
                         ],
