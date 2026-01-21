@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Actions\Inventory\PickingTrolley\UI;
+
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+
+class CreatePickingTrolley extends OrgAction
+{
+    use WithWarehouseEditAuthorisation;
+
+    public function handle(Warehouse $warehouse, ActionRequest $request): Response
+    {
+        return Inertia::render(
+            'CreateModel',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'title'       => __('create picking trolley'),
+                'pageHead'    => [
+                    'model'   => __('Picking trolley'),
+                    'title'   => __('Create'),
+                    'icon'    => 'fal fa-shopping-cart',
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'cancel',
+                            'label' => __('Cancel'),
+                            'route' => [
+                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ],
+                        ]
+                    ]
+                ],
+                'formData'    => [
+                    'blueprint' => [
+                        [
+                            'title'  => __('ID/Name'),
+                            'fields' => [
+                                'code' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Code'),
+                                    'placeholder' => __('maximum 64 character long'),
+                                    'value'       => '',
+                                    'required'    => true,
+                                ],
+                            ]
+                        ],
+                    ],
+                    'route'     => [
+                        'name'       => 'grp.models.warehouse.picking_trolley.store',
+                        'parameters' => $warehouse->id
+                    ]
+                ],
+            ]
+        );
+    }
+
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Response
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($warehouse, $request);
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        return array_merge(
+            IndexPickingTrolleys::make()->getBreadcrumbs(
+                routeName: preg_replace('/create$/', 'index', $routeName),
+                routeParameters: $routeParameters,
+            ),
+            [
+                [
+                    'type'          => 'creatingModel',
+                    'creatingModel' => [
+                        'label' => __('Creating picking trolleys'),
+                    ]
+                ]
+            ]
+        );
+    }
+}
