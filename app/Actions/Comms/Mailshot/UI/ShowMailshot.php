@@ -77,7 +77,7 @@ class ShowMailshot extends OrgAction
                 ),
                 'pageHead'                        => [
                     'icon'    => 'fal fa-coins',
-                    'title'   => 'Newsletter ' . $mailshot->id,
+                    'title'   => $mailshot->type->value . ' ' . $mailshot->id,
                     'edit'    => $this->canEdit ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -120,23 +120,23 @@ class ShowMailshot extends OrgAction
                     'navigation' => MailshotTabsEnum::navigation()
                 ],
                 MailshotTabsEnum::SHOWCASE->value => $this->tab == MailshotTabsEnum::SHOWCASE->value ?
-                    fn () => GetMailshotShowcase::run($mailshot)
-                    : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot)),
+                    fn() => GetMailshotShowcase::run($mailshot)
+                    : Inertia::lazy(fn() => GetMailshotShowcase::run($mailshot)),
 
                 MailshotTabsEnum::RECIPIENTS->value => $this->tab == MailshotTabsEnum::RECIPIENTS->value ?
-                    fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
-                    : Inertia::lazy(fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
+                    fn() => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
+                    : Inertia::lazy(fn() => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
 
 
                 MailshotTabsEnum::DISPATCHED_EMAILS->value => $this->tab == MailshotTabsEnum::DISPATCHED_EMAILS->value
                     ?
-                    fn () => DispatchedEmailsResource::collection(
+                    fn() => DispatchedEmailsResource::collection(
                         IndexDispatchedEmails::run(
                             parent: $mailshot,
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
                         )
                     )
-                    : Inertia::lazy(fn () => LocationResource::collection(
+                    : Inertia::lazy(fn() => LocationResource::collection(
                         IndexDispatchedEmails::run(
                             parent: $mailshot,
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value

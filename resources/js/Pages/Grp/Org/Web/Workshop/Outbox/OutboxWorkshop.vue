@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import type { Component } from "vue";
+import { ref } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -19,13 +18,11 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane } from '@fal'
 import { faUserCog } from '@fas'
-import Tabs from "@/Components/Navigation/Tabs.vue";
-import Modal from '@/Components/Utils/Modal.vue'
+
+
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { data } from "autoprefixer"
-import { useTabChange } from "@/Composables/tab-change";
-import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
 
 library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -236,98 +233,6 @@ const schedulePublish = async () => {
     }
 }
 
-const dummyTabs = {
-    current: "templates",
-    navigation: {
-        templates: {
-            title: "Templates",
-            icon: "fal fa-layer-group",
-        },
-        previous_mailshots: {
-            title: "Previous Mailshots",
-            icon: "fal fa-history",
-        },
-        store_mailshots: {
-            title: "Other Store Mailshots",
-            icon: "fal fa-store",
-        },
-    },
-}
-
-type TabKey =
-    | "templates"
-    | "previous_mailshots"
-    | "store_mailshots"
-
-const isModalConfirmationOrder = ref(false)
-
-const tabs = computed(() => props.tabs ?? dummyTabs)
-
-const currentTab = ref<TabKey>(
-    (tabs.value.current as TabKey) ?? "templates"
-)
-
-const handleTabUpdate = (tabSlug: string) =>
-    useTabChange(tabSlug, currentTab)
-
-const dummyTemplates = [
-    {
-        "id": 6,
-        "recipient_type": null,
-        "state": { "tooltip": "sent", "icon": "fal fa-paper-plane", "class": "text-green-600" },
-        "email_address": "matei_bogdan65@yahoo.com",
-        "sent_at": "2026-01-15 09:11:46+08",
-        "customer_name": "Bogdan Matei"
-    }
-]
-
-const dummyPreviousMailshots = [
-    {
-        id: 10,
-        subject: "January Newsletter",
-        sent_at: "2026-01-15 09:11",
-        total_recipients: 1240,
-        status: "sent",
-    },
-    {
-        id: 11,
-        subject: "New Product Launch",
-        sent_at: "2026-01-05 10:00",
-        total_recipients: 980,
-        status: "sent",
-    },
-]
-
-const dummyStoreMailshots = [
-    {
-        id: 20,
-        store_name: "Ancient Wisdom Ltd",
-        subject: "Holiday Sale",
-        created_at: "2026-01-02",
-    },
-    {
-        id: 21,
-        store_name: "Global Market",
-        subject: "New Collection",
-        created_at: "2025-12-28",
-    },
-]
-const tabData = computed<Record<TabKey, any[]>>(() => ({
-    templates: props.templates ?? dummyTemplates,
-    previous_mailshots: props.previous_mailshots ?? dummyPreviousMailshots,
-    store_mailshots: props.store_mailshots ?? dummyStoreMailshots,
-}))
-
-const component = computed<Component>(() => TableEmailTemplate)
-
-const activeData = computed(() => {
-    const data = tabData.value[currentTab.value]
-    return data
-})
-
-const activeSnapshot = ref(props.snapshot)
-
-console.log("outbox", props)
 </script>
 
 
@@ -335,21 +240,11 @@ console.log("outbox", props)
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #otherBefore>
-            <Button @click="() => isModalConfirmationOrder = true" :label="trans('Choose Template')"
-                class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" />
-
-        </template>
     </PageHeading>
-
-    <Modal :isOpen="isModalConfirmationOrder" @onClose="isModalConfirmationOrder = false" width="w-full max-w-4xl">
-        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-        <component :is="component" :data="activeData" :tab="currentTab" />
-    </Modal>
 
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
+        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
         @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree" />
 
     <!-- unlayer -->

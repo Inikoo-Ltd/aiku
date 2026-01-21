@@ -136,7 +136,7 @@ const isReady = computed(() => mailshotState.value === "ready")
         </template>
         <div v-if="isInProcess">
             <EmptyState :data="{
-                title: trans('Newsletter is still in process'),
+                title: trans(`${props.data.mailshot.data.subject} is still in process`),
             }">
             </EmptyState>
         </div>
