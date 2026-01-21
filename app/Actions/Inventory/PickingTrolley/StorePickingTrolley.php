@@ -60,7 +60,7 @@ class StorePickingTrolley extends OrgAction
 
     public function htmlResponse(PickingTrolley $pickingTrolley): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.infrastructure.picking_trolleys.show', [
+        return Redirect::route('grp.org.warehouses.show.inventory.picking_trolleys.show', [
             $pickingTrolley->organisation->slug,
             $pickingTrolley->warehouse->slug,
             $pickingTrolley->slug,
