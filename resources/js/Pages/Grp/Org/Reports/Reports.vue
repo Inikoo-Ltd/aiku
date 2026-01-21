@@ -13,6 +13,7 @@ import { capitalize } from "@/Composables/capitalize";
 import { ref, onMounted, onUnmounted } from "vue";
 import {
     faFileExport,
+    faFileImport,
     faFileInvoice,
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
@@ -29,6 +30,7 @@ library.add(
     faAngleDown,
     faAngleUp,
     faFileExport,
+    faFileImport,
     faFileInvoice,
 );
 
