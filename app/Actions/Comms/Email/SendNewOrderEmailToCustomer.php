@@ -91,9 +91,10 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
 
         $html .= '<tr style="border-bottom: 1px solid #e9e9e9;">
-            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: left; font-weight: bold; color: #777;">'.__('Product').'</td>
-            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: center; font-weight: bold; color: #777;">'.__('Qty').'</td>
-            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: right; font-weight: bold; color: #777;">'.__('Amount').'</td>
+            <td style="width:60px;"></td>
+            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: left; font-weight: bold; color: #777;">' . __('Product') . '</td>
+            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: center; font-weight: bold; color: #777;">' . __('Qty') . '</td>
+            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: right; font-weight: bold; color: #777;">' . __('Amount') . '</td>
         </tr>';
 
 
@@ -107,8 +108,24 @@ class SendNewOrderEmailToCustomer extends OrgAction
             $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
             $productLink = $product?->webpage?->getCanonicalUrl();
 
+            $productName = $transaction->historicAsset->name ?? 'N/A';
+
+            if ($productLink) {
+                $productName = sprintf(
+                    '<a href="%s" target="_blank"
+                style="color:#3498DB;
+                       text-decoration:underline;
+                       font-weight:500;">%s</a>',
+                    $productLink,
+                    e($productName)
+                );
+            }
+
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
+                    <td style="padding:12px 8px; vertical-align:middle;">
+                        %s
+                    </td>
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: left; color: #666;">
                         <strong style="color: #555;">%s</strong><br/>
                         <span style="color: #888;">%s</span>
@@ -116,8 +133,16 @@ class SendNewOrderEmailToCustomer extends OrgAction
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: center; color: #666;">%s</td>
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: right; color: #666;">%s%s</td>
                 </tr>',
+                $productImage
+                    ? '<img src="' . $productImage . '"
+                   width="48"
+                   height="48"
+                   style="display:block;
+                          border-radius:6px;
+                          object-fit:cover;" />'
+                    : '',
                 $transaction->historicAsset->code ?? 'N/A',
-                $transaction->historicAsset->name ?? 'N/A',
+                $productName,
                 rtrim(number_format($transaction->quantity_ordered, 3), '0.'),
                 $currency,
                 number_format($transaction->net_amount, 2)
@@ -134,7 +159,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">'.__('Items').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">' . __('Items') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #666;">%s%s</td>
             </tr>',
             $currency,
@@ -144,7 +169,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">'.__('Charges').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">' . __('Charges') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #666;">%s%s</td>
             </tr>',
             $currency,
@@ -154,7 +179,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">'.__('Shipping').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">' . __('Shipping') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #666;">%s%s</td>
             </tr>',
             $currency,
@@ -164,7 +189,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">'.__('Total net').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">' . __('Total net') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #666;">%s%s</td>
             </tr>',
             $currency,
@@ -174,7 +199,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">'.__('Tax').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #777;">' . __('Tax') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #666;">%s%s</td>
             </tr>',
             $currency,
@@ -184,7 +209,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">'.__('Total').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">' . __('Total') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">%s%s</td>
             </tr>',
             $currency,
@@ -194,7 +219,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">'.__('Paid').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">' . __('Paid') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">%s%s</td>
             </tr>',
             $currency,
@@ -204,7 +229,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">'.__('To Pay Amount').'</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">' . __('To Pay Amount') . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">%s%s</td>
             </tr>',
             $currency,
@@ -230,10 +255,10 @@ class SendNewOrderEmailToCustomer extends OrgAction
         if ($shopType == ShopTypeEnum::DROPSHIPPING) {
             $baseUrl = 'https://ds.test';
             if (app()->isProduction()) {
-                $baseUrl = 'https://'.$shop->website->domain;
+                $baseUrl = 'https://' . $shop->website->domain;
             }
 
-            $orderUrl = $baseUrl.'/app/dropshipping/channels/'.$order->customerSalesChannel->slug.'/orders/'.$order->slug;
+            $orderUrl = $baseUrl . '/app/dropshipping/channels/' . $order->customerSalesChannel->slug . '/orders/' . $order->slug;
 
             return sprintf(
                 '<a href="%s" target="_blank" style="color: #3498DB; text-decoration: underline; font-weight: 500;">%s</a>',
@@ -261,15 +286,15 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $currency = $order->shop->currency->symbol;
 
         $html .= '<div style="margin-top: 30px;">
-            <h3 style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; color: #555; margin: 0 0 15px 0;">'.__('Payments').'</h3>
+            <h3 style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; color: #555; margin: 0 0 15px 0;">' . __('Payments') . '</h3>
         </div>';
 
         $html .= '<table width="100%" cellpadding="8" cellspacing="0" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; border-collapse: collapse;">';
 
         $html .= '<tr style="border-bottom: 1px solid #e9e9e9;">
-            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left; font-weight: bold; color: #777;">'.__('Reference').'</td>
-            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center; font-weight: bold; color: #777;">'.__('Method').'</td>
-            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right; font-weight: bold; color: #777;">'.__('Amount').'</td>
+            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left; font-weight: bold; color: #777;">' . __('Reference') . '</td>
+            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center; font-weight: bold; color: #777;">' . __('Method') . '</td>
+            <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right; font-weight: bold; color: #777;">' . __('Amount') . '</td>
         </tr>';
 
         foreach ($payments as $payment) {
@@ -294,5 +319,4 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
         return $html;
     }
-
 }
