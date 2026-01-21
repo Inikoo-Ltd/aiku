@@ -112,7 +112,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                         <tr>
                             <td style="padding-right:12px; vertical-align:top;">%s</td>
                             <td style="vertical-align:top;">
-                                <span style="color:#666;">%s</span>
+                                <span><strong style="color: #555;">%s</strong></span>
                                 <br/>
                                 <a href="%s"
                                    target="_blank"
