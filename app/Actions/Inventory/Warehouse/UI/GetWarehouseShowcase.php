@@ -61,7 +61,7 @@ class GetWarehouseShowcase
                     'name'     => trans_choice('picked bay|picked bays', $warehouse->stats->number_picked_bays),
                     'value'   => $warehouse->stats->number_picked_bays,
                     'route'     => [
-                        'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                        'name'       => 'grp.org.warehouses.show.inventory.picked_bays.index',
                         'parameters' => array_merge($routeParameters, [$warehouse->slug])
                     ],
                     'icon' => [
