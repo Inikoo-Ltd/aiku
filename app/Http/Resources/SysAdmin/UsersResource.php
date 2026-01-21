@@ -37,9 +37,9 @@ class UsersResource extends JsonResource
     {
         /** @var User $user */
         $user = $this;
-
         return [
             'id'                        => $this->id,
+            'slug'                      => $this->slug,
             'username'                  => $this->username,
             'image'                     => $user->imageSources(48, 48),
             'email'                     => $this->email,
