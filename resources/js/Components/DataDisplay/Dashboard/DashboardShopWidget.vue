@@ -82,6 +82,7 @@ const registrationsRatio = computed(() => {
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
         <ShopSales :interval="interval" :data="data.interval_data" />
         <ShopInvoices :interval="interval" :data="data.interval_data" />
+
         <div v-if="Number(data.interval_data.visitors?.[interval]?.raw_value) > 0" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg min-h-32 transform transition-transform hover:scale-105">
             <div class="text-sm w-full">
                 <p class="text-lg font-bold mb-1">{{ trans('Visitors') }}</p>
@@ -92,18 +93,6 @@ const registrationsRatio = computed(() => {
                     </span>
                 </span>
                 <p class="text-xs text-gray-500 mt-1">{{ trans('Total visitors') }}</p>
-            </div>
-        </div>
-        <div v-if="Number(data.interval_data.registrations?.[interval]?.raw_value) > 0" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
-            <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">{{ trans('Registrations') }}</p>
-                <span class="text-2xl font-bold">
-                    {{ data.interval_data.registrations?.[interval]?.formatted_value || '0' }}
-                    <span v-if="getYoYComparison('registrations')" :class="['italic text-base font-medium ml-1', { 'text-green-500': getYoYComparison('registrations')?.isPositive, 'text-red-500': getYoYComparison('registrations')?.isNegative }]">
-                        {{ getYoYComparison('registrations')?.value }}
-                    </span>
-                </span>
-                <p class="text-xs text-gray-500 mt-1">{{ trans('New customer registrations') }}</p>
             </div>
         </div>
 
