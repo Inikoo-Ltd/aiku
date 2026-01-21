@@ -287,7 +287,7 @@ const getSeverity = (type?: string) => {
     <PageHeading :data="pageHead" />
 
     <div v-if="warning && showWarningMessage">
-        <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" :closable="true"
+        <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" xclosable="true"
             @close="showWarningMessage = false">
             <div class="flex items-start gap-3">
                 <!-- Icon -->
@@ -304,7 +304,7 @@ const getSeverity = (type?: string) => {
                         {{ warning?.title }}
                     </div>
                     <div v-if="warning?.text" :class="[
-                        getSeverity(warning.type) === 'warn' ? 'text-yellow-500' :
+                        getSeverity(warning.type) === 'warn' ? 'text-yellow-600/80' :
                             getSeverity(warning.type) === 'success' ? 'text-green-500' :
                                 getSeverity(warning.type) === 'error' ? 'text-red-500' :
                                     'text-blue-500'

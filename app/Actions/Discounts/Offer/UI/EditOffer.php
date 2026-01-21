@@ -39,6 +39,17 @@ class EditOffer extends OrgAction
         $percentage_off = $offerResource['data_allowance_signature']['percentage_off'] * 100;
 
         // dd($offer);
+        
+        $warning = null;
+        if ($productCategory) {
+            $warning = [
+                'type'  => 'info',
+                'title' => __('Info!'),
+                'text'  => __('This offer apply on product category :prodCat', ['prodCat' => $productCategory->name]),
+                'icon'  => ['fas', 'fa-exclamation-triangle']
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -51,8 +62,19 @@ class EditOffer extends OrgAction
                 'pageHead'    => [
                     'title' => $offer->name,
                     'model' => __('Edit Offer'),
-                    'icon'  => 'fal fa-pencil'
+                    'icon'  => 'fal fa-pencil',
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'route' => [
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ]
+                        ]
+                    ],
                 ],
+                'warning'   => $warning,
                 'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
@@ -60,26 +82,26 @@ class EditOffer extends OrgAction
                             [
                                 'title'  => __('Properties'),
                                 'fields' => [
-                                    'type'      => [
-                                        'label' => __('Offer type'),
-                                        'type'  => 'select',
-                                        'readonly' => true,
-                                        'required' => true,
-                                        'options'   => [
-                                            $offer->type
-                                        ],
-                                        'value' => $offer->type
-                                    ],
-                                    'category'      => $productCategory ? [
-                                        'label' => __('Product category'),
-                                        'type'  => 'select',
-                                        'readonly' => true,
-                                        'required' => true,
-                                        'options'   => [
-                                            $productCategory->name
-                                        ],
-                                        'value' => $productCategory->name
-                                    ] : null,
+                                    // 'type'      => [
+                                    //     'label' => __('Offer type'),
+                                    //     'type'  => 'select',
+                                    //     'readonly' => true,
+                                    //     'required' => true,
+                                    //     'options'   => [
+                                    //         $offer->type
+                                    //     ],
+                                    //     'value' => $offer->type
+                                    // ],
+                                    // 'category'      => $productCategory ? [
+                                    //     'label' => __('Product category'),
+                                    //     'type'  => 'select',
+                                    //     'readonly' => true,
+                                    //     'required' => true,
+                                    //     'options'   => [
+                                    //         $productCategory->name
+                                    //     ],
+                                    //     'value' => $productCategory->name
+                                    // ] : null,
                                     'name'        => [
                                         'type'        => 'input',
                                         'label'       => __('Name'),
