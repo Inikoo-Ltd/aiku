@@ -16,12 +16,17 @@ library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faCh
 
 const props = defineProps<{
   fieldValue: {
-    family: {
+    family: {  // WebBlockFamilyResource.
       name: string
       description_title?: string
       description?: string
       description_extra?: string
-      images: { source: string }[]
+      images: { 
+        png: string
+        avif: string
+        webp: string
+        original: string
+       }
       active_offers: {
 
       }[]
@@ -82,6 +87,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
         <div v-if="fieldValue?.family?.offers_data && layout.iris.is_logged_in"
             class="flex gap-x-4 mt-4 gap-y-2 mb-3"
         >
+            <!-- Offer: Gold Reward active/inactive -->
             <section
                 class="relative flex justify-between items-center w-fit rounded-lg px-5 py-1 shadow-md text-white mb-2"
                 :class="layout?.user?.gr_data?.customer_is_gr ? 'bg-[#ff862f]' : 'bg-gray-400/70'"
@@ -107,6 +113,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
                 </Popover>
             </section>
 
+            <!-- Offer: list offers -->
             <template v-if="Object.keys(fieldValue?.family?.offers_data).length">
                 <section
                     v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data"

@@ -45,7 +45,7 @@ class CloneProductsFromMaster
 
         if (!$shop->products()->where('master_product_id', $masterProduct->id)->exists()) {
             list($hasAllOrgStocks, $hasDiscontinuing, $hasDiscontinued) = $this->getOrgStocksData($shop->organisation, $masterProduct->tradeUnits);
-
+            
             if ($hasAllOrgStocks && !$hasDiscontinuing && !$hasDiscontinued) {
                 $anchorShop = $this->getSeederShop($masterShop, $shop->organisation);
 
