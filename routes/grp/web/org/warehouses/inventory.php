@@ -31,6 +31,10 @@ use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
+use App\Actions\Inventory\PickedBay\UI\CreatePickedBay;
+use App\Actions\Inventory\PickedBay\UI\EditPickedBay;
+use App\Actions\Inventory\PickedBay\UI\IndexPickedBays;
+use App\Actions\Inventory\PickedBay\UI\ShowPickedBay;
 use App\Actions\Inventory\PickingTrolley\UI\CreatePickingTrolley;
 use App\Actions\Inventory\PickingTrolley\UI\EditPickingTrolley;
 use App\Actions\Inventory\PickingTrolley\UI\IndexPickingTrolleys;
@@ -196,4 +200,11 @@ Route::prefix('picking-trolleys')->as('picking_trolleys.')->group(function () {
     Route::get('create', CreatePickingTrolley::class)->name('create');
     Route::get('{pickingTrolley}', ShowPickingTrolley::class)->name('show');
     Route::get('{pickingTrolley}/edit', EditPickingTrolley::class)->name('edit');
+});
+
+Route::prefix('picked-bays')->as('picked_bays.')->group(function () {
+    Route::get('', IndexPickedBays::class)->name('index');
+    Route::get('create', CreatePickedBay::class)->name('create');
+    Route::get('{pickedBay}', ShowPickedBay::class)->name('show');
+    Route::get('{pickedBay}/edit', EditPickedBay::class)->name('edit');
 });
