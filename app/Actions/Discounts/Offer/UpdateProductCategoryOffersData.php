@@ -85,6 +85,7 @@ class UpdateProductCategoryOffersData
 
         $offerData = [
             'state'           => $offer->state->value,
+            'type'            => $offer->type,
             'duration'        => $offer->duration->value,
             'label'           => $offer->label ?? $offer->name,
             'allowances'      => $allowances,
