@@ -4,6 +4,8 @@ namespace App\Actions\Inventory\PickingTrolley\UI;
 
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
+use App\Enums\UI\Inventory\PickingTrolleysTabsEnum;
+use App\Enums\UI\Inventory\WarehousesTabsEnum;
 use App\Http\Resources\Inventory\PickingTrolleyResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\PickingTrolley;
@@ -82,7 +84,7 @@ class IndexPickingTrolleys extends OrgAction
     public function htmlResponse(LengthAwarePaginator $pickingTrolleys, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Grp/Org/Warehouse/PickingTrolleys',
+            'Org/Warehouse/PickingTrolleys',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -104,6 +106,10 @@ class IndexPickingTrolleys extends OrgAction
                         ] : null,
                     ],
                 ],
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => PickingTrolleysTabsEnum::navigation(),
+                ],
                 'data'        => PickingTrolleyResource::collection($pickingTrolleys),
             ]
         )->table($this->tableStructure());
@@ -111,7 +117,7 @@ class IndexPickingTrolleys extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickingTrolleysTabsEnum::values());
 
         return $this->handle($warehouse);
     }
@@ -133,11 +139,11 @@ class IndexPickingTrolleys extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.infrastructure.picking_trolleys.index' =>
+            'grp.org.warehouses.show.inventory.picking_trolleys.index' =>
             array_merge(
                 ShowWarehouse::make()->getBreadcrumbs($routeParameters),
                 $headCrumb([
-                    'name'       => 'grp.org.warehouses.show.infrastructure.picking_trolleys.index',
+                    'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.index',
                     'parameters' => $routeParameters,
                 ])
             ),

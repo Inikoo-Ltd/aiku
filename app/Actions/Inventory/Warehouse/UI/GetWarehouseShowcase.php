@@ -49,11 +49,11 @@ class GetWarehouseShowcase
                     'name'     => trans_choice('picking trolley|picking trolleys', $warehouse->stats->number_picking_trolleys),
                     'value'   => $warehouse->stats->number_picking_trolleys,
                     'route'     => [
-                        'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                        'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.index',
                         'parameters' => array_merge($routeParameters, [$warehouse->slug])
                     ],
                     'icon' => [
-                        'icon'    => 'fal fa-inventory',
+                        'icon'    => 'fal fa-shopping-cart',
                         'tooltip' => __('Picking Trolleys')
                     ]
                 ],
