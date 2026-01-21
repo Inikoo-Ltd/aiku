@@ -211,7 +211,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\ProductCategory $productCategory
+ * @property-read \App\Models\Catalogue\ProductCategory|null $productCategory
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingIntervals query()

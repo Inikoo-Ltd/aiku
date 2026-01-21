@@ -12,6 +12,20 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+/**
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickedBay newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickedBay newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickedBay onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickedBay query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickedBay withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickedBay withoutTrashed()
+ * @mixin \Eloquent
+ */
 class PickedBay extends Model implements Auditable
 {
     use SoftDeletes;

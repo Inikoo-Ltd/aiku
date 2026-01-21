@@ -12,6 +12,20 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+/**
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley withoutTrashed()
+ * @mixin \Eloquent
+ */
 class PickingTrolley extends Model implements Auditable
 {
     use SoftDeletes;
