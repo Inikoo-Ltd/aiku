@@ -99,7 +99,11 @@ class SendNewOrderEmailToSubscribers extends OrgAction
             $historicAsset = $transaction->historicAsset;
             $product = $transaction->model;
             $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
-            $productLink = "";
+            $productLink = route('grp.org.shops.show.catalogue.products.current_products.show', [
+                $transaction->organisation?->slug,
+                $transaction->shop?->slug,
+                $product?->slug
+            ]);
 
             $html          .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
