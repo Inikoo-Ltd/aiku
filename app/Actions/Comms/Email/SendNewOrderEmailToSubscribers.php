@@ -118,7 +118,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                                    target="_blank"
                                    style="color:#2563eb;
                                           text-decoration:underline;
-                                          font-weight:600;">
+                                          font-weight:500;">
                                     %s
                                 </a>
                             </td>
