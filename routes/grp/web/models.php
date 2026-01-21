@@ -363,7 +363,6 @@ use App\Actions\UI\Profile\View2FAProfile;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
-Route::get('/profile/2fa-qrcode', View2FAProfile::class)->name('profile.2fa-qrcode');
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 
 Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name('notifications.read');

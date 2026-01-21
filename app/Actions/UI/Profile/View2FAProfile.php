@@ -37,12 +37,6 @@ class View2FAProfile
             $secret = $google2fa->generateSecretKey(32);
         }
 
-        // Generate the URL (for the QR)
-        $google2fa->getQRCodeUrl(
-            'aiku',
-            $user->username,
-            $secret
-        );
         // Generate the QR
         $qrInline = $google2fa->getQRCodeInline(
             'aiku',

@@ -75,6 +75,7 @@ else if (props.style == "disabled" || props.type == "disabled") styleClass = "cu
 else styleClass = `buttonPrimary`;
 
 if(props.style == 'white-w-outline') {styleClass = "bg-white hover:bg-gray-200/70 border border-gray-300  text-gray-600 disabled:bg-gray-300 disabled:border-gray-400"}
+if(props.style == 'blue-bk-outline') {styleClass = "bg-blue-400 hover:bg-blue-400/70 border border-gray-400 disabled:bg-gray-400 disabled:border-gray-800"}
 if(props.style == 'white-r-outline') {styleClass = "bg-white hover:bg-red-200 border border-red-300 text-red-500 hover:text-red-600  disabled:border-red-200 disabled:bg-gray-300 disabled:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 "}
 
 // Styling depends on the 'size' props
