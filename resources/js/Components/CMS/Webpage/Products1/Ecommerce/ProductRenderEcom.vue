@@ -103,8 +103,11 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false"
             >
                 <slot name="image" :product="product">
-                    <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery" :alt="product.name"
+                    <Image
+                        v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery"
+                        :alt="product.name"
                         :style="{ objectFit: 'contain' }"
+                        class="w-full h-full flex justify-center items-center"
                         :class="product.available_quantity > 0 ? '' : 'grayscale hover:grayscale-0'"
                     />
                     <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width aria-hidden="true" />
