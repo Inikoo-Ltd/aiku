@@ -9,6 +9,7 @@
 namespace App\Actions\Dashboard;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
+use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
@@ -52,6 +53,27 @@ class ShowOrganisationDashboard extends OrgAction
         $customRangeData = $this->setupCustomRange($userSettings, $organisation);
         $saved_interval  = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        $performanceDates = [null, null];
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
+                if (count($dates) === 2) {
+                    $performanceDates = [$dates[0], $dates[1]];
+                }
+            }
+        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
+            $intervalString = DashboardIntervalFilters::run($saved_interval);
+            if ($intervalString) {
+                $dates = explode('-', $intervalString);
+                if (count($dates) === 2) {
+                    $performanceDates = [$dates[0], $dates[1]];
+                }
+            }
+        }
+
+        $topPerformanceStats = GetTopPerformanceStats::run($organisation, $performanceDates[0], $performanceDates[1]);
+
         $tabsBox = $this->getTabsBox($organisation);
 
         $dashboard = [
@@ -75,7 +97,8 @@ class ShowOrganisationDashboard extends OrgAction
                             'current_tab' => $currentTab,
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
                             'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $customRangeData),
-                            'charts'      => []
+                            'charts'      => [],
+                            'top_performance' => $topPerformanceStats,
                         ],
                     ],
                     'tabs_box'  => [
