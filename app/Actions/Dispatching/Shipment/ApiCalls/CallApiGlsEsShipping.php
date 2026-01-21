@@ -235,6 +235,13 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["portage"]         = "P";
         $shipmentData["RefC"]            = strtoupper($parent->reference);
 
+        $cashOnDelivery='';
+        if (Arr::get($parentResource, 'cash_on_delivery')) {
+            $amount=Arr::get($parentResource, 'cash_on_delivery.amount');
+            $amount = str_replace('.', ',', (string)$amount);
+            $cashOnDelivery='<Importes><Reembolso>'.$amount.'</Reembolso></Importes>';
+        }
+
 
         return '<?xml version="1.0" encoding="utf-8"?>
          <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
@@ -273,6 +280,7 @@ class CallApiGlsEsShipping extends OrgAction
                <Referencias>
                   <Referencia tipo="C">'.$shipmentData["RefC"].'</Referencia>
                </Referencias>
+               '.$cashOnDelivery.'
             </Envio>
             </Servicios>
             </docIn>
