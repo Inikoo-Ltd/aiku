@@ -206,18 +206,26 @@ const buildNodes = computed<Node[]>(() => {
 
 
 const setProduct = (node: Node, val: any | null) => {
-  const entryId = Object.keys(model.value.products).find(id =>
-    Object.keys(node.key).every(k => model.value.products[id][k] === node.key[k])
-  )
+  // cari semua entry lama dengan kombinasi variant yang sama
+  const sameVariantIds = Object.keys(model.value.products).filter(id => {
+    const p = model.value.products[id]
+    return Object.keys(node.key).every(k => p[k] === node.key[k])
+  })
 
-
+  // jika product di-unpick → hapus semua entry kombinasi itu
   if (!val) {
-    if (!entryId) return
-
-    delete model.value.products[entryId]
+    sameVariantIds.forEach(id => {
+      delete model.value.products[id]
+    })
     return
   }
 
+  // jika ganti product → hapus product lama dulu
+  sameVariantIds.forEach(id => {
+    delete model.value.products[id]
+  })
+
+  // lalu simpan product baru
   model.value.products[val.id] = {
     ...node.key,
     product: {
