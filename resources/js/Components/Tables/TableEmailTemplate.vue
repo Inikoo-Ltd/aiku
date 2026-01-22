@@ -65,8 +65,8 @@ const locale = inject("locale", aikuLocaleStructure);
 const useTemplate = async (id: number) => {
     try {
         const { data } = await axios.get(
-            route('grp.json.mailshot.template', {
-                mailshot: id,
+            route('grp.json.email_templates.layout', {
+                emailTemplate: id,
             })
         )
 

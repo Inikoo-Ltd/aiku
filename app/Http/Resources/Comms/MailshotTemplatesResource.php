@@ -18,7 +18,7 @@ class MailshotTemplatesResource extends JsonResource
             'id'                => $this->id,
             'state'             => $this->state,
             'subject'           => $this->subject,
-            'shop_name'         => $this->name,
+            'shop_name'         => $this->shop_name,
             'created_at'        => $this->created_at,
             'sent_at'           => $this->sent_at,
         ];

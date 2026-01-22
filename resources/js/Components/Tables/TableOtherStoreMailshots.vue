@@ -98,5 +98,10 @@ const useTemplate = async (id: number) => {
                 {{ useFormatTime(item.created_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}
             </div>
         </template>
+        <template #cell(sent_at)="{ item }">
+            <div class="text-sm">
+                {{ useFormatTime(item.sent_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+            </div>
+        </template>
     </Table>
 </template>

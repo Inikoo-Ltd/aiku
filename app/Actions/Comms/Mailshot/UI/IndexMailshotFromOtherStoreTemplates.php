@@ -49,7 +49,7 @@ class IndexMailshotFromOtherStoreTemplates extends OrgAction
                 'mailshots.created_at',
                 'mailshots.sent_at'
             ])
-            ->allowedSorts(['created_at', 'subject', 'state'])
+            ->allowedSorts(['created_at', 'subject', 'sent_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
