@@ -116,6 +116,15 @@ class WebBlockProductResource extends JsonResource
             'is_on_demand'                      => $isOnDemand,
             'is_back_in_stock'                  => $product->backInStockReminders,
             'back_in_stock'                     => $back_in_stock,
+
+            
+            'offers_data'                   => $this->offers_data,  // TODO
+            'discounted_price'              => $this->price * .5,  // TODO
+            'discounted_price_per_unit'     => $pricePerUnit * .5,  // TODO
+            'discounted_profit'             => $profit * .5,  // TODO
+            'discounted_profit_per_unit'    => $profitPerUnit * .5,  // TODO
+            'discounted_margin'             => $margin,  // TODO
+
             'available_gr_offer_to_use'             => $gr_offer ? [
                 'slug'          => $gr_offer->slug,
                 'trigger_data'  => $gr_offer->trigger_data,
