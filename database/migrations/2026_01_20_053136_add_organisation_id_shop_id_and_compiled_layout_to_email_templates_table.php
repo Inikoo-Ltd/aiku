@@ -19,6 +19,7 @@ return new class () extends Migration {
     public function up()
     {
         Schema::table('email_templates', function (Blueprint $table) {
+            $table->text('compiled_layout')->nullable()->comment('e.g. html in case of email builders');
             $table->unsignedSmallInteger('organisation_id')->nullable()->index();
             $table->foreign('organisation_id')->references('id')->on('organisations')->nullOnDelete();
             $table->unsignedSmallInteger('shop_id')->nullable()->index();
@@ -34,6 +35,7 @@ return new class () extends Migration {
     public function down()
     {
         Schema::table('email_templates', function (Blueprint $table) {
+            $table->dropColumn('compiled_layout');
             $table->dropForeign(['organisation_id']);
             $table->dropIndex(['organisation_id']);
             $table->dropColumn('organisation_id');
