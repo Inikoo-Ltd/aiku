@@ -52,18 +52,20 @@ interface ProductResource {
     product_offers_data: {
         number_offers: 1
         offers: {
-            state: string
-            type: string
-            label: string
-            allowances: {
-                class: string
+            [key: string]: {
+                state: string
                 type: string
                 label: string
-                percentage_off: string
-            }[]
-            triggers_labels: string[]
-            max_percentage_discount: string
-        }[]
+                allowances: {
+                    class: string
+                    type: string
+                    label: string
+                    percentage_off: string
+                }[]
+                triggers_labels: string[]
+                max_percentage_discount: string
+            }
+        }
         best_percentage_off: {
             percentage_off: string
             offer_id: number
@@ -84,14 +86,14 @@ const isGoldMember = false // TO DO: get from user data
 
 const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
 
-console.log(props.product.product_offers_data)
+// console.log(props.product.product_offers_data)
 
 const getBestOffer = (offerId: string) => {
     if (!offerId) {
         return
     }
 
-    return props.product?.product_offers_data?.offers[offerId]
+    return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
 console.log('fffff', props.product.product_offers_data)
@@ -134,11 +136,11 @@ console.log('fffff', props.product.product_offers_data)
             <!-- Section: Profit, label Gold Reward Member -->
             <div class="mt-0 flex justify-between">
 
-
                 <template v-if="product.product_offers_data?.number_offers > 0">
-                    <template v-if="product?.product_offers_data?.offers?.some(e => e.type === 'Category Quantity Ordered Order Interval')">
+                    <template v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'">
                         <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
-                        <NonMemberPriceLabel v-else :product
+                        <NonMemberPriceLabel v-else
+                            :product
                             :isShowAvailableGROffer="
                                 (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
                                 && !layout?.user?.gr_data?.customer_is_gr
