@@ -9,6 +9,7 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -21,11 +22,16 @@ class RepairProductsHasLiveWebpage
 
     public string $commandSignature = 'product:repair_has_live_webpage';
 
+    public function handle(Product $product)
+    {
+        ProductHydrateHasLiveWebpage::run($product, $product->webpage);
+    }
+
     public function asCommand(Command $command): void
     {
         $command->info('Repairing Products has_live_webpage');
 
-        $query = Product::where('state', '!=', ProductStateEnum::DISCONTINUED->value);
+        $query = Product::all();
 
         $total = (clone $query)->count();
 
@@ -34,12 +40,7 @@ class RepairProductsHasLiveWebpage
 
         $query->chunk(200, function ($products) use ($bar) {
             foreach ($products as $product) {
-                $product->update([
-                    'has_live_webpage' => $product->webpage()
-                        ->where('state', WebpageStateEnum::LIVE)
-                        ->exists(),
-                ]);
-
+                $this->handle($product);
                 $bar->advance();
             }
         });
