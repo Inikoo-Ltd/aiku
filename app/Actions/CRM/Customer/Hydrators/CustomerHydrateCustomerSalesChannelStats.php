@@ -26,13 +26,23 @@ class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
      */
     public string $commandDescription = 'Hydrate sales channel stats for all customers';
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int|null $customerId): string
     {
-        return $customer->id;
+        return $customerId ?? 'empty';
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int|null $customerId): void
     {
+        if ($customerId === null) {
+            return;
+        }
+
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return;
+        }
+
         $stats = [
             'number_orders_sales_channel_type_showroom' => $customer->orders()
                 ->whereHas('salesChannel', function ($q) {
@@ -56,12 +66,7 @@ class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
 
             'number_orders_sales_channel_type_other' => $customer->orders()
                 ->whereHas('salesChannel', function ($q) {
-                    $q->whereNotIn('type', [
-                        SalesChannelTypeEnum::SHOWROOM,
-                        SalesChannelTypeEnum::PHONE,
-                        SalesChannelTypeEnum::EMAIL,
-                        SalesChannelTypeEnum::WEBSITE
-                    ]);
+                    $q->where('type', SalesChannelTypeEnum::OTHER);
                 })->count(),
         ];
 
@@ -78,7 +83,7 @@ class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
 
         Customer::chunkById(100, function ($customers) use ($bar) {
             foreach ($customers as $customer) {
-                $this->handle($customer);
+                $this->handle($customer->id);
                 $bar->advance();
             }
         });

@@ -27,9 +27,9 @@ class StoreSubmittedOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Customer $customer): Order
+    public function handle(Customer $customer, array $modelData): Order
     {
-        $order = StoreOrder::make()->action($customer, []);
+        $order = StoreOrder::make()->action($customer, $modelData);
         SubmitOrder::make()->action($order);
         $order->refresh();
 
@@ -56,6 +56,17 @@ class StoreSubmittedOrder extends OrgAction
     {
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer);
+        return $this->handle($customer, $this->validatedData);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'sales_channel_id' => [
+                'required',
+                'integer',
+                'exists:sales_channels,id'
+            ],
+        ];
     }
 }
