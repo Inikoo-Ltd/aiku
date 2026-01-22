@@ -9,55 +9,65 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\OrgAction;
-use App\Enums\Comms\Mailshot\MailshotBuilderEnum;
-use App\Enums\Comms\Mailshot\MailshotStateEnum;
-use App\Models\Comms\Mailshot;
-use App\Models\SysAdmin\Group;
-use Illuminate\Validation\Rule;
+use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
+use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
+use App\Models\Catalogue\Shop;
+use App\Models\Comms\EmailTemplate;
+use Inertia\Inertia;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreMailshotTemplate extends OrgAction
 {
-    public function handle(array $modelData): Mailshot
+    public function handle(array $modelData): EmailTemplate
     {
-        /** @var Mailshot $mailshot */
-        $mailshot = $this->shop->mailshots()->create($modelData);
+        //  Use default mailshot template
+        $defaultMailshotTemplate = $this->group->emailTemplates()->where('builder', EmailTemplateBuilderEnum::BEEFREE->value)->where('slug', 'mailshot')->first();
+
+        if (!$defaultMailshotTemplate) {
+            throw new \Exception('Default mailshot template not found');
+        }
+
+        data_set($modelData, 'organisation_id', $this->organisation->id);
+        data_set($modelData, 'shop_id', $this->shop->id);
+        data_set($modelData, 'builder', EmailTemplateBuilderEnum::BEEFREE->value);
+        data_set($modelData, 'data', $defaultMailshotTemplate->data);
+        data_set($modelData, 'language_id', $defaultMailshotTemplate->language_id);
+        data_set($modelData, 'state', EmailTemplateStateEnum::IN_PROCESS->value);
+        data_set($modelData, 'is_seeded', false);
+        data_set($modelData, 'arguments', $defaultMailshotTemplate->arguments);
+        data_set($modelData, 'layout', $defaultMailshotTemplate->layout);
+
+        // TODO: update this block
+        /** @var EmailTemplate $emailTemplate */
+        $emailTemplate = $this->group->emailTemplates()->create($modelData);
 
 
-        return $mailshot;
+        return $emailTemplate;
     }
 
     public function rules(): array
     {
         $rules = [
-            'layout'      => ['sometimes', 'array'],
-            'arguments'   => ['sometimes', 'array'],
             'name'        => ['required', 'string', 'max:255'],
-            // 'builder'     => ['required', Rule::enum(MailshotBuilderEnum::class)],
-            'language_id' => ['required', 'exists:languages,id'],
-            'data'        => ['sometimes', 'array'],
-            'shop_id'     => ['sometimes', 'nullable', 'exists:shops,id'],
         ];
-
-        if (!$this->strict) {
-            $rules['is_seeded'] = ['required', 'boolean'];
-            $rules['state']     = ['required', Rule::enum(MailshotStateEnum::class)];
-            $rules['active_at'] = ['sometimes', 'required', 'date'];
-        }
 
         return $rules;
     }
 
-
-    // public function action(Group $group, array $modelData, bool $strict = true): Mailshot
-    // {
-    //     $this->asAction = true;
-    //     $this->strict   = $strict;
-    //     $this->initialisationFromGroup($group, $modelData);
-
-    //     return $this->handle($this->validatedData);
-    // }
-
-    public function asController()
+    public function asController(Shop $shop, ActionRequest $request): EmailTemplate
     {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($this->validatedData);
+    }
+
+    public function htmlResponse(EmailTemplate $emailTemplate): \Symfony\Component\HttpFoundation\Response
+    {
+
+        return Inertia::location(route('grp.org.shops.show.marketing.templates.show', [
+            'organisation'      => $this->organisation->slug,
+            'shop'              => $this->shop->slug,
+            'emailTemplate'     => $emailTemplate->slug
+        ]));
     }
 }

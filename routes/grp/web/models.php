@@ -60,7 +60,6 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
-use App\Actions\Comms\EmailTemplate\StoreEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
@@ -76,6 +75,7 @@ use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\SendNewsLetterNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
+use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
@@ -779,6 +779,10 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('publish', PublishMailshot::class)->name('publish')->withoutScopedBindings();
         Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
     });
+
+    Route::name('email-template.')->prefix('email-template')->group(function () {
+        Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
+    });
 });
 
 Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function () {
@@ -944,7 +948,6 @@ Route::patch('/group-settings', UpdateGroupSettings::class)->name('group-setting
 Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mailshot.update');
 
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
-    Route::post('store', StoreEmailTemplate::class)->name('store'); // NOTE: update this  block
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
     Route::post('{emailTemplate:id}/images', UploadImagesToEmailTemplate::class)->name('images.store');
     Route::post('{emailTemplate:id}/publish', PublishEmail::class)->name('content.publish');

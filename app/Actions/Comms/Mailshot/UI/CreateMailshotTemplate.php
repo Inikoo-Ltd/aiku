@@ -24,8 +24,6 @@ class CreateMailshotTemplate extends OrgAction
     public function handle(Shop $parent, ActionRequest $request): Response
     {
 
-
-
         return Inertia::render(
             'CreateModel',
             [
@@ -34,9 +32,9 @@ class CreateMailshotTemplate extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('New mailshot'),
+                'title'    => __('New template'),
                 'pageHead' => [
-                    'title' => __('New mailshot')
+                    'title' => __('New template')
                 ],
                 'formData' => [
                     'fullLayout' => true,
@@ -55,9 +53,9 @@ class CreateMailshotTemplate extends OrgAction
                         ]
                     ],
                     'route' => [
-                        'name'       => 'grp.models.outbox.mailshot.store',
+                        'name'       => 'grp.models.shop.email-template.store',
                         'parameters' => [
-                            // 'outbox'         => $parent->outboxes()->where('outboxes.code', OutboxCodeEnum::MAILSHOT)->first()->id,
+                            'shop' => $parent->id
                         ]
                     ]
                 ],
@@ -95,7 +93,7 @@ class CreateMailshotTemplate extends OrgAction
                 [
                     'type'          => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating mailshot'),
+                        'label' => __('Creating template'),
                     ]
                 ]
             ]

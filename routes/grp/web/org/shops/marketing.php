@@ -14,6 +14,7 @@ use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
 use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\Comms\Mailshot\UI\ShowMailshot;
+use App\Actions\Comms\Mailshot\UI\ShowMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotWorkshop;
 use App\Actions\UI\Dropshipping\Marketing\ShowMarketingDashboard;
 use App\Stubs\UIDummies\CreateDummy;
@@ -49,4 +50,5 @@ Route::name("templates.")->prefix('templates')
     ->group(function () {
         Route::get('', IndexMailshotTemplates::class)->name('index');
         Route::get('create', CreateMailshotTemplate::class)->name('create');
+        Route::get('{emailTemplate}', ShowMailshotTemplate::class)->name('show');
     });
