@@ -40,9 +40,9 @@ class UpdateProductCategoryOffersData
         } else {
             $modelOfferData['offers'][$offer->id] = $offerData;
         }
-
-        $modelOfferData      = $this->getBestOffers($modelOfferData);
-        $modelOfferData['v'] = 1;
+        $modelOfferData['number_offers'] = count(Arr::get($modelOfferData, 'offers', []));
+        $modelOfferData                  = $this->getBestOffers($modelOfferData);
+        $modelOfferData['v']             = 1;
         $model->update(['offers_data' => $modelOfferData]);
 
         if ($model instanceof ProductCategory) {
@@ -124,6 +124,12 @@ class UpdateProductCategoryOffersData
 
     public function getBestOffers(array $offersData): array
     {
+        if (!Arr::get($offersData, 'number_offers')) {
+            unset($offersData['best_percentage_off']);
+
+            return $offersData;
+        }
+
         $bestPercentageOff        = 0;
         $bestPercentageOffOfferId = null;
 
