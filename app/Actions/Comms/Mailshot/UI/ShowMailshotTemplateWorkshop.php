@@ -64,6 +64,20 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'icon'  => ["fal", "fa-sliders-h"],
+                            'route' => [
+                                'name'       => "grp.org.shops.show.marketing.templates.edit",
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug,
+                                    $emailTemplate->slug
+                                ]
+                            ]
+                        ]
                     ]
 
                 ],

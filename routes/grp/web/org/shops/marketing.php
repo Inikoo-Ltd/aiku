@@ -10,6 +10,7 @@ use App\Actions\Comms\Mailshot\UI\CreateMailshot;
 use App\Actions\Comms\Mailshot\UI\CreateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\CreateNewsletter;
 use App\Actions\Comms\Mailshot\UI\EditMailshot;
+use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
 use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
@@ -53,4 +54,5 @@ Route::name("templates.")->prefix('templates')
         Route::get('create', CreateMailshotTemplate::class)->name('create');
         Route::get('{emailTemplate}', ShowMailshotTemplate::class)->name('show');
         Route::get('{emailTemplate}/workshop', ShowMailshotTemplateWorkshop::class)->name('workshop');
+        Route::get('{emailTemplate}/edit', EditMailshotTemplate::class)->name('edit');
     });

@@ -76,6 +76,7 @@ use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\SendNewsLetterNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
+use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
@@ -782,6 +783,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
 
     Route::name('email-template.')->prefix('email-template')->group(function () {
         Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
+        Route::patch('{emailTemplate:id}', UpdateMailshotTemplate::class)->name('update')->withoutScopedBindings();
     });
 });
 
