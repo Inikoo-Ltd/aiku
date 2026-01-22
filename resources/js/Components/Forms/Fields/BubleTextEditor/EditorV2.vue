@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, nextTick } from "vue"
+import { onBeforeUnmount, onMounted, ref, nextTick, watch } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
 import Select from 'primevue/select'
 import { useFontFamilyList } from '@/Composables/useFont'
@@ -83,6 +83,7 @@ import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
 import { uniqueId } from "lodash"
+import { ulid } from "ulid"
 
 
 const props = withDefaults(defineProps<{
@@ -121,7 +122,7 @@ const showLinkDialog = ref<boolean>()
 const CustomLinkConfirm = ref(false)
 const attrsCustomLink = ref<Object>(null)
 const tippyOptions = ref({})
-
+const key = ref(ulid())
 const editorInstance = useEditor({
     content: props.modelValue,
     editable: props.editable,
@@ -467,11 +468,57 @@ const convertRemToPx = (remString) => {
     return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
 }
 
+const showBubble = ref(true)
+const userCloseBubble = ref(false)
+const lastSelection = ref<{ from: number; to: number } | null>(null)
+
 const shouldShowBubble = ({ editor }: any) => {
   if (!editor) return false
+  if (!showBubble.value) return false
 
   return editor.isFocused && !showDialog.value
 }
+
+
+const closeBubble = () => {
+  showBubble.value = false
+  userCloseBubble.value = true
+  key.value = ulid()
+}
+
+
+watch(editorInstance, (editor) => {
+  if (!editor) return
+
+  editor.on('selectionUpdate', ({ editor }) => {
+    const { from, to } = editor.state.selection
+
+    // ignore cursor
+    if (from === to) {
+      showBubble.value = false
+      return
+    }
+
+    const isNewSelection =
+      !lastSelection.value ||
+      lastSelection.value.from !== from ||
+      lastSelection.value.to !== to
+
+    if (isNewSelection) {
+      // 🔴 always reset to CLOSED
+      showBubble.value = false
+      userCloseBubble.value = false
+    }
+
+    // only open if user did NOT close
+    if (!userCloseBubble.value) {
+      showBubble.value = true
+    }
+
+    lastSelection.value = { from, to }
+  })
+})
+
 
 
 onMounted(async () => {
@@ -480,21 +527,34 @@ onMounted(async () => {
   setTimeout(() => {
     contentResult.value = editorInstance.value?.getHTML()
   }, 250)
-
-
 })
+
 </script>
 
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
         <Teleport to="body">
-            <BubbleMenu  :shouldShow="shouldShowBubble" :tippy-options="{
+            <BubbleMenu  
+                :key="key"
+                :shouldShow="shouldShowBubble" 
+                :tippy-options="{
                 placement: 'bottom',
-                offset: [0, 8],}" ref="_bubbleMenu"  :editor="editorInstance"
+                offset: [0, 8],}" 
+                ref="_bubbleMenu"  
+                :editor="editorInstance"
                 v-if="editorInstance && !showDialog"
-                class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
+                class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]"
+            >
 
                 <div class="bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate">
+
+                    <div class="relative bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate py-3">
+                        <button type="button" class="absolute top-[-1px] right-0  z-10 text-gray-500 hover:text-gray-800"
+                            @click="closeBubble" aria-label="Close toolbar">
+                            <FontAwesomeIcon :icon="faTimes" class="h-4 w-4 text-red-500" />
+                        </button>
+                    </div>
+
                     <!-- 1st row -->
                     <section id="tiptap-toolbar"
                         class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 overflow-x-auto sm:overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
