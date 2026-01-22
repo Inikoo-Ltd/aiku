@@ -12,7 +12,7 @@ library.add(faQuestionCircle)
 
 const props = defineProps<{
     product: {}
-    basketButton: boolean
+    isShowAvailableGROffer: boolean
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -30,16 +30,9 @@ const _popoverQuestionCircle = ref(null)
         </div>
         
         <AvailableGROfferLabel
-            v-if="
-                (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
-                && product.available_gr_offer_to_use?.trigger_data?.item_quantity
-                && !layout?.user?.gr_data?.customer_is_gr
-                && product.quantity_ordered_new < product.available_gr_offer_to_use?.trigger_data?.item_quantity
-            "
+            v-if="isShowAvailableGROffer"
             :product
         />
-
-        
 
         <!-- Popover: Question circle GR member -->
         <Popover ref="_popoverQuestionCircle" :style="{width: '250px'}" class="py-1 px-2">

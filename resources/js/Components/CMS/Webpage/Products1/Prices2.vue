@@ -42,9 +42,36 @@ interface ProductResource {
             gallery: ImageTS
         }
     }
+
+    discounted_price: number
+    discounted_price_per_unit: number
+    discounted_profit: number
+    discounted_profit_per_unit: number
+    discounted_margin: number
+
+    offers_data: {
+        number_offers: 1
+        offers: {
+            state: string
+            type: string
+            label: string
+            allowances: {
+                class: string
+                type: string
+                label: string
+                percentage_off: string
+            }[]
+            triggers_labels: string[]
+            max_percentage_discount: string
+        }[]
+        best_percentage_off: {
+            percentage_off: string
+            offer_id: number
+        }
+    }
 }
 
-defineProps<{
+const props = defineProps<{
     product: ProductResource
     currency?: {
         code: string
@@ -56,6 +83,16 @@ defineProps<{
 const isGoldMember = false // TO DO: get from user data
 
 const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
+
+console.log(props.product.offers_data)
+
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return props.product?.offers_data?.offers[offerId]
+}
 </script>
 
 <template>
@@ -84,20 +121,44 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
             <!-- Price: Gold Member -->
             <div class="text-orange-500 font-bold text-sm">
                 <span v-if="product.units == 1">
-                    {{ locale.currencyFormat(currency?.code, product.gr_price) }}/<span class="font-normal">{{ product.unit }}</span>
+                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>
                 <span v-else>
-                    {{ locale.currencyFormat(currency?.code, product.gr_price) }} ({{ locale.currencyFormat(currency?.code, product.gr_price_per_unit) }}/<span class="font-normal">{{ product.unit }}</span>)
+                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }} ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/<span class="font-normal">{{ product.unit }}</span>)
                 </span>
             </div>
 
+
             <!-- Section: Profit, label Gold Reward Member -->
             <div class="mt-0 flex justify-between">
-                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
-                <NonMemberPriceLabel v-else :product :basketButton />
+                <!-- {{ getBestOffer(product?.offers_data?.best_percentage_off?.offer_id) }}
+                qqqq<pre v-if="product.id=='216988'">{{ product?.offers_data?.best_percentage_off?.offer_id }}</pre>wwwww -->
+                <template v-if="product.offers_data?.number_offers > 0">
+                    <template v-if="product?.offers_data?.offers?.some(e => e.type === 'Category Quantity Ordered Order Interval')">
+                        <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
+                        <NonMemberPriceLabel v-else :product
+                            :isShowAvailableGROffer="
+                                (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
+                                && !layout?.user?.gr_data?.customer_is_gr
+                            "
+                        />
+                    </template>
+                </template>
 
                 <!-- Section: Profit -->
-                <div v-if="product?.margin" class="flex justify-end text-right flex-col">
+                <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col">
+                    <div>
+                        <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                        {{ trans("Profit") }}:
+                    </div>
+                    <div class="font-bold text-green-700 text-sm">
+                        ({{ product?.margin }})
+                    </div>
+                    <div class="italic text-xs">
+                        <span class="text-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
+                    </div>
+                </div>
+                <!-- <div v-if="product?.margin" class="flex justify-end text-right flex-col">
                     <div>
                         <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
                         {{ trans("Profit") }}:
@@ -108,8 +169,10 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
                     <div class="italic">
                         {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}/{{ product.unit }}
                     </div>
-                </div>
+                </div> -->
             </div>
+            <!-- <pre>{{ product.offers_data }}</pre> -->
+
         </div>
 
     </div>
