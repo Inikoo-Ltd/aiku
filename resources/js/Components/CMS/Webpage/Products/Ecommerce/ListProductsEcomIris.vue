@@ -402,6 +402,7 @@ watch(
 </script>
 
 <template>
+
     <div id="list-products-ecom-iris" class="">
         <ConfirmDialog>
             <template #icon>
@@ -507,7 +508,7 @@ watch(
                         </div>
                     </template>
 
-                    
+
 
                     <template v-else-if="products.length">
                       <div
