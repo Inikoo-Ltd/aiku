@@ -292,7 +292,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
         return $this->handle($masterSubDepartment, prefix: MasterCollectionsTabsEnum::INDEX->value);
     }
 
-    public function getBreadcrumbs(MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

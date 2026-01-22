@@ -122,7 +122,7 @@ class IndexMasterShops extends GrpAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $suffix = null): array
+    public function getBreadcrumbs(?string $suffix = null): array
     {
         $headCrumb = function (?string $suffix) {
             return [
