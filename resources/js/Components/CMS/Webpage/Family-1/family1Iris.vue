@@ -94,10 +94,10 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
             <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
                 <FamilyOfferLabelGR v-if="offer.type == 'Category Quantity Ordered Order Interval'" />
 
-                <!-- <FamilyOfferLabelDiscount
+                <FamilyOfferLabelDiscount
                     v-if="offer.type == 'Category Quantity Ordered Order Interval'"
                     :offer="offer"
-                /> -->
+                />
             </template>
         </div>
 
