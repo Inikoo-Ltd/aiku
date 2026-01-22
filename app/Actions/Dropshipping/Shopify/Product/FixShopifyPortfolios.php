@@ -25,7 +25,7 @@ class FixShopifyPortfolios
 {
     use AsAction;
 
-    public function handle(Shop|CustomerSalesChannel|Portfolio $parent, int $fixLevel = null, Command $command = null): array
+    public function handle(Shop|CustomerSalesChannel|Portfolio $parent, int $fixLevel = null, ?Command $command = null): array
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 

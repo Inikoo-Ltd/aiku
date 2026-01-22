@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class BreakWebsiteCache extends OrgAction
 {
-    public function handle(Website $website, Command $command = null): Website
+    public function handle(Website $website, ?Command $command = null): Website
     {
         $key = config('iris.cache.website.prefix')."_$website->domain";
         Cache::forget($key);

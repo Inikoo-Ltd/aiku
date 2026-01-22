@@ -21,7 +21,7 @@ class RepairOrphanCollections
     /**
      * Iterate collections of a shop and delete those without a master_collection reference.
      */
-    public function handle(Shop $shop, bool $forceDelete = false, bool $dryRun = false, Command $command = null): int
+    public function handle(Shop $shop, bool $forceDelete = false, bool $dryRun = false, ?Command $command = null): int
     {
         $deleted = 0;
         $scanned = 0;

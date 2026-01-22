@@ -87,7 +87,7 @@ class FetchAction implements ShouldBeUnique
         return null;
     }
 
-    public function fetchAll(SourceOrganisationService $organisationSource, Command $command = null): void
+    public function fetchAll(SourceOrganisationService $organisationSource, ?Command $command = null): void
     {
         $this->getModelsQuery()->chunk(10000, function ($chunkedData) use ($command, $organisationSource) {
             foreach ($chunkedData as $auroraData) {

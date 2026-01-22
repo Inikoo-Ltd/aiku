@@ -29,7 +29,7 @@ class RedoProductTimeSeries
         $this->model = Product::class;
     }
 
-    public function handle(Product $product, array $frequencies, Command $command = null, bool $async = true): void
+    public function handle(Product $product, array $frequencies, ?Command $command = null, bool $async = true): void
     {
         $from              = null;
         $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->min('date');

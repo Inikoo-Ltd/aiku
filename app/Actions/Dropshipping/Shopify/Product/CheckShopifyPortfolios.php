@@ -32,7 +32,7 @@ class CheckShopifyPortfolios extends OrgAction
     private array $tableData = [];
 
 
-    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel|Portfolio $parent = null, Command $command = null): void
+    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel|Portfolio $parent = null, ?Command $command = null): void
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 

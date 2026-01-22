@@ -26,7 +26,7 @@ class RedoShopTimeSeries
         $this->model = Shop::class;
     }
 
-    public function handle(Shop $shop, array $frequencies, Command $command = null, bool $async = true): void
+    public function handle(Shop $shop, array $frequencies, ?Command $command = null, bool $async = true): void
     {
         $firstInvoicedDate = DB::table('invoices')->where('shop_id', $shop->id)->min('date');
 
