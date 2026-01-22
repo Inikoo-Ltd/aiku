@@ -138,7 +138,10 @@ console.log('fffff', props.product.product_offers_data)
 
                 <template v-if="product.product_offers_data?.number_offers > 0">
                     <template v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'">
-                        <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
+                        <MemberPriceLabel
+                            v-if="layout?.user?.gr_data?.customer_is_gr"
+                            :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
+                        />
                         <NonMemberPriceLabel v-else
                             :product
                             :isShowAvailableGROffer="
