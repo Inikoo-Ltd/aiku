@@ -57,7 +57,7 @@ const layout: any = inject("layout", {})
 console.log('ssss',props)
 
 // const promoData = computed(() => {
-//   const vol = props.fieldValue?.family?.offers_data?.vol_gr
+//   const vol = props.fieldValue?.family?.offers_data.offers?.vol_gr
 //   if (!vol?.volume || !vol?.discount) return null
 
 //   return {
@@ -82,8 +82,9 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
       aria-label="Family Description Section">
       
         <!-- Section: listing Offers -->
-         <!-- <pre>offers_data: {{ fieldValue?.family?.offers_data }}</pre> -->
-        <div v-if="Object.keys(fieldValue?.family?.offers_data || {}).length && layout.iris.is_logged_in"
+         <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
+         <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
+        <div v-if="Object.keys(fieldValue?.family?.offers_data.offers || {}).length && layout.iris.is_logged_in"
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3"
         >
             <!-- Offer: Gold Reward active/inactive -->
@@ -91,10 +92,10 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
             <!-- Offer: list offers -->
             <template
-              v-if="Object.keys(fieldValue?.family?.offers_data).length && layout?.user?.gr_data?.customer_is_gr"
+              v-if="Object.keys(fieldValue?.family?.offers_data.offers).length && !layout?.user?.gr_data?.customer_is_gr"
             >
               <template
-                v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data"
+                v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers"
               >
                 <!-- <FamilyOfferLabelGR
                   v-if="offer.type == 'Category Quantity Ordered Order Interval'"
