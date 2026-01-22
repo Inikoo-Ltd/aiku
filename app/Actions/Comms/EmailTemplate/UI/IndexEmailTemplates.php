@@ -9,42 +9,46 @@
 namespace App\Actions\Comms\EmailTemplate\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Comms\Mailshot\MailshotStateEnum;
-use App\Enums\Helpers\Snapshot\SnapshotBuilderEnum;
+use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
+use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\Mailshot;
+use App\Models\Comms\EmailTemplate;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexEmailTemplates extends OrgAction
 {
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
 
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->whereAnyWordStartWith('email_templates.name', $value);
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(Mailshot::class);
-        $queryBuilder->join('shops', 'mailshots.shop_id', '=', 'shops.id');
-        $queryBuilder->join('emails', 'mailshots.email_id', '=', 'emails.id');
-        $queryBuilder->join('snapshots', 'snapshots.id', '=', 'emails.live_snapshot_id');
-
-        $queryBuilder->where('mailshots.shop_id', $shop->id);
-        $queryBuilder->where('mailshots.state', MailshotStateEnum::SENT->value);
-        $queryBuilder->where('snapshots.builder', SnapshotBuilderEnum::BEEFREE->value);
+        $queryBuilder = QueryBuilder::for(EmailTemplate::class);
+        $queryBuilder->join('shops', 'email_templates.shop_id', '=', 'shops.id')
+            ->where('email_templates.shop_id', $shop->id)
+            ->where('email_templates.is_seeded', false)
+            ->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value)
+            ->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
+        $queryBuilder
+            ->select([
+                'email_templates.id',
+                'email_templates.name',
+                'shops.name as shop_name',
+                'email_templates.created_at'
+            ]);
 
         return $queryBuilder
-            ->select([
-                'mailshots.id',
-                'mailshots.state',
-                'mailshots.subject',
-                'shops.name',
-                'mailshots.created_at'
-            ])
-            ->allowedSorts(['created_at', 'subject', 'state'])
+            ->allowedSorts(['created_at', 'name'])
+            ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -57,10 +61,9 @@ class IndexEmailTemplates extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
-            $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon', sortable: true);
-            $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
             $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
-            $table->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true);
+            $table->column(key: 'title', label: __('Title'), canBeHidden: false, sortable: true);
+            $table->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true);
             $table->column(key: 'actions', label: __('Action'));
             $table->defaultSort('-created_at');
         };
