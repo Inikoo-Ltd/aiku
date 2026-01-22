@@ -93,6 +93,8 @@ const getBestOffer = (offerId: string) => {
 
     return props.product?.product_offers_data?.offers[offerId]
 }
+
+console.log('fffff', props.product.product_offers_data)
 </script>
 
 <template>
