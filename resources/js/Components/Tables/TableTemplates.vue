@@ -24,9 +24,9 @@ defineProps<{
 function mailshotRoute(mailshot: Mailshot) {
     // console.log(route().current())
     switch (route().current()) {
-        case "grp.org.shops.show.marketing.mailshots.index":
+        case "grp.org.shops.show.marketing.templates.index":
             return route(
-                "grp.org.shops.show.marketing.mailshots.show",
+                "grp.org.shops.show.marketing.templates.show",
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
@@ -56,9 +56,9 @@ function mailshotRoute(mailshot: Mailshot) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(subject)="{ item: mailshot }">
+        <template #cell(name)="{ item: mailshot }">
             <Link v-if="mailshotRoute(mailshot)" :href="(mailshotRoute(mailshot) as string)" class="primaryLink">
-                {{ mailshot["subject"] }}
+                {{ mailshot["name"] }}
             </Link>
         </template>
         <template #cell(state)="{ item: mailshot }">
