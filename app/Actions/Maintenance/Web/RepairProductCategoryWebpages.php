@@ -80,7 +80,12 @@ class RepairProductCategoryWebpages
 
     public function asCommand(Command $command): void
     {
-        $shops = Shop::where('state', ShopStateEnum::OPEN)->pluck('id');
+        $shops = Shop::where('state', ShopStateEnum::OPEN)
+            ->where(function ($query) {
+                $query->where('is_aiku', true)
+                    ->orWhere('is_migrating_to_aiku', true);
+            })
+            ->pluck('id');
 
         // Process webpages in chunks to save memory
         DB::table('product_categories')
