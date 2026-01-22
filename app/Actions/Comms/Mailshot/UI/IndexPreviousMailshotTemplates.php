@@ -17,11 +17,18 @@ use App\Models\Comms\Mailshot;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPreviousMailshotTemplates extends OrgAction
 {
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereWith('mailshots.subject', $value);
+            });
+        });
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -50,6 +57,7 @@ class IndexPreviousMailshotTemplates extends OrgAction
                 'mailshots.sent_at'
             ])
             ->allowedSorts(['created_at', 'subject', 'sent_at'])
+            ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -62,6 +70,7 @@ class IndexPreviousMailshotTemplates extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
+            $table->withGlobalSearch();
             $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
             $table->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true);
             $table->column(key: 'sent_at', label: __('Sent At'), canBeHidden: false, sortable: true);

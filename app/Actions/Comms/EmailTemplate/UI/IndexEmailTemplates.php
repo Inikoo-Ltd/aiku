@@ -25,7 +25,9 @@ class IndexEmailTemplates extends OrgAction
     {
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->whereAnyWordStartWith('email_templates.name', $value);
+            $query->where(function ($query) use ($value) {
+                $query->whereWith('email_templates.name', $value);
+            });
         });
 
         if ($prefix) {
@@ -61,6 +63,7 @@ class IndexEmailTemplates extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
+            $table->withGlobalSearch();
             $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true);
             $table->column(key: 'title', label: __('Title'), canBeHidden: false, sortable: true);
             $table->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true);
