@@ -48,6 +48,8 @@ class GetPortfolios extends RetinaApiAction
             $query->where('portfolios.item_type', class_basename(Product::class));
         }
 
+        $query->where('portfolios.status', true);
+
         $query->leftJoin('products', 'products.id', 'portfolios.item_id')
             ->select(
                 'portfolios.*',

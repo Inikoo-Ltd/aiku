@@ -6,6 +6,8 @@ use App\Actions\OrgAction;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatExportReport;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatImportReport;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
+use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
+use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SysAdmin\OverviewResource;
@@ -60,6 +62,18 @@ class GetReports extends OrgAction
                 'icon'  => 'fal fa-file-invoice',
                 'route' => route('grp.org.reports.sage-invoices', $organisation),
                 'count' => IndexSageInvoicesReport::make()->inReports($organisation),
+            ],
+            [
+                'name'  => __('Picker Performance'),
+                'icon'  => 'fal fa-dolly',
+                'route' => route('grp.org.reports.picker-performance', $organisation),
+                'count' => IndexPickerPerformanceReport::make()->inReports($organisation),
+            ],
+            [
+                'name'  => __('Packer Performance'),
+                'icon'  => 'fal fa-box-open',
+                'route' => route('grp.org.reports.packer-performance', $organisation),
+                'count' => IndexPackerPerformanceReport::make()->inReports($organisation),
             ],
         ];
     }
