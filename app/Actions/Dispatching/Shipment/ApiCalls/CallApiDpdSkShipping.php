@@ -212,7 +212,7 @@ class CallApiDpdSkShipping extends OrgAction
                     'SecurityToken' => $this->getAccessToken($shipper),
                 ),
                 'shipment'    => [
-                    'reference'        => Arr::get($parentResource, 'reference').'x',
+                    'reference'        => Arr::get($parentResource, 'reference'),
                     'delisId'          => Arr::get($shipper->settings, 'delisId'),
                     'note'             => $note,
                     'product'          => 1,

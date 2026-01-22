@@ -41,6 +41,7 @@ use App\Http\Resources\Traits\HasPriceMetrics;
  * @property mixed $shop_id
  * @property mixed $quantity_ordered
  * @property mixed $canonical_url
+ * @property mixed $offers_data
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
@@ -81,6 +82,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
         $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
+
         $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
 
         $gr_offer = $this->family->getGROffer;
@@ -130,6 +132,15 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'gr_price'             => $gr_price,
             'gr_price_per_unit'    => $gr_price_per_unit,
             'offers_data'          => $this->offers_data,
+
+
+            //todo use this for the dicounted price
+            //'discounted_price'     => $this->discounted_price ?? null,
+            //'discounted_price_per_unit'     =>
+            //'discounted_profit'     =>
+            //'discounted_profit_per_unit'     =>
+            //'discounted_margin     =>
+            //todo remove below here use offers_data
             'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
             'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
             'available_gr_offer_to_use'             => $gr_offer ? [

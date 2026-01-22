@@ -29,8 +29,6 @@ class GetWebBlockProducts
                 $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: 'all'));
             }
         } else {
-            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'all'));
-
             if ($isLoggedIn) {
                 $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'in_stock'));
                 $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'out_of_stock'));

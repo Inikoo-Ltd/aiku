@@ -84,7 +84,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
       aria-label="Family Description Section">
       
         <!-- Section: listing Offers -->
-        <div v-if="fieldValue?.family?.offers_data && layout.iris.is_logged_in"
+        <div v-if="Object.keys(fieldValue?.family?.offers_data || {}).length && layout.iris.is_logged_in"
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3"
         >
             <!-- Offer: Gold Reward active/inactive -->
