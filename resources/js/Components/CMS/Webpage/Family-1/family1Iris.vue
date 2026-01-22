@@ -84,28 +84,18 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
         <!-- Section: listing Offers -->
          <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
          <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
-        <div v-if="Object.keys(fieldValue?.family?.offers_data.offers || {}).length && layout.iris.is_logged_in"
+         
+        <!-- Offer: list offers -->
+        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3"
         >
-            <!-- Offer: Gold Reward active/inactive -->
-            <FamilyOfferLabelGR />
+            <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
+                <FamilyOfferLabelGR v-if="offer.type == 'Category Quantity Ordered Order Interval'" />
 
-            <!-- Offer: list offers -->
-            <template
-              v-if="Object.keys(fieldValue?.family?.offers_data.offers).length && !layout?.user?.gr_data?.customer_is_gr"
-            >
-              <template
-                v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers"
-              >
-                <!-- <FamilyOfferLabelGR
-                  v-if="offer.type == 'Category Quantity Ordered Order Interval'"
+                <!-- <FamilyOfferLabelDiscount
+                    v-if="offer.type == 'Category Quantity Ordered Order Interval'"
+                    :offer="offer"
                 /> -->
-
-                <FamilyOfferLabelDiscount
-                  v-if="offer.type == 'Category Quantity Ordered Order Interval'"
-                  :offer="offer"
-                />
-              </template>
             </template>
         </div>
 

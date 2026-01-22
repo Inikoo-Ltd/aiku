@@ -138,6 +138,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'discounted_profit'             => $profit * .5,
             'discounted_profit_per_unit'    => $profitPerUnit * .5,
             'discounted_margin'             => $margin,
+            
             //todo remove below here use offers_data
             'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
             'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
