@@ -22,16 +22,21 @@ class LuigiLastSeen extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
-    public function handle(string $luigi_identity, ActionRequest $request): LengthAwarePaginator|array
+    public function handle(ActionRequest $request): LengthAwarePaginator|array
     {
         $customer = $request->user();
-
+        $size = 25;
         $userId = $customer?->customer_id
             ? (string) $customer->customer_id
             : (string) ($request->cookie('_lb') ?? 'guest');
 
         $website   = $request->get('website');
         $trackerId = Arr::get($website->settings, 'luigisbox.tracker_id');
+
+
+         $luigi_identity = (string) $request->input('luigi_identity');
+         $recommendation_type = trim((string) $request->input('recommendation_type')) ?: 'last_seen';
+         $recommender_client_identifier = trim((string) $request->input('recommender_client_identifier')) ?: 'last_seen';
 
         if (! $trackerId) {
             throw new \RuntimeException('LuigisBox tracker_id not configured');
@@ -40,9 +45,9 @@ class LuigiLastSeen extends IrisAction
         $payload = [[
             'blacklisted_item_ids' => [],
             'item_ids' => [$luigi_identity],
-            'recommendation_type' => 'last_seen',
-            'recommender_client_identifier' => 'last_seen',
-            'size' => 25,
+            'recommendation_type' => $recommendation_type ,
+            'recommender_client_identifier' => $recommender_client_identifier,
+            'size' => $size,
             'user_id' => $userId,
             'recommendation_context' => new \stdClass(),
         ]];
@@ -113,17 +118,14 @@ class LuigiLastSeen extends IrisAction
             ->whereIn('products.id', $productIds);
 
         return $this
-            ->getData($queryBuilder, 25);
+            ->getData($queryBuilder,  $size);
     }
 
 
     public function asController(ActionRequest $request): LengthAwarePaginator|array
     {
         $this->initialisation($request);
-
-        $luigi_identity = (string) $request->input('luigi_identity');
-
-        return $this->handle($luigi_identity, $request);
+        return $this->handle($request);
     }
 
 
