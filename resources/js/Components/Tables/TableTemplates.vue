@@ -21,12 +21,13 @@ defineProps<{
 }>();
 
 
+// TODO: Check and make sure this route
 function mailshotRoute(mailshot: Mailshot) {
     // console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.marketing.templates.index":
             return route(
-                "grp.org.shops.show.marketing.templates.show",
+                "grp.org.shops.show.marketing.templates.workshop",
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,

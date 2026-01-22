@@ -64,7 +64,7 @@ class StoreMailshotTemplate extends OrgAction
     public function htmlResponse(EmailTemplate $emailTemplate): \Symfony\Component\HttpFoundation\Response
     {
 
-        return Inertia::location(route('grp.org.shops.show.marketing.templates.show', [
+        return Inertia::location(route('grp.org.shops.show.marketing.templates.workshop', [
             'organisation'      => $this->organisation->slug,
             'shop'              => $this->shop->slug,
             'emailTemplate'     => $emailTemplate->slug
