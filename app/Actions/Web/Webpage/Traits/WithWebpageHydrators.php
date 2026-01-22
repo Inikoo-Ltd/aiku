@@ -19,12 +19,18 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 
 trait WithWebpageHydrators
 {
     protected function dispatchWebpageHydrators(Webpage $webpage): void
     {
+        if($webpage->model_type === Product::class && $webpage->model) {
+            $webpage->model->update(['has_live_webpage' => $webpage->state == WebpageStateEnum::LIVE]);
+        }
+
         GroupHydrateWebpages::dispatch($webpage->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWebpages::dispatch($webpage->organisation)->delay($this->hydratorsDelay);
         WebsiteHydrateWebpages::dispatch($webpage->website)->delay($this->hydratorsDelay);
