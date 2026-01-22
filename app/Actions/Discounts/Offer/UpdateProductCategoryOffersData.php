@@ -16,6 +16,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateProductCategoryOffersData
@@ -35,21 +36,25 @@ class UpdateProductCategoryOffersData
 
         $modelOfferData = $model->offers_data ?? [];
         if (!$offerData) {
-            unset($modelOfferData[$offer->id]);
+            unset($modelOfferData['offers'][$offer->id]);
         } else {
-            $modelOfferData[$offer->id] = $offerData;
+            $modelOfferData['offers'][$offer->id] = $offerData;
         }
 
+        $modelOfferData=$this->getBestOffers($modelOfferData);
+        $modelOfferData['v']=1;
         $model->update(['offers_data' => $modelOfferData]);
 
         if ($model instanceof ProductCategory) {
             foreach ($model->getProducts() as $product) {
                 $productOfferData = $product->offers_data ?? [];
                 if (!$productOfferData) {
-                    unset($productOfferData[$offer->id]);
+                    unset($productOfferData['offers'][$offer->id]);
                 } else {
-                    $productOfferData[$offer->id] = $offerData;
+                    $productOfferData['offers'][$offer->id] = $offerData;
                 }
+                $modelOfferData=$this->getBestOffers($modelOfferData);
+                $modelOfferData['v']=1;
                 $product->update(['offers_data' => $modelOfferData]);
             }
         }
@@ -60,14 +65,29 @@ class UpdateProductCategoryOffersData
     {
         $allowances      = [];
         $offerAllowances = $offer->offerAllowances()->where('status', true)->get();
+
+        $maxPercentageDiscount = 0;
+
         foreach ($offerAllowances as $offerAllowance) {
             if ($offerAllowance && $offerAllowance->class) {
-                $allowances[] = [
-                    'class' => $offerAllowance->class->value,
-                    'type'  => $offerAllowance->type->value,
-                    'label' => $this->getAllowanceLabel($offerAllowance)
+                $percentageOff = Arr::get($offerAllowance->data, 'percentage_off', '');
+                if ($percentageOff && $percentageOff > $maxPercentageDiscount) {
+                    $maxPercentageDiscount = $percentageOff;
+                }
+
+                $allowanceData = [
+                    'class'          => $offerAllowance->class->value,
+                    'type'           => $offerAllowance->type->value,
+                    'label'          => $this->getAllowanceLabel($offerAllowance),
+                    'percentage_off' => $percentageOff
                 ];
+
+                $allowances[] = $allowanceData;
             }
+        }
+
+        if ($maxPercentageDiscount == 0) {
+            $maxPercentageDiscount = '';
         }
 
         if (empty($allowances)) {
@@ -84,13 +104,14 @@ class UpdateProductCategoryOffersData
 
 
         $offerData = [
-            'state'           => $offer->state->value,
-            'type'            => $offer->type,
-            'duration'        => $offer->duration->value,
-            'label'           => $offer->label ?? $offer->name,
-            'allowances'      => $allowances,
-            'triggers_labels' => $triggerLabels,
-            'note'            => ''
+            'state'                   => $offer->state->value,
+            'type'                    => $offer->type,
+            'duration'                => $offer->duration->value,
+            'label'                   => $offer->label ?? $offer->name,
+            'allowances'              => $allowances,
+            'triggers_labels'         => $triggerLabels,
+            'note'                    => '',
+            'max_percentage_discount' => $maxPercentageDiscount
         ];
 
         if ($offer->duration->value == OfferDurationEnum::INTERVAL) {
@@ -99,6 +120,27 @@ class UpdateProductCategoryOffersData
         }
 
         return $offerData;
+    }
+
+    public function getBestOffers(array $offersData): array
+    {
+        $bestPercentageOff = 0;
+        $bestPercentageOffOfferId = null;
+        foreach ($offersData['offers'] as $offerId => $offerData) {
+           if($offerData['max_percentage_discount'] && $offerData['max_percentage_discount']>$bestPercentageOff){
+               $bestPercentageOff = $offerData['max_percentage_discount'];
+               $bestPercentageOffOfferId = $offerId;
+           }
+
+        }
+
+        $offersData['best_percentage_off'] = [
+            'percentage_off' => $bestPercentageOff,
+            'offer_id' => $bestPercentageOffOfferId
+        ];
+
+        return $offersData;
+
     }
 
     protected function getAllowanceLabel(OfferAllowance $offerAllowance): string
