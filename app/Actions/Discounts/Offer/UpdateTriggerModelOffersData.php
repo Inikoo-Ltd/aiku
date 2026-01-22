@@ -8,6 +8,7 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -33,11 +34,15 @@ class UpdateTriggerModelOffersData
 
     public function asCommand(Command $command): int
     {
+
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+
+
         if ($slug = $command->argument('offer')) {
             $offer = Offer::where('slug', $slug)->firstOrFail();
             $this->handle($offer);
         } else {
-            $offers = Offer::query();
+            $offers = Offer::whereIn('shop_id', $aikuShops);
             $count  = $offers->count();
 
             $progressBar = $command->getOutput()->createProgressBar($count);
