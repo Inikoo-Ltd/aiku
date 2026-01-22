@@ -6,11 +6,9 @@ import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import StickerLabel from '@/Components/Utils/Iris/StickerLabel.vue'
-import InformationIcon from '@/Components/Utils/InformationIcon.vue'
-import { Popover } from 'primevue'
+import FamilyOfferLabelDiscount from '@/Components/Utils/Iris/Family/FamilyOfferLabelDiscount.vue'
+import FamilyOfferLabelGR from '@/Components/Utils/Iris/Family/FamilyOfferLabelGR.vue'
 
 library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faChevronCircleLeft, faChevronCircleRight)
 
@@ -59,7 +57,7 @@ const layout: any = inject("layout", {})
 console.log('ssss',props)
 
 // const promoData = computed(() => {
-//   const vol = props.fieldValue?.family?.offers_data?.vol_gr
+//   const vol = props.fieldValue?.family?.offers_data.offers?.vol_gr
 //   if (!vol?.volume || !vol?.discount) return null
 
 //   return {
@@ -84,72 +82,20 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
       aria-label="Family Description Section">
       
         <!-- Section: listing Offers -->
-        <div v-if="Object.keys(fieldValue?.family?.offers_data || {}).length && layout.iris.is_logged_in"
+         <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
+         <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
+         
+        <!-- Offer: list offers -->
+        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3"
         >
-            <!-- Offer: Gold Reward active/inactive -->
-            <section
-                class="relative w-full md:w-fit flex justify-between items-center rounded-lg px-5 py-1 shadow-md text-white mb-2"
-                :class="layout?.user?.gr_data?.customer_is_gr ? 'bg-[#ff862f]' : 'bg-gray-400/70'"
-            >
-                
-                <!-- Content -->
-                <div class="w-full relative flex items-center text-3xl">
-                    {{ layout?.user?.gr_data?.customer_is_gr ? trans("Gold Reward Active") : trans("Gold Reward Inactive") }}
-                </div>
+            <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
+                <FamilyOfferLabelGR v-if="offer.type == 'Category Quantity Ordered Order Interval'" />
 
-                <span @click="_popoverInfoGoldReward?.toggle" @mouseenter="_popoverInfoGoldReward?.show" @mouseleave="_popoverInfoGoldReward?.hide" class="align-middle ml-2 opacity-80 hover:opacity-100 cursor-pointer">
-                    <FontAwesomeIcon icon="fal fa-info-circle" class="align-middle" fixed-width aria-hidden="true" />
-                </span>
-
-                <!-- Popover: Question circle GR member -->
-                <Popover ref="_popoverInfoGoldReward" :style="{width: '350px'}" class="py-1 px-2">
-                    <div class="text-xs">
-                        <p class="font-bold mb-4">{{ trans("Gold Reward Membership") }}</p>
-                        <p class="inline-block mb-4 text-justify">
-                            {{ trans("Place an order within 30 days of your last invoice and Gold Reward status applies automatically. This unlocks the best pricing across eligible ranges, without needing to bulk up every order.") }}.
-                        </p>
-                    </div>
-                </Popover>
-            </section>
-
-            <!-- Offer: list offers -->
-            <template v-if="Object.keys(fieldValue?.family?.offers_data).length">
-                <section
-                    v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data"
-                    class="relative flex justify-between w-full md:w-fit overflow-hidden rounded-lg px-px py-px shadow-md mb-2 bg-[#ff862f]"
-                    aria-label="Colorful Volume Promotion"
-                >
-                
-                    <!-- Content -->
-                    <div class="w-full relative flex items-center text-white font-bold px-7 text-4xl">
-                        {{ offer.allowances[0].label }}
-                    </div>
-                    <div class="bg-white rounded-md px-2 py-1 flex items-center gap-x-4">
-                        <div>
-                            <div class="whitespace-nowrap capitalize">{{ offer.allowances[0].class }}</div>
-                            <div class="text-xs whitespace-nowrap opacity-70">
-                                {{ offer.triggers_labels?.join('/') }}
-                            </div>
-                        </div>
-                        <span @click="_popoverInfoCircle?.[offIdx]?.toggle, console.log('hehehe', _popoverInfoCircle?.[offIdx])" @mouseenter="_popoverInfoCircle?.[offIdx]?.show" @mouseleave="_popoverInfoCircle?.[offIdx]?.hide" class="opacity-60 hover:opacity-100 cursor-pointer">
-                            <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
-                        </span>
-                    </div>
-
-                    <!-- Popover: Question circle discount -->
-                    <Popover ref="_popoverInfoCircle" :style="{width: '300px'}" class="py-1 px-2">
-                        <div class="text-xs">
-                            <p class="font-bold mb-4">{{ trans("VOLUME DISCOUNT") }}</p>
-                            <p class="inline-block mb-4 text-justify">
-                                {{ trans("You don't need Gold Reward status to access the lower price") }}.
-                            </p>
-                            <p class="mb-4 text-justify">
-                                {{ trans("Order the listed volume and the member price applies automatically at checkout") }}. {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
-                            </p>
-                        </div>
-                    </Popover>
-                </section>
+                <!-- <FamilyOfferLabelDiscount
+                    v-if="offer.type == 'Category Quantity Ordered Order Interval'"
+                    :offer="offer"
+                /> -->
             </template>
         </div>
 

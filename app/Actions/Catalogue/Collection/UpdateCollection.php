@@ -47,14 +47,14 @@ class UpdateCollection extends OrgAction
         }
         $collection = $this->update($collection, $modelData, ['data']);
         $changes = Arr::except($collection->getChanges(), ['updated_at']);
-
+        
 
         if (!$collection->image_id && $originalImageId) {
             $collection->images()->detach($originalImageId);
         }
 
 
-        if (Arr::hasAny($changes, ['code', 'nane'])) {
+        if (Arr::hasAny($changes, ['code', 'name'])) {
             CollectionRecordSearch::dispatch($collection);
             if ($collection->webpage) {
                 ClearCacheByWildcard::run("irisData:website:{$collection->webpage->website_id}:*");

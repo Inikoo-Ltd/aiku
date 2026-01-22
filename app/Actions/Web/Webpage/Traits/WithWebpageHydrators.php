@@ -14,17 +14,23 @@
 namespace App\Actions\Web\Webpage\Traits;
 
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 
 trait WithWebpageHydrators
 {
     protected function dispatchWebpageHydrators(Webpage $webpage): void
     {
+        if($webpage->model_type === Product::class && $webpage->model) {
+            ProductHydrateHasLiveWebpage::run($webpage->model);
+        }
+
         GroupHydrateWebpages::dispatch($webpage->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWebpages::dispatch($webpage->organisation)->delay($this->hydratorsDelay);
         WebsiteHydrateWebpages::dispatch($webpage->website)->delay($this->hydratorsDelay);

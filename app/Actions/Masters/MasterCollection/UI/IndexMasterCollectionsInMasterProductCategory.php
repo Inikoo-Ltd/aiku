@@ -13,7 +13,10 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
+use App\Actions\Traits\WithTab;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\UI\Catalogue\MasterCollectionsTabsEnum;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterCollection;
@@ -32,6 +35,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 {
     use WithMasterDepartmentSubNavigation;
     use WithMasterSubDepartmentSubNavigation;
+    use WithTab;
 
     private MasterProductCategory $parent;
 
@@ -49,6 +53,43 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
         });
 
         $queryBuilder = QueryBuilder::for(MasterCollection::class);
+
+        $selects = [
+            'master_collections.id',
+            'master_collections.code',
+            'master_collections.state',
+            'master_collections.name',
+            'master_collections.description',
+            'master_collections.created_at',
+            'master_collections.updated_at',
+            'master_collections.slug',
+        ];
+
+        if ($prefix === MasterCollectionsTabsEnum::SALES->value) {
+            $queryBuilder->leftJoin('groups', 'master_collections.group_id', '=', 'groups.id')
+                ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id');
+
+
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'master_collection_time_series',
+                timeSeriesRecordsTable: 'master_collection_time_series_records',
+                foreignKey: 'master_collection_id',
+                aggregateColumns: [
+                    'sales_grp_currency' => 'sales',
+                    'invoices'           => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+            $selects[] = 'currencies.code as currency_code';
+            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
+
+
         $queryBuilder->join('model_has_master_collections', function ($join) {
             $join->on('model_has_master_collections.master_collection_id', '=', 'master_collections.id');
         });
@@ -59,33 +100,38 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
         $queryBuilder
             ->defaultSort('master_collections.code')
-            ->select([
-                'master_collections.id',
-                'master_collections.code',
-                'master_collections.state',
-                'master_collections.name',
-                'master_collections.description',
-                'master_collections.created_at',
-                'master_collections.updated_at',
-                'master_collections.slug',
-            ]);
+            ->select($selects);
 
 
+        $allowedSorts = ['code', 'name'];
+        if ($prefix === MasterCollectionsTabsEnum::SALES->value) {
+            $allowedSorts = [
+                'code',
+                'name',
+                'sales',
+                'invoices'
+            ];
+        }
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts($allowedSorts)
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
     public function tableStructure(MasterProductCategory $masterProductCategory, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($masterProductCategory, $modelOperations, $prefix) {
+        $sales = $prefix === MasterCollectionsTabsEnum::SALES->value;
+
+        return function (InertiaTable $table) use ($masterProductCategory, $modelOperations, $prefix, $sales) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
+            if ($sales) {
+                $table->betweenDates(['date']);
+            }
 
             $table
                 ->withGlobalSearch()
@@ -97,12 +143,21 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
                     ]
                 );
 
-            $table
-                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', searchable: true);
-
+            if ($sales) {
+                $table
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            } else {
+                $table
+                    ->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon')
+                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions', label: '', searchable: true);
+            }
         };
     }
 
@@ -120,27 +175,27 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
         $subNavigation = null;
 
 
-        $icon       = [
+        $icon = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('Collections')
         ];
 
 
-        $title      = $masterProductCategory->name;
-        $iconRight  = [];
+        $title = $masterProductCategory->name;
+        $iconRight = [];
 
         $afterTitle = [
             'label' => __('Master Collections')
         ];
-        $model      = '';
+        $model = '';
         if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-            $icon          = [
+            $icon = [
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('Master department')
             ];
             $subNavigation = $this->getMasterDepartmentSubNavigation($masterProductCategory);
         } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $icon          = [
+            $icon = [
                 'icon'  => ['fal', 'fa-dot-circle'],
                 'title' => __('Master sub department')
             ];
@@ -148,9 +203,8 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
         }
 
 
-
         $actions = array_values(array_filter([
-            ... (function () use ($request) {
+            ...(function () use ($request) {
                 $routes = [
                     'grp.masters.master_shops.show.master_departments.show.master_collections.index' => 'grp.masters.master_shops.show.master_departments.show.master_collections.create',
                 ];
@@ -199,27 +253,43 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'      => null,
-                'data'        => MasterCollectionsResource::collection($masterCollections),
+
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => MasterCollectionsTabsEnum::navigation(),
+                ],
+
+                MasterCollectionsTabsEnum::INDEX->value => $this->tab == MasterCollectionsTabsEnum::INDEX->value ?
+                    MasterCollectionsResource::collection($masterCollections)
+                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterProductCategory::run($this->parent, prefix: MasterCollectionsTabsEnum::INDEX->value))),
+
+                MasterCollectionsTabsEnum::SALES->value => $this->tab == MasterCollectionsTabsEnum::SALES->value ?
+                    MasterCollectionsResource::collection($masterCollections)
+                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterProductCategory::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))),
+
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure($this->parent, prefix: MasterCollectionsTabsEnum::INDEX->value))
+            ->table($this->tableStructure($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value));
     }
 
 
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisation($masterShop->group, $request)
+            ->withTab(MasterCollectionsTabsEnum::values());
 
-        return $this->handle($masterDepartment);
+        return $this->handle($masterDepartment, prefix: MasterCollectionsTabsEnum::INDEX->value);
     }
 
     public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisation($masterShop->group, $request)
+            ->withTab(MasterCollectionsTabsEnum::values());
 
-        return $this->handle($masterSubDepartment);
+        return $this->handle($masterSubDepartment, prefix: MasterCollectionsTabsEnum::INDEX->value);
     }
 
     public function getBreadcrumbs(MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array

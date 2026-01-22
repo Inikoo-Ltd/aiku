@@ -298,17 +298,18 @@ class EditFamily extends OrgAction
                                 ],
 
                             ],
-                            [
-                                'label'  => __('Discounts'),
-                                'icon'   => 'fa-light fa-badge-percent',
-                                'fields' => [
-                                    'offers_data'      => [
-                                        'label'  => 'Offer List',
-                                        'value'  =>  $family->offers_data,
-                                        'type'   =>  'offer_fields'
-                                    ]
-                                ],
-                            ],
+// todso this is wrong
+//                            [
+//                                'label'  => __('Discounts'),
+//                                'icon'   => 'fa-light fa-badge-percent',
+//                                'fields' => [
+//                                    'offers_data'      => [
+//                                        'label'  => 'Offer List',
+//                                        'value'  =>  $family->offers_data,
+//                                        'type'   =>  'offer_fields'
+//                                    ]
+//                                ],
+//                            ],
                         ]
                     ),
                     'args'      => [

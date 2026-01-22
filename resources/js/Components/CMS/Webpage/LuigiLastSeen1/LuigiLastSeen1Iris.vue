@@ -108,6 +108,8 @@ const fetchRecommenders = async () => {
             route('iris.json.luigi.last_seen'),
             {
                 luigi_identity: luigiIdentity,
+                recommendation_type : 'last_seen',
+                recommender_client_identifier : 'last_seen'
             }
         )
 

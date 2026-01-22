@@ -158,6 +158,7 @@ trait WithIrisProductsInWebpage
             'products.updated_at',
             'products.units',
             'products.unit',
+            'products.offers_data as product_offers_data',
             'products.variant_id',
             'products.top_seller',
             'products.web_images',

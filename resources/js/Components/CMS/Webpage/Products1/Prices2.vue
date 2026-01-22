@@ -10,6 +10,8 @@ import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel.vue"
 import { Popover } from "primevue"
+import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
+import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
 library.add(faPlusCircle, faQuestionCircle)
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -40,9 +42,36 @@ interface ProductResource {
             gallery: ImageTS
         }
     }
+
+    discounted_price: number
+    discounted_price_per_unit: number
+    discounted_profit: number
+    discounted_profit_per_unit: number
+    discounted_margin: number
+
+    product_offers_data: {
+        number_offers: 1
+        offers: {
+            state: string
+            type: string
+            label: string
+            allowances: {
+                class: string
+                type: string
+                label: string
+                percentage_off: string
+            }[]
+            triggers_labels: string[]
+            max_percentage_discount: string
+        }[]
+        best_percentage_off: {
+            percentage_off: string
+            offer_id: number
+        }
+    }
 }
 
-defineProps<{
+const props = defineProps<{
     product: ProductResource
     currency?: {
         code: string
@@ -54,11 +83,23 @@ defineProps<{
 const isGoldMember = false // TO DO: get from user data
 
 const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
+
+console.log(props.product.product_offers_data)
+
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return props.product?.product_offers_data?.offers[offerId]
+}
+
+console.log('fffff', props.product.product_offers_data)
 </script>
 
 <template>
     <div class="border-t xborder-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
-        <!-- <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" /> -->
+
         <div>
             <div class="flex justify-between">
                 <div>
@@ -82,40 +123,47 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
             <!-- Price: Gold Member -->
             <div class="text-orange-500 font-bold text-sm">
                 <span v-if="product.units == 1">
-                    {{ locale.currencyFormat(currency?.code, product.gr_price) }}/<span class="font-normal">{{ product.unit }}</span>
+                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>
                 <span v-else>
-                    {{ locale.currencyFormat(currency?.code, product.gr_price) }} ({{ locale.currencyFormat(currency?.code, product.gr_price_per_unit) }}/<span class="font-normal">{{ product.unit }}</span>)
+                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }} ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/<span class="font-normal">{{ product.unit }}</span>)
                 </span>
             </div>
 
+
             <!-- Section: Profit, label Gold Reward Member -->
-            <div class="mt-4 flex justify-between">
-                <div v-if="layout?.user?.gr_data?.customer_is_gr" class="relative w-fit">
-                    <div class="bg-orange-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
-                    <img src="/assets/promo/gr.png" alt="Gold Reward logo" class="absolute -right-9 -top-1 inline-block h-10 ml-1 align-middle" />
-                </div>
-                <div v-else class="relative w-fit">
-                    <div class="bg-gray-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
-                    <div class="my-1.5 text-xs">
-                        {{ trans("NOT A MEMBER") }}? <span @click="_popoverQuestionCircle?.toggle" @mouseenter="_popoverQuestionCircle?.show" @mouseleave="_popoverQuestionCircle?.hide" class="cursor-pointer">
-                            <FontAwesomeIcon icon="fal fa-question-circle" class="" fixed-width aria-hidden="true" />
-                        </span>
-                    </div>
-                    
-                    <AvailableGROfferLabel
-                        v-if="
-                            (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
-                            && product.available_gr_offer_to_use?.trigger_data?.item_quantity
-                            && !layout?.user?.gr_data?.customer_is_gr
-                            && product.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
-                        "
-                        :product
-                    />
-                </div>
+            <div class="mt-0 flex justify-between">
+
+
+                <template v-if="product.product_offers_data?.number_offers > 0">
+                    <template v-if="product?.product_offers_data?.offers?.some(e => e.type === 'Category Quantity Ordered Order Interval')">
+                        <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
+                        <NonMemberPriceLabel v-else :product
+                            :isShowAvailableGROffer="
+                                (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
+                                && !layout?.user?.gr_data?.customer_is_gr
+                            "
+                        />
+                    </template>
+                    <div v-else />
+                </template>
+
+                <div v-else />
 
                 <!-- Section: Profit -->
-                <div v-if="product?.margin" class="flex justify-end text-right flex-col">
+                <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col">
+                    <div>
+                        <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                        {{ trans("Profit") }}:
+                    </div>
+                    <div class="font-bold text-green-700 text-sm">
+                        ({{ product?.margin }})
+                    </div>
+                    <div class="italic text-xs">
+                        <span class="text-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
+                    </div>
+                </div>
+                <!-- <div v-if="product?.margin" class="flex justify-end text-right flex-col">
                     <div>
                         <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
                         {{ trans("Profit") }}:
@@ -126,22 +174,10 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
                     <div class="italic">
                         {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}/{{ product.unit }}
                     </div>
-                </div>
+                </div> -->
             </div>
-        </div>
 
-        <!-- Popover: Question circle GR member -->
-        <Popover ref="_popoverQuestionCircle" :style="{width: '250px'}" class="py-1 px-2">
-            <div class="text-xs">
-                <p class="font-bold mb-4">{{ trans("VOLUME DISCOUNT") }}</p>
-                <p class="inline-block mb-4 text-justify">
-                    {{ trans("You don't need Gold Reward status to access the lower price") }}.
-                </p>
-                <p class="mb-4 text-justify">
-                    {{ trans("Order the listed volume and the member price applies automatically at checkout") }}. {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
-                </p>
-            </div>
-        </Popover>
+        </div>
 
     </div>
 </template>
