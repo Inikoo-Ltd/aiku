@@ -83,6 +83,9 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
         $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
 
+
+
+
         //        $gr_offer = $this->family->getGROffer;
         //        $gr_price = null;
         //        $gr_price_per_unit = null;
@@ -129,7 +132,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'is_variant'                    => $this->variant_id ? true : false,
             //            'gr_price'             => $gr_price,
             //            'gr_price_per_unit'    => $gr_price_per_unit,
-            'product_offers_data'           => $this->product_offers_data,
+            'product_offers_data'           => json_decode($this->product_offers_data,true),
             'offers_data'                   => $this->offers_data, // this come3 from transaction.offers_data
 
 
