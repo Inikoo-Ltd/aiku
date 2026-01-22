@@ -40,9 +40,9 @@ class UpdateProductCategoryOffersData
         } else {
             $modelOfferData['offers'][$offer->id] = $offerData;
         }
-
-        $modelOfferData=$this->getBestOffers($modelOfferData);
-        $modelOfferData['v']=1;
+        $modelOfferData['number_offers'] = count(Arr::get($modelOfferData, 'offers', []));
+        $modelOfferData                  = $this->getBestOffers($modelOfferData);
+        $modelOfferData['v']             = 1;
         $model->update(['offers_data' => $modelOfferData]);
 
         if ($model instanceof ProductCategory) {
@@ -53,8 +53,8 @@ class UpdateProductCategoryOffersData
                 } else {
                     $productOfferData['offers'][$offer->id] = $offerData;
                 }
-                $modelOfferData=$this->getBestOffers($modelOfferData);
-                $modelOfferData['v']=1;
+                $modelOfferData      = $this->getBestOffers($modelOfferData);
+                $modelOfferData['v'] = 1;
                 $product->update(['offers_data' => $modelOfferData]);
             }
         }
@@ -124,23 +124,28 @@ class UpdateProductCategoryOffersData
 
     public function getBestOffers(array $offersData): array
     {
-        $bestPercentageOff = 0;
-        $bestPercentageOffOfferId = null;
-        foreach ($offersData['offers'] as $offerId => $offerData) {
-           if($offerData['max_percentage_discount'] && $offerData['max_percentage_discount']>$bestPercentageOff){
-               $bestPercentageOff = $offerData['max_percentage_discount'];
-               $bestPercentageOffOfferId = $offerId;
-           }
+        if (!Arr::get($offersData, 'number_offers')) {
+            unset($offersData['best_percentage_off']);
 
+            return $offersData;
+        }
+
+        $bestPercentageOff        = 0;
+        $bestPercentageOffOfferId = null;
+
+        foreach (Arr::get($offersData, 'offers', []) as $offerId => $offerData) {
+            if ($offerData['max_percentage_discount'] && $offerData['max_percentage_discount'] > $bestPercentageOff) {
+                $bestPercentageOff        = $offerData['max_percentage_discount'];
+                $bestPercentageOffOfferId = $offerId;
+            }
         }
 
         $offersData['best_percentage_off'] = [
             'percentage_off' => $bestPercentageOff,
-            'offer_id' => $bestPercentageOffOfferId
+            'offer_id'       => $bestPercentageOffOfferId
         ];
 
         return $offersData;
-
     }
 
     protected function getAllowanceLabel(OfferAllowance $offerAllowance): string
