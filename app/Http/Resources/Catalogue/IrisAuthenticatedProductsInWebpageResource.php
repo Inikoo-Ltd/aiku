@@ -129,7 +129,8 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'is_variant'                    => $this->variant_id ? true : false,
             //            'gr_price'             => $gr_price,
             //            'gr_price_per_unit'    => $gr_price_per_unit,
-            'offers_data'                   => $this->offers_data,
+            'product_offers_data'           => $this->product_offers_data,
+            'offers_data'                   => $this->offers_data, // this come3 from transaction.offers_data
 
 
             //todo use this for the dicounted price
@@ -138,7 +139,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'discounted_profit'             => $profit * .5,
             'discounted_profit_per_unit'    => $profitPerUnit * .5,
             'discounted_margin'             => $margin,
-            
+
             //todo remove below here use offers_data
             'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
             'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,

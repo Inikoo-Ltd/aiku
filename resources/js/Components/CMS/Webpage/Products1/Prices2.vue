@@ -49,7 +49,7 @@ interface ProductResource {
     discounted_profit_per_unit: number
     discounted_margin: number
 
-    offers_data: {
+    product_offers_data: {
         number_offers: 1
         offers: {
             state: string
@@ -84,20 +84,20 @@ const isGoldMember = false // TO DO: get from user data
 
 const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
 
-console.log(props.product.offers_data)
+console.log(props.product.product_offers_data)
 
 const getBestOffer = (offerId: string) => {
     if (!offerId) {
         return
     }
 
-    return props.product?.offers_data?.offers[offerId]
+    return props.product?.product_offers_data?.offers[offerId]
 }
 </script>
 
 <template>
     <div class="border-t xborder-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
-        <!-- <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" /> -->
+
         <div>
             <div class="flex justify-between">
                 <div>
@@ -131,10 +131,10 @@ const getBestOffer = (offerId: string) => {
 
             <!-- Section: Profit, label Gold Reward Member -->
             <div class="mt-0 flex justify-between">
-                <!-- {{ getBestOffer(product?.offers_data?.best_percentage_off?.offer_id) }}
-                qqqq<pre v-if="product.id=='216988'">{{ product?.offers_data?.best_percentage_off?.offer_id }}</pre>wwwww -->
-                <template v-if="product.offers_data?.number_offers > 0">
-                    <template v-if="product?.offers_data?.offers?.some(e => e.type === 'Category Quantity Ordered Order Interval')">
+
+
+                <template v-if="product.product_offers_data?.number_offers > 0">
+                    <template v-if="product?.product_offers_data?.offers?.some(e => e.type === 'Category Quantity Ordered Order Interval')">
                         <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
                         <NonMemberPriceLabel v-else :product
                             :isShowAvailableGROffer="
@@ -174,7 +174,6 @@ const getBestOffer = (offerId: string) => {
                     </div>
                 </div> -->
             </div>
-            <!-- <pre>{{ product.offers_data }}</pre> -->
 
         </div>
 
