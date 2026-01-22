@@ -143,7 +143,10 @@ const getBestOffer = (offerId: string) => {
                             "
                         />
                     </template>
+                    <div v-else />
                 </template>
+
+                <div v-else />
 
                 <!-- Section: Profit -->
                 <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col">
