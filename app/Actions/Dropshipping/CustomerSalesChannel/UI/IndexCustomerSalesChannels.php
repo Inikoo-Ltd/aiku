@@ -138,7 +138,7 @@ class IndexCustomerSalesChannels extends OrgAction
     }
 
 
-    public function tableStructure(Customer|Platform $parent, array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Customer|Platform $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {

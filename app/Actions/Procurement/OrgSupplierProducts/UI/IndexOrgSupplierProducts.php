@@ -79,7 +79,7 @@ class IndexOrgSupplierProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|OrgAgent|OrgSupplier $parent, array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Organisation|OrgAgent|OrgSupplier $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {

@@ -130,7 +130,7 @@ class IndexOrgSuppliers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|OrgAgent $parent, array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Organisation|OrgAgent $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
             if ($parent instanceof OrgAgent) {
