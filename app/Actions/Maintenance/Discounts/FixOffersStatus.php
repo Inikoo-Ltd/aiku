@@ -39,7 +39,7 @@ class FixOffersStatus
         foreach ($offers as $offer) {
             if (!$offer->source_id) {
 
-                if($offer->duration==OfferDurationEnum::PERMANENT){
+                if ($offer->duration == OfferDurationEnum::PERMANENT) {
                     $offer->update([
                         'status' => true,
                         'state'  => OfferStateEnum::ACTIVE

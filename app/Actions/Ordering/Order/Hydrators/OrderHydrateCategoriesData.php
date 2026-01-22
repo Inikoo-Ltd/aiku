@@ -91,9 +91,9 @@ class OrderHydrateCategoriesData
 
             return;
         }
-        $aikuShops=Shop::where('is_aiku',true)->pluck('id')->toArray();
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
-        $query = Order::whereIn('shop_id',$aikuShops);
+        $query = Order::whereIn('shop_id', $aikuShops);
         $count = $query->count();
 
         if ($count === 0) {

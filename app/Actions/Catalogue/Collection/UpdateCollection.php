@@ -47,7 +47,7 @@ class UpdateCollection extends OrgAction
         }
         $collection = $this->update($collection, $modelData, ['data']);
         $changes = Arr::except($collection->getChanges(), ['updated_at']);
-        
+
 
         if (!$collection->image_id && $originalImageId) {
             $collection->images()->detach($originalImageId);

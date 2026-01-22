@@ -11,8 +11,6 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
 

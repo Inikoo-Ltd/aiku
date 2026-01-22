@@ -10,7 +10,6 @@ namespace App\Actions\Masters;
 
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
-use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -94,8 +93,8 @@ class CloneProductsFromMaster
                             ]
                         );
 
-                        $product= $shop->products()->where('master_product_id', $masterProduct->id)->first();
-                        if($product){
+                        $product = $shop->products()->where('master_product_id', $masterProduct->id)->first();
+                        if ($product) {
                             try {
                                 $webpage = StoreProductWebpage::make()->action($product);
                                 PublishWebpage::make()->action(

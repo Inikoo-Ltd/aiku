@@ -30,7 +30,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
         /** @var MagentoUser|ShopifyUser|WooCommerceUser|EbayUser $platformUser */
         $platformUser = $customerSalesChannel->user;
 
-        if(! $platformUser) {
+        if (! $platformUser) {
             return null;
         }
 
