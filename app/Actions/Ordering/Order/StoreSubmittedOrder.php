@@ -63,7 +63,7 @@ class StoreSubmittedOrder extends OrgAction
     {
         return [
             'sales_channel_id' => [
-                'required',
+                'sometimes',
                 'integer',
                 'exists:sales_channels,id'
             ],
