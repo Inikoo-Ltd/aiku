@@ -32,18 +32,18 @@ class ShowDeletedBanner extends InertiaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canRestore   = $request->get('customerUser')->hasPermissionTo('portfolio.banners.edit');
+        $this->canRestore   = $request->input('customerUser')->hasPermissionTo('portfolio.banners.edit');
 
         return
             (
-                $request->get('customerUser')->hasPermissionTo('portfolio.banners.view')
+                $request->input('customerUser')->hasPermissionTo('portfolio.banners.view')
             );
     }
 
     public function asController(Banner $banner, ActionRequest $request): Banner
     {
         $this->initialisation($request)->withTab(BannerTabsEnum::values());
-        return $this->handle($request->get('customer'), $banner);
+        return $this->handle($request->input('customer'), $banner);
     }
 
     public function inCustomer(Banner $banner, ActionRequest $request): Banner
@@ -65,7 +65,7 @@ class ShowDeletedBanner extends InertiaAction
 
     public function htmlResponse(Banner $banner, ActionRequest $request): Response
     {
-        $customer = $request->get('customer');
+        $customer = $request->input('customer');
 
         return Inertia::render(
             'Banners/Banner',

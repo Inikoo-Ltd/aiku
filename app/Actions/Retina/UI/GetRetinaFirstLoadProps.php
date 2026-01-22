@@ -26,7 +26,7 @@ class GetRetinaFirstLoadProps
     public function handle(Request $request, ?WebUser $webUser): array
     {
         /** @var Shop $shop */
-        $shop = $request->get('website')->shop;
+        $shop = $request->input('website')->shop;
 
         if ($webUser) {
             $language = $webUser->language;

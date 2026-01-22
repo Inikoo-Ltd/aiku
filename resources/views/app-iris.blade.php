@@ -18,11 +18,11 @@
             rel="stylesheet">
     </noscript>
 
-    @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', ''))
+    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))
         @if(request()->header('X-Logged-Status') !== null || auth()->check())
             @if(request()->header('X-Logged-Status') === 'In' || auth()->check())
                 <script async data-jsd-embedded
-                        data-key="{{Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', '') }}"
+                        data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '') }}"
                         data-base-url="https://jsd-widget.atlassian.com"
                         src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
             @endif
@@ -31,11 +31,11 @@
 
 
 
-    @if(request()->get('favicons'))
-        <link rel="icon" type="image/png" sizes="16x16" href="{{ request()->get('favicons')['16']}}">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ request()->get('favicons')['32'] }}">
-        <link rel="icon" type="image/png" sizes="48x48" href="{{ request()->get('favicons')['48'] }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ request()->get('favicons')['180'] }}">
+    @if(request()->input('favicons'))
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ request()->input('favicons')['16']}}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ request()->input('favicons')['32'] }}">
+        <link rel="icon" type="image/png" sizes="48x48" href="{{ request()->input('favicons')['48'] }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ request()->input('favicons')['180'] }}">
     @endif
 
 
@@ -54,7 +54,7 @@
     {{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
     @inertiaHead
 
-    @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
         <!-- Google Tag Manager -->
         <script>(function (w, d, s, l, i) {
                 w[l] = w[l] || [];
@@ -68,24 +68,24 @@
                 j.src =
                     "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
                 f.parentNode.insertBefore(j, f);
-            })(window, document, "script", "dataLayer", '{{ Arr::get(request()->get("website")->settings, "google_tag_id", "") }}');</script>
+            })(window, document, "script", "dataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');</script>
         <!-- End Google Tag Manager -->
     @endif
 
     <!-- Section: Luigi analytics -->
-    @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', ''))
+    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
         <script async
-                src="https://scripts.luigisbox.tech/{{ Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script>
+                src="https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script>
     @endif
 
 </head>
 <body class="font-sans antialiased h-full">
 
-@if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+@if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
     <!-- Google Tag Manager (noscript) -->
     <noscript>
         <iframe
-            src="https://www.googletagmanager.com/ns.html?id={{ Arr::get(request()->get('website')->settings, 'google_tag_id', '') }}"
+            src="https://www.googletagmanager.com/ns.html?id={{ Arr::get(request()->input('website')->settings, 'google_tag_id', '') }}"
             height="0" width="0" style="display:none;visibility:hidden" title="google_tag"></iframe>
     </noscript>
     <!-- End Google Tag Manager (noscript) -->

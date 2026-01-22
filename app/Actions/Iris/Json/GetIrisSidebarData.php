@@ -18,7 +18,7 @@ class GetIrisSidebarData
     public function asController(ActionRequest $request): JsonResponse
     {
         /** @var Website|null $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         if (!$website) {
             return response()->json([

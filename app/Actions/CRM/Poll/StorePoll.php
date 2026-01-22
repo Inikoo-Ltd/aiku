@@ -119,7 +119,7 @@ class StorePoll extends OrgAction
     public function asController(Shop $shop, ActionRequest $request): Poll
     {
         // this because field in_iris hidden for now
-        if ($request->get('in_registration', false)) {
+        if ($request->input('in_registration', false)) {
             $request->merge([
                 'in_iris' => true,
             ]);

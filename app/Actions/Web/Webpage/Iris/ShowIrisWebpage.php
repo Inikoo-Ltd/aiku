@@ -87,11 +87,11 @@ class ShowIrisWebpage
         }
 
         if (config('iris.cache.webpage_path.ttl') == 0) {
-            $webpageID = $this->getWebpageID($request->get('website'), $path);
+            $webpageID = $this->getWebpageID($request->input('website'), $path);
         } else {
-            $key       = config('iris.cache.webpage_path.prefix').'_'.$request->get('website')->id.'_'.$path;
+            $key       = config('iris.cache.webpage_path.prefix').'_'.$request->input('website')->id.'_'.$path;
             $webpageID = cache()->remember($key, config('iris.cache.webpage_path.ttl'), function () use ($request, $path) {
-                return $this->getWebpageID($request->get('website'), $path);
+                return $this->getWebpageID($request->input('website'), $path);
             });
         }
 
@@ -104,7 +104,7 @@ class ShowIrisWebpage
         if (config('iris.cache.webpage.ttl') == 0) {
             $canonicalUrl = $this->getCanonicalUrl($webpageID);
         } else {
-            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_canonicals_'.$webpageID;
+            $key = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_canonicals_'.$webpageID;
 
             $canonicalUrl = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
                 return $this->getCanonicalUrl($webpageID);
@@ -128,7 +128,7 @@ class ShowIrisWebpage
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
-            $key         = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
+            $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
             $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
                 return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
             });

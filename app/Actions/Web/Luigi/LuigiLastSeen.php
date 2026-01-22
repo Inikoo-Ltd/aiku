@@ -16,7 +16,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 
 class LuigiLastSeen extends IrisAction
 {
@@ -30,13 +29,13 @@ class LuigiLastSeen extends IrisAction
             ? (string) $customer->customer_id
             : (string) ($request->cookie('_lb') ?? 'guest');
 
-        $website   = $request->get('website');
+        $website   = $request->input('website');
         $trackerId = Arr::get($website->settings, 'luigisbox.tracker_id');
 
 
-         $luigi_identity = (string) $request->input('luigi_identity');
-         $recommendation_type = trim((string) $request->input('recommendation_type')) ?: 'last_seen';
-         $recommender_client_identifier = trim((string) $request->input('recommender_client_identifier')) ?: 'last_seen';
+        $luigi_identity = (string) $request->input('luigi_identity');
+        $recommendation_type = trim((string) $request->input('recommendation_type')) ?: 'last_seen';
+        $recommender_client_identifier = trim((string) $request->input('recommender_client_identifier')) ?: 'last_seen';
 
         if (! $trackerId) {
             throw new \RuntimeException('LuigisBox tracker_id not configured');
@@ -118,7 +117,7 @@ class LuigiLastSeen extends IrisAction
             ->whereIn('products.id', $productIds);
 
         return $this
-            ->getData($queryBuilder,  $size);
+            ->getData($queryBuilder, $size);
     }
 
 
