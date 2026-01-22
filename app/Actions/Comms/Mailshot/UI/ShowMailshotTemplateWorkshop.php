@@ -40,7 +40,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
     public function htmlResponse(EmailTemplate $emailTemplate, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Web/Workshop/Mailshot/MailshotWorkshop', // TODO: Update this patch later
+            'Org/Web/Workshop/Mailshot/MailshotTemplateWorkshop', // TODO: Update this patch later
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $emailTemplate,

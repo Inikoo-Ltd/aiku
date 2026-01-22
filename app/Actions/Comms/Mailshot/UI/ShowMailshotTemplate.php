@@ -40,9 +40,9 @@ class ShowMailshotTemplate extends OrgAction
     {
 
         return Inertia::render(
-            'Comms/Mailshot',
+            'Comms/MailshotTemplate',
             [
-                'title'                           => $emailTemplate->id,
+                'title'                           => $emailTemplate->name,
                 'breadcrumbs'                     => $this->getBreadcrumbs(
                     $emailTemplate,
                     $request->route()->getName(),

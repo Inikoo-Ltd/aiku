@@ -22,6 +22,8 @@ import {
     faSkull, faDungeon
 } from '@fal';
 import { trans } from 'laravel-vue-i18n';
+import { Link } from "@inertiajs/vue3";
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
@@ -67,6 +69,7 @@ const mailshotState = computed(() => props.data.mailshot.data.state)
 
 const isInProcess = computed(() => mailshotState.value === "in_process")
 const isReady = computed(() => mailshotState.value === "ready")
+const isLoadingVisit = ref(false)
 </script>
 
 <template>
@@ -138,6 +141,15 @@ const isReady = computed(() => mailshotState.value === "ready")
             <EmptyState :data="{
                 title: trans(`${props.data.mailshot.data.subject} is still in process`),
             }">
+                <template #button-empty-state>
+                    <!-- <Link :href="route('grp.helpers.redirect_outbox_workshop', {
+                        outbox: data.outbox?.id,
+                    })
+                        " @start="() => (isLoadingVisit = true)" class="mt-4 block w-fit mx-auto">
+                        <Button :label="trans('Workshop')" type="secondary" icon="fal fa-drafting-compass"
+                            :loading="isLoadingVisit" />
+                    </Link> -->
+                </template>
             </EmptyState>
         </div>
     </div>
