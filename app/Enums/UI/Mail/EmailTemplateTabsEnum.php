@@ -25,15 +25,15 @@ enum EmailTemplateTabsEnum: string
         return match ($this) {
             EmailTemplateTabsEnum::TEMPLATES => [
                 'title' => __('Templates'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'icon'  => 'fal fa-layer-group',
             ],
             EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS => [
                 'title' => __('Previous Mailshots'),
-                'icon'  => 'fal fa-users',
+                'icon'  => 'fal fa-history',
             ],
             EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS => [
                 'title' => __('Other Store Mailshots'),
-                'icon'  => 'fal fa-paper-plane',
+                'icon'  => 'fal fa-store-alt',
             ],
         };
     }
