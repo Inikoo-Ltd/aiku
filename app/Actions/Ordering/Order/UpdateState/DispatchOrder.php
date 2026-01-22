@@ -37,7 +37,7 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order, DeliveryNote $deliveryNote = null): Order
+    public function handle(Order $order, ?DeliveryNote $deliveryNote = null): Order
     {
         $oldState = $order->state;
 

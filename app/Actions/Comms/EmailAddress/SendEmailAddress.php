@@ -19,7 +19,7 @@ class SendEmailAddress
 
     public mixed $message;
 
-    public function handle(array $content, string $to, $attach = null, $type = 'html'): void
+    public function handle(array $content, string $to, $attach = null, string $type = 'html'): void
     {
         $emailAddress = StoreEmailAddress::run(group(), $to);
         $response     = SendSesEmail::run($content, $emailAddress->email, $attach, $type);
