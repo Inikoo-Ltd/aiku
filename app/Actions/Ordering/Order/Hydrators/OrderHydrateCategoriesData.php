@@ -30,6 +30,7 @@ class OrderHydrateCategoriesData
             ->join('products', 'assets.id', '=', 'products.asset_id')
             ->where('transactions.order_id', $order->id)
             ->where('transactions.model_type', 'Product')
+            ->where('transactions.deleted_at', null)
             ->select([
                 'products.family_id',
                 'products.sub_department_id',
@@ -67,6 +68,7 @@ class OrderHydrateCategoriesData
         }
 
         $categoriesData['family_ids'] = $familyIds;
+
 
         $order->update([
             'categories_data' => $categoriesData,
