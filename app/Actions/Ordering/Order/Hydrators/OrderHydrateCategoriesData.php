@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\Hydrators;
 
+use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -74,4 +75,47 @@ class OrderHydrateCategoriesData
             'categories_data' => $categoriesData,
         ]);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'orders:hydrate_categories_data {order_id?}';
+    }
+
+    public function asCommand($command): void
+    {
+
+        if ($orderID = $command->argument('order_id')) {
+            /** @var \App\Models\Ordering\Order $order */
+            $order = Order::findOrFail($orderID);
+            $this->handle($order);
+
+            return;
+        }
+        $aikuShops=Shop::where('is_aiku',true)->pluck('id')->toArray();
+
+        $query = Order::whereIn('shop_id',$aikuShops);
+        $count = $query->count();
+
+        if ($count === 0) {
+            $command->info('No orders found to hydrate.');
+
+            return;
+        }
+
+        $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+
+        $bar->start();
+
+        $query->chunkById(1000, function ($orders) use ($bar) {
+            foreach ($orders as $order) {
+                $this->handle($order);
+                $bar->advance();
+            }
+        });
+
+        $bar->finish();
+        $command->newLine();
+    }
+
 }
