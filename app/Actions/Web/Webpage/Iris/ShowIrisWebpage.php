@@ -164,27 +164,27 @@ class ShowIrisWebpage
         return $url;
     }
 
-    public function asController(ActionRequest $request, string $path = null): string|array
+    public function asController(ActionRequest $request, ?string $path = null): string|array
     {
         return $this->handle($path, [], $request);
     }
 
-    public function deep1(ActionRequest $request, string $parentPath1, string $path): string|array
+    public function deep1(ActionRequest $request, string $parentPath1, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1], $request);
     }
 
-    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, string $path = null): string|array
+    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2], $request);
     }
 
-    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $path = null): string|array
+    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3], $request);
     }
 
-    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, string $path = null): string|array
+    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3, $parentPath4], $request);
     }
