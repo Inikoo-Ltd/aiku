@@ -10,6 +10,8 @@ import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel.vue"
 import { Popover } from "primevue"
+import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
+import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
 library.add(faPlusCircle, faQuestionCircle)
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -90,29 +92,9 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
             </div>
 
             <!-- Section: Profit, label Gold Reward Member -->
-            <div class="mt-4 flex justify-between">
-                <div v-if="layout?.user?.gr_data?.customer_is_gr" class="relative w-fit">
-                    <div class="bg-orange-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
-                    <img src="/assets/promo/gr.png" alt="Gold Reward logo" class="absolute -right-9 -top-1 inline-block h-10 ml-1 align-middle" />
-                </div>
-                <div v-else class="relative w-fit">
-                    <div class="bg-gray-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
-                    <div class="my-1.5 text-xs">
-                        {{ trans("NOT A MEMBER") }}? <span @click="_popoverQuestionCircle?.toggle" @mouseenter="_popoverQuestionCircle?.show" @mouseleave="_popoverQuestionCircle?.hide" class="cursor-pointer">
-                            <FontAwesomeIcon icon="fal fa-question-circle" class="" fixed-width aria-hidden="true" />
-                        </span>
-                    </div>
-                    
-                    <AvailableGROfferLabel
-                        v-if="
-                            (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
-                            && product.available_gr_offer_to_use?.trigger_data?.item_quantity
-                            && !layout?.user?.gr_data?.customer_is_gr
-                            && product.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
-                        "
-                        :product
-                    />
-                </div>
+            <div class="mt-0 flex justify-between">
+                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
+                <NonMemberPriceLabel v-else :product :basketButton />
 
                 <!-- Section: Profit -->
                 <div v-if="product?.margin" class="flex justify-end text-right flex-col">
@@ -129,19 +111,6 @@ const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
                 </div>
             </div>
         </div>
-
-        <!-- Popover: Question circle GR member -->
-        <Popover ref="_popoverQuestionCircle" :style="{width: '250px'}" class="py-1 px-2">
-            <div class="text-xs">
-                <p class="font-bold mb-4">{{ trans("VOLUME DISCOUNT") }}</p>
-                <p class="inline-block mb-4 text-justify">
-                    {{ trans("You don't need Gold Reward status to access the lower price") }}.
-                </p>
-                <p class="mb-4 text-justify">
-                    {{ trans("Order the listed volume and the member price applies automatically at checkout") }}. {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
-                </p>
-            </div>
-        </Popover>
 
     </div>
 </template>
