@@ -475,7 +475,6 @@ const lastSelection = ref<{ from: number; to: number } | null>(null)
 const shouldShowBubble = ({ editor }: any) => {
   if (!editor) return false
   if (!showBubble.value) return false
-
   return editor.isFocused && !showDialog.value
 }
 
@@ -486,39 +485,39 @@ const closeBubble = () => {
   key.value = ulid()
 }
 
-
 watch(editorInstance, (editor) => {
   if (!editor) return
 
-  editor.on('selectionUpdate', ({ editor }) => {
-    const { from, to } = editor.state.selection
+  // BLUR: always hide
+  editor.on('blur', () => {
+    showBubble.value = false
+    lastSelection.value = null
+  })
 
-    // ignore cursor
-    if (from === to) {
-      showBubble.value = false
-      return
-    }
-
-    const isNewSelection =
-      !lastSelection.value ||
-      lastSelection.value.from !== from ||
-      lastSelection.value.to !== to
-
-    if (isNewSelection) {
-      // 🔴 always reset to CLOSED
-      showBubble.value = false
-      userCloseBubble.value = false
-    }
-
-    // only open if user did NOT close
+  // FOCUS: auto mode shows bubble immediately
+  editor.on('focus', () => {
     if (!userCloseBubble.value) {
       showBubble.value = true
     }
+  })
 
-    lastSelection.value = { from, to }
+  // SELECTION HANDLING
+  editor.on('selectionUpdate', ({ editor }) => {
+    const { from, to } = editor.state.selection
+    const hasSelection = from !== to
+
+    // MANUAL MODE
+    if (userCloseBubble.value) {
+      showBubble.value = hasSelection
+      lastSelection.value = hasSelection ? { from, to } : null
+      return
+    }
+
+    // AUTO MODE
+    showBubble.value = true
+    lastSelection.value = hasSelection ? { from, to } : null
   })
 })
-
 
 
 onMounted(async () => {
