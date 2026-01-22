@@ -140,6 +140,13 @@ watch(
 const _popoverProfit = ref(null)
 
 // console.log('fdsfds', props.fieldValue.product)
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return product.value?.offers_data?.offers?.[offerId] 
+}
 </script>
 
 
@@ -229,20 +236,20 @@ const _popoverProfit = ref(null)
                 </div>       
 
                 <!-- PRICE -->
-                <!-- <ProductPrices
-                    :field-value="fieldValue"
-                    :key="product.code"
-                    :offers_data="customerData?.offers_data"
-                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
-                    :offer_price_per_unit="customerData?.offer_price_per_unit"
-                /> -->
-                <ProductPrices2
+                <ProductPrices
                     :field-value="fieldValue"
                     :key="product.code"
                     :offers_data="customerData?.offers_data"
                     :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
                     :offer_price_per_unit="customerData?.offer_price_per_unit"
                 />
+                <!-- <ProductPrices2
+                    :field-value="fieldValue"
+                    :key="product.code"
+                    :offers_data="customerData?.offers_data"
+                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
+                    :offer_price_per_unit="customerData?.offer_price_per_unit"
+                /> -->
 
                 <!-- Section: Member/Non Member label, Profit -->
                 <div class="flex justify-between">
@@ -260,7 +267,10 @@ const _popoverProfit = ref(null)
                     </template>
 
                     <div v-else /> -->
-                    <div></div>
+                    <!-- <div>
+                        {{ product.offers_data.best_percentage_off.offer_id }}
+                        <pre><span class="bg-yellow-500">product.offers_data</span>: {{ getBestOffer(product?.offers_data?.best_percentage_off?.offer_id) }}</pre>
+                    </div> -->
                     
                     <!-- <NonMemberPriceLabel
                         :product="product"
@@ -271,8 +281,12 @@ const _popoverProfit = ref(null)
                             && customerData?.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
                         "
                     /> -->
+                    <div>
+                        
+                    </div>
 
-                    <div class="flex justify-between items-end">
+                    
+                    <!-- <div class="flex justify-between items-end">
                         <span @click="_popoverProfit?.toggle">Profit</span>:
                         <span class="text-green-500 ml-1 font-bold">
                             {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
@@ -282,7 +296,7 @@ const _popoverProfit = ref(null)
                         >
                             <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
                         </span>
-                    </div>
+                    </div> -->
 
                     <!-- Popover: Question circle GR member -->
                     <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
@@ -379,7 +393,7 @@ const _popoverProfit = ref(null)
                 <!-- <pre>{{ customerData?.offers_data }}</pre> -->
 
                 <!-- Section: ADD TO CART -->
-                <div class="flex gap-2 mb-6">
+                <div class="mt-4 flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
                         <EcomAddToBasketv2 
                             v-if="product.stock"  
