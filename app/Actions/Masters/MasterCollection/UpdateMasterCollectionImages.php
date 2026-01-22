@@ -47,12 +47,22 @@ class UpdateMasterCollectionImages extends GrpAction
                 $media = Media::find($mediaId);
 
                 if ($media) {
+                    $masterCollection->images()
+                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                        ->updateExistingPivot(
+                            $masterCollection->images()
+                                ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                                ->first()?->id,
+                            ['sub_scope' => null]
+                        );
+
                     $masterCollection->images()->updateExistingPivot(
                         $media->id,
                         ['sub_scope' => $imageTypeMapping[$imageKey]]
                     );
                 }
             }
+
         }
 
         $this->update($masterCollection, $modelData);

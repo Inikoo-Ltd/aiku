@@ -107,7 +107,8 @@
     "vemcogroup/laravel-translation": "^3.0",
     "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
-    "webklex/laravel-imap": "^6.2"
+    "webklex/laravel-imap": "^6.2",
+    "ext-libxml": "*"
   },
   "require-dev": {
     "amphibee/laravel-pint-pre-commit": "^1.5",

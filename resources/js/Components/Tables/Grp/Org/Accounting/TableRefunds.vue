@@ -32,6 +32,15 @@ function refundRoute(refund: Invoice) {
     console.log((route().current()))
 
     switch (route().current()) {
+
+      case 'grp.org.accounting.invoice-categories.show.refunds.index':
+        return route(
+          'grp.org.shops.show.dashboard.invoices.refunds.show',
+          [
+            (route().params as RouteParams).organisation,
+            refund.shop_slug,
+            refund.slug
+          ])
       case 'grp.org.accounting.invoices.show':
       case 'grp.overview.accounting.refunds.index':
       case 'grp.org.accounting.refunds.index':
@@ -43,6 +52,7 @@ function refundRoute(refund: Invoice) {
           ])
       case 'grp.org.shops.show.dashboard.invoices.show':
       case 'grp.org.shops.show.dashboard.invoices.refunds.index':
+      case 'grp.org.shops.show.crm.customers.show.invoices.index':
         return route(
           'grp.org.shops.show.dashboard.invoices.refunds.show',
           [

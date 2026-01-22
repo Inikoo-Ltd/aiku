@@ -95,7 +95,6 @@ class EditFamily extends OrgAction
             ];
         }
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
-        $offers = $family->getActiveOffers()->with('offerAllowances')->get();
 
         return Inertia::render(
             'EditModel',
@@ -299,17 +298,18 @@ class EditFamily extends OrgAction
                                 ],
 
                             ],
-                            [
-                                'label'  => __('Discounts'),
-                                'icon'   => 'fa-light fa-badge-percent',
-                                'fields' => [
-                                    'offers_data'      => [
-                                        'label'  => 'Offer List',
-                                        'value'  =>  $family->offers_data,
-                                        'type'   =>  'offer_fields'
-                                    ]
-                                ],
-                            ],
+// todso this is wrong
+//                            [
+//                                'label'  => __('Discounts'),
+//                                'icon'   => 'fa-light fa-badge-percent',
+//                                'fields' => [
+//                                    'offers_data'      => [
+//                                        'label'  => 'Offer List',
+//                                        'value'  =>  $family->offers_data,
+//                                        'type'   =>  'offer_fields'
+//                                    ]
+//                                ],
+//                            ],
                         ]
                     ),
                     'args'      => [

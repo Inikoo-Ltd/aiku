@@ -159,7 +159,7 @@ class ShowUser extends OrgAction
         };
 
         $employee = null;
-        $user     = User::where('username', $routeParameters['user'])->first();
+        $user     = User::where('slug', $routeParameters['user'])->first();
         if (Arr::has($routeParameters, 'employee')) {
             $employee = Employee::where('slug', $routeParameters['employee'])->first();
         }
@@ -180,7 +180,7 @@ class ShowUser extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.sysadmin.users.show',
-                            'parameters' => $user->username
+                            'parameters' => $user->slug
                         ]
                     ],
                     $suffix
@@ -197,7 +197,7 @@ class ShowUser extends OrgAction
                                 'name'       => $routeName,
                                 'parameters' => $routeParameters
                             ],
-                            'label' => $user->username,
+                            'label' => $user->slug,
                             'icon'  => 'fal fa-user-circle',
                         ]
                     ],
@@ -211,14 +211,14 @@ class ShowUser extends OrgAction
 
     public function getPrevious(User $user, ActionRequest $request): ?array
     {
-        $previous = User::where('username', '<', $user->username)->orderBy('username', 'desc')->first();
+        $previous = User::where('slug', '<', $user->slug)->orderBy('slug', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(User $user, ActionRequest $request): ?array
     {
-        $next = User::where('username', '>', $user->username)->orderBy('username')->first();
+        $next = User::where('slug', '>', $user->slug)->orderBy('slug')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
@@ -235,7 +235,7 @@ class ShowUser extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'user' => $user->username
+                        'user' => $user->slug
                     ]
 
                 ]

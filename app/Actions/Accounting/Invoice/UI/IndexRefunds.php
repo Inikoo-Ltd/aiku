@@ -116,11 +116,10 @@ class IndexRefunds extends OrgAction
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
 
-
-        if ($parent instanceof Shop || $parent instanceof Organisation) {
-            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
-        }
+        // if ($parent instanceof Shop || $parent instanceof Organisation) {
+        // }
+        $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
+            ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
 
         if ($parent instanceof Fulfilment) {
             $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
@@ -176,9 +175,9 @@ class IndexRefunds extends OrgAction
             }
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($parent instanceof Fulfilment || $parent instanceof Shop || $parent instanceof Organisation) {
-                $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
-            }
+            // if ($parent instanceof Fulfilment || $parent instanceof Shop || $parent instanceof Organisation) {
+            // }
+            $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 

@@ -59,7 +59,7 @@ class RunBackInStockEmailBulkRuns
             $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
             $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
             // select options
-            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'products.name as product_name', 'back_in_stock_reminders.id as reminder_id');
+            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'back_in_stock_reminders.id as reminder_id');
 
             // where conditions
             $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
@@ -164,6 +164,8 @@ class RunBackInStockEmailBulkRuns
 
     public function generateProductLinks(array $productData): string
     {
+        $date = Carbon::now()->format('d M y');
+
         $html = '';
 
         $html .= '<table width="100%" cellpadding="8" cellspacing="0"
@@ -174,8 +176,8 @@ class RunBackInStockEmailBulkRuns
 
         $html .= '
         <tr style="border-bottom:1px solid #e5e7eb;">
-            <th align="left" style="color:#555;">Product</th>
-            <th align="center" style="color:#555;">Back in stock</th>
+            <th align="left" style="color:#555;">' . __('Product') . '</th>
+            <th align="center" style="color:#555;">' . __('New stock') . ' (' . $date . ')</th>
         </tr>';
 
         foreach ($productData as $product) {
@@ -218,9 +220,9 @@ class RunBackInStockEmailBulkRuns
                                 </td>
                                 <td style="vertical-align:middle;">
                                     <a ses:no-track href="' . $url . '"
-                                       style="color:#111;
-                                              text-decoration:none;
-                                              font-weight:600;">'
+                                       style="color:#2563eb;
+                                        text-decoration:underline;
+                                        font-weight:600;">'
                     . $name .
                     '</a>
                                 </td>
