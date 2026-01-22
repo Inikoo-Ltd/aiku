@@ -198,7 +198,7 @@ const autoSave = async (jsonFile) => {
             },
         )
         .then((response) => {
-            console.log("autosave successful:", response.data);
+            // console.log("autosave successful:", response.data);
             // Handle success (equivalent to onFinish)
         })
         .catch((error) => {
@@ -209,7 +209,7 @@ const autoSave = async (jsonFile) => {
             })
         })
         .finally(() => {
-            console.log("autosave finished.");
+            // console.log("autosave finished.");
         });
 }
 
@@ -248,7 +248,7 @@ const currentTab = ref<string>(tabs.value.current)
 const isBeefreeReady = ref(false)
 
 const tabData = computed(() => {
-    return page.props[currentTab.value]?.data ?? []
+    return page.props[currentTab.value] ?? []
 })
 
 const handleTabUpdate = (tabSlug: string) =>
@@ -288,10 +288,14 @@ watch(
         </template>
     </PageHeading>
 
-    <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-4xl">
+    <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-5xl">
+
         <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+
         <component :is="component" :key="currentTab" :data="tabData" :tab="currentTab"
             @select-snapshot="onSelectTemplateSnapshot" />
+
     </Modal>
 
     <!-- beefree -->
