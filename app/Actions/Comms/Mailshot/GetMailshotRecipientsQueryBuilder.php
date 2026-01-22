@@ -24,6 +24,7 @@ use App\Actions\Comms\Mailshot\Filters\FilterBySubdepartment;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
 use App\Actions\Comms\Mailshot\Filters\FilterByFamilyNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
+use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
 
 class GetMailshotRecipientsQueryBuilder
 {
@@ -205,6 +206,13 @@ class GetMailshotRecipientsQueryBuilder
             if (!empty($valueToSend['ids'])) {
                 (new FilterBySubdepartment())->apply($query, $valueToSend);
             }
+        }
+        // FILTER: By Showroom Orders
+        $showroomFilter = Arr::get($filters, 'by_showroom_orders');
+        $isShowroomActive = is_array($showroomFilter) ? ($showroomFilter['value'] ?? false) : $showroomFilter;
+
+        if ($isShowroomActive) {
+            (new FilterByShowroomOrders())->apply($query);
         }
 
         return $query;
