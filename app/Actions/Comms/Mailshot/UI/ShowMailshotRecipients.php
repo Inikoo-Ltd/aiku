@@ -12,6 +12,8 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\Helpers\Tag;
 
 class ShowMailshotRecipients extends OrgAction
 {
@@ -48,6 +50,13 @@ class ShowMailshotRecipients extends OrgAction
             ->orderBy('name')
             ->get()
             ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->toArray();
+
+        $interestTags = Tag::query()
+            ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $filtersStructure = [
@@ -133,11 +142,11 @@ class ShowMailshotRecipients extends OrgAction
                             ['value' => 'non_gold', 'label' => 'Non-Gold Reward Members (Inactive > 30 days)'],
                         ],
                     ],
-                    'by_interest'              => [
+                    'by_interest' => [
                         'label'          => 'By Interest',
                         'type'           => 'multiselect',
                         'description'    => 'Targets customers who have selected at least one of the chosen interests in their profile.',
-                        'options_source' => \App\Models\Helpers\Tag::class,
+                        'options'        => $interestTags,
                         'multiple'       => true,
                         'logic'          => 'OR'
                     ],

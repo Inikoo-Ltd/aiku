@@ -25,6 +25,7 @@ use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
 use App\Actions\Comms\Mailshot\Filters\FilterByFamilyNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
+use App\Actions\Comms\Mailshot\Filters\FilterByInterest;
 
 class GetMailshotRecipientsQueryBuilder
 {
@@ -213,6 +214,18 @@ class GetMailshotRecipientsQueryBuilder
 
         if ($isShowroomActive) {
             (new FilterByShowroomOrders())->apply($query);
+        }
+
+        // FILTER: By Interest
+        $interestFilter = Arr::get($filters, 'by_interest');
+        $interestTags = is_array($interestFilter) ? ($interestFilter['value'] ?? []) : [];
+
+        if (!is_array($interestTags) && !is_null($interestTags)) {
+            $interestTags = [$interestTags];
+        }
+
+        if (!empty($interestTags)) {
+            (new FilterByInterest())->apply($query, $interestTags);
         }
 
         return $query;

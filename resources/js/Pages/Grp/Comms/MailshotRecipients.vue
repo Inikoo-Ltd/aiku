@@ -326,6 +326,21 @@ watch(activeFilters, () => {
                             </div>
                         </div>
 
+                        <div v-else-if="filter.config.type === 'multiselect'">
+                            <div class="mb-3">
+                                <MultiselectTagsInfiniteScroll :form="filter" fieldName="value" :fieldData="{
+                                    options: filter.config.options,
+                                    labelProp: 'label',
+                                    valueProp: 'value',
+                                    placeholder: 'Select interests...',
+                                    mode: 'tags'
+                                }" />
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                * Customers matching <strong>any</strong> of the selected tags will be included.
+                            </p>
+                        </div>
+
                     </div>
                 </div>
              </div>
