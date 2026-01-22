@@ -11,7 +11,6 @@ namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Web\Webpage;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,9 +23,9 @@ class ProductHydrateHasLiveWebpage implements ShouldBeUnique
         return $product->id;
     }
 
-    public function handle(Product $product, Webpage $webpage): void
+    public function handle(Product $product): void
     {
-        $product->update(['has_live_webpage' => $webpage->state == WebpageStateEnum::LIVE]);
+        $product->update(['has_live_webpage' => $product->webpage()->where('state', WebpageStateEnum::LIVE)->exists()]);
     }
 
 }

@@ -24,7 +24,7 @@ class RepairProductsHasLiveWebpage
 
     public function handle(Product $product)
     {
-        ProductHydrateHasLiveWebpage::run($product, $product->webpage);
+        ProductHydrateHasLiveWebpage::run($product);
     }
 
     public function asCommand(Command $command): void
