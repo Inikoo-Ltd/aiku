@@ -195,12 +195,7 @@ class UpdateCustomer extends OrgAction
             // Recalculate customer orders VAT Charges | INI-875
             // Will only update the VAT Charges for orders that has status creating. Changeable if Dimitar wants it
             $customer->orders()
-                ->select('orders.*')
-                ->join('customer_sales_channels as csc', function ($join) {
-                    $join->on('orders.customer_sales_channel_id', '=', 'csc.id')
-                        ->where('csc.status', CustomerSalesChannelStatusEnum::OPEN);
-                })
-                ->where('orders.state', OrderStateEnum::CREATING)
+                ->where('state', OrderStateEnum::CREATING)
                 ->with(['organisation', 'billingAddress', 'deliveryAddress'])
                 ->each(function ($order) use ($customer) {
                     $order->update([
