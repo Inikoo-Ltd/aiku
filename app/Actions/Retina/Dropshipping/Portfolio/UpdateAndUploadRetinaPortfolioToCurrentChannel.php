@@ -15,12 +15,14 @@ use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
+use App\Traits\SanitizeInputs;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 {
     use AsAction;
+    use SanitizeInputs;
 
     public function handle(Portfolio $portfolio, array $modelData, $isDraft = false): void
     {
@@ -47,6 +49,13 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
+        $this->setSanitizeFields([
+            'title',
+            'price',
+        ]);
+        $this->sanitizeInputs();
+        $this->sanitizeHtml('description');
+
         $this->set('customer_product_name', $request->input('title'));
         $this->set('customer_price', (string) $request->input('price'));
         $this->set('customer_description', $request->input('description'));
@@ -54,13 +63,14 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
-
+        $this->enableSanitize();
         $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData);
     }
 
     public function asDraft(Portfolio $portfolio, ActionRequest $request): void
     {
+        $this->enableSanitize();
         $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData, true);
     }

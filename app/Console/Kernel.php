@@ -96,7 +96,6 @@ class Kernel extends ConsoleKernel
         );
 
 
-
         $this->logSchedule(
             $schedule->job(UpdateCurrentRecurringBillsTemporalAggregates::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'UpdateCurrentRecurringBillsTemporalAggregates',
@@ -397,16 +396,16 @@ class Kernel extends ConsoleKernel
 
         $urlsToHit = [
             [
-                'url' => 'https://www.aw-fulfilment.eu/',
+                'url'     => 'https://www.aw-fulfilment.eu/',
                 'inertia' => true,
                 'xmlhttp' => true,
-                'slug' => 'Hit https://www.aw-fulfilment.eu/ X-Inertia: true',
+                'slug'    => 'Hit https://www.aw-fulfilment.eu/ X-Inertia: true',
             ],
             [
-                'url' => 'https://www.aw-fulfilment.eu/',
+                'url'     => 'https://www.aw-fulfilment.eu/',
                 'inertia' => false,
                 'xmlhttp' => false,
-                'slug' => 'Hit https://www.aw-fulfilment.eu/',
+                'slug'    => 'Hit https://www.aw-fulfilment.eu/',
             ],
         ];
 
@@ -469,7 +468,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->command('process:time-series', ['--frequency' => 'yearly'])->yearlyOn(1, '05:00')->timezone('UTC')->sentryMonitor(
+            $schedule->command('process:time-series', ['--frequency' => 'yearly'])->yearlyOn(1, 1, '05:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'ProcessYearlyTimeSeries',
             ),
             name: 'ProcessYearlyTimeSeries',

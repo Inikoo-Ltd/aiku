@@ -9,6 +9,7 @@ export interface User {
 
     parent_type: string,
 
+    slug: string,
     email: string,
     about: string,
     created_at: string

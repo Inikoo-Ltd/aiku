@@ -56,7 +56,6 @@ class StoreVariantFromMaster extends OrgAction
                     'is_main'           => $isLeader,
                     'is_variant_leader' => $isLeader,
                     'is_minion_variant' => !$isLeader
-
                 ]);
 
                 if ($product->webpage()->exists()) {

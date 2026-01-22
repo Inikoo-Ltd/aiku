@@ -41,6 +41,7 @@ use App\Http\Resources\Traits\HasPriceMetrics;
  * @property mixed $shop_id
  * @property mixed $quantity_ordered
  * @property mixed $canonical_url
+ * @property mixed $offers_data
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
@@ -53,6 +54,9 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
 
         $favourite = false;
+        $back_in_stock_id = null;
+        $back_in_stock    = false;
+
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
@@ -60,8 +64,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             }
         }
 
-        $back_in_stock_id = null;
-        $back_in_stock    = false;
+
 
         if ($request->user()) {
             $customer = $request->user()->customer;
@@ -78,12 +81,23 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
         }
 
 
-        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
 
+        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
-
         $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
+
+//        $gr_offer = $this->family->getGROffer;
+//        $gr_price = null;
+//        $gr_price_per_unit = null;
+//        if ($gr_offer) {
+//            $allowances = $gr_offer->offerAllowances;
+//            $gr_price = $this->price;
+//            foreach ($allowances as $allowance) {
+//                $gr_price -= round((float) $this->price * $allowance->data['percentage_off'], 2);
+//            }
+//            $gr_price_per_unit = $gr_price / max(1, (int) $units);
+//        }
 
         return [
             'id'                   => $this->id,
@@ -117,9 +131,24 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'         => $this->is_on_demand,
             'is_variant'           => $this->variant_id ? true : false,
+//            'gr_price'             => $gr_price,
+//            'gr_price_per_unit'    => $gr_price_per_unit,
             'offers_data'          => $this->offers_data,
+
+
+            //todo use this for the dicounted price
+            //'discounted_price'     => $this->discounted_price ?? null,
+            //'discounted_price_per_unit'     =>
+            //'discounted_profit'     =>
+            //'discounted_profit_per_unit'     =>
+            //'discounted_margin     =>
+            //todo remove below here use offers_data
             'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
             'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
+//            'available_gr_offer_to_use'             => $gr_offer ? [
+//                'slug'          => $gr_offer->slug,
+//                'trigger_data'  => $gr_offer->trigger_data,
+//            ] : [],
         ];
     }
 

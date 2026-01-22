@@ -220,12 +220,6 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         );
     }
 
-    public function withTrashed()
-    {
-        $this->queryBuilder->withTrashed();
-        return $this;
-    }
-
     /**
      * Add time series aggregation with optional date filtering and last year comparison
      *

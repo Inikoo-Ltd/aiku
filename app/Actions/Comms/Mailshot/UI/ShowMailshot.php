@@ -77,7 +77,7 @@ class ShowMailshot extends OrgAction
                 ),
                 'pageHead'                        => [
                     'icon'    => 'fal fa-coins',
-                    'title'   => 'Mailshot ' . $mailshot->id,
+                    'title'   => 'Newsletter ' . $mailshot->id,
                     'edit'    => $this->canEdit ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),

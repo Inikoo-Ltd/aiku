@@ -301,7 +301,7 @@ watch(
                         <FontAwesomeIcon icon="fal fa-sign-in" class="button"  fixed-width aria-hidden="true" />
                     </template>
                     <template #label>
-                        <span class="button">
+                        <span class="button whitespace-nowrap">
                             {{ trans("Login") }}
                         </span>
                     </template>

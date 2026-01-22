@@ -16,6 +16,11 @@ class TwoFAMiddleware
 {
     public function handle($request, Closure $next)
     {
+        // Ignore in Local
+        if (app()->isLocal()) {
+            return $next($request);
+        }
+
         $authenticator = new Authenticator($request);
 
         // Importantly, all of this check is needed, otherwise it will break and causes infinity loop. Please do not remove any of them

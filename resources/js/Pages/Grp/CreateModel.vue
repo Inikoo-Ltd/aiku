@@ -64,17 +64,17 @@ const handleFormSubmit = async () => {
     if (!props.formData.submitButton) {
         if (props.formData?.route?.body) {
             form
-            .transform((data) => ({
-                ...data,
-                ...props.formData.route.body
-            }))
-            .post(route(
-                props.formData.route.name,
-                props.formData.route.parameters
-            ), {
-                onStart: () => isLoading.value = true,
-                onError: () => isLoading.value = false
-            })
+                .transform((data) => ({
+                    ...data,
+                    ...props.formData.route.body
+                }))
+                .post(route(
+                    props.formData.route.name,
+                    props.formData.route.parameters
+                ), {
+                    onStart: () => isLoading.value = true,
+                    onError: () => isLoading.value = false
+                })
         } else {
             form.post(route(
                 props.formData.route.name,
@@ -127,6 +127,7 @@ const onSelectSubmitChange = (value) => {
     ButtonActive.value = value
 }
 
+console.log("formdata create", props.formData)
 </script>
 
 <template>
@@ -145,25 +146,14 @@ const onSelectSubmitChange = (value) => {
                 />
 
                 <div v-else-if="formData.submitButton == 'dropdown'" class="flex justify-center">
-                    <Button
-                        :key="ButtonActive.key"
-                        type="save"
-                        :disabled="form.processing"
-                        class="rounded-r-none border-none"
-                        size="m" @click="handleFormSubmit"
-                        :label="ButtonActive.label"
-                        :loading="isLoading"
-                    />
+                    <Button :key="ButtonActive.key" type="save" :disabled="form.processing"
+                        class="rounded-r-none border-none" size="m" @click="handleFormSubmit"
+                        :label="ButtonActive.label" :loading="isLoading" />
 
                     <Menu as="div" class="relative inline-block text-left">
                         <MenuButton as="template">
-                            <Button
-                                icon="fas fa-chevron-down"
-                                :disabled="form.processing"
-                                class="rounded-l-none border-none"
-                                :style="'tertiary'"
-                                size="l"
-                            />
+                            <Button icon="fas fa-chevron-down" :disabled="form.processing"
+                                class="rounded-l-none border-none" :style="'tertiary'" size="l" />
                         </MenuButton>
 
                         <transition enter-active-class="transition duration-100 ease-out"
@@ -225,14 +215,17 @@ const onSelectSubmitChange = (value) => {
                 @submit.prevent="handleFormSubmit">
 
                 <Transition name="spin-to-down">
-                    <div v-if="usePage().props?.errors?.error_in_models" class="max-w-3xl mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
-                        <FontAwesomeIcon v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'" icon='far fa-ban' class='text-lg' fixed-width aria-hidden='true' />
+                    <div v-if="usePage().props?.errors?.error_in_models"
+                        class="max-w-3xl mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
+                        <FontAwesomeIcon
+                            v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'"
+                            icon='far fa-ban' class='text-lg' fixed-width aria-hidden='true' />
                         <div class="">{{ usePage().props.errors.error_in_models }}</div>
                     </div>
                 </Transition>
 
 
-                <template v-for="(sectionData, sectionIdx ) in formData['blueprint']" :key="sectionIdx">
+                <template v-for="(sectionData, sectionIdx) in formData['blueprint']" :key="sectionIdx">
                     <!-- If Section: all fields is not hidden -->
                     <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
                         class="relative py-4">
@@ -250,7 +243,7 @@ const onSelectSubmitChange = (value) => {
                             </p>
                         </div>
                         <div class="mt-2 pt-4 sm:pt-5">
-                            <template v-for="(fieldData, fieldName, index ) in sectionData.fields" :key="index">
+                            <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                 <!-- If Field is not hidden = true -->
                                 <dl v-if="!fieldData.hidden" class="mt-1 pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4"
                                     :class="fieldData.full ? '' : 'max-w-3xl'">
@@ -259,8 +252,7 @@ const onSelectSubmitChange = (value) => {
                                         <div class="inline-flex items-start leading-none">
                                             <span>{{ fieldData.label }}</span>
                                             <!-- Icon: Required -->
-                                            <FontAwesomeIcon v-if="fieldData.required"
-                                                :icon="['fas', 'asterisk']"
+                                            <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']"
                                                 class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
                                         </div>
                                     </dt>

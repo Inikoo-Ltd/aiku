@@ -23,32 +23,32 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
-        $queryBuilder
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('webpages')
-                    ->whereColumn('webpages.id', 'products.webpage_id')
-                    ->where('webpages.state', 'live');
-            });
 
-        $queryBuilder
-            ->where(function ($query) {
-                $query
-                    ->whereNull('products.variant_id')
-                    ->orWhere('products.is_variant_leader', true);
-            });
-        $queryBuilder->select(
-            $this->getSelect([
-                DB::raw('products.variant_id IS NOT NULL as is_variant'),
-                DB::raw('exists (
-                        select os.is_on_demand
-                        from org_stocks os
-                        join product_has_org_stocks phos on phos.org_stock_id = os.id
-                        where phos.product_id = products.id
-                        and os.is_on_demand = true
-                    ) as is_on_demand')
-            ])
-        );
+
+        //todo
+        //$queryBuilder->where('products.has_live_webpage', true);
+        // remove this
+//        $queryBuilder
+//            ->whereExists(function ($q) {
+//                $q->select(DB::raw(1))
+//                    ->from('webpages')
+//                    ->whereColumn('webpages.id', 'products.webpage_id')
+//                    ->where('webpages.state', 'live');
+//            });
+
+        // todo remove  this an we will trust has_live_webpage not to have variants
+//        $queryBuilder
+//            ->where(function ($query) {
+//                $query
+//                    ->whereNull('products.variant_id')
+//                    ->orWhere('products.is_variant_leader', true);
+//            });
+        // remove this use the login in the resource
+//        $queryBuilder->select(
+//            $this->getSelect([
+//                DB::raw('products.variant_id IS NOT NULL as is_variant'),
+//            ])
+//        );
         $perPage = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('products.department_id', $productCategory->id);
@@ -75,6 +75,7 @@ class GetIrisProductsInProductCategory extends IrisAction
                 $queryBuilder->orderBy($column, $direction);
             }
         }
+
 
         return $this->getData($queryBuilder, $perPage);
     }

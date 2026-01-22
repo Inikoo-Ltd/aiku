@@ -42,7 +42,7 @@ class UpdateCollectionImages extends OrgAction
                             ->first()?->id,
                         ['sub_scope' => null]
                     );
-            } else {
+             } else {
                 $media = Media::find($mediaId);
 
                 if ($media) {
@@ -54,7 +54,13 @@ class UpdateCollectionImages extends OrgAction
             }
         }
 
-        $this->update($collection, $modelData);
+        $collection = $this->update($collection, $modelData);
+
+        $changes = Arr::except($collection->getChanges(), ['updated_at']);
+
+        if (Arr::has($changes, 'image_id')) {
+            UpdateCollectionWebImages::run($collection);
+        }
 
         return $collection;
     }

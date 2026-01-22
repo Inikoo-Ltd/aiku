@@ -84,6 +84,7 @@ import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 import { get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
@@ -351,7 +352,6 @@ const noteToSubmit = ref({
     selectedNote: "",
     value: ""
 })
-const ellipsis = ref()
 const onSubmitNote = async (closePopup: Function) => {
 
     try {
@@ -364,7 +364,6 @@ const onSubmitNote = async (closePopup: Function) => {
                 onError: (error) => errorNote.value = error,
                 onFinish: () => {
                     isLoadingButton.value = false
-                    ellipsis.value.hide()
                 },
                 onSuccess: () => {
                     closePopup()
@@ -602,6 +601,7 @@ const onCreateReturn = (action: any) => {
 }
 
 
+// Section: Proforma Invoice
 const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
 const compSelectedDeck = computed(() => {
@@ -612,29 +612,9 @@ const compSelectedDeck = computed(() => {
 
     return route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...xxx})
 })
-
-
 const isShowProforma = computed(() => {
-    return props.proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)
+    return props.proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))
 })
-
-// Function: Copy to clipboard
-const copyToClipboard = async (text: string, label: string) => {
-    try {
-        await navigator.clipboard.writeText(text)
-        notify({
-            title: trans("Copied!"),
-            text: trans(`:label copied to clipboard`, { label: label }),
-            type: "success"
-        })
-    } catch (error) {
-        notify({
-            title: trans("Failed"),
-            text: trans("Failed to copy to clipboard"),
-            type: "error"
-        })
-    }
-}
 
 
 const labelToBePaid = (toBePaidValue: string) => {
@@ -797,14 +777,10 @@ const setShippingToAuto = () => {
 
 
         <template #other>
-
-
             <div v-if="!props.readonly || isShowProforma" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
-
-
         </template>
 
         <template #button-replacement="{ action }">
@@ -862,28 +838,26 @@ const setShippingToAuto = () => {
                 </template>
             </Popover>
 
-            <!-- Popover: on click ellipsis -->
-            <PopoverPrimevue ref="ellipsis">
-                <div class="flex flex-col gap-2">
-                    <!-- Button: Undispatched -->
-                    <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
-                                             :routeDelete="routes.rollback_dispatch"
-                                             :title="trans('Are you sure you want to rollback the Order??')"
-                                             :description="trans('The state of the Order will go back to finalised state.')"
-                                             isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                        <template #default="{ changeModel }">
-                            <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
-                                    icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
-                        </template>
-                    </ModalConfirmationDelete>
+            <div class="flex flex-col gap-2">
+                <!-- Button: Undispatched -->
+                <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
+                    :routeDelete="routes.rollback_dispatch"
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to finalised state.')"
+                    isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt"
+                >
+                    <template #default="{ changeModel }">
+                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
+                    </template>
+                </ModalConfirmationDelete>
 
-                    <Button
-                        v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
-                        @click="() => isOpenModalProforma = true" type="tertiary"
-                        :label="trans('Proforma Invoice')" icon="fal fa-download" />
+                <!-- Button: Proforma Invoice -->
+                <Button
+                    v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
+                    @click="() => isOpenModalProforma = true" type="tertiary"
+                    :label="trans('Proforma Invoice')" icon="fal fa-download" />
 
-                </div>
-            </PopoverPrimevue>
+            </div>
         </template>
 
         <template #afterTitle2>
@@ -941,16 +915,8 @@ const setShippingToAuto = () => {
                               class="text-sm text-gray-500 cursor-pointer secondaryLink">
                             {{ box_stats?.customer_client.contact_name }}
                         </Link>
-                        <button @click="copyToClipboard(box_stats?.customer_client.contact_name, 'Customer client')"
-                                class="text-gray-400 hover:text-gray-600 transition-colors"
-                                v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer_client.contact_name" />
                     </div>
-
-
-
-
 
 
                     <!-- Field: Reference Number -->
@@ -964,10 +930,7 @@ const setShippingToAuto = () => {
                             class="text-sm text-gray-500 cursor-pointer primaryLink">
                             {{ box_stats?.customer.name }} ({{ box_stats?.customer.reference }})
                         </Link>
-
                     </div>
-
-
 
 
                     <!-- Field: Contact name -->
@@ -978,11 +941,7 @@ const setShippingToAuto = () => {
                                 aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
-                        <button @click="copyToClipboard(box_stats?.customer.contact_name, 'Contact name')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.contact_name" />
                     </dl>
 
                     <!-- Field: Company name -->
@@ -993,11 +952,7 @@ const setShippingToAuto = () => {
                                 aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
-                        <button @click="copyToClipboard(box_stats?.customer.company_name, 'Company name')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.company_name" />
                     </dl>
 
                     <!-- Field: Email -->
@@ -1010,11 +965,7 @@ const setShippingToAuto = () => {
                             class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
                             box_stats?.customer.email
                             }}</a>
-                        <button @click="copyToClipboard(box_stats?.customer.email, 'Email')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.email" />
                     </dl>
 
                     <!-- Field: Phone -->
@@ -1025,11 +976,7 @@ const setShippingToAuto = () => {
                         </dt>
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
                             class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
-                        <button @click="copyToClipboard(box_stats?.customer.phone, 'Phone')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.phone" />
                     </dl>
 
                     <!-- Field: Billing Address -->
@@ -1106,19 +1053,14 @@ const setShippingToAuto = () => {
                             </dt>
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
+                                <div v-html="box_stats?.customer?.addresses?.delivery?.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
                             </dd>
-                            <button
-                                @click="copyToClipboard(box_stats?.customer.addresses.delivery.formatted_address.replace(/<[^>]*>/g, ''), 'Address')"
-                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 pt-2"
-                                v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="box_stats?.customer?.addresses?.delivery?.formatted_address?.replace(/<[^>]*>/g, '')" />
                         </dl>
                     </div>
 
@@ -1344,9 +1286,12 @@ const setShippingToAuto = () => {
                                 class="flex justify-between">
                                 <div class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
                                     <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
-                                        class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
+                                        class="text-gray-500 secondaryLink" v-tooltip="invoice?.type_label">
                                     {{ invoice?.reference }}
                                     </Link>
+                                    <FontAwesomeIcon v-if="invoice?.in_process" icon="fal fa-seedling" fixed-width aria-hidden="true"
+                                                     class="text-green-500"  v-tooltip="trans('In Process')" />
+
                                 </div>
 
                                 <a v-if="invoice?.routes?.download?.name"
@@ -1719,10 +1664,21 @@ const setShippingToAuto = () => {
         :preview_template="upload_excel.preview_template" :propsRefreshAfterFinish="['transactions', 'box_stats']"
         :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined" />
 
-    <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
-        label: 'Upload your file',
-        information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
+    <UploadAttachment
+        v-model="isModalUploadOpen"
+        scope="attachment"
+        :title="{
+            label: 'Upload your file',
+            information: 'The list of column file: customer_reference, notes, stored_items'
+        }"
+        :attachmentRoutes="attachmentRoutes"
+        :options="[
+            {
+                name: 'Other',
+                code: 'other'
+            }
+        ]"
+    />
 </template>
 
 <style scoped>

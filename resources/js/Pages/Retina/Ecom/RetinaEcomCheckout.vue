@@ -18,6 +18,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaymentCashOnDelivery.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { Select } from "primevue"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -100,6 +101,7 @@ const locale = inject("locale", aikuLocaleStructure)
             :balance
             :order="order"
             isInBasket
+            class="md:px-4 !px-0"
         />
 
         <!-- If 'Total' is 0 or less -->
@@ -125,17 +127,23 @@ const locale = inject("locale", aikuLocaleStructure)
                 </div>
             </div>
 
-            <div class="mt-5 border border-gray-300">
+            <div class="mt-5 sm:border border-gray-300">
                 <div v-if="props.paymentMethods?.length > 1" class="max-w-lg">
                     <div class="grid grid-cols-1 sm:hidden">
-                        <!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
-                        <select aria-label="Select a tab"
-                                class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
-                            <option v-for="(tab, tabIdx) in paymentMethods" :key="tabIdx" :selected="currentTab === tabIdx">
-                                <FontAwesomeIcon :icon="tab.icon" class="" fixed-width aria-hidden="true" />
-                                {{ tab.label }}
-                            </option>
-                        </select>
+                        <Select
+                            v-model="currentTab.key"
+                            @update:modelValue="(val) => {
+                                console.log('val', val)
+                                const idx = paymentMethods.findIndex(pm => pm.key === val)
+                                console.log('idx', idx)
+                                if (idx !== -1) currentTab.index = idx
+                            }"
+                            :options="paymentMethods"
+                            optionLabel="label"
+                            optionValue="key"
+                            placeholder="Select a City"
+                            class="w-full"
+                        />
                     </div>
 
                     <div class="hidden sm:block">

@@ -51,15 +51,16 @@ class WebBlockProductResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
-        $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
+        //==== out thi sin ajax specific action from here
+        // $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
 
-        $offers = isset($this->quantity_ordered) ? [
-            'offers_data'                       => $product->offers_data,
-            'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
-            'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
-        ] : [];
+        // $offers = isset($this->quantity_ordered) ? [
+        //     'offers_data'                   => $product->offers_data,
+        //     'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
+        //     'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
+        // ] : [];
 
-        $back_in_stock    = false;
+        $back_in_stock = false;
 
         if ($request->user()) {
             /** @var Customer $customer */
@@ -70,10 +71,15 @@ class WebBlockProductResource extends JsonResource
                     ->first();
 
                 if ($set_data_back_in_stock) {
-                    $back_in_stock    = true;
+                    $back_in_stock = true;
                 }
             }
         }
+        $gr_offer = null;
+        if ($this->family) {
+            $gr_offer = $this->family->getGROffer;
+        }
+        // until here
 
         return [
             'luigi_identity'                    => $product->getLuigiIdentity(),
@@ -110,7 +116,12 @@ class WebBlockProductResource extends JsonResource
             'is_on_demand'                      => $isOnDemand,
             'is_back_in_stock'                  => $product->backInStockReminders,
             'back_in_stock'                     => $back_in_stock,
-            ...$offers
+            'available_gr_offer_to_use'             => $gr_offer ? [
+                'slug'          => $gr_offer->slug,
+                'trigger_data'  => $gr_offer->trigger_data,
+            ] : [],
+
+            // ...$offers
         ];
     }
 }

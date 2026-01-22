@@ -11,6 +11,8 @@ namespace App\Actions\Web\WebBlock;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,23 +22,21 @@ class GetWebBlockProducts
 
     public function handle(Webpage $webpage, array $webBlock, bool $isLoggedIn): array
     {
+        /** @var Collection|ProductCategory $model */
+        $model = $webpage->model;
 
         if ($webpage->model_type == 'Collection') {
             if ($isLoggedIn) {
-                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: 'in_stock'));
-                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: 'out_of_stock'));
+                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'in_stock'));
+                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'out_of_stock'));
             } else {
-                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: 'all'));
+                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $model, stockMode: 'all'));
             }
+        } elseif ($isLoggedIn) {
+            $products           = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'in_stock'));
+            $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'out_of_stock'));
         } else {
-            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'all'));
-
-            if ($isLoggedIn) {
-                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'in_stock'));
-                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'out_of_stock'));
-            } else {
-                $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'all'));
-            }
+            $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $model, stockMode: 'all'));
         }
 
 
@@ -47,7 +47,7 @@ class GetWebBlockProducts
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $webpage->model?->slug);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $model?->slug);
         if ($isLoggedIn) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.products_out_of_stock', $productsOutOfStock);
         }

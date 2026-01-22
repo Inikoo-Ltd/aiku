@@ -18,6 +18,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Helpers\Currency;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 
 class SendNewOrderEmailToSubscribers extends OrgAction
 {
@@ -39,7 +40,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
         $transactions = $order->transactions()->where('model_type', 'Product')->get();
 
-        $balance = 'Customer Balance: '.$order->shop->currency->symbol.$order->customer->balance;
+        $balance = 'Customer Balance: ' . $order->shop->currency->symbol . $order->customer->balance;
 
 
         $this->sendOutboxEmailToSubscribers(
@@ -96,16 +97,45 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
-            $html          .= sprintf(
+            $product = $transaction->model;
+            $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
+            $productLink = route('grp.org.shops.show.catalogue.products.current_products.show', [
+                $transaction->organisation?->slug,
+                $transaction->shop?->slug,
+                $product?->slug
+            ]);
+
+            $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
-                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
-                        <strong>%s</strong><br/>
-                        <span style="color: #666;">%s</span>
-                    </td>
-                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
-                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">%s%s</td>
-                </tr>',
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
+                    <table cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding-right:12px; vertical-align:top;">%s</td>
+                            <td style="vertical-align:top;">
+                                <span><strong style="color: #555;">%s</strong></span>
+                                <br/>
+                                <a href="%s"
+                                   target="_blank"
+                                   style="color:#2563eb;
+                                          text-decoration:underline;
+                                          font-weight:500;">
+                                    %s
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">%s%s</td>
+            </tr>',
+                $productImage
+                    ? '<img src="' . $productImage . '"
+                         width="56"
+                         height="56"
+                         style="display:block;border-radius:6px;object-fit:cover;" />'
+                    : '',
                 $historicAsset->code ?? 'N/A',
+                $productLink,
                 $historicAsset->name ?? 'N/A',
                 rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
                 $currencySymbol,
@@ -115,5 +145,4 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
         return $html;
     }
-
 }

@@ -96,16 +96,14 @@ class UpdateMasterProductCategory extends OrgAction
             ]);
         }
 
-        $modelData['offers_data'] = $masterProductCategory->offers_data;
         if (Arr::has($modelData, 'vol_gr')) {
             $modelData['vol_gr']                = $modelData['vol_gr'][0];
-            $modelData['offers_data']['vol_gr'] = Arr::pull($modelData, 'vol_gr');
         }
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'rrp', 'offers_data'])) {
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'rrp'])) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $dataToBeUpdated = [];
                 // If name/description/description_title/description_extra is already reviewed / modified, ignore the changes, but change the status back to false
@@ -130,9 +128,6 @@ class UpdateMasterProductCategory extends OrgAction
                 }
                 if (Arr::has($changed, 'rrp')) {
                     $dataToBeUpdated['rrp'] = $masterProductCategory->rrp;
-                }
-                if (Arr::has($changed, 'offers_data')) {
-                    $dataToBeUpdated['offers_data'] = $masterProductCategory->offers_data;
                 }
 
                 if ($dataToBeUpdated) {

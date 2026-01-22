@@ -179,7 +179,7 @@ onMounted(() => {
 							placeholder="Select a type"
 							class="w-full md:w-40"
 							:dropdownIcon="typeEmployee.length === 1 ? 's' : 'pi pi-chevron-down'"
-							disabled>
+							xdisabled>
 							<template #optiongroup="slotProps">
 								<div class="flex items-center">
 									<div>{{ slotProps.option.label }}</div>

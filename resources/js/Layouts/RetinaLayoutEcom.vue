@@ -97,6 +97,18 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 								#{{ layout?.iris_variables?.reference }}
 							</span>
 						</div>
+
+
+						<Link
+								v-if="layout.iris?.is_logged_in"
+								:href="route('retina.top_up.dashboard')"
+								class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2"
+							>
+								{{ trans("My balance") }}:
+								<span class="font-semibold tabular-nums">
+									{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0) }}
+								</span>
+							</Link>
 					</div>
 
 					<div class="overflow-x-auto w-full">

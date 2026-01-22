@@ -111,7 +111,7 @@ const onChangeDepartment = (payload: any) => {
 
 
 const autosave = () => {
-  const payload = structuredClone(toRaw(props.data.layout))
+  const payload = toRaw(props.data.layout)
 
   if (payload?.data?.fieldValue) {
     delete payload.data.fieldValue.families
