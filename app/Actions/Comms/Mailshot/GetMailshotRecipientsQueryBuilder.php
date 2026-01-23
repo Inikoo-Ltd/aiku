@@ -26,6 +26,7 @@ use App\Actions\Comms\Mailshot\Filters\FilterByFamilyNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
 use App\Actions\Comms\Mailshot\Filters\FilterByInterest;
+use App\Actions\Comms\Mailshot\Filters\FilterOrdersCollection;
 
 class GetMailshotRecipientsQueryBuilder
 {
@@ -226,6 +227,14 @@ class GetMailshotRecipientsQueryBuilder
 
         if (!empty($interestTags)) {
             (new FilterByInterest())->apply($query, $interestTags);
+        }
+
+        // FILTER: By Orders Collection
+        $collectionFilter = Arr::get($filters, 'orders_collection');
+        $isCollectionActive = is_array($collectionFilter) ? ($collectionFilter['value'] ?? false) : $collectionFilter;
+
+        if ($isCollectionActive) {
+            (new FilterOrdersCollection())->apply($query);
         }
 
         return $query;

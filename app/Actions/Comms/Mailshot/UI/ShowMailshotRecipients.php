@@ -116,10 +116,11 @@ class ShowMailshotRecipients extends OrgAction
                             ]
                         ]
                     ],
-                    'orders_collection'        => [
+                    'orders_collection' => [
                         'label'       => 'Orders Collection',
                         'type'        => 'boolean',
-                        'description' => 'Targets customers who have ever selected "Collection" and collected an order from the warehouse.'
+                        'description' => 'Targets customers who have ever selected "Collection" and collected an order from the warehouse.',
+                        'options'     => [],
                     ],
                     'by_subdepartment' => [
                         'label'       => 'By Subdepartment',
