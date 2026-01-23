@@ -37,7 +37,7 @@ class UpdateVariant extends OrgAction
             $variant->refresh();
 
             $products = $variant->allProduct();
-            $productIds = $products->pluck('id');
+            $productIds = $variant->fetchProductFromData()->pluck('id');
 
             // Detach other product not in variant
             Product::where('variant_id', $variant->id)
