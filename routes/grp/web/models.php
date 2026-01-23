@@ -781,6 +781,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('/workshop', UpdateWorkshopMailShot::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('publish', PublishMailshot::class)->name('publish')->withoutScopedBindings();
         Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
+        Route::post('as-new-template', [StoreMailshotAsNewTemplate::class, 'inMailshot'])->name('store.as-new-template')->withoutScopedBindings();
     });
 
     Route::name('email-template.')->prefix('email-template')->group(function () {

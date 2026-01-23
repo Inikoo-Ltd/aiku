@@ -13,22 +13,33 @@ use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
+use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\JsonResponse;
 
 class StoreMailshotAsNewTemplate extends OrgAction
 {
-    public function handle(EmailTemplate $emailTemplate, array $modelData): EmailTemplate
+    public function handle(EmailTemplate|Mailshot $parent, array $modelData): EmailTemplate
     {
+
+        if ($parent instanceof Mailshot) {
+            // get default template
+            $defaultMailshotTemplate = $this->group->emailTemplates()->where('builder', EmailTemplateBuilderEnum::BEEFREE->value)->where('slug', 'mailshot')->first();
+            data_set($modelData, 'data', $defaultMailshotTemplate->data);
+            data_set($modelData, 'language_id', $parent->shop->language_id);
+            data_set($modelData, 'arguments', $defaultMailshotTemplate->arguments);
+        } else {
+            data_set($modelData, 'data', $parent->data);
+            data_set($modelData, 'language_id', $parent->language_id);
+            data_set($modelData, 'arguments', $parent->arguments);
+        }
+
         data_set($modelData, 'organisation_id', $this->organisation->id);
         data_set($modelData, 'shop_id', $this->shop->id);
         data_set($modelData, 'builder', EmailTemplateBuilderEnum::BEEFREE->value);
-        data_set($modelData, 'data', $emailTemplate->data);
-        data_set($modelData, 'language_id', $emailTemplate->language_id);
         data_set($modelData, 'state', EmailTemplateStateEnum::ACTIVE->value);
         data_set($modelData, 'active_at', now());
         data_set($modelData, 'is_seeded', false);
-        data_set($modelData, 'arguments', $emailTemplate->arguments);
 
         // TODO: update this block
         /** @var EmailTemplate $emailTemplate */
@@ -46,6 +57,13 @@ class StoreMailshotAsNewTemplate extends OrgAction
         ];
 
         return $rules;
+    }
+
+    public function inMailshot(Shop $shop, Mailshot $mailshot, ActionRequest $request): EmailTemplate
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($mailshot, $this->validatedData);
     }
 
     public function asController(Shop $shop, EmailTemplate $emailTemplate, ActionRequest $request): EmailTemplate

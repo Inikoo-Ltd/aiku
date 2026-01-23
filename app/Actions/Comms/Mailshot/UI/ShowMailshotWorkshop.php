@@ -139,6 +139,14 @@ class ShowMailshotWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
+                'storeNewTemplateRoute' => [
+                    'name' => 'grp.models.shop.mailshot.store.as-new-template',
+                    'parameters' => [
+                        'shop' => $mailshot->shop_id,
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
+                ],
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,

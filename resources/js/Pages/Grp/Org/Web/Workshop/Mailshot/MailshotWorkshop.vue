@@ -43,8 +43,8 @@ const props = defineProps<{
     status: string
     publishRoute: routeType
     sendTestRoute: routeType
-    storeTemplateRoute: routeType
     organisationSlug: string
+    storeNewTemplateRoute: routeType
 }>()
 
 const comment = ref('')
@@ -136,7 +136,7 @@ const saveTemplate = async () => {
 
     axios
         .post(
-            route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
+            route(props.storeNewTemplateRoute.name, props.storeNewTemplateRoute.parameters),
             {
                 name: templateName.value,
                 layout: JSON.parse(temporaryData.value?.layout)
