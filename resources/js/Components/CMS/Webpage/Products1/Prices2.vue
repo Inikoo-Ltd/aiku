@@ -8,10 +8,11 @@ import Discount from "@/Components/Utils/Label/Discount.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel.vue"
+import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import { Popover } from "primevue"
 import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
 import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
+import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 library.add(faPlusCircle, faQuestionCircle)
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -82,12 +83,6 @@ const props = defineProps<{
     basketButton?: boolean
 }>()
 
-const isGoldMember = false // TO DO: get from user data
-
-const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
-
-// console.log(props.product.product_offers_data)
-
 const getBestOffer = (offerId: string) => {
     if (!offerId) {
         return
@@ -96,11 +91,13 @@ const getBestOffer = (offerId: string) => {
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
-console.log('fffff', props.product.product_offers_data)
+// console.log('fffff', props.product.product_offers_data)
+
+const _popoverProfit = ref(null)
 </script>
 
 <template>
-    <div class="border-t xborder-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
+    <div class="font-sans border-t xborder-b border-gray-200 mt-1 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
 
         <div>
             <div class="flex justify-between">
@@ -123,8 +120,8 @@ console.log('fffff', props.product.product_offers_data)
             </div>
 
             <!-- Price: Gold Member -->
-            <div v-if="product.discounted_price" class="text-orange-500 font-bold text-sm" >
-                <span v-if="product.units == 1 &&  product.discounted_price">
+            <div class="text-orange-500 font-bold text-sm">
+                <span v-if="product.units == 1">
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>
                 <span v-else>
@@ -134,22 +131,27 @@ console.log('fffff', props.product.product_offers_data)
 
 
             <!-- Section: Profit, label Gold Reward Member -->
-            <div class="mt-0 flex justify-between">
+            <div class="mt-0 flex justify-between gap-x-2">
 
                 <template v-if="product.product_offers_data?.number_offers > 0">
-                    <template v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'">
+                    <div v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
+                        class="flex flex-col w-fit"
+                    >
                         <MemberPriceLabel
                             v-if="layout?.user?.gr_data?.customer_is_gr"
                             :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
                         />
                         <NonMemberPriceLabel v-else
                             :product
-                            :isShowAvailableGROffer="
-                                (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
-                                && !layout?.user?.gr_data?.customer_is_gr
-                            "
                         />
-                    </template>
+        
+                        <AvailableVolOfferLabel
+                            v-if="
+                                (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
+                                && !layout?.user?.gr_data?.customer_is_gr"
+                            :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
+                        />
+                    </div>
                     <div v-else />
                 </template>
 
@@ -157,16 +159,32 @@ console.log('fffff', props.product.product_offers_data)
 
                 <!-- Section: Profit -->
                 <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col">
-                    <div>
-                        <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                    <div class="whitespace-nowrap">                        
+                        <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
+                            class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+                        >
+                            <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                        </span>
                         {{ trans("Profit") }}:
                     </div>
                     <div class="font-bold text-green-700 text-sm">
                         ({{ product?.margin }})
                     </div>
                     <div class="italic text-xs">
-                        <span class="text-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
+                        <span class="xtext-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
                     </div>
+
+                    <!-- <div class="flex justify-between items-end">
+                        <span @click="_popoverProfit?.toggle">Profit</span>:
+                        <span class="text-green-500 ml-1 font-bold">
+                            {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
+                        </span>
+                    </div> -->
+
+                    <!-- Popover: Question circle GR member -->
+                    <Popover ref="_popoverProfit" :style="{ width: '450px' }" class="py-1 px-2 text-xxs">
+                        <ProfitCalculationList :product="product" />
+                    </Popover>
                 </div>
                 <!-- <div v-if="product?.margin" class="flex justify-end text-right flex-col">
                     <div>

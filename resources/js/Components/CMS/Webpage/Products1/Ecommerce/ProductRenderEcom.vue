@@ -114,12 +114,12 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
                 <!-- Section: Favourite -->
                 <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
-                    <div v-if="isLoadingFavourite" class="absolute bottom-2 left-2 text-gray-500 text-xl z-10">
+                    <div v-if="isLoadingFavourite" class="absolute right-2 top-2 text-pink-400 text-xl z-10">
                         <LoadingIcon />
                     </div>
                     <div v-else
                         @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                        class="cursor-pointer absolute left-2 bottom-2 group text-xl z-10">
+                        class="cursor-pointer absolute right-2 top-2 group text-xl z-10">
 
                         <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
                             class="text-pink-500" />
