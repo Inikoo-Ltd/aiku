@@ -40,6 +40,8 @@ use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Ordering\SalesChannel;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 
 class ShowCustomer extends OrgAction
 {
@@ -103,6 +105,14 @@ class ShowCustomer extends OrgAction
             ];
         }
 
+        $salesChannels = SalesChannel::whereIn('type', [
+            SalesChannelTypeEnum::WEBSITE,
+            SalesChannelTypeEnum::PHONE,
+            SalesChannelTypeEnum::SHOWROOM,
+            SalesChannelTypeEnum::EMAIL,
+            SalesChannelTypeEnum::OTHER,
+        ])->get(['id', 'name', 'code']);
+
         return Inertia::render(
             'Org/Shop/CRM/Customer',
             [
@@ -115,6 +125,8 @@ class ShowCustomer extends OrgAction
                     'previous' => $this->getPrevious($customer, $request),
                     'next'     => $this->getNext($customer, $request),
                 ],
+                'sales_channels' => $salesChannels,
+                'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
                 'pageHead'         => [
                     'title'         => $customer->name,
                     'icon'          => [
@@ -139,20 +151,6 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
-                        $this->shop->type == ShopTypeEnum::B2B ? [
-                            'key'         => 'add_order',
-                            'type'        => 'button',
-                            'style'       => 'create',
-                            'label'       => __('Add order'),
-                            'fullLoading' => true,
-                            'route'       => [
-                                'method'     => 'post',
-                                'name'       => 'grp.models.customer.submitted_order.store',
-                                'parameters' => [
-                                    'customer' => $customer->id
-                                ]
-                            ]
-                        ] : [],
                     ],
                     'subNavigation' => $subNavigation,
                 ],
