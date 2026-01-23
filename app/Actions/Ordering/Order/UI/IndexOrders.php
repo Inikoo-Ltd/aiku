@@ -296,6 +296,7 @@ class IndexOrders extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
+        $customerId    = null;
         $navigation    = OrdersTabsEnum::navigation();
         $subNavigation = null;
         if ($this->parent instanceof CustomerClient) {
@@ -382,14 +383,14 @@ class IndexOrders extends OrgAction
         return Inertia::render(
             'Ordering/Orders',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'    => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('orders'),
+                'title'          => __('orders'),
                 'sales_channels' => $salesChannels,
                 'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
-                'pageHead'    => [
+                'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
@@ -398,36 +399,36 @@ class IndexOrders extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'data'        => OrderResource::collection($orders),
-                'submitRoute' => [
+                'data'           => OrderResource::collection($orders),
+                'submitRoute'    => $customerId ? [
                     'name'       => 'grp.models.customer.submitted_order.store',
                     'parameters' => [
                         'customer' => $customerId
                     ]
-                ],
-                'tabs' => [
+                ] : null,
+                'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
 
                 OrdersTabsEnum::STATS->value => $this->tab == OrdersTabsEnum::STATS->value ?
-                    fn () => GetOrderStats::run($this->parent)
-                    : Inertia::lazy(fn () => GetOrderStats::run($this->parent)),
+                    fn() => GetOrderStats::run($this->parent)
+                    : Inertia::lazy(fn() => GetOrderStats::run($this->parent)),
 
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
-                    fn () => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+                    fn() => OrdersResource::collection($orders)
+                    : Inertia::lazy(fn() => OrdersResource::collection($orders)),
 
                 OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value => $this->tab == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                     ?
-                    fn () => OrdersResource::collection(
+                    fn() => OrdersResource::collection(
                         IndexOrders::run(
                             $shop,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => OrdersResource::collection(
+                    : Inertia::lazy(fn() => OrdersResource::collection(
                         IndexOrders::run(
                             $shop,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
@@ -436,12 +437,12 @@ class IndexOrders extends OrgAction
                     )),
 
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
-                    fn () => GetLastOrders::run($shop)
-                    : Inertia::lazy(fn () => GetLastOrders::run($shop)),
+                    fn() => GetLastOrders::run($shop)
+                    : Inertia::lazy(fn() => GetLastOrders::run($shop)),
 
                 OrdersTabsEnum::EXCESS_ORDERS->value => $this->tab == OrdersTabsEnum::EXCESS_ORDERS->value ?
-                    fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
+                    fn() => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
+                    : Inertia::lazy(fn() => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)
