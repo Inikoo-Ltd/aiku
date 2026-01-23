@@ -8,11 +8,13 @@
 
 namespace App\Actions\Catalogue\Shop\Seeders;
 
+use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\OfferCampaign\StoreOfferCampaign;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\GrpAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
@@ -57,6 +59,8 @@ class SeedShopOfferCampaigns extends GrpAction
                     $offerCampaign,
                     [
                         'state'            => OfferStateEnum::ACTIVE,
+                        'status'           => true,
+                        'duration'         => OfferDurationEnum::PERMANENT,
                         'code'             => 'di-'.$shop->slug,
                         'name'             => 'Discretionary Discount',
                         'type'             => 'Discretionary',
@@ -77,6 +81,8 @@ class SeedShopOfferCampaigns extends GrpAction
                     ],
                     strict: false
                 );
+
+                ActivateOffer::run($discretionaryOffer);
             }
         }
     }
