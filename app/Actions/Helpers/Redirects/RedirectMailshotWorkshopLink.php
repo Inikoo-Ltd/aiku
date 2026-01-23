@@ -26,13 +26,12 @@ class RedirectMailshotWorkshopLink extends OrgAction
         }
     }
 
-    // TODOL fix the redirect later
     protected function redirectToNewsletter(Mailshot $mailshot): ?RedirectResponse
     {
         $organisation = $mailshot->organisation;
         $shop         = $mailshot->shop;
         $route        = [
-            'name'       => 'grp.org.shops.show.marketing.mailshots.workshop',
+            'name'       => 'grp.org.shops.show.marketing.newsletters.workshop',
             'parameters' => [
                 'organisation'      => $organisation->slug,
                 'shop'              => $shop->slug,
@@ -65,5 +64,4 @@ class RedirectMailshotWorkshopLink extends OrgAction
 
         return $this->handle($mailshot);
     }
-
 }
