@@ -31,7 +31,7 @@ class UpdateMasterVariant extends OrgAction
             $masterVariant->update($modelData);
             $masterVariant->refresh();
 
-            $masterProducts = $masterVariant->fetchProductFromData();
+            $masterProducts = $masterVariant->fetchProductFromData()->keyBy('code');
             $masterProductsIds = $masterProducts->pluck('id');
 
             // Detach other master product not in variant
@@ -67,7 +67,6 @@ class UpdateMasterVariant extends OrgAction
                 $missingProducts = array_diff($masterProductCodes, $productsCode->toArray());
 
                 foreach ($missingProducts as $productCode) {
-                    if($productCode == 'SWTS-45') dd($missingProducts);
                     StoreProductFromMasterProduct::make()->action(
                         $masterProducts[$productCode],
                         [
