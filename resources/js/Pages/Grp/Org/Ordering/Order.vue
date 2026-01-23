@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { faMoneyCheckEditAlt } from "@far"
+import { faMoneyCheckEditAlt } from "@fal"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -1390,12 +1390,12 @@ const onSubmitEditAllPercentage = async () => {
                                 </dd>
                             </div>
                             <!-- button edit all percentage -->
-                            <div class="text-right w-full">rifqi</div>
+                            <div class="text-right text-gray-500 w-full mr-1">{{ trans('Global discount') }}</div>
 
                             <button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))"
-                                class="ml-auto h-6" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
-                                v-tooltip="trans('Edit all discretionary discount')">
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'x'))"
+                                class="ml-auto h-6 pl" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
+                                v-tooltip="trans('Apply discount to all products')">
                                 <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
                                     class="h-4 text-gray-400 hover:text-gray-600" />
                             </button>

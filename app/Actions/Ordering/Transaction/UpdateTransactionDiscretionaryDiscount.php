@@ -14,6 +14,7 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateDiscretionaryOffersData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,6 +28,15 @@ class UpdateTransactionDiscretionaryDiscount extends OrgAction
 
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
+
+        if (in_array($transaction->order->state, [
+            OrderStateEnum::DISPATCHED,
+            OrderStateEnum::FINALISED,
+            OrderStateEnum::CANCELLED,
+        ])) {
+            abort(403);
+        }
+
         if (Arr::get($modelData, 'discretionary_offer') == 0) {
             $modelData['discretionary_offer'] = null;
         }
