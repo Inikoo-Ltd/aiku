@@ -20,7 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from '@/Components/Utils/Label/Discount.vue'
-import { InputNumber } from 'primevue'
+import { InputNumber, InputText } from 'primevue'
 import { faMoneyCheckEditAlt } from "@far"
 library.add(faBadgePercent, faMoneyCheckEditAlt)
 
@@ -280,7 +280,8 @@ const onSubmitEditNetAmount = () => {
             transaction: selectedItemToEditNetAmount.value?.id
         }),
         {
-            discretionary_offer: selectedItemToEditNetAmount.value?.discretionary_offer
+            discretionary_offer: selectedItemToEditNetAmount.value?.discretionary_offer,
+          discretionary_offer_label: selectedItemToEditNetAmount.value?.discretionary_offer_label,
         },
         {
             preserveScroll: true,
@@ -404,7 +405,7 @@ const onSubmitEditNetAmount = () => {
                                 class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
-                            <Button v-if="layout.app.environment === 'local'"
+                            <Button
                                 @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                 v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
                                 :icon="faMoneyCheckEditAlt" class="ml-1 !px-1" />
@@ -455,14 +456,31 @@ const onSubmitEditNetAmount = () => {
                 </div>
             </div>
 
-            <div class="flex flex-col items-center gap-4">
-                <div class="w-full ">
-                    <label class="block text-sm font-medium mb-2">
-                        {{ trans("Discretionary discount percentage") }}:
-                    </label>
-                    <InputNumber :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
-                        @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)" suffix="%" />
-                </div>
+        <div class="flex flex-col items-center gap-4">
+            <!-- Input: Percentage -->
+            <div class="w-full ">
+                <label class="block text-sm font-medium mb-2">
+                    {{ trans("Discretionary discount percentage") }}:
+                </label>
+                <InputNumber
+                  :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
+                  @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)"
+                  suffix="%"
+                  :disabled="isLoadingSubmitNetAmount"
+                />
+            </div>
+
+            <!-- Input: Label -->
+            <div class="w-full ">
+                <label class="block text-sm font-medium mb-2">
+                    {{ trans("Discretionary discount Label") }}:
+                </label>
+                <InputText
+                  :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
+                  @input="(e) => (set(selectedItemToEditNetAmount, 'discretionary_offer_label', e?.target?.value))"
+                  :disabled="isLoadingSubmitNetAmount"
+                />
+            </div>
 
                 <div class="w-full flex gap-4 mt-4">
                     <Button type="negative" size="md" :disabled="isLoadingSubmitNetAmount" icon="far fa-arrow-left"
