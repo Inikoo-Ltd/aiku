@@ -87,7 +87,13 @@ class LuigiBoxRecommendation extends IrisAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->whereIn('products.id', $productsInLuigi->keys());
-        $queryBuilder->where('products.has_live_webpage', true)
+        $queryBuilder->where('products.has_live_webpage', true);
+
+        if($recommendation_type != 'last_seen'){
+            $queryBuilder->where('products.available_quantity', '>', 0);
+        }
+
+        $queryBuilder
             ->select([
                 'products.id',
                 'products.code',
