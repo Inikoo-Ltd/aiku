@@ -156,7 +156,7 @@ const debounceUpdateQuantity = debounce(
         gridClass="lg:grid-cols-1 xl:grid-cols-1 grid grid-cols-1">
 
         <template #card="{ item }">
-            <li class="flex py-1 relative">
+            <li class="flex py-1 relative border-b">
                 <div v-if="item?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
 
                 <div class="relative group">
@@ -181,6 +181,15 @@ const debounceUpdateQuantity = debounce(
                                     {{ item.asset_name }}
                                 </a>
                                 <div class="text-xxs text-gray-400">{{ item.asset_code }}</div>
+                                <div v-if="!item.available_quantity">
+                                    <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
+                                </div>
+                                <div v-else class="text-gray-400 italic text-xs">
+                                    {{ trans('Stock :xquantityx available', {
+                                        xquantityx:
+                                            locale.number(item.available_quantity || 0) })
+                                    }}
+                                </div>
                             </div>
                         </div>
                         <div class="flex flex-col justify-between pt-3">

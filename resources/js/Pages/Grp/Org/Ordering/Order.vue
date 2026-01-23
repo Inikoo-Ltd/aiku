@@ -1391,7 +1391,8 @@ const onSubmitEditAllPercentage = async () => {
                             </div>
 
                             <!-- button edit all percentage -->
-                            <button class="ml-auto h-6" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
+                            <button v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))"
+ class="ml-auto h-6" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                 v-tooltip="trans('Edit all discretionary discount')">
                                 <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
                                     class="h-4 text-gray-400 hover:text-gray-600" />
