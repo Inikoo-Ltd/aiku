@@ -78,6 +78,7 @@ class IndexTransactions extends OrgAction
                 'transactions.model_type as model_type',
                 'transactions.created_at',
                 'transactions.discretionary_offer',
+                'transactions.discretionary_offer_label',
                 'assets.code as asset_code',
                 'assets.name as asset_name',
                 'assets.type as asset_type',
