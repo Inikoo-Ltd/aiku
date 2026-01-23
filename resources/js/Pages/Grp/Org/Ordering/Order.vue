@@ -1389,8 +1389,9 @@ const onSubmitEditAllPercentage = async () => {
                                     {{ box_stats?.products.estimated_weight || 0 }} {{ trans("kilogram") }}
                                 </dd>
                             </div>
-                            rifqi
                             <!-- button edit all percentage -->
+                            <div class="text-right w-full">rifqi</div>
+
                             <button
                                 v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))"
                                 class="ml-auto h-6" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
