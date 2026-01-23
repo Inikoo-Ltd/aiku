@@ -8,7 +8,7 @@ import Discount from "@/Components/Utils/Label/Discount.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel.vue"
+import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import { Popover } from "primevue"
 import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
 import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
@@ -120,8 +120,8 @@ const _popoverProfit = ref(null)
             </div>
 
             <!-- Price: Gold Member -->
-            <div v-if="product.discounted_price" class="text-orange-500 font-bold text-sm" >
-                <span v-if="product.units == 1 &&  product.discounted_price">
+            <div class="text-orange-500 font-bold text-sm">
+                <span v-if="product.units == 1">
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>
                 <span v-else>
@@ -131,22 +131,27 @@ const _popoverProfit = ref(null)
 
 
             <!-- Section: Profit, label Gold Reward Member -->
-            <div class="mt-0 flex justify-between">
+            <div class="mt-0 flex justify-between gap-x-2">
 
                 <template v-if="product.product_offers_data?.number_offers > 0">
-                    <template v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'">
+                    <div v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
+                        class="flex flex-col w-fit"
+                    >
                         <MemberPriceLabel
                             v-if="layout?.user?.gr_data?.customer_is_gr"
                             :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
                         />
                         <NonMemberPriceLabel v-else
                             :product
-                            :isShowAvailableGROffer="
-                                (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
-                                && !layout?.user?.gr_data?.customer_is_gr
-                            "
                         />
-                    </template>
+        
+                        <AvailableVolOfferLabel
+                            v-if="
+                                (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
+                                && !layout?.user?.gr_data?.customer_is_gr"
+                            :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
+                        />
+                    </div>
                     <div v-else />
                 </template>
 
@@ -154,7 +159,7 @@ const _popoverProfit = ref(null)
 
                 <!-- Section: Profit -->
                 <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col">
-                    <div>                        
+                    <div class="whitespace-nowrap">                        
                         <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
                             class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
                         >
@@ -166,7 +171,7 @@ const _popoverProfit = ref(null)
                         ({{ product?.margin }})
                     </div>
                     <div class="italic text-xs">
-                        <span class="text-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
+                        <span class="xtext-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
                     </div>
 
                     <!-- <div class="flex justify-between items-end">

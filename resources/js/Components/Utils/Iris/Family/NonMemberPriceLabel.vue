@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
-import AvailableGROfferLabel from '../AvailableGROfferLabel.vue'
 import { Popover } from 'primevue'
 import { inject, ref } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -12,7 +11,6 @@ library.add(faQuestionCircle)
 
 const props = defineProps<{
     product: {}
-    isShowAvailableGROffer: boolean
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -23,16 +21,11 @@ const _popoverQuestionCircle = ref(null)
 <template>
     <div class="relative w-fit">
         <div class="bg-gray-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
-        <div class="my-1.5 text-xs">
+        <div class="my-1.5 text-xs text-balance">
             {{ trans("NOT A MEMBER") }}? <span @click="_popoverQuestionCircle?.toggle" @mouseenter="_popoverQuestionCircle?.show" @mouseleave="_popoverQuestionCircle?.hide" class="cursor-pointer">
                 <FontAwesomeIcon icon="fal fa-question-circle" class="" fixed-width aria-hidden="true" />
             </span>
         </div>
-        
-        <AvailableGROfferLabel
-            v-if="isShowAvailableGROffer"
-            :product
-        />
 
         <!-- Popover: Question circle GR member -->
         <Popover ref="_popoverQuestionCircle" :style="{width: '250px'}" class="py-1 px-2">
