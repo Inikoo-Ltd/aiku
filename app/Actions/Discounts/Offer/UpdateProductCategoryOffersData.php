@@ -95,11 +95,14 @@ class UpdateProductCategoryOffersData
         }
 
 
-        $triggerLabels = [];
+        $triggerLabels           = [];
+        $categoryQuantityTrigger = null;
 
         if ($offer->type == 'Category Quantity Ordered Order Interval') {
             $triggerLabels[] = __('Order :n or more', ['n' => $offer->trigger_data['item_quantity']]);
             $triggerLabels[] = __('Order with in :n days', ['n' => $offer->trigger_data['interval']]);
+
+            $categoryQuantityTrigger = $offer->trigger_data['item_quantity'];
         }
 
 
@@ -114,6 +117,10 @@ class UpdateProductCategoryOffersData
             'note'                    => '',
             'max_percentage_discount' => $maxPercentageDiscount
         ];
+
+        if ($categoryQuantityTrigger) {
+            $offerData['category_qty_trigger'] = $categoryQuantityTrigger;
+        }
 
         if ($offer->duration->value == OfferDurationEnum::INTERVAL) {
             $offerData['start_at'] = $offer->start_at;
