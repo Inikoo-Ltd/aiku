@@ -271,22 +271,22 @@ class GetShopNavigation
                             ],
                         ],
                         [
+                            "label"   => __("Templates"),
+                            "tooltip" => __("Templates"),
+                            "icon"    => ["fal", "fa-layer-group"],
+                            'root'    => 'grp.org.shops.show.marketing.templates.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.templates.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
                             "label"   => __("Traffic sources"),
                             "tooltip" => __("Traffic sources"),
                             "icon"    => ["fal", "fa-chart-line"],
                             'root'    => 'grp.org.shops.show.marketing.traffic_sources.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.marketing.traffic_sources.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
-                            ],
-                        ],
-                        [
-                            "label"   => __("Templates"),
-                            "tooltip" => __("Templates"),
-                            "icon"    => ["fal", "fa-chart-line"],
-                            'root'    => 'grp.org.shops.show.marketing.templates.',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.marketing.templates.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

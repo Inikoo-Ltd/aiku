@@ -78,6 +78,15 @@ class ShowMarketingDashboard extends OrgAction
                         ]
                     ],
                     [
+                        'name' => __('Templates'),
+                        'value' => 2, // need to adjustment the value to be dynamic
+                        'icon'  => ['fal', 'fa-layer-group'], // Nedd to change the icon
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.templates.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
+                    [
                         'name' => __('Traffic Sources'),
                         'value' => $this->shop->commsStats->number_traffic_sources ?? 0,
                         'icon'  => ['fal', 'fa-traffic-light'],
@@ -86,15 +95,7 @@ class ShowMarketingDashboard extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ],
-                    [
-                        'name' => __('Templates'),
-                        'value' => 2,// need to adjustment the value to be dynamic
-                        'icon'  => ['fal', 'fa-newspaper'], // Nedd to change the icon
-                        'route' => [
-                            'name'       => 'grp.org.shops.show.marketing.templates.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ],
+
                 ]
 
 
