@@ -15,7 +15,6 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { faMoneyCheckEditAlt } from "@fal"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -64,7 +63,7 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy, faParachuteBox, faSortNumericDown
+    faCopy, faParachuteBox, faSortNumericDown,faMoneyCheckEditAlt
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -1390,14 +1389,14 @@ const onSubmitEditAllPercentage = async () => {
                                 </dd>
                             </div>
                             <!-- button edit all percentage -->
-                            <div class="text-right text-gray-500 w-full mr-1">{{ trans('Global discount') }}</div>
+                            <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
 
                             <button
                                 v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'x'))"
-                                class="ml-auto h-6 pl" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
+                                class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                 v-tooltip="trans('Apply discount to all products')">
                                 <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                    class="h-4 text-gray-400 hover:text-gray-600" />
+                                    class="h-4 text-purple-400 hover:text-gray-600" />
                             </button>
                         </dl>
 

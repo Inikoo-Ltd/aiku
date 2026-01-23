@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { ref, reactive, inject, onBeforeUnmount } from 'vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
-import Table from '@/Components/Table/Table.vue'
-import Tag from '@/Components/Tag.vue'
-import { routeType } from '@/types/route'
-import { Table as TableTS } from '@/types/Table'
-import { faPencil, faTimes, faTrashAlt } from '@far'
-import { Link, router } from '@inertiajs/vue3'
-import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
-import { debounce, get, set } from 'lodash-es'
-import Modal from '@/Components/Utils/Modal.vue'
-import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
-import { ulid } from 'ulid'
+import { ref, reactive, inject, onBeforeUnmount } from "vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
+import Table from "@/Components/Table/Table.vue"
+import Tag from "@/Components/Tag.vue"
+import { routeType } from "@/types/route"
+import { Table as TableTS } from "@/types/Table"
+import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt } from "@far"
+import { Link, router } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
+import { debounce, get, set } from "lodash-es"
+import Modal from "@/Components/Utils/Modal.vue"
+import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
+import { ulid } from "ulid"
 import Image from "@/Components/Image.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import Discount from '@/Components/Utils/Label/Discount.vue'
-import { InputNumber, InputText } from 'primevue'
-import { faMoneyCheckEditAlt } from "@far"
+import Discount from "@/Components/Utils/Label/Discount.vue"
+import { InputNumber, InputText } from "primevue"
+
 library.add(faBadgePercent, faMoneyCheckEditAlt)
 
 type ProductRow = {
@@ -46,8 +46,8 @@ const props = defineProps<{
     routesProductsListModification?: routeType
 }>()
 
-const layout = inject("layout", {});
-const locale = inject('locale', {})
+const layout = inject("layout", {})
+const locale = inject("locale", {})
 const editingIds = ref<Set<number>>(new Set())
 const createNewQty = reactive<Record<number, ProductRow>>({})
 const isLoading = ref<string | null>(null)
@@ -71,21 +71,21 @@ function formatQuantity(value: any): string | number {
 
 function productRoute(product: ProductRow) {
     switch (route().current()) {
-        case 'grp.org.shops.show.crm.customers.show.orders.show':
-        case 'grp.org.shops.show.ordering.orders.show':
+        case "grp.org.shops.show.crm.customers.show.orders.show":
+        case "grp.org.shops.show.ordering.orders.show":
             if (product.product_slug) {
                 return route(
-                    'grp.org.shops.show.catalogue.products.all_products.show',
+                    "grp.org.shops.show.catalogue.products.all_products.show",
                     [
-                        route().params['organisation'],
-                        route().params['shop'],
-                        product.product_slug,
+                        route().params["organisation"],
+                        route().params["shop"],
+                        product.product_slug
                     ]
                 )
             }
-            return ''
+            return ""
         default:
-            return ''
+            return ""
     }
 }
 
@@ -114,15 +114,15 @@ const onUpdateQuantity = (
         {
             onError: (e: any) => {
                 notify({
-                    title: trans('Something went wrong'),
+                    title: trans("Something went wrong"),
                     text: e.message,
-                    type: 'error',
+                    type: "error"
                 })
             },
-            onStart: () => (isLoading.value = 'quantity' + idTransaction),
+            onStart: () => (isLoading.value = "quantity" + idTransaction),
             onFinish: () => (isLoading.value = null),
-            only: ['transactions', 'box_stats', 'total_to_pay', 'balance'],
-            preserveScroll: true,
+            only: ["transactions", "box_stats", "total_to_pay", "balance"],
+            preserveScroll: true
         }
     )
 }
@@ -145,14 +145,14 @@ async function onSave() {
 
     rowsArray().forEach((row) => {
         // Handle new products
-        if (typeof row.id === 'string' && row.id.startsWith('new')) {
+        if (typeof row.id === "string" && row.id.startsWith("new")) {
             const edited = createNewQty[row.id]
             const qty = edited
                 ? Number(edited.quantity_ordered)
                 : Number(row.quantity_ordered)
 
             newProducts[row.id_product] = {
-                quantity_ordered: qty,
+                quantity_ordered: qty
             }
             return
         }
@@ -179,7 +179,7 @@ async function onSave() {
         route(props.modifyRoute.name, props.modifyRoute.parameters),
         {
             transactions: changedItems,
-            products: newProducts,
+            products: newProducts
         },
         {
             onStart: () => (loadingsaveModify.value = true),
@@ -189,19 +189,19 @@ async function onSave() {
                 Object.keys(createNewQty).forEach((k) => delete createNewQty[k])
                 editingIds.value.clear()
                 notify({
-                    title: trans('Success'),
-                    text: trans('Changes saved successfully'),
-                    type: 'success',
+                    title: trans("Success"),
+                    text: trans("Changes saved successfully"),
+                    type: "success"
                 })
             },
             onError: (e: any) => {
                 notify({
-                    title: trans('Something went wrong'),
+                    title: trans("Something went wrong"),
                     text: e.message,
-                    type: 'error',
+                    type: "error"
                 })
             },
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -221,14 +221,14 @@ const addNewProduct = (products) => {
         )
 
         const newItem = {
-            id: existingIndex >= 0 ? props.data.data[existingIndex].id : 'new-' + ulid(),
+            id: existingIndex >= 0 ? props.data.data[existingIndex].id : "new-" + ulid(),
             asset_code: product.code,
             id_product: product.id,
             price: product.price,
             quantity_ordered: product.quantity_selected,
             net_amount: product.quantity_selected * product.price,
             asset_name: product.name,
-            available_quantity: product.available_quantity,
+            available_quantity: product.available_quantity
         }
 
         if (existingIndex >= 0) {
@@ -263,25 +263,25 @@ const onCloseModalNetAmount = () => {
 
     setTimeout(() => {
         selectedItemToEditNetAmount.value = null
-    }, 300);
+    }, 300)
 }
 const isLoadingSubmitNetAmount = ref(false)
 const isOpenModalEditNetAmount = ref(false)
 const onSubmitEditNetAmount = () => {
 
-    console.log('ccc', selectedItemToEditNetAmount.value)
+    console.log("ccc", selectedItemToEditNetAmount.value)
     if (!selectedItemToEditNetAmount.value) {
-        console.log('No item net amount selected')
+        console.log("No item net amount selected")
         return
     }
 
     router.patch(
-        route('grp.models.transaction.update_discretionary_discount', {
+        route("grp.models.transaction.update_discretionary_discount", {
             transaction: selectedItemToEditNetAmount.value?.id
         }),
         {
             discretionary_offer: selectedItemToEditNetAmount.value?.discretionary_offer,
-          discretionary_offer_label: selectedItemToEditNetAmount.value?.discretionary_offer_label,
+            discretionary_offer_label: selectedItemToEditNetAmount.value?.discretionary_offer_label
         },
         {
             preserveScroll: true,
@@ -306,7 +306,7 @@ const onSubmitEditNetAmount = () => {
             },
             onFinish: () => {
                 isLoadingSubmitNetAmount.value = false
-            },
+            }
         }
     )
 }
@@ -320,7 +320,6 @@ const onSubmitEditNetAmount = () => {
             }
             return ''
         }">
-
 
 
             <template #cell(image)="{ item }">
@@ -359,13 +358,13 @@ const onSubmitEditNetAmount = () => {
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
                     <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
-                        class="w-fit">
+                         class="w-fit">
                         <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
-                            :bindToTarget="{ min: 0, max: item.available_quantity }" isWithRefreshModel
-                            keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
-                            :readonly="readonly"
-                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
-                            noUndoButton noSaveButton />
+                                              :bindToTarget="{ min: 0, max: item.available_quantity }" isWithRefreshModel
+                                              keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
+                                              :readonly="readonly"
+                                              @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                                              noUndoButton noSaveButton />
                     </div>
 
                     <!-- Read-only display -->
@@ -379,7 +378,7 @@ const onSubmitEditNetAmount = () => {
                             original: {{ formatQuantity(item.quantity_ordered) }}
                         </span>
                         <NumberWithButtonSave v-model="createNewQty[item.id].quantity_ordered"
-                            :bindToTarget="{ min: 0 }" noUndoButton noSaveButton class="w-24" />
+                                              :bindToTarget="{ min: 0 }" noUndoButton noSaveButton class="w-24" />
                     </div>
                 </div>
             </template>
@@ -396,20 +395,20 @@ const onSubmitEditNetAmount = () => {
                         <div
                             class="bg-yellow-100 text-yellow-800 px-4 py-1.5 rounded-full text-sm font-medium shadow-sm whitespace-nowrap inline-flex items-center justify-center">
                             est: {{ locale.currencyFormat(item.currency_code, (item.price *
-                                createNewQty[item.id].quantity_ordered).toFixed(2)) }}
+                            createNewQty[item.id].quantity_ordered).toFixed(2)) }}
                         </div>
                     </div>
                     <div v-else>
                         <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
                             <span v-if="item.gross_amount != item.net_amount"
-                                class="text-gray-500 line-through mr-1 opacity-70">{{
+                                  class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
-                            <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
+                            <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
                             <Button
-                                  v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))"
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))"
                                 @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                 v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
-                                :icon="faMoneyCheckEditAlt" class="ml-1 !px-1" />
+                                :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />
                         </p>
                     </div>
                 </div>
@@ -420,28 +419,28 @@ const onSubmitEditNetAmount = () => {
                 <div class="flex gap-2 items-center">
                     <!-- Delete / Unselect -->
                     <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
-                        as="button" :method="item.deleteRoute.method" @start="() => (isLoading = 'unselect' + item.id)"
-                        @finish="() => (isLoading = null)" v-tooltip="trans('Unselect this product')"
-                        :preserveScroll="true">
+                          as="button" :method="item.deleteRoute.method" @start="() => (isLoading = 'unselect' + item.id)"
+                          @finish="() => (isLoading = null)" v-tooltip="trans('Unselect this product')"
+                          :preserveScroll="true">
                         <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
-                            :loading="isLoading === 'unselect' + item.id" />
+                                :loading="isLoading === 'unselect' + item.id" />
                     </Link>
 
                     <!-- Edit / Cancel -->
                     <div v-if="state !== 'creating'" class="flex gap-2 items-center">
                         <button v-if="!editingIds.has(item.id) && layout?.app?.environment === 'local'"
-                            class="h-9 align-bottom text-center" @click="startEdit(item)"
-                            aria-label="Edit Product Order" v-tooltip="'Edit Product Order'">
+                                class="h-9 align-bottom text-center" @click="startEdit(item)"
+                                aria-label="Edit Product Order" v-tooltip="'Edit Product Order'">
                             <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700"
-                                aria-hidden="true" />
+                                             aria-hidden="true" />
                         </button>
 
                         <Button v-else-if="editingIds.has(item.id)" type="negative" v-tooltip="'Cancel edit'"
-                            :icon="faTimes" @click="onCancel(item)" size="sm" aria-label="Cancel edit" />
+                                :icon="faTimes" @click="onCancel(item)" size="sm" aria-label="Cancel edit" />
 
                         <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
-                            v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"
-                            size="sm" />
+                                v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"
+                                size="sm" />
                     </div>
                 </div>
             </template>
@@ -457,39 +456,39 @@ const onSubmitEditNetAmount = () => {
                 </div>
             </div>
 
-        <div class="flex flex-col items-center gap-4">
-            <!-- Input: Percentage -->
-            <div class="w-full ">
-                <label class="block text-sm font-medium mb-2">
-                    {{ trans("Discretionary discount percentage") }}:
-                </label>
-                <InputNumber
-                  :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
-                  @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)"
-                  suffix="%"
-                  :disabled="isLoadingSubmitNetAmount"
-                />
-            </div>
+            <div class="flex flex-col items-center gap-4">
+                <!-- Input: Percentage -->
+                <div class="w-full ">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans("Discretionary discount percentage") }}:
+                    </label>
+                    <InputNumber
+                        :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
+                        @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)"
+                        suffix="%"
+                        :disabled="isLoadingSubmitNetAmount"
+                    />
+                </div>
 
-            <!-- Input: Label -->
-            <div class="w-full ">
-                <label class="block text-sm font-medium mb-2">
-                    {{ trans("Discretionary discount Label") }}:
-                </label>
-                <InputText
-                  :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
-                  @input="(e) => (set(selectedItemToEditNetAmount, 'discretionary_offer_label', e?.target?.value))"
-                  :disabled="isLoadingSubmitNetAmount"
-                />
-            </div>
+                <!-- Input: Label -->
+                <div class="w-full ">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans("Discretionary discount Label") }}:
+                    </label>
+                    <InputText
+                        :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
+                        @input="(e) => (set(selectedItemToEditNetAmount, 'discretionary_offer_label', e?.target?.value))"
+                        :disabled="isLoadingSubmitNetAmount"
+                    />
+                </div>
 
                 <div class="w-full flex gap-4 mt-4">
                     <Button type="negative" size="md" :disabled="isLoadingSubmitNetAmount" icon="far fa-arrow-left"
-                        @click="onCloseModalNetAmount" :label="trans('Cancel')">
+                            @click="onCloseModalNetAmount" :label="trans('Cancel')">
                     </Button>
 
                     <Button type="primary" size="md" :loading="isLoadingSubmitNetAmount" icon="fad fa-save"
-                        @click="onSubmitEditNetAmount" full label="Save">
+                            @click="onSubmitEditNetAmount" full label="Save">
                     </Button>
                 </div>
             </div>
