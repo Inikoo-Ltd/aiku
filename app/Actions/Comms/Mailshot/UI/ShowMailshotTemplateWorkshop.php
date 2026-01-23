@@ -81,6 +81,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     ]
 
                 ],
+                'builder'     => $emailTemplate->builder,
                 'snapshot'    => $emailTemplate->layout,
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.email-template.update',

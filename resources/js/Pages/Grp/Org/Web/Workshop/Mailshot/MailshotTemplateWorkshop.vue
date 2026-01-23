@@ -65,7 +65,22 @@ const options = ref([
     { name: 'Suspended', value: "suspended" },
 ]);
 
-const onSendPublish = async (data) => {
+const lastBuilderResult = ref<{
+    layout: string | null
+    compiled_layout: string | null
+}>({
+    layout: null,
+    compiled_layout: null,
+})
+
+const onBeefreeSave = (data: any) => {
+    lastBuilderResult.value = {
+        layout: data.jsonFile,
+        compiled_layout: data.htmlFile,
+    }
+}
+
+const onSendPublish = async (data: any) => {
     try {
         const response = await axios.post(route(props.publishRoute.name, props.publishRoute.parameters), {
             comment: comment.value,
@@ -93,7 +108,6 @@ const onSendPublish = async (data) => {
     }
 }
 
-
 const openSendTest = (data) => {
     visibleEmailTestModal.value = true
     temporaryData.value = {
@@ -102,12 +116,19 @@ const openSendTest = (data) => {
     }
 }
 
-const onSaveTemplate = (data: any) => {
-    visibleSAveEmailTemplateModal.value = true
-    temporaryData.value = {
-        layout: data?.jsonFile
+const onSaveTemplate = async (data: any) => {
+    if (!lastBuilderResult.value.compiled_layout) {
+        notify({
+            title: 'Please save editor first',
+            type: 'warning',
+        })
+        return
     }
+
+    temporaryData.value = { ...lastBuilderResult.value }
+    visibleSAveEmailTemplateModal.value = true
 }
+
 
 const sendTestToServer = async () => {
     isLoading.value = true;
@@ -130,8 +151,7 @@ const sendTestToServer = async () => {
     }
 };
 
-
-const saveTemplate = async () => {
+const saveTemplate = async (data: any) => {
     isLoading.value = true;
 
     axios
@@ -139,7 +159,8 @@ const saveTemplate = async () => {
             route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
             {
                 name: templateName.value,
-                layout: JSON.parse(temporaryData.value?.layout)
+                layout: JSON.parse(temporaryData.value?.layout),
+                compiled_layout: temporaryData.value?.compiled_layout,
             },
         )
         .then((response) => {
@@ -241,39 +262,6 @@ const schedulePublish = async () => {
 
 const isModalCloneTemplateEmail = ref(false)
 const activeSnapshot = ref(props.snapshot)
-
-const page = usePage()
-const tabs = computed(() => page.props.tabs)
-const currentTab = ref<string>(tabs.value.current)
-const isBeefreeReady = ref(false)
-
-const tabData = computed(() => {
-    return page.props[currentTab.value]?.data ?? []
-})
-
-const handleTabUpdate = (tabSlug: string) =>
-    useTabChange(tabSlug, currentTab)
-
-const component = computed(() => {
-    const components: Component = {
-        templates: TableEmailTemplate,
-        previous_mailshots: TablePreviousMailshots,
-        other_store_mailshots: TableOtherStoreMailshots,
-    };
-    return components[currentTab.value];
-});
-
-const onSelectTemplateSnapshot = (snapshot: any) => {
-    activeSnapshot.value = snapshot
-    isModalCloneTemplateEmail.value = false
-}
-
-watch(
-    () => tabs.value.current,
-    (val) => {
-        currentTab.value = val
-    }
-)
 </script>
 
 
@@ -282,23 +270,14 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
-                class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faPlus" :disabled="!isBeefreeReady" />
+
         </template>
     </PageHeading>
 
-    <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-4xl">
-        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-        <component :is="component" :key="currentTab" :data="tabData" :tab="currentTab"
-            @select-snapshot="onSelectTemplateSnapshot" />
-    </Modal>
-
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
-        @ready="isBeefreeReady = $event" />
+        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onBeefreeSave"
+        @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
