@@ -21,10 +21,15 @@ class OrderHydrateDiscretionaryOffersData
     {
         $discretionaryOffersData = [];
 
-        foreach (DB::table('transactions')->select('discretionary_offer', 'id')
-            ->where('order_id', $order->id)->whereNotNull('discretionary_offer')
-            ->whereNull('deleted_at')->get() as $transactionData) {
-            $discretionaryOffersData[$transactionData->id] = $transactionData->discretionary_offer;
+        foreach (
+            DB::table('transactions')->select('discretionary_offer', 'discretionary_offer_label', 'id')
+                ->where('order_id', $order->id)->whereNotNull('discretionary_offer')
+                ->whereNull('deleted_at')->get() as $transactionData
+        ) {
+            $discretionaryOffersData[$transactionData->id] = [
+                'percentage' => $transactionData->discretionary_offer,
+                'label'      => $transactionData->discretionary_offer_label ?? 'Discretionary Offer'
+            ];
         }
 
         $order->update([
@@ -39,7 +44,6 @@ class OrderHydrateDiscretionaryOffersData
 
     public function asCommand($command): void
     {
-
         if ($orderID = $command->argument('order_id')) {
             /** @var \App\Models\Ordering\Order $order */
             $order = Order::findOrFail($orderID);

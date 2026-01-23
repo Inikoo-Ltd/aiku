@@ -37,7 +37,6 @@ class CalculateOrderDiscounts
         $this->setEnabledOffers($order);
 
         if (count($this->enabledOffers) > 0) {
-
             $this->transactions = DB::table('transactions')
                 ->select([
                     'id',
@@ -203,12 +202,12 @@ class CalculateOrderDiscounts
             return $this->daysSinceLastInvoiced;
         }
 
-        $lastInvoiced                = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
+        $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
             return $order->customer->last_invoiced_at;
         });
-        $this->isLastInvoicedSet     = true;
+        $this->isLastInvoicedSet = true;
         // Explicitly cast to int to prevent PHP 8.4+ precision loss warnings
-        $this->daysSinceLastInvoiced = $lastInvoiced ? (int) -now()->diffInDays($lastInvoiced) : null;
+        $this->daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
         return $this->daysSinceLastInvoiced;
     }
@@ -316,7 +315,7 @@ class CalculateOrderDiscounts
         }
     }
 
-    private function applyDiscretionaryOffer(object $transaction, float $percentageOff, OfferAllowance $allowance): void
+    private function applyDiscretionaryOffer(object $transaction, float $percentageOff, string $label, OfferAllowance $allowance): void
     {
         $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
 
@@ -327,14 +326,13 @@ class CalculateOrderDiscounts
         $transaction->offer_id              = $allowance->offer_id;
         $transaction->offer_campaign_id     = $allowance->offer_campaign_id;
         $transaction->offer_allowance_id    = $allowance->id;
-        $transaction->offer_label           = 'Discretionary Offer';
+        $transaction->offer_label           = $label;
         $transaction->allowance_type        = 'percentage';
         $transaction->sub_trigger           = null;
     }
 
     public function processDiscretionaryOffers(Order $order): void
     {
-
         if (count($order->discretionary_offers_data) == 0) {
             return;
         }
@@ -342,15 +340,11 @@ class CalculateOrderDiscounts
         $discretionaryOfferAllowance = OfferAllowance::where('shop_id', $order->shop_id)->where('is_discretionary', true)->first();
 
         foreach ($order->discretionary_offers_data as $transactionId => $discretionaryOffer) {
-
-
-
-            $percentageOff = max(0.0, min(1.0, $discretionaryOffer));
-
+            $percentageOff = max(0.0, min(1.0, $discretionaryOffer['percentage']));
+            $label         = $discretionaryOffer['label'];
 
 
             $transaction = $this->transactions->get($transactionId);
-
 
 
             if (!$transaction) {
@@ -360,18 +354,13 @@ class CalculateOrderDiscounts
             $hasOffer = property_exists($transaction, 'with_offer') && $transaction->with_offer;
 
 
-
             if ($hasOffer) {
-
                 $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
                 if ((float)$current < $percentageOff) {
-                    $this->applyDiscretionaryOffer($transaction, $percentageOff, $discretionaryOfferAllowance);
+                    $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
                 }
-
-
-
             } else {
-                $this->applyDiscretionaryOffer($transaction, $percentageOff, $discretionaryOfferAllowance);
+                $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
             }
         }
     }
