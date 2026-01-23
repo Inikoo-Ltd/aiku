@@ -105,7 +105,7 @@ const fetchRecommenders = async () => {
         } */
 
         const response = await axios.post(
-            route('iris.json.luigi.last_seen'),
+            route('iris.json.luigi.product_recommendation'),
             {
                 luigi_identity: '',
                 recommendation_type : 'trends',
