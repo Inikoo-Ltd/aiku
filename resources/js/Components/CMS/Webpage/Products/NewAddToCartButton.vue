@@ -328,7 +328,7 @@ const showChartButton = computed(() => {
 })
 
 const canOrder = computed(() => {
-    else if (props.product.stock > 0) return true
+    if (props.product.stock > 0) return true
     return false
 })
 
