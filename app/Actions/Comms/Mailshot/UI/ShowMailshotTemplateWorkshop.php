@@ -108,7 +108,6 @@ class ShowMailshotTemplateWorkshop extends OrgAction
         );
     }
 
-    // TODO: Update later
     public function getBreadcrumbs(EmailTemplate $emailTemplate, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (EmailTemplate $emailTemplate, array $routeParameters, string $suffix = null) {

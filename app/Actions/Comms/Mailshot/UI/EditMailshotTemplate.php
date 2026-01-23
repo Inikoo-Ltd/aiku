@@ -35,7 +35,22 @@ class EditMailshotTemplate extends OrgAction
                 ),
                 'title'    => __('Edit template'),
                 'pageHead' => [
-                    'title' => __('Edit template')
+                    'title' => __('Edit template'),
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'label' => __('Exit edit'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.templates.workshop',
+                                'parameters' => [
+                                    'organisation' => $parent->organisation->slug,
+                                    'shop' => $parent->slug,
+                                    'emailTemplate' => $emailTemplate->slug
+                                ]
+                            ]
+                        ]
+                    ]
                 ],
                 'formData' => [
                     'fullLayout' => true,
