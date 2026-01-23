@@ -59,7 +59,7 @@ class IndexFulfilmentCustomerFromWebhook
         $this->setRawAttributes($request->all());
 
         $validatedData = $this->validateAttributes();
-        $this->type    = $request->get('type');
+        $this->type    = $request->input('type');
 
         return $this->handle($fulfilmentCustomer, $validatedData);
     }

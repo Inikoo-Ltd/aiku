@@ -33,7 +33,6 @@ use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;

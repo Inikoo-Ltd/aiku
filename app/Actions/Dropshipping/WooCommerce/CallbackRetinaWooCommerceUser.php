@@ -41,7 +41,7 @@ class CallbackRetinaWooCommerceUser extends OrgAction
 
     public function asController(ActionRequest $request): string
     {
-        $customer = Customer::findOrFail($request->get('user_id'));
+        $customer = Customer::findOrFail($request->input('user_id'));
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);

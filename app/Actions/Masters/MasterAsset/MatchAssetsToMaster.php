@@ -23,7 +23,7 @@ class MatchAssetsToMaster extends OrgAction
     use AsAction;
 
 
-    public function handle(Asset $asset, Command $command = null): Asset
+    public function handle(Asset $asset, ?Command $command = null): Asset
     {
         $masterShop = $asset->shop->masterShop;
 

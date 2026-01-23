@@ -39,7 +39,7 @@ class RetinaLogin
     {
         $this->ensureIsNotRateLimited($request);
 
-        $websiteId  = $request->get('website')->id;
+        $websiteId  = $request->input('website')->id;
         $rememberMe = $request->boolean('remember');
 
         $authorised = false;
@@ -135,9 +135,9 @@ class RetinaLogin
         }
 
         $retinaHome = '';
-        $webpage_key = request()->get('ref');
+        $webpage_key = request()->input('ref');
         if ($webpage_key && is_numeric($webpage_key)) {
-            $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->get('website')->id)
+            $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->input('website')->id)
                 ->where('state', WebpageStateEnum::LIVE)->first();
             if ($webpage) {
                 $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);

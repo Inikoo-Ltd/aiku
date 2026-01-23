@@ -22,7 +22,7 @@ class CleanUserCaches
     public string $commandSignature = 'users:clean_cache {--i|id=} {--u|username=}';
 
 
-    public function handle(User $user, array $patterns = null): void
+    public function handle(User $user, ?array $patterns = null): void
     {
         if ($patterns === null) {
             $patterns = ['auth-user:'.$user->id.';*'];

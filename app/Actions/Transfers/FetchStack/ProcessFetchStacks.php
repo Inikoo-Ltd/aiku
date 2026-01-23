@@ -21,7 +21,7 @@ class ProcessFetchStacks
     /**
      * @throws \Exception
      */
-    public function handle(bool $runInBackground = true, Command $command = null): void
+    public function handle(bool $runInBackground = true, ?Command $command = null): void
     {
         StoreFetchStacks::run();
 

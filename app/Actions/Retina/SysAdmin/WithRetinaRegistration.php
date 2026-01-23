@@ -122,12 +122,12 @@ trait WithRetinaRegistration
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
 
         if ($request->has('tax_number')) {
-            $taxNumberValue = (string)Arr::get($request->get('tax_number'), 'value');
+            $taxNumberValue = (string)Arr::get($request->input('tax_number'), 'value');
             if ($taxNumberValue) {
-                $countryCode   = Arr::get($request->get('tax_number'), 'country.isoCode.short');
+                $countryCode   = Arr::get($request->input('tax_number'), 'country.isoCode.short');
                 $country       = Country::where('code', $countryCode)->first();
                 $taxNumberData = [
-                    'number'     => strip_tags((string)Arr::get($request->get('tax_number'), 'value')),
+                    'number'     => strip_tags((string)Arr::get($request->input('tax_number'), 'value')),
                     'country_id' => $country?->id,
                 ];
             } else {

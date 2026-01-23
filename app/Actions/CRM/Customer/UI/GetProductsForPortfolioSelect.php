@@ -24,7 +24,7 @@ class GetProductsForPortfolioSelect extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             // Get the type filter to determine how to filter products
-            $type = Arr::get(request()->get('filter'), 'type');
+            $type = Arr::get(request()->input('filter'), 'type');
 
             switch (strtolower($type)) {
                 case 'department':
@@ -66,7 +66,7 @@ class GetProductsForPortfolioSelect extends OrgAction
             $allowedTypes = ['all', 'department', 'family', 'sub_department'];
             if (!in_array(strtolower($value), $allowedTypes)) {
                 // Default to 'all' if invalid type provided
-                request()->merge(['filter' => array_merge(request()->get('filter', []), ['type' => 'all'])]);
+                request()->merge(['filter' => array_merge(request()->input('filter', []), ['type' => 'all'])]);
             }
         });
 

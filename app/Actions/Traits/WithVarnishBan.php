@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Http;
 
 trait WithVarnishBan
 {
-    protected function sendVarnishBanHttp(array $banExpression, Command $command = null): array
+    protected function sendVarnishBanHttp(array $banExpression, ?Command $command = null): array
     {
         try {
             $response = Http::timeout(3)

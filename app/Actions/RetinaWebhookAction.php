@@ -37,7 +37,7 @@ class RetinaWebhookAction
 
     public function initialisation(ActionRequest $request): static
     {
-        $this->website = $request->get('website');
+        $this->website = $request->input('website');
         $this->shop = $this->website->shop;
         $this->fulfilment = $this->shop->fulfilment;
         $this->organisation = $this->shop->organisation;

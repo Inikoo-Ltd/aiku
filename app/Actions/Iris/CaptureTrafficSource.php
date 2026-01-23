@@ -98,7 +98,7 @@ class CaptureTrafficSource
         if (!($routeName && (str_starts_with($routeName, 'iris') || in_array($routeName, $allowedRoutes)))) {
             return false;
         }
-        $website = request()->get('website');
+        $website = request()->input('website');
 
 
         if (auth()->check() && $website->type == WebsiteTypeEnum::DROPSHIPPING) {

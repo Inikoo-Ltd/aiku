@@ -87,7 +87,7 @@ class CalculateTimeSeriesStats
         return $results->keyBy($foreignKey)->map(fn ($item) => (array) $item)->toArray();
     }
 
-    public function format(array $stats, array $metricsMapping, string $currencyCode = null): array
+    public function format(array $stats, array $metricsMapping, ?string $currencyCode = null): array
     {
         $formattedStats = [];
 

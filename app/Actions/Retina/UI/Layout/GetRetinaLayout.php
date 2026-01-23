@@ -24,11 +24,11 @@ class GetRetinaLayout
     public function handle($request, ?WebUser $webUser): array
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
         if (!$webUser) {
             return [
                 'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
-                'website'   => GroupResource::make($request->get('website'))->getArray(),
+                'website'   => GroupResource::make($request->input('website'))->getArray(),
             ];
         }
 
@@ -49,11 +49,11 @@ class GetRetinaLayout
 
         return [
             ...$additionalData,
-            'website'   => GroupResource::make($request->get('website'))->getArray(),
+            'website'   => GroupResource::make($request->input('website'))->getArray(),
             'customer'  => CustomersResource::make($webUser->customer)->getArray(),
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
 
-            'navigation' => $isPreRegistration ? null : match ($request->get('website')->type->value) {
+            'navigation' => $isPreRegistration ? null : match ($request->input('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),
                 'dropshipping' => GetRetinaDropshippingNavigation::run($webUser),
                 'b2b' => GetRetinaEcomNavigation::run(),

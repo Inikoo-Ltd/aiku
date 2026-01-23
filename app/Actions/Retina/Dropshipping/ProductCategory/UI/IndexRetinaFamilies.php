@@ -213,7 +213,7 @@ class IndexRetinaFamilies extends RetinaAction
         )->table($this->tableStructure(parent: $this->parent));
     }
 
-    public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

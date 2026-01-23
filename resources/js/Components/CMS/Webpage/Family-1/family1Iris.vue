@@ -82,8 +82,10 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
       aria-label="Family Description Section">
       
         <!-- Section: listing Offers -->
-         <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
-         <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
+        <div class="hidden">
+          <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
+          <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
+        </div>
          
         <!-- Offer: list offers -->
         <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
@@ -92,10 +94,10 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
             <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
                 <FamilyOfferLabelGR v-if="offer.type == 'Category Quantity Ordered Order Interval'" />
 
-                <!-- <FamilyOfferLabelDiscount
+                <FamilyOfferLabelDiscount
                     v-if="offer.type == 'Category Quantity Ordered Order Interval'"
                     :offer="offer"
-                /> -->
+                />
             </template>
         </div>
 

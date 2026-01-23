@@ -43,7 +43,7 @@ class MacroServiceProvider extends ServiceProvider
             return $this->props['queryBuilderProps'] ?? [];
         });
 
-        InertiaResponse::macro('table', function (callable $withTableBuilder = null): Response {
+        InertiaResponse::macro('table', function (?callable $withTableBuilder = null): Response {
             $tableBuilder = new InertiaTable(request());
 
             if ($withTableBuilder) {

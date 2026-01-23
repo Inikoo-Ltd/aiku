@@ -28,7 +28,7 @@ class ServeLlmsTxt
     public function asController(ActionRequest $request): Response
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         return $this->handle($website);
     }

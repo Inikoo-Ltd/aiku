@@ -23,16 +23,16 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 
         <!-- Content -->
         <div class="w-full relative flex items-center text-white font-bold px-7 text-4xl">
-            {{ offer.allowances[0].label }}
+            {{ offer.allowances?.[0].label }}
         </div>
         <div class="bg-white rounded-md px-2 py-1 flex items-center gap-x-4">
             <div>
-                <div class="whitespace-nowrap capitalize">{{ offer.allowances[0].class }}</div>
+                <div class="whitespace-nowrap capitalize">{{ offer.allowances?.[0].class }}</div>
                 <div class="text-xs whitespace-nowrap opacity-70">
                     {{ offer.triggers_labels?.join('/') }}
                 </div>
             </div>
-            <span @click="_popoverInfoCircle?.toggle, console.log('hehehe', _popoverInfoCircle)"
+            <span @click="() => (_popoverInfoCircle?.toggle())"
                 @mouseenter="_popoverInfoCircle?.show" @mouseleave="_popoverInfoCircle?.hide"
                 class="opacity-60 hover:opacity-100 cursor-pointer">
                 <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />

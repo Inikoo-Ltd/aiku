@@ -49,7 +49,7 @@ class BlogWebpagesResource extends JsonResource
                 $href .= $this->website->domain;
             }
         } else {
-            $website = $request->get('website') ?? Website::find($this->website_id);
+            $website = $request->input('website') ?? Website::find($this->website_id);
             if ($website == WebsiteTypeEnum::DROPSHIPPING) {
                 $href = 'https://ds.test';
             } elseif ($website->type == WebsiteTypeEnum::FULFILMENT) {
