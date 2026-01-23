@@ -142,13 +142,13 @@ const isLoadingVisit = ref(false)
                 title: trans(`${props.data.mailshot.data.subject} is still in process`),
             }">
                 <template #button-empty-state>
-                    <!-- <Link :href="route('grp.helpers.redirect_outbox_workshop', {
-                        outbox: data.outbox?.id,
+                    <Link :href="route('grp.helpers.redirect_mailshot_workshop', {
+                        mailshot: props.data.mailshot.data.id,
                     })
                         " @start="() => (isLoadingVisit = true)" class="mt-4 block w-fit mx-auto">
                         <Button :label="trans('Workshop')" type="secondary" icon="fal fa-drafting-compass"
                             :loading="isLoadingVisit" />
-                    </Link> -->
+                    </Link>
                 </template>
             </EmptyState>
         </div>
