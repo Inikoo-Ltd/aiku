@@ -23,64 +23,85 @@ const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 const currency = layout?.iris?.currency
 const isLoadingVisit = ref(false)
+
+
 </script>
 
 <template>
-    <div class="relative h-full w-full rounded border border-gray-200 bg-white px-3 py-2 sm:px-4 sm:py-3">
+  <div class="relative flex flex-col h-full p-3 rounded bg-white">
 
-        <!-- Card content -->
-        <div class="flex h-full flex-col">
-
-            <!-- Image -->
-            <component :is="product.url ? LinkIris : 'div'" :href="product.url"
-                class="mb-2 block w-full overflow-hidden rounded bg-white" @success="() => SelectItemCollector(product)"
-                @start="() => isLoadingVisit = true" @finish="() => isLoadingVisit = false">
-                <Image :src="product?.web_images?.main?.original" :alt="product.name"
-                    class="w-full h-[160px] sm:h-[200px] object-cover" />
-            </component>
-
-
-            <!-- Body -->
-            <div class="flex flex-1 flex-col">
-
-                <!-- Title -->
-                <h3 class="mb-1">
-                    <component :is="product.url ? LinkIris : 'div'" :href="product.url"
-                        class="line-clamp-2 cursor-pointer text-sm font-semibold leading-snug hover:underline"
-                        @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
-                        @finish="() => isLoadingVisit = false">
-                        {{ product.name }}
-                    </component>
-                </h3>
-
-                <!-- Meta -->
-                <div class="mb-1 flex flex-col gap-1 text-xs text-gray-500 sm:flex-row sm:justify-between">
-                    <div class="truncate">{{ product.code }}</div>
-
-                    <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')" class="flex items-center gap-1"
-                        :class="Number(product.stock) > 0 ? 'text-green-600' : 'text-red-600'">
-                        <FontAwesomeIcon :icon="faCircle" class="text-[6px]" />
-                        <span>
-                            {{ Number(product.stock) > 0 ? locale.number(Number(product.stock)) : 0 }}
-                            {{ trans('available') }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Prices -->
-                <div v-if="layout?.iris?.is_logged_in" class="mt-1 sm:mt-auto">
-                    <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product" :currency="currency"
-                        :basketButton="false" class="mb-1 sm:mb-3" />
-                    <Prices v-else :product="product" :currency="currency" :basketButton="false" />
-                </div>
-
-            </div>
-        </div>
-
-        <!-- Loading Overlay -->
-        <div v-if="isLoadingVisit" class="absolute inset-0 grid place-items-center bg-black/50 text-white">
-            <LoadingIcon class="h-8 w-8" />
-        </div>
-
+    <!-- IMAGE -->
+    <div class="mb-3 flex justify-center">
+      <component
+        :is="product.url ? LinkIris : 'div'"
+        :href="product.url"
+        class="w-full max-w-[220px] aspect-square flex items-center justify-center"
+        @success="() => SelectItemCollector(product)"
+        @start="() => isLoadingVisit = true"
+        @finish="() => isLoadingVisit = false"
+      >
+        <Image
+          :src="product?.web_images?.main?.original"
+          :alt="product.name"
+          class="object-contain w-full h-full"
+        />
+      </component>
     </div>
+
+    <!-- TITLE -->
+    <span class="mb-1 text-[16px] font-semibold leading-snug line-clamp-3">
+      <component
+        :is="product.url ? LinkIris : 'div'"
+        :href="product.url"
+        class="hover:underline"
+        @success="() => SelectItemCollector(product)"
+        @start="() => isLoadingVisit = true"
+        @finish="() => isLoadingVisit = false"
+      >
+        {{ product.name }}
+      </component>
+    </span>
+
+    <!-- CODE -->
+    <div class="text-xs text-gray-400 mb-2">
+      {{ product.code }}
+    </div>
+
+    <!-- STOCK -->
+    <div
+      v-if="layout?.iris?.is_logged_in"
+      class="flex items-center gap-1 text-xs mb-3"
+      :class="Number(product.stock) > 0 ? 'text-green-600' : 'text-red-600'"
+    >
+      <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
+      <span>
+        {{ locale.number(Number(product.stock)) }} {{ trans('available') }}
+      </span>
+    </div>
+
+    <!-- PRICES (KEEP COMPONENTS) -->
+    <div v-if="layout?.iris?.is_logged_in">
+      <Prices2
+        v-if="layout.retina?.type === 'b2b'"
+        :product="product"
+        :currency="currency"
+        :basketButton="false"
+      />
+      <Prices
+        v-else
+        :product="product"
+        :currency="currency"
+        :basketButton="false"
+      />
+    </div>
+
+    <!-- LOADING -->
+    <div
+      v-if="isLoadingVisit"
+      class="absolute inset-0 z-10 grid place-items-center bg-black/50 text-white text-4xl"
+    >
+      <LoadingIcon />
+    </div>
+
+  </div>
 </template>

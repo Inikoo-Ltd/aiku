@@ -120,8 +120,8 @@ const _popoverProfit = ref(null)
             </div>
 
             <!-- Price: Gold Member -->
-            <div class="text-orange-500 font-bold text-sm">
-                <span v-if="product.units == 1">
+            <div v-if="product.discounted_price" class="text-orange-500 font-bold text-sm" >
+                <span v-if="product.units == 1 &&  product.discounted_price">
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>
                 <span v-else>

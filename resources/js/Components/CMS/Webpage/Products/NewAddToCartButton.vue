@@ -285,9 +285,7 @@ const debAddAndUpdateProduct = debounce(() => {
 // Handle quantity change
 const updateQuantity = (newQuantity: number) => {
 
-    const clampedQuantity = props.product.is_on_demand
-        ? Math.max(0, newQuantity)
-        : Math.max(0, Math.min(newQuantity, props.product.stock))
+    const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
 
     // set quantity_ordered_new
     set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
@@ -330,8 +328,7 @@ const showChartButton = computed(() => {
 })
 
 const canOrder = computed(() => {
-    if (props.product.is_on_demand) return true
-    else if (props.product.stock > 0) return true
+    if (props.product.stock > 0) return true
     return false
 })
 
@@ -382,7 +379,7 @@ const hoveredButton = ref<string | null>(null)
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"  type="button"
-                :disabled="isLoadingSubmitQuantityProduct || (!props.product.is_on_demand && currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
+                :disabled="isLoadingSubmitQuantityProduct || (currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
                     color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color
