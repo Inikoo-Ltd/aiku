@@ -18,7 +18,8 @@ class CalculateTimeSeriesStats
         string $tableName,
         string $foreignKey,
         $from_date = null,
-        $to_date = null
+        $to_date = null,
+        array $additionalWhere = []
     ): array {
         if (empty($timeSeriesIds)) {
             return [];
@@ -77,13 +78,18 @@ class CalculateTimeSeriesStats
             }
         }
 
-        $results = DB::table($tableName)
+        $query = DB::table($tableName)
             ->selectRaw(implode(', ', $selects), $bindings)
-            ->whereIn($foreignKey, $timeSeriesIds)
-            ->groupBy($foreignKey)
-            ->get();
+            ->whereIn($foreignKey, $timeSeriesIds);
 
-        // Key results by offer_time_series_id
+        // Apply additional where conditions
+        foreach ($additionalWhere as $column => $value) {
+            $query->where($column, $value);
+        }
+
+        $results = $query->groupBy($foreignKey)->get();
+
+        // Key results by foreign key (e.g., platform_time_series_id)
         return $results->keyBy($foreignKey)->map(fn ($item) => (array) $item)->toArray();
     }
 
