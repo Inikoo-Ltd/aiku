@@ -28,6 +28,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
             </span>
             <span v-else>{{ offer.allowances?.[0]?.label }}</span>
         </div>
+        
         <div class="bg-white rounded-md px-2 py-1 flex items-center gap-x-4">
             <div>
                 <!-- <div class="whitespace-nowrap capitalize">{{ offer.allowances?.[0].class }}</div> -->

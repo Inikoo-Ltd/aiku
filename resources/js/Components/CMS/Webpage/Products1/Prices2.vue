@@ -82,12 +82,6 @@ const props = defineProps<{
     basketButton?: boolean
 }>()
 
-const isGoldMember = false // TO DO: get from user data
-
-const _popoverQuestionCircle = ref<InstanceType<any> | null>(null)
-
-// console.log(props.product.product_offers_data)
-
 const getBestOffer = (offerId: string) => {
     if (!offerId) {
         return
@@ -96,11 +90,11 @@ const getBestOffer = (offerId: string) => {
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
-console.log('fffff', props.product.product_offers_data)
+// console.log('fffff', props.product.product_offers_data)
 </script>
 
 <template>
-    <div class="border-t xborder-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
+    <div class="font-sans border-t xborder-b border-gray-200 mt-1 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
 
         <div>
             <div class="flex justify-between">
