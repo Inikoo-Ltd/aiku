@@ -471,7 +471,7 @@ const confirm2 = (action) => {
 const isCollection = ref<boolean>(props.delivery_address_management.addresses.collection_address_id ? true : false)
 const collectionBy = ref<string>(props.box_stats?.shipping_notes ? 'thirdParty' : 'myself')
 const textValue = ref<string | null>(props.box_stats?.shipping_notes)
-
+const labelPercentage = ref("")
 const updateCollection = async (e: Event) => {
     const target = e.target as HTMLInputElement
     const payload = {
