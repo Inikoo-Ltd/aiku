@@ -16,7 +16,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
 import { faMoneyCheckEditAlt } from "@far"
-import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -76,7 +76,6 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import { useConfirm } from "primevue/useconfirm";
 import ConfirmDialog from 'primevue/confirmdialog';
-
 import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -255,6 +254,8 @@ const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 console.log("dispatched_emails", props.dispatched_emails)
+
+console.log("props", props)
 
 const component = computed(() => {
     const components: Component = {
@@ -779,13 +780,14 @@ const onSubmitEditAllPercentage = async () => {
     router.patch(
         route(routeConfig.name, routeConfig.parameters),
         {
-            discretionary_discount_percentage: editedAllPercentage.value,
+            discretionary_offer: editedAllPercentage.value,
+            discretionary_offer_label: labelPercentage.value
         },
         {
             preserveScroll: true,
             preserveState: true,
             onStart: () => {
-                isLoadingSubmitAllPercentage.value = true
+                isLoadingSubmitNetAmount.value = true
             },
             onSuccess: () => {
                 notify({
@@ -805,7 +807,7 @@ const onSubmitEditAllPercentage = async () => {
                 })
             },
             onFinish: () => {
-                isLoadingSubmitAllPercentage.value = false
+                isLoadingSubmitNetAmount.value = false
             },
         }
     )
@@ -1410,6 +1412,17 @@ const onSubmitEditAllPercentage = async () => {
                                         {{ trans('Discretionary discount percentage: (%)') }}
                                     </label>
                                     <InputNumber v-model="editedAllPercentage" :min="0" suffix="%" class="w-full" />
+                                </div>
+
+
+                                <!-- Input: Label -->
+                                <div class="w-full "
+                                    v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data.data.state))">
+                                    <label class="block text-sm font-medium mb-2">
+                                        {{ trans("Discretionary discount Label") }}:
+                                    </label>
+                                    <InputText v-model="labelPercentage" :disabled="isLoadingSubmitNetAmount"
+                                        class="w-full" />
                                 </div>
 
                                 <div class="flex gap-3 mt-4">
