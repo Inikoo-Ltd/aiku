@@ -34,10 +34,11 @@ class IrisLuigiBoxRecommendationResource extends JsonResource
             'profit_per_unit'      => $profitPerUnit,
             'rrp'                  => $this->rrp,
             'rrp_per_unit'         => $rrpPerUnit,
-            'units'                => $units,
             'margin'               => $margin,
             'web_images'           => $this->web_images,
             'url'                  => $this->url,
+            'unit'                 => $this->unit,
+            'units'                => $units,
         ];
     }
 

@@ -96,6 +96,7 @@ class LuigiBoxRecommendation extends IrisAction
                 'products.price',
                 'products.rrp',
                 'products.units',
+                'products.unit',
                 'products.web_images',
             ]);
         
