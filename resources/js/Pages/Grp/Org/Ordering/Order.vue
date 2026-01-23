@@ -1380,12 +1380,12 @@ const onSubmitEditAllPercentage = async () => {
                     <div class="border-b border-gray-300 mb-2 pb-2">
                         <!-- Field: weight -->
                         <dl class="flex w-full items-center">
-                            <div class="flex items-center gap-x-1.5">
+                            <div class="flex items-center gap-x-1.5 w-">
                                 <dt v-tooltip="trans('Weight')" class="flex-none">
                                     <FontAwesomeIcon icon="fal fa-weight" fixed-width class="text-gray-500" />
                                 </dt>
 
-                                <dd class="text-gray-500 sep">
+                                <dd class="text-gray-500 whitespace-nowrap">
                                     {{ box_stats?.products.estimated_weight || 0 }} {{ trans("kilogram") }}
                                 </dd>
                             </div>
