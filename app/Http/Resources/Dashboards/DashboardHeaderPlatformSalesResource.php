@@ -37,78 +37,79 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
         ];
 
         $newChannelsColumns = [
-            'new_channels' => [
+            'channels' => [
                 'formatted_value'   => __('Channels'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_channels'
+                'scope'             => 'channels',
+                'information'       => 'This is only showing opened channels' // Todo: In FE
             ],
-            'new_channels_minified' => [
+            'channels_minified' => [
                 'formatted_value'   => __('Channels'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_channels'
+                'scope'             => 'channels'
             ]
         ];
 
         $newPortfoliosColumns = [
-            'new_portfolios' => [
+            'portfolios' => [
                 'formatted_value'   => __('Portfolios'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_portfolios'
+                'scope'             => 'portfolios'
             ],
-            'new_portfolios_minified' => [
+            'portfolios_minified' => [
                 'formatted_value'   => __('Portfolios'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_portfolios'
+                'scope'             => 'portfolios'
             ]
         ];
 
         $newCustomersColumns = [
-            'new_customers' => [
+            'customers' => [
                 'formatted_value'   => __('Customers'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_customers'
+                'scope'             => 'customers'
             ],
-            'new_customers_minified' => [
+            'customers_minified' => [
                 'formatted_value'   => __('Customers'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_customers'
+                'scope'             => 'customers'
             ]
         ];
 
-        $newCustomerClientColumns = [
-            'new_customer_client' => [
-                'formatted_value'   => __('Customer Client'),
+        $newCustomerClientsColumns = [
+            'customer_clients' => [
+            'formatted_value'   => __('Customer Clients'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_customer_client'
+                'scope'             => 'customer_clients'
             ],
-            'new_customer_client_minified' => [
-                'formatted_value'   => __('Customer Client'),
+            'customer_clients_minified' => [
+                'formatted_value'   => __('Customer Clients'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'new_customer_client'
+                'scope'             => 'customer_clients'
             ]
         ];
 
@@ -239,7 +240,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
             $newChannelsColumns,
             $newPortfoliosColumns,
             $newCustomersColumns,
-            $newCustomerClientColumns,
+            $newCustomerClientsColumns,
             $invoicesColumns,
             $model instanceof Shop ? $salesColumns : [],
             $model instanceof Shop ? $salesOrgCurrencyColumns : [],
