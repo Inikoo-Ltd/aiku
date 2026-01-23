@@ -195,7 +195,7 @@ const debounceUpdateQuantity = debounce(
                                             :max="item.available_quantity" />
                                     </div>
 
-                                    <ConditionIcon class="absolute ml-2 top-1/2 -translate-y-1/2 text-base"
+                                    <ConditionIcon class="absolute ml-1 top-[65%] right-[40%] -translate-y-1/2 text-base"
                                         :state="get(listState, [item.id, 'quantity'], null)" />
                                 </div>
 
