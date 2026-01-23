@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, watch, inject } from 'vue'
-import type { Component } from "vue";
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -19,16 +18,9 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus } from '@fal'
 import { faUserCog } from '@fas'
-import Tabs from "@/Components/Navigation/Tabs.vue";
-import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { data } from "autoprefixer"
-import { useTabChange } from "@/Composables/tab-change";
-import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
-import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
-import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
-import { usePage } from "@inertiajs/vue3"
 
 library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -49,9 +41,6 @@ const props = defineProps<{
 
 const comment = ref('')
 const isLoading = ref(false)
-const openTemplates = ref(false)
-const _beefree = ref()
-const _unlayer = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
 const email = ref([])
@@ -59,11 +48,11 @@ const templateName = ref('')
 const temporaryData = ref()
 const active = ref(props.status)
 const _popover = ref()
-const date = ref(new Date())
-const options = ref([
-    { name: 'Active', value: "active" },
-    { name: 'Suspended', value: "suspended" },
-]);
+const _beefree = ref<any>(null)
+
+type SaveIntent = 'save' | 'template' | null
+
+const saveIntent = ref<SaveIntent>(null)
 
 const lastBuilderResult = ref<{
     layout: string | null
@@ -78,34 +67,17 @@ const onBeefreeSave = (data: any) => {
         layout: data.jsonFile,
         compiled_layout: data.htmlFile,
     }
-}
 
-const onSendPublish = async (data: any) => {
-    try {
-        const response = await axios.post(route(props.publishRoute.name, props.publishRoute.parameters), {
-            comment: comment.value,
-            layout: JSON.parse(data?.jsonFile),
-            compiled_layout: data?.htmlFile
-        });
-
-        if (response && response.status === 200) {
-            notify({
-                title: "Success",
-                text: "Save and publish email successfully",
-                type: "success",
-            });
-        }
-    } catch (error) {
-        console.log(error)
-        const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
-        notify({
-            title: "Something went wrong.",
-            text: errorMessage,
-            type: "error",
-        });
-    } finally {
-        isLoading.value = false;
+    if (saveIntent.value === 'save') {
+        save(data.jsonFile)
     }
+
+    if (saveIntent.value === 'template') {
+        temporaryData.value = { ...lastBuilderResult.value }
+        visibleSAveEmailTemplateModal.value = true
+    }
+
+    saveIntent.value = null
 }
 
 const openSendTest = (data) => {
@@ -117,18 +89,18 @@ const openSendTest = (data) => {
 }
 
 const onSaveTemplate = async (data: any) => {
-    if (!lastBuilderResult.value.compiled_layout) {
+    saveIntent.value = 'template'
+
+    if (!_beefree.value?.beeInstance) {
         notify({
-            title: 'Please save editor first',
+            title: 'Editor not ready',
             type: 'warning',
         })
         return
     }
 
-    temporaryData.value = { ...lastBuilderResult.value }
-    visibleSAveEmailTemplateModal.value = true
+    _beefree.value.beeInstance.save()
 }
-
 
 const sendTestToServer = async () => {
     isLoading.value = true;
@@ -185,31 +157,7 @@ const saveTemplate = async (data: any) => {
         });
 }
 
-const updateActiveValue = async (action) => {
-    router.patch(route(action.name, action.parameters),
-        { active: active.value },
-        {
-            onStart: () => console.log('start'),
-            onSuccess: () => {
-                notify({
-                    title: trans('Success!'),
-                    text: trans('change status'),
-                    type: 'success',
-                })
-            },
-            onError: () => {
-                notify({
-                    title: trans('Something went wrong'),
-                    text: trans('Unsuccessfully change status'),
-                    type: 'error',
-                })
-            },
-            onFinish: () => console.log('finish'),
-        }
-    )
-}
-
-const autoSave = async (jsonFile) => {
+const save = async (jsonFile) => {
     axios
         .patch(
             route(props.updateRoute.name, props.updateRoute.parameters),
@@ -219,49 +167,20 @@ const autoSave = async (jsonFile) => {
             },
         )
         .then((response) => {
-            console.log("autosave successful:", response.data);
+            console.log("save successful:", response.data);
             // Handle success (equivalent to onFinish)
         })
         .catch((error) => {
-            console.error("autosave failed:", error);
+            console.error("save failed:", error);
             notify({
                 title: "Failed to save",
                 type: "error",
             })
         })
         .finally(() => {
-            console.log("autosave finished.");
+            console.log("save finished.");
         });
 }
-
-const onSchedulePublish = (event) => {
-    event.stopPropagation()
-    _popover.value.toggle(event);
-}
-
-const schedulePublish = async () => {
-    try {
-        const response = await axios.post(route('xxxxx'), {
-            comment: comment.value,
-            layout: JSON.parse(data?.jsonFile),
-            compiled_layout: data?.htmlFile
-        });
-        console.log("Publish response:", response.data);
-    } catch (error) {
-        console.log(error)
-        const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
-        notify({
-            title: "Something went wrong.",
-            text: errorMessage,
-            type: "error",
-        });
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-const isModalCloneTemplateEmail = ref(false)
-const activeSnapshot = ref(props.snapshot)
 </script>
 
 
@@ -270,7 +189,6 @@ const activeSnapshot = ref(props.snapshot)
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-
         </template>
     </PageHeading>
 
