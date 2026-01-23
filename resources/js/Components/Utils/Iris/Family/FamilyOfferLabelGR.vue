@@ -26,7 +26,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
     >
         
         <!-- Content -->
-        <div class="w-full relative flex items-center text-3xl">
+        <div class="w-full relative flex items-center text-2xl">
             {{ layout?.user?.gr_data?.customer_is_gr ? trans("Gold Reward Active") : trans("Gold Reward Inactive") }}
         </div>
 
