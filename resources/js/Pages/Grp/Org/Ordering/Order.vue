@@ -1276,7 +1276,7 @@ const onSubmitEditAllPercentage = async () => {
                                     fixed-width />
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
                                     note?.reference
-                                    }}
+                                }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                                     {{ trans(note?.state?.tooltip) }}
@@ -1389,10 +1389,11 @@ const onSubmitEditAllPercentage = async () => {
                                     {{ box_stats?.products.estimated_weight || 0 }} {{ trans("kilogram") }}
                                 </dd>
                             </div>
-
+                            rifqi
                             <!-- button edit all percentage -->
-                            <button v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))"
- class="ml-auto h-6" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
+                            <button
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))"
+                                class="ml-auto h-6" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                 v-tooltip="trans('Edit all discretionary discount')">
                                 <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
                                     class="h-4 text-gray-400 hover:text-gray-600" />
@@ -1492,7 +1493,7 @@ const onSubmitEditAllPercentage = async () => {
                                                         class="mt-1 focus:ring-0 focus:border-none" />
                                                     <div>
                                                         <label for="ingredient2" class="block">{{ trans("Manual")
-                                                            }}</label>
+                                                        }}</label>
                                                         <InputNumber
                                                             :modelValue="get(fieldSummary, ['data', 'new_shipping_amount'], get(fieldSummary, ['data', 'shipping_amount'], null))"
                                                             @update:modelValue="(v) => set(fieldSummary, ['data', 'new_shipping_amount'], v)"
@@ -1635,7 +1636,7 @@ const onSubmitEditAllPercentage = async () => {
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
-                        }}: {{
+                            }}: {{
                                 locale.currencyFormat(currency.code,
                                     box_stats.products.payment.pay_amount)
                             }}</span>
@@ -1660,7 +1661,7 @@ const onSubmitEditAllPercentage = async () => {
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
                         errorPaymentMethod
-                    }}</p>
+                        }}</p>
                 </Transition>
             </div>
         </div>
@@ -1696,7 +1697,7 @@ const onSubmitEditAllPercentage = async () => {
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
-                        }}: {{
+                            }}: {{
                                 locale.currencyFormat(currency.code,
                                     box_stats.products.payment.pay_amount)
                             }}</span>
