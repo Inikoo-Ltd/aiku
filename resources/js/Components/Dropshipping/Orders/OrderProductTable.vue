@@ -279,7 +279,7 @@ const onSubmitEditNetAmount = () => {
           transaction: selectedItemToEditNetAmount.value?.id
       }),
       {
-          discretionary_discount_percentage: selectedItemToEditNetAmount.value?.discretionary_discount_percentage
+          discretionary_offer: selectedItemToEditNetAmount.value?.discretionary_offer
       },
       {
           preserveScroll: true,
@@ -298,7 +298,7 @@ const onSubmitEditNetAmount = () => {
           onError: errors => {
               notify({
                   title: trans("Something went wrong"),
-                  text: errors?.discretionary_discount_percentage || trans("Failed to set discretionary discount percentage. Try again"),
+                  text: errors?.discretionary_offer || trans("Failed to set discretionary discount percentage. Try again"),
                   type: "error"
               })
           },
@@ -461,8 +461,8 @@ const onSubmitEditNetAmount = () => {
                     {{ trans("Discretionary discount percentage") }}:
                 </label>
                 <InputNumber
-                  :modelValue="get(selectedItemToEditNetAmount, 'discretionary_discount_percentage', 0)"
-                  @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_discount_percentage', e?.value)"
+                  :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
+                  @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)"
                   suffix="%"
                 />
             </div>

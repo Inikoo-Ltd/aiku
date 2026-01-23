@@ -89,6 +89,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $department_id
  * @property int|null $sub_department_id
  * @property string|null $discretionary_offer
+ * @property string|null $discretionary_offer_label
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
