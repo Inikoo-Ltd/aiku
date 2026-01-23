@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
+class CustomerHydrateOrderStats implements ShouldBeUnique
 {
     use AsAction;
 
@@ -17,14 +17,15 @@ class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
      *
      * @var string
      */
-    public string $commandSignature = 'hydrate:all-customers-sales-channel-stats';
+    // Update signature agar sesuai dengan nama baru
+    public string $commandSignature = 'hydrate:all-customers-order-stats';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    public string $commandDescription = 'Hydrate sales channel stats for all customers';
+    public string $commandDescription = 'Hydrate order related stats (sales channels, collection, etc) for all customers';
 
     public function getJobUniqueId(int|null $customerId): string
     {
@@ -39,7 +40,7 @@ class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
 
         $customer = Customer::find($customerId);
 
-        if (!$customer) {
+        if (! $customer) {
             return;
         }
 
@@ -68,6 +69,10 @@ class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
                 ->whereHas('salesChannel', function ($q) {
                     $q->where('type', SalesChannelTypeEnum::OTHER);
                 })->count(),
+
+            'number_orders_with_collection_address' => $customer->orders()
+                ->whereNotNull('collection_address_id')
+                ->count(),
         ];
 
         $customer->stats()->update($stats);
@@ -75,13 +80,13 @@ class CustomerHydrateCustomerSalesChannelStats implements ShouldBeUnique
 
     public function asCommand(Command $command): void
     {
-        $command->info('Starting hydration of customer sales channel stats...');
+        $command->info('Starting hydration of customer order stats...');
         $totalCustomers = Customer::count();
         $bar = $command->getOutput()->createProgressBar($totalCustomers);
         $bar->setFormat('%current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
-        Customer::chunkById(100, function ($customers) use ($bar) {
+        Customer::chunkById(1000, function ($customers) use ($bar) {
             foreach ($customers as $customer) {
                 $this->handle($customer->id);
                 $bar->advance();
