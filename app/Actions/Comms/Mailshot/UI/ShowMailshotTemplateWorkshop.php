@@ -81,27 +81,22 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     ]
 
                 ],
-                'unpublished_layout' => $emailTemplate->layout,
                 'snapshot'    => $emailTemplate->layout,
-                'builder'     => $emailTemplate->builder,
-                // TODO: check and make sure this route
-                'imagesUploadRoute'   => [
-                    'name'       => 'grp.models.email-template.images.store',
-                    'parameters' => $emailTemplate->id
-                ],
-                // TODO: check and make sure this route
                 'updateRoute'         => [
-                    'name'       => 'grp.models.shop.email-template.workshop.update',
+                    'name'       => 'grp.models.shop.email-template.update',
                     'parameters' => [
                         'shop' => $emailTemplate->shop_id,
-                        'mailshot' => $emailTemplate->id
+                        'emailTemplate' => $emailTemplate->id
                     ],
                     'method' => 'patch'
                 ],
-                // TODO: check and make sure this route
-                'loadRoute'           => [
-                    'name'       => 'grp.models.email-templates.content.show',
-                    'parameters' => $emailTemplate->id
+                'storeTemplateRoute' => [
+                    'name' => 'grp.models.shop.email-template.store.as-new-template',
+                    'parameters' => [
+                        'shop' => $emailTemplate->shop_id,
+                        'emailTemplate' => $emailTemplate->id
+                    ],
+                    'method' => 'post'
                 ],
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'organisationSlug' => $this->organisation->slug,

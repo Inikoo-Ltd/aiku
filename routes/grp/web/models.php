@@ -75,6 +75,7 @@ use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\SendNewsLetterNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
+use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
@@ -784,6 +785,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::name('email-template.')->prefix('email-template')->group(function () {
         Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
         Route::patch('{emailTemplate:id}', UpdateMailshotTemplate::class)->name('update')->withoutScopedBindings();
+        Route::post('{emailTemplate:id}/as-new-template', StoreMailshotAsNewTemplate::class)->name('store.as-new-template')->withoutScopedBindings();
     });
 });
 

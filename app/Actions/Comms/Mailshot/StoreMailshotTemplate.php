@@ -32,7 +32,8 @@ class StoreMailshotTemplate extends OrgAction
         data_set($modelData, 'builder', EmailTemplateBuilderEnum::BEEFREE->value);
         data_set($modelData, 'data', $defaultMailshotTemplate->data);
         data_set($modelData, 'language_id', $defaultMailshotTemplate->language_id);
-        data_set($modelData, 'state', EmailTemplateStateEnum::IN_PROCESS->value);
+        data_set($modelData, 'state', EmailTemplateStateEnum::ACTIVE->value);
+        data_set($modelData, 'active_at', now());
         data_set($modelData, 'is_seeded', false);
         data_set($modelData, 'arguments', $defaultMailshotTemplate->arguments);
         data_set($modelData, 'layout', $defaultMailshotTemplate->layout);
