@@ -85,7 +85,9 @@ class ShowMailshotTemplateWorkshop extends OrgAction
 
                 ],
                 'builder'     => $emailTemplate->builder,
-                'snapshot'    => $emailTemplate->layout,
+                'snapshot'    => [
+                    'layout' => $emailTemplate->layout,
+                ],
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.email-template.update',
                     'parameters' => [
@@ -102,6 +104,22 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
+                'deleteTemplateRoute' => [
+                    'name' => 'grp.models.shop.email-template.delete',
+                    'parameters' => [
+                        'shop' => $emailTemplate->shop_id,
+                        'emailTemplate' => $emailTemplate->id
+                    ],
+                    'method' => 'delete'
+                ],
+                'indexRoute' => [
+                    'name' => 'grp.org.shops.show.marketing.templates.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug
+                    ],
+                ],
+
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'organisationSlug' => $this->organisation->slug,
             ]

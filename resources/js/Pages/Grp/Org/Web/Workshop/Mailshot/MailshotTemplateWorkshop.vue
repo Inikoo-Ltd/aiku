@@ -3,11 +3,11 @@ import { ref, computed, watch, inject } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
 import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Dialog from 'primevue/dialog';
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { trans } from "laravel-vue-i18n"
@@ -16,11 +16,10 @@ import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faTrashAlt } from '@fal'
 import { faUserCog } from '@fas'
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
-import { data } from "autoprefixer"
 
 library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -32,53 +31,20 @@ const props = defineProps<{
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
-    status: string
-    publishRoute: routeType
     sendTestRoute: routeType
     storeTemplateRoute: routeType
+    deleteTemplateRoute: routeType
     organisationSlug: string
+    indexRoute: routeType
 }>()
 
-const comment = ref('')
 const isLoading = ref(false)
+const inProgress = ref(false)
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
 const email = ref([])
 const templateName = ref('')
 const temporaryData = ref()
-const active = ref(props.status)
-const _popover = ref()
-const _beefree = ref<any>(null)
-
-type SaveIntent = 'save' | 'template' | null
-
-const saveIntent = ref<SaveIntent>(null)
-
-const lastBuilderResult = ref<{
-    layout: string | null
-    compiled_layout: string | null
-}>({
-    layout: null,
-    compiled_layout: null,
-})
-
-const onBeefreeSave = (data: any) => {
-    lastBuilderResult.value = {
-        layout: data.jsonFile,
-        compiled_layout: data.htmlFile,
-    }
-
-    if (saveIntent.value === 'save') {
-        save(data.jsonFile)
-    }
-
-    if (saveIntent.value === 'template') {
-        temporaryData.value = { ...lastBuilderResult.value }
-        visibleSAveEmailTemplateModal.value = true
-    }
-
-    saveIntent.value = null
-}
 
 const openSendTest = (data) => {
     visibleEmailTestModal.value = true
@@ -88,19 +54,6 @@ const openSendTest = (data) => {
     }
 }
 
-const onSaveTemplate = async (data: any) => {
-    saveIntent.value = 'template'
-
-    if (!_beefree.value?.beeInstance) {
-        notify({
-            title: 'Editor not ready',
-            type: 'warning',
-        })
-        return
-    }
-
-    _beefree.value.beeInstance.save()
-}
 
 const sendTestToServer = async () => {
     isLoading.value = true;
@@ -123,16 +76,21 @@ const sendTestToServer = async () => {
     }
 };
 
+const onSaveTemplate = (data: any) => {
+    visibleSAveEmailTemplateModal.value = true
+    temporaryData.value = {
+        layout: data?.jsonFile
+    }
+}
+
 const saveTemplate = async (data: any) => {
     isLoading.value = true;
-
     axios
         .post(
             route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
             {
                 name: templateName.value,
                 layout: JSON.parse(temporaryData.value?.layout),
-                compiled_layout: temporaryData.value?.compiled_layout,
             },
         )
         .then((response) => {
@@ -157,29 +115,77 @@ const saveTemplate = async (data: any) => {
         });
 }
 
-const save = async (jsonFile) => {
-    axios
-        .patch(
-            route(props.updateRoute.name, props.updateRoute.parameters),
-            {
-                layout: JSON.parse(jsonFile),
-                /*  compiled_layout: htmlFile */
-            },
-        )
-        .then((response) => {
-            console.log("save successful:", response.data);
-            // Handle success (equivalent to onFinish)
-        })
-        .catch((error) => {
-            console.error("save failed:", error);
+const onSave = async (data: any) => {
+    try {
+        const response = await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
+            layout: JSON.parse(data?.jsonFile),
+            compiled_layout: data?.htmlFile
+        });
+
+        if (response && response.status === 200) {
             notify({
-                title: "Failed to save",
-                type: "error",
+                title: "Success",
+                text: "Successfully updated template",
+                type: "success",
+            });
+        }
+    } catch (error) {
+        console.log(error)
+        const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
+        notify({
+            title: "Something went wrong.",
+            text: errorMessage,
+            type: "error",
+        });
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+
+const handleDelete = async () => {
+    if (inProgress.value) {
+        return;
+    }
+
+    inProgress.value = true;
+
+    if (!props.deleteTemplateRoute) {
+        notify({
+            title: 'Error',
+            text: 'Delete route not configured',
+        })
+        inProgress.value = false;
+        return;
+    }
+
+    await axios.delete(route(props.deleteTemplateRoute.name, props.deleteTemplateRoute.parameters))
+        .then((response) => {
+            notify({
+                title: trans('Success!'),
+                text: trans('Template deleted successfully'),
+                type: 'success',
             })
         })
+        .catch((error) => {
+            console.log(error);
+            if (error.response) {
+                notify({
+                    title: 'Error',
+                    text: error.response.data.message || 'Failed to delete template',
+                })
+            } else {
+                notify({
+                    title: 'Error',
+                    text: 'Failed to delete template',
+                })
+            }
+            inProgress.value = false;
+        })
         .finally(() => {
-            console.log("save finished.");
-        });
+            inProgress.value = false;
+            router.visit(route(props.indexRoute.name, props.indexRoute.parameters));
+        })
 }
 </script>
 
@@ -188,18 +194,25 @@ const save = async (jsonFile) => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #otherBefore>
+        <template #other>
+            <ModalConfirmation :title="trans('Are you sure you want to delete this template?')"
+                :description="trans('This action cannot be undone. This will permanently delete this template')"
+                isFullLoading>
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button :disabled="inProgress" :icon="faTrashAlt" type="negative" @click="changeModel" />
+                </template>
+                <template #btn-yes>
+                    <Button :label="trans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
+                        type="negative" :icon="faTrashAlt" />
+                </template>
+            </ModalConfirmation>
         </template>
     </PageHeading>
 
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onBeefreeSave"
+        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSave"
         @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
-
-    <!-- unlayer -->
-    <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot" ref="_unlayer" />
 
     <div v-else>
         <EmptyState :data="{

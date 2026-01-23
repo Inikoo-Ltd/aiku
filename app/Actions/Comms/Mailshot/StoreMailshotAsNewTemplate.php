@@ -43,7 +43,6 @@ class StoreMailshotAsNewTemplate extends OrgAction
         $rules = [
             'name'        => ['required', 'string', 'max:255'],
             'layout'      => ['required', 'array'],
-            'compiled_layout' => ['required', 'string'],
         ];
 
         return $rules;

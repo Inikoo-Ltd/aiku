@@ -64,6 +64,7 @@ use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
+use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
 use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
@@ -786,6 +787,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
         Route::patch('{emailTemplate:id}', UpdateMailshotTemplate::class)->name('update')->withoutScopedBindings();
         Route::post('{emailTemplate:id}/as-new-template', StoreMailshotAsNewTemplate::class)->name('store.as-new-template')->withoutScopedBindings();
+        Route::delete('{emailTemplate:id}', DeleteMailshotTemplate::class)->name('delete')->withoutScopedBindings();
     });
 });
 
