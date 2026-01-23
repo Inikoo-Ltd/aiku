@@ -67,8 +67,8 @@ class LaunchWebsite extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!$request->exists('status') and $request->has('state')) {
-            $status = match ($request->get('state')) {
+        if (!$request->exists('status') && $request->has('state')) {
+            $status = match ($request->input('state')) {
                 WebsiteStateEnum::LIVE->value => true,
                 default                       => false
             };

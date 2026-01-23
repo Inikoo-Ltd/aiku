@@ -25,7 +25,7 @@ class FulfillOrderToShopify extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Order $order, DeliveryNote $deliveryNote = null): void
+    public function handle(Order $order, ?DeliveryNote $deliveryNote = null): void
     {
         $fulfillOrderId = $order->platform_order_id;
 

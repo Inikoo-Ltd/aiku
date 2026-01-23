@@ -200,7 +200,8 @@ class CalculateOrderDiscounts
             return $order->customer->last_invoiced_at;
         });
         $this->isLastInvoicedSet     = true;
-        $this->daysSinceLastInvoiced = $lastInvoiced ? -now()->diffInDays($lastInvoiced) : null;
+        // Explicitly cast to int to prevent PHP 8.4+ precision loss warnings
+        $this->daysSinceLastInvoiced = $lastInvoiced ? (int) -now()->diffInDays($lastInvoiced) : null;
 
         return $this->daysSinceLastInvoiced;
     }

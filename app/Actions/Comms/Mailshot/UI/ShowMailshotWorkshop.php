@@ -110,9 +110,9 @@ class ShowMailshotWorkshop extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (string $type, Mailshot $mailshot, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (string $type, Mailshot $mailshot, array $routeParameters, ?string $suffix = null) {
             return [
                 [
                     'type'           => $type,

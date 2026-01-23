@@ -264,7 +264,7 @@ class ShowCustomer extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (Customer $customer, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (Customer $customer, array $routeParameters, ?string $suffix = null) {
             return [
                 [
 

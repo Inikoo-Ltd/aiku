@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faSignIn, faMedal } from '@fal'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
 import { faMedal as fasMedal } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -30,7 +30,7 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 
-library.add(faHome, faImage, faSparkles, faSignIn, faExclamationTriangle, faMedal, fasMedal, fadMedal, faWhatsapp)
+library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 

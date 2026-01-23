@@ -44,7 +44,7 @@ class ConnectMayaWithCredentials
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        $user = User::where('username', $request->get('username'))->first();
+        $user = User::where('username', $request->input('username'))->first();
 
 
         if (!$user) {

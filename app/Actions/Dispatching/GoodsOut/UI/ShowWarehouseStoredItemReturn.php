@@ -116,7 +116,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
         $navigation = PalletReturnTabsEnum::navigation($palletReturn);
         unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
-        $this->tab = $request->get('tab', array_key_first($navigation));
+        $this->tab = $request->input('tab', array_key_first($navigation));
 
 
         $afterTitle = [

@@ -101,7 +101,7 @@ class ShowInvoiceCategory extends OrgAction
 
     public function getBreadcrumbs(InvoiceCategory $invoiceCategory, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (InvoiceCategory $invoiceCategory, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (InvoiceCategory $invoiceCategory, array $routeParameters, ?string $suffix = null) {
             return [
                 [
 

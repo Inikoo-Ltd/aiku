@@ -393,17 +393,17 @@ class InertiaTable
 
     public function column(
         string $key,
-        array|string $label = null,
-        string $shortLabel = null,
-        array|string $icon = null,
-        string $tooltip = null,
+        array|string|null $label = null,
+        ?string $shortLabel = null,
+        array|string|null $icon = null,
+        ?string $tooltip = null,
         bool $canBeHidden = true,
         bool $hidden = false,
         bool $sortable = false,
         bool $searchable = false,
-        string $type = null,
-        string $align = null,
-        string $className = null,
+        ?string $type = null,
+        ?string $align = null,
+        ?string $className = null,
         bool $isInterval = false
     ): self {
         $this->columns = $this->columns->reject(function (Column $column) use ($key) {
@@ -443,26 +443,26 @@ class InertiaTable
     }
 
 
-    public function withGlobalSearch(string $label = null): self
+    public function withGlobalSearch(?string $label = null): self
     {
         return $this->searchInput('global', $label ?: __('Search on table...'));
     }
 
-    public function withModelOperations(array $modelOperations = null): self
+    public function withModelOperations(?array $modelOperations = null): self
     {
         $this->modelOperations = collect($modelOperations);
 
         return $this;
     }
 
-    public function withExportLinks(array $exportLinks = null): self
+    public function withExportLinks(?array $exportLinks = null): self
     {
         $this->exportLinks = collect($exportLinks);
 
         return $this;
     }
 
-    public function withEmptyState(array $emptyState = null): self
+    public function withEmptyState(?array $emptyState = null): self
     {
         $this->emptyState = collect($emptyState);
 
@@ -476,14 +476,14 @@ class InertiaTable
         return $this;
     }
 
-    public function withLabelRecord(array $labelRecord = null): self
+    public function withLabelRecord(?array $labelRecord = null): self
     {
         $this->labelRecord = $labelRecord;
 
         return $this;
     }
 
-    public function withTitle(string $title, array $leftIcon = null): self
+    public function withTitle(string $title, ?array $leftIcon = null): self
     {
         $this->title = [
             'title'    => $title,
@@ -494,7 +494,7 @@ class InertiaTable
     }
 
 
-    public function searchInput(string $key, string $label = null, string $defaultValue = null): self
+    public function searchInput(string $key, ?string $label = null, ?string $defaultValue = null): self
     {
         $this->searchInputs = $this->searchInputs->reject(function (SearchInput $searchInput) use ($key) {
             return $searchInput->key === $key;
@@ -522,7 +522,7 @@ class InertiaTable
      * @return $this
      * @noinspection PhpUnused
      */
-    public function selectFilter(string $key, array $options, string $label = null, string $defaultValue = null, bool $noFilterOption = true, string $noFilterOptionLabel = null): self
+    public function selectFilter(string $key, array $options, ?string $label = null, ?string $defaultValue = null, bool $noFilterOption = true, ?string $noFilterOptionLabel = null): self
     {
         $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
             return $filter->key === $key;

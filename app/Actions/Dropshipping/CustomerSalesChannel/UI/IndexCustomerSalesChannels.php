@@ -35,7 +35,7 @@ class IndexCustomerSalesChannels extends OrgAction
 
     private Customer|Platform $parent;
 
-    public function handle(Customer|Platform $parent, Shop $shop = null, $prefix = null): LengthAwarePaginator
+    public function handle(Customer|Platform $parent, ?Shop $shop = null, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -138,7 +138,7 @@ class IndexCustomerSalesChannels extends OrgAction
     }
 
 
-    public function tableStructure(Customer|Platform $parent, array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Customer|Platform $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {

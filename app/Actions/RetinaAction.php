@@ -56,7 +56,7 @@ class RetinaAction
         $this->fulfilment   = $fulfilment;
         $this->shop         = $this->fulfilment->shop;
         $this->organisation = $this->shop->organisation;
-        $this->website      = $request->get('website');
+        $this->website      = $request->input('website');
         $this->fillFromRequest($request);
         $this->validatedData = $this->validateAttributes();
 
@@ -66,7 +66,7 @@ class RetinaAction
     public function initialisation(ActionRequest $request): static
     {
 
-        $this->website = $request->get('website');
+        $this->website = $request->input('website');
         $this->organisation = $this->website->organisation;
         $this->shop    = $this->website->shop;
         if ($this->shop->type === ShopTypeEnum::FULFILMENT) {
@@ -123,7 +123,7 @@ class RetinaAction
 
     public function logoutInitialisation(ActionRequest $request): static
     {
-        $this->website = $request->get('website');
+        $this->website = $request->input('website');
 
         $this->shop         = $this->website->shop;
         $this->fulfilment   = $this->shop->fulfilment;

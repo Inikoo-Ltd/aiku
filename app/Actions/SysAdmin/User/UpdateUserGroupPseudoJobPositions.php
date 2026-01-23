@@ -106,7 +106,7 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $this->set('job_position_codes', $request->get('permissions', []));
+        $this->set('job_position_codes', $request->input('permissions', []));
     }
 
     public function asController(User $user, ActionRequest $request): User

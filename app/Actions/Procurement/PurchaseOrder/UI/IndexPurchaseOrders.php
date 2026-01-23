@@ -119,7 +119,7 @@ class IndexPurchaseOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($parent, array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {

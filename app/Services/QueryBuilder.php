@@ -143,7 +143,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this;
     }
 
-    public function withIrisPaginator(int $numberOfRecords = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withIrisPaginator(?int $numberOfRecords = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         if ($numberOfRecords === null && request()->has('perPage')) {
             $numberOfRecords = (int)request()->input('perPage');
@@ -162,19 +162,19 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this->paginate(perPage: $perPage);
     }
 
-    public function withRetinaPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withRetinaPaginator(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         return $this->processPagination($prefix, $numberOfRecords, $tableName, $queryName, 'web-user');
     }
 
 
-    public function withPaginator(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function withPaginator(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         return $this->processPagination($prefix, $numberOfRecords, $tableName, $queryName);
     }
 
 
-    private function processPagination(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    private function processPagination(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
 
 

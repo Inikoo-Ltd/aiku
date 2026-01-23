@@ -40,8 +40,8 @@ class GetEbayProducts extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $request->merge([
-            'query' => $request->get('query'),
-            'offset' => $request->get('offset'),
+            'query' => $request->input('query'),
+            'offset' => $request->input('offset'),
         ]);
     }
 

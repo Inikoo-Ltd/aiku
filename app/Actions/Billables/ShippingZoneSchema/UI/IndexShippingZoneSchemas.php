@@ -203,7 +203,7 @@ class IndexShippingZoneSchemas extends OrgAction
         return $this->handle(parent: $shop);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

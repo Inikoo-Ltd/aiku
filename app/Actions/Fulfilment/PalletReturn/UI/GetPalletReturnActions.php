@@ -251,7 +251,7 @@ class GetPalletReturnActions
 
     public function getPalletReturnPickedActions(PalletReturn $palletReturn): array
     {
-        $actions=[];
+        $actions = [];
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
 
             $actions[] =
@@ -289,7 +289,7 @@ class GetPalletReturnActions
                 ];
         }
 
-        $actions[]=
+        $actions[] =
             [
                 'type'    => 'button',
                 'style'   => 'save',

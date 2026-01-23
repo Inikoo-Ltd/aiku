@@ -42,7 +42,7 @@ class UpdateCollectionImages extends OrgAction
                             ->first()?->id,
                         ['sub_scope' => null]
                     );
-             } else {
+            } else {
                 $media = Media::find($mediaId);
 
                 if ($media) {

@@ -27,6 +27,11 @@ import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
 import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel.vue"
+import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
+import ProductPrices2 from "../ProductPrices2.vue"
+import { Popover } from "primevue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
 
 
 
@@ -54,7 +59,36 @@ interface ProductResource {
 
 const props = withDefaults(
     defineProps<{
-        fieldValue: any
+        fieldValue: {
+            product: {   // WebBlockProductResource
+                discounted_price: number
+                discounted_price_per_unit: number
+                discounted_profit: number
+                discounted_profit_per_unit: number
+                discounted_margin: number
+
+                offers_data: {
+                    number_offers: 1
+                    offers: {
+                        state: string
+                        type: string
+                        label: string
+                        allowances: {
+                            class: string
+                            type: string
+                            label: string
+                            percentage_off: string
+                        }[]
+                        triggers_labels: string[]
+                        max_percentage_discount: string
+                    }[]
+                    best_percentage_off: {
+                        percentage_off: string
+                        offer_id: number
+                    }
+                }
+            }
+        }
         webpageData?: any
         blockData?: object
         screenType: "mobile" | "tablet" | "desktop"
@@ -68,6 +102,8 @@ const props = withDefaults(
     }>(),
     {}
 )
+
+const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
     (e: "setFavorite", value: any[]): void
@@ -101,7 +137,16 @@ watch(
 )
 
 
+const _popoverProfit = ref(null)
 
+// console.log('fdsfds', props.fieldValue.product)
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return product.value?.offers_data?.offers?.[offerId] 
+}
 </script>
 
 
@@ -198,9 +243,157 @@ watch(
                     :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
                     :offer_price_per_unit="customerData?.offer_price_per_unit"
                 />
+                <!-- <ProductPrices2
+                    :field-value="fieldValue"
+                    :key="product.code"
+                    :offers_data="customerData?.offers_data"
+                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
+                    :offer_price_per_unit="customerData?.offer_price_per_unit"
+                /> -->
 
-                <!-- ADD TO CART -->
-                <div class="flex gap-2 mb-6">
+                <!-- Section: Member/Non Member label, Profit -->
+                <div class="flex justify-between">
+                    <!-- <template v-if="product.offers_data?.number_offers > 0">
+                        <template v-if="product?.offers_data?.offers?.some(e => e.type === 'Category Quantity Ordered Order Interval')">
+                            <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
+                            <NonMemberPriceLabel v-else :product
+                                :isShowAvailableGROffer="
+                                    (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
+                                    && !layout?.user?.gr_data?.customer_is_gr
+                                "
+                            />
+                        </template>
+                        <div v-else />
+                    </template>
+
+                    <div v-else /> -->
+                    <!-- <div>
+                        {{ product.offers_data.best_percentage_off.offer_id }}
+                        <pre><span class="bg-yellow-500">product.offers_data</span>: {{ getBestOffer(product?.offers_data?.best_percentage_off?.offer_id) }}</pre>
+                    </div> -->
+                    
+                    <!-- <NonMemberPriceLabel
+                        :product="product"
+                        :isShowAvailableGROffer="
+                            product.stock  // Same as button add to basket conditions
+                            && product.available_gr_offer_to_use?.trigger_data?.item_quantity
+                            && !layout?.user?.gr_data?.customer_is_gr
+                            && customerData?.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
+                        "
+                    /> -->
+                    <div>
+                        
+                    </div>
+
+                    
+                    <!-- <div class="flex justify-between items-end">
+                        <span @click="_popoverProfit?.toggle">Profit</span>:
+                        <span class="text-green-500 ml-1 font-bold">
+                            {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
+                        </span>
+                        <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
+                            class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+                        >
+                            <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                        </span>
+                    </div> -->
+
+                    <!-- Popover: Question circle GR member -->
+                    <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                        <div class="">                            
+                            <!-- Rows -->
+                            <div class="space-y-2 bg-gray-100 pr-4 border-b border-gray-500 pb-2">
+                                <!-- Section: Title Profit Breakdown -->
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="font-semibold text-[13px] text-slate-800">Profit Breakdown:</div>
+                                </div>
+
+                                <!-- Retail -->
+                                <div class="flex items-center justify-between pl-4 pr-24">
+                                    <div class="text-slate-700">Retail:</div>
+                                    <div class="font-semibold text-slate-900">
+                                        {{ locale.currencyFormat(layout?.iris?.currency?.code, fieldValue.product.rrp) }}
+                                        <span class="font-normal text-slate-500">Outer</span>
+                                        <template v-if="fieldValue.product.units > 1">
+                                            <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, fieldValue.product.rrp_per_unit) }}</span>
+                                            <span class="font-normal text-slate-500">/{{ fieldValue.product.unit }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Cost -->
+                                <div class="flex items-center justify-between pl-4 pr-24">
+                                    <div class="text-slate-700">Cost Price:</div>
+                                    <div class="font-semibold text-slate-900">
+                                        {{ locale.currencyFormat(layout?.iris?.currency?.code, fieldValue.product.price) }}
+                                        <span class="font-normal text-slate-500">Outer</span>
+                                        <template v-if="fieldValue.product.units > 1">
+                                            <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number((fieldValue.product.price / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}</span>
+                                            <span class="font-normal text-slate-500">/{{ fieldValue.product.unit }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Divider -->
+                                <div class="border-t border-slate-300 my-1 mr-24"></div>
+
+                                <!-- Profit 50% -->
+                                <div class="flex items-center justify-between pl-4">
+                                    <div class="text-slate-700">
+                                        Profit <span class="text-emerald-600 font-semibold">({{ fieldValue.product.margin }})</span>:
+                                    </div>
+                                    <div class="flex font-semibold text-emerald-600">
+                                        {{ locale.currencyFormat(layout?.iris?.currency?.code, fieldValue.product.rrp - fieldValue.product.price) }}
+                                        <span class="font-normal text-slate-500 ml-1">Outer</span>
+                                        <template v-if="fieldValue.product.units > 1">
+                                            <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, fieldValue.product.rrp_per_unit - fieldValue.product.price_per_unit) }}</span>
+                                            <span class="font-normal text-slate-500">/{{ fieldValue.product.unit }}</span>
+                                        </template>
+
+                                        <div class="w-24">
+                                            <div
+                                                class="w-fit ml-auto text-xs px-2 py-[2px] rounded-full bg-gray-200 border border-slate-300 text-slate-600 hover:bg-slate-50"
+                                            >
+                                                Excl. Vat
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Profit -->
+                            <div class="flex items-center justify-between pl-4 mt-2">
+                                <div class="text-slate-700">
+                                    Profit <span class="text-orange-500 font-semibold">({{ fieldValue.product.discounted_margin }})</span>:
+                                </div>
+
+                                <div class="flex items-center gap-2x">
+                                    <div class="font-semibold text-orange-500 mr-4">
+                                        {{ locale.currencyFormat(layout?.iris?.currency?.code, fieldValue.product.discounted_price) }}
+                                        <span class="font-normal text-slate-500">Outer</span>
+                                        <template v-if="fieldValue.product.units > 1">
+                                            <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, fieldValue.product.discounted_price_per_unit) }}</span>
+                                            <span class="font-normal text-slate-500">/{{ fieldValue.product.unit }}</span>
+                                        </template>
+                                    </div>
+
+                                    <div class="w-24 flex gap-x-2">
+                                        <img src="/assets/promo/gr.png" alt="Gold Reward Logo" class="h-7" />
+                                        <span class="text-xs text-orange-500 flex items-center gap-1">
+                                            Members <br />& Volume
+                                        </span>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </Popover>
+                </div>
+
+                <!-- <pre>{{ customerData?.offers_data }}</pre> -->
+
+                <!-- Section: ADD TO CART -->
+                <div class="mt-4 flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
                         <EcomAddToBasketv2 
                             v-if="product.stock"  
@@ -221,17 +414,7 @@ watch(
                     </LinkIris>
                 </div>
 
-                <AvailableGROfferLabel
-                    v-if="
-                        product.stock  // Same as button add to basket conditions
-                        && product.available_gr_offer_to_use?.trigger_data?.item_quantity
-                        && !layout?.user?.gr_data?.customer_is_gr
-                        && customerData?.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
-                    "
-                    :product
-                    class="w-fit"
-                />
-
+                
                 <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
                     <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
                         640: { slidesPerView: 4.5 },

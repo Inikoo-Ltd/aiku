@@ -38,7 +38,7 @@ class GetWooProducts extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $request->merge([
-            'query' => $request->get('query')
+            'query' => $request->input('query')
         ]);
     }
 

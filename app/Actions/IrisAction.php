@@ -40,7 +40,7 @@ class IrisAction
     public function initialisation(ActionRequest|array $request): static
     {
 
-        $this->website = $request->get('website');
+        $this->website = $request->input('website');
         $this->shop = $this->website->shop;
 
         $this->organisation = $this->website->organisation;

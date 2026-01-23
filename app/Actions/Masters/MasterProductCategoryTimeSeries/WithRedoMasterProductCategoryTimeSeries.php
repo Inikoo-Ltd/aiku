@@ -19,7 +19,7 @@ use Throwable;
 
 trait WithRedoMasterProductCategoryTimeSeries
 {
-    public function handle(MasterProductCategory $masterProductCategory, array $frequencies, Command $command = null, bool $async = true): void
+    public function handle(MasterProductCategory $masterProductCategory, array $frequencies, ?Command $command = null, bool $async = true): void
     {
         $type = MasterProductCategoryTypeEnum::from($this->restriction);
 

@@ -274,6 +274,23 @@ class CloneCatalogueStructure
             }
         }
 
+        if ($foundFamily && !$foundFamily->webpage) {
+            try {
+                $webpage = StoreProductCategoryWebpage::make()->action($foundFamily);
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'Published after cloning',
+                    ]
+                );
+            } catch (\Throwable $e) {
+                print $foundFamily->slug.' '.$e->getMessage()." can not create family webpage \n";
+            }
+        }
+        if ($foundFamily) {
+            MatchProductCategoryToMaster::run($foundFamily);
+        }
+
 
         return $foundFamily;
     }

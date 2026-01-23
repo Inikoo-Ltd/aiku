@@ -264,7 +264,7 @@ class IndexBlogWebpages extends OrgAction
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

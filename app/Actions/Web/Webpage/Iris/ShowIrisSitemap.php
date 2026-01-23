@@ -23,7 +23,7 @@ class ShowIrisSitemap
     public function asController(ActionRequest $request): Response
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
         // dd($website->id);
         $filePath = "sitemaps/sitemap_{$website->id}.xml";
 

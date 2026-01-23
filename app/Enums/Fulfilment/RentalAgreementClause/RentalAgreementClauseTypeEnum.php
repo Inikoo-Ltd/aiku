@@ -22,7 +22,7 @@ enum RentalAgreementClauseTypeEnum: string
     case SERVICE      = 'service';
     case RENTAL       = 'rental';
 
-    public static function labels(Shop|Organisation|ProductCategory $parent = null): array
+    public static function labels(Shop|Organisation|ProductCategory|null $parent = null): array
     {
         return [
             'product'      => __('Product'),

@@ -48,7 +48,7 @@ class HandleRetinaInertiaRequests extends Middleware
             };
         }
 
-        $website                           = $request->get('website');
+        $website                           = $request->input('website');
         $firstLoadOnlyProps['environment'] = app()->environment();
 
         $customerSalesChannels = [];

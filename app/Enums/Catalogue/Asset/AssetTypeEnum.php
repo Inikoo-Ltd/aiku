@@ -28,7 +28,7 @@ enum AssetTypeEnum: string
     case SHIPPING_ZONE = 'shipping_zone';
 
 
-    public static function labels(Shop|Organisation|Group|ProductCategory|Collection $parent = null): array
+    public static function labels(Shop|Organisation|Group|ProductCategory|Collection|null $parent = null): array
     {
         $labels = [
             'product'       => __('Product'),

@@ -34,8 +34,8 @@ class IndexStockFamilies extends OrgAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        if ($request->has('dateInterval') && DateIntervalEnum::tryFrom($request->get('dateInterval'))) {
-            $this->dateInterval = DateIntervalEnum::from($request->get('dateInterval'));
+        if ($request->has('dateInterval') && DateIntervalEnum::tryFrom($request->input('dateInterval'))) {
+            $this->dateInterval = DateIntervalEnum::from($request->input('dateInterval'));
         }
 
         $this->initialisationFromGroup(group(), $request);
