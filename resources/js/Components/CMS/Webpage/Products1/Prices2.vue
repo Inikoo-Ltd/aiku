@@ -12,6 +12,7 @@ import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel
 import { Popover } from "primevue"
 import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
 import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
+import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 library.add(faPlusCircle, faQuestionCircle)
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -91,6 +92,8 @@ const getBestOffer = (offerId: string) => {
 }
 
 // console.log('fffff', props.product.product_offers_data)
+
+const _popoverProfit = ref(null)
 </script>
 
 <template>
@@ -151,8 +154,12 @@ const getBestOffer = (offerId: string) => {
 
                 <!-- Section: Profit -->
                 <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col">
-                    <div>
-                        <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                    <div>                        
+                        <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
+                            class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+                        >
+                            <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                        </span>
                         {{ trans("Profit") }}:
                     </div>
                     <div class="font-bold text-green-700 text-sm">
@@ -161,6 +168,18 @@ const getBestOffer = (offerId: string) => {
                     <div class="italic text-xs">
                         <span class="text-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
                     </div>
+
+                    <!-- <div class="flex justify-between items-end">
+                        <span @click="_popoverProfit?.toggle">Profit</span>:
+                        <span class="text-green-500 ml-1 font-bold">
+                            {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
+                        </span>
+                    </div> -->
+
+                    <!-- Popover: Question circle GR member -->
+                    <Popover ref="_popoverProfit" :style="{ width: '450px' }" class="py-1 px-2 text-xxs">
+                        <ProfitCalculationList :product="product" />
+                    </Popover>
                 </div>
                 <!-- <div v-if="product?.margin" class="flex justify-end text-right flex-col">
                     <div>
