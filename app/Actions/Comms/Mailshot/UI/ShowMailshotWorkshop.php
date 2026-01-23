@@ -164,27 +164,15 @@ class ShowMailshotWorkshop extends OrgAction
 
     public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (string $type, Mailshot $mailshot, array $routeParameters, ?string $suffix = null) {
+        $headCrumb = function (Mailshot $mailshot, array $routeParameters) {
             return [
                 [
-                    'type'           => $type,
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Mailshots')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $mailshot->subject,
-                        ],
-
+                    'type' => 'simple',
+                    'simple' => [
+                        'route' => "#",
+                        'label' => __('Workshop')
                     ],
-                    'simple'         => [
-                        'route' => $routeParameters['model'],
-                        'label' => $mailshot->subject
-                    ],
-                    'suffix'         => $suffix
-                ],
+                ]
             ];
         };
 
@@ -198,18 +186,20 @@ class ShowMailshotWorkshop extends OrgAction
                     $routeParameters,
                 ),
                 $headCrumb(
-                    'modelWithIndex',
                     $mailshot,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.marketing.mailshots.index',
-                            'parameters' => $routeParameters
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.marketing.mailshots.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
+                    $routeParameters
+                ),
+            ),
+            'grp.org.shops.show.marketing.newsletters.workshop' =>
+            array_merge(
+                ShowMailshot::make()->getBreadcrumbs(
+                    $mailshot,
+                    'grp.org.shops.show.marketing.newsletters.show',
+                    $routeParameters,
+                ),
+                $headCrumb(
+                    $mailshot,
+                    $routeParameters,
                     $suffix
                 ),
             ),

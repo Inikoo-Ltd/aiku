@@ -32,6 +32,7 @@ Route::name("newsletters.")->prefix('newsletters')
         Route::get('create', CreateNewsletter::class)->name('create');
         Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
+        Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
     });
 Route::name("mailshots.")->prefix('mailshots')
     ->group(function () {
