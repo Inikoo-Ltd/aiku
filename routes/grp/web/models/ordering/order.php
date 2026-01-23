@@ -61,7 +61,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('return', StoreReturn::class)->name('return.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
-    Route::patch('update-discount', UpdateOrderDiscount::class)->name('update_discount');
+    Route::patch('update-discount', UpdateOrderDiscount::class)->name('discount.update');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');

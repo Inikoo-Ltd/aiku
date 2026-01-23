@@ -364,7 +364,7 @@ class ShowOrder extends OrgAction
                         ]
                     ],
                     'update_discount'            => [
-                        'name'       => 'grp.models.order.update_discount',
+                        'name'       => 'grp.models.order.discount.update',
                         'parameters' => [
                             'order' => $order->id
                         ]
