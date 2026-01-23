@@ -124,7 +124,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'available_quantity'   => $this->available_quantity,
             'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'         => $this->is_on_demand,
-            'is_variant'           => $this->variant_id ? true : false,
+            'variant'              => $this->variant_id,
             'product_offers_data'  => $productOffersData,
             'offers_data'          => $this->offers_data, // this come3 from transaction.offers_data
 

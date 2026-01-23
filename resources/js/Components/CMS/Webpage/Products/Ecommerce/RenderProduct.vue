@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from 'vue'
+import { inject, ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -69,6 +69,9 @@ const emits = defineEmits<{
 
 
 const isLoadingRemindBackInStock = ref(false)
+const showVariantPopover = ref(false)
+const variant = ref<any>(null)
+
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -199,12 +202,89 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 	}
 }
 
+const popoverRef = ref<HTMLElement | null>(null)
+
+const onClickOutside = (e: MouseEvent) => {
+  if (!popoverRef.value) return
+  if (!popoverRef.value.contains(e.target as Node)) {
+    showVariantPopover.value = false
+  }
+}
+
+const getAllProductFromVariant = async (variant_id: string) => {
+  if (!variant_id) return
+
+  showVariantPopover.value = false
+
+  try {
+    const response = await axios.get(
+      route("iris.json.variant", {
+        variant: variant_id,
+      })
+    )
+
+    variant.value = response.data
+    showVariantPopover.value = true
+  } catch (e) {
+    console.error("getAllProductFromVariant error", e)
+  }
+}
+
+const getVariantLabel = (index: number) => {
+  const entry = variant.value.data.product[index]
+  if (!entry) return null
+
+  return variant.value.data
+    .map(v => entry[v.label])
+    .filter(Boolean)
+    .join(" – ")
+}
+
+const listProducts = computed(() => {
+  if(!variant.value) return []
+  return variant.value.data.product
+    .map((v, index) => {
+      const baseProduct = variant.value.product.find(
+        p => p.id === v.product.id
+      )
+
+      if (!baseProduct) return null
+
+      return {
+        ...baseProduct,
+        is_leader: v.is_leader,
+        variant_label: getVariantLabel(index),
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (!a.variant_label) return 1
+      if (!b.variant_label) return -1
+
+      return a.variant_label.localeCompare(b.variant_label, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      })
+    })
+})
+
+
+onMounted(() => {
+  document.addEventListener("click", onClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", onClickOutside)
+})
+
+
 
 
 </script>
 
 <template>
-    <component 
+    <div class="relative">
+        <component 
         :is="getProductsRenderB2bComponent(code)" 
         :product="product"
         :buttonStyle="buttonStyle"
@@ -215,6 +295,7 @@ const onUnselectBackInStock = async (product: ProductResource) => {
         @unsetFavorite="onUnselectFavourite"
         @setBackInStock="onAddBackInStock"
         @unsetBackInStock="onUnselectBackInStock"
+        @onVariantClick="getAllProductFromVariant"
         basketButton
         :isLoadingFavourite
         :isLoadingRemindBackInStock
@@ -222,6 +303,19 @@ const onUnselectBackInStock = async (product: ProductResource) => {
         :bestSeller="bestSeller"
         :screenType
     />
+
+     <transition name="fade">
+        <div
+            v-if="showVariantPopover"
+            class="absolute left-0 top-[-1px] z-50 mt-2 w-full rounded-lg border bg-white shadow-lg"
+        >
+            <div class="p-4 text-sm">
+              {{ listProducts }}
+            </div>
+        </div>
+     </transition>
+    </div>
+    
 </template>
 
 <style scoped></style>

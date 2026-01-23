@@ -135,7 +135,7 @@ const toggleBackInStock = () =>
                     </div>
 
                     <!-- FAVOURITE -->
-                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
+                    <template v-if="layout?.iris?.is_logged_in && !product.variant">
                         <div v-if="isLoadingFavourite" class="absolute top-1 right-2 text-gray-500 text-xl z-10">
                             <LoadingIcon />
                         </div>
@@ -227,7 +227,7 @@ const toggleBackInStock = () =>
 
                 <!-- BUTTON -->
                 <div class="absolute right-2 bottom-1 flex items-center justify-end">
-                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
+                    <template v-if="layout?.iris?.is_logged_in && !product.variant">
                         <!-- In stock -->
                         <NewAddToCartButton
                             v-if="product.stock > 0 && basketButton && !product.is_coming_soon"
@@ -242,7 +242,7 @@ const toggleBackInStock = () =>
 
                         <!-- Back in stock notify -->
                          
-                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.is_variant" @click.prevent="toggleBackInStock"
+                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant" @click.prevent="toggleBackInStock"
                             class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all shadow-lg"
                             v-tooltip="product.is_back_in_stock
                                 ? trans('You will be notified')
