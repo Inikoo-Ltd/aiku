@@ -28,9 +28,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeriesRecord newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeriesRecord newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeriesRecord query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeriesRecord newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeriesRecord newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeriesRecord query()
  * @mixin \Eloquent
  */
 class PlatformTimeSeriesRecord extends Model
