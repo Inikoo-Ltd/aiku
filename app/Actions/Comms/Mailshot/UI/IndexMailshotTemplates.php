@@ -72,7 +72,6 @@ class IndexMailshotTemplates extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };

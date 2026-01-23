@@ -40,7 +40,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
     public function htmlResponse(EmailTemplate $emailTemplate, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Web/Workshop/Mailshot/MailshotTemplateWorkshop', // TODO: Update this patch later
+            'Org/Web/Workshop/Mailshot/MailshotTemplateWorkshop',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $emailTemplate,
@@ -60,8 +60,11 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                             'style' => 'exit',
                             'label' => __('Exit workshop'),
                             'route' => [
-                                'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters()),
+                                'name'       => 'grp.org.shops.show.marketing.templates.index',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop' => $this->shop->slug
+                                ]
                             ]
                         ],
                         [
@@ -108,55 +111,33 @@ class ShowMailshotTemplateWorkshop extends OrgAction
     // TODO: Update later
     public function getBreadcrumbs(EmailTemplate $emailTemplate, string $routeName, array $routeParameters, string $suffix = null): array
     {
-        $headCrumb = function (string $type, EmailTemplate $emailTemplate, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (EmailTemplate $emailTemplate, array $routeParameters, string $suffix = null) {
             return [
                 [
-                    'type'           => $type,
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Mailshots')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $emailTemplate->name,
-                        ],
-
+                    'type' => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => $emailTemplate->name,
                     ],
-                    'simple'         => [
-                        'route' => $routeParameters['model'],
-                        'label' => $emailTemplate->name
-                    ],
-                    'suffix'         => $suffix
-                ],
+                    'suffix' => __('(Workshop)'),
+                ]
             ];
         };
 
 
         return match ($routeName) {
-            // 'grp.org.shops.show.marketing.mailshots.workshop' =>
-            // array_merge(
-            //     ShowMailshot::make()->getBreadcrumbs(
-            //         $mailshot,
-            //         'grp.org.shops.show.marketing.mailshots.show',
-            //         $routeParameters,
-            //     ),
-            //     $headCrumb(
-            //         'modelWithIndex',
-            //         $mailshot,
-            //         [
-            //             'index' => [
-            //                 'name'       => 'grp.org.shops.show.marketing.mailshots.index',
-            //                 'parameters' => $routeParameters
-            //             ],
-            //             'model' => [
-            //                 'name'       => 'grp.org.shops.show.marketing.mailshots.show',
-            //                 'parameters' => $routeParameters
-            //             ]
-            //         ],
-            //         $suffix
-            //     ),
-            // ),
+            'grp.org.shops.show.marketing.templates.workshop' =>
+            array_merge(
+                IndexMailshotTemplates::make()->getBreadcrumbs(
+                    'grp.org.shops.show.marketing.templates.index',
+                    $routeParameters,
+                    parent: $this->shop
+                ),
+                $headCrumb(
+                    $emailTemplate,
+                    $routeParameters,
+                ),
+            ),
             default => []
         };
     }

@@ -95,6 +95,23 @@ trait HasUIMailshots
                 ShowPostRoom::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb([$parent->slug])
             ),
+            'grp.org.shops.show.marketing.templates.index' =>
+            array_merge(
+                MarketingHub::make()->getBreadcrumbs($routeName, $routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.templates.index',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Templates'),
+                            'icon'  => 'fal fa-bars'
+                        ],
+                    ],
+                ]
+            ),
             default => []
         };
     }
