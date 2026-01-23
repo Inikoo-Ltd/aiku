@@ -406,6 +406,7 @@ const onSubmitEditNetAmount = () => {
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
                             <Button
+                                  v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))"
                                 @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                 v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
                                 :icon="faMoneyCheckEditAlt" class="ml-1 !px-1" />
@@ -448,7 +449,7 @@ const onSubmitEditNetAmount = () => {
         </Table>
 
         <!-- Section: Modal edit discretionary discount -->
-        <Modal :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
+        <Modal v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))" :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
             <div class="text-center mb-4">
                 <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
                 <div class="opacity-80 italic text-sm">
