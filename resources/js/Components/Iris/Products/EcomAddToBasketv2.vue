@@ -194,7 +194,7 @@ const debouncedSync = debounce(() => {
 const incrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
 
-    if (current >= customer.value.stock && !product.value.is_on_demand) {
+    if (current >= customer.value.stock) {
         showWarning()
         return
     }
