@@ -73,6 +73,7 @@ class UpdateVariant extends OrgAction
                 PublishWebpage::make()->action($webpage, [
                     'comment' => 'first publish'
                 ]);
+                $leader->refresh();
             }
 
             foreach ($productsInVariant as $product) {
