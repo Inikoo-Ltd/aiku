@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch } from "vue"
+import { ref, inject, computed, watch, onMounted, nextTick } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus, faChevronCircleLeft, faChevronCircleRight } from "@fas"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
@@ -32,6 +32,8 @@ import ProductPrices2 from "../ProductPrices2.vue"
 import { Popover } from "primevue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
+
+import { Navigation, Thumbs } from 'swiper/modules'
 
 
 
@@ -147,6 +149,34 @@ const getBestOffer = (offerId: string) => {
 
     return product.value?.offers_data?.offers?.[offerId] 
 }
+
+
+
+const variantPrevEl = ref<HTMLElement | null>(null)
+const variantNextEl = ref<HTMLElement | null>(null)
+
+const varinatNavigation = ref({
+  prevEl: null as HTMLElement | null,
+  nextEl: null as HTMLElement | null,
+})
+
+watch([variantPrevEl, variantNextEl], () => {
+  if (variantPrevEl.value && variantNextEl.value) {
+    varinatNavigation.value = {
+      prevEl: variantPrevEl.value,
+      nextEl: variantNextEl.value,
+    }
+  }
+})
+
+onMounted(async () => {
+  await nextTick()
+  varinatNavigation.value.prevEl = variantPrevEl.value
+  varinatNavigation.value.nextEl = variantNextEl.value
+})
+
+
+
 </script>
 
 
@@ -416,10 +446,23 @@ const getBestOffer = (offerId: string) => {
 
                 
                 <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
-                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
-                        640: { slidesPerView: 4.5 },
-                        1024: { slidesPerView: 4 }
-                    }">
+                    <Swiper :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6"
+                        :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                            640: { slidesPerView: 4.5 },
+                            1024: { slidesPerView: 4 }
+                        }">
+
+                        <div class="absolute inset-0 pointer-events-none z-50">
+                            <div ref="variantPrevEl"
+                                class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleLeft" />
+                            </div>
+
+                            <div ref="variantNextEl"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleRight" />
+                            </div>
+                        </div>
 
                         <SwiperSlide v-for="item in listProducts" :key="item.id">
                             <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
@@ -564,10 +607,22 @@ const getBestOffer = (offerId: string) => {
 
 
           <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md my-4">
-                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                    <Swiper  :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
                         640: { slidesPerView: 4.5 },
                         1024: { slidesPerView: 4 }
                     }">
+
+                     <div class="absolute inset-0 pointer-events-none z-50">
+                            <div ref="variantPrevEl"
+                                class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleLeft" />
+                            </div>
+
+                            <div ref="variantNextEl"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleRight" />
+                            </div>
+                        </div>
 
                         <SwiperSlide v-for="item in listProducts" :key="item.id">
                             <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[

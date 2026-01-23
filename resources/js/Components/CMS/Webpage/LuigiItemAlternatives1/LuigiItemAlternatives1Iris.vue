@@ -106,7 +106,7 @@ const isFetched = ref(false)
         } */
 
         const response = await axios.post(
-            route('iris.json.luigi.last_seen'),
+            route('iris.json.luigi.product_recommendation'),
             {
                 luigi_identity: '',
                 recommendation_type : 'item_detail_alternatives',

@@ -19,15 +19,21 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 <template>
     <section
         class="relative flex justify-between w-full md:w-fit overflow-hidden rounded-lg px-px py-px shadow-md mb-2 bg-[#ff862f]"
-        aria-label="Colorful Volume Promotion">
+        aria-label="Volume Discount Offer Label">
 
         <!-- Content -->
         <div class="w-full relative flex items-center text-white font-bold px-7 text-4xl">
-            {{ offer.allowances?.[0].label }}
+            <span v-if="offer?.max_percentage_discount">
+                {{ Number(offer?.max_percentage_discount) * 100 }}%
+            </span>
+            <span v-else>{{ offer.allowances?.[0]?.label }}</span>
         </div>
         <div class="bg-white rounded-md px-2 py-1 flex items-center gap-x-4">
             <div>
-                <div class="whitespace-nowrap capitalize">{{ offer.allowances?.[0].class }}</div>
+                <!-- <div class="whitespace-nowrap capitalize">{{ offer.allowances?.[0].class }}</div> -->
+                <div class="whitespace-nowrap capitalize">
+                    {{ trans("Volume Discount") }}
+                </div>
                 <div class="text-xs whitespace-nowrap opacity-70">
                     {{ offer.triggers_labels?.join('/') }}
                 </div>
