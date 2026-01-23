@@ -363,6 +363,12 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'update_discount'            => [
+                        'name'       => 'grp.models.order.update_discount',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
                     'delivery_note'              => $deliveryNoteRoute
                 ],
 
