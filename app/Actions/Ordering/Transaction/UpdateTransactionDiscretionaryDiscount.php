@@ -9,10 +9,13 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateDiscretionaryOffersData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTransactionDiscretionaryDiscount extends OrgAction
@@ -24,24 +27,33 @@ class UpdateTransactionDiscretionaryDiscount extends OrgAction
 
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
-        dd('xxxxxx', $modelData);
+        if (Arr::get($modelData, 'discretionary_offer') == 0) {
+            $modelData['discretionary_offer'] = null;
+        }
+
+        $transaction->update($modelData);
+        OrderHydrateDiscretionaryOffersData::run($transaction->order);
+        CalculateOrderDiscounts::run($transaction->order);
+
 
         return $transaction;
     }
 
     public function rules(): array
     {
-        $rules = [
-            'discretionary_discount_percentage' => ['nullable', 'numeric', 'between:0,100'],
+        return [
+            'discretionary_offer'       => ['nullable', 'numeric', 'between:0,1'],
+            'discretionary_offer_label' => ['sometimes', 'nullable', 'string', 'max:255']
         ];
+    }
 
-
-        return $rules;
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $this->set('discretionary_offer', $request->input('discretionary_offer') / 100);
     }
 
     public function action(Transaction $transaction, array $modelData): Transaction
     {
-
         $this->initialisationFromShop($transaction->shop, $modelData);
 
         return $this->handle($transaction, $this->validatedData);
