@@ -17,11 +17,9 @@ use Illuminate\Support\Arr;
 use App\Http\Resources\Catalogue\IrisLuigiBoxRecommendationResource;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 
 class LuigiBoxRecommendation extends IrisAction
 {
-
     public function handle(ActionRequest $request): LengthAwarePaginator|array
     {
         $customer = $request->user();
@@ -89,7 +87,7 @@ class LuigiBoxRecommendation extends IrisAction
         $queryBuilder->whereIn('products.id', $productsInLuigi->keys());
         $queryBuilder->where('products.has_live_webpage', true);
 
-        if($recommendation_type != 'last_seen'){
+        if ($recommendation_type != 'last_seen') {
             $queryBuilder->where('products.available_quantity', '>', 0);
         }
 
@@ -105,7 +103,7 @@ class LuigiBoxRecommendation extends IrisAction
                 'products.unit',
                 'products.web_images',
             ]);
-        
+
         $result = $queryBuilder->defaultSort('name')
             ->withIrisPaginator($size)
             ->withQueryString();

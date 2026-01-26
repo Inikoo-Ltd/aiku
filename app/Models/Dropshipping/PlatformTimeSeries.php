@@ -24,9 +24,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Dropshipping\Platform $platform
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\PlatformTimeSeriesRecord> $records
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeries newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeries newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeries query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeries newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeries newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeries query()
  * @mixin \Eloquent
  */
 class PlatformTimeSeries extends Model

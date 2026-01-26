@@ -107,6 +107,7 @@ class StoreOrder extends OrgAction
             $modelData['customer_id'] = $parent->id;
             $modelData['currency_id'] = $parent->shop->currency_id;
             $modelData['shop_id']     = $parent->shop_id;
+            $modelData['sales_channel_id'] = Arr::get($modelData, 'sales_channel_id');
             $shop                     = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
             $modelData['customer_id']               = $parent->customer_id;

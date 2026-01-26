@@ -20,7 +20,7 @@ class IrisLuigiBoxRecommendationResource extends JsonResource
 
     public function toArray($request): array
     {
-        
+
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [

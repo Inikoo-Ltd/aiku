@@ -75,10 +75,10 @@ class WebBlockProductResource extends JsonResource
                 }
             }
         }
-        $gr_offer = null;
-        if ($this->family) {
-            $gr_offer = $this->family->getGROffer;
-        }
+        // $gr_offer = null;
+        // if ($this->family) {
+        //     $gr_offer = $this->family->getGROffer;
+        // }
         // until here
 
         return [
@@ -118,17 +118,17 @@ class WebBlockProductResource extends JsonResource
             'back_in_stock'                     => $back_in_stock,
 
 
-            'offers_data'                   => $this->offers_data,  // TODO
+            'offers_data'                   => $this->offers_data,
             'discounted_price'              => $this->price * .5,  // TODO
             'discounted_price_per_unit'     => $pricePerUnit * .5,  // TODO
             'discounted_profit'             => $profit * .5,  // TODO
             'discounted_profit_per_unit'    => $profitPerUnit * .5,  // TODO
             'discounted_margin'             => $margin,  // TODO
 
-            'available_gr_offer_to_use'             => $gr_offer ? [
-                'slug'          => $gr_offer->slug,
-                'trigger_data'  => $gr_offer->trigger_data,
-            ] : [],
+            // 'available_gr_offer_to_use'             => $gr_offer ? [
+            //     'slug'          => $gr_offer->slug,
+            //     'trigger_data'  => $gr_offer->trigger_data,
+            // ] : [],
 
             // ...$offers
         ];
