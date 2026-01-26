@@ -104,7 +104,7 @@ const luigiFetchRecommenders = async () => {
             return
         } */
 
-        const response = await axios.get(
+        const response = await axios.post(
             route('iris.json.luigi.product_recommendation'),
             {
                 luigi_identity: '',
