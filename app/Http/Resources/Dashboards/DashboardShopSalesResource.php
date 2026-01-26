@@ -77,6 +77,8 @@ class DashboardShopSalesResource extends JsonResource
                 'baskets_created_minified' => $routeTargets['inBasket'],
                 'baskets_created_org_currency' => $routeTargets['inBasket'],
                 'baskets_created_org_currency_minified' => $routeTargets['inBasket'],
+                'baskets_created_grp_currency' => $routeTargets['inBasket'],
+                'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
                 'invoices' => $routeTargets['invoices'],
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
@@ -89,6 +91,9 @@ class DashboardShopSalesResource extends JsonResource
                 'sales_org_currency',
                 'sales_org_currency_minified',
                 'sales_org_currency_delta',
+                'sales_grp_currency',
+                'sales_grp_currency_minified',
+                'sales_grp_currency_delta',
             ])
         );
 

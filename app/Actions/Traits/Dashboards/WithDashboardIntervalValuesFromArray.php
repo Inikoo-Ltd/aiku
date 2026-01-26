@@ -169,7 +169,7 @@ trait WithDashboardIntervalValuesFromArray
             if ($dataType != DashboardDataType::DELTA_LAST_YEAR && $dataType != DashboardDataType::PERCENTAGE) {
                 $dataType = DashboardDataType::CURRENCY;
             }
-            $options['currency'] = $options['currency'] ?? $data['shop_currency_code'] ?? $data['organisation_currency_code'] ?? 'GBP';
+            $options['currency'] = $options['currency'] ?? $data['shop_currency_code'] ?? $data['organisation_currency_code'] ?? $data['group_currency_code'] ?? 'GBP';
         }
 
         return [
