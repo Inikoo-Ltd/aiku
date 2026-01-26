@@ -108,7 +108,7 @@ class StoreOffer extends OrgAction
             'type'         => ['required', 'string'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
             'allowances'   => ['sometimes', 'nullable', 'array'],
-            'duration'     => ['sometimes', OfferDurationEnum::class],
+            'duration'     => ['sometimes', Rule::enum(OfferDurationEnum::class)],
         ];
         if (!$this->strict) {
             $rules['start_at']         = ['sometimes', 'nullable', 'date'];
