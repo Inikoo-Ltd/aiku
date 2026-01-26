@@ -2,7 +2,10 @@
 
 namespace App\Actions\Inventory\PickingTrolley;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingTrolleys;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePickingTrolleys;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePickingTrolleys;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Inventory\PickingTrolley;
@@ -23,7 +26,13 @@ class StorePickingTrolley extends OrgAction
         $modelData['organisation_id'] = $warehouse->organisation_id;
         $modelData['warehouse_id'] = $warehouse->id;
 
-        return PickingTrolley::create($modelData);
+        $pickingTrolley = PickingTrolley::create($modelData);
+
+        WarehouseHydratePickingTrolleys::dispatch($pickingTrolley->warehouse);
+        OrganisationHydratePickingTrolleys::dispatch($pickingTrolley->organisation);
+        GroupHydratePickingTrolleys::dispatch($pickingTrolley->group);
+
+        return $pickingTrolley;
     }
 
     public function rules(): array

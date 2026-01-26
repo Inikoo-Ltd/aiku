@@ -2,7 +2,10 @@
 
 namespace App\Actions\Inventory\PickedBay;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickedBays;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePickedBays;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePickedBays;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Inventory\PickedBay;
@@ -23,7 +26,13 @@ class StorePickedBay extends OrgAction
         $modelData['organisation_id'] = $warehouse->organisation_id;
         $modelData['warehouse_id'] = $warehouse->id;
 
-        return PickedBay::create($modelData);
+        $pickedBay = PickedBay::create($modelData);
+
+        WarehouseHydratePickedBays::dispatch($pickedBay->warehouse);
+        OrganisationHydratePickedBays::dispatch($pickedBay->organisation);
+        GroupHydratePickedBays::dispatch($pickedBay->group);
+
+        return $pickedBay;
     }
 
     public function rules(): array

@@ -13,6 +13,8 @@ use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickedBays;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingTrolleys;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStocks;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStoredItemAudits;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStoredItems;
@@ -42,6 +44,8 @@ class HydrateWarehouse
         WarehouseHydratePalletReturns::run($warehouse);
         WarehouseHydrateStoredItemAudits::run($warehouse);
         WarehouseHydrateStoredItems::run($warehouse);
+        WarehouseHydratePickingTrolleys::run($warehouse);
+        WarehouseHydratePickedBays::run($warehouse);
 
     }
 
