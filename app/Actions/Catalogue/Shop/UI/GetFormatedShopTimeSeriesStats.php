@@ -12,7 +12,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetShopTimeSeriesStats
+class GetFormatedShopTimeSeriesStats
 {
     use AsObject;
 
