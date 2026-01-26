@@ -9,8 +9,11 @@
 
 namespace App\Actions\Catalogue\Variant;
 
+use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
+use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Shop;
@@ -36,8 +39,9 @@ class UpdateVariant extends OrgAction
             $variant->update($modelData);
             $variant->refresh();
 
-            $products = $variant->allProduct();
-            $productIds = $variant->fetchProductFromData()->pluck('id');
+            $leader = $variant->leaderProduct;
+            $productsInVariant = $variant->fetchProductFromData();
+            $productIds = $productsInVariant->pluck('id');
 
             // Detach other product not in variant
             Product::where('variant_id', $variant->id)
@@ -64,12 +68,20 @@ class UpdateVariant extends OrgAction
                     'is_minion_variant' => false
                 ]);
 
-            foreach ($products->get() as $product) {
+            if(!$leader->webpage){
+                $webpage = StoreProductWebpage::run($leader);
+                PublishWebpage::make()->action($webpage, [
+                    'comment' => 'first publish'
+                ]);
+                $leader->refresh();
+            }
+
+            foreach ($productsInVariant as $product) {
                 if ($product->webpage()->exists()) {
                     UpdateWebpage::make()->action($product->webpage()->first(), [
                          'state_data' => [
                              'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-                             'redirect_webpage_id'   => $variant->leaderProduct->webpage->id
+                             'redirect_webpage_id'   => $variant->leaderProduct->webpage?->id
                          ]
                     ]);
                 }

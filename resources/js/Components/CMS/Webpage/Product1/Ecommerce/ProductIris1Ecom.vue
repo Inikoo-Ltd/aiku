@@ -26,7 +26,6 @@ import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
-import AvailableGROfferLabel from "@/Components/Utils/Iris/AvailableGROfferLabel.vue"
 import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
 import ProductPrices2 from "../ProductPrices2.vue"
 import { Popover } from "primevue"
@@ -35,6 +34,7 @@ import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vu
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 
 import { Navigation, Thumbs } from 'swiper/modules'
+import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 
 
 
@@ -96,8 +96,10 @@ const props = withDefaults(
         blockData?: object
         screenType: "mobile" | "tablet" | "desktop"
         validImages: object
-        customerData: any
-        product: ProductResource
+        customerData: {  // \Json\GetIrisProductEcomOrdering  (no cache)
+
+        }
+        product: ProductResource  // Catalogue\GetProductDetail (no cache)
         isLoadingRemindBackInStock: boolean
         isLoadingFavourite: boolean
         videoSetup: { url: string }
@@ -274,8 +276,10 @@ onMounted(async () => {
                     :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
                     :offer_price_per_unit="customerData?.offer_price_per_unit"
                 />
+
                 <!-- <ProductPrices2
                     :field-value="fieldValue"
+                    :product="product"
                     :key="product.code"
                     :offers_data="customerData?.offers_data"
                     :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
@@ -283,42 +287,34 @@ onMounted(async () => {
                 /> -->
 
                 <!-- Section: Member/Non Member label, Profit -->
-                <div class="flex justify-between">
-                    <!-- <template v-if="product.offers_data?.number_offers > 0">
-                        <template v-if="product?.offers_data?.offers?.some(e => e.type === 'Category Quantity Ordered Order Interval')">
-                            <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" />
-                            <NonMemberPriceLabel v-else :product
-                                :isShowAvailableGROffer="
-                                    (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
-                                    && !layout?.user?.gr_data?.customer_is_gr
-                                "
+                <div v-if="false" class="flex justify-between">
+                    <template v-if="product.offers_data?.number_offers > 0">
+                        <div v-if="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
+                            class="flex flex-col w-fit"
+                        >
+                            <MemberPriceLabel
+                                v-if="layout?.user?.gr_data?.customer_is_gr"
+                                :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)"
                             />
-                        </template>
+                            <NonMemberPriceLabel v-else
+                                :product
+                            />
+            
+                            <AvailableVolOfferLabel
+                                v-if="
+                                    (product.stock && !product.is_coming_soon)  // same as button add to basket conditions
+                                    && !layout?.user?.gr_data?.customer_is_gr"
+                                :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)"
+                            />
+                        </div>
                         <div v-else />
                     </template>
-
-                    <div v-else /> -->
-                    <!-- <div>
-                        {{ product.offers_data.best_percentage_off.offer_id }}
-                        <pre><span class="bg-yellow-500">product.offers_data</span>: {{ getBestOffer(product?.offers_data?.best_percentage_off?.offer_id) }}</pre>
-                    </div> -->
-                    
-                    <!-- <NonMemberPriceLabel
-                        :product="product"
-                        :isShowAvailableGROffer="
-                            product.stock  // Same as button add to basket conditions
-                            && product.available_gr_offer_to_use?.trigger_data?.item_quantity
-                            && !layout?.user?.gr_data?.customer_is_gr
-                            && customerData?.quantity_ordered_new < product.available_gr_offer_to_use.trigger_data.item_quantity
-                        "
-                    /> -->
-                    <div>
-                        
-                    </div>
+                    <div v-else />
 
                     
-                    <!-- <div class="flex justify-between items-end">
-                        <span @click="_popoverProfit?.toggle">Profit</span>:
+                    <!-- Section: Profit and the popover -->
+                    <div class="flex justify-between items-end">
+                        <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
                         <span class="text-green-500 ml-1 font-bold">
                             {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
                         </span>
@@ -327,16 +323,16 @@ onMounted(async () => {
                         >
                             <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
                         </span>
-                    </div> -->
+                        
+                        <!-- Popover: Question circle GR member -->
+                        <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                            <ProfitCalculationList :product="fieldValue.product" />
+                        </Popover>
+                    </div>
 
-                    <!-- Popover: Question circle GR member -->
-                    <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
-                        <ProfitCalculationList :product="fieldValue.product" />
-                    </Popover>
                 </div>
 
-                <!-- <pre>{{ customerData?.offers_data }}</pre> -->
-
+                
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">

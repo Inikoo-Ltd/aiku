@@ -99,6 +99,11 @@ const props = defineProps({
         default: () => ({}),
         required: false,
     },
+    showHeader : {
+        type: Boolean,
+        default: true,
+        required: false,
+    },
 })
 
 // console.log(props);
@@ -468,21 +473,22 @@ watch(queryBuilderData, async () => {
                         :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || trans('products')" />
 
                     <!-- Search Input -->
-                    <div class="flex flex-row">
+                    <div class="flex flex-row"  v-if="queryBuilderProps.globalSearch">
                         <TableFilterSearch @resetSearch="resetQuery" :label="trans('Search products...')"
                             :value="getSearchInputValue('global')" :on-change="changeGlobalSearchValue"
                             :isVisiting="isVisiting" />
                     </div>
                 </div>
 
-                <div>
-                    <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)"
-                        :name="`header(${column.key})`" :header="column">
-                        <HeaderCell :key="`table-${name}-header-${column.key}`" :cell="header(column.key)"
-                            :type="columnsType[column.key]" :column="column" :resource="compResourceData">
-                        </HeaderCell>
-                    </slot>
-                </div>
+                    <div v-if="showHeader">
+                        <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)"
+                            :name="`header(${column.key})`" :header="column">
+                            <HeaderCell :key="`table-${name}-header-${column.key}`" :cell="header(column.key)"
+                                :type="columnsType[column.key]" :column="column" :resource="compResourceData">
+                            </HeaderCell>
+                        </slot>
+                    </div>
+
             </div>
         </div>
 
@@ -505,8 +511,6 @@ watch(queryBuilderData, async () => {
                         </ProductRenderEcom>
                     </slot>
                 </div>
-
-
             </div>
 
             <!-- Empty State -->

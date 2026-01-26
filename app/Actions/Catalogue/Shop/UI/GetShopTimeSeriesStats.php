@@ -88,7 +88,6 @@ class GetShopTimeSeriesStats
 
         $metricsMapping['visitors'] = 'visitors';
 
-
         return (new CalculateTimeSeriesStats())->format(
             $rawStats[$dailyTimeSeries->id],
             $metricsMapping,
