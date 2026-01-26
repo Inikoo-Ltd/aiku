@@ -23,10 +23,11 @@ class LuigiBoxRecommendation extends IrisAction
     public function handle(ActionRequest $request): LengthAwarePaginator|array
     {
         $customer = $request->user();
+        
         $size = 25;
         $userId = $customer?->customer_id
             ? (string) $customer->customer_id
-            : (string) ($request->cookie('_lb') ?? 'guest');
+            : (string) ($request->cookies_lb ?? 'guest');
 
         $website   = $request->input('website');
         $trackerId = Arr::get($website->settings, 'luigisbox.tracker_id');
