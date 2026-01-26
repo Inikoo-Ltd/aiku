@@ -39,6 +39,15 @@ class IrisLuigiBoxRecommendationResource extends JsonResource
             'url'                  => $this->url,
             'unit'                 => $this->unit,
             'units'                => $units,
+
+            // TODO: make below to similar like IrisAuthenticatedProductsInWebpageResource
+            // 'offers_data'                   => $this->offers_data,
+            // 'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
+            // 'discounted_price_per_unit'  => $pricePerUnitDiscounted,
+            // 'discounted_profit'          => $profitDiscounted,
+            // 'discounted_profit_per_unit' => $profitPerUnitDiscounted,
+            // 'discounted_margin'          => $marginDiscounted,
+            // 'discounted_percentage'      => percentage($bestPercentageOff, 1),
         ];
     }
 
