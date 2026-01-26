@@ -99,17 +99,17 @@ const _popoverProfit = ref(null)
         <div>
             <div class="flex justify-between">
                 <div>
-                    <div class="text-xs">{{ trans("Price") }} ({{ trans("Excl. Vat") }})</div>
+                    <div class="text-xs">{{ trans("Price") }} <span class="text-gray-500 text-xxs">({{ trans("Excl. Vat") }})</span></div>
                     <div v-if="product.units == 1" class="font-bold text-sm leading-4">
                         {{ locale.currencyFormat(currency?.code, product.price) }}/<span class="font-normal">{{ product.unit}}</span>
                     </div>
-                    <div v-else class="font-bold text-base leading-4">
+                    <div v-else class="font-bold text-base leading-4 text-sm">
                         {{ locale.currencyFormat(currency?.code, product.price) }} <span v-if="product.price_per_unit > 0">({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/<span class="font-normal">{{ product.unit}}</span>)</span>
                     </div>
                 </div>
 
-                <div v-if="product?.rrp_per_unit > 0" v-tooltip="trans('Recommended retail price')" class="flex flex-col text-right">
-                    <div class="text-xs">{{ trans("RRP") }} ({{ trans("Excl. Vat") }}):</div>
+                <div v-if="product?.rrp_per_unit > 0" v-tooltip="trans('Recommended retail price')+' ('+trans('Excl. Vat')+')'" class="flex flex-col text-right">
+                    <div class="text-xs">{{ trans("RRP") }}:</div>
                     <div class="font-bold text-xs">
                         {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}/<span class="font-normal">{{ product.unit}}</span>
                     </div>
