@@ -13,8 +13,11 @@ use App\Actions\Dashboard\IndexShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInOrganisationSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
+use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopsSalesResource;
 use App\Models\SysAdmin\Organisation;
 
@@ -25,6 +28,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
 
     case SHOPS = 'shops';
     case INVOICE_CATEGORIES = 'invoice_categories';
+    case DS_PLATFORMS = 'ds_platforms';
 
     public function blueprint(): array
     {
@@ -37,24 +41,31 @@ enum OrganisationDashboardSalesTableTabsEnum: string
                 'title' => __('Invoice categories'),
                 'icon'  => 'fal fa-sitemap',
             ],
+            OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS => [
+                 'title' => __('DS Platforms'),
+                 'icon'  => 'fal fa-code-branch',
+             ],
         };
     }
 
-    public function table(Organisation $organisation, array $customRangeData = []): array
+    public function table(Organisation $organisation, array $customRangeData = [], mixed $platformTimeSeriesStats = null): array
     {
         $header = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($organisation)->toJson(), true),
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInOrganisationSalesResource::make($organisation)->toJson(), true)
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInOrganisationSalesResource::make($organisation)->toJson(), true),
+            OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardHeaderPlatformSalesResource::make($organisation)->toJson(), true)
         };
 
         $body = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => IndexShopsSalesTable::make()->action($organisation, $customRangeData),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => IndexInvoiceCategoriesSalesTable::make()->action($organisation, $customRangeData),
+            OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
         };
 
         $totals = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalShopsSalesResource::make($organisation)->setCustomRangeData($customRangeData)->toJson(), true),
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($organisation)->setCustomRangeData($customRangeData)->toJson(), true)
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($organisation)->setCustomRangeData($customRangeData)->toJson(), true),
+            OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true)
         };
 
         return [
@@ -64,10 +75,10 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Organisation $organisation, array $customRangeData = []): array
+    public static function tables(Organisation $organisation, array $customRangeData = [], mixed $platformTimeSeriesStats = null): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation, $customRangeData) {
-            return [$case->value => $case->table($organisation, $customRangeData)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation, $customRangeData, $platformTimeSeriesStats) {
+            return [$case->value => $case->table($organisation, $customRangeData, $platformTimeSeriesStats)];
         })->all();
     }
 }
