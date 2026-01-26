@@ -282,8 +282,9 @@ class ShowIrisWebpage
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => $this->getBreadcrumbLabel($parentWebpage),
-                            'url'   => $this->getEnvironmentUrl($parentWebpage->canonical_url)
+                            'short_label' => $this->getBreadcrumbShortLabel($parentWebpage),
+                            'label'       => $this->getBreadcrumbLabel($parentWebpage),
+                            'url'         => $this->getEnvironmentUrl($parentWebpage->canonical_url)
                         ]
 
                     ];
@@ -294,8 +295,9 @@ class ShowIrisWebpage
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'label' => $this->getBreadcrumbLabel($webpage),
-                    'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
+                    'short_label' => $this->getBreadcrumbShortLabel($parentWebpage),
+                    'label'       => $this->getBreadcrumbLabel($webpage),
+                    'url'         => $this->getEnvironmentUrl($webpage->canonical_url)
                 ]
 
             ];
@@ -306,6 +308,28 @@ class ShowIrisWebpage
         }
 
         return $breadcrumbs;
+    }
+
+    public function getBreadcrumbShortLabel(Webpage $webpage): string
+    {
+        if ($webpage->model_type == 'Product') {
+            /** @var Product $product */
+            $product = $webpage->model;
+            if ($product) {
+                return $product->code;
+            }
+        } elseif ($webpage->model_type == 'ProductCategory') {
+            /** @var \App\Models\Catalogue\ProductCategory $productCateggory */
+            $productCategory = $webpage->model;
+            if ($productCategory) {
+                return $productCategory->code;
+            }
+        }
+
+        $label = $webpage->code;
+
+
+        return $label ?? '';
     }
 
     public function getBreadcrumbLabel(Webpage $webpage): string
