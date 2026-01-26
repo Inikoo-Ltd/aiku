@@ -54,7 +54,7 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
-/* const fetchRecommenders = async () => {
+const luigiFetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -82,17 +82,16 @@ const isFetched = ref(false)
         }
 
         console.log('LIA1:', response.data)
-        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
+        // RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
-        isFetched.value = true
+        // isFetched.value = true
     }
-    isLoadingFetch.value = false
+    // isLoadingFetch.value = false
 }
- */
 
  const fetchRecommenders = async () => {
     try {
@@ -110,7 +109,8 @@ const isFetched = ref(false)
             {
                 luigi_identity: '',
                 recommendation_type : 'item_detail_alternatives',
-                recommender_client_identifier : 'item_detail_alternatives'
+                recommender_client_identifier : 'item_detail_alternatives',
+                cookies_lb: Cookies.get('_lb') ?? null,
             }
         )
         listProducts.value = response.data
@@ -125,6 +125,7 @@ const isFetched = ref(false)
 
 onMounted(() => {
     fetchRecommenders()
+    window.luigiItemAlternatives = luigiFetchRecommenders
 })
 </script>
 

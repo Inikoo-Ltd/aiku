@@ -51,9 +51,10 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
-/* const fetchRecommenders = async () => {
+
+const luigiFetchRecommenders = async () => {
     try {
-        isLoadingFetch.value = true
+        // isLoadingFetch.value = true
         const response = await axios.post(
             `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
             [
@@ -81,17 +82,17 @@ const isFetched = ref(false)
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        RecommendationCollector(response.data[0])
+        // RecommendationCollector(response.data[0])
 
         console.log('LTrends1:', response.data)
-        listProducts.value = response.data[0].hits
+        // listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
-        isFetched.value = true
+        // isFetched.value = true
     }
-    isLoadingFetch.value = false
-} */
+    // isLoadingFetch.value = false
+}
 
 const fetchRecommenders = async () => {
     try {
@@ -109,7 +110,8 @@ const fetchRecommenders = async () => {
             {
                 luigi_identity: '',
                 recommendation_type : 'trends',
-                recommender_client_identifier : 'trends'
+                recommender_client_identifier : 'trends',
+                cookies_lb: Cookies.get('_lb') ?? null,
             }
         )
         listProducts.value = response.data
@@ -124,6 +126,7 @@ const fetchRecommenders = async () => {
 
 onMounted(() => {
     fetchRecommenders()
+    window.luigiTrends = luigiFetchRecommenders
 })
 </script>
 
