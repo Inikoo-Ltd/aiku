@@ -250,6 +250,11 @@ class UpdateProductCategory extends OrgAction
             'is_description_title_reviewed' => ['sometimes', 'boolean'],
             'is_description_reviewed' => ['sometimes', 'boolean'],
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
+            // Follow master
+            'follow_master_name'                => ['sometimes', 'boolean'],
+            'follow_master_description_title'   => ['sometimes', 'boolean'],
+            'follow_master_description'         => ['sometimes', 'boolean'],
+            'follow_master_description_extra'   => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

@@ -94,11 +94,22 @@ class EditProduct extends OrgAction
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
         $warning = null;
+        $warningText = [];
         if ($product->is_single_trade_unit) {
+            $warningText[] = __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.');
+        }
+
+        $haveFollowingMaster = $product->follow_master_name || $product->follow_master_description_title || $product->follow_master_description || $product->follow_master_description_extra;
+
+        if ($product->masterProduct && $haveFollowingMaster) {
+            $warningText[] = __('One of this product name/descriptions follows the master. Updates made on master will overwrite local changes');
+        }
+
+        if (count($warningText) > 0) {
             $warning = [
                 'type'  => 'warning',
                 'title' => __('Important'),
-                'text'  => __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.'),
+                'text'  => implode('<br>', $warningText),
                 'icon'  => ['fas', 'fa-exclamation-triangle']
             ];
         }
@@ -194,6 +205,8 @@ class EditProduct extends OrgAction
                     'main'          => $product->masterProduct->name,
                     'languages'     => $languages,
                     'mode'          => 'single',
+                    'show_follow_master'    => true,
+                    'follow_master'         => $product->follow_master_name,
                     'value'         => $product->name,
                     'reviewed'      => $product->is_name_reviewed,
                     'information' => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
@@ -216,6 +229,8 @@ class EditProduct extends OrgAction
                     'main'          => $product->masterProduct->description,
                     'languages'     => $languages,
                     'mode'          => 'single',
+                    'show_follow_master'    => true,
+                    'follow_master'         => $product->follow_master_description,
                     'value'         => $product->description,
                     'reviewed'      => $product->is_description_reviewed,
                     'information' => __('This show in product webpage'),
@@ -238,6 +253,8 @@ class EditProduct extends OrgAction
                     'main'          => $product->masterProduct->description_extra,
                     'languages'     => $languages,
                     'mode'          => 'single',
+                    'show_follow_master'    => true,
+                    'follow_master'         => $product->follow_master_description_extra,
                     'value'         => $product->description_extra,
                     'reviewed'      => $product->is_description_extra_reviewed,
                     'information' => __('This above product specification in product webpage'),
