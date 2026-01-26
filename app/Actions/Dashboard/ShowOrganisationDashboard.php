@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dashboard;
 
+use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\OrgAction;
@@ -73,6 +74,7 @@ class ShowOrganisationDashboard extends OrgAction
         }
 
         $topPerformanceStats = GetTopPerformanceStats::run($organisation, $performanceDates[0], $performanceDates[1]);
+        $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($organisation, $performanceDates[0], $performanceDates[1]);
 
         $tabsBox = $this->getTabsBox($organisation);
 
@@ -96,7 +98,7 @@ class ShowOrganisationDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $customRangeData),
+                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $customRangeData, $platformTimeSeriesStats),
                             'charts'      => [],
                             'top_performance' => $topPerformanceStats,
                         ],
