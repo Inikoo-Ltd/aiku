@@ -122,7 +122,7 @@ class UpdateProductCategoryOffersData
             if ($category) {
                 $categoryLink = $category->code;
                 if ($category->webpage && $category->webpage->state == WebpageStateEnum::LIVE) {
-                    $categoryLink = '<a href="'.$category->webpage->canonical_url.'" target="_blank" class="underline">'.$category->code.'</a>';
+                    $categoryLink = '<a href="'.e($category->webpage->canonical_url).'" target="_blank" class="underline">'.e($category->code).'</a>';
                 }
 
             }
@@ -136,7 +136,7 @@ class UpdateProductCategoryOffersData
             }
 
             $productsTriggerLabel = __('Order :n+ from :category range to get :percentage off', [
-                'n'          => $offer->trigger_data['item_quantity'],
+                'n'          => (int) $offer->trigger_data['item_quantity'],
                 'category'   => $categoryLink,
                 'percentage' => $percentage
             ]);
