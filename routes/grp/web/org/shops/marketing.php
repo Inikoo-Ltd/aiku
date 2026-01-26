@@ -23,9 +23,7 @@ use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexMarketingMailshots;
 use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
-use App\Actions\Comms\Mailshot\UI\ShowMailshot;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotTemplateWorkshop;
-use App\Actions\Comms\Mailshot\UI\ShowMailshotWorkshop;
 use App\Actions\UI\Dropshipping\Marketing\ShowMarketingDashboard;
 
 Route::get('', ShowMarketingDashboard::class)->name('dashboard');
