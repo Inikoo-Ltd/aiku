@@ -245,9 +245,19 @@ watch(
 
         <ConditionIcon class="qty-status" :state="status" />
 
-        <Button v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" class="qty-add-btn"
-            icon="fas fa-plus" :label="trans('Add to basket')" type="primary" size="lg"
-            :loading="isLoadingSubmitQuantityProduct" @click="onAddToBasket(product, 1)" />
+        <slot name="qty-add-button" :data="{product,customer,onAddToBasket,isLoadingSubmitQuantityProduct}">
+             <Button 
+                v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" 
+                class="qty-add-btn"
+                icon="fas fa-plus" 
+                :label="trans('Add to basket')" 
+                type="primary" 
+                size="lg"
+                :loading="isLoadingSubmitQuantityProduct" 
+                @click="onAddToBasket(product, 1)" 
+            />
+        </slot>
+       
 
         <div v-if="customer.quantity_ordered" class="qty-info">
             <span class="qty-info-label">
