@@ -118,9 +118,10 @@ class UpdateProductCategoryOffersData
             /** @var ProductCategory $category */
             $category = $offer->trigger;
 
-            $productsTriggerLabel = __('Order :n+ from :category range to get member price', [
+            $productsTriggerLabel = __('Order :n+ from :category range to get :percentage off', [
                 'n'        => $offer->trigger_data['item_quantity'],
-                'category' => $category?->code
+                'category' => $category?->code,
+                'percentage' => percentage($offer->trigger_data['percentage_off'], 1)
             ]);
 
             app()->setLocale($currentLocale);
