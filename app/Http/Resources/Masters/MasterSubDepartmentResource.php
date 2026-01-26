@@ -43,6 +43,7 @@ class MasterSubDepartmentResource extends JsonResource
                     'icon'    => 'fas fa-times-circle',
                     'class'   => 'text-red-400'
                 ],
+            'stats' => $masterSubDepartment->stats
         ];
     }
 }

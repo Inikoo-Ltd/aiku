@@ -11,6 +11,7 @@ import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link } from "@inertiajs/vue3";
 import { faYinYang, faDotCircle, faCheck,} from "@fal";
+import Image from "@/Components/Image.vue";
 
 
 library.add(faCheck,faYinYang, faDotCircle)
@@ -46,6 +47,11 @@ function familyRoute(family): string {
 
 <template>
     <Table :resource="data" :name="tab">
+          <template #cell(image)="{ item: item }">
+            <div class="flex justify-center">
+                <Image :src="item['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(state)="{ item: family }">
             <Icon :data="family.state" />
         </template>

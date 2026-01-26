@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch } from "vue"
+import { ref, inject, computed, watch, onMounted, nextTick } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus, faChevronCircleLeft, faChevronCircleRight } from "@fas"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
@@ -26,7 +26,16 @@ import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
-import Discount from "@/Components/Utils/Label/Discount.vue"
+import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
+import ProductPrices2 from "../ProductPrices2.vue"
+import { Popover } from "primevue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
+import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
+
+import { Navigation, Thumbs } from 'swiper/modules'
+import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
+
 
 
 // Register icons
@@ -53,13 +62,44 @@ interface ProductResource {
 
 const props = withDefaults(
     defineProps<{
-        fieldValue: any
+        fieldValue: {
+            product: {   // WebBlockProductResource
+                discounted_price: number
+                discounted_price_per_unit: number
+                discounted_profit: number
+                discounted_profit_per_unit: number
+                discounted_margin: number
+
+                offers_data: {
+                    number_offers: 1
+                    offers: {
+                        state: string
+                        type: string
+                        label: string
+                        allowances: {
+                            class: string
+                            type: string
+                            label: string
+                            percentage_off: string
+                        }[]
+                        triggers_labels: string[]
+                        max_percentage_discount: string
+                    }[]
+                    best_percentage_off: {
+                        percentage_off: string
+                        offer_id: number
+                    }
+                }
+            }
+        }
         webpageData?: any
         blockData?: object
         screenType: "mobile" | "tablet" | "desktop"
         validImages: object
-        customerData: any
-        product: ProductResource
+        customerData: {  // \Json\GetIrisProductEcomOrdering  (no cache)
+
+        }
+        product: ProductResource  // Catalogue\GetProductDetail (no cache)
         isLoadingRemindBackInStock: boolean
         isLoadingFavourite: boolean
         videoSetup: { url: string }
@@ -67,6 +107,8 @@ const props = withDefaults(
     }>(),
     {}
 )
+
+const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
     (e: "setFavorite", value: any[]): void
@@ -94,9 +136,49 @@ watch(
     () => props.product,
     (newProduct) => {
        product.value = newProduct
+       console.log('product',product.value)
     },
     { deep: true }
 )
+
+
+const _popoverProfit = ref(null)
+
+// console.log('fdsfds', props.fieldValue.product)
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return product.value?.offers_data?.offers?.[offerId] 
+}
+
+
+
+const variantPrevEl = ref<HTMLElement | null>(null)
+const variantNextEl = ref<HTMLElement | null>(null)
+
+const varinatNavigation = ref({
+  prevEl: null as HTMLElement | null,
+  nextEl: null as HTMLElement | null,
+})
+
+watch([variantPrevEl, variantNextEl], () => {
+  if (variantPrevEl.value && variantNextEl.value) {
+    varinatNavigation.value = {
+      prevEl: variantPrevEl.value,
+      nextEl: variantNextEl.value,
+    }
+  }
+})
+
+onMounted(async () => {
+  await nextTick()
+  varinatNavigation.value.prevEl = variantPrevEl.value
+  varinatNavigation.value.nextEl = variantNextEl.value
+})
+
+
 
 </script>
 
@@ -104,7 +186,7 @@ watch(
 <template>
     <!-- DESKTOP -->
     <div v-if="screenType !== 'mobile'" id="product-iris-1-ecom"
-        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
+        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
             marginRight: 'auto'
@@ -129,7 +211,7 @@ watch(
 
             <!-- RIGHT: Product Info -->
             <div class="col-span-5 self-start">
-                <Discount v-if="customerData?.offers_data && Object.keys(customerData?.offers_data).length" :offers_data="customerData.offers_data" class="w-full justify-center" />
+                
                 
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
@@ -184,7 +266,7 @@ watch(
                             <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
                         </div>
                     </div>
-                </div>
+                </div>       
 
                 <!-- PRICE -->
                 <ProductPrices
@@ -195,8 +277,64 @@ watch(
                     :offer_price_per_unit="customerData?.offer_price_per_unit"
                 />
 
-                <!-- ADD TO CART -->
-                <div class="flex gap-2 mb-6">
+                <!-- <ProductPrices2
+                    :field-value="fieldValue"
+                    :product="product"
+                    :key="product.code"
+                    :offers_data="customerData?.offers_data"
+                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
+                    :offer_price_per_unit="customerData?.offer_price_per_unit"
+                /> -->
+
+                <!-- Section: Member/Non Member label, Profit -->
+                <div v-if="false" class="flex justify-between">
+                    <template v-if="product.offers_data?.number_offers > 0">
+                        <div v-if="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
+                            class="flex flex-col w-fit"
+                        >
+                            <MemberPriceLabel
+                                v-if="layout?.user?.gr_data?.customer_is_gr"
+                                :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)"
+                            />
+                            <NonMemberPriceLabel v-else
+                                :product
+                            />
+            
+                            <AvailableVolOfferLabel
+                                v-if="
+                                    (product.stock && !product.is_coming_soon)  // same as button add to basket conditions
+                                    && !layout?.user?.gr_data?.customer_is_gr"
+                                :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)"
+                            />
+                        </div>
+                        <div v-else />
+                    </template>
+                    <div v-else />
+
+                    
+                    <!-- Section: Profit and the popover -->
+                    <div class="flex justify-between items-end">
+                        <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
+                        <span class="text-green-500 ml-1 font-bold">
+                            {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
+                        </span>
+                        <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
+                            class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+                        >
+                            <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                        </span>
+                        
+                        <!-- Popover: Question circle GR member -->
+                        <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                            <ProfitCalculationList :product="fieldValue.product" />
+                        </Popover>
+                    </div>
+
+                </div>
+
+                
+                <!-- Section: ADD TO CART -->
+                <div class="mt-4 flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
                         <EcomAddToBasketv2 
                             v-if="product.stock"  
@@ -217,11 +355,25 @@ watch(
                     </LinkIris>
                 </div>
 
+                
                 <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
-                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
-                        640: { slidesPerView: 4.5 },
-                        1024: { slidesPerView: 4 }
-                    }">
+                    <Swiper :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6"
+                        :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                            640: { slidesPerView: 4.5 },
+                            1024: { slidesPerView: 4 }
+                        }">
+
+                        <div class="absolute inset-0 pointer-events-none z-50">
+                            <div ref="variantPrevEl"
+                                class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleLeft" />
+                            </div>
+
+                            <div ref="variantNextEl"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleRight" />
+                            </div>
+                        </div>
 
                         <SwiperSlide v-for="item in listProducts" :key="item.id">
                             <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
@@ -366,10 +518,22 @@ watch(
 
 
           <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md my-4">
-                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                    <Swiper  :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
                         640: { slidesPerView: 4.5 },
                         1024: { slidesPerView: 4 }
                     }">
+
+                     <div class="absolute inset-0 pointer-events-none z-50">
+                            <div ref="variantPrevEl"
+                                class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleLeft" />
+                            </div>
+
+                            <div ref="variantNextEl"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleRight" />
+                            </div>
+                        </div>
 
                         <SwiperSlide v-for="item in listProducts" :key="item.id">
                             <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
@@ -409,11 +573,10 @@ watch(
 
         <!-- CONTENTS -->
         <div class="mt-4">
-            <ProductContentsIris :product="product" :setting="fieldValue.setting"
-                :styleData="fieldValue?.information_style" />
-            <InformationSideProduct v-if="fieldValue?.information?.length" :informations="fieldValue.information"
-                :styleData="fieldValue?.information_style" />
-
+            <ProductContentsIris :product="product" :setting="fieldValue.setting" :styleData="fieldValue?.information_style" />
+            <div v-if="fieldValue.setting?.information" class="mt-2">
+                <InformationSideProduct v-if="fieldValue?.information?.length" :informations="fieldValue.information" :styleData="fieldValue?.information_style" />
+            </div>
             <h2 class="text-base font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"

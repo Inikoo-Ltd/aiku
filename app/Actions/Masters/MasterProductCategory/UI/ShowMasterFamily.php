@@ -25,8 +25,7 @@ use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Masters\MasterFamiliesSalesResource;
-use App\Actions\Masters\MasterAsset\UI\IndexMasterFamilySales;
+use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 use App\Http\Resources\Masters\MasterVariantsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -110,29 +109,22 @@ class ShowMasterFamily extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
-        $perfectFamily = $masterFamily->status;
-        $masterProducts = $masterFamily->masterAssets->pluck('code');
-
-        if ($perfectFamily) {
-            foreach ($masterFamily->productCategories as $productCategory) {
-                $products = $productCategory->getProducts()->pluck('code');
-                if (array_diff($masterProducts->toArray(), $products->toArray())) {
-                    $perfectFamily = false;
-                }
-            }
-        }
 
         $tabs = [
             MasterFamilyTabsEnum::SALES->value =>
                 $this->tab === MasterFamilyTabsEnum::SALES->value
-                    ? fn () => MasterFamiliesSalesResource::collection(
-                        IndexMasterFamilySales::run($masterFamily)
+                    ? fn () => MasterProductCategoryTimeSeriesResource::collection(
+                        IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value)
                     )
                     : Inertia::lazy(
-                        fn () => MasterFamiliesSalesResource::collection(
-                            IndexMasterFamilySales::run($masterFamily)
+                        fn () => MasterProductCategoryTimeSeriesResource::collection(
+                            IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value)
                         )
                     ),
+
+            'salesData' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value
+                ? fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)
+                : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)),
 
             MasterFamilyTabsEnum::SHOWCASE->value =>
                 $this->tab === MasterFamilyTabsEnum::SHOWCASE->value
@@ -305,7 +297,7 @@ class ShowMasterFamily extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
-                'isPerfectFamily'         => $perfectFamily,
+                'isPerfectFamily'         => true,
                 'masterProductCategoryId' => $masterFamily->id,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
                 ...$tabs,
@@ -315,7 +307,7 @@ class ShowMasterFamily extends GrpAction
         )
             ->table(IndexMailshots::make()->tableStructure(parent: $masterFamily))
             ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
-            ->table(IndexMasterFamilySales::make()->tableStructure(prefix: MasterFamilyTabsEnum::SALES->value))
+            ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterFamilyTabsEnum::SALES->value))
             ->table(IndexMasterVariant::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
 

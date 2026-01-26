@@ -43,6 +43,7 @@ const props = defineProps<{
   collection: Record<string, any>
   publishRoute: Record<string, routeType>
   website_slug: string
+  layout_theme : Array<any>
 }>()
 
 const layout = inject('layout')
@@ -160,7 +161,7 @@ onUnmounted(() => {
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
   <KeepAlive>
-    <component :is="component" :data="props[currentTab]" :currency="props.currency" />
+    <component :is="component" :data="props[currentTab]" :currency="props.currency" :layout_theme/>
   </KeepAlive>
 
   <Dialog v-model:visible="modalPublish" modal :closable="true" :draggable="false" class="w-[90%] md:w-[400px]"

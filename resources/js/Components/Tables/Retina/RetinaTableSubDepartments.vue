@@ -9,6 +9,7 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3";
+import Image from "@/Components/Image.vue";
 
 const props = defineProps<{
   data: object
@@ -28,6 +29,11 @@ function subDepartmentRoute(SubDepartment): string {
 
 <template>
   <Table :resource="data" :name="tab" class="mt-5">
+     <template #cell(image)="{ item: item }">
+            <div class="flex justify-center">
+                <Image :src="item['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
     <template #cell(state)="{ item: SubDepartment }">
       <Tag :label="SubDepartment.state.label" v-tooltip="SubDepartment.state.label">
         <template #label>

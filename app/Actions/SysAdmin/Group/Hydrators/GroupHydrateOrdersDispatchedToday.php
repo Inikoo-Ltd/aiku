@@ -36,8 +36,8 @@ class GroupHydrateOrdersDispatchedToday implements ShouldBeUnique
         $stats = [
 
 
-            'number_orders_dispatched_today'              => $group->orders()->whereDate('dispatched_at', Carbon::today())->count(),
-            'orders_dispatched_today_amount_grp_currency' => $group->orders()->whereDate('dispatched_at', Carbon::today())->sum('grp_net_amount'),
+            'number_orders_dispatched_today'              => $group->orderFromActiveShops()->whereDate('dispatched_at', Carbon::today())->count(),
+            'orders_dispatched_today_amount_grp_currency' => $group->orderFromActiveShops()->whereDate('dispatched_at', Carbon::today())->sum('grp_net_amount'),
 
         ];
 

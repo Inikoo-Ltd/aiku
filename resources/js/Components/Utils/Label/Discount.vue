@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBadgePercent } from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue";
-library.add(faBadgePercent)
-
+import { computed, defineAsyncComponent } from "vue"
 
 const props = defineProps<{
+    template : string
     offers_data: {
         v: number
         o: {
@@ -20,19 +16,24 @@ const props = defineProps<{
     }
 }>()
 
-const formattedPercentage = computed(() => {
-    const value = props.offers_data?.o?.p
-    if (!value) return ''
+const componentsMap = {
+  basic: defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue")),
+  agnes_and_cat: defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/ACDiscount.vue")),
+} as const
 
-    // hapus ".0%" → "%"
-    return value.replace(/\.0%$/, '%')
+
+const resolvedComponent = computed(() => {
+  return componentsMap[props.template as keyof typeof componentsMap]
+    ?? componentsMap.basic
 })
+
 
 </script>
 
 <template>
-    <div class="bg-green-500/20 px-1 py-0.5 text-xs border flex items-center border-green-500/50 rounded-sm w-fit text-green-700" >
-        <FontAwesomeIcon icon="fas fa-badge-percent" class="text-green-500 text-sm align-middle" fixed-width aria-hidden="true" />
-        <span class="ml-0.5 font-bold mr-1">{{ formattedPercentage  }}</span> {{ offers_data?.o?.l }}
-    </div>
+    <component 
+        :is="resolvedComponent"
+        :key="template"
+        :offers_data="offers_data"
+    />
 </template>

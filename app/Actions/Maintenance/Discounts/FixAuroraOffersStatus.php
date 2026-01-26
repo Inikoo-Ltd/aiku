@@ -10,8 +10,8 @@ namespace App\Actions\Maintenance\Discounts;
 
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -22,20 +22,27 @@ class FixAuroraOffersStatus
     use AsAction;
     use WithOrganisationSource;
 
-    public string $commandSignature = 'repair:aurora_offers_status {organisation}';
+    public string $commandSignature = 'repair:aurora_offers_status {shop}';
 
     /**
      * @throws \Exception
      */
     public function asCommand(Command $command): void
     {
-        $organisation       = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
+
+        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+
+        $organisation = $shop->organisation;
+
         $organisationSource = $this->getOrganisationSource($organisation);
         $organisationSource->initialisation($organisation);
 
 
-        $offers = Offer::whereNotNull('source_id')->where('organisation_id', $organisation->id)->get();
+        $offers = Offer::whereNotNull('source_id')->where('shop_id', $shop->id)->get();
 
+        $bar = $command->getOutput()->createProgressBar($offers->count());
+        $bar->setFormat('debug');
+        $bar->start();
 
         /** @var Offer $offer */
         foreach ($offers as $offer) {
@@ -113,7 +120,11 @@ class FixAuroraOffersStatus
                 }
             }
 
+            $bar->advance();
         }
+
+        $bar->finish();
+        $command->getOutput()->newLine();
     }
 
 

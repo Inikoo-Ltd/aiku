@@ -402,6 +402,7 @@ watch(
 </script>
 
 <template>
+
     <div id="list-products-ecom-iris" class="">
         <ConfirmDialog>
             <template #icon>
@@ -496,7 +497,7 @@ watch(
                 </div>
 
                 <!-- Product Grid -->
-               <div :class="responsiveGridClass" class="grid gap-6 p-4"
+               <div :class="responsiveGridClass" class="grid gap-x-6 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 gap-y-10 p-3"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
@@ -507,7 +508,7 @@ watch(
                         </div>
                     </template>
 
-                    
+
 
                     <template v-else-if="products.length">
                       <div

@@ -123,7 +123,8 @@ library.add(
     faFolder,
     faCartArrowDown,
     faWeight,
-    faCommentAlt
+    faCommentAlt,
+    faUserLock
 )
 
 const props = defineProps<{
@@ -308,8 +309,8 @@ const getSeverity = (type?: string) => {
                             getSeverity(warning.type) === 'success' ? 'text-green-500' :
                                 getSeverity(warning.type) === 'error' ? 'text-red-500' :
                                     'text-blue-500'
-                    ]" class="text-xs ">
-                        {{ warning?.text }}
+                    ]" class="text-xs">
+                        <div v-html="warning?.text"/>
                     </div>
                 </div>
             </div>
@@ -398,7 +399,7 @@ const getSeverity = (type?: string) => {
                                 <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                     <!-- Field: is not hidden and skip price when TBC -->
 
-                                    <div v-if="!fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                                    <div v-if="fieldData && !fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
                                         class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
 
                                         <Action v-if="fieldData.type === 'action'" :action="fieldData.action"

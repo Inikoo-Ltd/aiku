@@ -261,7 +261,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox || editable_table"
+    <Table :resource="data" :name="tab" class="mt-5 table-product" :isCheckBox="isCheckBox || editable_table"
         @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
 
         <template #cell(image_thumbnail)="{ item: collection }">
@@ -303,9 +303,13 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(code)="{ item: masterProduct }">
-            <Link v-if="masterProduct.code" v-tooltip="masterProduct.code" :href="(masterProductRoute(masterProduct) as string)" class="secondaryLink">
-                {{ masterProduct["code"] }}
-            </Link>
+            <div class="inline-block">
+                <Link v-if="masterProduct.code" v-tooltip="masterProduct.code"
+                    :href="masterProductRoute(masterProduct) as string"
+                    class="secondaryLink whitespace-nowrap w-max inline-block">
+                    {{ masterProduct.code }}
+                </Link>
+            </div>
         </template>
 
         <template #cell(code_product)="{ item: masterProduct }">
@@ -503,5 +507,3 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
     </Table>
 </template>
-
-

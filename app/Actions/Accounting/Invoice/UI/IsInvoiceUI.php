@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -305,6 +306,27 @@ trait IsInvoiceUI
                         ]
                     ],
                 ];
+            $wrappedActions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'icon'  => 'fal fa-plus',
+                    'label' => __('Create tax only refund'),
+                    'route' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.refund.refund_tax',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
+
+                        ],
+                        'body'       => [
+                            'referral_route' => [
+                                'name'       => $request->route()->getName(),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ],
+                ];
         }
 
 
@@ -314,7 +336,7 @@ trait IsInvoiceUI
 
     public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (Invoice $invoice, array $routeParameters, string $suffix = null, $suffixIndex = '') {
+        $headCrumb = function (Invoice $invoice, array $routeParameters, ?string $suffix = null, $suffixIndex = '') {
             return [
                 [
 
@@ -335,6 +357,7 @@ trait IsInvoiceUI
                 ],
             ];
         };
+
 
         return match ($routeName) {
             'grp.org.shops.show.ordering.orders.show.invoices.show' => $this->getOrderBreadcrumbs($invoice, $routeName, $routeParameters),
@@ -461,6 +484,23 @@ trait IsInvoiceUI
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'invoice'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            'grp.org.shops.show.dashboard.invoices.show', => array_merge(
+                ShowShop::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'shop'])),
+                $headCrumb(
+                    $invoice,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.dashboard.invoices.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.dashboard.invoices.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'invoice'])
                         ]
                     ],
                     $suffix

@@ -420,6 +420,20 @@
       "customer"
     ]
   },
+  {
+    "outboxes": [
+      "newsletter",
+      "marketing",
+      "invite",
+      "abandoned_cart"
+    ],
+    "name": "Mailshot",
+    "content": "beefree_mailshot.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
    {
     "outboxes": [
       "credit_balance_notification_for_customer"

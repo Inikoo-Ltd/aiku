@@ -123,7 +123,8 @@ class SendDispatchedReplacementOrderEmailToCustomer extends OrgAction
                 'order_reference' => $order->reference,
                 'date'            => $order->created_at->format('F jS, Y'),
                 'order_link'      => $orderUrl
-            ]
+            ],
+            senderName: $outbox->emailOngoingRun->senderName(),
         );
     }
 

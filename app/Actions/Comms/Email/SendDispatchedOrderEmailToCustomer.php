@@ -145,7 +145,8 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                 'date'            => $order->created_at->format('F jS, Y'),
                 'order_link'      => $orderUrl,
                 'invoice_link'    => $invoiceUrl,
-            ]
+            ],
+            senderName: $outbox->emailOngoingRun->senderName()
         );
     }
 

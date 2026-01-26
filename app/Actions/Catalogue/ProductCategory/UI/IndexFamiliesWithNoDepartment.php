@@ -197,7 +197,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         )->table($this->tableStructure(shop: $this->shop, prefix: ProductCategoryTabsEnum::INDEX->value));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

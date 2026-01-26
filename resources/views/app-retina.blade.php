@@ -13,12 +13,12 @@
         <link href="https://fonts.bunny.net/css?family=inter:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
         <!-- Favicon -->
-        @if(request()->get('website'))
-        @cache('iris-favicon-'.request()->get('website')->id, 3600)
-            <link rel="icon" type="image/png" sizes="16x16" href="{{ request()->get('website')->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png') }}">
-            <link rel="icon" type="image/png" sizes="32x32" href="{{ request()->get('website')->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png') }}">
-            <link rel="icon" type="image/png" sizes="48x48" href="{{ request()->get('website')->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico') }}">
-            <link rel="apple-touch-icon" sizes="180x180" href="{{ request()->get('website')->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png') }}">
+        @if(request()->input('website'))
+        @cache('iris-favicon-'.request()->input('website')->id, 3600)
+            <link rel="icon" type="image/png" sizes="16x16" href="{{ request()->input('website')->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png') }}">
+            <link rel="icon" type="image/png" sizes="32x32" href="{{ request()->input('website')->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png') }}">
+            <link rel="icon" type="image/png" sizes="48x48" href="{{ request()->input('website')->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico') }}">
+            <link rel="apple-touch-icon" sizes="180x180" href="{{ request()->input('website')->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png') }}">
         @endcache
         @endif
 
@@ -32,32 +32,32 @@
         {{Vite::useHotFile('retina.hot')->useBuildDirectory('retina')->withEntryPoints(['resources/js/app-retina.js'])}}
         @inertiaHead
 
-        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+        @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
             <!-- Google Tag Manager -->
             <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','{{ Arr::get(request()->get("website")->settings, "google_tag_id", "") }}');</script>
+            })(window,document,'script','dataLayer','{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');</script>
             <!-- End Google Tag Manager -->
         @endif
 
         <!-- Section: Luigi analytics -->
-        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', ''))
-            <script async src="https://scripts.luigisbox.tech/{{ Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script> 
+        @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
+            <script async src="https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script> 
         @endif
 
 
         <!-- Jira -->
-        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', ''))
-            <script data-jsd-embedded data-key="{{Arr::get(request()->get('website')->settings, 'jira_help_desk_widget', '')}}" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
+        @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))
+            <script data-jsd-embedded data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '')}}" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
         @endif
 
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
-        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))
+        @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
             <!-- Google Tag Manager (noscript) -->
-            <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ Arr::get(request()->get('website')->settings, 'google_tag_id', '') }}"
+            <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ Arr::get(request()->input('website')->settings, 'google_tag_id', '') }}"
             height="0" width="0" style="display:none;visibility:hidden" title="google_tag"></iframe></noscript>
             <!-- End Google Tag Manager (noscript) -->
         @endif

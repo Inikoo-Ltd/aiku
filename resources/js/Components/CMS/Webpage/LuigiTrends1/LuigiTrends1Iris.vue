@@ -14,7 +14,7 @@ import Cookies from 'js-cookie';
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
+import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { trans } from "laravel-vue-i18n"
@@ -51,9 +51,10 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
-const fetchRecommenders = async () => {
+
+const luigiFetchRecommenders = async () => {
     try {
-        isLoadingFetch.value = true
+        // isLoadingFetch.value = true
         const response = await axios.post(
             `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
             [
@@ -62,7 +63,7 @@ const fetchRecommenders = async () => {
                     "item_ids": [],
                     "recommendation_type": "trends",
                     "recommender_client_identifier": "trends",
-                    "size": 12,
+                    "size": 25,
                     "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,
                     "category": undefined,
                     "brand": undefined,
@@ -81,20 +82,51 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        RecommendationCollector(response.data[0])
+        // RecommendationCollector(response.data[0])
 
         console.log('LTrends1:', response.data)
-        listProducts.value = response.data[0].hits
+        // listProducts.value = response.data[0].hits
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        // isFetched.value = true
+    }
+    // isLoadingFetch.value = false
+}
+
+const fetchRecommenders = async () => {
+    try {
+        isLoadingFetch.value = true
+
+        /* const luigiIdentity = props.fieldValue?.product?.luigi_identity
+
+        if (!luigiIdentity) {
+            listProducts.value = []
+            return
+        } */
+
+        const response = await axios.post(
+            route('iris.json.luigi.product_recommendation'),
+            {
+                luigi_identity: '',
+                recommendation_type : 'trends',
+                recommender_client_identifier : 'trends',
+                cookies_lb: Cookies.get('_lb') ?? null,
+            }
+        )
+        listProducts.value = response.data
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
         isFetched.value = true
+        isLoadingFetch.value = false
     }
-    isLoadingFetch.value = false
 }
+
 
 onMounted(() => {
     fetchRecommenders()
+    window.luigiTrends = luigiFetchRecommenders
 })
 </script>
 
@@ -136,10 +168,16 @@ onMounted(() => {
                             :key="index"
                             class="w-full cursor-grab relative !grid h-full min-h-full py-0.5"
                         >
-                            <RecommendationSlideIris
+                            <!-- <RecommendationSlideIris
+                                :product
+                                :isProductLoading
+                            /> -->
+
+                              <RecommendationSlideIris
                                 :product
                                 :isProductLoading
                             />
+
                         </SwiperSlide>
                     </template>
                 </Swiper>

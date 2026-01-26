@@ -27,7 +27,7 @@ class IndexUploadRecords
 
     private bool $asAction = false;
 
-    public function handle(Upload $upload, string $prefix = null): LengthAwarePaginator
+    public function handle(Upload $upload, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);

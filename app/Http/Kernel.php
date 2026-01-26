@@ -143,10 +143,14 @@ class Kernel extends HttpKernel
             BindGroupInstance::class,
             SubstituteBindings::class,
             SetLocale::class,
-            //LogUserRequestMiddleware::class,
+            LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+        ],
+        'two_fa'    => [
+            \App\Http\Middleware\EnforcesTwoFAMiddleware::class,
+            \App\Http\Middleware\TwoFAMiddleware::class, 
         ],
         'web_errors'  => [
             EncryptCookies::class,

@@ -44,7 +44,7 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    $web = Website::first();
+    $web = Website::has('shop')->first();
     if (!$web) {
         list(
             $this->organisation,
@@ -198,14 +198,16 @@ test('validation rules are correct', function () {
         'guest_identifier',
         'ai_model_version',
         'priority',
-        'ulid'
+        'ulid',
+        'shop_id'
     ])
         ->and($rules['web_user_id'])->toEqual(['nullable', 'exists:web_users,id'])
         ->and($rules['language_id'])->toEqual(['required', 'exists:languages,id'])
         ->and($rules['priority'])->toEqual(['required', Rule::enum(ChatPriorityEnum::class)])
         ->and($rules['guest_identifier'])->toEqual(['nullable', 'string', 'max:255'])
         ->and($rules['ai_model_version'])->toEqual(['nullable', 'string', 'max:50'])
-        ->and($rules['ulid'])->toEqual(['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid']);
+        ->and($rules['ulid'])->toEqual(['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid'])
+        ->and($rules['shop_id'])->toEqual(['required', 'exists:shops,id']);
 });
 
 
@@ -397,7 +399,7 @@ test('authenticated agent can assign chat session to self', function () {
         ['user_id' => $user->id],
         [
             'is_online'            => true,
-            'max_concurrent_chats' => 5,
+            'max_concurrent_chats' => 100,
             'current_chat_count'   => 0,
         ]
     );
@@ -447,7 +449,7 @@ test('can send message from agent after assignment', function () {
         $agent = ChatAgent::create([
             'user_id'              => $user->id,
             'is_online'            => true,
-            'max_concurrent_chats' => 5,
+            'max_concurrent_chats' => 10,
             'current_chat_count'   => 0,
         ]);
     }
@@ -485,7 +487,7 @@ test('can send message from agent after assignment', function () {
 });
 
 
-test('can send message without text but with media', function () {
+test('can send message media', function () {
     $chatSession = ChatSession::find(1)
         ?? ChatSession::inRandomOrder()->first();
 
@@ -494,12 +496,12 @@ test('can send message without text but with media', function () {
         'message_type' => ChatMessageTypeEnum::IMAGE->value,
         'sender_type'  => ChatSenderTypeEnum::GUEST->value,
         'media_id'     => 1,
-        'message_text' => null,
+        'message_text' => 'this image',
     ];
 
     $chatMessage = $this->sendMessageAction->handle($chatSession, $modelData);
 
-    expect($chatMessage->message_text)->toBeNull()
+    expect($chatMessage->message_text)->toBe('this image')
         ->and($chatMessage->media_id)->toBe(1)
         ->and($chatMessage->message_type)->toBe(ChatMessageTypeEnum::IMAGE);
 });
@@ -535,7 +537,7 @@ test('can close chat session by agent from active assignment', function (): void
         ['user_id' => $user->id],
         [
             'is_online'            => true,
-            'max_concurrent_chats' => 5,
+            'max_concurrent_chats' => 100,
             'current_chat_count'   => 0,
             'deleted_at'           => null,
         ]

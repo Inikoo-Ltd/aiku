@@ -73,7 +73,7 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare,
+	faShare, faUndoAlt,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
@@ -164,7 +164,7 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare
+	faShare, faUndoAlt
 )
 
 provide("layout", useLayoutStore())
@@ -324,16 +324,16 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 		</main>
 
 		<!-- Sidebar: Right -->
-
-		<RightSideBar
-			v-if="Object.values(layout.rightSidebar).some((value) => value.show)"
-			class="fixed top-[2.7rem] transition-all duration-200 ease-in-out"
-			:class="[
-				Object.values(layout.rightSidebar).some((value) => value.show)
-					? 'right-0 lg:w-[30%] xl:w-[20%]'
-					: '-right-44',
-			]" />
-
+        <Teleport to="body">
+            <RightSideBar
+                v-if="Object.values(layout.rightSidebar).some((value) => value.show)"
+                class="fixed top-[2.7rem] transition-all duration-200 ease-in-out"
+                :class="[
+                    Object.values(layout.rightSidebar).some((value) => value.show)
+                        ? 'right-0 lg:w-[30%] xl:w-[20%]'
+                        : '-right-44',
+                ]" />
+        </Teleport>
 		<Teleport to="body">
 			<div>
 				<Transition>

@@ -20,8 +20,8 @@ class AuthenticateRetinaShopifyUser
     public function handle(ActionRequest $request): RedirectResponse
     {
         $retinaHome = 'app/dashboard';
-        if ($request->get('shopify')) {
-            $shopifyUser = ShopifyUser::where('password', base64_decode($request->get('shopify')))->first();
+        if ($request->input('shopify')) {
+            $shopifyUser = ShopifyUser::where('password', base64_decode($request->input('shopify')))->first();
 
             if ($shopifyUser) {
                 auth('retina')->login($shopifyUser->customer?->webUsers?->first());

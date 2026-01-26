@@ -15,18 +15,29 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
+use App\Traits\SanitizeInputs;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaCustomerSalesChannel extends RetinaAction
 {
     use WithActionUpdate;
+    use SanitizeInputs;
 
     private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
         return UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
+    }
+
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields([
+            'name',
+            'return_description',
+        ]);
+        $this->sanitizeInputs();
     }
 
     public function rules(): array
@@ -68,12 +79,16 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
             'return_accepted' => ['sometimes', 'boolean'],
             'return_payer' => ['sometimes', 'string'],
             'return_within' => ['sometimes', 'integer'],
-            'return_description' => ['nullable', 'string']
+            'return_description' => ['nullable', 'string'],
+
+            'pricing_type' => ['sometimes', 'string'],
+            'pricing_value' => ['sometimes', 'numeric']
         ];
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+        $this->enableSanitize();
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
 

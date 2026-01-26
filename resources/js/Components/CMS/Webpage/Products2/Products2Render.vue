@@ -90,7 +90,7 @@ const toggleBackInStock = () =>
             <!-- TOP AREA (GROWS) -->
             <div class="flex-grow">
 
-                <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"  :screen-type="screenType"/>
+                <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screen-type="screenType"/>
 
                 <!-- IMAGE -->
                 <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
@@ -128,6 +128,11 @@ const toggleBackInStock = () =>
                             </div>
                         </div>
                     </slot>
+
+                    <!-- Section: Discounts -->
+                    <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
+                        <Discount :template="'agnes_and_cat'" :offers_data="product.offers_data"  />
+                    </div>
 
                     <!-- FAVOURITE -->
                     <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
@@ -173,8 +178,7 @@ const toggleBackInStock = () =>
 
                         <span  class="text-left md:text-right text-xs break-words">
                             {{ trans("RRP") }}:
-                            {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}
-                            / {{ product.unit }}
+                            {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }} / {{ product.unit }}
                         </span>
                     </div>
                 </div>
@@ -198,10 +202,6 @@ const toggleBackInStock = () =>
                 </div>
             </div>
             
-            <!-- Section: Discounts -->
-            <div v-if="Object.keys(product.offers_data || {})?.length" class="w-full px-3">
-                <Discount :offers_data="product.offers_data" class="text-xxs w-full justify-center" />
-            </div>
 
             <!-- PRICE + BUTTON (FIXED AT BOTTOM) -->
             <div  v-if="layout?.iris?.is_logged_in" class="relative px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
@@ -209,14 +209,14 @@ const toggleBackInStock = () =>
                     <div class="font-extrabold text-black text-sm">
                         {{ trans("Price") }}:
                         <template v-if="Object.keys(product.offers_data || {})?.length">
-                            <span class="text-green-600">{{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}</span>
-                            <span class="ml-1.5 line-through text-gray-500 text-xs font-normal opacity-60">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
+                            <span class="mr-1.5 line-through text-gray-500 text-xs font-normal opacity-60">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
+                            <span class="text-red-600">{{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}</span>
                         </template>
                         <span v-else class="text-black">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
                     </div>
 
                     <div class="mt-1 mr-9">
-                        <span v-if="Object.keys(product.offers_data || {})?.length" v-tooltip="trans('Discounted from :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.price_per_unit) })" class="text-green-600">
+                        <span v-if="Object.keys(product.offers_data || {})?.length" v-tooltip="trans('Discounted from :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.price_per_unit) })" class="text-red-600">
                             ({{ locale.currencyFormat(currency?.code, product.offer_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
                         </span>
                         <span v-else class="">

@@ -53,6 +53,7 @@ const props = defineProps<{
         createToken: routeType
         deleteToken: routeType
     }
+    two_fa_status: {}
 }>();
 
 const isModalApiToken = ref(false);
@@ -137,7 +138,7 @@ const onClickCopyButton = async (text: string) => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :twoFAStatus="two_fa_status"></component>
 
     <Modal :isOpen="isModalApiToken" @onClose="() => (isModalApiToken = false)" width="w-fit max-w-xl"
            height="h-[500px]">

@@ -24,7 +24,7 @@ class ShowIrisSubSitemap
     {
 
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         $validSitemapTypes = [
             'products',

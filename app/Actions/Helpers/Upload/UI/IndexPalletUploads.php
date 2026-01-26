@@ -30,7 +30,7 @@ class IndexPalletUploads
 
     private bool $asAction = false;
 
-    public function handle(Fulfilment|FulfilmentCustomer $parent, string $prefix = null): LengthAwarePaginator
+    public function handle(Fulfilment|FulfilmentCustomer $parent, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);

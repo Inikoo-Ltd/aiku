@@ -74,7 +74,7 @@ class IndexInvoices extends OrgAction
         }
 
 
-        $queryBuilder = QueryBuilder::for(Invoice::class);
+        $queryBuilder = QueryBuilder::for(Invoice::class)->withTrashed();
         $queryBuilder->where('invoices.type', InvoiceTypeEnum::INVOICE);
         $queryBuilder->whereNot('invoices.in_process', true);
 
@@ -567,7 +567,6 @@ class IndexInvoices extends OrgAction
                 ]
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.accounting.invoices.index' =>

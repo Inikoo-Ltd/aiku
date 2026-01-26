@@ -374,7 +374,7 @@ provide("goNext", goNext)
 				<div
 					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
 					<img
-						src="https://aw.aurora.systems/art/aurora_log_v2_orange.png"
+						src="https://aiku.io/art/aurora.png"
 						alt=""
 						class="h-9 sm:h-12" />
 					<div class="flex flex-col">

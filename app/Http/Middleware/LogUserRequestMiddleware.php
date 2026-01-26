@@ -17,7 +17,6 @@ class LogUserRequestMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-
         if (!config('app.log_user_requests')) {
             return $next($request);
         }
@@ -27,9 +26,18 @@ class LogUserRequestMiddleware
         }
 
 
+        $ip          = $request->ip();
+        $geoLocation = [
+            $request->header('CF-IPCountry') ?? 'XX',
+            $request->header('CF-Region'),
+            $request->header('CF-IPCity'),
+            $request->header('CF-IPLongitude'),
+            $request->header('CF-IPLatitude'),
+        ];
 
         /* @var User $user */
         $user = $request->user();
+
         if (!app()->runningUnitTests() && $user) {
             ProcessUserRequest::dispatch(
                 $user,
@@ -39,11 +47,10 @@ class LogUserRequestMiddleware
                     'arguments' => $request->route()->originalParameters(),
                     'url'       => $request->path(),
                 ],
-                $request->ip(),
-                $request->header('User-Agent')
+                $ip,
+                $request->header('User-Agent'),
+                $geoLocation
             );
-
-
         }
 
         return $next($request);

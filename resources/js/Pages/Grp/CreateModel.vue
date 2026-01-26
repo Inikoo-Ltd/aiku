@@ -29,7 +29,7 @@ const props = defineProps<{
     formData: {
         submitButton?: String
         fullLayout?: Boolean
-        submitPosition?:String
+        submitPosition?: String
         blueprint: {
             title?: string
             subtitle?: string
@@ -63,17 +63,17 @@ const handleFormSubmit = async () => {
     if (!props.formData.submitButton) {
         if (props.formData?.route?.body) {
             form
-            .transform((data) => ({
-                ...data,
-                ...props.formData.route.body
-            }))
-            .post(route(
-                props.formData.route.name,
-                props.formData.route.parameters
-            ), {
-                onStart: () => isLoading.value = true,
-                onError: () => isLoading.value = false
-            })
+                .transform((data) => ({
+                    ...data,
+                    ...props.formData.route.body
+                }))
+                .post(route(
+                    props.formData.route.name,
+                    props.formData.route.parameters
+                ), {
+                    onStart: () => isLoading.value = true,
+                    onError: () => isLoading.value = false
+                })
         } else {
             form.post(route(
                 props.formData.route.name,
@@ -126,6 +126,7 @@ const onSelectSubmitChange = (value) => {
     ButtonActive.value = value
 }
 
+console.log("formdata create", props.formData)
 </script>
 
 <template>
@@ -134,34 +135,18 @@ const onSelectSubmitChange = (value) => {
     <PageHeading :data="pageHead">
         <template v-if="formData?.submitPosition == 'top'" #other>
             <div class="flex flex-col items-end sm:flex-row sm:items-center gap-2 rounded-md">
-                <Button
-                    v-if="!formData.submitButton"
-                    :disabled="form.processing"
-                    type="save"
-                    @click="handleFormSubmit"
-                    :loading="isLoading"
-                />
+                <Button v-if="!formData.submitButton" :disabled="form.processing" type="save" @click="handleFormSubmit"
+                    :loading="isLoading" />
 
                 <div v-else-if="formData.submitButton == 'dropdown'" class="flex justify-center">
-                    <Button
-                        :key="ButtonActive.key"
-                        type="save"
-                        :disabled="form.processing"
-                        class="rounded-r-none border-none"
-                        size="m" @click="handleFormSubmit"
-                        :label="ButtonActive.label"
-                        :loading="isLoading"
-                    />
+                    <Button :key="ButtonActive.key" type="save" :disabled="form.processing"
+                        class="rounded-r-none border-none" size="m" @click="handleFormSubmit"
+                        :label="ButtonActive.label" :loading="isLoading" />
 
                     <Menu as="div" class="relative inline-block text-left">
                         <MenuButton as="template">
-                            <Button
-                                icon="fas fa-chevron-down"
-                                :disabled="form.processing"
-                                class="rounded-l-none border-none"
-                                :style="'tertiary'"
-                                size="l"
-                            />
+                            <Button icon="fas fa-chevron-down" :disabled="form.processing"
+                                class="rounded-l-none border-none" :style="'tertiary'" size="l" />
                         </MenuButton>
 
                         <transition enter-active-class="transition duration-100 ease-out"
@@ -172,8 +157,7 @@ const onSelectSubmitChange = (value) => {
                             leave-to-class="transform scale-95 opacity-0">
                             <MenuItems
                                 class="absolute z-50 right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/10 focus:outline-none"
-                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'"    
-                            >
+                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'">
                                 <div class="px-1 py-1">
                                     <div v-for="(item, index) in formData.route">
                                         <MenuItem>
@@ -223,14 +207,17 @@ const onSelectSubmitChange = (value) => {
                 @submit.prevent="handleFormSubmit">
 
                 <Transition name="spin-to-down">
-                    <div v-if="usePage().props?.errors?.error_in_models" class="max-w-3xl mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
-                        <FontAwesomeIcon v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'" icon='far fa-ban' class='text-lg' fixed-width aria-hidden='true' />
+                    <div v-if="usePage().props?.errors?.error_in_models"
+                        class="max-w-3xl mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
+                        <FontAwesomeIcon
+                            v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'"
+                            icon='far fa-ban' class='text-lg' fixed-width aria-hidden='true' />
                         <div class="">{{ usePage().props.errors.error_in_models }}</div>
                     </div>
                 </Transition>
 
 
-                <template v-for="(sectionData, sectionIdx ) in formData['blueprint']" :key="sectionIdx">
+                <template v-for="(sectionData, sectionIdx) in formData['blueprint']" :key="sectionIdx">
                     <!-- If Section: all fields is not hidden -->
                     <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
                         class="relative py-4">
@@ -248,7 +235,7 @@ const onSelectSubmitChange = (value) => {
                             </p>
                         </div>
                         <div class="mt-2 pt-4 sm:pt-5">
-                            <template v-for="(fieldData, fieldName, index ) in sectionData.fields" :key="index">
+                            <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                 <!-- If Field is not hidden = true -->
                                 <dl v-if="!fieldData.hidden" class="mt-1 pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4"
                                     :class="fieldData.full ? '' : 'max-w-3xl'">
@@ -257,12 +244,11 @@ const onSelectSubmitChange = (value) => {
                                         <div class="inline-flex items-start leading-none">
                                             <span>{{ fieldData.label }}</span>
                                             <!-- Icon: Required -->
-                                            <FontAwesomeIcon v-if="fieldData.required"
-                                                :icon="['fas', 'asterisk']"
+                                            <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']"
                                                 class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
                                         </div>
                                     </dt>
-                                    
+
                                     <!-- Field (Full: to full the component field i.e create Prospects Mailshot) -->
                                     <dd :class="fieldData.full ? 'sm:col-span-3' : 'sm:col-span-2'">
                                         <div class="mt-1 flex text-sm text-gray-700 sm:mt-0">
@@ -282,14 +268,11 @@ const onSelectSubmitChange = (value) => {
                 </template>
 
                 <!-- Button -->
-                <div v-if="!formData?.submitPosition || formData?.submitPosition != 'top'" class="pt-5 flex justify-end">
-                    <Button
-                        v-if="!formData.submitButton"
-                        :loading="isLoading"
-                        type="save"
-                        @click="handleFormSubmit"
-                    />
+                <div v-if="!formData?.submitPosition || formData?.submitPosition != 'top'"
+                    class="pt-5 flex justify-end">
 
+                    <Button v-if="!formData.submitButton" :loading="isLoading" label="Continue" style="primary"
+                        @click="handleFormSubmit" />
                     <div v-else-if="formData.submitButton == 'dropdown'" class="flex justify-center">
                         <Button :key="ButtonActive.key" type="submit" :disabled="form.processing"
                             class="rounded-r-none border-none" :style="'primary'" size="m" @click="handleFormSubmit">

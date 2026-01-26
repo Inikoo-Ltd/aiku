@@ -18,7 +18,7 @@ class BreakWebsiteVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
-    public function handle(Website $website, Command $command = null): array
+    public function handle(Website $website, ?Command $command = null): array
     {
 
         return $this->sendVarnishBanHttp([

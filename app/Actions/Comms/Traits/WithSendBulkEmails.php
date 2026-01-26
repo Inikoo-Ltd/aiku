@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
 {
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, string $unsubscribeUrl = null, string $passwordToken = null, string $invoiceUrl = null, array $additionalData = []): DispatchedEmail
+    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null): DispatchedEmail
     {
         $html = $emailHtmlBody;
 
@@ -52,11 +52,12 @@ trait WithSendBulkEmails
             emailHtmlBody: $html,
             dispatchedEmail: $dispatchedEmail,
             sender: $sender,
-            unsubscribeUrl: $unsubscribeUrl
+            unsubscribeUrl: $unsubscribeUrl,
+            senderName: $senderName
         );
     }
 
-    private function replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl = null, $passwordToken = null, $invoiceUrl = null, array $additionalData = []): ?string
+    private function replaceMergeTags($placeholder, $dispatchedEmail, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = []): ?string
     {
         $originalPlaceholder = $placeholder;
         $placeholder         = Str::kebab(trim($placeholder));

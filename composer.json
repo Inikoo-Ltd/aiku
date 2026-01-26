@@ -8,7 +8,7 @@
   ],
   "license": "MIT",
   "require": {
-    "php": "^8.3",
+    "php": "^8.4",
     "ext-bcmath": "*",
     "ext-curl": "*",
     "ext-gd": "*",
@@ -27,6 +27,7 @@
     "aws/aws-php-sns-message-validator": "^1.1",
     "aws/aws-sdk-php": "^3.255",
     "aws/aws-sdk-php-laravel": "^3.8",
+    "bacon/bacon-qr-code": "*",
     "carlos-meneses/laravel-mpdf": "^2.1",
     "checkout/checkout-sdk-php": "^4",
     "cloudstudio/ollama-laravel": "^1.0",
@@ -35,6 +36,7 @@
     "darkaonline/l5-swagger": "^9.0",
     "deepseek-php/deepseek-php-client": "^2.0",
     "elasticsearch/elasticsearch": "^8.8",
+    "ezyang/htmlpurifier": "^4.19",
     "google/apiclient": "^2.15.0",
     "guzzlehttp/guzzle": "^7.2",
     "hisorange/browser-detect": "^4.5",
@@ -71,6 +73,7 @@
     "phlak/semver": "^6.0",
     "phpmailer/phpmailer": "^6.9",
     "picqer/php-barcode-generator": "^3.2",
+    "pragmarx/google2fa-laravel": "*",
     "predis/predis": "^3",
     "propaganistas/laravel-phone": "^5.0",
     "pusher/pusher-php-server": "^7.2",
@@ -104,7 +107,8 @@
     "vemcogroup/laravel-translation": "^3.0",
     "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
-    "webklex/laravel-imap": "^6.2"
+    "webklex/laravel-imap": "^6.2",
+    "ext-libxml": "*"
   },
   "require-dev": {
     "amphibee/laravel-pint-pre-commit": "^1.5",

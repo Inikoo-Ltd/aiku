@@ -33,6 +33,7 @@ class DeliveryNoteResource extends JsonResource
             'is_premium_dispatch'       => $deliverNote->is_premium_dispatch,
             'has_extra_packing'         => $deliverNote->has_extra_packing,
             'updated_at'     => $deliverNote->updated_at,
+            'is_cash_on_delivery' => $deliverNote->is_cash_on_delivery
         ];
     }
 }

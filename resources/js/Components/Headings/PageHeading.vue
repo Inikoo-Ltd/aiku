@@ -307,7 +307,6 @@ const setError = (e) => {
 									:dataToSubmit="dataToSubmit" />
 							</slot>
 						</slot>
-
 						<!-- ButtonGroup -->
 						<slot
 							v-else-if="action.type == 'buttonGroup'"

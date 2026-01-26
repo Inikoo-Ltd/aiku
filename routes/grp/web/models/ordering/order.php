@@ -37,13 +37,16 @@ use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update');
+    Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
 });
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
@@ -58,6 +61,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('return', StoreReturn::class)->name('return.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
+    Route::patch('update-discount', UpdateOrderDiscretionaryDiscount::class)->name('discount.update');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');

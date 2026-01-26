@@ -122,7 +122,7 @@ class IndexRetinaCollections extends RetinaAction
                     ]
                 );
 
-
+            $table->column(key: 'image', label: __('Image'), type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: false);
@@ -180,7 +180,7 @@ class IndexRetinaCollections extends RetinaAction
     }
 
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

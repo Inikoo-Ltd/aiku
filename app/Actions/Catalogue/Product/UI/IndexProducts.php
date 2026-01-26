@@ -135,7 +135,7 @@ class IndexProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null, string $bucket = null, $sales = true): Closure
+    public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null, ?string $bucket = null, $sales = true): Closure
     {
         return function (InertiaTable $table) use ($shop, $modelOperations, $prefix, $bucket, $sales) {
             if ($prefix) {

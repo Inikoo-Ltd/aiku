@@ -14,10 +14,13 @@ use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerClient;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
+use App\Traits\SanitizeInputs;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaCustomerClient extends RetinaAction
 {
+    use SanitizeInputs;
+
     public function handle(CustomerClient $customerClient, array $modelData): CustomerClient
     {
         $customerClient = UpdateCustomerClient::make()->action(
@@ -26,6 +29,17 @@ class UpdateRetinaCustomerClient extends RetinaAction
         );
 
         return $customerClient;
+    }
+
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields([
+            'contact_name',
+            'company_name',
+            'phone',
+            'address',
+        ]);
+        $this->sanitizeInputs();
     }
 
     public function rules(): array
@@ -42,6 +56,7 @@ class UpdateRetinaCustomerClient extends RetinaAction
 
     public function asController(CustomerClient $customerClient, ActionRequest $request)
     {
+        $this->enableSanitize();
         $this->initialisation($request);
 
         $this->handle($customerClient, $this->validatedData);

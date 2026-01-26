@@ -30,6 +30,8 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $packed_in
  * @property mixed $warehouse_area_picking_position
  * @property mixed $warehouse_area_code
+ * @property mixed $batch_code
+ * @property mixed $expiry_date
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -124,6 +126,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'is_packed'                    => $isPacked,
             'quantity_required_fractional' => $requiredFactionalData,
             'warehouse_area'               => $warehouseArea,
+            'batch_code'                   => $this->batch_code,
+            'expiry_date'                  => $this->expiry_date,
 
 
             'upsert_picking_route' => [

@@ -34,6 +34,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
@@ -105,7 +106,7 @@ class RunInvoiceHydrators
             $queueOrRun(ShopHydratePlatformSalesIntervalsSalesGrpCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
         }
 
-        if ($invoice->shop->type == 'fulfilment') {
+        if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
             SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
         }
     }

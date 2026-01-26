@@ -9,8 +9,10 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
+use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
@@ -19,7 +21,6 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
-use App\Http\Resources\Catalogue\Shop\ShopIntervalsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -50,6 +51,24 @@ class ShowShop extends OrgAction
         $customRangeData = $this->setupCustomRange($userSettings, $shop);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        $performanceDates = [null, null];
+        $timeSeriesStats = [];
+
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
+                if (count($dates) === 2) {
+                    $performanceDates = [$dates[0], $dates[1]];
+                    $timeSeriesStats = GetShopTimeSeriesStats::run($shop, $dates[0], $dates[1]);
+                }
+            }
+        } else {
+            $timeSeriesStats = GetShopTimeSeriesStats::run($shop);
+        }
+
+        $topPerformanceStats = GetTopPerformanceStats::run($shop, $performanceDates[0], $performanceDates[1]);
+
         $tabsBox = $this->getTabsBox($shop);
 
         $dashboard = [
@@ -68,8 +87,9 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => array_merge(
                         [
-                            'interval_data' => json_decode(ShopIntervalsResource::make($shop)->setCustomRangeData($customRangeData)->toJson()),
-                            'currency_code' => $shop->currency->code,
+                            'interval_data'   => $timeSeriesStats,
+                            'currency_code'   => $shop->currency->code,
+                            'top_performance' => $topPerformanceStats,
                         ],
                         $this->getAverageClv($shop)
                     ),
@@ -82,13 +102,15 @@ class ShowShop extends OrgAction
         ];
 
         if ($shop->type->value === 'dropshipping') {
+            $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($shop, $performanceDates[0], $performanceDates[1]);
+
             $dashboard['super_blocks'][0]['blocks'] = [
                 [
                     'id'          => 'sales_table',
                     'type'        => 'table',
                     'current_tab' => $currentTab,
                     'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $customRangeData),
+                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $platformTimeSeriesStats),
                     'charts'      => [],
                 ],
             ];

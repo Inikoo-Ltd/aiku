@@ -37,13 +37,13 @@ class OrganisationHydrateOrderStatePacked implements ShouldBeUnique
         $stats = [
 
 
-            'number_orders_state_packed'              => $organisation->orders()->where('state', OrderStateEnum::PACKED)->count(),
-            'orders_state_packed_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::PACKED)->sum('org_net_amount'),
-            'orders_state_packed_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::PACKED)->sum('grp_net_amount'),
+            'number_orders_state_packed'              => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::PACKED)->count(),
+            'orders_state_packed_amount_org_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::PACKED)->sum('org_net_amount'),
+            'orders_state_packed_amount_grp_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::PACKED)->sum('grp_net_amount'),
 
-            'number_orders_packed_today'              => $organisation->orders()->whereDate('packed_at', Carbon::today())->count(),
-            'orders_packed_today_amount_org_currency' => $organisation->orders()->whereDate('packed_at', Carbon::today())->sum('org_net_amount'),
-            'orders_packed_today_amount_grp_currency' => $organisation->orders()->whereDate('packed_at', Carbon::today())->sum('grp_net_amount'),
+            'number_orders_packed_today'              => $organisation->orderFromActiveShops()->whereDate('packed_at', Carbon::today())->count(),
+            'orders_packed_today_amount_org_currency' => $organisation->orderFromActiveShops()->whereDate('packed_at', Carbon::today())->sum('org_net_amount'),
+            'orders_packed_today_amount_grp_currency' => $organisation->orderFromActiveShops()->whereDate('packed_at', Carbon::today())->sum('grp_net_amount'),
 
 
         ];

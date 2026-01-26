@@ -102,9 +102,10 @@ class IndexRetinaSubDepartments extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
+            $table->column(key: 'image', label: __('Image'), type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_families', label: __('families'), canBeHidden: false);
+                ->column(key: 'number_families', label: __('Families'), canBeHidden: false);
         };
     }
 
@@ -158,7 +159,7 @@ class IndexRetinaSubDepartments extends RetinaAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

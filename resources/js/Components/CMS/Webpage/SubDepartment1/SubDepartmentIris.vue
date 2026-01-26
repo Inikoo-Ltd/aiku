@@ -34,11 +34,11 @@ library.add(
 
 const props = defineProps<{
   fieldValue: {
-    collections : Array<Object>
-    sub_departments :Array<Object>
-      container : {
-        properties : object
-      }
+    collections: Array<Object>
+    sub_departments: Array<Object>
+    container: {
+      properties: object
+    }
   }
   webpageData?: any
   blockData?: object
@@ -81,61 +81,48 @@ const mergedItems = computed(() => {
 })
 
 const idxSlideLoading = ref<number | null>(null)
-
+console.log('ssssdsd', mergedItems.value)
 </script>
 
 <template>
 
-    <div v-if="mergedItems.length"
-    class="mx-auto"
-    :class="screenClass"
-    :style="getStyles(fieldValue?.container?.properties, screenType)"
-  >
+  <div v-if="mergedItems.length" class="mx-auto" :class="screenClass"
+    :style="getStyles(fieldValue?.container?.properties, screenType)">
     <h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">
       {{ trans("Browse By Sub-department") }}
     </h2>
 
-    <div >
+    <div>
       <div class="grid gap-4" :class="gridColsClass">
-        <LinkIris
-          v-for="(item, index) in mergedItems"
-          :key="item?.code"
-          :href="`${item?.url}`"
+        <LinkIris v-for="(item, index) in mergedItems" :key="item?.code" :href="`${item?.url}`"
           class="relative flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
-          :aria-label="`Go to ${item?.name}`"
-          type="internal"
-          @start="() => idxSlideLoading = index"
+          :aria-label="`Go to ${item?.name}`" type="internal" @start="() => idxSlideLoading = index"
           @finish="() => idxSlideLoading = null"
-          :style="getStyles(fieldValue?.card?.container?.properties, screenType)"
-        >
-        <template #default>
-          <div v-if="item?.icon || item?.web_images?.main?.gallery" class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">
-            <FontAwesomeIcon
-              v-if="item?.icon"
-              :icon="item?.icon"
-              class="text-xl w-5 h-5"
-            />
-            <Image
-              v-else-if="item?.web_images?.main?.gallery"
-              :src="item?.web_images?.main?.gallery"
-              class="max-w-full max-h-full object-contain"
-              :alt="item?.name"
-            />
-          </div>
-          <span class="flex-1 text-center">{{ item?.name }}</span>
-          
-          <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-2xl">
-            <LoadingIcon />
-          </div>
+          :style="getStyles(fieldValue?.card?.container?.properties, screenType)">
+          <template #default>
+            <div v-if="item?.icon || item?.web_images?.main?.gallery || item?.image"
+              class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">
+              <FontAwesomeIcon v-if="item?.icon" :icon="item?.icon" class="text-xl w-5 h-5" />
+
+              <Image v-else :src="item?.web_images?.main?.gallery || item?.image"
+                class="max-w-full max-h-full object-contain" :alt="item?.name" />
+            </div>
+
+            <span class="flex-1 text-center">{{ item?.name }}</span>
+
+            <div v-if="idxSlideLoading == index"
+              class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-2xl">
+              <LoadingIcon />
+            </div>
           </template>
+
         </LinkIris>
       </div>
     </div>
 
-    
+
   </div>
 
 
-<div v-else></div>
+  <div v-else></div>
 </template>
-

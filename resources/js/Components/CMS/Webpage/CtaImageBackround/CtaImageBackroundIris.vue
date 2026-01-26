@@ -28,11 +28,14 @@ const layout: any = inject("layout", {})
 				:style="{
 					...getStyles(fieldValue.image.properties, screenType),
 				}">
-				<Image :src="fieldValue?.image?.source
-					? fieldValue.image.source
-					: { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }"
-					:alt="fieldValue?.image?.alt ?? 'CTA Image'" imageCover
-					class="rounded-lg object-cover w-full h-full" />
+				<Image 
+					:src="fieldValue?.image?.source ? fieldValue.image.source : { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }"
+					:alt="fieldValue?.image?.alt ?? 'CTA Image'" 
+					imageCover
+					class="rounded-lg object-cover w-full h-full" 
+					:height="getStyles(fieldValue.image.properties, screenType,false)?.height"
+					:width="getStyles(fieldValue.image.properties, screenType,false)?.width"
+				/>
 			</div>
 
 			<!-- Text + button overlay -->

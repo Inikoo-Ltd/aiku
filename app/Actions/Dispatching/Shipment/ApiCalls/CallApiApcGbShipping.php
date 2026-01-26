@@ -131,7 +131,7 @@ class CallApiApcGbShipping extends OrgAction
                 'PostalCode'   => $postalCode,
                 'City'         => Str::limit(Arr::get($parentResource, 'to_address.locality'), 31, ''),
                 'County'       => Str::limit(Arr::get($parentResource, 'to_address.administrative_area'), 31, ''),
-                'CountryCode'  => Arr::get($parentResource, 'to_address.country.code'),
+                'CountryCode'  => Arr::get($parentResource, 'to_address.country_code'),
                 'Contact'      => [
                     'PersonName'  => $contactName,
                     'PhoneNumber' => Str::limit(Arr::get($parentResource, 'to_phone'), 15, ''),

@@ -29,7 +29,7 @@ class IndexRetinaUploadRecords extends RetinaAction
 
     private bool $action = false;
 
-    public function handle(Upload $upload, string $prefix = null): LengthAwarePaginator
+    public function handle(Upload $upload, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);

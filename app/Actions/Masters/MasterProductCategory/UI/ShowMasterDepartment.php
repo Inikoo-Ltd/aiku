@@ -20,6 +20,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -154,6 +155,14 @@ class ShowMasterDepartment extends GrpAction
                     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
                     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
 
+                'salesData' => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
+                    fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)),
+
+                MasterDepartmentTabsEnum::SALES->value => $this->tab == MasterDepartmentTabsEnum::SALES->value ?
+                    fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterDepartment, MasterDepartmentTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterDepartment, MasterDepartmentTabsEnum::SALES->value))),
+
                 MasterDepartmentTabsEnum::IMAGES->value => $this->tab == MasterDepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetMasterProductCategoryImages::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
@@ -166,11 +175,12 @@ class ShowMasterDepartment extends GrpAction
             ]
         )
             ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value, sales:false))
+            ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterDepartmentTabsEnum::SALES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterDepartmentTabsEnum::HISTORY->value));
     }
 
 
-    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, ?MasterProductCategory $masterDepartment, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, ?MasterProductCategory $masterDepartment, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         if ($masterDepartment == null) {
             return [];

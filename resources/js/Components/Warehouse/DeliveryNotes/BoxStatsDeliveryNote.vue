@@ -19,6 +19,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
+import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -349,6 +350,12 @@ const updateCollection = async (e: Event) => {
 
                 </template>
                 <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
+
+                <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
+                    <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" />
+                    {{ trans('Cash on Delivery') }}
+                </div>
+
             </div>
         </BoxStatPallet>
 

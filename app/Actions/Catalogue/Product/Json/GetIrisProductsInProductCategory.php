@@ -24,6 +24,14 @@ class GetIrisProductsInProductCategory extends IrisAction
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
         $queryBuilder
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('webpages')
+                    ->whereColumn('webpages.id', 'products.webpage_id')
+                    ->where('webpages.state', 'live');
+            });
+
+        $queryBuilder
             ->where(function ($query) {
                 $query
                     ->whereNull('products.variant_id')

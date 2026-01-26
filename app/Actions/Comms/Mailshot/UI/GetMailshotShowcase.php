@@ -20,7 +20,7 @@ class GetMailshotShowcase
     {
         return [
             'mailshot' => new MailshotResource($mailshot),
-            'compiled_layout' => $mailshot->emailOngoingRun?->email?->liveSnapshot?->compiled_layout,
+            'compiled_layout' => $mailshot->email?->liveSnapshot?->compiled_layout,
         ];
     }
 }

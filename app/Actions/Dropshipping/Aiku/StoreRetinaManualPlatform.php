@@ -19,6 +19,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Rules\IUnique;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,6 +32,7 @@ class StoreRetinaManualPlatform extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use SanitizeInputs;
 
     public function handle(Customer $customer, array $modelData): CustomerSalesChannel
     {
@@ -60,6 +62,14 @@ class StoreRetinaManualPlatform extends RetinaAction
         ]));
     }
 
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields([
+            'name'
+        ]);
+        $this->sanitizeInputs();
+    }
+
     public function rules(): array
     {
         return [
@@ -83,6 +93,7 @@ class StoreRetinaManualPlatform extends RetinaAction
 
     public function asController(ActionRequest $request): CustomerSalesChannel
     {
+        $this->enableSanitize();
         $this->initialisation($request);
 
         return $this->handle($this->customer, $this->validatedData);

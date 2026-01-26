@@ -32,7 +32,7 @@ Route::middleware(["auth"])->group(function () {
                 * { font-family: sans-serif; }
             </style>";
             echo "<table class='route-table' style='width:100%'>";
-            echo "<th>";
+            echo "<tr>";
             echo "<td><h4>HTTP Method</h4></td>";
             echo "<td><h4>Route</h4></td>";
             echo "<td><h4>Name</h4></td>";
@@ -65,8 +65,8 @@ Route::middleware(["auth"])->group(function () {
                         el.addEventListener('click', function () {
                             const text = this.getAttribute('data-copy');
 
+                            // Notification
                             navigator.clipboard.writeText(text).then(() => {
-                                // Notifikasi kecil
                                 const toast = document.createElement('div');
                                 toast.innerText = 'Copied: ' + text;
                                 toast.style.position = 'fixed';

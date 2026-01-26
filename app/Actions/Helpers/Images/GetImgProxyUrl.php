@@ -106,7 +106,7 @@ class GetImgProxyUrl
 
     }
 
-    public function getProcessingOptions(Image $img = null): string
+    public function getProcessingOptions(?Image $img = null): string
     {
 
         if (!$img) {

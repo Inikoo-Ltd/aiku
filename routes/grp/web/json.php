@@ -90,6 +90,8 @@ use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
+use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
+use App\Actions\Comms\Mailshot\GetMailshotTemplate;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
@@ -240,3 +242,6 @@ Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::c
 
 
 Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');
+
+Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
+Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');

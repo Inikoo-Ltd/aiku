@@ -33,6 +33,13 @@ class DeleteOrder extends OrgAction
         if (in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED])) {
             $order->delete();
 
+            $order->billingAddress()->forceDelete();
+            $order->deliveryAddress()->forceDelete();
+
+            foreach ($order->addresses as $address) {
+                $address->forceDelete();
+            }
+
             $order = $this->update($order, $deletedData, ['data']);
             $order->transactions()->delete();
             $this->orderHandlingHydrators($order, $order->state);

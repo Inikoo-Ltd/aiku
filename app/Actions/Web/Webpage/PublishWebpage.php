@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
@@ -20,6 +21,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
+use App\Models\Catalogue\Product;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use OwenIt\Auditing\Resolvers\UserResolver;
@@ -54,7 +56,6 @@ class PublishWebpage extends OrgAction
 
         $currentUnpublishedLayout = $webpage->unpublishedSnapshot->layout;
 
-
         /** @var Snapshot $snapshot */
         $snapshot = StoreWebpageSnapshot::run(
             $webpage,
@@ -69,7 +70,6 @@ class PublishWebpage extends OrgAction
                 'publisher_type' => Arr::get($modelData, 'publisher_type'),
             ]
         );
-
 
         $deployment = StoreDeployment::run(
             $webpage,
@@ -97,6 +97,9 @@ class PublishWebpage extends OrgAction
         }
 
         $webpage->update($updateData);
+        if ($webpage->model_type === Product::class && $webpage->model) {
+            ProductHydrateHasLiveWebpage::run($webpage->model);
+        }
 
         BreakWebpageCache::run($webpage);
         ReindexWebpageLuigiData::dispatch($webpage->id)->delay(60 * 15);

@@ -35,8 +35,8 @@ class GroupHydrateOrderStateCreating implements ShouldBeUnique
         }
 
         $stats = [
-            'number_orders_state_creating'              => $group->orders()->where('state', OrderStateEnum::CREATING)->count(),
-            'orders_state_creating_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::CREATING)->sum('grp_net_amount'),
+            'number_orders_state_creating'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::CREATING)->count(),
+            'orders_state_creating_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::CREATING)->sum('grp_net_amount'),
 
         ];
 

@@ -17,6 +17,7 @@ use App\Models\CRM\PollOption;
 use App\Models\Helpers\Country;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\Rules\Password;
@@ -25,9 +26,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithRetinaRegistration
 {
+    use SanitizeInputs;
+
     public function handle(array $modelData): void
     {
-
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             RegisterFulfilmentCustomer::run(
                 $this->shop->fulfilment,
@@ -61,7 +63,7 @@ trait WithRetinaRegistration
         foreach ($pollReplies as $key => $value) {
             $pollId     = Arr::get($value, 'id');
             $pollType   = Arr::get($value, 'type');
-            $pollAnswer = Arr::get($value, 'answer');
+            $pollAnswer = strip_tags(Arr::get($value, 'answer'));
 
             if (!$pollId || !$pollType) {
                 $validator->errors()->add(
@@ -116,15 +118,16 @@ trait WithRetinaRegistration
 
     public function prepareForValidation(ActionRequest $request): void
     {
+        $this->sanitizeInputs();
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
 
         if ($request->has('tax_number')) {
-            $taxNumberValue = (string)Arr::get($request->get('tax_number'), 'value');
+            $taxNumberValue = (string)Arr::get($request->input('tax_number'), 'value');
             if ($taxNumberValue) {
-                $countryCode   = Arr::get($request->get('tax_number'), 'country.isoCode.short');
+                $countryCode   = Arr::get($request->input('tax_number'), 'country.isoCode.short');
                 $country       = Country::where('code', $countryCode)->first();
                 $taxNumberData = [
-                    'number'     => (string)Arr::get($request->get('tax_number'), 'value'),
+                    'number'     => strip_tags((string)Arr::get($request->input('tax_number'), 'value')),
                     'country_id' => $country?->id,
                 ];
             } else {

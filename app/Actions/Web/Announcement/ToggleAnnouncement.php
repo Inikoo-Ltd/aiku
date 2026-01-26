@@ -21,7 +21,7 @@ class ToggleAnnouncement extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(Announcement $announcement, string $status = null): void
+    public function handle(Announcement $announcement, ?string $status = null): void
     {
         $this->update($announcement, [
             'status' => $status

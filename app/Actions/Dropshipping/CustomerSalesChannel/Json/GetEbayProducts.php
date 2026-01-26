@@ -25,7 +25,7 @@ class GetEbayProducts extends OrgAction
         if ($query === null) {
             $query = '';
         }
-        
+
         return GetProductForEbay::run($customerSalesChannel->user, $query, $offset);
     }
 
@@ -40,8 +40,8 @@ class GetEbayProducts extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $request->merge([
-            'query' => $request->get('query'),
-            'offset' => $request->get('offset'),
+            'query' => $request->input('query'),
+            'offset' => $request->input('offset'),
         ]);
     }
 

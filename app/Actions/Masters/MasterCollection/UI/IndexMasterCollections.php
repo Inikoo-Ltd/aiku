@@ -12,6 +12,8 @@ use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\UI\Catalogue\MasterCollectionsTabsEnum;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterCollection;
@@ -57,9 +59,11 @@ class IndexMasterCollections extends OrgAction
                 'master_shops',
                 'master_shops.id',
                 'master_collections.master_shop_id'
-            );
+            )
+            ->leftJoin('groups', 'master_shops.group_id', '=', 'groups.id')
+            ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id');
 
-        $queryBuilder->select([
+        $selects = [
             'master_collections.id',
             'master_collections.code',
             'master_collections.slug',
@@ -68,6 +72,7 @@ class IndexMasterCollections extends OrgAction
             'master_collections.name',
             'master_collections.status',
             'master_collections.web_images',
+            'currencies.code as currency_code',
 
             'master_collection_stats.number_current_master_families',
             'master_collection_stats.number_current_master_products',
@@ -76,7 +81,29 @@ class IndexMasterCollections extends OrgAction
             'master_shops.slug as master_shop_slug',
             'master_shops.code as master_shop_code',
             'master_shops.name as master_shop_name',
-        ]);
+        ];
+
+        if ($prefix === MasterCollectionsTabsEnum::SALES->value) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'master_collection_time_series',
+                timeSeriesRecordsTable: 'master_collection_time_series_records',
+                foreignKey: 'master_collection_id',
+                aggregateColumns: [
+                    'sales_grp_currency' => 'sales',
+                    'invoices'           => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
+
+        $queryBuilder->select($selects);
 
 
         $queryBuilder->selectRaw("
@@ -151,20 +178,27 @@ class IndexMasterCollections extends OrgAction
                 'number_current_master_families',
                 'number_current_master_products',
                 'number_current_master_collections',
+                'sales',
+                'invoices'
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): \Closure
+    public function tableStructure($prefix = null, $sales = false): \Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $sales) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
+
+            if ($sales) {
+                $table->betweenDates(['date']);
+            }
+
             $table
                 ->withGlobalSearch()
                 ->withEmptyState(
@@ -173,17 +207,26 @@ class IndexMasterCollections extends OrgAction
                     ],
                 );
 
-            $table->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
-            /*   $table->column(key: 'parents', label: __('Parents'), canBeHidden: false); */
-            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __(key: 'Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'master_department', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false);
-            $table->column(key: 'master_sub_department', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false);
-            $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
-            $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
-            $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
-            $table->column(key: 'actions', label: __('Action'));
+            if ($sales) {
+                $table
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            } else {
+                $table->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
+                /*   $table->column(key: 'parents', label: __('Parents'), canBeHidden: false); */
+                $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'name', label: __(key: 'Name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'master_department', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false);
+                $table->column(key: 'master_sub_department', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false);
+                $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
+                $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
+                $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
+                $table->column(key: 'actions', label: __('Action'));
+            }
         };
     }
 
@@ -251,11 +294,26 @@ class IndexMasterCollections extends OrgAction
                 ],
                 'data'        => MasterCollectionsResource::collection($masterCollections),
 
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => MasterCollectionsTabsEnum::navigation(),
+                ],
+
+                MasterCollectionsTabsEnum::INDEX->value => $this->tab == MasterCollectionsTabsEnum::INDEX->value ?
+                    fn () => MasterCollectionsResource::collection($masterCollections)
+                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::INDEX->value))),
+
+                MasterCollectionsTabsEnum::SALES->value => $this->tab == MasterCollectionsTabsEnum::SALES->value ?
+                    fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))),
+
+
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure(prefix: MasterCollectionsTabsEnum::INDEX->value))
+        ->table($this->tableStructure(prefix: MasterCollectionsTabsEnum::SALES->value, sales: true));
     }
 
-    public function getBreadcrumbs(MasterShop|MasterProductCategory|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(MasterShop|MasterProductCategory|Group $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -291,17 +349,17 @@ class IndexMasterCollections extends OrgAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionsTabsEnum::values());
 
-        return $this->handle(parent: $masterShop);
+        return $this->handle(parent: $masterShop, prefix: MasterCollectionsTabsEnum::INDEX->value);
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
         $group        = $this->parent;
-        $this->initialisationFromGroup($group, $request);
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionsTabsEnum::values());
 
-        return $this->handle(parent: $group);
+        return $this->handle(parent: $group, prefix: MasterCollectionsTabsEnum::INDEX->value);
     }
 }

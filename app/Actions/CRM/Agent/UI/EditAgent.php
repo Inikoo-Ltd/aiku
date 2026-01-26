@@ -11,6 +11,7 @@ use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ShopHasChatAgent;
 use App\Actions\Helpers\Shop\UI\GetShopOptions;
 use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 
 class EditAgent extends OrgAction
@@ -134,6 +135,20 @@ class EditAgent extends OrgAction
                                         ->toArray(),
                                     'labelProp' => 'label',
                                     'valueProp' => 'value',
+                                ],
+                            ],
+                        ],
+
+                        [
+                            'label'  => __('Language'),
+                            'title'  => __('Edit Language'),
+                            'fields' => [
+                                'language_id' => [
+                                    'type'  => 'select',
+                                    'label' => __('Language'),
+                                    'placeholder' => __('Select language'),
+                                    'options'  => GetLanguagesOptions::make()->translated(),
+                                    'value' => $agent->language_id,
                                 ],
                             ],
                         ],

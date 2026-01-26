@@ -24,6 +24,7 @@ use App\Models\Web\Website;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Arr;
 
 class ShowWebsiteWorkshop extends OrgAction
 {
@@ -186,6 +187,7 @@ class ShowWebsiteWorkshop extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'primary',
+                            'key'   => 'Publish',
                             'icon'  => ["fas", "fa-save"],
                             'label' => __('Publish'),
                             'route' => $publishRoute
@@ -237,6 +239,7 @@ class ShowWebsiteWorkshop extends OrgAction
                         ]
                     ],
                 ],
+                'layout_theme' => Arr::get($website->published_layout, 'theme'),
                 ...$tabs
             ]
         );

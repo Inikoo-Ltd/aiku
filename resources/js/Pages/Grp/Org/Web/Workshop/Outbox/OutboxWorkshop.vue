@@ -24,7 +24,7 @@ import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { data } from "autoprefixer"
 
-library.add(faUserCog,faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
 const props = defineProps<{
     title: string,
@@ -36,7 +36,7 @@ const props = defineProps<{
     mergeTags: Array<any>
     status: string
     publishRoute: routeType
-    sendTestRoute : routeType
+    sendTestRoute: routeType
     storeTemplateRoute: routeType
     organisationSlug: string
 }>()
@@ -106,7 +106,7 @@ const onSaveTemplate = (data: any) => {
 const sendTestToServer = async () => {
     isLoading.value = true;
     try {
-        const response = await axios.post(route(props.sendTestRoute.name,props.sendTestRoute.parameters),
+        const response = await axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
             { ...temporaryData.value, emails: email.value }
         );
     } catch (error) {
@@ -132,17 +132,17 @@ const saveTemplate = async () => {
         .post(
             route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
             {
-                name:templateName.value,
+                name: templateName.value,
                 layout: JSON.parse(temporaryData.value?.layout)
             },
         )
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
-             notify({
-                    title: trans('Success!'),
-                    text: trans('Success to save template'),
-                    type: 'success',
-                })
+            notify({
+                title: trans('Success!'),
+                text: trans('Success to save template'),
+                type: 'success',
+            })
         })
         .catch((error) => {
             notify({
@@ -207,12 +207,12 @@ const autoSave = async (jsonFile) => {
         });
 }
 
-const onSchedulePublish = (event) =>{
+const onSchedulePublish = (event) => {
     event.stopPropagation()
     _popover.value.toggle(event);
 }
 
-const schedulePublish = async () =>{
+const schedulePublish = async () => {
     try {
         const response = await axios.post(route('xxxxx'), {
             comment: comment.value,
@@ -237,33 +237,19 @@ const schedulePublish = async () =>{
 
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
     </PageHeading>
 
     <!-- beefree -->
-    <Beetree
-        v-if="builder == 'beefree'"
-        :updateRoute="updateRoute"
-        :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot"
-        :mergeTags="mergeTags"
-        :organisationSlug="organisationSlug"
-        @onSave="onSendPublish"
-        @sendTest="openSendTest"
-        @auto-save="autoSave"
-        @saveTemplate="onSaveTemplate"
-        ref="_beefree"
-    />
+    <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
+        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree" />
 
     <!-- unlayer -->
-    <Unlayer
-        v-else-if="builder == 'unlayer'"
-        :updateRoute="updateRoute"
-        :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot"
-        ref="_unlayer"
-    />
+    <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+        :snapshot="snapshot" ref="_unlayer" />
 
     <div v-else>
         <EmptyState :data="{
@@ -276,25 +262,17 @@ const schedulePublish = async () =>{
         :style="{ width: '25rem' }">
         <div class="pt-4">
             <div class="font-semibold w-24 mb-3">Email</div>
-            <Multiselect
-                v-model="email"
-                mode="tags"
-                :close-on-select="false"
-                :searchable="true"
-                :create-option="true"
-                :options="[]"
-                :showOptions="false"
-                :caret="false"
-            >
-            <template #tag="{ option, handleTagRemove, disabled }">
-            <slot name="tag" :option="option" :handleTagRemove="handleTagRemove" :disabled="disabled">
-                <div class="px-0.5 py-[3px]">
-                    <Tag :label="option.label" :closeButton="true"
-                        :stringToColor="true" size="sm" @onClose="(event) => handleTagRemove(option, event)" />
-                </div>
-            </slot>
-        </template>
-        </Multiselect>
+            <Multiselect v-model="email" mode="tags" :close-on-select="false" :searchable="true" :create-option="true"
+                :options="[]" :showOptions="false" :caret="false">
+                <template #tag="{ option, handleTagRemove, disabled }">
+                    <slot name="tag" :option="option" :handleTagRemove="handleTagRemove" :disabled="disabled">
+                        <div class="px-0.5 py-[3px]">
+                            <Tag :label="option.label" :closeButton="true" :stringToColor="true" size="sm"
+                                @onClose="(event) => handleTagRemove(option, event)" />
+                        </div>
+                    </slot>
+                </template>
+            </Multiselect>
             <div class="flex justify-end mt-3 gap-3">
                 <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"></Button>
                 <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send"></Button>

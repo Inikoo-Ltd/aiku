@@ -31,7 +31,17 @@ class RouteServiceProvider extends ServiceProvider
             ->name('pupil.')
             ->group(base_path('routes/pupil/pupil_app.php'));
 
+        Route::middleware(['grp', 'two_fa'])
+            ->domain('app.'.config('app.domain'))
+            ->name('grp.')
+            ->group(base_path('routes/grp/web/app.php'));
+            
         Route::middleware('grp')
+            ->domain('app.'.config('app.domain'))
+            ->name('grp.')
+            ->group(base_path('routes/grp/web/two_factor.php'));
+
+        Route::middleware(['grp', 'two_fa'])
             ->domain('app.'.config('app.domain'))
             ->name('grp.')
             ->group(base_path('routes/grp/web/app.php'));
