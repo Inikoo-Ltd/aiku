@@ -96,7 +96,6 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 </script>
 
 <template> 
-{{ product.variant }}
     <div  class="text-gray-800 isolate h-full flex flex-col flex-grow"  comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
@@ -159,15 +158,14 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </button>
                 </div>
 
-
-
-                <div v-if="layout?.iris?.is_logged_in && product.variant" class="absolute bottom-2 left-[32%] text-gray-500 text-xl z-10">
-                    <Button
-                        :label="trans('Choose variants')"
-                        size="xs"
-                        @click.prevent.stop="onClickVariant(product)"
-                    />
+                <div v-if="layout?.iris?.is_logged_in && product.variant"
+                    class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
+                    <div class="flex justify-center">
+                        <Button :label="trans('Choose variants')" size="xs"
+                            @click.prevent.stop="onClickVariant(product)" />
+                    </div>
                 </div>
+
             </component>
 
             <div class="xpx-3 mt-2">
