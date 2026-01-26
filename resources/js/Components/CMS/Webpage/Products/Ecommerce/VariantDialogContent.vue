@@ -3,12 +3,12 @@ import { ProductResource } from '@/types/Iris/Products'
 import { ref, inject } from 'vue';
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n';
-import { faCircle } from '@fas';
+import { faChevronCircleLeft, faChevronDown, faCircle } from '@fas';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue';
 import EcomAddToBasketv2 from '@/Components/Iris/Products/EcomAddToBasketv2.vue';
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons';
-import { faEnvelope } from '@far';
+import { faChevronCircleDown, faEnvelope, faShoppingCart } from '@far';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 
 const props = withDefaults(defineProps<{
@@ -97,27 +97,71 @@ const onUnselectBackInStock = (product: ProductResource) => {
     </div>
 
     <!-- VARIANT LIST -->
-    <div class="flex gap-2 mt-2 flex-nowrap overflow-x-auto">
-        <button v-for="(variant, index) in variants" :key="index" type="button"
-            @click="selectVariant(variant, index)"
+    <!-- DESKTOP -->
+    <div class="hidden md:flex gap-2 mt-2 flex-nowrap overflow-x-auto">
+        <button v-for="(variant, index) in variants" :key="index" type="button" @click="selectVariant(variant, index)"
             class="relative border px-3 py-2 text-sm font-medium shrink-0 transition overflow-hidden" :class="[
                 isActive(index) && variant.stock > 0
                     ? 'option-primary'
                     : 'bg-white text-gray-700 hover:bg-gray-100',
 
-                variant.stock === 0 ? 'opacity-60 after:content-[\'\'] after:absolute after:top-1/2 after:left-[-25%] after:w-[140%] after:h-[2px] after:bg-gray-400 after:-rotate-[34deg]' : ''
+                variant.stock === 0
+                    ? 'opacity-60 after:content-[\'\'] after:absolute after:top-1/2 after:left-[-25%] after:w-[140%] after:h-[2px] after:bg-gray-400 after:-rotate-[34deg]'
+                    : ''
             ]">
             {{ variant.variant_label }}
         </button>
     </div>
+
+    <!-- MOBILE -->
+    <div class="md:hidden mt-2">
+        <details class="group border rounded-lg">
+            <summary class="px-3 py-2 text-sm font-medium cursor-pointer flex justify-between items-center list-none">
+                <span>{{ trans('Choose variant') }}</span>
+
+                <font-awesome-icon :icon="faChevronDown"
+                    class="text-gray-400 transition-transform duration-200 group-open:rotate-180" />
+            </summary>
+
+            <div class="px-3 py-2 space-y-2">
+                <label v-for="(variant, index) in variants" :key="index"
+                    class="flex items-center gap-2 text-sm cursor-pointer"
+                    :class="variant.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''">
+                    <input type="radio" name="variant" class="accent-primary" :checked="isActive(index)"
+                       @change="selectVariant(variant, index)" />
+
+                    <span class="flex-1">
+                        {{ variant.variant_label }}
+                    </span>
+
+                    <span v-if="variant.stock === 0" class="flex items-center gap-1 text-xs text-gray-400">
+                        {{ trans('Out of stock') }}
+                        <font-awesome-icon :icon="faEnvelope" class="text-[10px]" />
+                    </span>
+
+                </label>
+            </div>
+        </details>
+    </div>
+
 
 
 
     <div v-if="selectedProduct" class="mt-2">
         <ecom-add-to-basketv2 v-if="selectedProduct.stock > 0" class="order-input-button"
             :customer-data="hasInBasketList[selectedProduct.id]" v-model:product="selectedProduct">
+            <template #qty-add-button="{ data }">
+                <div v-if="!data.customer.quantity_ordered && !data.customer.quantity_ordered_new"  class="md:hidden">
+                    <button @click="() => data.onAddToBasket(data.product, 1)"
+                        :disabled="data.isLoadingSubmitQuantityProduct"
+                        class="rounded-full option-primary  bg-gray-800 hover:bg-green-700 text-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        v-tooltip="trans('Add to basket')">
+                        <LoadingIcon v-if="data.isLoadingSubmitQuantityProduct" class="text-gray-600" />
+                        <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
+                    </button>
+                </div>
+            </template>
         </ecom-add-to-basketv2>
-
 
         <button v-if="!selectedProduct.stock && layout?.outboxes?.oos_notification?.state == 'active'" v-tooltip="selectedProduct?.is_back_in_stock
             ? trans('You will be notify via email when the product back in stock')
@@ -157,6 +201,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
     &:disabled {
         background-color: color-mix(in srgb, var(--theme-color-4) 70%, grey) !important;
     }
+}
+
+summary::-webkit-details-marker {
+    display: none;
 }
 
 :deep(.order-input-button .qty-root) {
