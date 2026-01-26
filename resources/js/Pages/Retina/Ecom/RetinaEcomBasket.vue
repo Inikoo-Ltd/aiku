@@ -109,6 +109,17 @@ const props = defineProps<{
         extra_packing?: ChargeResource
         insurance?: ChargeResource
     }
+    eligible_gifts: {
+        is_customer_eligible: boolean
+        selected_gift: {
+            label: string
+            value: string
+        }
+        available_gifts: {
+            label: string
+            value: string
+        }[]
+    }
 }>()
 
 
@@ -573,12 +584,14 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
 
-            <div v-if="layout.app.environment === 'local'" class="flex justify-end pr-2 md:pr-6 mt-4">
+            <div v-if="layout.app.environment === 'local' && eligible_gifts?.is_customer_eligible" class="flex justify-end pr-2 md:pr-6 mt-4">
                 <EligibleGift
                     :routeUpdate="{
                         name: 'retina.models.order.update_eligible_gift',
                         parameters: order?.id
                     }"
+                    :selectedGift="eligible_gifts?.selected_gift"
+                    :giftOptions="eligible_gifts?.available_gifts"
                 />
             </div>
             

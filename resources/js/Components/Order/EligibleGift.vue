@@ -9,23 +9,17 @@ import { routeType } from '@/types/route'
 
 const props = defineProps<{
     routeUpdate: routeType
+    selectedGift: {
+        label: string
+        value: string
+    } | null
+    giftOptions: {
+        label: string
+        value: string
+    }[]
 }>()
 
-const giftList = [
-    {
-        label: 'Coca cola',
-        value: 'coca_cola'
-    },
-    {
-        label: 'Pepsi',
-        value: 'pepsi'
-    },
-    {
-        label: 'Fanta',
-        value: 'fanta'
-    }
-]
-const selectedGift = ref()
+const selectedGift = ref(props.selectedGift ?? {})
 
 const _popover = ref<InstanceType<typeof Popover> | null>(null)
 
@@ -79,7 +73,7 @@ const onChangeGift = async (val: {}) => {
         <Popover ref="_popover">
             <div class="flex flex-col gap-2">
                 <div
-                    v-for="gift in giftList"
+                    v-for="gift in giftOptions"
                     :key="gift.value"
                     class="flex items-center gap-2 cursor-pointer"
                     @click.prevent="() => (_popover?.hide(), onChangeGift(gift))"
