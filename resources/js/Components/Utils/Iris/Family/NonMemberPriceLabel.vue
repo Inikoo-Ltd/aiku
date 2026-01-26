@@ -22,7 +22,7 @@ const _popoverQuestionCircle = ref(null)
     <div class="relative w-fit">
         <div class="bg-gray-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
         <div class="my-1.5 text-xs text-balance">
-            {{ trans("NOT A MEMBER") }}? <span @click="_popoverQuestionCircle?.toggle" @mouseenter="_popoverQuestionCircle?.show" @mouseleave="_popoverQuestionCircle?.hide" class="cursor-pointer">
+            {{ trans("Not a member?") }} <span @click="_popoverQuestionCircle?.toggle" @mouseenter="_popoverQuestionCircle?.show" @mouseleave="_popoverQuestionCircle?.hide" class="cursor-pointer">
                 <FontAwesomeIcon icon="fal fa-question-circle" class="" fixed-width aria-hidden="true" />
             </span>
         </div>

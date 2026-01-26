@@ -36,7 +36,9 @@ class UpdateProductCategoryOffersData
 
         $modelOfferData = $model->offers_data ?? [];
         if (!$offerData) {
-            unset($modelOfferData['offers'][$offer->id]);
+            if (isset($modelOfferData['offers'])) {
+                unset($modelOfferData['offers'][$offer->id]);
+            }
         } else {
             $modelOfferData['offers'][$offer->id] = $offerData;
         }
@@ -48,14 +50,17 @@ class UpdateProductCategoryOffersData
         if ($model instanceof ProductCategory) {
             foreach ($model->getProducts() as $product) {
                 $productOfferData = $product->offers_data ?? [];
-                if (!$productOfferData) {
-                    unset($productOfferData['offers'][$offer->id]);
+                if (!$offerData) {
+                    if (isset($productOfferData['offers'])) {
+                        unset($productOfferData['offers'][$offer->id]);
+                    }
                 } else {
                     $productOfferData['offers'][$offer->id] = $offerData;
                 }
-                $modelOfferData      = $this->getBestOffers($modelOfferData);
-                $modelOfferData['v'] = 1;
-                $product->update(['offers_data' => $modelOfferData]);
+                $productOfferData['number_offers'] = count(Arr::get($productOfferData, 'offers', []));
+                $productOfferData                  = $this->getBestOffers($productOfferData);
+                $productOfferData['v']             = 1;
+                $product->update(['offers_data' => $productOfferData]);
             }
         }
     }
@@ -97,12 +102,28 @@ class UpdateProductCategoryOffersData
 
         $triggerLabels           = [];
         $categoryQuantityTrigger = null;
+        $productsTriggerLabel    = null;
 
         if ($offer->type == 'Category Quantity Ordered Order Interval') {
+
+            $currentLocale = app()->getLocale();
+            $locale        = $offer->shop->language->code;
+            app()->setLocale($locale);
+
             $triggerLabels[] = __('Order :n or more', ['n' => $offer->trigger_data['item_quantity']]);
             $triggerLabels[] = __('Order with in :n days', ['n' => $offer->trigger_data['interval']]);
 
             $categoryQuantityTrigger = $offer->trigger_data['item_quantity'];
+
+            /** @var ProductCategory $category */
+            $category = $offer->trigger;
+
+            $productsTriggerLabel = __('Order :n+ from :category range to get member price', [
+                'n'        => $offer->trigger_data['item_quantity'],
+                'category' => $category?->code
+            ]);
+
+            app()->setLocale($currentLocale);
         }
 
 
@@ -114,8 +135,10 @@ class UpdateProductCategoryOffersData
             'label'                   => $offer->label ?? $offer->name,
             'allowances'              => $allowances,
             'triggers_labels'         => $triggerLabels,
+            'products_triggers_label' => $productsTriggerLabel,
             'note'                    => '',
-            'max_percentage_discount' => $maxPercentageDiscount
+            'max_percentage_discount' => $maxPercentageDiscount,
+
         ];
 
         if ($categoryQuantityTrigger) {
@@ -142,8 +165,9 @@ class UpdateProductCategoryOffersData
         $bestPercentageOffOfferId = null;
 
         foreach (Arr::get($offersData, 'offers', []) as $offerId => $offerData) {
-            if ($offerData['max_percentage_discount'] && $offerData['max_percentage_discount'] > $bestPercentageOff) {
-                $bestPercentageOff        = $offerData['max_percentage_discount'];
+            $maxPercentageDiscount = $offerData['max_percentage_discount'] ?? 0;
+            if ($maxPercentageDiscount && $maxPercentageDiscount > $bestPercentageOff) {
+                $bestPercentageOff        = $maxPercentageDiscount;
                 $bestPercentageOffOfferId = $offerId;
             }
         }

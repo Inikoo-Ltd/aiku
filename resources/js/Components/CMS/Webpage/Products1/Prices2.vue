@@ -4,7 +4,6 @@ import { inject, ref } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
-import Discount from "@/Components/Utils/Label/Discount.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -91,14 +90,12 @@ const getBestOffer = (offerId: string) => {
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
-// console.log('fffff', props.product)
 
 const _popoverProfit = ref(null)
 </script>
 
 <template>
     <div class="font-sans border-t xborder-b border-gray-200 mt-1 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm">
-
         <div>
             <div class="flex justify-between">
                 <div>
@@ -174,36 +171,17 @@ const _popoverProfit = ref(null)
                         <span class="xtext-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
                     </div>
 
-                    <!-- <div class="flex justify-between items-end">
-                        <span @click="_popoverProfit?.toggle">Profit</span>:
-                        <span class="text-green-500 ml-1 font-bold">
-                            {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
-                        </span>
-                    </div> -->
+
 
                     <!-- Popover: Question circle GR member -->
                     <Popover ref="_popoverProfit" :style="{ width: '450px' }" class="py-1 px-2 text-xxs">
                         <ProfitCalculationList :product="product" />
                     </Popover>
                 </div>
-                <!-- <div v-if="product?.margin" class="flex justify-end text-right flex-col">
-                    <div>
-                        <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
-                        {{ trans("Profit") }}:
-                    </div>
-                    <div class="font-bold text-green-700 text-base">
-                        ({{ product?.margin }})
-                    </div>
-                    <div class="italic">
-                        {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}/{{ product.unit }}
-                    </div>
-                </div> -->
+
             </div>
 
         </div>
 
     </div>
 </template>
-
-
-<style scoped></style>
