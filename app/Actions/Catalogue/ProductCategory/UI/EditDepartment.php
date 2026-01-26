@@ -72,6 +72,16 @@ class EditDepartment extends OrgAction
             ];
         }
 
+        $followMasterFields = $department->masterProductCategory ? [
+            'follow_master_fields'  => [
+                'type'  => 'toggle',
+                'label' => 'Follow masters',
+                'information'   => __('Name and descriptions would follow master if changes were made there'),
+                'value' => ($department->follow_master_name && $department->follow_master_description_title && $department->follow_master_description && $department->follow_master_description_extra),
+                'revisit_after_save' => true,
+            ]
+        ] : [];
+
         return Inertia::render(
             'EditModel',
             [
@@ -109,7 +119,6 @@ class EditDepartment extends OrgAction
                         ]
                     ]
                 ],
-
                 'formData' => [
                     'blueprint' =>
                         array_filter(
@@ -129,6 +138,7 @@ class EditDepartment extends OrgAction
                                     'label'  => __('Name/Description'),
                                     'icon'   => 'fa-light fa-tag',
                                     'fields' => [
+                                        ...$followMasterFields,
                                         'name'              => $department->masterProductCategory
                                             ? [
                                                 'type'          => 'input_translation',

@@ -190,12 +190,21 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-
-
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 
+        $followMasterFields = $product->masterProduct ? [
+            'follow_master_fields'  => [
+                'type'  => 'toggle',
+                'label' => 'Follow masters',
+                'information'   => __('Name and descriptions would follow master if changes were made there'),
+                'value' => ($product->follow_master_name && $product->follow_master_description_title && $product->follow_master_description && $product->follow_master_description_extra),
+                'revisit_after_save' => true,
+            ]
+        ] : [];
+
         $nameFields = [
+            ...$followMasterFields,
             'name'              => $product->masterProduct
                 ? [
                     'type'          => 'input_translation',

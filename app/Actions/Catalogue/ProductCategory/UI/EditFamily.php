@@ -111,6 +111,16 @@ class EditFamily extends OrgAction
             ];
         }
 
+        $followMasterFields = $family->masterProductCategory ? [
+            'follow_master_fields'  => [
+                'type'  => 'toggle',
+                'label' => 'Follow masters',
+                'information'   => __('Name and descriptions would follow master if changes were made there'),
+                'value' => ($family->follow_master_name && $family->follow_master_description_title && $family->follow_master_description && $family->follow_master_description_extra),
+                'revisit_after_save' => true,
+            ]
+        ] : [];
+
         return Inertia::render(
             'EditModel',
             [
@@ -146,7 +156,6 @@ class EditFamily extends OrgAction
                         ]
                     ]
                 ],
-
                 'formData' => [
                     'blueprint' => array_filter(
                         [
@@ -165,11 +174,7 @@ class EditFamily extends OrgAction
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
-                                    'code'              => [
-                                        'type'  => 'input',
-                                        'label' => __('Code'),
-                                        'value' => $family->code
-                                    ],
+                                    ...$followMasterFields,
                                     'name'              => $family->masterProductCategory
                                         ? [
                                             'type'          => 'input_translation',

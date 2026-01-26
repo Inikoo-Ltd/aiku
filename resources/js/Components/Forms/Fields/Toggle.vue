@@ -19,6 +19,7 @@ const props = defineProps<{
         maxLength?: number
         noIcon?: boolean
         suffixImage?: string
+        warningText?: string
     }
 }>()
 
