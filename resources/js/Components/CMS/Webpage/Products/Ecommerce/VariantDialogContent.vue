@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ProductResource } from '@/types/Iris/Products'
-import { ref, inject } from 'vue';
+import { ref, inject, computed, onMounted, onBeforeUnmount } from 'vue';
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n';
 import { faChevronCircleLeft, faChevronDown, faCircle } from '@fas';
@@ -26,6 +26,13 @@ const emits = defineEmits<{
 const layout = inject('layout', retinaLayoutStructure)
 const selectedIndex = ref(0)
 const selectedProduct = ref(props.variants[0])
+const width = ref(window.innerWidth)
+
+const isMobile = computed(() => width.value < 768)
+
+const onResize = () => {
+  width.value = window.innerWidth
+}
 
 const selectVariant = (variant: ProductResource, index: number) => {
     selectedIndex.value = index
@@ -41,6 +48,16 @@ const onAddBackInStock = (product: ProductResource) => {
 const onUnselectBackInStock = (product: ProductResource) => {
     emits('unsetBackInStock', product)
 }
+
+
+onMounted(() => {
+  window.addEventListener('resize', onResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onResize)
+})
+
 
 
 </script>
@@ -145,16 +162,17 @@ const onUnselectBackInStock = (product: ProductResource) => {
     </div>
 
 
-
-
     <div v-if="selectedProduct" class="mt-2">
-        <ecom-add-to-basketv2 v-if="selectedProduct.stock > 0" class="order-input-button"
+        <ecom-add-to-basketv2 v-if="selectedProduct.stock > 0" 
+            class="order-input-button"
+            :classContainer="!hasInBasketList[selectedProduct.id].quantity_ordered && !hasInBasketList[selectedProduct.id].quantity_ordered_new ? 'flex items-center gap-2 relative' : 'relative'"
             :customer-data="hasInBasketList[selectedProduct.id]" v-model:product="selectedProduct">
-            <template #qty-add-button="{ data }">
-                <div v-if="!data.customer.quantity_ordered && !data.customer.quantity_ordered_new"  class="md:hidden">
-                    <button @click="() => data.onAddToBasket(data.product, 1)"
-                        :disabled="data.isLoadingSubmitQuantityProduct"
-                        class="rounded-full option-primary  bg-gray-800 hover:bg-green-700 text-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            <template v-if="isMobile" #qty-add-button="{ data }">
+                <div v-if="!data.customer.quantity_ordered && !data.customer.quantity_ordered_new">
+                    <button @click="data.onAddToBasket(data.product, 1)" :disabled="data.isLoadingSubmitQuantityProduct"
+                        class="rounded-full option-primary bg-gray-800 hover:bg-green-700
+                       text-gray-300 h-10 w-10 flex items-center justify-center
+                       transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="trans('Add to basket')">
                         <LoadingIcon v-if="data.isLoadingSubmitQuantityProduct" class="text-gray-600" />
                         <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
@@ -180,13 +198,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 {{ selectedProduct?.is_back_in_stock ? trans('Notified') : trans('Remind me') }}
             </span>
         </button>
-
     </div>
-
-
 </template>
-
-
 
 
 <style scoped>
@@ -207,10 +220,10 @@ summary::-webkit-details-marker {
     display: none;
 }
 
-:deep(.order-input-button .qty-root) {
+/* :deep(.order-input-button .qty-root) {
     @apply flex-wrap gap-1;
 }
-
+ */
 
 
 :deep(.order-input-button .qty-input:focus) {
@@ -236,7 +249,7 @@ summary::-webkit-details-marker {
 
 
 :deep(.order-input-button .qty-info) {
-    @apply ml-1 text-[11px];
+    @apply mt-2 text-[11px];
 }
 
 :deep(.order-input-button .qty-price),
