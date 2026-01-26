@@ -295,7 +295,7 @@ class ShowIrisWebpage
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'short_label' => $this->getBreadcrumbShortLabel($parentWebpage),
+                    'short_label' => $this->getBreadcrumbShortLabel($webpage),
                     'label'       => $this->getBreadcrumbLabel($webpage),
                     'url'         => $this->getEnvironmentUrl($webpage->canonical_url)
                 ]
