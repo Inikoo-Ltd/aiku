@@ -117,7 +117,7 @@ class ShowMailshot extends OrgAction
                 ],
                 'tabs'                            => [
                     'current'    => $this->tab,
-                    'navigation' => MailshotTabsEnum::navigation()
+                    'navigation' => MailshotTabsEnum::navigation($mailshot)
                 ],
                 MailshotTabsEnum::SHOWCASE->value => $this->tab == MailshotTabsEnum::SHOWCASE->value ?
                     fn () => GetMailshotShowcase::run($mailshot)
