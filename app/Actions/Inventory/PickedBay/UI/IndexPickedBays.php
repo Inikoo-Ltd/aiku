@@ -4,10 +4,8 @@ namespace App\Actions\Inventory\PickedBay\UI;
 
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Enums\UI\Inventory\PickedBaysTabsEnum;
-use App\Enums\UI\Inventory\WarehousesTabsEnum;
 use App\Http\Resources\Inventory\PickedBayResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\PickedBay;

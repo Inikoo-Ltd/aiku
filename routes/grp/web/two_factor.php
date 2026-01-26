@@ -19,7 +19,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('two-factor', Show2FA::class)->name('login.show2fa');
     Route::post('two-factor', Validate2FA::class)->name('login.auth2fa');
-    
+
     Route::get('two-factor/required', Show2FARequired::class)->name('login.require2fa');
     Route::post('two-factor/validate-save', ValidateAndSave2FA::class)->name('login.validate_save2fa');
 });

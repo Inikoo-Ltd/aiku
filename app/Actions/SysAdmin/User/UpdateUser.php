@@ -33,7 +33,7 @@ class UpdateUser extends OrgAction
         if (Arr::exists($modelData, 'password')) {
             data_set($modelData, 'auth_type', UserAuthTypeEnum::DEFAULT);
         }
-        
+
         if (Arr::exists($modelData, 'disable_2fa')) {
             data_set($modelData, 'google2fa_secret', null);
             data_forget($modelData, 'disable_2fa');

@@ -23,8 +23,10 @@ class Show2FARequired
     {
         $authenticator = new Authenticator(request());
 
-        if(!request()->user()?->is_two_factor_required || $authenticator->isAuthenticated()) return redirect()->route('grp.dashboard.show');
-        
+        if (!request()->user()?->is_two_factor_required || $authenticator->isAuthenticated()) {
+            return redirect()->route('grp.dashboard.show');
+        }
+
         return Inertia::render('SysAdmin/Requires2FA');
     }
 

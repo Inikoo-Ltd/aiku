@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
 use App\Actions\Web\Webpage\PublishWebpage;
-use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Shop;
@@ -68,7 +67,7 @@ class UpdateVariant extends OrgAction
                     'is_minion_variant' => false
                 ]);
 
-            if(!$leader->webpage){
+            if (!$leader->webpage) {
                 $webpage = StoreProductWebpage::run($leader);
                 PublishWebpage::make()->action($webpage, [
                     'comment' => 'first publish'

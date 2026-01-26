@@ -35,7 +35,7 @@ class RouteServiceProvider extends ServiceProvider
             ->domain('app.'.config('app.domain'))
             ->name('grp.')
             ->group(base_path('routes/grp/web/app.php'));
-            
+
         Route::middleware('grp')
             ->domain('app.'.config('app.domain'))
             ->name('grp.')

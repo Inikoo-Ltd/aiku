@@ -363,7 +363,6 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
-use App\Actions\UI\Profile\View2FAProfile;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 

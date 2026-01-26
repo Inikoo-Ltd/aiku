@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Actions\Inventory\PickedBay\UI;
+
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\PickedBay;
@@ -8,6 +10,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+
 class EditPickedBay extends OrgAction
 {
     use WithWarehouseEditAuthorisation;

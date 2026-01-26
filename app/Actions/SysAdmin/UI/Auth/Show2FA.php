@@ -24,11 +24,11 @@ class Show2FA
     {
         $authenticator = new Authenticator($request);
 
-        if($request->user()?->is_two_factor_required && !$authenticator->isActivated()) {
+        if ($request->user()?->is_two_factor_required && !$authenticator->isActivated()) {
             return redirect()->route('grp.login.require2fa');
         }
 
-        if($authenticator->isAuthenticated()){
+        if ($authenticator->isAuthenticated()) {
             return redirect()->route('grp.dashboard.show');
         }
 

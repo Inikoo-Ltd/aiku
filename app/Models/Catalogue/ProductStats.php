@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $public_images_size
  * @property float $average_image_size
  * @property float|null $max_image_size
- * @property-read \App\Models\Catalogue\Product|null $product
+ * @property-read \App\Models\Catalogue\Product $product
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductStats query()

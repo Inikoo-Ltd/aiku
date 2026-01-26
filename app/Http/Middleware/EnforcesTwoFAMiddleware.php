@@ -25,14 +25,14 @@ class EnforcesTwoFAMiddleware
 
         $is_two_factor_required = request()->user()?->is_two_factor_required;
 
-        if(!$is_two_factor_required){
+        if (!$is_two_factor_required) {
             return $next($request);
         }
 
-        if($authenticator->isActivated()) {
+        if ($authenticator->isActivated()) {
             return $next($request);
         }
-        
+
         return redirect()->route('grp.login.require2fa');
     }
 }

@@ -174,6 +174,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read ShippingZoneSchema|null $discountShippingZoneSchema
  * @property-read \App\Models\Catalogue\ShopDiscountsStats|null $discountsStats
  * @property-read \App\Models\Catalogue\ShopDropshippingStat|null $dropshippingStats
+ * @property-read LaravelCollection<int, EmailTemplate> $emailTemplates
  * @property-read LaravelCollection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read Fulfilment|null $fulfilment
  * @property-read Group $group

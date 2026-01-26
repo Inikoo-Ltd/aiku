@@ -30,7 +30,7 @@ class ValidateAndSave2FA extends GrpAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(ActionRequest $request, Array $modelData): RedirectResponse|Response
+    public function handle(ActionRequest $request, array $modelData): RedirectResponse|Response
     {
         $authenticator = new Authenticator(request());
         $google2fa = new Google2FA();
@@ -62,7 +62,7 @@ class ValidateAndSave2FA extends GrpAction
             'secret_key'            => ['required', 'string']
         ];
     }
-    
+
     /**
      * @throws \Illuminate\Validation\ValidationException
      */

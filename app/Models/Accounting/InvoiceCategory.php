@@ -49,7 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Accounting\InvoiceCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Accounting\InvoiceCategoryStats|null $stats
- * @property-read LaravelCollection<int, \App\Models\Accounting\InvoiceCategoryTimeSeries> $timeSeries
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceCategoryTimeSeries> $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory query()

@@ -150,7 +150,7 @@ class Kernel extends HttpKernel
         ],
         'two_fa'    => [
             \App\Http\Middleware\EnforcesTwoFAMiddleware::class,
-            \App\Http\Middleware\TwoFAMiddleware::class, 
+            \App\Http\Middleware\TwoFAMiddleware::class,
         ],
         'web_errors'  => [
             EncryptCookies::class,

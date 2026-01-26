@@ -20,7 +20,7 @@ class TwoFAMiddleware
         if (app()->isLocal()) {
             return $next($request);
         }
-        
+
         $authenticator = new Authenticator($request);
         // Allow user to go to where they want to if authenticated
         if ($authenticator->isAuthenticated()) {

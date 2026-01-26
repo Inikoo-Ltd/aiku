@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Product|null $product
+ * @property-read Product $product
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminder newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminder newQuery()
