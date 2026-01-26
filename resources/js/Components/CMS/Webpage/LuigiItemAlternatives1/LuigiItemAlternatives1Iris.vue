@@ -104,14 +104,15 @@ const luigiFetchRecommenders = async () => {
             return
         } */
 
-        const response = await axios.post(
-            route('iris.json.luigi.product_recommendation'),
-            {
-                luigi_identity: '',
-                recommendation_type : 'item_detail_alternatives',
-                recommender_client_identifier : 'item_detail_alternatives',
-                cookies_lb: Cookies.get('_lb') ?? null,
-            }
+        const response = await axios.get(
+            route('iris.json.luigi.product_recommendation', 
+                {
+                    luigi_identity: 'empty',
+                    recommendation_type : 'item_detail_alternatives',
+                    recommender_client_identifier : 'item_detail_alternatives',
+                    cookies_lb: Cookies.get('_lb') ?? null,
+                }
+            ),
         )
         listProducts.value = response.data
     } catch (error: any) {

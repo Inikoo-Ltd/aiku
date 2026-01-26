@@ -20,7 +20,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class LuigiBoxRecommendation extends IrisAction
 {
-    public function handle(ActionRequest $request): LengthAwarePaginator|array
+    public function handle(string $luigi_identity, string $recommendation_type, string $recommender_client_identifier, string $cookies_lb, ActionRequest $request): LengthAwarePaginator|array
     {
         $customer = $request->user();
 
@@ -32,10 +32,9 @@ class LuigiBoxRecommendation extends IrisAction
         $website   = $request->input('website');
         $trackerId = Arr::get($website->settings, 'luigisbox.tracker_id');
 
-
-        $luigi_identity = (string) $request->input('luigi_identity');
-        $recommendation_type = trim((string) $request->input('recommendation_type')) ?: 'last_seen';
-        $recommender_client_identifier = trim((string) $request->input('recommender_client_identifier')) ?: 'last_seen';
+        $luigi_identity = (string) $luigi_identity == 'empty' ? '' : $luigi_identity;
+        $recommendation_type = trim((string) $recommender_client_identifier) ?: 'last_seen';
+        $recommender_client_identifier = trim((string) $cookies_lb) ?: 'last_seen';
 
         if (! $trackerId) {
             throw new \RuntimeException('LuigisBox tracker_id not configured');
@@ -118,10 +117,13 @@ class LuigiBoxRecommendation extends IrisAction
     }
 
 
-    public function asController(ActionRequest $request): LengthAwarePaginator|array
+    public function asController(string $luigi_identity, string $recommendation_type, string $recommender_client_identifier, string $cookies_lb,  ActionRequest $request): LengthAwarePaginator|array
     {
         $this->initialisation($request);
-        return $this->handle($request);
+        return $this->handle($luigi_identity,
+        $recommendation_type,
+        $recommender_client_identifier,
+        $cookies_lb, $request);
     }
 
 

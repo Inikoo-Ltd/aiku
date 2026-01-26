@@ -105,14 +105,15 @@ const fetchRecommenders = async () => {
             return
         } */
 
-        const response = await axios.post(
-            route('iris.json.luigi.product_recommendation'),
-            {
-                luigi_identity: '',
-                recommendation_type : 'trends',
-                recommender_client_identifier : 'trends',
-                cookies_lb: Cookies.get('_lb') ?? null,
-            }
+        const response = await axios.get(
+            route('iris.json.luigi.product_recommendation', 
+                {
+                    luigi_identity: 'empty',
+                    recommendation_type : 'trends',
+                    recommender_client_identifier : 'trends',
+                    cookies_lb: Cookies.get('_lb') ?? null,
+                }
+            ),
         )
         listProducts.value = response.data
     } catch (error: any) {

@@ -90,5 +90,5 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant');
-    Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
+    Route::get('luigi-product-recommendation/{luigi_identity}/{recommendation_type}/{recommender_client_identifier}/{cookies_lb}', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
 });
