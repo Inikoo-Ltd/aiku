@@ -115,6 +115,10 @@ class ShowUser extends OrgAction
                         'parameters' => ['user' => $user->id]
                     ],
                 ],
+                'two_fa_status'                => [
+                    'has_2fa'                   => (bool) $user->google2fa_secret,
+                    'is_two_factor_required'    => $user->is_two_factor_required,
+                ],
                 UserTabsEnum::SHOWCASE->value => $this->tab == UserTabsEnum::SHOWCASE->value ?
                     fn () => UserShowcaseResource::make($user)
                     : Inertia::lazy(fn () => UserShowcaseResource::make($user)),

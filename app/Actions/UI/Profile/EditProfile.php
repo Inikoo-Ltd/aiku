@@ -82,8 +82,9 @@ class EditProfile
                                 "label"         => __("Enable 2FA"),
                                 "noSaveButton"  => true,
                                 "value"         => [
-                                    'has_2fa'   => (bool)$user->google2fa_secret,
-                                    'secretKey' => $user->google2fa_secret
+                                    'has_2fa'               => (bool) $user->google2fa_secret,
+                                    'secretKey'             => $user->google2fa_secret,
+                                    'one_time_password'     => null,
                                 ],
                             ],
                         ]

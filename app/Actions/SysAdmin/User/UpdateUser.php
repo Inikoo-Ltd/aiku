@@ -33,6 +33,15 @@ class UpdateUser extends OrgAction
         if (Arr::exists($modelData, 'password')) {
             data_set($modelData, 'auth_type', UserAuthTypeEnum::DEFAULT);
         }
+        
+        if (Arr::exists($modelData, 'disable_2fa')) {
+            data_set($modelData, 'google2fa_secret', null);
+            data_forget($modelData, 'disable_2fa');
+        }
+
+        if (Arr::exists($modelData, 'is_two_factor_required')) {
+            data_set($modelData, 'is_two_factor_required', (bool) Arr::pull($modelData, 'is_two_factor_required'));
+        }
 
         $user = $this->update($user, $modelData, ['profile', 'settings']);
 
@@ -102,6 +111,8 @@ class UpdateUser extends OrgAction
             'auth_type'      => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
             'status'         => ['sometimes', 'boolean'],
             'language_id'    => ['sometimes', 'required', 'exists:languages,id'],
+            'disable_2fa'    => ['sometimes', 'boolean'],
+            'is_two_factor_required'   => ['sometimes', 'boolean']
         ];
 
         if (!$this->strict) {
