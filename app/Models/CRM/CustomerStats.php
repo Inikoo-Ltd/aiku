@@ -188,6 +188,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_items_state_inspected
  * @property int $number_return_items_state_restocked
  * @property int $number_return_items_state_cancelled
+ * @property int $number_orders_sales_channel_type_showroom
+ * @property int $number_orders_sales_channel_type_phone
+ * @property int $number_orders_sales_channel_type_email
+ * @property int $number_orders_sales_channel_type_other
+ * @property int $number_orders_sales_channel_type_website
+ * @property int $number_orders_with_collection_address
  * @property-read \App\Models\CRM\Customer $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()

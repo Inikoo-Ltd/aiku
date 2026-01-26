@@ -24,6 +24,7 @@ enum EmailTrackingEventTypeEnum: string
     case MARKED_AS_SPAM       = 'marked_as_spam';
     case ERROR                = 'error';
     case DELAY                = 'delay';
+    case UNSUBSCRIBED          = 'unsubscribed';
 
     public static function typeIcon(): array
     {

@@ -32,7 +32,7 @@ class UpdateRetinaCustomer extends RetinaAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
-        if($taxValue = Arr::get($modelData, 'tax_number.value')) {
+        if ($taxValue = Arr::get($modelData, 'tax_number.value')) {
             data_set($modelData, 'tax_number.number', $taxValue);
         }
 

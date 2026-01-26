@@ -11,6 +11,8 @@ import axios from 'axios'
 import { faCopy } from '@fal'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import ValidationErrors from '@/Components/ValidationErrors.vue'
+import { useForm } from '@inertiajs/vue3'
 library.add(faTimes, faCheck)
 
 const props = defineProps<{
@@ -67,7 +69,6 @@ const value = ref(setFormValue(props.form, props.fieldName))
 
 watch(value, (newValue) => {
     // Update the form field value when the value ref changes
-    console.log('initVal', initialValue);
     updateFormValue(newValue)
     props.form.errors[props.fieldName] = ''
 }, {
@@ -86,11 +87,27 @@ let tooltipTimeout = setTimeout(() => {
     tooltipText.value = trans('Copy the code');
 }, 1500);;
 let initialValue = value.value.has_2fa;
+const errorsMsg = ref('');
+
+const form = useForm({
+    one_time_password: '',
+    secret_key: '',
+})
+
+const validateSave = async () => {
+    // Do nothing if authenticated already
+    if(initialValue){
+        return;
+    }
+    form.secret_key = value.value.secretKey;
+    form.one_time_password = value.value.one_time_password;
+    form.post(route('grp.login.validate_save2fa'))
+}
 
 const fetch2Fa = async () => {
     if (!imageXml.value || !secretKey.value) {
         if(!openModal.value) openModal.value = true;
-        await axios.get((route('grp.models.profile.2fa-qrcode')))
+        await axios.get((route('grp.profile.2fa-qrcode')))
             .then((response) => {
                 imageXml.value = response.data.qrUrl;
                 secretKey.value = response.data.secretKey.match(/.{1,4}/g);
@@ -101,8 +118,9 @@ const fetch2Fa = async () => {
 
 const resetSecret = () => {
     imageXml.value = '';
-    secretKey.value = '';
+    secretKey.value = [];
     value.secretKey = null;
+    errorsMsg.value = '';
 }
 
 const resetSwitch = (val: any) => {
@@ -170,7 +188,7 @@ const copyTextToClipboard = () =>  {
         </div>
     </div>
     
-    <Modal :isOpen="openModal" :zIndex="150" xclose="()=>{openModal = false}" :width="'md:w-[55%] md:max-w-[55%]'">
+    <Modal :isOpen="openModal" :zIndex="150" :width="'md:w-[55%] md:max-w-[55%]'">
         <div class="mb-4 max-w-2xl mx-auto">
             <div class="w-full text-center mb-2 text-xl text-balance font-semibold text-red-400">
                 {{ trans('Please make sure to save this QR Code on your Authenticator before closing') }}
@@ -219,9 +237,18 @@ const copyTextToClipboard = () =>  {
                             {{ trans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" />
                         </span>
                     </div>
+                    <div v-if="!initialValue" class="text-center font-semibold w-full px-8">
+                        {{ trans('Verify your OTP before you could continue:') }}
+                        <div class="w-full flex">
+                            <input v-model="value.one_time_password" :autofocus="true" class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" :class="errorsMsg ? 'ring-1 ring-red-500' : ''"/>
+                        </div>
+                        <ValidationErrors />
+                        <div v-if="errorsMsg" class="text-red-500 text-sm italic">
+                            {{ errorsMsg }}
+                        </div>
+                    </div>
                 </div>
             </div>
-
             <div v-if="props.form.processing" class="bg-black/30 text-white flex items-center justify-center text-6xl absolute inset-0 z-10 rounded-md">
                 <LoadingIcon />
             </div>
@@ -230,7 +257,7 @@ const copyTextToClipboard = () =>  {
         <!-- Section: 2 buttons (cancel & submit) -->
         <div class="grid grid-cols-2 gap-4 mt-8" tabindex="0">
             <Button @click="() => (openModal = false, value.has_2fa = initialValue, resetSecret())" label="Cancel" type="negative" full :disabled="props.form.processing"/>
-            <Button @click="() => submit()" :loading="props.form.processing" label="Continue" full icon="fad fa-save" />
+            <Button @click="() => validateSave()" :loading="props.form.processing" label="Continue" full icon="fad fa-save" />
         </div>
     </Modal>
 </template>

@@ -28,6 +28,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Str;
 
 class StoreDispatchedEmail extends OrgAction
 {
@@ -46,6 +47,7 @@ class StoreDispatchedEmail extends OrgAction
         data_set($modelData, 'org_post_room_id', $outbox->org_post_room_id);
         data_set($modelData, 'recipient_type', class_basename($recipient));
         data_set($modelData, 'recipient_id', $recipient->id);
+        data_set($modelData, 'uuid', Str::uuid());
 
         $emailAddress = StoreEmailAddress::run($parent->group, Arr::pull($modelData, 'email_address'));
         data_set($modelData, 'email_address_id', $emailAddress->id);

@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Unsubscribe;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Comms\DispatchedEmail;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,15 +27,10 @@ class ShowUnsubscribeMailshot
         return $this->handle($dispatchedEmail);
     }
 
-    public function htmlResponse(DispatchedEmail $dispatchedEmail): Response
+    public function htmlResponse(): Response
     {
-
-
-
-
-        return Inertia::render('Utils/Unsubscribe', [
+        return Inertia::render('UnsubscribeMailshot', [
             'title'           => __("Unsubscribe"),
-            'dispatchedEmail' => DispatchedEmailsResource::make($dispatchedEmail)->getArray(),
             'message'         => [
                 'confirmationTitle'       => __("Are you sure to unsubscribe?"),
                 'successTitle'            => __("Unsubscription successful"),
