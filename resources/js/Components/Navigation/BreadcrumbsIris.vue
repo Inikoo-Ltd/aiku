@@ -5,7 +5,7 @@
   -  Version 4.0
   -->
 <script setup lang="ts">
-import { nextTick, ref } from "vue"
+import { nextTick, ref, onUnmounted, computed } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -104,6 +104,24 @@ watch(() => props.breadcrumbs?.length, async () => {
     scrollToRight()
 })
 
+const isMobileRef = ref(window.matchMedia("(max-width: 768px)").matches)
+let mediaQuery: MediaQueryList
+let handler: (e: MediaQueryListEvent) => void
+
+onMounted(() => {
+  mediaQuery = window.matchMedia("(max-width: 768px)")
+  handler = (e: MediaQueryListEvent) => {
+    isMobileRef.value = e.matches
+  }
+  mediaQuery.addEventListener("change", handler)
+})
+
+onUnmounted(() => {
+  if (mediaQuery && handler) mediaQuery.removeEventListener("change", handler)
+})
+
+const isMobile = computed(() => isMobileRef.value)
+
 </script>
 
 <template>
@@ -122,14 +140,13 @@ watch(() => props.breadcrumbs?.length, async () => {
                     <!-- Shorter Breadcrumb on Mobile size -->
                     <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden flex items-center">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
-                        <span>...</span>
+                        <span>{{ breadcrumb.simple.short_label }}</span>
                     </div>
                     
                     <template v-if="breadcrumb.type === 'simple'">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
                         <component
                             :is="breadcrumb.simple.url || breadcrumb.simple.route?.name ? Link : 'span'"
-                            xclass="'' || ''"
                             :href="breadcrumb.simple.url ? breadcrumb.simple.url : breadcrumb.simple?.route?.name ? route( breadcrumb.simple.route.name, breadcrumb.simple.route.parameters ) : '#' "
                             class="hover:text-gray-700 overflow-hidden flex items-center"
                         >
@@ -138,7 +155,7 @@ watch(() => props.breadcrumbs?.length, async () => {
                             </Transition>
         
                             <Transition name="spin-to-down">
-                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 sm:w-auto">{{ breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 sm:w-auto">{{ isMobile ?  breadcrumb.simple.short_label  :  breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>

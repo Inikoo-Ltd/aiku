@@ -165,11 +165,11 @@ trait WithDashboardIntervalValuesFromArray
         }
 
         // Auto-detect currency fields
-        if (in_array($columnFingerprint, ['sales', 'revenue'])) {
+        if (in_array($columnFingerprint, ['sales', 'revenue', 'baskets_created', 'baskets_updated'])) {
             if ($dataType != DashboardDataType::DELTA_LAST_YEAR && $dataType != DashboardDataType::PERCENTAGE) {
                 $dataType = DashboardDataType::CURRENCY;
             }
-            $options['currency'] = $options['currency'] ?? 'GBP';
+            $options['currency'] = $options['currency'] ?? $data['shop_currency_code'] ?? $data['organisation_currency_code'] ?? 'GBP';
         }
 
         return [
