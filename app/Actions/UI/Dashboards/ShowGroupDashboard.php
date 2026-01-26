@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
+use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
@@ -69,6 +70,7 @@ class ShowGroupDashboard extends OrgAction
         }
 
         $topPerformanceStats = GetTopPerformanceStats::run($group, $performanceDates[0], $performanceDates[1]);
+        $shopTimeSeriesStats = GetShopTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
         $invoiceCategoryTimeSeriesStats = GetInvoiceCategoryTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
         $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
 
@@ -94,7 +96,7 @@ class ShowGroupDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $customRangeData, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats),
+                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $customRangeData, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats),
                             'charts'      => [], // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
                             'top_performance' => $topPerformanceStats,
                         ]
