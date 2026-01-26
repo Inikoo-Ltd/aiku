@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
+use App\Http\Resources\Web\ProductOfVariantResource;
 use App\Models\Catalogue\Variant;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\Resources\Json\JsonResource;

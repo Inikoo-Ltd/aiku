@@ -33,7 +33,7 @@ class GetGrpProductOfVariant extends OrgAction
 
     public function asController(Variant $variant, ActionRequest $request): array
     {
-        $this->initialisation($request);
+        $this->initialisation($variant->organisation, $request);
 
         return $this->handle($variant);
     }

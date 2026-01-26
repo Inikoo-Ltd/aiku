@@ -134,15 +134,19 @@ const isMobile = computed(() => isMobileRef.value)
         <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto flex">
             <li v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx"
                 class="hidden first:flex last:flex md:flex items-center"
-                :class="breadcrumbIdx === 0 ? 'sticky left-0 xbg-white z-10 pr-2' : ''"
-            >
+                :class="breadcrumbIdx === 0 ? 'sticky left-0 xbg-white z-10 pr-2' : ''">
                 <div class="flex items-center">
                     <!-- Shorter Breadcrumb on Mobile size -->
                     <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden flex items-center">
-                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
-                        <span>{{ breadcrumb.simple.short_label }}</span>
-                    </div>
-                    
+                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50"
+                            icon="fa-regular fa-chevron-right" aria-hidden="true" />
+                        <span> {{
+                            breadcrumbs[breadcrumbs.length - 2].type === 'simple'
+                                ? breadcrumbs[breadcrumbs.length - 2].simple.short_label || breadcrumbs[breadcrumbs.length -
+                                    2].simple.label
+                            : breadcrumbs[breadcrumbs.length - 2].simple?.label
+                            }}</span>
+                    </div> 
                     <template v-if="breadcrumb.type === 'simple'">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
                         <component

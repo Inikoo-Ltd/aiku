@@ -52,7 +52,11 @@ class ProductOfVariantResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
-        $productOffersData = json_decode($product->offers_data, true);
+        if(is_string($product->offers_data)) {
+            $productOffersData = json_decode($product->offers_data, true);
+        }else{
+            $productOffersData = $product->offers_data;
+        }
 
         $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
