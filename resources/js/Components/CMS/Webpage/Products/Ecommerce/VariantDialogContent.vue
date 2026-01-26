@@ -7,11 +7,21 @@ import { faCircle } from '@fas';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue';
 import EcomAddToBasketv2 from '@/Components/Iris/Products/EcomAddToBasketv2.vue';
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope } from '@far';
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 
 const props = withDefaults(defineProps<{
     variants: ProductResource
     hasInBasketList?: any
+    isLoadingRemindBackInStock? : boolean
 }>(), {})
+
+
+const emits = defineEmits<{
+    (e: 'setBackInStock', value: any[]): void
+    (e: 'unsetBackInStock', value: any[]): void
+}>()
 
 const layout = inject('layout', retinaLayoutStructure)
 const selectedIndex = ref(0)
@@ -23,7 +33,16 @@ const selectVariant = (variant: ProductResource, index: number) => {
 }
 
 const isActive = (index: number) => selectedIndex.value === index
-console.log('sss', props.variants)
+
+const onAddBackInStock = (product: ProductResource) => {
+     emits('setBackInStock', product)
+}
+
+const onUnselectBackInStock = (product: ProductResource) => {
+    emits('unsetBackInStock', product)
+}
+
+
 </script>
 
 <template>
@@ -79,14 +98,14 @@ console.log('sss', props.variants)
 
     <!-- VARIANT LIST -->
     <div class="flex gap-2 mt-2 flex-nowrap overflow-x-auto">
-        <button v-for="(variant, index) in variants" :key="index" type="button" :disabled="variant.stock === 0"
-            @click="variant.stock > 0 && selectVariant(variant, index)"
+        <button v-for="(variant, index) in variants" :key="index" type="button"
+            @click="selectVariant(variant, index)"
             class="relative border px-3 py-2 text-sm font-medium shrink-0 transition overflow-hidden" :class="[
                 isActive(index) && variant.stock > 0
                     ? 'option-primary'
                     : 'bg-white text-gray-700 hover:bg-gray-100',
 
-                variant.stock === 0 ? 'cursor-not-allowed opacity-60 after:content-[\'\'] after:absolute after:top-1/2 after:left-[-25%] after:w-[140%] after:h-[2px] after:bg-gray-400 after:-rotate-[34deg]' : ''
+                variant.stock === 0 ? 'opacity-60 after:content-[\'\'] after:absolute after:top-1/2 after:left-[-25%] after:w-[140%] after:h-[2px] after:bg-gray-400 after:-rotate-[34deg]' : ''
             ]">
             {{ variant.variant_label }}
         </button>
@@ -94,9 +113,30 @@ console.log('sss', props.variants)
 
 
 
-    <div v-if="selectedProduct && selectedProduct.stock > 0" class="mt-2">
-        <ecom-add-to-basketv2 class="order-input-button" :customer-data="hasInBasketList[selectedProduct.id]"
-            v-model:product="selectedProduct"> </ecom-add-to-basketv2>
+    <div v-if="selectedProduct" class="mt-2">
+        <ecom-add-to-basketv2 v-if="selectedProduct.stock > 0" class="order-input-button"
+            :customer-data="hasInBasketList[selectedProduct.id]" v-model:product="selectedProduct">
+        </ecom-add-to-basketv2>
+
+
+        <button v-if="!selectedProduct.stock && layout?.outboxes?.oos_notification?.state == 'active'" v-tooltip="selectedProduct?.is_back_in_stock
+            ? trans('You will be notify via email when the product back in stock')
+            : trans('Click to be notified via email when the product back in stock')" @click="() =>
+                selectedProduct?.is_back_in_stock
+                    ? onUnselectBackInStock(selectedProduct)
+                    : onAddBackInStock(selectedProduct)
+            "
+            class=" w-full inline-flex flex-wrap items-center justify-center gap-2 rounded border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 text-center shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+            <LoadingIcon v-if="isLoadingRemindBackInStock" />
+
+            <FontAwesomeIcon v-else :icon="selectedProduct?.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                :class="selectedProduct?.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+
+            <span class="whitespace-normal">
+                {{ selectedProduct?.is_back_in_stock ? trans('Notified') : trans('Remind me') }}
+            </span>
+        </button>
+
     </div>
 
 

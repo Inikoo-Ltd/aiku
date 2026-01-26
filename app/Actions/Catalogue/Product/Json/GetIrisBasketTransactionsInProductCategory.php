@@ -49,7 +49,7 @@ class GetIrisBasketTransactionsInProductCategory extends IrisAction
         foreach ($query->get() as $data) {
             if ($basket) {
                 $quantityOrdered = json_decode(str_replace(['{', '}'], ['', ''], $data->quantity_ordered), true);
-                 $transactionIds = $data->transaction_ids ? json_decode(str_replace(['{', '}'], ['', ''], $data->transaction_ids), true) : null;
+                $transactionIds = $data->transaction_ids ? json_decode(str_replace(['{', '}'], ['', ''], $data->transaction_ids), true) : null;
             } else {
                 $quantityOrdered = null;
                 $transactionIds = null;
