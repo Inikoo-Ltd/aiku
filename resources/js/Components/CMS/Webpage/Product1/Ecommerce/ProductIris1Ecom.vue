@@ -269,25 +269,22 @@ onMounted(async () => {
                 </div>       
 
                 <!-- PRICE -->
-                <ProductPrices
+                <!-- <ProductPrices
                     :field-value="fieldValue"
-                    :key="product.code"
-                    :offers_data="customerData?.offers_data"
-                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
-                    :offer_price_per_unit="customerData?.offer_price_per_unit"
-                />
-
-                <!-- <ProductPrices2
-                    :field-value="fieldValue"
-                    :product="product"
                     :key="product.code"
                     :offers_data="customerData?.offers_data"
                     :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
                     :offer_price_per_unit="customerData?.offer_price_per_unit"
                 /> -->
 
+                <ProductPrices2
+                    :field-value="fieldValue"
+                    :product="product"
+                    :key="product.code"
+                />
+
                 <!-- Section: Member/Non Member label, Profit -->
-                <div v-if="false" class="flex justify-between">
+                <div class="flex justify-between mt-1">
                     <template v-if="product.offers_data?.number_offers > 0">
                         <div v-if="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
                             class="flex flex-col w-fit"
