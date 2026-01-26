@@ -79,8 +79,8 @@ class ShowMarketingDashboard extends OrgAction
                     ],
                     [
                         'name' => __('Templates'),
-                        'value' => 2, // need to adjustment the value to be dynamic
-                        'icon'  => ['fal', 'fa-layer-group'], // Nedd to change the icon
+                        'value' => $this->shop->commsStats->number_email_templates,
+                        'icon'  => ['fal', 'fa-layer-group'],
                         'route' => [
                             'name'       => 'grp.org.shops.show.marketing.templates.index',
                             'parameters' => $request->route()->originalParameters()

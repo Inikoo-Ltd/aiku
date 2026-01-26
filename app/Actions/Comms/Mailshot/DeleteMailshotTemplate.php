@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
@@ -17,7 +18,13 @@ class DeleteMailshotTemplate extends OrgAction
 {
     public function handle(EmailTemplate $emailTemplate): bool
     {
-        return $emailTemplate->delete();
+        $result = $emailTemplate->delete();
+
+        if ($result) {
+            ShopHydrateEmailTemplates::dispatch($emailTemplate->shop);
+        }
+
+        return $result;
     }
 
     public function asController(Shop $shop, EmailTemplate $emailTemplate, ActionRequest $request): bool

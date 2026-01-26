@@ -108,7 +108,7 @@ class IndexMailshotTemplates extends OrgAction
                 'title'       => $title,
                 'pageHead'    => array_filter([
                     'title'   => $title,
-                    'icon'    => ['fal', 'fa-newspaper'],
+                    'icon'    => ['fal', 'fa-layer-group'],
                     'actions' => $actions,
                 ]),
                 'data'        => MailshotTemplatesInDashboardResource::collection($mailshots),

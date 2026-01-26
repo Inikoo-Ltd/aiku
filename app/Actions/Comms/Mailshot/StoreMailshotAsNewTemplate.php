@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
 use App\Actions\OrgAction;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
@@ -45,6 +46,7 @@ class StoreMailshotAsNewTemplate extends OrgAction
         /** @var EmailTemplate $emailTemplate */
         $emailTemplate = $this->group->emailTemplates()->create($modelData);
 
+        ShopHydrateEmailTemplates::dispatch($this->shop);
 
         return $emailTemplate;
     }
