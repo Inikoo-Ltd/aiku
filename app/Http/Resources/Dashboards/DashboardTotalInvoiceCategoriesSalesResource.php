@@ -8,60 +8,43 @@
 
 namespace App\Http\Resources\Dashboards;
 
-use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Models\SysAdmin\Organisation;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
 {
-    use WithDashboardIntervalValues;
-
-    private array $customRangeData = [];
-
-    public function setCustomRangeData(array $customRangeData): self
-    {
-        $this->customRangeData = $customRangeData;
-        return $this;
-    }
+    use WithDashboardIntervalValuesFromArray;
 
     public function toArray($request): array
     {
-        /** @var Organisation $organisation */
-        $organisation = $this->resource;
+        $models = $this->resource;
 
-        $salesIntervals = $organisation->salesIntervals;
-        $orderingIntervals = $organisation->orderingIntervals;
-
-        // Handle custom range data
-        if (!empty($this->customRangeData['invoice_categories'])) {
-            $aggregatedData = $this->aggregateInvoiceCategoriesData($this->customRangeData['invoice_categories']);
-
-            $salesIntervals = $this->createCustomRangeIntervalsObject($salesIntervals, $aggregatedData, 'sales', $organisation);
-            $orderingIntervals = $this->createCustomRangeIntervalsObject($orderingIntervals, $aggregatedData, 'ordering', $organisation);
+        if (empty($models)) {
+            return [
+                'slug'    => 'totals',
+                'columns' => $this->getEmptyColumns(),
+            ];
         }
 
-        $sales_org_currency = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency');
-        $sales_org_currency_delta = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency_delta');
+        $firstModel = is_array($models) ? ($models[0] ?? []) : [];
 
-        $sales_invoice_category_currency = [
-            'sales_invoice_category_currency' => $sales_org_currency['sales_org_currency']
+        $fields = [
+            'refunds',
+            'invoices',
+            'sales',
+            'sales_org_currency',
         ];
 
-        $sales_invoice_category_currency_delta = [
-            'sales_invoice_category_currency_delta' => $sales_org_currency_delta['sales_org_currency_delta']
-        ];
+        $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
 
-        $sales_org_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency_minified');
-        $sales_invoice_category_currency_minified = [
-            'sales_invoice_category_currency_minified' => $sales_org_currency_minified['sales_org_currency_minified']
-        ];
+        $summedData = array_merge($firstModel, $summedData);
 
         $routeTargets = [
             'invoices' => [
                 'route_target' => [
                     'name' => 'grp.org.accounting.invoices.index',
                     'parameters' => [
-                        'organisation' => $this->slug,
+                        'organisation' => $summedData['organisation_slug'] ?? '',
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
@@ -70,17 +53,9 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.accounting.refunds.index',
                     'parameters' => [
-                        'organisation' => $this->slug,
+                        'organisation' => $summedData['organisation_slug'] ?? '',
                     ],
                     'key_date_filter' => 'between[date]',
-                ],
-            ],
-            'organisation' => [
-                'route_target' => [
-                    'name' => 'grp.org.dashboard.show',
-                    'parameters' => [
-                        'organisation' => $this->slug,
-                    ],
                 ],
             ],
         ];
@@ -88,91 +63,52 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $organisation->name,
+                    'formatted_value' => 'All Invoice Categories',
                     'align'           => 'left',
-                    ...$routeTargets['organisation']
-                ]
-            ],
-            [
+                ],
                 'label_minified' => [
-                    'formatted_value' => $organisation->code,
-                    'tooltip'         => $organisation->name,
+                    'formatted_value' => 'All',
+                    'tooltip'         => 'All Invoice Categories',
                     'align'           => 'left',
-                    ...$routeTargets['organisation']
-                ]
+                ],
             ],
-            $this->getDashboardTableColumn($orderingIntervals, 'refunds', $routeTargets['refunds']),
-            $this->getDashboardTableColumn($orderingIntervals, 'refunds_minified', $routeTargets['refunds']),
-            $this->getDashboardTableColumn($orderingIntervals, 'refunds_inverse_delta'),
-            $this->getDashboardTableColumn($orderingIntervals, 'invoices', $routeTargets['invoices']),
-            $this->getDashboardTableColumn($orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
-            $this->getDashboardTableColumn($orderingIntervals, 'invoices_delta'),
-            $this->getDashboardTableColumn($orderingIntervals, 'lost_revenue_other_amount_org_currency'),
-            $sales_invoice_category_currency,
-            $sales_invoice_category_currency_minified,
-            $sales_invoice_category_currency_delta,
-            $sales_org_currency,
-            $sales_org_currency_minified,
-            $sales_org_currency_delta
+            $this->getDashboardColumnsFromArray($summedData, [
+                'refunds' => $routeTargets['refunds'],
+                'refunds_minified' => $routeTargets['refunds'],
+                'refunds_inverse_delta',
+
+                'invoices' => $routeTargets['invoices'],
+                'invoices_minified' => $routeTargets['invoices'],
+                'invoices_delta',
+
+                'sales',
+                'sales_minified',
+                'sales_delta',
+
+                'sales_org_currency',
+                'sales_org_currency_minified',
+                'sales_org_currency_delta',
+            ])
         );
 
         return [
-            'slug'    => $organisation->slug,
-            'columns' => $columns
+            'slug'    => 'totals',
+            'columns' => $columns,
         ];
     }
 
-    private function aggregateInvoiceCategoriesData(array $invoiceCategoriesData): array
+    private function getEmptyColumns(): array
     {
-        $aggregated = [
-            'invoices_ctm' => 0,
-            'refunds_ctm' => 0,
-            'sales_org_currency_ctm' => 0,
-            'sales_invoice_category_currency_ctm' => 0,
-            'revenue_org_currency_ctm' => 0,
-            'revenue_invoice_category_currency_ctm' => 0,
-            'lost_revenue_org_currency_ctm' => 0,
-            'lost_revenue_invoice_category_currency_ctm' => 0,
-            'invoices_ctm_ly' => 0,
-            'refunds_ctm_ly' => 0,
-            'sales_org_currency_ctm_ly' => 0,
-            'sales_invoice_category_currency_ctm_ly' => 0,
-            'revenue_org_currency_ctm_ly' => 0,
-            'revenue_invoice_category_currency_ctm_ly' => 0,
-            'lost_revenue_org_currency_ctm_ly' => 0,
-            'lost_revenue_invoice_category_currency_ctm_ly' => 0,
+        return [
+            'label' => [
+                'formatted_value' => 'All Invoice Categories',
+                'align'           => 'left',
+            ],
+            'label_minified' => [
+                'formatted_value' => 'All',
+                'tooltip'         => 'All Invoice Categories',
+                'align'           => 'left',
+            ],
         ];
-
-        foreach ($invoiceCategoriesData as $invoiceCategoryId => $invoiceCategoryData) {
-            foreach ($aggregated as $key => $value) {
-                if (isset($invoiceCategoryData[$key])) {
-                    $aggregated[$key] += (float) $invoiceCategoryData[$key];
-                }
-            }
-        }
-
-        return $aggregated;
-    }
-
-    private function createCustomRangeIntervalsObject($originalIntervals, array $customData, string $type, Organisation $organisation): object
-    {
-        $intervalsData = [];
-
-        if ($originalIntervals) {
-            $intervalsData = $originalIntervals->toArray();
-        }
-
-        foreach ($customData as $key => $value) {
-            if ($type === 'sales' && (str_starts_with($key, 'sales_') || str_starts_with($key, 'revenue_') || str_starts_with($key, 'lost_revenue_'))) {
-                $intervalsData[$key] = $value;
-            } elseif ($type === 'ordering' && (str_starts_with($key, 'invoices_') || str_starts_with($key, 'refunds_'))) {
-                $intervalsData[$key] = $value;
-            }
-        }
-
-        $intervalsData['organisationCurrencyCode'] = $organisation->currency->code;
-        $intervalsData['organisation'] = $organisation;
-
-        return (object) $intervalsData;
     }
 }

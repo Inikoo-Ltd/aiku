@@ -128,9 +128,12 @@ trait WithDashboardIntervalValuesFromArray
 
         // Parse currency suffix
         if (str_ends_with($columnFingerprint, '_currency')) {
-            $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED
-                ? DashboardDataType::CURRENCY_MINIFIED
-                : DashboardDataType::CURRENCY;
+            // Only change dataType if not already set to DELTA_LAST_YEAR
+            if ($dataType != DashboardDataType::DELTA_LAST_YEAR) {
+                $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED
+                    ? DashboardDataType::CURRENCY_MINIFIED
+                    : DashboardDataType::CURRENCY;
+            }
         }
 
         // Parse shop currency suffix
