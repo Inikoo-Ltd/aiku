@@ -29,6 +29,7 @@ class UpdateProductCategoryOffersData
         if ($offer->status) {
             $offerData = $this->getBasicOfferData($offer);
         }
+
         $model = $this->getTriggerModel($offer);
         if (!$model) {
             return;
@@ -105,7 +106,6 @@ class UpdateProductCategoryOffersData
         $productsTriggerLabel    = null;
 
         if ($offer->type == 'Category Quantity Ordered Order Interval') {
-
             $currentLocale = app()->getLocale();
             $locale        = $offer->shop->language->code;
             app()->setLocale($locale);
@@ -119,9 +119,9 @@ class UpdateProductCategoryOffersData
             $category = $offer->trigger;
 
             $productsTriggerLabel = __('Order :n+ from :category range to get :percentage off', [
-                'n'        => $offer->trigger_data['item_quantity'],
-                'category' => $category?->code,
-                'percentage' => percentage($offer->trigger_data['percentage_off'], 1)
+                'n'          => $offer->trigger_data['item_quantity'],
+                'category'   => $category?->code,
+                'percentage' => $maxPercentageDiscount == '' ? 'X' : percentage($maxPercentageDiscount, 1)
             ]);
 
             app()->setLocale($currentLocale);

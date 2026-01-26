@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
-import { Popover } from 'primevue'
-import { inject, ref } from 'vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-
+import { trans } from "laravel-vue-i18n"
+import { Popover } from "primevue"
+import { ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+
 library.add(faQuestionCircle)
 
-const props = defineProps<{
+defineProps<{
     product: {}
 }>()
 
-const layout = inject('layout', layoutStructure)
 
 const _popoverQuestionCircle = ref(null)
 </script>
