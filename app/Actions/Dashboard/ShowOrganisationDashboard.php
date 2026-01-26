@@ -9,6 +9,7 @@
 namespace App\Actions\Dashboard;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
+use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
@@ -52,7 +53,6 @@ class ShowOrganisationDashboard extends OrgAction
             $currentTab = Arr::first(OrganisationDashboardSalesTableTabsEnum::values());
         }
 
-        $customRangeData = $this->setupCustomRange($userSettings, $organisation);
         $saved_interval  = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
         $performanceDates = [null, null];
@@ -75,6 +75,7 @@ class ShowOrganisationDashboard extends OrgAction
         }
 
         $topPerformanceStats = GetTopPerformanceStats::run($organisation, $performanceDates[0], $performanceDates[1]);
+        $shopTimeSeriesStats = GetShopTimeSeriesStats::run($organisation, $performanceDates[0], $performanceDates[1]);
         $invoiceCategoryTimeSeriesStats = GetInvoiceCategoryTimeSeriesStats::run($organisation, $performanceDates[0], $performanceDates[1]);
         $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($organisation, $performanceDates[0], $performanceDates[1]);
 
@@ -100,7 +101,7 @@ class ShowOrganisationDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $customRangeData, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats),
+                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats),
                             'charts'      => [],
                             'top_performance' => $topPerformanceStats,
                         ],
