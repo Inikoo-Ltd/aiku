@@ -104,7 +104,7 @@ class PickWholePalletInPalletReturn extends OrgAction
         $this->fulfilment   = $fulfilmentCustomer->fulfilment;
         $this->pallet       = $palletReturnItem;
 
-        $this->initialisation($request->get('website')->organisation, $request);
+        $this->initialisation($request->input('website')->organisation, $request);
 
         return $this->handle($palletReturnItem);
     }

@@ -170,7 +170,7 @@ class IndexCustomersInOverview extends OrgAction
     {
         $navigation = CustomersTabsEnum::navigation();
 
-        $this->tab = $request->get('tab', array_key_first($navigation));
+        $this->tab = $request->input('tab', array_key_first($navigation));
 
         $subNavigation = [];
 

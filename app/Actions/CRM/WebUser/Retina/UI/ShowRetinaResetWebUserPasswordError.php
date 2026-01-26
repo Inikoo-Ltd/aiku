@@ -22,10 +22,10 @@ class ShowRetinaResetWebUserPasswordError extends RetinaAction
     public function handle(ActionRequest $request): Response
     {
 
-        if (is_array($request->get('errors'))) {
-            $parsedErrors['errors'] = $request->get('errors');
+        if (is_array($request->input('errors'))) {
+            $parsedErrors['errors'] = $request->input('errors');
         } else {
-            parse_str($request->get('errors'), $parsedErrors);
+            parse_str($request->input('errors'), $parsedErrors);
         }
 
 

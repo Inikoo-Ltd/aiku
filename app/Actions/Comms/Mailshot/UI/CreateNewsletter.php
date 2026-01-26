@@ -60,7 +60,7 @@ class CreateNewsletter extends OrgAction
                     [
                         [
                             // 'title'  => __('Name'),
-                            'fields' => array_merge(...array_map(fn($item) => $item['fields'], $fields))
+                            'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                         ]
                     ],
                     'route'      => [

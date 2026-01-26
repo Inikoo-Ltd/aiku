@@ -50,7 +50,7 @@ class DispatchDeliveryNote extends OrgAction
             $deliveryNote->refresh();
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 foreach ($deliveryNote->orders as $order) {
-                    DispatchOrderFromDeliveryNote::make()->action($order);
+                    DispatchOrderFromDeliveryNote::make()->action($order, $deliveryNote);
                 }
             } else {
                 SendDispatchedReplacementOrderEmailToCustomer::dispatch($deliveryNote);

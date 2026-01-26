@@ -26,10 +26,10 @@ class ExportCarton
      */
     public function handle(ActionRequest $request): Response
     {
-        $width      = $request->get('width');
-        $height     = $request->get('height');
-        $customText = $request->get('custom_text');
-        $withImage  = $request->get('with_image');
+        $width      = $request->input('width');
+        $height     = $request->input('height');
+        $customText = $request->input('custom_text');
+        $withImage  = $request->input('with_image');
 
         $filename = 'carton-' . now()->format('Y-m-d');
 

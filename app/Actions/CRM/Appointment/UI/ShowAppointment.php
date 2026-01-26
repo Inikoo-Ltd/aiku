@@ -97,7 +97,7 @@ class ShowAppointment extends InertiaAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (Appointment $appointment, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (Appointment $appointment, array $routeParameters, ?string $suffix = null) {
             return [
                 [
 

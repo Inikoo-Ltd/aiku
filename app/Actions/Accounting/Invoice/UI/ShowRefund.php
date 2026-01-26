@@ -413,7 +413,7 @@ class ShowRefund extends OrgAction
     {
         $originalInvoice = $refund->originalInvoice;
 
-        $headCrumb = function (Invoice $refund, array $routeParameters, string $suffix = null, $suffixIndex = '') {
+        $headCrumb = function (Invoice $refund, array $routeParameters, ?string $suffix = null, $suffixIndex = '') {
             return [
                 [
 

@@ -23,7 +23,7 @@ class CopyPrices
     /**
      * @throws \Throwable
      */
-    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, Command $command = null): void
+    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, ?Command $command = null): void
     {
 
         $shop->products()
@@ -46,7 +46,7 @@ class CopyPrices
             });
     }
 
-    public function updatePrice(Product $fromProduct, Product $product, Command $command = null): void
+    public function updatePrice(Product $fromProduct, Product $product, ?Command $command = null): void
     {
         $dataToUpdate = [];
         if ($product->price != $fromProduct->price) {

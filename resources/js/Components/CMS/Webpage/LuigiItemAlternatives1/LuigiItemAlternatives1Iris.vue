@@ -17,9 +17,9 @@ import { Autoplay, Navigation, Pagination } from 'swiper/modules'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
+import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
@@ -54,7 +54,7 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
-const fetchRecommenders = async () => {
+const luigiFetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -82,19 +82,50 @@ const fetchRecommenders = async () => {
         }
 
         console.log('LIA1:', response.data)
-        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
+        // RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
-        isFetched.value = true
+        // isFetched.value = true
     }
-    isLoadingFetch.value = false
+    // isLoadingFetch.value = false
 }
+
+ const fetchRecommenders = async () => {
+    try {
+        isLoadingFetch.value = true
+
+        /* const luigiIdentity = props.fieldValue?.product?.luigi_identity
+
+        if (!luigiIdentity) {
+            listProducts.value = []
+            return
+        } */
+
+        const response = await axios.post(
+            route('iris.json.luigi.product_recommendation'),
+            {
+                luigi_identity: '',
+                recommendation_type : 'item_detail_alternatives',
+                recommender_client_identifier : 'item_detail_alternatives',
+                cookies_lb: Cookies.get('_lb') ?? null,
+            }
+        )
+        listProducts.value = response.data
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isFetched.value = true
+        isLoadingFetch.value = false
+    }
+}
+
 
 onMounted(() => {
     fetchRecommenders()
+    window.luigiItemAlternatives = luigiFetchRecommenders
 })
 </script>
 
@@ -137,10 +168,16 @@ onMounted(() => {
                             :key="index"
                             class="w-full cursor-grab relative !grid h-full min-h-full"
                         >
-                            <RecommendationSlideIris
+                            <!-- <RecommendationSlideIris
+                                :product
+                                :isProductLoading
+                            /> -->
+
+                             <RecommendationSlideIris
                                 :product
                                 :isProductLoading
                             />
+
                         </SwiperSlide>
                     </template>
                 </Swiper>

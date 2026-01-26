@@ -30,6 +30,10 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
         /** @var MagentoUser|ShopifyUser|WooCommerceUser|EbayUser $platformUser */
         $platformUser = $customerSalesChannel->user;
 
+        if (! $platformUser) {
+            return null;
+        }
+
         return match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::SHOPIFY => route('pupil.authenticate', [
                 'shop' => $platformUser->name

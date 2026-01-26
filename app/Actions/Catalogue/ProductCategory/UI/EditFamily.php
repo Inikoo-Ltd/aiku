@@ -96,16 +96,26 @@ class EditFamily extends OrgAction
         }
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
 
+        $warning = [];
+        $haveFollowingMaster = $family->follow_master_name || $family->follow_master_description_title || $family->follow_master_description || $family->follow_master_description_extra;
+
+        if ($family->masterProductCategory && $haveFollowingMaster) {
+            $warning = [
+                'warning'     => [
+                    'type'  => 'warning',
+                    'title' => 'Warning',
+                    // 'text'  => __('Changing name or description may affect master family.'), // Isn't true anymore. Not neccessarily the case. Turned off
+                    'text'  => __('One of this item name/descriptions follows the master. Updates made on master will overwrite local changes'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle'],
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Family'),
-                'warning'     => $family->masterProductCategory ? [
-                    'type'  => 'warning',
-                    'title' => 'warning',
-                    'text'  => __('Changing name or description may affect master family.'),
-                    'icon'  => ['fas', 'fa-exclamation-triangle']
-                ] : null,
+                ...$warning,
                 'iconRight'   => $urlMaster ? [
                     'icon'  => "fab fa-octopus-deploy",
                     'color' => "#4B0082",
@@ -170,6 +180,8 @@ class EditFamily extends OrgAction
                                             'main'          => $family->masterProductCategory->name,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $family->follow_master_name,
                                             'value'         => $family->name,
                                             'reviewed'      => $family->is_name_reviewed
                                         ]
@@ -189,6 +201,8 @@ class EditFamily extends OrgAction
                                             'main'          => $family->masterProductCategory->description_title,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $family->follow_master_description_title,
                                             'value'         => $family->description_title,
                                             'reviewed'      => $family->is_description_title_reviewed
                                         ]
@@ -199,15 +213,17 @@ class EditFamily extends OrgAction
                                         ], */
                                     'description'       => $family->masterProductCategory
                                         ? [
-                                            'type'          => 'textEditor_translation',
-                                            'label'         => __('Description'),
-                                            'language_from' => 'en',
-                                            'full'          => true,
-                                            'main'          => $family->masterProductCategory->description,
-                                            'languages'     => $languages,
-                                            'mode'          => 'single',
-                                            'value'         => $family->description,
-                                            'reviewed'      => $family->is_description_reviewed
+                                            'type'                  => 'textEditor_translation',
+                                            'label'                 => __('Description'),
+                                            'language_from'         => 'en',
+                                            'full'                  => true,
+                                            'main'                  => $family->masterProductCategory->description,
+                                            'languages'             => $languages,
+                                            'mode'                  => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $family->follow_master_description,
+                                            'value'                 => $family->description,
+                                            'reviewed'              => $family->is_description_reviewed
                                         ]
                                         : [
                                             'type'  => 'textEditor',
@@ -223,6 +239,8 @@ class EditFamily extends OrgAction
                                             'main'          => $family->masterProductCategory->description_extra,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $family->follow_master_description_extra,
                                             'value'         => $family->description_extra,
                                             'reviewed'      => $family->is_description_extra_reviewed
                                         ]
@@ -298,40 +316,18 @@ class EditFamily extends OrgAction
                                 ],
 
                             ],
-                            [
-                                'label'  => __('Discounts'),
-                                'icon'   => 'fa-light fa-badge-percent',
-                                'fields' => [
-                                    'vol_gr' => [
-                                        'label'  => 'Vol / GR',
-                                        'type'   => 'input_twin',
-                                        'value'  => [
-                                            [
-                                                'volume'   => $family->offers_data['vol_gr']['volume'] ?? null,
-                                                'discount' => $family->offers_data['vol_gr']['discount'] ?? null,
-                                            ]
-                                        ],
-                                        'fields' => [
-                                            'volume'   => [
-                                                'key'         => 'volume',
-                                                'placeholder' => __('Minimal Volume'),
-                                                'required'    => true,
-                                                'minValue'    => 0,
-                                                'type'        => 'number',
-                                                'suffix'      => '%'
-                                            ],
-                                            'discount' => [
-                                                'key'         => 'discount',
-                                                'placeholder' => __('Discount %'),
-                                                'required'    => true,
-                                                'minValue'    => 0,
-                                                'type'        => 'number',
-                                                'suffix'      => '%'
-                                            ]
-                                        ]
-                                    ],
-                                ],
-                            ],
+// todso this is wrong
+//                            [
+//                                'label'  => __('Discounts'),
+//                                'icon'   => 'fa-light fa-badge-percent',
+//                                'fields' => [
+//                                    'offers_data'      => [
+//                                        'label'  => 'Offer List',
+//                                        'value'  =>  $family->offers_data,
+//                                        'type'   =>  'offer_fields'
+//                                    ]
+//                                ],
+//                            ],
                         ]
                     ),
                     'args'      => [

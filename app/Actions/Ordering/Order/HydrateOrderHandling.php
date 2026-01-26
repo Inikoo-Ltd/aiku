@@ -93,10 +93,19 @@ class HydrateOrderHandling
             return;
         }
 
+        $progressBar = $command->getOutput()->createProgressBar(count($models));
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% -- Elapsed: %elapsed:-6s% -- ETA: %estimated:-6s%');
+        $progressBar->start();
+
         foreach ($models as $model) {
             $this->handle($model);
-            $command->info("All order handling states have been hydrated for {$modelType} {$model->slug}.");
+            $progressBar->advance();
         }
+
+        $progressBar->finish();
+
+        $command->newLine(2);
+        $command->info("All order handling states have been hydrated for the found {$modelType}(s).");
     }
 
     public function handle(Group|Organisation|Shop $model): void
@@ -114,37 +123,37 @@ class HydrateOrderHandling
 
     private function hydrateForGroup(int $id): void
     {
-        GroupHydrateOrderStateCreating::dispatch($id);
-        GroupHydrateOrderStateSubmitted::dispatch($id);
-        GroupHydrateOrderStateInWarehouse::dispatch($id);
-        GroupHydrateOrderStateHandling::dispatch($id);
-        GroupHydrateOrderStateHandlingBlocked::dispatch($id);
-        GroupHydrateOrderStatePacked::dispatch($id);
-        GroupHydrateOrderStateFinalised::dispatch($id);
-        GroupHydrateOrdersDispatchedToday::dispatch($id);
+        GroupHydrateOrderStateCreating::run($id);
+        GroupHydrateOrderStateSubmitted::run($id);
+        GroupHydrateOrderStateInWarehouse::run($id);
+        GroupHydrateOrderStateHandling::run($id);
+        GroupHydrateOrderStateHandlingBlocked::run($id);
+        GroupHydrateOrderStatePacked::run($id);
+        GroupHydrateOrderStateFinalised::run($id);
+        GroupHydrateOrdersDispatchedToday::run($id);
     }
 
     private function hydrateForOrganisation(int $id): void
     {
-        OrganisationHydrateOrderStateCreating::dispatch($id);
-        OrganisationHydrateOrderStateSubmitted::dispatch($id);
-        OrganisationHydrateOrderStateInWarehouse::dispatch($id);
-        OrganisationHydrateOrderStateHandling::dispatch($id);
-        OrganisationHydrateOrderStateHandlingBlocked::dispatch($id);
-        OrganisationHydrateOrderStatePacked::dispatch($id);
-        OrganisationHydrateOrderStateFinalised::dispatch($id);
-        OrganisationHydrateOrdersDispatchedToday::dispatch($id);
+        OrganisationHydrateOrderStateCreating::run($id);
+        OrganisationHydrateOrderStateSubmitted::run($id);
+        OrganisationHydrateOrderStateInWarehouse::run($id);
+        OrganisationHydrateOrderStateHandling::run($id);
+        OrganisationHydrateOrderStateHandlingBlocked::run($id);
+        OrganisationHydrateOrderStatePacked::run($id);
+        OrganisationHydrateOrderStateFinalised::run($id);
+        OrganisationHydrateOrdersDispatchedToday::run($id);
     }
 
     private function hydrateForShop(int $id): void
     {
-        ShopHydrateOrderStateCreating::dispatch($id);
-        ShopHydrateOrderStateSubmitted::dispatch($id);
-        ShopHydrateOrderStateInWarehouse::dispatch($id);
-        ShopHydrateOrderStateHandling::dispatch($id);
-        ShopHydrateOrderStateHandlingBlocked::dispatch($id);
-        ShopHydrateOrderStatePacked::dispatch($id);
-        ShopHydrateOrderStateFinalised::dispatch($id);
-        ShopHydrateOrdersDispatchedToday::dispatch($id);
+        ShopHydrateOrderStateCreating::run($id);
+        ShopHydrateOrderStateSubmitted::run($id);
+        ShopHydrateOrderStateInWarehouse::run($id);
+        ShopHydrateOrderStateHandling::run($id);
+        ShopHydrateOrderStateHandlingBlocked::run($id);
+        ShopHydrateOrderStatePacked::run($id);
+        ShopHydrateOrderStateFinalised::run($id);
+        ShopHydrateOrdersDispatchedToday::run($id);
     }
 }

@@ -42,7 +42,7 @@ class GetPrintNodePrinters extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $this->set('after', $request->get('after'));
+        $this->set('after', $request->input('after'));
     }
 
 

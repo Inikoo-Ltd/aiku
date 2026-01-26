@@ -28,7 +28,7 @@ class IndexRetinaPalletUploads extends RetinaAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(WebUser $webUser, string $prefix = null): LengthAwarePaginator
+    public function handle(WebUser $webUser, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);

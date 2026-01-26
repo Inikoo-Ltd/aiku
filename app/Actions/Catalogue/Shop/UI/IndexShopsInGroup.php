@@ -57,7 +57,7 @@ class IndexShopsInGroup extends OrgAction
         )->table($this->tableStructure(parent: $this->group, prefix: null));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

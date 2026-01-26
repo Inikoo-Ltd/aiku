@@ -24,7 +24,7 @@ class SetClockingPhotoFromImage
      * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig
      * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist
      */
-    public function handle(Clocking $clocking, string $imagePath, string $originalFilename, string $extension = null): Clocking
+    public function handle(Clocking $clocking, string $imagePath, string $originalFilename, ?string $extension = null): Clocking
     {
         return $this->updateModelImage(
             model: $clocking,

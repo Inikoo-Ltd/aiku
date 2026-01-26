@@ -62,7 +62,7 @@ class AddRetinaProductToBasket extends RetinaAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if ($request->has('product_id')) {
-            $product = Product::find($request->get('product_id'));
+            $product = Product::find($request->input('product_id'));
             $request->merge(
                 [
                     'historic_asset_id' => $product->currentHistoricProduct->id,

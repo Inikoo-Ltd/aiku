@@ -24,7 +24,7 @@ class TrackWebsiteVisitor
         if ($this->shouldTrack($request)) {
             ProcessWebsiteVisitorTracking::dispatch(
                 sessionId: $request->session()->getId(),
-                website: $request->get('website'),
+                website: $request->input('website'),
                 webUser: $request->user('retina'),
                 userAgent: $request->userAgent(),
                 ips: $request->ips(),
@@ -40,7 +40,7 @@ class TrackWebsiteVisitor
             return false;
         }
 
-        if (!$request->get('website')) {
+        if (!$request->input('website')) {
             return false;
         }
 

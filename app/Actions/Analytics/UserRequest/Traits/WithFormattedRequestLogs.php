@@ -40,7 +40,7 @@ trait WithFormattedRequestLogs
             }
 
             return collect(array_reverse($results))->paginate(
-                perPage: \request()->get('perPage') ?? config('ui.table.records_per_page')
+                perPage: \request()->input('perPage') ?? config('ui.table.records_per_page')
             )->withQueryString();
 
         } catch (\Exception $e) {

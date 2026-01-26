@@ -106,7 +106,7 @@ class CallApiItdShipping extends OrgAction
                     'fromAddressCity'        => Arr::get($parentResource, 'from_address.locality'),
                     'fromAddressCountyState' => Arr::get($parentResource, 'from_address.administrative_area'),
                     'fromAddressZip'         => Arr::get($parentResource, 'from_address.postal_code'),
-                    'fromAddressCountryIso'  => Arr::get($parentResource, 'from_address.country.code'),
+                    'fromAddressCountryIso'  => Arr::get($parentResource, 'from_address.country_code'),
                     'toAddressFirstName'     => Arr::get($parentResource, 'to_first_name'), // this changes the Customer FirstName in the label
                     'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'), // this changes the Customer LastName in the label
                     'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'), // this changes the Depot in label
@@ -117,7 +117,7 @@ class CallApiItdShipping extends OrgAction
                     'toAddressCity'          => Arr::get($parentResource, 'to_address.locality'),
                     'toAddressCountyState'   => Arr::get($parentResource, 'to_address.administrative_area'),
                     'toAddressZip'           => Arr::get($parentResource, 'to_address.postal_code'),
-                    'toAddressCountryIso'    => Arr::get($parentResource, 'to_address.country.code'),
+                    'toAddressCountryIso'    => Arr::get($parentResource, 'to_address.country_code'),
                     'packages'               => $packages
                 ]
             ]

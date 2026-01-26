@@ -308,7 +308,7 @@ class IndexPalletsInCustomer extends OrgAction
         $this->parent             = $fulfilmentCustomer;// This is needed for authorisation checks
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(FulfilmentCustomerPalletsTabsEnum::values());
 
-        return $this->handle($fulfilmentCustomer, $request->get('tab', FulfilmentCustomerPalletsTabsEnum::STORING->value));
+        return $this->handle($fulfilmentCustomer, $request->input('tab', FulfilmentCustomerPalletsTabsEnum::STORING->value));
     }
 
 

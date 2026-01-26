@@ -6,18 +6,26 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Illuminate\Support\Number;
 
 class CalculateTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(array $timeSeriesIds, array $metricsMapping, $from_date = null, $to_date = null): array
-    {
+    public function handle(
+        array $timeSeriesIds,
+        array $metricsMapping,
+        string $tableName,
+        string $foreignKey,
+        $from_date = null,
+        $to_date = null,
+        array $additionalWhere = []
+    ): array {
         if (empty($timeSeriesIds)) {
             return [];
         }
 
-        $selects = ['offer_time_series_id'];
+        $selects = [$foreignKey];
         $bindings = [];
         $intervals = DateIntervalEnum::cases();
         $now = now();
@@ -70,14 +78,86 @@ class CalculateTimeSeriesStats
             }
         }
 
-        $results = DB::table('offer_time_series_records')
+        $query = DB::table($tableName)
             ->selectRaw(implode(', ', $selects), $bindings)
-            ->whereIn('offer_time_series_id', $timeSeriesIds)
-            ->groupBy('offer_time_series_id')
-            ->get();
+            ->whereIn($foreignKey, $timeSeriesIds);
 
-        // Key results by offer_time_series_id
-        return $results->keyBy('offer_time_series_id')->map(fn ($item) => (array) $item)->toArray();
+        // Apply additional where conditions
+        foreach ($additionalWhere as $column => $value) {
+            $query->where($column, $value);
+        }
+
+        $results = $query->groupBy($foreignKey)->get();
+
+        // Key results by foreign key (e.g., platform_time_series_id)
+        return $results->keyBy($foreignKey)->map(fn ($item) => (array) $item)->toArray();
+    }
+
+    public function format(array $stats, array $metricsMapping, ?string $currencyCode = null): array
+    {
+        $formattedStats = [];
+
+        $intervals = DateIntervalEnum::cases();
+
+        foreach ($metricsMapping as $metricKey => $column) {
+            $formattedStats[$metricKey] = [];
+            $formattedStats[$metricKey . '_delta'] = [];
+
+            foreach ($intervals as $interval) {
+                $intervalValue = $interval->value;
+
+                $currentValueKey = "{$column}_{$intervalValue}";
+                $lastYearValueKey = "{$currentValueKey}_ly";
+
+                $currentValue = (float)($stats[$currentValueKey] ?? 0);
+                $lastYearValue = (float)($stats[$lastYearValueKey] ?? 0);
+
+                // Format for currency if the key contains 'sales' or 'revenue'
+                if (str_contains($metricKey, 'sales') || str_contains($metricKey, 'revenue')) {
+                    $formattedValue = $currencyCode ? Number::currency($currentValue, $currencyCode) : $currentValue;
+                } else {
+                    $formattedValue = number_format($currentValue);
+                }
+
+                $formattedStats[$metricKey][$intervalValue] = [
+                    'raw_value'       => $currentValue,
+                    'tooltip'         => '', // You can add logic for tooltips if needed
+                    'formatted_value' => $formattedValue,
+                ];
+
+                $delta = $this->calculateDelta($currentValue, $lastYearValue);
+                $formattedStats[$metricKey . '_delta'][$intervalValue] = $delta;
+            }
+        }
+
+        return $formattedStats;
+    }
+
+    private function calculateDelta(float $current, float $previous): array
+    {
+        if ($previous == 0) {
+            $percentageChange = $current > 0 ? 100 : 0;
+        } else {
+            $percentageChange = (($current - $previous) / $previous) * 100;
+        }
+
+        if ($percentageChange > 0) {
+            $deltaIcon = ['icon' => 'fa-arrow-up', 'variant' => 'success'];
+            $formattedValue = '+' . number_format($percentageChange, 1) . '%';
+        } elseif ($percentageChange < 0) {
+            $deltaIcon = ['icon' => 'fa-arrow-down', 'variant' => 'danger'];
+            $formattedValue = number_format($percentageChange, 1) . '%';
+        } else {
+            $deltaIcon = ['icon' => 'fa-minus', 'variant' => 'secondary'];
+            $formattedValue = '0.0%';
+        }
+
+        return [
+            'raw_value'       => $percentageChange,
+            'tooltip'         => (string)$previous,
+            'formatted_value' => $formattedValue,
+            'delta_icon'      => $deltaIcon,
+        ];
     }
 
     protected function getIntervalRange(DateIntervalEnum $interval, Carbon $now): ?array

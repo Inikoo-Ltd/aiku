@@ -63,7 +63,7 @@ class DeleteStoredItemFromReturn extends OrgAction
         $fulfilmentCustomer           = $request->user()->customer->fulfilmentCustomer;
         $this->fulfilment             = $fulfilmentCustomer->fulfilment;
 
-        $this->initialisation($request->get('website')->organisation, $request);
+        $this->initialisation($request->input('website')->organisation, $request);
         return $this->handle($palletReturn, $palletReturnItem);
     }
 }

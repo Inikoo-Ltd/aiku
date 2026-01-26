@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import ColumnWebppage from "./ColumnWebppageWorkshop.vue"
+import ColumnWebppage from "@/Components/CMS/Webpage/WorkshopComponentsHelper/ColumnWebppageWorkshop.vue"
 import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faImage)
@@ -38,5 +38,6 @@ const emits = defineEmits<{
 			:blockData="blockData"
 			:screenType="screenType"
 		/>
+
 	</div>
 </template>

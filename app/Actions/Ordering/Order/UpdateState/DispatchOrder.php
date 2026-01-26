@@ -23,6 +23,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +37,7 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, ?DeliveryNote $deliveryNote = null): Order
     {
         $oldState = $order->state;
 
@@ -47,7 +48,7 @@ class DispatchOrder extends OrgAction
             'dispatched_at' => $date
         ];
 
-        $order = DB::transaction(function () use ($order, $data, $date) {
+        $order = DB::transaction(function () use ($order, $data, $date, $deliveryNote) {
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $dataToUpdate = [
@@ -59,10 +60,8 @@ class DispatchOrder extends OrgAction
                     if ($transaction->asset) {
                         $transaction->asset->orderingStats()->update(['last_order_dispatched_at' => $date]);
                     }
-
                 }
                 $transaction->update($dataToUpdate);
-
             }
 
             $this->update($order, $data);
@@ -78,7 +77,6 @@ class DispatchOrder extends OrgAction
 
             $order->refresh();
 
-
             if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 if ($order->customerSalesChannel?->user && app()->isProduction()) {
                     match ($order->customerSalesChannel->platform->type) {
@@ -86,7 +84,7 @@ class DispatchOrder extends OrgAction
                         PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
                         PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
-                        PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
+                        PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
                         default => null,
                     };
                 } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {
@@ -116,9 +114,9 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order): Order
+    public function action(Order $order, DeliveryNote $deliveryNote): Order
     {
-        return $this->handle($order);
+        return $this->handle($order, $deliveryNote);
     }
 
     /**

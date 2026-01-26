@@ -130,7 +130,7 @@ class IndexUsers extends OrgAction
 
         return $queryBuilder
             ->defaultSort('username')
-            ->select(['users.username', 'users.email', 'users.contact_name', 'users.image_id', 'users.status', 'user_stats.*', DB::raw("NULLIF(users.google2fa_secret, '') IS NOT NULL AS has_2fa"), 'users.is_two_factor_required'])
+            ->select(['users.username', 'users.email', 'users.slug', 'users.contact_name', 'users.image_id', 'users.status', 'user_stats.*', DB::raw("NULLIF(users.google2fa_secret, '') IS NOT NULL AS has_2fa"), 'users.is_two_factor_required'])
             ->allowedSorts(['username', 'email', 'contact_name', 'has_2fa', 'is_two_factor_required'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

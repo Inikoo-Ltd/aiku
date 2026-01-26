@@ -75,17 +75,17 @@ class CallApiDpdSkShipping extends OrgAction
         ];
         $errorData = [];
 
-        if ($statusCode == 200 && Arr::get($apiResponse, 'error') == null) {
+        if ($statusCode == 200 && Arr::get($apiResponse, 'result.result.0.success')) {
             $status = 'success';
 
 
-            $trackingNumber = substr(Arr::get($apiResponse, 'mpsid'), 0, -8);
+            $trackingNumber = substr(Arr::get($apiResponse, 'result.result.0.mpsid'), 0, -8);
 
 
             $modelData['tracking']           = $trackingNumber;
-            $modelData['combined_label_url'] = Arr::get($apiResponse, 'label');
+            $modelData['combined_label_url'] = Arr::get($apiResponse, 'result.result.0.label');
             $modelData['trackings']          = [$trackingNumber];
-            $modelData['label_urls']         = [Arr::get($apiResponse, 'label')];
+            $modelData['label_urls']         = [Arr::get($apiResponse, 'result.result.0.label')];
         } else {
             $status = 'fail';
             $error  = Arr::get($apiResponse, 'error', []);
@@ -93,12 +93,17 @@ class CallApiDpdSkShipping extends OrgAction
 
             if (!empty($error)) {
                 $errorMessage = Arr::get($error, 'message', 'Unknown error');
-
-                if (Str::contains($errorMessage, 'Phone number')) {
-                    $errorMessage         = __('Invalid phone number');
-                }
-                $errorData['address'] = $errorMessage;
+            } else {
+                $errorMessage = Arr::get($apiResponse, 'result.result.0.messages.0', 'Unknown error');
             }
+
+
+            if (Str::contains($errorMessage, 'Phone number')) {
+                $errorMessage = __('Invalid phone number');
+            } elseif (Str::contains($errorMessage, 'Invalid ZIP')) {
+                $errorMessage = __('Invalid postal code');
+            }
+            $errorData['address'] = $errorMessage;
         }
 
         return [
@@ -107,8 +112,6 @@ class CallApiDpdSkShipping extends OrgAction
             'errorData' => $errorData,
         ];
     }
-
-
 
 
     protected function prepareShipmentParams(Shipper $shipper, array $parentResource, array $parcels): array

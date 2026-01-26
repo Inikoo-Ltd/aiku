@@ -94,7 +94,7 @@ class ShowIrisWebpagesList
     public function asController(ActionRequest $request): StreamedResponse
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         return $this->handle($website);
     }
@@ -102,7 +102,7 @@ class ShowIrisWebpagesList
     public function base(ActionRequest $request): StreamedResponse
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         return $this->handle($website, 'base');
     }
@@ -110,7 +110,7 @@ class ShowIrisWebpagesList
     public function products(ActionRequest $request): StreamedResponse
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         return $this->handle($website, 'products');
     }
@@ -118,7 +118,7 @@ class ShowIrisWebpagesList
     public function families(ActionRequest $request): StreamedResponse
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         return $this->handle($website, 'families');
     }

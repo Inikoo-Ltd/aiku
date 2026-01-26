@@ -11,6 +11,8 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
@@ -23,14 +25,14 @@ class FulfillOrderToShopify extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Order $order): void
+    public function handle(Order $order, ?DeliveryNote $deliveryNote = null): void
     {
         $fulfillOrderId = $order->platform_order_id;
 
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $order->customerSalesChannel->user;
 
-        if (! $shopifyUser) {
+        if (!$shopifyUser) {
             return;
         }
 
@@ -48,25 +50,25 @@ class FulfillOrderToShopify extends OrgAction
             }
         MUTATION;
 
-        $deliveryNotes = $order->deliveryNotes->first();
-        $shipments     = $deliveryNotes->shipments;
 
-        if (blank($shipments)) {
-            throw ValidationException::withMessages([
-                'messages' => __('The shipments are empty.')
-            ]);
+        if ($deliveryNote == null) {
+            $deliveryNote = $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->first();
         }
 
-        $shipper = $shipments->first()->shipper;
+
+        $shipments = $deliveryNote->shipments;
+
+
+        $shipper            = $shipments->first()->shipper;
         $shipperCompanyName = $shipper->trade_as ?? $shipper->name;
 
 
         $numbers = [];
-        $urls = [];
+        $urls    = [];
         foreach ($shipments as $shipment) {
-            $trackingNumbers = array_map(fn ($num) => (string) $num, $shipment->trackings);
-            $numbers = array_merge($numbers, $trackingNumbers);
-            $urls = array_merge($urls, $shipment->tracking_urls);
+            $trackingNumbers = array_map(fn ($num) => (string)$num, $shipment->trackings);
+            $numbers         = array_merge($numbers, $trackingNumbers);
+            $urls            = array_merge($urls, $shipment->tracking_urls);
         }
 
 
@@ -77,7 +79,7 @@ class FulfillOrderToShopify extends OrgAction
 
         $message = 'Shipper: '.$shipperCompanyName.', '.implode(',', $numbers);
 
-        $validShopifyShippingCompanies = ['Yodel','DPD UK','Parcelforce'];
+        $validShopifyShippingCompanies = ['Yodel', 'DPD UK', 'Parcelforce'];
 
 
         if (!in_array($shipperCompanyName, $validShopifyShippingCompanies) && !empty($urls)) {
@@ -93,7 +95,7 @@ class FulfillOrderToShopify extends OrgAction
                 ],
                 'trackingInfo'                => $trackingInfo
             ],
-            'message' => $message,
+            'message'     => $message,
         ];
 
 

@@ -64,6 +64,7 @@ use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
+use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
 use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
@@ -75,6 +76,9 @@ use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\SendNewsLetterNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
+use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
+use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
+use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
@@ -777,6 +781,14 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('/workshop', UpdateWorkshopMailShot::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('publish', PublishMailshot::class)->name('publish')->withoutScopedBindings();
         Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
+        Route::post('as-new-template', [StoreMailshotAsNewTemplate::class, 'inMailshot'])->name('store.as-new-template')->withoutScopedBindings();
+    });
+
+    Route::name('email-template.')->prefix('email-template')->group(function () {
+        Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
+        Route::patch('{emailTemplate:id}', UpdateMailshotTemplate::class)->name('update')->withoutScopedBindings();
+        Route::post('{emailTemplate:id}/as-new-template', StoreMailshotAsNewTemplate::class)->name('store.as-new-template')->withoutScopedBindings();
+        Route::delete('{emailTemplate:id}', DeleteMailshotTemplate::class)->name('delete')->withoutScopedBindings();
     });
 });
 

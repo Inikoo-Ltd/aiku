@@ -48,7 +48,7 @@ class UpdateUserStatus
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        if ($request->exists('username') and $request->get('username') != strtolower($request->get('username'))) {
+        if ($request->exists('username') && $request->input('username') != strtolower($request->input('username'))) {
             $validator->errors()->add('invalid_username', 'Username must be lowercase.');
         }
     }
