@@ -56,7 +56,7 @@ enum GroupDashboardSalesTableTabsEnum: string
         };
     }
 
-    public function table(Group $group, array $customRangeData = [], mixed $shopTimeSeriesStats = null, mixed $invoiceCategoryTimeSeriesStats = null, mixed $platformTimeSeriesStats = null): array
+    public function table(Group $group, array $customRangeData = [], mixed $shopTimeSeriesStats = [], mixed $invoiceCategoryTimeSeriesStats = [], mixed $platformTimeSeriesStats = []): array
     {
         $header = match ($this) {
             GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardHeaderOrganisationsSalesResource::make($group)->toJson(), true),
@@ -86,7 +86,7 @@ enum GroupDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Group $group, array $customRangeData = [], mixed $shopTimeSeriesStats = null, mixed $invoiceCategoryTimeSeriesStats = null, mixed $platformTimeSeriesStats = null): array
+    public static function tables(Group $group, array $customRangeData = [], mixed $shopTimeSeriesStats = [], mixed $invoiceCategoryTimeSeriesStats = [], mixed $platformTimeSeriesStats = []): array
     {
         return collect(self::cases())->mapWithKeys(function ($case) use ($group, $customRangeData, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats) {
             return [$case->value => $case->table($group, $customRangeData, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats)];
