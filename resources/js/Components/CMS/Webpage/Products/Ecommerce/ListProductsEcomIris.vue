@@ -523,7 +523,7 @@ watch(
                                 :key="index" 
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" 
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :hasInBasket="productInBasket.list[product.id]" 
+                                :hasInBasketList="productInBasket.list" 
                                 :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"
