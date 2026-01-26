@@ -74,15 +74,10 @@ class GetInvoiceCategoryTimeSeriesStats
                 continue;
             }
 
-            $invoiceCategoryData = array_merge($invoiceCategory->toArray(), $stats);
-
-            if ($parent instanceof Group) {
-                $invoiceCategoryData['group_id'] = $parent->id;
-                $invoiceCategoryData['group_slug'] = $parent->slug;
-            } else {
-                $invoiceCategoryData['organisation_id'] = $parent->id;
-                $invoiceCategoryData['organisation_slug'] = $parent->slug;
-            }
+            $invoiceCategoryData = array_merge($invoiceCategory->toArray(), $stats, [
+                'organisation_slug' => $invoiceCategory->organisation->slug,
+                'organisation_code' => $invoiceCategory->organisation->code,
+            ]);
 
             $results[] = $invoiceCategoryData;
         }
