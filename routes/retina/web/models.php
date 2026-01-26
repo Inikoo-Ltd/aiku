@@ -66,6 +66,7 @@ use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderEligibleGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
@@ -246,6 +247,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
+    Route::patch('update-eligible-gift', UpdateRetinaOrderEligibleGift::class)->name('update_eligible_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
