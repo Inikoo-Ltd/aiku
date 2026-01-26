@@ -1,26 +1,25 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 10 Sept 2025 11:33:31 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 23-01-2026-08h-54m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
 namespace App\Actions\Web\Luigi;
 
-use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\IrisAction;
+use App\Services\QueryBuilder;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
-use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
+use App\Http\Resources\Catalogue\IrisLuigiBoxRecommendationResource;
+use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class LuigiLastSeen extends IrisAction
+class LuigiBoxRecommendation extends IrisAction
 {
-    use WithIrisProductsInWebpage;
-
     public function handle(ActionRequest $request): LengthAwarePaginator|array
     {
         $customer = $request->user();
@@ -67,57 +66,54 @@ class LuigiLastSeen extends IrisAction
         $json = $response->json();
         $hits = $json[0]['hits'] ?? [];
 
-        $productIds = collect($hits)
+        $productsInLuigi = collect($hits)
             ->map(function ($hit) {
-                $productId = $hit['attributes']['product_id'] ?? null;
+                $productId = data_get($hit, 'attributes.product_id.0') ?? null;
 
-                if (is_array($productId)) {
-                    return $productId[0] ?? null;
-                }
-
-                return is_string($productId) ? $productId : null;
+                return $productId ? [
+                    'product_id' => $productId,
+                    'web_url'    => data_get($hit, 'attributes.web_url.0')
+                ] : null;
             })
             ->filter()
             ->unique()
-            ->values();
+            ->keyBy('product_id');
 
-        if ($productIds->isEmpty()) {
+        if ($productsInLuigi->isEmpty()) {
             return [];
         }
 
-        $queryBuilder = $this->getBaseQuery('all', false);
+        $queryBuilder = QueryBuilder::for(Product::class);
+        $queryBuilder->whereIn('products.id', $productsInLuigi->keys());
+        $queryBuilder->where('products.has_live_webpage', true);
 
-        $queryBuilder->whereExists(function ($q) {
-            $q->select(DB::raw(1))
-                ->from('webpages')
-                ->whereColumn('webpages.id', 'products.webpage_id')
-                ->where('webpages.state', 'live');
-        });
-
-        $queryBuilder->where(function ($query) {
-            $query
-                ->whereNull('products.variant_id')
-                ->orWhere('products.is_variant_leader', true);
-        });
-
-        $queryBuilder->select($this->getSelect());
-
-        $queryBuilder->addSelect([
-            DB::raw('products.variant_id IS NOT NULL as is_variant'),
-            DB::raw('exists (
-            select 1
-            from org_stocks os
-            join product_has_org_stocks phos on phos.org_stock_id = os.id
-            where phos.product_id = products.id
-              and os.is_on_demand = true
-        ) as is_on_demand'),
-        ]);
+        if ($recommendation_type != 'last_seen') {
+            $queryBuilder->where('products.available_quantity', '>', 0);
+        }
 
         $queryBuilder
-            ->whereIn('products.id', $productIds);
+            ->select([
+                'products.id',
+                'products.code',
+                'products.name',
+                'products.available_quantity',
+                'products.price',
+                'products.rrp',
+                'products.units',
+                'products.unit',
+                'products.web_images',
+            ]);
 
-        return $this
-            ->getData($queryBuilder, $size);
+        $result = $queryBuilder->defaultSort('name')
+            ->withIrisPaginator($size)
+            ->withQueryString();
+
+        $result->through(function ($product) use ($productsInLuigi) {
+            $product->url = $productsInLuigi[$product->id]['web_url'] ?? null;
+            return $product;
+        });
+
+        return $result;
     }
 
 
@@ -130,6 +126,6 @@ class LuigiLastSeen extends IrisAction
 
     public function jsonResponse(LengthAwarePaginator|array $products): array
     {
-        return is_array($products) ? $products : IrisAuthenticatedProductsInWebpageResource::collection($products)->toArray(request());
+        return is_array($products) ? $products : IrisLuigiBoxRecommendationResource::collection($products)->toArray(request());
     }
 }

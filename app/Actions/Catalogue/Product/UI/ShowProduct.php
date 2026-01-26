@@ -328,7 +328,7 @@ class ShowProduct extends OrgAction
         }
 
         $productWeb = $product->webpage;
-        
+
         if ($productWeb?->canonical_url) {
             $actions[] =
                 [

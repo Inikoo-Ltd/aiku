@@ -31,19 +31,19 @@ class UpdateMasterVariant extends OrgAction
             $masterVariant->update($modelData);
             $masterVariant->refresh();
 
-            $masterProducts = $masterVariant->allProduct()->get()->keyBy('code');
-            $masterProductIds = $masterProducts->pluck('id');
+            $masterProducts = $masterVariant->fetchProductFromData()->keyBy('code');
+            $masterProductsIds = $masterProducts->pluck('id');
 
             // Detach other master product not in variant
             MasterAsset::where('master_variant_id', $masterVariant->id)
-                ->whereNotIn('id', $masterProductIds)
+                ->whereNotIn('id', $masterProductsIds)
                 ->update([
                     'is_main'           => true,
                     'master_variant_id' => null,
                     'is_variant_leader' => false,
                 ]);
             // Attach minion
-            MasterAsset::whereIn('id', $masterProductIds)
+            MasterAsset::whereIn('id', $masterProductsIds)
                 ->update([
                     'is_main'           => false,
                     'master_variant_id' => $masterVariant->id,
@@ -62,8 +62,9 @@ class UpdateMasterVariant extends OrgAction
                 }
 
                 $shop = $variant->shop;
-                $productsCode = $variant->family->getProducts()->whereIn('code', $masterProducts->pluck('code'))->pluck('code');
-                $missingProducts = array_diff($masterProducts->pluck('code')->toArray(), $productsCode->toArray());
+                $masterProductCodes = $masterProducts->pluck('code')->toArray();
+                $productsCode = $variant->family->getProducts()->whereIn('code', $masterProductCodes)->pluck('code');
+                $missingProducts = array_diff($masterProductCodes, $productsCode->toArray());
 
                 foreach ($missingProducts as $productCode) {
                     StoreProductFromMasterProduct::make()->action(
@@ -78,7 +79,8 @@ class UpdateMasterVariant extends OrgAction
                                     ]
                                 ],
                             ],
-                        generateVariant: false
+                        generateVariant: false,
+                        ignoreCreateWebpage: true,
                     );
                 }
 

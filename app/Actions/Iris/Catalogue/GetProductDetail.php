@@ -23,7 +23,7 @@ class GetProductDetail extends IrisAction
 
     public function jsonResponse(Product $product, ActionRequest $request): array
     {
-        return WebBlockProductResource::make($product)->toArray($request);
+        return WebBlockProductResource::make($product)->toArray($request);  // This should choose only needed data
     }
 
     public function asController(Product $product, ActionRequest $request): Product

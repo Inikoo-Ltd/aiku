@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
+use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
@@ -101,13 +102,15 @@ class ShowShop extends OrgAction
         ];
 
         if ($shop->type->value === 'dropshipping') {
+            $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($shop, $performanceDates[0], $performanceDates[1]);
+
             $dashboard['super_blocks'][0]['blocks'] = [
                 [
                     'id'          => 'sales_table',
                     'type'        => 'table',
                     'current_tab' => $currentTab,
                     'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $customRangeData),
+                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $platformTimeSeriesStats),
                     'charts'      => [],
                 ],
             ];
