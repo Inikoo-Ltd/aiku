@@ -290,6 +290,14 @@ onMounted(() => {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
         fetchHasInBasket();
+    } else {
+        setTimeout(() => {   // Needed, to handle, after login phase
+            if (layout?.iris?.is_logged_in) {
+                firstLoad.value = 1
+                fetchProducts()
+                fetchHasInBasket()
+            }
+        }, 400)
     }
 })
 
