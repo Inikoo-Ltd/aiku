@@ -177,6 +177,27 @@ class ShowMailshotRecipients extends OrgAction
                                 ]
                             ]
                         ]
+                    ],
+                    'by_family'              => [
+                        'label'       => 'By Family',
+                        'type'        => 'location',
+                        'description' => 'Enable email targeting based on customer location with radius.',
+                        'fields'      => [
+                            'family_ids' => [
+                                'type'        => 'input',
+                                'label'       => 'Location (Postcode, City, etc.)',
+                                'placeholder' => 'Enter location'
+                            ],
+                            'behaviours'   => [
+                                'type'    => 'select',
+                                'label'   => 'Radius',
+                                'options' => [
+                                    'purchased'    => 'Purchased',
+                                    'in_basket'   => 'In Basket',
+                                    'basket_not_purchased'   => 'Basket Not Purchased'
+                                ]
+                            ]
+                        ]
                     ]
                 ]
             ]
@@ -222,6 +243,4 @@ class ShowMailshotRecipients extends OrgAction
             suffix: '(' . __('Recipients') . ')'
         );
     }
-
-
 }

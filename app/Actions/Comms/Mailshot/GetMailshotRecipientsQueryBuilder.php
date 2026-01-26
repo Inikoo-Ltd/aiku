@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Comms\Mailshot\Filters\FilterByFamily;
 use Illuminate\Support\Arr;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
@@ -237,7 +238,13 @@ class GetMailshotRecipientsQueryBuilder
             (new FilterOrdersCollection())->apply($query);
         }
 
+        // FILTER: By Family
+        $familyFilter = Arr::get($filters, 'by_family');
+        $familyOptions = Arr::get($familyFilter, 'value', []);
+        if ($familyFilter) {
+            (new FilterByFamily())->apply($query, $familyOptions);
+        }
+
         return $query;
     }
-
 }
