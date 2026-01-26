@@ -25,7 +25,7 @@ use Illuminate\Support\Arr;
  * @property mixed $rrp
  * @property mixed $id
  */
-class WebBlockProductResource extends JsonResource
+class WebBlockProductTODOPROCUCTDEAILIRISPRODUCTPAGEResource extends JsonResource
 {
     use HasSelfCall;
     use HasBucketImages;
@@ -52,13 +52,7 @@ class WebBlockProductResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
-
-        if (is_array($product->offers_data)) {
-            $productOffersData = $product->offers_data;
-        } else {
-            $productOffersData = json_decode($product->offers_data, true);
-        }
-
+        $productOffersData = json_decode($product->offers_data, true);
 
         $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;

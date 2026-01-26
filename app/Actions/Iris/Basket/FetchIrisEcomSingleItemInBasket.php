@@ -11,8 +11,8 @@ namespace App\Actions\Iris\Basket;
 
 use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\IrisAction;
-use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
-use App\Http\Resources\Web\WebBlockProductResource;
+use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageTHIS_IS_WRONG_FIX_IT_Resource;
+use App\Http\Resources\Web\WebBlockProductTHISISWRONGResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +22,7 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
-    private $returnType = 'default';
+    private string $returnType = 'default';
 
     public function handle(Transaction $transaction)
     {
@@ -76,7 +76,7 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
         return $queryBuilder->first();
     }
 
-    public function asController(Transaction $transaction, ActionRequest $request)
+    public function asController(Transaction $transaction, ActionRequest $request): ?\Illuminate\Http\Response
     {
         $this->returnType = 'default';
         $this->initialisation($request);
@@ -95,8 +95,8 @@ class FetchIrisEcomSingleItemInBasket extends IrisAction
     public function jsonResponse(Product $product)
     {
         if ($this->returnType == 'product_page') {
-            return WebBlockProductResource::make($product)->toArray(request());
+            return WebBlockProductTHISISWRONGResource::make($product)->toArray(request());
         }
-        return IrisAuthenticatedProductsInWebpageResource::make($product)->toArray(request());
+        return IrisAuthenticatedProductsInWebpageTHIS_IS_WRONG_FIX_IT_Resource::make($product)->toArray(request());
     }
 }

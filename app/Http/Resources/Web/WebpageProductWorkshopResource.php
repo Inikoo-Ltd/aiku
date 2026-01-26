@@ -9,23 +9,20 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\Traits\HasBucketImages;
-use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property mixed $units
  * @property mixed $rrp
  * @property mixed $id
  */
-class WebBlockProductResource extends JsonResource
+class WebpageProductWorkshopResource extends JsonResource
 {
     use HasSelfCall;
     use HasBucketImages;
@@ -48,39 +45,8 @@ class WebBlockProductResource extends JsonResource
             'unit'              => $product->unit,
         ];
 
-        $isOnDemand = $product->orgStocks()->where('is_on_demand', true)->exists();
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
-
-
-        if (is_array($product->offers_data)) {
-            $productOffersData = $product->offers_data;
-        } else {
-            $productOffersData = json_decode($product->offers_data, true);
-        }
-
-
-        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
-        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
-
-        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
-
-
-        $back_in_stock = false;
-
-        if ($request->user()) {
-            /** @var Customer $customer */
-            $customer = $request->user()->customer;
-            if ($customer) {
-                $set_data_back_in_stock = $customer->backInStockReminder()
-                    ?->where('product_id', $this->id)
-                    ->first();
-
-                if ($set_data_back_in_stock) {
-                    $back_in_stock = true;
-                }
-            }
-        }
 
 
         return [
@@ -114,18 +80,9 @@ class WebBlockProductResource extends JsonResource
             'updated_at'        => $product->updated_at,
             'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
-            'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'      => $isOnDemand,
-            'is_back_in_stock'  => $product->backInStockReminders,
-            'back_in_stock'     => $back_in_stock,
 
 
-            'discounted_price'           => round($product->price * $bestPercentageOffOfferFactor, 2),
-            'discounted_price_per_unit'  => $pricePerUnitDiscounted,
-            'discounted_profit'          => $profitDiscounted,
-            'discounted_profit_per_unit' => $profitPerUnitDiscounted,
-            'discounted_margin'          => $marginDiscounted,
-            'discounted_percentage'      => percentage($bestPercentageOff, 1),
+
 
 
         ];

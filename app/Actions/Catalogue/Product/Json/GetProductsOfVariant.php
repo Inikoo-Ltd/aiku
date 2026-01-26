@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\IrisAction;
 use App\Models\Catalogue\Variant;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Web\WebBlockProductResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class GetProductsOfVariant extends IrisAction
@@ -23,7 +22,7 @@ class GetProductsOfVariant extends IrisAction
             'products' => $variant->allProduct
                 ->map(
                     fn ($product) =>
-                    WebBlockProductResource::make($product)
+                    ProductOfVariantResource::make($product)
                         ->toArray(request())
                 )
                 ->values()

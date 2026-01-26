@@ -10,7 +10,7 @@
 namespace App\Actions\Iris\Catalogue;
 
 use App\Actions\IrisAction;
-use App\Http\Resources\Web\WebBlockProductResource;
+use App\Http\Resources\Web\WebBlockProductTODOPROCUCTDEAILIRISPRODUCTPAGEResource;
 use App\Models\Catalogue\Product;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,7 +23,8 @@ class GetProductDetail extends IrisAction
 
     public function jsonResponse(Product $product, ActionRequest $request): array
     {
-        return WebBlockProductResource::make($product)->toArray($request);  // This should choose only needed data
+        // no need to have resource, just return array with whatever vika wants
+        return WebBlockProductTODOPROCUCTDEAILIRISPRODUCTPAGEResource::make($product)->toArray($request);
     }
 
     public function asController(Product $product, ActionRequest $request): Product
