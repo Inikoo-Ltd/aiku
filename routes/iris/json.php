@@ -7,6 +7,8 @@
  * copyright 2025
 */
 
+use App\Actions\Iris\Basket\FetchIrisEcomSingleItemInBasket;
+use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\IrisLogWebUserRequest;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
@@ -50,6 +52,9 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
+
+    Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data');
+
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
