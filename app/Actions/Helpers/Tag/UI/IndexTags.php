@@ -80,6 +80,15 @@ class IndexTags extends OrgAction
         return $this->handle($shop);
     }
 
+    public function inSystemTags(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->forcedScope = TagScopeEnum::SYSTEM_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop);
+    }
+
     public function handle(Shop|TradeUnit $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -100,7 +109,7 @@ class IndexTags extends OrgAction
             $queryBuilder->where('scope', $this->forcedScope);
         }
 
-        if ($parent instanceof Shop) {
+        if ($parent instanceof Shop && $this->forcedScope !== TagScopeEnum::SYSTEM_CUSTOMER) {
             $queryBuilder->where('shop_id', $parent->id);
         }
 
