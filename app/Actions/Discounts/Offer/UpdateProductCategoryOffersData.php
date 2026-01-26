@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -115,13 +116,29 @@ class UpdateProductCategoryOffersData
 
             $categoryQuantityTrigger = $offer->trigger_data['item_quantity'];
 
+            $categoryLink = '';
             /** @var ProductCategory $category */
             $category = $offer->trigger;
+            if ($category) {
+                $categoryLink = $category->code;
+                if ($category->webpage && $category->webpage->state == WebpageStateEnum::LIVE) {
+                    $categoryLink = '<a href="'.$category->webpage->canonical_url.'" target="_blank" class="underline">'.$category->code.'</a>';
+                }
+
+            }
+
+
+            $percentage = $maxPercentageDiscount;
+            if ($percentage == '') {
+                $percentage = 'X';
+            } else {
+                $percentage = percentage($maxPercentageDiscount, 1, null);
+            }
 
             $productsTriggerLabel = __('Order :n+ from :category range to get :percentage off', [
                 'n'          => $offer->trigger_data['item_quantity'],
-                'category'   => $category?->code,
-                'percentage' => $maxPercentageDiscount == '' ? 'X' : percentage($maxPercentageDiscount, 1)
+                'category'   => $categoryLink,
+                'percentage' => $percentage
             ]);
 
             app()->setLocale($currentLocale);
