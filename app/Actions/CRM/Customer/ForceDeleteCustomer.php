@@ -48,6 +48,10 @@ class ForceDeleteCustomer extends OrgAction
             ForceDeleteInvoice::run($invoice);
         }
 
+        foreach ($customer->payments as $payment) {
+            $payment->forceDelete();
+        }
+
         DB::table('model_has_addresses')
             ->where('model_type', 'Customer')
             ->where('model_id', $customer->id)->delete();

@@ -12,6 +12,7 @@ use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -319,7 +320,7 @@ class ShowIrisWebpage
                 return $product->code;
             }
         } elseif ($webpage->model_type == 'ProductCategory') {
-            /** @var \App\Models\Catalogue\ProductCategory $productCateggory */
+            /** @var ProductCategory $productCategory */
             $productCategory = $webpage->model;
             if ($productCategory) {
                 return $productCategory->code;
@@ -327,7 +328,6 @@ class ShowIrisWebpage
         }
 
         $label = $webpage->code;
-
 
         return $label ?? '';
     }
