@@ -78,6 +78,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'platform_possible_matches',
                 'portfolios.exist_in_platform',
                 'portfolios.platform_status',
+                'portfolios.status',
                 'portfolios.has_valid_platform_product_id',
                 'portfolios.number_platform_possible_matches as matches',
                 'portfolios.data',
