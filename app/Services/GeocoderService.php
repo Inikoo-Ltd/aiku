@@ -14,7 +14,7 @@ class GeocoderService
 {
     protected StatefulGeocoder $geocoder;
     protected string $provider;
-    protected int $cacheTime = 129600; // 90 days in minutes
+    protected int $cacheTime = 129600;
 
     public function __construct()
     {
@@ -34,14 +34,14 @@ class GeocoderService
     /**
      * Geocode address string to coordinates
      */
-    public function geocodeLayered(array $addressData): ?array
+     public function geocodeLayered(array $addressData): ?array
     {
         $layers = $this->buildGeocodingLayers($addressData);
 
         Log::info('🔍 Geocoding started', [
             'input' => $addressData,
             'total_layers' => count($layers),
-            'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
+            'layers' => array_map(fn($l) => $l['name'] . ': ' . $l['query'], $layers),
         ]);
 
         foreach ($layers as $index => $layer) {
@@ -67,8 +67,7 @@ class GeocoderService
                 return $result;
             }
 
-            // Rate limiting untuk Nominatim
-            usleep(100000); // 0.1 detik
+            usleep(100000);
         }
 
         Log::warning('❌ Geocoding FAILED for all layers', [
@@ -79,16 +78,11 @@ class GeocoderService
         return null;
     }
 
-    /**
-     * Build geocoding layers dari data address
-     * Strategy: OTOMATIS generate SEMUA kombinasi dari spesifik ke general
-     * Backend yang pintar - user tinggal kasih data apapun yang ada
-     */
+
     protected function buildGeocodingLayers(array $data): array
     {
         $layers = [];
 
-        // Normalize dan extract data - ambil SEMUA yang ada
         $parts = [
             'address_line_1' => trim($data['address_line_1'] ?? ''),
             'address_line_2' => trim($data['address_line_2'] ?? ''),
@@ -98,18 +92,13 @@ class GeocoderService
             'country_code' => strtoupper(trim($data['country_code'] ?? '')),
         ];
 
-        // Filter hanya yang ada isinya
         $availableParts = array_filter($parts);
 
-        // Helper function untuk build query
-        $buildQuery = function (array $selectedParts) {
+        $buildQuery = function(array $selectedParts) {
             return implode(', ', array_filter($selectedParts));
         };
 
-        // STRATEGI: Generate kombinasi dari LENGKAP ke MINIMAL
-        // Semakin banyak parts = semakin spesifik = confidence tinggi
 
-        // Level 1: ALL PARTS (paling spesifik)
         if (count($availableParts) >= 4) {
             $layers[] = [
                 'name' => 'all_parts',
@@ -118,7 +107,6 @@ class GeocoderService
             ];
         }
 
-        // Level 2: Tanpa address_line_2
         $withoutLine2 = $availableParts;
         unset($withoutLine2['address_line_2']);
         if (count($withoutLine2) >= 3) {
@@ -129,7 +117,6 @@ class GeocoderService
             ];
         }
 
-        // Level 3: Hanya address_line_1 + locality + country
         if (!empty($parts['address_line_1']) && !empty($parts['locality']) && !empty($parts['country_code'])) {
             $layers[] = [
                 'name' => 'address_locality_country',
@@ -142,7 +129,6 @@ class GeocoderService
             ];
         }
 
-        // Level 4: Locality + postal + country
         if (!empty($parts['locality']) && !empty($parts['postal_code']) && !empty($parts['country_code'])) {
             $layers[] = [
                 'name' => 'locality_postal_country',
@@ -155,7 +141,6 @@ class GeocoderService
             ];
         }
 
-        // Level 5: Locality + admin + country
         if (!empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_code'])) {
             $layers[] = [
                 'name' => 'locality_admin_country',
@@ -168,7 +153,6 @@ class GeocoderService
             ];
         }
 
-        // Level 6: Locality + country (KUNCI - ini harusnya selalu berhasil)
         if (!empty($parts['locality']) && !empty($parts['country_code'])) {
             $layers[] = [
                 'name' => 'locality_country',
@@ -180,7 +164,6 @@ class GeocoderService
             ];
         }
 
-        // Level 7: Admin area + country
         if (!empty($parts['administrative_area']) && !empty($parts['country_code'])) {
             $layers[] = [
                 'name' => 'admin_country',
@@ -192,7 +175,6 @@ class GeocoderService
             ];
         }
 
-        // Level 8: Postal + country
         if (!empty($parts['postal_code']) && !empty($parts['country_code'])) {
             $layers[] = [
                 'name' => 'postal_country',
@@ -204,7 +186,6 @@ class GeocoderService
             ];
         }
 
-        // Level 9: Country only (FALLBACK FINAL)
         if (!empty($parts['country_code'])) {
             $countryName = $this->getCountryName($parts['country_code']);
             $layers[] = [
@@ -217,9 +198,7 @@ class GeocoderService
         return $layers;
     }
 
-    /**
-     * Convert country code ke nama lengkap untuk geocoding lebih akurat
-     */
+
     protected function getCountryName(string $code): ?string
     {
         $countries = [
@@ -240,16 +219,13 @@ class GeocoderService
         return $countries[$code] ?? null;
     }
 
-    /**
-     * Perform geocoding untuk satu layer
-     */
+
     protected function performLayeredGeocode(array $layer): ?array
     {
         try {
             $query = GeocodeQuery::create($layer['query']);
 
-            // JANGAN tambahkan country code constraint - biarkan API lebih fleksibel
-            // Country akan divalidasi di hasil, bukan di query
+
 
             $results = $this->geocoder->geocodeQuery($query);
 
@@ -264,7 +240,7 @@ class GeocoderService
             $location = $results->first();
             $coordinates = $location->getCoordinates();
 
-            // Hitung confidence score berdasarkan detail yang tersedia
+
             $confidenceScore = $this->calculateConfidenceScore($location, $layer['confidence_base']);
 
             $bounds = $location->getBounds();
@@ -301,14 +277,11 @@ class GeocoderService
         }
     }
 
-    /**
-     * Calculate confidence score berdasarkan detail yang tersedia
-     */
+
     protected function calculateConfidenceScore($location, int $baseScore): int
     {
         $score = $baseScore;
 
-        // Bonus untuk data yang lebih detail
         if ($location->getStreetNumber()) {
             $score += 5;
         }
@@ -329,9 +302,7 @@ class GeocoderService
         return max(0, min(100, $score));
     }
 
-    /**
-     * Build formatted address dari location result
-     */
+
     protected function buildFormattedAddress($location): string
     {
         $parts = array_filter([
@@ -346,26 +317,19 @@ class GeocoderService
         return implode(', ', $parts);
     }
 
-    /**
-     * Normalize address string
-     */
+
     protected function normalizeAddress(string $address): string
     {
-        // Remove extra whitespace
         $address = preg_replace('/\s+/', ' ', $address);
 
-        // Remove multiple commas
         $address = preg_replace('/,+/', ',', $address);
 
-        // Remove leading/trailing commas and spaces
         $address = trim($address, ', ');
 
         return $address;
     }
 
-    /**
-     * Reverse geocode (convert coordinates to address)
-     */
+
     public function reverseGeocode(float $lat, float $lng): ?array
     {
         $cacheKey = 'reverse_geocode:' . $lat . ':' . $lng;
@@ -404,12 +368,9 @@ class GeocoderService
         });
     }
 
-    /**
-     * Backward compatibility: geocode with string
-     */
+
     public function geocode(string $address, bool $enableFallback = true): ?array
     {
-        // Parse string address ke array format
         $parts = array_map('trim', explode(',', $address));
 
         $addressData = [
@@ -422,17 +383,14 @@ class GeocoderService
         return $this->geocodeLayered($addressData);
     }
 
-    /**
-     * Extract postal code dari string
-     */
+
     protected function extractPostalCode(string $text): ?string
     {
-        // Pattern untuk postal code berbagai format
         $patterns = [
-            '/\b\d{5}(?:-\d{4})?\b/', // US: 12345 atau 12345-6789
-            '/\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/i', // Canada: A1A 1A1
-            '/\b[A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2}\b/i', // UK: SW1A 1AA
-            '/\b\d{4,6}\b/', // Generic 4-6 digits
+            '/\b\d{5}(?:-\d{4})?\b/',
+            '/\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/i',
+            '/\b[A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2}\b/i',
+            '/\b\d{4,6}\b/',
         ];
 
         foreach ($patterns as $pattern) {
