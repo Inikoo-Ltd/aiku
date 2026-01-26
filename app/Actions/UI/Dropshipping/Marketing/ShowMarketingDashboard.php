@@ -78,6 +78,15 @@ class ShowMarketingDashboard extends OrgAction
                         ]
                     ],
                     [
+                        'name' => __('Templates'),
+                        'value' => $this->shop->commsStats->number_email_templates,
+                        'icon'  => ['fal', 'fa-layer-group'],
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.templates.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
+                    [
                         'name' => __('Traffic Sources'),
                         'value' => $this->shop->commsStats->number_traffic_sources ?? 0,
                         'icon'  => ['fal', 'fa-traffic-light'],
@@ -85,7 +94,8 @@ class ShowMarketingDashboard extends OrgAction
                             'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
                             'parameters' => $request->route()->originalParameters()
                         ]
-                    ]
+                    ],
+
                 ]
 
 

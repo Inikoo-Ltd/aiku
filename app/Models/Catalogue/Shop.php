@@ -28,6 +28,7 @@ use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
+use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
@@ -755,5 +756,10 @@ class Shop extends Model implements HasMedia, Auditable
     public function shippingCountries(): HasMany
     {
         return $this->hasMany(ShippingCountry::class);
+    }
+
+    public function emailTemplates(): HasMany
+    {
+        return $this->hasMany(EmailTemplate::class);
     }
 }

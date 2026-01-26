@@ -33,7 +33,7 @@ class GetShopNavigation
 
             'topMenu' => [
                 'subSections' => [
-                     $shop->type !== ShopTypeEnum::EXTERNAL ? [
+                    $shop->type !== ShopTypeEnum::EXTERNAL ? [
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
                         "icon"    => ["fal", "fa-satellite-dish"],
@@ -267,6 +267,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.marketing.mailshots.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.marketing.mailshots.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Templates"),
+                            "tooltip" => __("Templates"),
+                            "icon"    => ["fal", "fa-layer-group"],
+                            'root'    => 'grp.org.shops.show.marketing.templates.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.templates.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

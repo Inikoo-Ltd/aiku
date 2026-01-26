@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
+import type { Component } from "vue";
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -16,13 +17,18 @@ import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus } from '@fal'
 import { faUserCog } from '@fas'
-
-
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { data } from "autoprefixer"
+import { useTabChange } from "@/Composables/tab-change";
+import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
+import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
+import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
+import { usePage } from "@inertiajs/vue3"
 
 library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -37,8 +43,8 @@ const props = defineProps<{
     status: string
     publishRoute: routeType
     sendTestRoute: routeType
-    storeTemplateRoute: routeType
     organisationSlug: string
+    storeNewTemplateRoute: routeType
 }>()
 
 const comment = ref('')
@@ -130,7 +136,7 @@ const saveTemplate = async () => {
 
     axios
         .post(
-            route(props.storeTemplateRoute.name, props.storeTemplateRoute.parameters),
+            route(props.storeNewTemplateRoute.name, props.storeNewTemplateRoute.parameters),
             {
                 name: templateName.value,
                 layout: JSON.parse(temporaryData.value?.layout)
@@ -192,7 +198,7 @@ const autoSave = async (jsonFile) => {
             },
         )
         .then((response) => {
-            console.log("autosave successful:", response.data);
+            // console.log("autosave successful:", response.data);
             // Handle success (equivalent to onFinish)
         })
         .catch((error) => {
@@ -203,7 +209,7 @@ const autoSave = async (jsonFile) => {
             })
         })
         .finally(() => {
-            console.log("autosave finished.");
+            // console.log("autosave finished.");
         });
 }
 
@@ -233,6 +239,41 @@ const schedulePublish = async () => {
     }
 }
 
+const isModalCloneTemplateEmail = ref(false)
+const activeSnapshot = ref(props.snapshot)
+
+const page = usePage()
+const tabs = computed(() => page.props.tabs)
+const currentTab = ref<string>(tabs.value.current)
+const isBeefreeReady = ref(false)
+
+const tabData = computed(() => {
+    return page.props[currentTab.value] ?? []
+})
+
+const handleTabUpdate = (tabSlug: string) =>
+    useTabChange(tabSlug, currentTab)
+
+const component = computed(() => {
+    const components: Component = {
+        templates: TableEmailTemplate,
+        previous_mailshots: TablePreviousMailshots,
+        other_store_mailshots: TableOtherStoreMailshots,
+    };
+    return components[currentTab.value];
+});
+
+const onSelectTemplateSnapshot = (snapshot: any) => {
+    activeSnapshot.value = snapshot
+    isModalCloneTemplateEmail.value = false
+}
+
+watch(
+    () => tabs.value.current,
+    (val) => {
+        currentTab.value = val
+    }
+)
 </script>
 
 
@@ -240,12 +281,28 @@ const schedulePublish = async () => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
+                class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
+                :icon="faPlus" :disabled="!isBeefreeReady" />
+        </template>
     </PageHeading>
+
+    <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-6xl">
+
+        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+
+        <component :is="component" :key="currentTab" :data="tabData" :tab="currentTab"
+            @select-snapshot="onSelectTemplateSnapshot" />
+
+    </Modal>
 
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree" />
+        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
+        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
+        @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
