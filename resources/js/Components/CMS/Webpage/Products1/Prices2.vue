@@ -91,7 +91,7 @@ const getBestOffer = (offerId: string) => {
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
-// console.log('fffff', props.product.product_offers_data)
+// console.log('fffff', props.product)
 
 const _popoverProfit = ref(null)
 </script>
@@ -103,10 +103,10 @@ const _popoverProfit = ref(null)
             <div class="flex justify-between">
                 <div>
                     <div class="text-xs">{{ trans("Price") }} ({{ trans("Excl. Vat") }})</div>
-                    <div v-if="product.units == 1" class="font-bold text-base">
+                    <div v-if="product.units == 1" class="font-bold text-base leading-4">
                         {{ locale.currencyFormat(currency?.code, product.price) }}/<span class="font-normal">{{ product.unit}}</span>
                     </div>
-                    <div v-else class="font-bold text-base">
+                    <div v-else class="font-bold text-base leading-4">
                         {{ locale.currencyFormat(currency?.code, product.price) }} <span v-if="product.price_per_unit > 0">({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/<span class="font-normal">{{ product.unit}}</span>)</span>
                     </div>
                 </div>
@@ -120,7 +120,7 @@ const _popoverProfit = ref(null)
             </div>
 
             <!-- Price: Gold Member -->
-            <div class="text-orange-500 font-bold text-sm">
+            <div v-if="product.discounted_price" class="text-orange-500 font-bold text-sm">
                 <span v-if="product.units == 1">
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>

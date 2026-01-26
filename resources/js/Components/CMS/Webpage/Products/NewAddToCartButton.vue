@@ -76,17 +76,15 @@ const status = ref<null | 'loading' | 'success' | 'error'>(null)
 
 
 const currentQuantity = computed(() => {
-    const quantityNew = get(props.hasInBasket, ['quantity_ordered_new'])
-    const quantity = get(props.hasInBasket, ['quantity_ordered'])
+  const quantityNew = Number(get(props.hasInBasket, 'quantity_ordered_new') ?? 0)
+  const quantity = Number(get(props.hasInBasket, 'quantity_ordered') ?? 0)
 
-    const safeQuantity = Number(quantity ?? 0)
-    const safeQuantityNew = Number(quantityNew ?? 0)
+  // Jika quantity lama ada dan quantity baru 0/undefined, pakai quantity lama
+  if (quantity !== 0 && quantityNew === 0) {
+    return quantity
+  }
 
-    if (safeQuantity !== 0 && (quantityNew === 0 || quantityNew === undefined)) {
-        return safeQuantity
-    }
-
-    return safeQuantityNew
+  return quantityNew
 })
 
 
