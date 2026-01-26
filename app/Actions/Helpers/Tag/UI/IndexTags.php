@@ -131,12 +131,16 @@ class IndexTags extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'scope', label: __('Scope'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->forcedScope !== TagScopeEnum::SYSTEM_CUSTOMER) {
+                $table->column(key: 'action', label: __('Action'));
+            }
+
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'scope', label: __('Scope'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: __('Action'))
                 ->defaultSort('name');
         };
     }
@@ -159,7 +163,7 @@ class IndexTags extends OrgAction
                         'title' => __('Tags'),
                         'icon'  => ['fal', 'fa-tags'],
                     ],
-                    'actions' => [
+                    'actions' => $this->forcedScope !== TagScopeEnum::SYSTEM_CUSTOMER ? [
                         [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -173,7 +177,7 @@ class IndexTags extends OrgAction
                                 ],
                             ],
                         ],
-                    ],
+                    ] : [],
                     'subNavigation' => $this->getSubNavigation($request)
                 ],
                 'data' => TagsResource::collection($tags),
