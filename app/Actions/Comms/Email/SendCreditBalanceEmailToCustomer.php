@@ -21,7 +21,7 @@ class SendCreditBalanceEmailToCustomer extends OrgAction
 
     public string $jobQueue = 'low-priority';
 
-    public function handle(Customer $customer, array $additionalData = []): DispatchedEmail
+    public function handle(Customer $customer, array $additionalData = []): DispatchedEmail|null
     {
         return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER, $additionalData);
     }
