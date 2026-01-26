@@ -66,10 +66,26 @@ class EditSubDepartment extends OrgAction
         }
         $languages = [$subDepartment->shop->language_id => LanguageResource::make($subDepartment->shop->language)->resolve()];
 
+        $warning = [];
+        $haveFollowingMaster = $subDepartment->follow_master_name || $subDepartment->follow_master_description_title || $subDepartment->follow_master_description || $subDepartment->follow_master_description_extra;
+
+        if ($subDepartment->masterProductCategory && $haveFollowingMaster) {
+            $warning = [
+                'warning'     => [
+                    'type'  => 'warning',
+                    'title' => 'Warning',
+                    // 'text'  => __('Changing name or description may affect master sub department .'), // Isn't true anymore. Not neccessarily the case. Turned off
+                    'text'  => __('One of this item name/descriptions follows the master. Updates made on master will overwrite local changes'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle'],
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Sub-department'),
+                ...$warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
                     $request->route()->getName(),
@@ -99,7 +115,6 @@ class EditSubDepartment extends OrgAction
                         ]
                     ]
                 ],
-
                 'formData' => [
                     'blueprint' => array_filter(
                         [
@@ -127,6 +142,8 @@ class EditSubDepartment extends OrgAction
                                             'main'          => $subDepartment->masterProductCategory->name,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $subDepartment->follow_master_name,
                                             'value'         => $subDepartment->name,
                                             'reviewed'      => $subDepartment->is_name_reviewed
                                         ]
@@ -144,6 +161,8 @@ class EditSubDepartment extends OrgAction
                                             'main'          => $subDepartment->masterProductCategory->description_title,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $subDepartment->follow_master_description_title,
                                             'value'         => $subDepartment->description_title,
                                             'reviewed'      => $subDepartment->is_description_title_reviewed
                                         ]
@@ -161,6 +180,8 @@ class EditSubDepartment extends OrgAction
                                             'main'          => $subDepartment->masterProductCategory->description,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $subDepartment->follow_master_description,
                                             'value'         => $subDepartment->description,
                                             'reviewed'      => $subDepartment->is_description_reviewed
 
@@ -179,6 +200,8 @@ class EditSubDepartment extends OrgAction
                                             'main'          => $subDepartment->masterProductCategory->description_extra,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
+                                            'show_follow_master'    => true,
+                                            'follow_master'         => $subDepartment->follow_master_description_extra,
                                             'value'         => $subDepartment->description_extra,
                                             'reviewed'      => $subDepartment->is_description_extra_reviewed
                                         ]
