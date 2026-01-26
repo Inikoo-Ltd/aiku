@@ -100,7 +100,7 @@ const _popoverProfit = ref(null)
             <div class="flex justify-between">
                 <div>
                     <div class="text-xs">{{ trans("Price") }} ({{ trans("Excl. Vat") }})</div>
-                    <div v-if="product.units == 1" class="font-bold text-base leading-4">
+                    <div v-if="product.units == 1" class="font-bold text-sm leading-4">
                         {{ locale.currencyFormat(currency?.code, product.price) }}/<span class="font-normal">{{ product.unit}}</span>
                     </div>
                     <div v-else class="font-bold text-base leading-4">
