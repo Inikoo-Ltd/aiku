@@ -13,7 +13,8 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Autoplay} from 'swiper/modules'
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
+import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
+import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -92,36 +93,73 @@ const luigiFetchRecommenders = async () => {
     }
     // isLoadingFetch.value = false
 }
-
 const fetchRecommenders = async () => {
     try {
-        isLoadingFetch.value = true
-
-        const luigiIdentity = props.fieldValue?.product?.luigi_identity
-
-        if (!luigiIdentity) {
-            listProducts.value = []
-            return
-        }
-
+        // isLoadingFetch.value = true
         const response = await axios.post(
-            route('iris.json.luigi.product_recommendation'),
+            `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+            [
+                {
+                    "blacklisted_item_ids": [],
+                    "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
+                    "recommendation_type": "last_seen",
+                    "recommender_client_identifier": "last_seen",
+                    "size": 25,
+                    "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
+                    "recommendation_context": {},
+                    // "hit_fields": ["url", "title"]
+                }
+            ],
             {
-                luigi_identity: luigiIdentity,
-                recommendation_type : 'last_seen',
-                recommender_client_identifier : 'last_seen',
-                cookies_lb: Cookies.get('_lb') ?? null,
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                }
             }
         )
+        if (response.status !== 200) {
+            console.error('Error fetching recommenders:', response.statusText)
+        }
+        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
+        console.log('LLS1:', response.data)
 
-        listProducts.value = response.data
+        listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
         isFetched.value = true
-        isLoadingFetch.value = false
     }
+    isLoadingFetch.value = false
 }
+
+// const fetchRecommenders = async () => {
+//     try {
+//         isLoadingFetch.value = true
+
+//         const luigiIdentity = props.fieldValue?.product?.luigi_identity
+
+//         if (!luigiIdentity) {
+//             listProducts.value = []
+//             return
+//         }
+
+//         const response = await axios.post(
+//             route('iris.json.luigi.product_recommendation'),
+//             {
+//                 luigi_identity: luigiIdentity,
+//                 recommendation_type : 'last_seen',
+//                 recommender_client_identifier : 'last_seen',
+//                 cookies_lb: Cookies.get('_lb') ?? null,
+//             }
+//         )
+
+//         listProducts.value = response.data
+//     } catch (error: any) {
+//         console.error('Error on fetching recommendations:', error)
+//     } finally {
+//         isFetched.value = true
+//         isLoadingFetch.value = false
+//     }
+// }
 
 
 

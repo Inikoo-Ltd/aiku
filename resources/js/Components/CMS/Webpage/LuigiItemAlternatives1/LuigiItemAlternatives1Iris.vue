@@ -19,7 +19,9 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
+import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
+import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
+
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
@@ -92,35 +94,73 @@ const luigiFetchRecommenders = async () => {
     }
     // isLoadingFetch.value = false
 }
-
- const fetchRecommenders = async () => {
+const fetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
-
-        /* const luigiIdentity = props.fieldValue?.product?.luigi_identity
-
-        if (!luigiIdentity) {
-            listProducts.value = []
-            return
-        } */
-
         const response = await axios.post(
-            route('iris.json.luigi.product_recommendation'),
+            `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+            [
+                {
+                    "blacklisted_item_ids": [],
+                    "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
+                    "recommendation_type": "item_detail_alternatives",
+                    "recommender_client_identifier": "item_detail_alternatives",
+                    "size": 25,
+                    "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
+                    "recommendation_context": {},
+                    // "hit_fields": ["url", "title"]
+                }
+            ],
             {
-                luigi_identity: '',
-                recommendation_type : 'item_detail_alternatives',
-                recommender_client_identifier : 'item_detail_alternatives',
-                cookies_lb: Cookies.get('_lb') ?? null,
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                }
             }
         )
-        listProducts.value = response.data
+        if (response.status !== 200) {
+            console.error('Error fetching recommenders:', response.statusText)
+        }
+
+        console.log('LIA1:', response.data)
+        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
+
+        listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
         isFetched.value = true
-        isLoadingFetch.value = false
     }
+    isLoadingFetch.value = false
 }
+
+//  const fetchRecommenders = async () => {
+//     try {
+//         isLoadingFetch.value = true
+
+//         /* const luigiIdentity = props.fieldValue?.product?.luigi_identity
+
+//         if (!luigiIdentity) {
+//             listProducts.value = []
+//             return
+//         } */
+
+//         const response = await axios.post(
+//             route('iris.json.luigi.product_recommendation'),
+//             {
+//                 luigi_identity: '',
+//                 recommendation_type : 'item_detail_alternatives',
+//                 recommender_client_identifier : 'item_detail_alternatives',
+//                 cookies_lb: Cookies.get('_lb') ?? null,
+//             }
+//         )
+//         listProducts.value = response.data
+//     } catch (error: any) {
+//         console.error('Error on fetching recommendations:', error)
+//     } finally {
+//         isFetched.value = true
+//         isLoadingFetch.value = false
+//     }
+// }
 
 
 onMounted(() => {
@@ -173,7 +213,7 @@ onMounted(() => {
                                 :isProductLoading
                             /> -->
 
-                             <RecommendationSlideIris
+                            <RecommendationSlideIris
                                 :product
                                 :isProductLoading
                             />
