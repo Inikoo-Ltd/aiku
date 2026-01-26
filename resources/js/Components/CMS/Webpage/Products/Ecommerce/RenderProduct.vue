@@ -329,7 +329,7 @@ onBeforeUnmount(() => {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 translate-y-1"
     >
-            <div v-if="showVariantPopover" class="absolute z-50 inline-block w-max max-w-[160px] md:max-w-[200px] lg:max-w-[260px] rounded-lg border bg-white shadow- top-[10rem] md:mt-[-15rem] md:top-[14rem]  lg:top-[13rem] " @keydown.esc="closePopover" tabindex="0">
+            <div v-if="showVariantPopover" class="absolute z-50 inline-block w-max max-w-[200px] md:max-w-[200px] lg:max-w-[260px] rounded-lg border bg-white shadow- top-[10rem] md:mt-[-15rem] md:top-[14rem]  lg:top-[13rem] " @keydown.esc="closePopover" tabindex="0">
                 <div class="p-4 text-sm break-words">
                     <variant-dialog-content 
                         :variants="listProducts" 
