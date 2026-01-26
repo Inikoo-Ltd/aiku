@@ -33,6 +33,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
+use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
@@ -83,5 +84,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
+    Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant');
     Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
 });
