@@ -87,6 +87,7 @@ class GetShopTimeSeriesStats
                 'group_slug' => $shop->group->slug ?? 'Unknown',
                 'shop_currency_code' => $shop->currency->code ?? 'GBP',
                 'organisation_currency_code' => $shop->organisation->currency->code ?? 'GBP',
+                'group_currency_code' => $shop->group->currency->code ?? 'GBP',
             ]);
 
             $results[] = $shopData;
