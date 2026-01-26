@@ -8,13 +8,13 @@
 
 namespace App\Enums\Dashboards;
 
-use App\Actions\Accounting\InvoiceCategory\IndexInvoiceCategoriesSalesTable;
 use App\Actions\Dashboard\IndexShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
+use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
@@ -48,7 +48,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         };
     }
 
-    public function table(Organisation $organisation, array $customRangeData = [], mixed $platformTimeSeriesStats = null): array
+    public function table(Organisation $organisation, array $customRangeData = [], mixed $invoiceCategoryTimeSeriesStats = null, mixed $platformTimeSeriesStats = null): array
     {
         $header = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($organisation)->toJson(), true),
@@ -58,13 +58,13 @@ enum OrganisationDashboardSalesTableTabsEnum: string
 
         $body = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => IndexShopsSalesTable::make()->action($organisation, $customRangeData),
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => IndexInvoiceCategoriesSalesTable::make()->action($organisation, $customRangeData),
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardInvoiceCategoriesInOrganisationSalesResource::collection($invoiceCategoryTimeSeriesStats)->toJson(), true),
             OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
         };
 
         $totals = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalShopsSalesResource::make($organisation)->setCustomRangeData($customRangeData)->toJson(), true),
-            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($organisation)->setCustomRangeData($customRangeData)->toJson(), true),
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalInvoiceCategoriesSalesResource::make($invoiceCategoryTimeSeriesStats)->toJson(), true),
             OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true)
         };
 
@@ -75,10 +75,10 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Organisation $organisation, array $customRangeData = [], mixed $platformTimeSeriesStats = null): array
+    public static function tables(Organisation $organisation, array $customRangeData = [], mixed $invoiceCategoryTimeSeriesStats = null, mixed $platformTimeSeriesStats = null): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation, $customRangeData, $platformTimeSeriesStats) {
-            return [$case->value => $case->table($organisation, $customRangeData, $platformTimeSeriesStats)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation, $customRangeData, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats) {
+            return [$case->value => $case->table($organisation, $customRangeData, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats)];
         })->all();
     }
 }
