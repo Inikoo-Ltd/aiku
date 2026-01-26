@@ -52,7 +52,7 @@ class WebBlockProductResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
-        $productOffersData = json_decode($product->offers_data, true);
+        $productOffersData =  is_string($product->offers_data) ? json_decode($product->offers_data, true) : $product->offers_data;
 
         $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
