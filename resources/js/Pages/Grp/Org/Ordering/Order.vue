@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -946,6 +946,44 @@ watch(isOpenModalDiscretionaryCharge, async (val) => {
         fetchChargesList()
     }
 })
+const isLoadingRemoveCharge = ref<number[]>([])
+const onRemoveCharge = (charge) => {
+    // Section: Submit
+    router.delete(
+        route('grp.models.transaction.delete', {
+            transaction: charge.transaction_id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingRemoveCharge.value.push(charge.transaction_id)
+            },
+            onSuccess: () => {
+                // notifySuccess(trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label }))
+                notify({
+                    title: trans("Success"),
+                    text: trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label ?? '' }),
+                    type: "success"
+                })
+                chargesList.value = chargesList.value.filter((item) => item.transaction_id !== charge.transaction_id)
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove charge :chargeLabel", { chargeLabel: charge.label ?? '' }),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                const idx = isLoadingRemoveCharge.value.indexOf(charge.transaction_id)
+                if (idx !== -1) {
+                    isLoadingRemoveCharge.value.splice(idx, 1)
+                }
+            },
+        }
+    )
+}
 
 
 // Section: add new charge
@@ -979,6 +1017,7 @@ const submitNewCharge = async () => {
             text: trans("Successfully add new charge"),
             type: "success"
         })
+        router.reload()
     } catch (error: any) {
         notify({
             title: trans("Something went wrong"),
@@ -988,7 +1027,6 @@ const submitNewCharge = async () => {
     } finally {
         isLoadingAddNewCharge.value = false
     }
-
 }
 
 </script>
@@ -2006,10 +2044,27 @@ const submitNewCharge = async () => {
                             </div>
                         </template>
                     </Column>
-                    <Column field="discounts" header="">
+                    <Column field="discounts" header="Percentage Change">
                         <template #body="{ data }">
                             <div>
                                 -{{ data.percentage_discount }}
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column field="actions" header="">
+                        <template #body="{ data }">
+                            <div>
+                                <Button 
+                                    v-if="data.is_discretionary"
+                                    @click="() => onRemoveCharge(data)"
+                                    v-tooltip="trans('Remove Charge')"
+                                    type="negative"
+                                    icon="fal fa-trash-alt"
+                                    key="l"
+                                    :loading="isLoadingRemoveCharge.includes(data.transaction_id)"
+                                    size="sm"
+                                />
                             </div>
                         </template>
                     </Column>
@@ -2023,15 +2078,13 @@ const submitNewCharge = async () => {
         </div>
     </Modal>
 
-    <!-- Modal: Add new discretionary Charges -->
-    <Modal :isOpen="isOpenModalAddCharges" @onClose="isOpenModalAddCharges = false"
-        width="w-full max-w-lg" :isClosableInBackground="false" closeButton>
+    <Dialog v-model:visible="isOpenModalAddCharges" modal :header="trans('Add Discretionary Charges')" class="w-full max-w-lg" xstyle="{ width: '25rem' }">
         <div class="isolate bg-white px-6 lg:px-8">
-            <div class="mx-auto max-w-2xl text-center mb-4">
+            <!-- <div class="mx-auto max-w-2xl text-center mb-4">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
                     {{ trans("Add Discretionary Charges") }}
                 </h2>
-            </div>
+            </div> -->
 
             <div class="mt-6 mb-6 xflex gap-x-6">
                 <div class=" w-full col-span-2">
@@ -2067,7 +2120,13 @@ const submitNewCharge = async () => {
                 <Button @click="submitNewCharge" label="Add Charge" full :loading="isLoadingAddNewCharge" />
             </div>
         </div>
-    </Modal>
+    </Dialog>
+
+    <!-- Modal: Add new discretionary Charges -->
+    <!-- <Modal :isOpen="isOpenModalAddCharges" @onClose="isOpenModalAddCharges = false"
+        width="w-full max-w-lg" :isClosableInBackground="false" closeButton>
+        
+    </Modal> -->
 
     <UploadExcel v-if="props.upload_excel" v-model="isModalUploadExcel" :title="upload_excel.title"
         :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"
