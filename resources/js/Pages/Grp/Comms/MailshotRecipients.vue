@@ -429,16 +429,34 @@ watch(activeFilters, () => {
                             </div>
 
                             <!-- MODE: RADIUS -->
+                            <!-- MODE: RADIUS / AREA -->
                             <div v-if="filter.value.mode === 'radius'" class="space-y-3">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Center Location</label>
-                                    <input type="text" v-model="filter.value.location" placeholder="e.g. London, UK"
-                                        class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6" />
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Center Location /
+                                        Area</label>
+                                    <div class="flex gap-2">
+                                        <!-- Gunakan .lazy agar tidak update setiap keystroke, tapi update saat blur/enter -->
+                                        <!-- Atau lebih baik: gunakan v-model biasa tapi fetch hanya dipanggil saat trigger tertentu -->
+                                        <input type="text" v-model.lazy="filter.value.location"
+                                            placeholder="e.g. Bali, Indonesia"
+                                            class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6"
+                                            @keydown.enter="fetchFilteredRecipients" />
+                                        <button type="button" @click="fetchFilteredRecipients"
+                                            class="rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                                            Set
+                                        </button>
+                                    </div>
+                                    <p class="mt-1 text-[10px] text-gray-400">Press Enter or click Set to apply
+                                        location.</p>
                                 </div>
+
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 mb-1">Radius</label>
-                                    <select v-model="filter.value.radius"
+                                    <select v-model="filter.value.radius" @change="fetchFilteredRecipients"
                                         class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6">
+                                        <!-- Tambahkan opsi Whole Area -->
+                                        <option value="area">Whole Area (No Radius)</option>
+                                        <option disabled>──────────</option>
                                         <option v-for="(label, val) in filter.config.fields.radius.options" :key="val"
                                             :value="val">
                                             {{ label }}

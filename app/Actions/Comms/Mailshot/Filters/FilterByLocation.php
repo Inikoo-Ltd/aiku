@@ -21,44 +21,46 @@ class FilterByLocation
      */
     public function apply($query, $value)
     {
-
         $mode = Arr::get($value, 'mode', 'radius');
-
         $countryIds = Arr::get($value, 'country_ids', []);
         $postalCodes = Arr::get($value, 'postal_codes', []);
-
-
         $location = Arr::get($value, 'location');
         $radius = Arr::get($value, 'radius');
 
 
-
         if ($mode === 'direct' || (!empty($countryIds) || !empty($postalCodes))) {
             return $query->whereHas('address', function (Builder $q) use ($countryIds, $postalCodes) {
-
                 if (!empty($countryIds)) {
                     $q->whereIn('country_id', $countryIds);
                 }
-
                 if (!empty($postalCodes)) {
-
                     $normalizedCodes = array_map(function ($code) {
                         return strtoupper(preg_replace('/\s+/', '', $code));
                     }, $postalCodes);
 
-                    $q->where(function ($subQ) use ($normalizedCodes) {
-                        $subQ->whereRaw("REPLACE(UPPER(postal_code), ' ', '') IN ('" . implode("','", $normalizedCodes) . "')");
-                    });
+                    $placeholders = implode(',', array_fill(0, count($normalizedCodes), '?'));
+                    $q->whereRaw("REPLACE(UPPER(postal_code), ' ', '') IN ($placeholders)", $normalizedCodes);
                 }
             });
         }
 
+        // --- MODE 2: RADIUS / AREA (Geocoding) ---
         if (!empty($location)) {
             $coordinates = $this->geocodeLocation($location);
 
             if (! $coordinates) {
                 return $query;
             }
+
+
+            if ($radius === 'area' && !empty($coordinates['bounds'])) {
+                $bounds = $coordinates['bounds'];
+                return $query->whereHas('address', function (Builder $q) use ($bounds) {
+                    $q->whereBetween('latitude', [$bounds['south'], $bounds['north']])
+                        ->whereBetween('longitude', [$bounds['west'], $bounds['east']]);
+                });
+            }
+
 
             $lat = $coordinates['latitude'];
             $lng = $coordinates['longitude'];
@@ -81,21 +83,23 @@ class FilterByLocation
 
     private function parseRadius($radius)
     {
+        if ($radius === 'area') {
+            return 20;
+        }
         if (empty($radius)) {
             return 10;
         }
         if ($radius === 'custom') {
             return 50;
         }
+
         return (int) filter_var($radius, FILTER_SANITIZE_NUMBER_INT) ?: 10;
     }
 
     private function geocodeLocation($location): ?array
     {
         $geocoder = new GeocoderService();
-        if (is_array($location)) {
-            return $geocoder->geocodeLayered($location);
-        }
+
         return $geocoder->geocode($location);
     }
 }

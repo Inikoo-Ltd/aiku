@@ -43,7 +43,7 @@ class GeocoderService
         Log::info('📍 Geocoding started', [
             'input' => $addressData,
             'total_layers' => count($layers),
-            'layers' => array_map(fn($l) => $l['name'] . ': ' . $l['query'], $layers),
+            'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
         ]);
 
         foreach ($layers as $index => $layer) {
@@ -250,11 +250,21 @@ class GeocoderService
     {
         $score = $baseScore;
 
-        if ($location->getStreetNumber()) $score += 5;
-        if ($location->getStreetName()) $score += 5;
-        if ($location->getPostalCode()) $score += 5; // Poin plus untuk kode pos
-        if ($location->getLocality()) $score += 2;
-        if ($location->getSubLocality()) $score += 3; // Poin plus untuk kecamatan/sub-district
+        if ($location->getStreetNumber()) {
+            $score += 5;
+        }
+        if ($location->getStreetName()) {
+            $score += 5;
+        }
+        if ($location->getPostalCode()) {
+            $score += 5;
+        } // Poin plus untuk kode pos
+        if ($location->getLocality()) {
+            $score += 2;
+        }
+        if ($location->getSubLocality()) {
+            $score += 3;
+        } // Poin plus untuk kecamatan/sub-district
 
         return max(0, min(100, $score));
     }
@@ -292,7 +302,9 @@ class GeocoderService
                 $query = ReverseQuery::fromCoordinates($lat, $lng);
                 $results = $this->geocoder->reverseQuery($query);
 
-                if ($results->isEmpty()) return null;
+                if ($results->isEmpty()) {
+                    return null;
+                }
 
                 $location = $results->first();
 
@@ -312,17 +324,61 @@ class GeocoderService
         });
     }
 
-    // Support fungsi lama untuk kompatibilitas
+
     public function geocode(string $address, bool $enableFallback = true): ?array
     {
-        $parts = array_map('trim', explode(',', $address));
-        $addressData = [
-            'address_line_1' => $parts[0] ?? '',
-            'locality' => $parts[1] ?? null,
-            'postal_code' => $this->extractPostalCode($address),
-            'country_code' => $parts[count($parts) - 1] ?? '',
-        ];
-        return $this->geocodeLayered($addressData);
+
+        $queryText = trim($address);
+        if (empty($queryText)) {
+            return null;
+        }
+
+        $cacheKey = 'geocode:simple:' . md5($queryText);
+
+        return Cache::remember($cacheKey, $this->cacheTime, function () use ($queryText) {
+            try {
+
+                $query = GeocodeQuery::create($queryText);
+
+
+                $results = $this->geocoder->geocodeQuery($query);
+
+                if ($results->isEmpty()) {
+                    return null;
+                }
+
+
+                $location = $results->first();
+                $coordinates = $location->getCoordinates();
+                $bounds = $location->getBounds();
+
+
+                return [
+                    'latitude'          => $coordinates->getLatitude(),
+                    'longitude'         => $coordinates->getLongitude(),
+                    'formatted_address' => $this->buildFormattedAddress($location),
+                    'matched_layer'     => 'simple_query',
+                    'confidence_score'  => 80,
+                    'street'            => $location->getStreetName(),
+                    'city'              => $location->getLocality() ?? $location->getSubLocality(),
+                    'postal_code'       => $location->getPostalCode(),
+                    'country'           => $location->getCountry()?->getName(),
+                    'country_code'      => $location->getCountry()?->getCode(),
+                    'bounds'            => $bounds ? [
+                        'south' => $bounds->getSouth(),
+                        'west'  => $bounds->getWest(),
+                        'north' => $bounds->getNorth(),
+                        'east'  => $bounds->getEast(),
+                    ] : null,
+                ];
+            } catch (\Exception $e) {
+                Log::error('Simple geocoding failed', [
+                    'query' => $queryText,
+                    'error' => $e->getMessage()
+                ]);
+                return null;
+            }
+        });
     }
 
 
@@ -335,7 +391,9 @@ class GeocoderService
             '/\b\d{4,6}\b/',
         ];
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $text, $matches)) return trim($matches[0]);
+            if (preg_match($pattern, $text, $matches)) {
+                return trim($matches[0]);
+            }
         }
         return null;
     }
