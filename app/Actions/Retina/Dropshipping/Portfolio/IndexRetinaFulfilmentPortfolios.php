@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\Dropshipping\FulfilmentPortfolioResource;
 use App\Http\Resources\Platform\PlatformsResource;

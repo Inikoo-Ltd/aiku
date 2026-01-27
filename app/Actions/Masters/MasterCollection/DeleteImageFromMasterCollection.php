@@ -40,9 +40,9 @@ class DeleteImageFromMasterCollection extends GrpAction
         if ($updateDependants) {
             $this->updateDependants($masterCollection, $media);
         }
-        
+
         $changes = Arr::except($masterCollection->getChanges(), ['updated_at']);
-        
+
         if (Arr::has($changes, 'image_id')) {
             UpdateMasterCollectionWebImages::run($masterCollection);
         }

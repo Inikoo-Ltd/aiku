@@ -35,11 +35,11 @@ class DeleteMasterCollection extends GrpAction
         DB::transaction(function () use ($masterCollection, $forceDelete) {
             // No need to detach, will delete children collections
             // DB::table('collections')->where('master_collection_id', $masterCollection->id)
-            //     ->update(['master_collection_id' => null]);  
-            
+            //     ->update(['master_collection_id' => null]);
+
             $masterCollection
                 ->childrenCollections
-                ->each(function ($collection) { 
+                ->each(function ($collection) {
                     DeleteCollection::make()->action($collection);
                 });
 
