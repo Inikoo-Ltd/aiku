@@ -1645,7 +1645,7 @@ const submitNewCharge = async () => {
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
-                        <template v-if="layout.app.environment === 'local'" #cell_charges_1="{ fieldSummary }">
+                        <template #cell_charges_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                                     <span>
