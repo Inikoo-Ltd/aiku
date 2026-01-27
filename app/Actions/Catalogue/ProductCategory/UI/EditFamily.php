@@ -97,29 +97,19 @@ class EditFamily extends OrgAction
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
 
         $warning = [];
-        $haveFollowingMaster = $family->follow_master_name || $family->follow_master_description_title || $family->follow_master_description || $family->follow_master_description_extra;
+        $forceFollowMasterFamily = data_get($family->shop->settings, 'catalog.family_follow_master');
 
-        if ($family->masterProductCategory && $haveFollowingMaster) {
+        if ($family->masterProductCategory && $forceFollowMasterFamily) {
             $warning = [
                 'warning'     => [
                     'type'  => 'warning',
                     'title' => 'Warning',
                     // 'text'  => __('Changing name or description may affect master family.'), // Isn't true anymore. Not neccessarily the case. Turned off
-                    'text'  => __('One of this item name/descriptions follows the master. Updates made on master will overwrite local changes'),
+                    'text'  => __('This shop has enabled the Family force follow master setting. Updates made on master will overwrite local changes'),
                     'icon'  => ['fas', 'fa-exclamation-triangle'],
                 ]
             ];
         }
-
-        $followMasterFields = $family->masterProductCategory ? [
-            'follow_master_fields'  => [
-                'type'  => 'toggle',
-                'label' => 'Follow masters',
-                'information'   => __('Name and descriptions would follow master if changes were made there'),
-                'value' => ($family->follow_master_name && $family->follow_master_description_title && $family->follow_master_description && $family->follow_master_description_extra),
-                'revisit_after_save' => true,
-            ]
-        ] : [];
 
         return Inertia::render(
             'EditModel',
@@ -174,7 +164,6 @@ class EditFamily extends OrgAction
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
-                                    ...$followMasterFields,
                                     'name'              => $family->masterProductCategory
                                         ? [
                                             'type'          => 'input_translation',
@@ -185,8 +174,6 @@ class EditFamily extends OrgAction
                                             'main'          => $family->masterProductCategory->name,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
-                                            'show_follow_master'    => true,
-                                            'follow_master'         => $family->follow_master_name,
                                             'value'         => $family->name,
                                             'reviewed'      => $family->is_name_reviewed
                                         ]
@@ -206,8 +193,6 @@ class EditFamily extends OrgAction
                                             'main'          => $family->masterProductCategory->description_title,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
-                                            'show_follow_master'    => true,
-                                            'follow_master'         => $family->follow_master_description_title,
                                             'value'         => $family->description_title,
                                             'reviewed'      => $family->is_description_title_reviewed
                                         ]
@@ -225,8 +210,6 @@ class EditFamily extends OrgAction
                                             'main'                  => $family->masterProductCategory->description,
                                             'languages'             => $languages,
                                             'mode'                  => 'single',
-                                            'show_follow_master'    => true,
-                                            'follow_master'         => $family->follow_master_description,
                                             'value'                 => $family->description,
                                             'reviewed'              => $family->is_description_reviewed
                                         ]
@@ -244,8 +227,6 @@ class EditFamily extends OrgAction
                                             'main'          => $family->masterProductCategory->description_extra,
                                             'languages'     => $languages,
                                             'mode'          => 'single',
-                                            'show_follow_master'    => true,
-                                            'follow_master'         => $family->follow_master_description_extra,
                                             'value'         => $family->description_extra,
                                             'reviewed'      => $family->is_description_extra_reviewed
                                         ]

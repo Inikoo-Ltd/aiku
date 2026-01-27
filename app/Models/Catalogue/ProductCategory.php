@@ -91,10 +91,6 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
- * @property bool $follow_master_name
- * @property bool $follow_master_description_title
- * @property bool $follow_master_description
- * @property bool $follow_master_description_extra
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

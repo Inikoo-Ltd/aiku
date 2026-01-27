@@ -42,14 +42,6 @@ class UpdateProductCategory extends OrgAction
     {
         $originalImageId = $productCategory->image_id;
 
-        if(Arr::has($modelData, 'follow_master_fields')){
-            $followMasterAll = Arr::pull($modelData, 'follow_master_fields');
-            data_set($modelData, 'follow_master_name', $followMasterAll);
-            data_set($modelData, 'follow_master_description_title', $followMasterAll);
-            data_set($modelData, 'follow_master_description', $followMasterAll);
-            data_set($modelData, 'follow_master_description_extra', $followMasterAll);
-        }
-
         if (Arr::has($modelData, 'department_id')) {
             $departmentId = Arr::pull($modelData, 'department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -257,12 +249,6 @@ class UpdateProductCategory extends OrgAction
             'is_description_title_reviewed' => ['sometimes', 'boolean'],
             'is_description_reviewed' => ['sometimes', 'boolean'],
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
-            // Follow master
-            'follow_master_fields'              => ['sometimes', 'boolean'],
-            'follow_master_name'                => ['sometimes', 'boolean'],
-            'follow_master_description_title'   => ['sometimes', 'boolean'],
-            'follow_master_description'         => ['sometimes', 'boolean'],
-            'follow_master_description_extra'   => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
