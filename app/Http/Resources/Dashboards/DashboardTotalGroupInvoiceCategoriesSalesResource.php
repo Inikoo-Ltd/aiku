@@ -37,7 +37,10 @@ class DashboardTotalGroupInvoiceCategoriesSalesResource extends JsonResource
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
 
-        $summedData = array_merge($firstModel, $summedData);
+        $summedData = array_merge([
+            'organisation_slug' => $firstModel['organisation_slug'] ?? '',
+            'organisation_code' => $firstModel['organisation_code'] ?? '',
+        ], $summedData);
 
         $routeTargets = [
             'invoices' => [

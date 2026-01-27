@@ -34,7 +34,12 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
 
-        $summedData = array_merge($firstModel, $summedData);
+        $summedData = array_merge([
+            'organisation_slug' => $firstModel['organisation_slug'] ?? '',
+            'shop_currency_code' => $firstModel['shop_currency_code'] ?? 'GBP',
+            'organisation_currency_code' => $firstModel['organisation_currency_code'] ?? 'GBP',
+            'group_currency_code' => $firstModel['group_currency_code'] ?? 'GBP',
+        ], $summedData);
 
         $routeTargets = [
             'invoices' => [

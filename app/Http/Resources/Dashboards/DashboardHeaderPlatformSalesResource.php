@@ -242,8 +242,8 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
             $newCustomersColumns,
             $newCustomerClientsColumns,
             $invoicesColumns,
-            $model instanceof Shop ? $salesColumns : [],
-            $model instanceof Shop ? $salesOrgCurrencyColumns : [],
+            $salesColumns,
+            $salesOrgCurrencyColumns,
             $salesGrpCurrencyColumns,
             $salesPercentage
         );

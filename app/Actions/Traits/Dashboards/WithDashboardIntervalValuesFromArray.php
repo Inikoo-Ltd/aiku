@@ -136,20 +136,48 @@ trait WithDashboardIntervalValuesFromArray
             }
         }
 
+        // Store original field name before removing currency suffix
+        $fieldNameBeforeCurrencyParsing = $columnFingerprint;
+        $shouldKeepCurrencySuffix = false;
+
         // Parse shop currency suffix
         if (str_ends_with($columnFingerprint, '_shop_currency')) {
             $options['currency'] = $data['shop_currency_code'] ?? 'GBP';
-            $columnFingerprint = substr($columnFingerprint, 0, -strlen('_shop_currency'));
+            $baseFieldName = substr($columnFingerprint, 0, -strlen('_shop_currency'));
+            // Check if base field exists in data (e.g., 'sales_all')
+            // If not, keep the full field name (e.g., 'sales_shop_currency_all')
+            if (!isset($data[$baseFieldName . '_all']) && !isset($data[$baseFieldName . '_tdy'])) {
+                $shouldKeepCurrencySuffix = true;
+            } else {
+                $columnFingerprint = $baseFieldName;
+            }
         }
         // Parse org currency suffix
         elseif (str_ends_with($columnFingerprint, '_org_currency')) {
             $options['currency'] = $data['organisation_currency_code'] ?? $data['org_currency_code'] ?? 'GBP';
-            $columnFingerprint = substr($columnFingerprint, 0, -strlen('_org_currency'));
+            $baseFieldName = substr($columnFingerprint, 0, -strlen('_org_currency'));
+            // Check if base field exists in data
+            if (!isset($data[$baseFieldName . '_all']) && !isset($data[$baseFieldName . '_tdy'])) {
+                $shouldKeepCurrencySuffix = true;
+            } else {
+                $columnFingerprint = $baseFieldName;
+            }
         }
         // Parse group currency suffix
         elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
             $options['currency'] = $data['group_currency_code'] ?? $data['grp_currency_code'] ?? 'GBP';
-            $columnFingerprint = substr($columnFingerprint, 0, -strlen('_grp_currency'));
+            $baseFieldName = substr($columnFingerprint, 0, -strlen('_grp_currency'));
+            // Check if base field exists in data
+            if (!isset($data[$baseFieldName . '_all']) && !isset($data[$baseFieldName . '_tdy'])) {
+                $shouldKeepCurrencySuffix = true;
+            } else {
+                $columnFingerprint = $baseFieldName;
+            }
+        }
+
+        // If we should keep currency suffix, restore the original field name
+        if ($shouldKeepCurrencySuffix) {
+            $columnFingerprint = $fieldNameBeforeCurrencyParsing;
         }
 
         // Parse inverse suffix
@@ -166,9 +194,12 @@ trait WithDashboardIntervalValuesFromArray
 
         // Auto-detect currency fields
         if (in_array($columnFingerprint, ['sales', 'revenue', 'baskets_created', 'baskets_updated'])) {
-            if ($dataType != DashboardDataType::DELTA_LAST_YEAR && $dataType != DashboardDataType::PERCENTAGE) {
+            if ($dataType == DashboardDataType::NUMBER) {
                 $dataType = DashboardDataType::CURRENCY;
+            } elseif ($dataType == DashboardDataType::NUMBER_MINIFIED) {
+                $dataType = DashboardDataType::CURRENCY_MINIFIED;
             }
+            // For DELTA_LAST_YEAR, PERCENTAGE, CURRENCY, CURRENCY_MINIFIED - keep as is
             $options['currency'] = $options['currency'] ?? $data['shop_currency_code'] ?? $data['organisation_currency_code'] ?? $data['group_currency_code'] ?? 'GBP';
         }
 
