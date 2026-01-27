@@ -823,40 +823,82 @@ const dataDiscretionaryChargeToChange = ref({
     label: '',
     amount: ''
 })
-const updateCharge = async (charge: {}) => {
-    try {
-        charge.isLoading = true
-        const response = await axios.patch(
-            route(
+const updateCharge = (charge: {}) => {
+    // Section: Submit
+    router.patch(
+        route(
                 'grp.models.transaction.update_charge_amount',
                 {
                     transaction: charge.transaction_id
                 }
-            ), {
+            ),
+            {
                 amount: charge.net_amount
-            }
-        )
-        
-        charge.isRecentlySuccess = true
-        setTimeout(() => {
-            charge.isRecentlySuccess = false
-        }, 2000)
-        notify({
-            title: trans("Success!"),
-            text: "Successfully edit net amount of the charge",
-            type: "success",
-        })
+            },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                charge.isLoading = true
+            },
+            onSuccess: () => {
+                charge.isRecentlySuccess = true
+                setTimeout(() => {
+                    charge.isRecentlySuccess = false
+                }, 2000)
+                notify({
+                    title: trans("Success!"),
+                    text: "Successfully edit net amount of the charge",
+                    type: "success",
+                })
+            },
+            onError: errors => {
+                notify({
+                title: trans("Something went wrong"),
+                text: error.message || trans("Please try again or contact administrator"),
+                type: 'error'
+            })
+            },
+            onFinish: () => {
+                charge.isLoading = false
+            },
+        }
+    )
 
-        console.log('Response axios:', response.data)
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
-            type: 'error'
-        })
-    } finally {
-        charge.isLoading = false
-    }
+    
+    // try {
+    //     charge.isLoading = true
+    //     const response = await axios.patch(
+    //         route(
+    //             'grp.models.transaction.update_charge_amount',
+    //             {
+    //                 transaction: charge.transaction_id
+    //             }
+    //         ), {
+    //             amount: charge.net_amount
+    //         }
+    //     )
+        
+    //     charge.isRecentlySuccess = true
+    //     setTimeout(() => {
+    //         charge.isRecentlySuccess = false
+    //     }, 2000)
+    //     notify({
+    //         title: trans("Success!"),
+    //         text: "Successfully edit net amount of the charge",
+    //         type: "success",
+    //     })
+
+    //     console.log('Response axios:', response.data)
+    // } catch (error: any) {
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: error.message || trans("Please try again or contact administrator"),
+    //         type: 'error'
+    //     })
+    // } finally {
+    //     charge.isLoading = false
+    // }
 }
 const updateDebCharge = debounce((charge) => updateCharge(charge), 400)
 const addCharge = async (charge: {}) => {
@@ -1585,7 +1627,7 @@ const submitNewCharge = async () => {
                                     </span>
                                     <span @click="isOpenModalDiscretionaryCharge = true"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
-                                        <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
                                 </div>
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
@@ -1908,7 +1950,7 @@ const submitNewCharge = async () => {
 
     <!-- Modal: Charges list -->
     <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
-        width="w-full max-w-3xl " :isClosableInBackground="false" closeButton>
+        width="w-full max-w-4xl " :isClosableInBackground="false" closeButton>
         <div class="isolate bg-white px-6 lg:px-8 relative">
             <div class="mx-auto max-w-2xl text-center mb-4">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
@@ -1940,17 +1982,23 @@ const submitNewCharge = async () => {
                                 </span>
                             </div>
 
-                            <div v-else>
+                            <div v-else class="flex gap-x-2">
                                 <InputNumber
-                                    v-model="data.net_amount"
                                     :modelValue="data.net_amount"
-                                    @input="(val) => (data.net_amount = val.value, updateDebCharge(data))"
+                                    @input="(val) => (data.net_amount = val.value)"
                                     :min="0"
                                     mode="currency"
                                     :currency="currency.code"
                                     size="small"
                                     :inputClass="data.isRecentlySuccess ? '!border-green-500' : ''"
                                 />
+
+                                <span v-if="data.isLoading">
+                                    <LoadingIcon class="text-4xl leading-none" />
+                                </span>
+                                <span v-else @click="() => updateCharge(data)" class="cursor-pointer">
+                                    <FontAwesomeIcon icon="fad fa-save" class="text-4xl leading-none" fixed-width aria-hidden="true" />
+                                </span>
                                 
                                 <span @click="data.is_editing_net_amount = false" class="text-red-500 cursor-pointer underline inline-block ml-2">
                                     {{ trans("cancel") }}
