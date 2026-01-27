@@ -286,44 +286,29 @@ console.log('ssss',props)
 
          <template #cell(actions)="{ item }">
             <div class="flex items-center gap-2">
-            <!--  <Link v-if="routes?.detach?.name" as="button"
-                :href="route(routes.detach.name, { ...routes.detach.parameters, collection : item.id })"
-                :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-            <Button icon="fal fa-times" type="negative" size="xs"
-                :loading="isLoadingDetach.includes('detach' + item.id)" />
-            </Link>
-
-            <Link :href="editRoute(item)">
-             <Button
-                        type="tertiary"
-                        icon="fal fa-edit"
-                        size="s"
-                    />
-            </Link> -->
-
             <ModalConfirmationDelete
                 :routeDelete="item.delete_route"
                 :title="trans('Are you sure you want to delete this master collection?')"
+                :description="trans('Doing so would delete all of the collections and permanently delete their webpages in every single shop under this master collection 😥 .This action cannot be undone.')"
                 isFullLoading
                 :noLabel="trans('Delete')"
                 :noIcon="'fal fa-store-alt-slash'"
             >
                 <template #beforeTitle>
                     <div class="text-center font-semibold text-xl mb-4">
-                        {{ `${item.name} (${item.code})` }}
+                        {{ trans('Deleting master collection :_masterCollection', {_masterCollection: item.name}) }} <br>
+                        {{ `(${item.code})` }}
                     </div>
                 </template>
 
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
-                        v-tooltip="item.has_active_webpage ? trans('Cannot delete: Active webpage exists') : trans('Delete master collection')"
-                        @click="!item.has_active_webpage && changeModel()"
-                        :type="item.has_active_webpage ? 'disabled' : 'negative'"
+                        v-tooltip="trans('Delete master collection')"
+                        @click="changeModel()"
+                        :type="'negative'"
                         icon="fal fa-trash"
                         size="s"
                         :key="1"
-                        :class="{'opacity-50 cursor-not-allowed': item.has_active_webpage}"
                     />
                 </template>
             </ModalConfirmationDelete>
