@@ -64,7 +64,7 @@ class GetOrganisationTimeSeriesStats
             $timeSeriesId = $organisationToTimeSeriesMap[$organisation->id] ?? null;
             $stats = $allStats[$timeSeriesId] ?? [];
 
-            $intervals = ['tdy', 'ld', '3d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw'];
+            $intervals = ['tdy', 'ld', '3d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ctm'];
             $registrationsData = [];
 
             foreach ($intervals as $interval) {

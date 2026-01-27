@@ -261,10 +261,6 @@ trait WithDashboardIntervalValuesFromArray
 
             foreach ($fields as $field) {
                 foreach ($intervals as $interval) {
-                    if ($interval === DateIntervalEnum::CUSTOM) {
-                        continue;
-                    }
-
                     // Current period
                     $key = $field . '_' . $interval->value;
                     if (isset($modelArray[$key])) {
