@@ -178,7 +178,12 @@ trait IsOrder
             [
                 'label'       => __('Charges'),
                 'information' => '',
-                'price_total' => $order->charges_amount
+                'price_total' => $order->charges_amount,
+                'discretionary_charge'      => [  // TODO Raul: INI-641
+                    'label' => 'xxxx',  // TODO Raul: INI-641
+                    'amount'    => 45  // TODO Raul: INI-641
+                ],
+                'slot_name'   => 'charges',
             ],
             [
                 'label'       => __('Shipping'),
