@@ -40,6 +40,10 @@ import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
 import Checkbox from 'primevue/checkbox'
 import ToggleButton from 'primevue/togglebutton'
+import { routeType } from '@/types/route'
+import axios from 'axios'
+import { notify } from '@kyvg/vue3-notification'
+import { trans } from "laravel-vue-i18n"
 
 import '@vuepic/vue-datepicker/dist/main.css'
 
@@ -72,6 +76,7 @@ const props = defineProps<{
     customers: any,
     filters: Record<string, any>,
     filtersStructure: Record<string, any>
+    recipientFilterRoute: routeType
 }>();
 
 const locale = inject("locale", aikuLocaleStructure);
@@ -243,20 +248,66 @@ const filtersPayload = computed(() => {
     return payload
 })
 
-const saveFilters = () => {
+const saveFilters = async () => {
     console.log('[SAVE FILTER PAYLOAD]', filtersPayload.value)
     console.log('SAVE JSON', JSON.stringify(filtersPayload.value))
-    return;
-    router.post(
-        route('mailshots.filters.save'), // ganti sesuai route
-        {
-            filters: filtersPayload.value
-        },
-        {
-            preserveState: true,
-            preserveScroll: true
-        }
-    )
+    // return;
+    // grp.models.shop.mailshot.recipient-filter.update
+    // router.post(
+    //     route('mailshots.filters.save'), // ganti sesuai route
+    //     {
+    //         filters: filtersPayload.value
+    //     },
+    //     {
+    //         preserveState: true,
+    //         preserveScroll: true
+    //     }
+    // )
+
+    axios
+        .patch(
+            route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters),
+            {
+                recipients_recipe: {
+                    "registered_never_ordered": {
+                        "value": true,
+                        "date_range": [
+                            "2025-12-31T16:00:00.000Z",
+                            "2026-01-30T16:00:00.000Z"
+                        ]
+                    },
+                    "by_family_never_ordered": 33048,
+                    "orders_in_basket": {
+                        "value": true,
+                        "_ui_preset": 14,
+                        "date_range": null,
+                        "amount_range": {
+                            "min": 12,
+                            "max": 32
+                        }
+                    },
+                    "by_interest": [],
+                    "gold_reward_status": "gold"
+                }
+            },
+        )
+        .then((response) => {
+
+            notify({
+                title: trans('Success!'),
+                text: trans('Success to save filter'),
+                type: 'success',
+            })
+        })
+        .catch((error) => {
+            notify({
+                title: "Failed to save filter",
+                type: "error",
+            })
+        })
+        .finally(() => {
+            console.log('finally')
+        });
 }
 
 

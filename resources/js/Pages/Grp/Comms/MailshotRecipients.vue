@@ -5,6 +5,7 @@ import { ref, watch, computed } from 'vue'
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableTemplateRecipients from '@/Components/Tables/TableTemplateRecipients.vue'
+import { routeType } from '@/types/route'
 
 // Import Datepicker
 import '@vuepic/vue-datepicker/dist/main.css'
@@ -18,6 +19,8 @@ const props = defineProps<{
     filtersStructure: Record<string, any>
     filters: any
     customers: any
+    recipientFilterRoute: routeType
+
 }>()
 </script>
 
@@ -27,5 +30,5 @@ const props = defineProps<{
 
     <PageHeading :data="pageHead" />
 
-    <TableTemplateRecipients :customers="customers" :filters="filters" :filters-structure="filtersStructure" />
+    <TableTemplateRecipients :customers="customers" :filters="filters" :filters-structure="filtersStructure" :recipient-filter-route="recipientFilterRoute" />
 </template>

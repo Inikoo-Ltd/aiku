@@ -78,6 +78,7 @@ use App\Actions\Comms\Mailshot\SendNewsLetterNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
+use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
 use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
@@ -780,6 +781,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('publish', PublishMailshot::class)->name('publish')->withoutScopedBindings();
         Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
         Route::post('as-new-template', [StoreMailshotAsNewTemplate::class, 'inMailshot'])->name('store.as-new-template')->withoutScopedBindings();
+        Route::patch('recipient-filter', UpdateMailshotRecipientFilter::class)->name('recipient-filter.update')->withoutScopedBindings();
     });
 
     Route::name('email-template.')->prefix('email-template')->group(function () {
