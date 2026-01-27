@@ -1926,7 +1926,7 @@ const submitNewCharge = async () => {
                         <template #body="{ data }">
                             <div v-if="!data.is_editing_net_amount">
                                 {{ locale.currencyFormat(currency.code, data.net_amount) }}
-                                <span @click="data.is_editing_net_amount = true" class="opacity-80 hover:opacity-100 cursor-pointer">
+                                <span @click="data.is_editing_net_amount = true" class="opacity-60 hover:opacity-100 cursor-pointer">
                                     <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
                                 </span>
                             </div>
@@ -1959,7 +1959,7 @@ const submitNewCharge = async () => {
         </div>
     </Modal>
 
-    <!-- Modal: Add new Charges -->
+    <!-- Modal: Add new discretionary Charges -->
     <Modal :isOpen="isOpenModalAddCharges" @onClose="isOpenModalAddCharges = false"
         width="w-full max-w-lg" :isClosableInBackground="false" closeButton>
         <div class="isolate bg-white px-6 lg:px-8">
@@ -1969,7 +1969,7 @@ const submitNewCharge = async () => {
                 </h2>
             </div>
 
-            <div class=" mb-6 xflex gap-x-6">
+            <div class="mt-6 mb-6 xflex gap-x-6">
                 <div class=" w-full col-span-2">
                     <label class="block text-sm font-medium mb-2">
                         {{ trans("Label") }}
