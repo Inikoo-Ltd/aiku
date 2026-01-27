@@ -142,7 +142,7 @@ const _popoverProfit = ref(null)
                             :product
                         />
         
-                        <AvailableVolOfferLabel
+                        <AvailableVolOfferLabel class="w-48"
                             v-if="
                                 (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
                                 && !layout?.user?.gr_data?.customer_is_gr"
@@ -155,8 +155,8 @@ const _popoverProfit = ref(null)
                 <div v-else />
 
                 <!-- Section: Profit -->
-                <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col">
-                    <div class="whitespace-nowrap">                        
+                <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col text-xs">
+                    <div class="whitespace-nowrap">
                         <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
                             class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
                         >
@@ -164,10 +164,10 @@ const _popoverProfit = ref(null)
                         </span>
                         {{ trans("Profit") }}:
                     </div>
-                    <div class="font-bold text-green-700 text-sm">
+                    <div class="font-bold text-green-700 text-xxs">
                         ({{ product?.margin }})
                     </div>
-                    <div class="italic text-xs">
+                    <div class="italic text-xxs">
                         <span class="xtext-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
                     </div>
 
