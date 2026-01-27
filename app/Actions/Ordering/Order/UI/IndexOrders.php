@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -41,6 +42,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Models\Ordering\SalesChannel;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 
 class IndexOrders extends OrgAction
 {
@@ -81,7 +84,7 @@ class IndexOrders extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('orders.reference', $value)
-                ->orWhereWith('orders.tracking_number', $value);
+                    ->orWhereWith('orders.tracking_number', $value);
             });
         });
 
@@ -108,7 +111,7 @@ class IndexOrders extends OrgAction
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
-        $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
+        $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')->where('shops.state', ShopStateEnum::OPEN);
 
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
             $query->where('orders.state', OrderStateEnum::CREATING);
@@ -149,6 +152,8 @@ class IndexOrders extends OrgAction
         } elseif ($this->bucket == 'dispatched_today') {
             $query->where('orders.state', OrderStateEnum::DISPATCHED)
                 ->where('dispatched_at', Carbon::today());
+        } elseif ($this->bucket == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value) {
+            $query->where('orders.with_replacement', true);
         } elseif ($this->bucket == 'all') {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $query->whereElementGroup(
@@ -159,7 +164,6 @@ class IndexOrders extends OrgAction
                 );
             }
         }
-
 
 
         $shipmentsExpr =
@@ -203,6 +207,7 @@ class IndexOrders extends OrgAction
                 'orders.to_be_paid_by',
                 'orders.tracking_number',
                 'orders.shipping_data',
+                'orders.with_replacement',
                 $shipmentsSelect,
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
@@ -248,7 +253,7 @@ class IndexOrders extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withLabelRecord([__('order'),__('orders')])
+                ->withLabelRecord([__('order'), __('orders')])
                 ->withEmptyState(
                     [
                         'title' => $noResults,
@@ -291,6 +296,7 @@ class IndexOrders extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
+        $customerId    = null;
         $navigation    = OrdersTabsEnum::navigation();
         $subNavigation = null;
         if ($this->parent instanceof CustomerClient) {
@@ -357,25 +363,7 @@ class IndexOrders extends OrgAction
             $afterTitle = [
                 'label' => __('Orders')
             ];
-
-            if ($this->shop->type == ShopTypeEnum::B2B) {
-                $actions = [
-                    [
-                        'type'        => 'button',
-                        'style'       => 'create',
-                        'label'       => 'Add order',
-                        'key'         => 'add_order',
-                        'fullLoading' => true,
-                        'route'       => [
-                            'method'     => 'post',
-                            'name'       => 'grp.models.customer.submitted_order.store',
-                            'parameters' => [
-                                'customer' => $this->parent->id
-                            ]
-                        ]
-                    ],
-                ];
-            }
+            $customerId = $this->parent->id;
         }
 
         if ($this->parent instanceof Shop) {
@@ -384,15 +372,25 @@ class IndexOrders extends OrgAction
             $shop = $this->parent->shop;
         }
 
+        $salesChannels = SalesChannel::whereIn('type', [
+            SalesChannelTypeEnum::WEBSITE,
+            SalesChannelTypeEnum::PHONE,
+            SalesChannelTypeEnum::SHOWROOM,
+            SalesChannelTypeEnum::EMAIL,
+            SalesChannelTypeEnum::OTHER,
+        ])->get(['id', 'name', 'code']);
+
         return Inertia::render(
             'Ordering/Orders',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'    => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('orders'),
-                'pageHead'    => [
+                'title'          => __('orders'),
+                'sales_channels' => $salesChannels,
+                'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
+                'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
@@ -401,9 +399,14 @@ class IndexOrders extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'data'        => OrderResource::collection($orders),
-
-                'tabs' => [
+                'data'           => OrderResource::collection($orders),
+                'submitRoute'    => $customerId ? [
+                    'name'       => 'grp.models.customer.submitted_order.store',
+                    'parameters' => [
+                        'customer' => $customerId
+                    ]
+                ] : null,
+                'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
@@ -416,6 +419,23 @@ class IndexOrders extends OrgAction
                     fn () => OrdersResource::collection($orders)
                     : Inertia::lazy(fn () => OrdersResource::collection($orders)),
 
+                OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value => $this->tab == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
+                    ?
+                    fn () => OrdersResource::collection(
+                        IndexOrders::run(
+                            $shop,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
+                        )
+                    )
+                    : Inertia::lazy(fn () => OrdersResource::collection(
+                        IndexOrders::run(
+                            $shop,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
+                            OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
+                        )
+                    )),
+
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
                     fn () => GetLastOrders::run($shop)
                     : Inertia::lazy(fn () => GetLastOrders::run($shop)),
@@ -426,6 +446,8 @@ class IndexOrders extends OrgAction
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)
+        )->table(
+            $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value, OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value)
         )->table(IndexOrdersExcessPayment::make()->tableStructure($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value));
     }
 

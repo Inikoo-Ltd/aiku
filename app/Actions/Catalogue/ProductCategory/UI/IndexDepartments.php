@@ -81,20 +81,6 @@ class IndexDepartments extends OrgAction
         $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
 
-        // Use reusable time series aggregation method
-        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
-            timeSeriesTable: 'product_category_time_series',
-            timeSeriesRecordsTable: 'product_category_time_series_records',
-            foreignKey: 'product_category_id',
-            aggregateColumns: [
-                'sales_grp_currency' => 'sales',
-                'invoices' => 'invoices'
-            ],
-            frequency: TimeSeriesFrequencyEnum::DAILY->value,
-            prefix: $prefix,
-            includeLY: true
-        );
-
         if (class_basename($parent) == 'Shop') {
             $queryBuilder->where('product_categories.shop_id', $parent->id);
         } elseif (class_basename($parent) == 'Collection') {
@@ -107,56 +93,54 @@ class IndexDepartments extends OrgAction
             $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
         }
 
+        $selects = [
+            'product_categories.id',
+            'product_categories.slug',
+            'product_categories.code',
+            'product_categories.name',
+            'product_categories.state',
+            'product_categories.description',
+            'product_categories.created_at',
+            'product_categories.updated_at',
+            'product_categories.web_images',
+            'product_categories.master_product_category_id',
+            'product_category_stats.number_current_families',
+            'product_category_stats.number_current_products',
+            'product_category_stats.number_current_sub_departments',
+            'product_category_stats.number_current_collections',
+            'shops.slug as shop_slug',
+            'shops.code as shop_code',
+            'shops.name as shop_name',
+            'currencies.code as currency_code',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+        ];
+
+        if ($prefix === ProductCategoryTabsEnum::SALES->value) {
+            // Use reusable time series aggregation method
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'product_category_time_series',
+                timeSeriesRecordsTable: 'product_category_time_series_records',
+                foreignKey: 'product_category_id',
+                aggregateColumns: [
+                    'sales_grp_currency' => 'sales',
+                    'invoices'           => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
+
+        $queryBuilder->select($selects);
+
         return $queryBuilder
             ->defaultSort('product_categories.code')
-            ->select([
-                'product_categories.id',
-                'product_categories.slug',
-                'product_categories.code',
-                'product_categories.name',
-                'product_categories.state',
-                'product_categories.description',
-                'product_categories.created_at',
-                'product_categories.updated_at',
-                'product_categories.web_images',
-                'product_categories.master_product_category_id',
-                'product_category_stats.number_current_families',
-                'product_category_stats.number_current_products',
-                'product_category_stats.number_current_sub_departments',
-                'product_category_stats.number_current_collections',
-                'shops.slug as shop_slug',
-                'shops.code as shop_code',
-                'shops.name as shop_name',
-                'currencies.code as currency_code',
-                $timeSeriesData['selectRaw']['sales'],
-                $timeSeriesData['selectRaw']['invoices'],
-                $timeSeriesData['selectRaw']['sales_ly'],
-                $timeSeriesData['selectRaw']['invoices_ly'],
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-            ])
-            ->groupBy([
-                'product_categories.id',
-                'product_categories.slug',
-                'product_categories.code',
-                'product_categories.name',
-                'product_categories.state',
-                'product_categories.description',
-                'product_categories.created_at',
-                'product_categories.updated_at',
-                'product_categories.web_images',
-                'product_categories.master_product_category_id',
-                'product_category_stats.number_current_families',
-                'product_category_stats.number_current_products',
-                'product_category_stats.number_current_sub_departments',
-                'product_category_stats.number_current_collections',
-                'shops.slug',
-                'shops.code',
-                'shops.name',
-                'currencies.code',
-                'organisations.name',
-                'organisations.slug',
-            ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::DEPARTMENT)
             ->allowedSorts([
@@ -392,7 +376,7 @@ class IndexDepartments extends OrgAction
             ->table(IndexDepartmentsNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

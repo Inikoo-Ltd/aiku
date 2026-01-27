@@ -99,21 +99,21 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                 ]
             ],
             [
-                'sales_invoice_category_currency' => [
+                'sales' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'category',
                     'data_display_type' => 'full',
                     'sortable'          => true,
-                    'scope'             => 'sales_invoice_category_currency',
+                    'scope'             => 'sales',
                 ]
             ],
             [
-                'sales_invoice_category_currency_minified' => [
+                'sales_minified' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'category',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
-                    'scope'             => 'sales_invoice_category_currency',
+                    'scope'             => 'sales',
                 ]
             ],
             [

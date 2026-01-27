@@ -6,14 +6,43 @@ import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome } fr
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import TableMasterCollections from '@/Components/Tables/Grp/Goods/TableMasterCollections.vue'
+import { useTabChange } from '@/Composables/tab-change'
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { computed, ref } from "vue"
+
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
+    tabs: {
+        current: string
+        navigation: {}
+    }
+    index?: {}
+    sales?: {}
     data: {}
     shopsData : {}
 }>()
+
+const currentTab = ref<string>(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const currentData = computed(() => {
+    if (currentTab.value === 'index' || currentTab.value === 'sales') {
+        return (props as any)[currentTab.value] || props.data
+    }
+    return props.data
+})
+
+const component = computed(() => {
+    const components: any = {
+        index: TableMasterCollections,
+        sales: TableMasterCollections,
+    }
+
+    return components[currentTab.value]
+})
+
 
 console.log('ddddd',props)
 </script>
@@ -21,5 +50,12 @@ console.log('ddddd',props)
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableMasterCollections :data="data" :shopsData="shopsData"/>
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" :shopsData="shopsData"/>
+
+    <component
+        :is="component"
+        :key="currentTab"
+        :tab="currentTab"
+        :data="currentData"
+    ></component>
 </template>

@@ -30,6 +30,7 @@ const props = defineProps<{
 		searchable?: boolean
         readonly?: boolean
 		labelProp?: string
+		labelAdditionalProp?: string
 		valueProp?: string
 		type_label? :string
     }
@@ -72,6 +73,7 @@ function unsnakeCase(str?: string | null) {
                 :disabled="fieldData.readonly"
                 :caret="!fieldData.readonly"
 				:labelProp="fieldData.labelProp || 'label'"
+				:labelAdditionalProp="fieldData.labelAdditionalProp"
 				:valueProp="fieldData.valueProp || 'value'"
 				:clearOnBlur="true"
 				:clearOnSelect="true"

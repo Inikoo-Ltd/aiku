@@ -190,9 +190,9 @@ class ShowAnnouncement extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (string $type, Announcement $announcement, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (string $type, Announcement $announcement, array $routeParameters, ?string $suffix = null) {
             return [
                 [
                     'type'           => $type,

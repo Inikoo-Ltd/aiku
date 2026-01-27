@@ -24,12 +24,17 @@ import Discount from '@/Components/Utils/Label/Discount.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
+import EligibleGift from '@/Components/Order/EligibleGift.vue'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
 
 interface DataSideBasket {
     order_summary: any
     order_data: {
+        id: number
         reference: string
+        is_premium_dispatch: boolean
+        has_extra_packing: boolean
+        has_insurance: boolean
     }
 }
 
@@ -361,6 +366,7 @@ const idxProductLoading = ref<number | null>(null)
                                             <LinkIris :href="product.canonical_url" class="font-medium hover:underline truncate block w-52" @start="() => idxProductLoading = idxProd" @finish="() => idxProductLoading = null">
                                                 <span v-if="product.units > 1" class="mr-1">{{ product.units }}x</span>{{ product.name }}
                                             </LinkIris>
+                                            <div class="text-xxs text-gray-400">{{ product.code }}</div>
                                         </div>
                                     </div>
 
@@ -431,8 +437,22 @@ const idxProductLoading = ref<number | null>(null)
                     size="sm"
                 />
 
-                <!-- Section: Charge Premium Dispatch -->
+                
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
+                    <!-- Section: Eligible Gift -->
+                    <div v-if="layout.app.environment === 'local' && dataSideBasket?.eligible_gifts?.is_customer_eligible" class="text-xs flex justify-end pr-2 xmt-4">
+                        <EligibleGift
+                            :routeUpdate="{
+                                name: 'iris.models.order.update_eligible_gift',
+                                parameters: dataSideBasket?.order_data?.id
+                            }"
+                            :selectedGift="dataSideBasket?.eligible_gifts?.selected_gift"
+                            :giftOptions="dataSideBasket?.eligible_gifts?.available_gifts"
+                            class="justify-between w-full"
+                        />
+                    </div>
+
+                    <!-- Section: Charges (Premium Dispatch, Insurance) -->
                     <template v-for="charge in dataSideBasket?.charges">
                         <div v-if="charge?.id" class="flex gap-4 justify-between">
                             <div class="text-xs flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">

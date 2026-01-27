@@ -515,7 +515,7 @@ const successEditTradeUnit = (data) => {
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <div :class="layout?.app?.environment != 'local' ? 'col-span-2' : ''">
+                        <div :class="'col-span-2'">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
@@ -524,8 +524,7 @@ const successEditTradeUnit = (data) => {
                                 {{ form.errors.code.join(", ") }}
                             </small>
                         </div>
-
-                        <div v-if="layout?.app?.environment === 'local'">
+                        <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">
                                 {{trans('Is Follower')}} 
                                 <FontAwesomeIcon

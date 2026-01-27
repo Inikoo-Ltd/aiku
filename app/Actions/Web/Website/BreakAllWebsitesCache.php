@@ -16,7 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class BreakAllWebsitesCache extends OrgAction
 {
-    public function handle(Command $command = null): void
+    public function handle(?Command $command = null): void
     {
         foreach (Website::all() as $website) {
             BreakWebsiteCache::run($website, $command);

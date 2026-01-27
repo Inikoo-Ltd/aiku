@@ -36,20 +36,20 @@ class GroupHydrateOrderStateSubmitted implements ShouldBeUnique
         }
 
         $stats = [
-            'number_orders_state_submitted'              => $group->orders()->where('state', OrderStateEnum::SUBMITTED)->count(),
-            'orders_state_submitted_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
+            'number_orders_state_submitted'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)->count(),
+            'orders_state_submitted_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
 
-            'number_orders_state_submitted_paid'              => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'number_orders_state_submitted_paid'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
                 ->count(),
-            'orders_state_submitted_paid_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'orders_state_submitted_paid_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
                 ->sum('grp_net_amount'),
 
-            'number_orders_state_submitted_not_paid'              => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'number_orders_state_submitted_not_paid'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
                 ->count(),
-            'orders_state_submitted_not_paid_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'orders_state_submitted_not_paid_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
                 ->sum('grp_net_amount'),
 

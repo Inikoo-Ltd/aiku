@@ -142,6 +142,7 @@ trait WithIrisProductsInWebpage
     {
         $select = [
             'products.id',
+            'products.family_id as family_id',
             'products.image_id',
             'products.code',
             'products.group_id',
@@ -157,6 +158,7 @@ trait WithIrisProductsInWebpage
             'products.updated_at',
             'products.units',
             'products.unit',
+            'products.offers_data as product_offers_data',
             'products.variant_id',
             'products.top_seller',
             'products.web_images',
@@ -171,6 +173,8 @@ trait WithIrisProductsInWebpage
         if ($customer && $customer->orderInBasket) {
             $select[] = 'transactions.id as transaction_id';
             $select[] = 'transactions.quantity_ordered as quantity_ordered';
+            $select[] = 'transactions.offers_data as offers_data';
+            $select[] = 'transactions.net_amount as net_amount';
         }
 
         return $select;

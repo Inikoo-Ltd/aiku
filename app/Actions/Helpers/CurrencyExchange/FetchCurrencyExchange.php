@@ -20,7 +20,7 @@ class FetchCurrencyExchange
     use AsAction;
 
 
-    public function handle(Currency $baseCurrency, Currency $targetCurrency, ?Carbon $date = null, string $provider = null): array
+    public function handle(Currency $baseCurrency, Currency $targetCurrency, ?Carbon $date = null, ?string $provider = null): array
     {
         if ($baseCurrency->code == $targetCurrency) {
             return [

@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Discounts;
 
 use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
@@ -19,37 +20,42 @@ class FixOffersStatus
     use AsAction;
     use WithOrganisationSource;
 
-    public string $commandSignature = 'repair:offers_status';
+    public string $commandSignature = 'repair:offers_status {shop}';
 
     /**
      * @throws \Exception
      */
     public function asCommand(\Illuminate\Console\Command $command): void
     {
-        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
-        $offers = Offer::whereIn('shop_id', $aikuShops)->get();
+        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+
+        $offers = Offer::where('shop_id', $shop->id)->get();
 
         $progressBar = $command->getOutput()->createProgressBar($offers->count());
         $progressBar->start();
 
         /** @var Offer $offer */
         foreach ($offers as $offer) {
-            if ($offer->state != OfferStateEnum::ACTIVE) {
-                $offer->update([
-                    'status' => false,
-                ]);
+            if (!$offer->source_id) {
 
-                foreach ($offer->offerAllowances as $offerAllowance) {
-                    $offerAllowance->update([
-                        'state'  => $offer->state->value,
-                        'status' => $offer->status,
-                    ]);
-                }
-            } else {
-                if ($offer->end_at < now()) {
+                if ($offer->duration == OfferDurationEnum::PERMANENT) {
                     $offer->update([
-                        'state'  => OfferStateEnum::FINISHED,
+                        'status' => true,
+                        'state'  => OfferStateEnum::ACTIVE
+                    ]);
+
+                    foreach ($offer->offerAllowances as $offerAllowance) {
+                        $offerAllowance->update([
+                            'state'  => $offer->state->value,
+                            'status' => $offer->status,
+                        ]);
+                    }
+                }
+
+            } else {
+                if ($offer->state != OfferStateEnum::ACTIVE) {
+                    $offer->update([
                         'status' => false,
                     ]);
 
@@ -57,16 +63,30 @@ class FixOffersStatus
                         $offerAllowance->update([
                             'state'  => $offer->state->value,
                             'status' => $offer->status,
-                            'end_at' => $offer->end_at
                         ]);
                     }
                 } else {
-                    $offer->update([
-                        'status' => true,
-                    ]);
+                    if ($offer->end_at < now()) {
+                        $offer->update([
+                            'state'  => OfferStateEnum::FINISHED,
+                            'status' => false,
+                        ]);
+
+                        foreach ($offer->offerAllowances as $offerAllowance) {
+                            $offerAllowance->update([
+                                'state'  => $offer->state->value,
+                                'status' => $offer->status,
+                                'end_at' => $offer->end_at
+                            ]);
+                        }
+                    } else {
+                        $offer->update([
+                            'status' => true,
+                        ]);
+                    }
                 }
+                $progressBar->advance();
             }
-            $progressBar->advance();
         }
 
         $progressBar->finish();

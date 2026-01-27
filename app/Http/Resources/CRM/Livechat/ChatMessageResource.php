@@ -14,9 +14,29 @@ class ChatMessageResource extends JsonResource
     {
         $chatMessage = $this;
 
+        $translations = $chatMessage->translations;
+
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,
+            'original' => [
+                'text'          => $chatMessage->original_text,
+                'language_name' => $chatMessage->originalLanguage?->name,
+                'language_code' => $chatMessage->originalLanguage?->code,
+                'language_flag' => $chatMessage->originalLanguage?->flag ? asset('flags/' . $chatMessage->originalLanguage->flag) : null,
+            ],
+
+            'translations' => $translations->map(function ($translation) {
+                return [
+                    'chat_translation_id' => $translation->id,
+                    'language_id'     => $translation->targetLanguage?->id,
+                    'translated_text' => $translation->translated_text,
+                    'language_name'   => $translation->targetLanguage?->name,
+                    'language_code'   => $translation->targetLanguage?->code,
+                    'language_flag'   => $translation->targetLanguage?->flag ? asset('flags/' . $translation->targetLanguage->flag) : null,
+                ];
+            })->values(),
+
             'message_type' => $chatMessage->message_type->value,
             'sender_type' => $chatMessage->sender_type->value,
             'is_agent' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AGENT->value,
@@ -26,6 +46,18 @@ class ChatMessageResource extends JsonResource
             'is_ai' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AI->value,
             'is_read' => $chatMessage->is_read,
             'media_url' => $chatMessage->imageSources(0, 0, 'attachment'),
+            'original_url' => $chatMessage->attachment ? $chatMessage->attachment->getUrl() : null,
+            'file_name' => $chatMessage->attachment ? $chatMessage->attachment->file_name : null,
+            'file_size' => $chatMessage->attachment ? $chatMessage->attachment->size : null,
+            'file_mime' => $chatMessage->attachment ? $chatMessage->attachment->mime_type : null,
+            'download_route' => $chatMessage->attachment ? [
+                'name'       => 'grp.api.chats.chat.attachment.download',
+                'parameters' => [
+                    'ulid' => $chatMessage->attachment->ulid,
+                ],
+                'method'     => 'get',
+                'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
+            ] : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'timestamp' => $chatMessage->created_at->timestamp

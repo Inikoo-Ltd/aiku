@@ -50,23 +50,23 @@ class DashboardHeaderShopsSalesResource extends JsonResource
 
         $basketShopCurrency = [
 
-            'baskets_created_shop_currency' => [
+            'baskets_created' => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'shop',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'baskets_created_shop_currency',
+                'scope'             => 'baskets_created',
             ],
 
 
-            'baskets_created_shop_currency_minified' => [
+            'baskets_created_minified' => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'baskets_created_shop_currency',
+                'scope'             => 'baskets_created',
             ],
 
 
@@ -176,30 +176,30 @@ class DashboardHeaderShopsSalesResource extends JsonResource
 
         $salesShopCurrency = [
 
-            'sales_shop_currency'          => [
+            'sales'          => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'full',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_shop_currency',
+                'scope'             => 'sales',
             ],
-            'sales_shop_currency_minified' => [
+            'sales_minified' => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_shop_currency',
+                'scope'             => 'sales',
             ],
-            'sales_shop_currency_delta'    => [
+            'sales_delta'    => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'always',
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_shop_currency',
+                'scope'             => 'sales',
             ],
 
         ];

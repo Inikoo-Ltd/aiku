@@ -27,9 +27,17 @@ class SendChatMessage
 
     public function handle(ChatSession $chatSession, array $modelData): ChatMessage
     {
+        $rawMessage = $modelData['message_text'] ?? '';
+        if ($rawMessage !== null) {
+            $sanitizedMessage = strip_tags($rawMessage);
+            $sanitizedMessage = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $sanitizedMessage);
+            $sanitizedMessage = trim($sanitizedMessage);
+        } else {
+            $sanitizedMessage = null;
+        }
         $exists = ChatMessage::where('chat_session_id', $chatSession->id)
             ->where('sender_type', $modelData['sender_type'])
-            ->where('message_text', $modelData['message_text'] ?? '')
+            ->where('message_text', $sanitizedMessage ?? '')
             ->whereBetween('created_at', [now()->subSeconds(1), now()])
             ->first();
 
@@ -37,12 +45,15 @@ class SendChatMessage
             return $exists;
         }
 
+
         $chatMessageData = [
             'chat_session_id' => $chatSession->id,
             'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
             'sender_type'     => $modelData['sender_type'],
             'sender_id'       => $modelData['sender_id'] ?? null,
-            'message_text'    => $modelData['message_text'] ?? null,
+            'message_text'    => $sanitizedMessage,
+            'media_id'        => $modelData['media_id'] ?? null,
+            'original_text'   => $sanitizedMessage,
             'media_id'        => $modelData['media_id'] ?? null,
             'is_read'         => false,
             'created_at'      => now(),
@@ -53,6 +64,9 @@ class SendChatMessage
 
         if (isset($modelData['image']) && $modelData['image'] instanceof UploadedFile) {
             $this->processMessageImage($chatMessage, $modelData['image']);
+        }
+        if (isset($modelData['file']) && $modelData['file'] instanceof UploadedFile) {
+            $this->processMessageFile($chatMessage, $modelData['file']);
         }
 
         $this->updateSessionTimestamps(
@@ -67,6 +81,7 @@ class SendChatMessage
             $chatMessage
         );
 
+        TranslateChatMessage::dispatch(messageId: $chatMessage->id);
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch();
 
@@ -87,6 +102,25 @@ class SendChatMessage
         $chatMessage->updateQuietly([
             'media_id'     => $media->id,
             'message_type' => ChatMessageTypeEnum::IMAGE,
+        ]);
+
+        $chatMessage->refresh();
+    }
+
+    protected function processMessageFile(ChatMessage $chatMessage, UploadedFile $file): void
+    {
+        $fileData = [
+            'path'         => $file->getPathName(),
+            'originalName' => $file->getClientOriginalName(),
+            'extension'    => $file->getClientOriginalExtension(),
+            'checksum'     => md5_file($file->getPathName()),
+        ];
+
+        $media = StoreMediaFromFile::run($chatMessage, $fileData, 'chat_attachments', 'file');
+
+        $chatMessage->updateQuietly([
+            'media_id'     => $media->id,
+            'message_type' => ChatMessageTypeEnum::FILE,
         ]);
 
         $chatMessage->refresh();
@@ -131,7 +165,8 @@ class SendChatMessage
     {
         return [
             'message_text' => [
-                'required_without:media_id',
+                'required_without_all:image,file',
+                'nullable',
                 'string',
                 'max:5000'
             ],
@@ -152,6 +187,12 @@ class SendChatMessage
                 'sometimes',
                 'nullable',
                 File::image()->max(10 * 1024)
+            ],
+            'file' => [
+                'sometimes',
+                'nullable',
+                File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
+                    ->max(20 * 1024)
             ]
         ];
     }

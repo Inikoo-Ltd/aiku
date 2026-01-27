@@ -54,7 +54,7 @@ class UpdateRetinaWebUserPassword extends RetinaAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        $webUserPasswordReset = WebUserPasswordReset::find($request->get('web_user_password_reset_id'));
+        $webUserPasswordReset = WebUserPasswordReset::find($request->input('web_user_password_reset_id'));
 
         if (!$webUserPasswordReset) {
             $validator->errors()->add('password', 'Token not found.');

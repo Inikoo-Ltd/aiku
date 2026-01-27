@@ -130,9 +130,9 @@ class ShowBanner extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (string $type, Banner $banner, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (string $type, Banner $banner, array $routeParameters, ?string $suffix = null) {
             return [
                 [
                     'type'           => $type,

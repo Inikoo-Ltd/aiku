@@ -25,6 +25,7 @@ import Topbar2Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar2
 import Topbar3Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Blueprint"
 import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
+import ColumnLayout3Blueprint from "@/Components/CMS/Webpage/Column3/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
 import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
 import DepartmentBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
@@ -47,6 +48,9 @@ import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBests
 import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Blueprint"
 import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
+
+import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
+import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/Blueprint'
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
@@ -128,6 +132,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"overview_2": Overview2Blueprint.blueprint,
 		"button": Button.blueprint,
 		"column-layout-2": ColumnLayout2Blueprint.blueprint,
+		"column-layout-3": ColumnLayout3Blueprint.blueprint,
 		"disclosure": DisclosureBlueprint.blueprint,
 		"timeline": TimelineBlueprint.blueprint,
 		"step-1": Timeline2Bluprint.blueprint,
@@ -160,3 +165,15 @@ export const getHiddenPermissions = (data: PermissionData) => hasPermission(data
 
 // try to bulid rename fitur
 export const getRenamePermision = (data: PermissionData) => hasPermission(data, 'edit')
+
+
+
+export const getBlueprintProduct = (componentName: string, shop_type?: string) => {
+	const components: Record<string, any> = {
+		"product-1":  shop_type == 'b2b' ?  Product1EcomBlueprint.blueprint : Product1DSBlueprint.blueprint, 
+		"product-2": Product2.blueprint,
+	}
+
+	const blueprint = components[componentName]
+	return typeof blueprint === "function" ? blueprint() : blueprint ?? []
+}

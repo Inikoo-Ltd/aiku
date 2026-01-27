@@ -1,0 +1,153 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 07 Oct 2025 18:13:06 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+
+/** @noinspection DuplicatedCode */
+
+namespace App\Actions\Maintenance\Catalogue;
+
+use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
+use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class UpdateFamilyDescriptionAndNameFromAurora
+{
+    use AsAction;
+    use WithOrganisationSource;
+
+    public function handle(Shop $shop, Command $command): void
+    {
+        $organisation             = $shop->organisation;
+        $this->organisationSource = $this->getOrganisationSource($organisation);
+        $this->organisationSource->initialisation($organisation);
+
+
+        ProductCategory::query()
+            ->where(
+                'shop_id',
+                $shop->id
+            )
+            ->where('type', ProductCategoryTypeEnum::FAMILY)
+            ->whereNotNull('source_family_id')
+
+            //    ->where('id',31890)
+            ->orderBy('id')
+            ->chunkById(1000, function ($families) use ($command) {
+                foreach ($families as $family) {
+                    $description = '';
+
+
+                    if ($family && $family->webpage && $family->webpage->source_id) {
+                        $sourceData  = explode(':', $family->webpage->source_id);
+                        $webpageData = DB::connection('aurora')->table('Page Store Dimension')->where('Page Key', $sourceData[1])->first();
+                        if ($webpageData) {
+                            $webpageData = $webpageData->{'Page Store Content Published Data'};
+                            if ($webpageData) {
+                                $webpageData    = json_decode($webpageData, true);
+                                $blackBoardData = null;
+                                $text           = '';
+
+
+                                foreach ($webpageData['blocks'] as $block) {
+                                    if (Arr::get($block, 'type') == 'blackboard') {
+                                        $blackBoardData = $block;
+                                        break;
+                                    } elseif (Arr::get($block, 'type') == 'text') {
+                                        foreach (Arr::get($block, 'text_blocks', []) as $textBlock) {
+                                            $text .= $textBlock['text'].' ';
+                                        }
+                                    }
+                                }
+
+                                if ($blackBoardData) {
+                                    foreach ($blackBoardData['texts'] as $text) {
+                                        $description .= $text['text'].' ';
+                                    }
+                                    // Replace all instances of <p><br></p> (and the self-closing variant) with empty string
+                                    $description = str_replace('<p><br></p>', '', $description);
+                                    $description = str_replace('<p><br />\u003C/p>', '', $description); // handle potential escaped variant
+                                    $description = str_replace('<p><br /></p>', '', $description);
+                                }
+
+                                if (!$description) {
+                                    $description = $text;
+                                }
+                            }
+                        }
+                    }
+
+
+                    if ($description) {
+                        $masterCategory = $family->masterProductCategory;
+                        $family->update([
+                            'description'             => $description,
+                            'is_description_reviewed' => true
+                        ]);
+                        if ($family->wasChanged('description')) {
+                            $command->info("Description changed $family->code");
+                        }
+
+                        $family
+                            ->setTranslation('description_i8n', $family->shop->language->code, $description)
+                            ->save();
+
+                        $family->update(
+                            [
+                                'description_extra'             => '',
+                                'is_description_extra_reviewed' => true
+                            ]
+                        );
+
+                    }
+
+                    // get family name
+
+                    $shopSourceData = explode(':', $family->shop->source_id);
+                    $auroraStoreKey = $shopSourceData[1];
+
+                    $auFamData = DB::connection('aurora')->table('Category Dimension')
+                        ->where('Category Scope', 'Product')
+                        ->where('Category Store Key', $auroraStoreKey)
+                        ->whereRaw('LOWER(`Category Code`) != LOWER(`Category Label`)')
+                        ->whereRaw('LOWER(`Category Code`) = ?', [strtolower($family->code)])
+                        ->first();
+                    if ($auFamData) {
+                        $family->update(
+                            [
+                                'name'             => $auFamData->{'Category Label'},
+                                'is_name_reviewed' => true
+                            ]
+                        );
+                        if ($family->wasChanged('name')) {
+                            $command->info("Name changed $family->code $family->name");
+                        }
+                    }
+                }
+            }, 'id');
+    }
+
+
+    public function getCommandSignature(): string
+    {
+        return 'maintenance:update_family_descriptions_from_aurora {shop}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
+        $this->handle($shop, $command);
+
+        return 0;
+    }
+
+}

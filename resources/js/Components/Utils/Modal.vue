@@ -7,6 +7,7 @@ library.add(faTimes)
 
 const props = withDefaults(defineProps<{
     width?: string
+    maxWidth?: string
     isOpen: boolean
     closeButton?: boolean
     dialogStyle?: {}

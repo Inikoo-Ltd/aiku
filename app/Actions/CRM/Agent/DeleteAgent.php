@@ -33,6 +33,8 @@ class DeleteAgent extends OrgAction
             ];
         }
 
+        $agent->shopAssignments()->delete();
+
         $agent->delete();
 
         return [

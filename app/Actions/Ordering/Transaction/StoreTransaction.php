@@ -115,10 +115,10 @@ class StoreTransaction extends OrgAction
 
         }
 
-        if (request()->hasSession() && request()->get('website')) {
+        if (request()->hasSession() && request()->input('website')) {
             StoreWebsiteConversionEvent::dispatch(
                 sessionId: request()->session()->getId(),
-                websiteId: request()->get('website')->id,
+                websiteId: request()->input('website')->id,
                 eventType: WebsiteConversionEventTypeEnum::ADD_TO_BASKET,
                 url: request()->header('referer') ?? request()->fullUrl(),
                 productId: $transaction->asset_id,
@@ -156,6 +156,7 @@ class StoreTransaction extends OrgAction
             'date'                    => ['sometimes', 'required', 'date'],
             'submitted_at'            => ['sometimes', 'required', 'date'],
             'data'                    => ['sometimes', 'array'],
+            'label'                   => ['sometimes', 'string', 'max:255'],
         ];
 
         if (!$this->strict) {

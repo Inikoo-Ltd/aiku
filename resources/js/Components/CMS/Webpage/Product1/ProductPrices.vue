@@ -6,11 +6,15 @@ import { ref, inject, computed } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
+import Discount from "@/Components/Utils/Label/Discount.vue"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
 const props = withDefaults(defineProps<{
     fieldValue: any
+    offers_data?: {}
+    offer_net_amount_per_quantity?: number
+    offer_price_per_unit?: number
 }>(), {})
 
 const layout = inject("layout", {})
@@ -42,6 +46,7 @@ const closePopover = (close: any): void => {
 </script>
 
 <template>
+
     <Popover v-slot="{ open, close }">
         <PopoverButton style="width: 100%;">
             <div v-if="layout?.iris?.is_logged_in" class="border-y border-gray-200 p-1 mb-2 text-gray-800 tabular-nums">
@@ -49,7 +54,7 @@ const closePopover = (close: any): void => {
                     @mouseleave="closePopover(close)">
                     <!-- Retail -->
                     <div class="flex flex-col text-left col-span-4">
-                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail Price') }} </span>
+                        <span class="text-sm font-medium text-gray-600 xmb-1">{{ trans('Retail Price') }} </span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
                                 {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
@@ -60,10 +65,11 @@ const closePopover = (close: any): void => {
                     </div>
                     <!-- Profit -->
                     <div class="flex flex-col items-end text-right col-span-1 col-span-2 justify-end">
-                        <div>
-                            <span class="text-sm font-medium text-gray-600 mb-1 flex justify-end">
+                        <div class="">
+                            <span class="text-sm font-medium text-gray-600 xmb-1 flex justify-end">
                                 <span v-tooltip="trans('Profit margin')" class="mr-3 text-xs ml-1 font-medium text-gray-400">
-                                </span> {{trans('Profit') }} ({{ fieldValue.product?.margin }})</span>
+                                </span> {{trans('Profit') }} ({{ fieldValue.product?.margin }})
+                            </span>
                             <div class="flex flex-wrap items-baseline justify-end gap-1">
                                 <span class="text-base font-semibold text-gray-700">
                                     {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit_per_unit || 0) }}
@@ -139,29 +145,57 @@ const closePopover = (close: any): void => {
     </Popover>
 
     <div v-if="layout?.iris?.is_logged_in" class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
-        <div v-if="fieldValue.product.units === 1" class="flex justify-between">
+
+        <Discount v-if="offers_data && Object.keys(offers_data).length" :offers_data="offers_data" class="my-3" />
+
+        <div v-if="fieldValue.product.units == 1" class="flex justify-between">
             <div>
                 {{ trans("Price") }}:
-                <span class="font-semibold text-green-600 text-xl">
+                <span v-if="offer_price_per_unit &&  Object.keys(offers_data).length" class="font-semibold text-green-600 text-xl">
+                    <span class="line-through opacity-60 mr-1 text-gray-600 text-xs">{{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}</span> 
+                    <span class="">{{ locale.currencyFormat(currency?.code, offer_price_per_unit || 0) }}</span> 
+                    <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
+                </span>
+
+                <span v-else class="font-semibold text-green-600 text-xl">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
                     <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
                 </span>
             </div>
         </div>
+
         <div v-else>
-            <div class="flex justify-between">
+            <div class="flex justify-between flex-wrap">
                 <div v-tooltip="trans('Wholesale Price')" class="flex items-center gap-1">
                     {{ trans("Price") }}:
-                    <span class="font-semibold text-green-600 text-xl">{{ locale.currencyFormat(currency?.code,
-                        fieldValue.product.price) }}</span><span class="text-sm text-gray-500">/ {{trans('Outer') }}</span>
+                    <span v-if="offer_net_amount_per_quantity && Object.keys(offers_data).length">
+                        <span class="opacity-60 line-through mr-2 text-xs">
+                            {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
+                        </span>
+                        <span class="font-semibold text-green-600 text-xl">
+                            {{ locale.currencyFormat(currency?.code, offer_net_amount_per_quantity) }}
+                        </span>
+                    </span>
+                    <span v-else class="font-semibold text-green-600 text-xl">
+                        {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
+                    </span>
+                    <span class="text-sm text-gray-500">/ {{trans('Outer') }}</span>
+                    
                 </div>
                 <div>
                     <span class="text-xs price_per_unit">
-                        <span class="text-green-600 text-xl font-semibold">
-                            {{ locale.currencyFormat(currency?.code, Number((fieldValue.product.price
-                                / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}
-                           </span>
-                            <span class="text-gray-600 text-sm"> / {{ fieldValue.product.unit }}</span>
+                        <span v-if="offer_price_per_unit && Object.keys(offers_data).length">
+                            <span class="line-through opacity-60 mr-2 text-xs">
+                                {{ locale.currencyFormat(currency?.code, Number((fieldValue.product.price / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}
+                            </span>
+                            <span class="text-green-600 text-xl font-semibold">
+                                {{ locale.currencyFormat(currency?.code, offer_price_per_unit || 0) }}
+                            </span>
+                        </span>
+                        <span v-else class="text-green-600 text-xl font-semibold">
+                            {{ locale.currencyFormat(currency?.code, Number((fieldValue.product.price / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}
+                        </span>
+                        <span class="text-gray-600 text-sm"> / {{ fieldValue.product.unit }}</span>
                     </span>
                 </div>
             </div>

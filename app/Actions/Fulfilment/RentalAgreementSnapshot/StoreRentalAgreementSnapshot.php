@@ -16,7 +16,7 @@ use Illuminate\Support\Arr;
 
 class StoreRentalAgreementSnapshot extends OrgAction
 {
-    public function handle(RentalAgreement $rentalAgreement, bool $firstSnapshot, array $updateData = null): RentalAgreementSnapshot
+    public function handle(RentalAgreement $rentalAgreement, bool $firstSnapshot, ?array $updateData = null): RentalAgreementSnapshot
     {
 
         $modelData = [

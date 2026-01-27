@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Language\UI;
 
 use App\Models\Helpers\Language;
+use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetLanguagesOptions
@@ -59,6 +60,25 @@ class GetLanguagesOptions
     public function translated(): array
     {
         return $this->handle(Language::where('status', true)->get());
+    }
+
+    public function getLanguageJson(): JsonResponse
+    {
+        $languages = Language::where('status', true)->get();
+
+        $options = $this->handle($languages);
+
+        $data = array_values(array_map(function ($option) {
+            if (!empty($option['flag'])) {
+                $option['flag'] = asset('flags/' . $option['flag']);
+            }
+            return $option;
+        }, $options));
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data
+        ]);
     }
 
 }

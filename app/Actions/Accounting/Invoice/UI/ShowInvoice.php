@@ -56,7 +56,7 @@ class ShowInvoice extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request)
+    public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $organisation;
 
@@ -88,6 +88,7 @@ class ShowInvoice extends OrgAction
 
         return $this->handle($invoice);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, Invoice $invoice, ActionRequest $request): Invoice
     {
@@ -96,6 +97,7 @@ class ShowInvoice extends OrgAction
 
         return $this->handle($invoice);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, Invoice $invoice, ActionRequest $request): Invoice
     {
@@ -104,6 +106,7 @@ class ShowInvoice extends OrgAction
 
         return $this->handle($invoice);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, Invoice $invoice, ActionRequest $request): Invoice
     {
@@ -213,15 +216,25 @@ class ShowInvoice extends OrgAction
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response|RedirectResponse
     {
-
         if ($invoice->type == InvoiceTypeEnum::REFUND) {
+            if (str_ends_with($request->route()->getName(), 'invoices.show')) {
 
-            if ($request->route()->getName() == 'grp.org.accounting.invoices.show') {
-                return Redirect::route('grp.org.accounting.refunds.show', [
-                    $invoice->organisation->slug,
-                    $invoice->slug
-                ]);
+                $parameters = $request->route()->originalParameters();
+                $lastKey = array_key_last($parameters);
+                if ($lastKey !== null) {
+                    $parameters['refund'] = $parameters[$lastKey];
+                    unset($parameters[$lastKey]);
+                }
+
+                $routeName = preg_replace('/invoices.show/', 'refunds.show', $request->route()->getName());
+                return Redirect::route($routeName, $parameters);
             }
+
+
+            return Redirect::route('grp.org.accounting.refunds.show', [
+                $invoice->organisation->slug,
+                $invoice->slug
+            ]);
         }
 
         if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {

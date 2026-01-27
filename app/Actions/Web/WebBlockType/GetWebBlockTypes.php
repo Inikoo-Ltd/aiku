@@ -32,7 +32,6 @@ class GetWebBlockTypes extends OrgAction
 
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('web_block_types.code', $value);
@@ -43,14 +42,21 @@ class GetWebBlockTypes extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(WebBlockType::class);
-        $queryBuilder->where('group_id', $group->id);
+        $queryBuilder = QueryBuilder::for(WebBlockType::class)
+            ->where('group_id', $group->id)
+            ->where('fixed', false)
+            ->where('scope', 'webpage');
+
+
 
         return $queryBuilder
             ->defaultSort('web_block_types.code')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator(
+                $prefix,
+                tableName: request()->route()->getName()
+            )
             ->withQueryString();
     }
 

@@ -23,13 +23,14 @@ class RedoProductTimeSeries
 
 
     public string $commandSignature = 'products:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $jobQueue = 'default-long';
 
     public function __construct()
     {
         $this->model = Product::class;
     }
 
-    public function handle(Product $product, array $frequencies, Command $command = null, bool $async = true): void
+    public function handle(Product $product, array $frequencies, ?Command $command = null, bool $async = true): void
     {
         $from              = null;
         $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->min('date');

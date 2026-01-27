@@ -46,29 +46,15 @@ class ISDocInvoice extends OrgAction
         $shop        = $invoice->shop;
         $shopAddress = $shop->address;
 
-        $accountingSupplierParty = new Party(
-            new PartyIdentification($shop->id),
-            new PartyName($shop->name),
-            new PostalAddress(
-                $shopAddress->address_line_1,
-                $shopAddress->address_line_2,
-                $shopAddress->locality,
-                $shopAddress->postal_code,
-                new Country($shopAddress->country->code, $shopAddress->country->name)
-            )
+        $accountingSupplierParty = $this->createParty(
+            id: $shop->id,
+            name: $shop->name,
+            address: $shopAddress,
+            contactName: $shop->contact_name,
+            phone: $shop->phone,
+            email: $shop->email,
+            taxNumber: $shop->taxNumber
         );
-
-        $accountingSupplierParty->setContact(
-            (new Contact())->setName($shop->contact_name)
-                ->setTelephone($shop->phone)
-                ->setElectronicMail($shop->email)
-        );
-
-        if ($shop->taxNumber) {
-            $accountingSupplierParty->setPartyTaxScheme(
-                new PartyTaxScheme($shop->taxNumber->number, $shop->taxNumber->getType($shopAddress->country)->value)
-            );
-        }
 
         $isDocInvoice = new InvoiceISDoc(
             $invoice->reference,
@@ -82,31 +68,18 @@ class ISDocInvoice extends OrgAction
         );
 
 
-        $customer        = $invoice->customer;
+        $customer       = $invoice->customer;
         $invoiceAddress = $invoice->address;
-        $customerParty   = new Party(
-            new PartyIdentification($customer->id),
-            new PartyName($customer->name),
-            new PostalAddress(
-                $invoiceAddress->address_line_1 ?? '',
-                $invoiceAddress->address_line_2 ?? '',
-                $invoiceAddress->locality ?? '',
-                $invoiceAddress->postal_code ?? '',
-                new Country($invoiceAddress->country->code, $invoiceAddress->country->name)
-            )
-        );
 
-        $customerParty->setContact(
-            (new Contact())->setName($customer->contact_name)
-                ->setTelephone($customer->phone)
-                ->setElectronicMail($customer->email)
+        $customerParty = $this->createParty(
+            id: $customer->id,
+            name: $customer->name,
+            address: $invoiceAddress,
+            contactName: $customer->contact_name,
+            phone: $customer->phone,
+            email: $customer->email,
+            taxNumber: $customer->taxNumber
         );
-
-        if ($customer->taxNumber) {
-            $customerParty->setPartyTaxScheme(
-                new PartyTaxScheme($customer->taxNumber->number, $customer->taxNumber->getType($invoiceAddress->country)->value)
-            );
-        }
 
         $isDocInvoice->setAccountingCustomerParty(
             new AccountingCustomerParty(
@@ -124,7 +97,7 @@ class ISDocInvoice extends OrgAction
             $trTaxCategory = $transaction->taxCategory;
 
             $taxAmount             = $transaction->net_amount * $trTaxCategory->rate;
-            $unitPrice = $transaction->historicAsset?->price ?? $transaction->net_amount;
+            $unitPrice             = $transaction->historicAsset?->price ?? $transaction->net_amount;
             $taxAmountPerUnitPrice = $unitPrice * $trTaxCategory->rate;
             $amountAfterTax        = $transaction->net_amount + $taxAmount;
             $unitPriceAfterTax     = $unitPrice + $taxAmountPerUnitPrice;
@@ -170,21 +143,15 @@ class ISDocInvoice extends OrgAction
             );
         }
 
-        $deliveryAddress = $invoice?->deliveryAddress;
+        $deliveryAddress = $invoice->deliveryAddress;
 
         if ($deliveryAddress) {
             $isDocInvoice->setDelivery(
                 new Delivery(
-                    new Party(
-                        new PartyIdentification($deliveryAddress->id),
-                        new PartyName($customer->company_name ?? $customer->contact_name),
-                        new PostalAddress(
-                            $deliveryAddress->address_line_1,
-                            $deliveryAddress->address_line_2,
-                            $deliveryAddress->locality,
-                            $deliveryAddress->postal_code,
-                            new Country($deliveryAddress->country->code, $deliveryAddress->country->name)
-                        )
+                    $this->createParty(
+                        id: $deliveryAddress->id,
+                        name: $customer->company_name ?? $customer->contact_name,
+                        address: $deliveryAddress
                     )
                 )
             );
@@ -220,6 +187,44 @@ class ISDocInvoice extends OrgAction
         return response($xmlIsDocInvoice, 200)
             ->header('Content-Type', 'application/xml')
             ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
+    }
+
+    private function createParty(
+        int $id,
+        string $name,
+        mixed $address,
+        ?string $contactName = null,
+        ?string $phone = null,
+        ?string $email = null,
+        mixed $taxNumber = null
+    ): Party {
+        $party = new Party(
+            new PartyIdentification((string)$id),
+            new PartyName($name),
+            new PostalAddress(
+                $address->address_line_1 ?? '',
+                $address->address_line_2 ?? '',
+                $address->locality ?? '',
+                $address->postal_code ?? '',
+                new Country($address->country->code, $address->country->name)
+            )
+        );
+
+        if ($contactName || $phone || $email) {
+            $party->setContact(
+                (new Contact())->setName($contactName)
+                    ->setTelephone($phone)
+                    ->setElectronicMail($email)
+            );
+        }
+
+        if ($taxNumber) {
+            $party->setPartyTaxScheme(
+                new PartyTaxScheme($taxNumber->number, $taxNumber->getType($address->country)->value)
+            );
+        }
+
+        return $party;
     }
 
 

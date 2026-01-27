@@ -19,6 +19,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
@@ -50,6 +51,10 @@ class UpdateOffer extends OrgAction
 
         if ($offer->wasChanged(['code', 'name'])) {
             OfferRecordSearch::dispatch($offer)->delay($this->hydratorsDelay);
+        }
+
+        if ($offer->wasChanged(['label']) && $this->offer->trigger instanceof ProductCategory) {
+            UpdateProductCategoryOffersData::run($offer);
         }
 
         if ($offer->wasChanged(['state', 'status'])) {
@@ -95,6 +100,7 @@ class UpdateOffer extends OrgAction
                 'alpha_dash'
             ],
             'name'                       => ['sometimes', 'max:250', 'string'],
+            'label'                      => ['sometimes', 'max:1028', 'string'],
             'data'                       => ['sometimes', 'required'],
             'settings'                   => ['sometimes', 'required'],
             'trigger_data'               => ['sometimes', 'required'],

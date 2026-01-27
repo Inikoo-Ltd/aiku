@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
@@ -31,25 +32,25 @@ class RepairWebpageSeoData
      */
     public function handle(Webpage $webpage, Command $command): void
     {
-        if ($webpage->model_type == 'Product') {
-            /** @var Product $product */
-            $product = $webpage->model;
-            $webpage->update([
-                'breadcrumb_label' => $product->name
-            ]);
-        } elseif ($webpage->model_type == 'ProductCategory') {
-            /** @var ProductCategory $productCategory */
-            $productCategory = $webpage->model;
-            $webpage->update([
-                'breadcrumb_label' => $productCategory->name
-            ]);
-        } elseif ($webpage->model_type == 'Collection') {
-            /** @var \App\Models\Catalogue\Collection $collection */
-            $collection = $webpage->model;
-            $webpage->update([
-                'breadcrumb_label' => $collection->name
-            ]);
-        }
+        //        if ($webpage->model_type == 'Product') {
+        //            /** @var Product $product */
+        //            $product = $webpage->model;
+        //            $webpage->update([
+        //                'breadcrumb_label' => $product->name
+        //            ]);
+        //        } elseif ($webpage->model_type == 'ProductCategory') {
+        //            /** @var ProductCategory $productCategory */
+        //            $productCategory = $webpage->model;
+        //            $webpage->update([
+        //                'breadcrumb_label' => $productCategory->name
+        //            ]);
+        //        } elseif ($webpage->model_type == 'Collection') {
+        //            /** @var \App\Models\Catalogue\Collection $collection */
+        //            $collection = $webpage->model;
+        //            $webpage->update([
+        //                'breadcrumb_label' => $collection->name
+        //            ]);
+        //        }
 
         $seoData = $webpage->seo_data;
 
@@ -61,6 +62,9 @@ class RepairWebpageSeoData
                         'structured_data' => $structuredData
                     ]
                 );
+                if ($webpage->wasChanged('structured_data')) {
+                    $command->info("Structured data changed for $webpage->code");
+                }
             }
         }
         if ($seoTitle = Arr::pull($seoData, 'meta_title')) {
@@ -69,6 +73,9 @@ class RepairWebpageSeoData
                     'seo_title' => $seoTitle
                 ]
             );
+            if ($webpage->wasChanged('seo_title')) {
+                $command->info("SEO title changed for $webpage->code");
+            }
         }
 
         if ($seoDescription = Arr::pull($seoData, 'meta_description')) {
@@ -77,6 +84,9 @@ class RepairWebpageSeoData
                     'seo_description' => $seoDescription
                 ]
             );
+            if ($webpage->wasChanged('seo_description')) {
+                $command->info("SEO description (A) changed for $webpage->code");
+            }
         }
 
         $webpage->refresh();
@@ -90,11 +100,16 @@ class RepairWebpageSeoData
                 ->where('Page Key', $auSource[1])
                 ->first();
             if ($auData) {
-                $webpage->update(
-                    [
-                        'seo_description' => $auData->{'Webpage Meta Description'}
-                    ]
-                );
+                if ($auData->{'Webpage Meta Description'} != '') {
+                    $webpage->update(
+                        [
+                            'seo_description' => $auData->{'Webpage Meta Description'}
+                        ]
+                    );
+                    if ($webpage->wasChanged('seo_description')) {
+                        $command->info("SEO description (B) changed for $webpage->code");
+                    }
+                }
             }
         }
     }
@@ -108,28 +123,31 @@ class RepairWebpageSeoData
         $this->organisationSource->initialisation($organisation);
     }
 
-    public string $commandSignature = 'repair:webpage_seo_data {webpage?}';
+    public string $commandSignature = 'repair:webpage_seo_data {shop?}';
 
     public function asCommand(Command $command): void
     {
-        if ($command->argument('webpage')) {
-            $webpage = Webpage::find($command->argument('webpage'));
-            $this->handle($webpage, $command);
-        } else {
-            $count = Webpage::count();
 
-            $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
-            $bar->start();
+        //        $webpage = Webpage::where('slug','aclb-06-ace')->first();
+        //        $this->handle($webpage, $command);
+        //        exit;
 
-            Webpage::orderBy('id')
-                ->chunk(100, function (Collection $models) use ($bar, $command) {
-                    foreach ($models as $model) {
-                        $this->handle($model, $command);
-                        $bar->advance();
-                    }
-                });
-        }
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
+
+        $count = Webpage::where('shop_id', $shop->id)->count();
+
+        $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat('debug');
+        $bar->start();
+
+        Webpage::where('shop_id', $shop->id)->orderBy('id')
+            ->chunk(100, function (Collection $models) use ($bar, $command) {
+                foreach ($models as $model) {
+                    $this->handle($model, $command);
+                    $bar->advance();
+                }
+            });
+
     }
 
 }

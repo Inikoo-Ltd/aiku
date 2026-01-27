@@ -36,7 +36,7 @@ class AddMissingProductsFromMaster
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_product_s_from_master {master}';
+        return 'repair:add_missing_products_from_master {master}';
     }
 
     /**

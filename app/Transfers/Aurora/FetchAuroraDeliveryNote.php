@@ -10,6 +10,7 @@ namespace App\Transfers\Aurora;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Helpers\Address;
 use Illuminate\Support\Facades\DB;
 
@@ -17,20 +18,25 @@ class FetchAuroraDeliveryNote extends FetchAurora
 {
     protected function parseModel(): void
     {
-
         if (!$this->auroraModelData->{'Delivery Note Order Key'}) {
             print "Warning delivery without order ".$this->auroraModelData->{'Delivery Note Key'}."  \n";
+
             return;
         }
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Delivery Note Store Key'});
+        if ($shop->is_aiku) {
+            return;
+        }
+
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
             print "Ignore fulfilment delivery without order ".$this->auroraModelData->{'Delivery Note Key'}."  \n";
+
             return;
         }
 
 
-        $order     = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Delivery Note Order Key'});
+        $order = $this->parseOrder($this->organisation->id.':'.$this->auroraModelData->{'Delivery Note Order Key'});
 
         $warehouseID = $this->auroraModelData->{'Delivery Note Warehouse Key'};
         if (!$warehouseID) {
@@ -50,13 +56,12 @@ class FetchAuroraDeliveryNote extends FetchAurora
 
         $state = match ($this->auroraModelData->{'Delivery Note State'}) {
             'Picker Assigned', 'Picking', 'Picked', 'Packing' => DeliveryNoteStateEnum::HANDLING,
-            'Packed'          => DeliveryNoteStateEnum::PACKED,
+            'Packed' => DeliveryNoteStateEnum::PACKED,
             'Packed Done', 'Approved' => DeliveryNoteStateEnum::FINALISED,
-            'Dispatched',  => DeliveryNoteStateEnum::DISPATCHED,
+            'Dispatched', => DeliveryNoteStateEnum::DISPATCHED,
             'Cancelled', 'Cancelled to Restock' => DeliveryNoteStateEnum::CANCELLED,
             default => DeliveryNoteStateEnum::UNASSIGNED,
         };
-
 
 
         $cancelled_at = null;
@@ -66,7 +71,6 @@ class FetchAuroraDeliveryNote extends FetchAurora
                 $cancelled_at = $this->auroraModelData->{'Delivery Note Date'};
             }
         }
-
 
 
         $shipment  = null;
@@ -93,7 +97,7 @@ class FetchAuroraDeliveryNote extends FetchAurora
 
         $weight = null;
         if ($this->auroraModelData->{'Delivery Note Weight'} && $this->auroraModelData->{'Delivery Note Weight'} > 0) {
-            $weight = (int) floor($this->auroraModelData->{'Delivery Note Weight'} * 1000);
+            $weight = (int)floor($this->auroraModelData->{'Delivery Note Weight'} * 1000);
         }
 
 
@@ -130,7 +134,19 @@ class FetchAuroraDeliveryNote extends FetchAurora
             $phone = trim($phone);
         }
 
+        //enum('Replacement & Shortages','Order','Replacement','Shortages','Sample','Donation')
+
+        $type = DeliveryNoteTypeEnum::ORDER;
+        if (in_array($this->auroraModelData->{'Delivery Note Type'}, [
+            'Replacement & Shortages',
+            'Replacement',
+            'Shortages'
+        ])) {
+            $type = DeliveryNoteTypeEnum::REPLACEMENT;
+        }
+
         $this->parsedData["delivery_note"] = [
+            'type'             => $type,
             "reference"        => $reference,
             'date'             => $this->auroraModelData->{'Delivery Note Date Created'},
             "state"            => $state,

@@ -21,6 +21,8 @@ import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import Discount from '@/Components/Utils/Label/Discount.vue'
+import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -56,7 +58,8 @@ const emit = defineEmits([
     'setFavorite',
     'unsetFavorite',
     'setBackInStock',
-    'unsetBackInStock'
+    'unsetBackInStock',
+    'onVariantClick'
 ])
 
 const currency = layout?.iris?.currency
@@ -79,6 +82,18 @@ const toggleBackInStock = () =>
         : emit('setBackInStock', props.product)
 
 
+const onClickVariant = (product: ProductResource) => {
+    emit('onVariantClick', product.variant)
+}
+
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
+}
+
 
 </script>
 
@@ -89,7 +104,7 @@ const toggleBackInStock = () =>
             <!-- TOP AREA (GROWS) -->
             <div class="flex-grow">
 
-                <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"  :screen-type="screenType"/>
+                <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screen-type="screenType"/>
 
                 <!-- IMAGE -->
                 <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
@@ -102,9 +117,18 @@ const toggleBackInStock = () =>
                                 opacity: product.stock > 0 ? 1 : 0.4
                             }" />
 
-                        <FontAwesomeIcon v-else icon="fal fa-image"
+                         <FontAwesomeIcon v-else icon="fal fa-image"
                             class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
                             fixed-width />
+
+
+                        <div v-if="layout?.iris?.is_logged_in && product.variant"
+                            class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
+                            <div class="flex justify-center">
+                                <Button :label="trans('Choose variants')" size="xs"
+                                    @click.prevent.stop="onClickVariant(product)" />
+                            </div>
+                        </div>
 
                        <div
                             v-if="!product.stock > 0"
@@ -128,8 +152,17 @@ const toggleBackInStock = () =>
                         </div>
                     </slot>
 
+                    <!-- Section: Discounts -->
+                    <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
+                       <!--  <Discount :template="'agnes_and_cat'" :offers_data="product.offers_data"  /> -->
+                        <AvailableVolOfferLabel class="w-48"
+                            v-if="(product.stock && basketButton && !product.is_coming_soon) && !layout?.user?.gr_data?.customer_is_gr"
+                            :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
+                        />
+                    </div>
+
                     <!-- FAVOURITE -->
-                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
+                    <template v-if="layout?.iris?.is_logged_in && !product.variant">
                         <div v-if="isLoadingFavourite" class="absolute top-1 right-2 text-gray-500 text-xl z-10">
                             <LoadingIcon />
                         </div>
@@ -172,8 +205,7 @@ const toggleBackInStock = () =>
 
                         <span  class="text-left md:text-right text-xs break-words">
                             {{ trans("RRP") }}:
-                            {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}
-                            / {{ product.unit }}
+                            {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }} / {{ product.unit }}
                         </span>
                     </div>
                 </div>
@@ -196,25 +228,33 @@ const toggleBackInStock = () =>
                     </span>
                 </div>
             </div>
+            
 
             <!-- PRICE + BUTTON (FIXED AT BOTTOM) -->
             <div  v-if="layout?.iris?.is_logged_in" class="relative px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
                 <div class="">
                     <div class="font-extrabold text-black text-sm">
                         {{ trans("Price") }}:
-                        {{ locale.currencyFormat(currency?.code, product.price) }}
+                        <template v-if="Object.keys(product.offers_data || {})?.length">
+                            <span class="mr-1.5 line-through text-gray-500 text-xs font-normal opacity-60">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
+                            <span class="text-red-600">{{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}</span>
+                        </template>
+                        <span v-else class="text-black">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
                     </div>
 
                     <div class="mt-1 mr-9">
-                        <span class="price_per_unit">
-                            ( {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}<span class="text-gray-600">/{{ product.unit }}</span> )
+                        <span v-if="Object.keys(product.offers_data || {})?.length" v-tooltip="trans('Discounted from :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.price_per_unit) })" class="text-red-600">
+                            ({{ locale.currencyFormat(currency?.code, product.offer_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
+                        </span>
+                        <span v-else class="">
+                            ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}<span class="">/{{ product.unit }}</span>)
                         </span>
                     </div>
                 </div>
 
                 <!-- BUTTON -->
                 <div class="absolute right-2 bottom-1 flex items-center justify-end">
-                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
+                    <template v-if="layout?.iris?.is_logged_in && !product.variant">
                         <!-- In stock -->
                         <NewAddToCartButton
                             v-if="product.stock > 0 && basketButton && !product.is_coming_soon"
@@ -229,7 +269,7 @@ const toggleBackInStock = () =>
 
                         <!-- Back in stock notify -->
                          
-                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.is_variant" @click.prevent="toggleBackInStock"
+                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant" @click.prevent="toggleBackInStock"
                             class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all shadow-lg"
                             v-tooltip="product.is_back_in_stock
                                 ? trans('You will be notified')

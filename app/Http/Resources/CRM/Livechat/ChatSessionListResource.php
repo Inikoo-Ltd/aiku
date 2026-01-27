@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use Illuminate\Support\Str;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -133,10 +134,6 @@ class ChatSessionListResource extends JsonResource
 
     protected function truncateMessage($message, $length = 50)
     {
-        if (strlen($message) <= $length) {
-            return $message;
-        }
-
-        return substr($message, 0, $length) . '...';
+        return Str::limit($message, $length, '...');
     }
 }

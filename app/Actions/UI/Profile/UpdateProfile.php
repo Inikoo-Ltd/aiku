@@ -42,6 +42,15 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['preferred_printer_id'] = $printerId;
         }
 
+        if ($twoFa = Arr::pull($modelData, 'enable_2fa')) {
+            if (data_get($twoFa, 'has_2fa')) {
+                data_set($modelData, 'google2fa_secret', data_get($twoFa, 'secretKey'));
+            } else {
+                // Remove from DB if it is false
+                data_set($modelData, 'google2fa_secret', null);
+            }
+        }
+
         $user = $this->processProfileAvatar($modelData, $user);
         if (Arr::exists($modelData, 'app_theme')) {
             $appTheme                           = Arr::pull($modelData, 'app_theme');
@@ -83,6 +92,7 @@ class UpdateProfile extends OrgAction
                     ->max(12 * 1024)
             ],
             'timezones'         => ['sometimes', 'array'],
+            'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
         ];
     }
@@ -95,5 +105,12 @@ class UpdateProfile extends OrgAction
         return $this->handle($request->user(), $this->validatedData);
     }
 
+    public function asAction(User $user, array $modelData): User
+    {
+        $this->asAction = true;
+        $this->initialisationFromGroup(app('group'), $modelData);
+
+        return $this->handle($user, $this->validatedData);
+    }
 
 }

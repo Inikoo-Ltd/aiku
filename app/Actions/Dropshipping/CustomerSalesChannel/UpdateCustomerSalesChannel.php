@@ -29,6 +29,22 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
+        if (Arr::has($modelData, 'is_vat_adjustment')) {
+            data_set($modelData, 'settings.tax_category.checked', Arr::pull($modelData, 'is_vat_adjustment'));
+        }
+
+        if (Arr::has($modelData, 'tax_category_id')) {
+            data_set($modelData, 'settings.tax_category.id', Arr::pull($modelData, 'tax_category_id'));
+        }
+
+        if (Arr::has($modelData, 'pricing_type')) {
+            data_set($modelData, 'settings.pricing.type', Arr::pull($modelData, 'pricing_type'));
+        }
+
+        if (Arr::has($modelData, 'pricing_value')) {
+            data_set($modelData, 'settings.pricing.value', Arr::pull($modelData, 'pricing_value'));
+        }
+
         $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
         $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
 

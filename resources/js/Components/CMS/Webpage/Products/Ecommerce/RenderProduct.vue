@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from 'vue'
+import { inject, ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 
 import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
@@ -13,6 +14,7 @@ import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents"
 import axios from "axios"
+import VariantDialogContent from "./VariantDialogContent.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -23,7 +25,7 @@ const locale = useLocaleStore()
 
 const props = withDefaults(defineProps<{
     product: ProductResource
-    hasInBasket?: any
+    hasInBasketList?: any
     basketButton?: boolean
     attachToFavouriteRoute?: routeType
     dettachToFavouriteRoute?: routeType
@@ -69,6 +71,10 @@ const emits = defineEmits<{
 
 
 const isLoadingRemindBackInStock = ref(false)
+const showVariantPopover = ref(false)
+const variant = ref<any>(null)
+const popoverRef = ref<HTMLElement | null>(null)
+
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -201,20 +207,105 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 
 
 
+const onClickOutside = (e: MouseEvent) => {
+  if (!popoverRef.value) return
+  if (!popoverRef.value.contains(e.target as Node)) {
+    showVariantPopover.value = false
+  }
+}
+
+const getAllProductFromVariant = async (variant_id: string) => {
+  if (!variant_id) return
+
+  try {
+    const response = await axios.get(
+      route("iris.json.variant", { variant: variant_id })
+    )
+
+    variant.value = response.data
+    showVariantPopover.value = true
+  } catch (e) {
+    console.error("getAllProductFromVariant error", e)
+  }
+}
+
+
+const getVariantLabel = (entry: number) => {
+  if (!entry) return null
+
+  return variant.value.variant_data.variants
+    .map(v => entry[v.label])
+    .filter(Boolean)
+    .join(" – ")
+}
+
+const listProducts = computed(() => {
+  if (!variant.value?.variant_data?.products) return []
+
+  return Object.values(variant.value.variant_data.products)
+    .map((v: any) => {
+      const baseProduct = variant.value.products.find(
+        p => p.id === v.product.id
+      )
+
+      if (!baseProduct) return null
+
+      return {
+        ...baseProduct,
+        is_leader: v.is_leader,
+        variant_label: getVariantLabel(v),
+      }
+    })
+    .filter(Boolean)
+    .sort((a: any, b: any) => {
+      /* 1️⃣ leader selalu di paling atas */
+      if (a.is_leader && !b.is_leader) return -1
+      if (!a.is_leader && b.is_leader) return 1
+
+      /* 2️⃣ sorting label normal */
+      if (!a.variant_label) return 1
+      if (!b.variant_label) return -1
+
+      return a.variant_label.localeCompare(b.variant_label, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      })
+    })
+})
+
+
+const closePopover = () => {
+  showVariantPopover.value = false
+}
+
+
+onMounted(() => {
+  document.addEventListener("click", onClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", onClickOutside)
+})
+
+
+
+
 </script>
 
 <template>
+    <div class="relative" ref="popoverRef">
     <component 
         :is="getProductsRenderB2bComponent(code)" 
         :product="product"
         :buttonStyle="buttonStyle"
         :buttonStyleLogin="buttonStyleLogin"
-        :hasInBasket="hasInBasket"
+        :hasInBasket="hasInBasketList[product.id]"
         :buttonStyleHover="buttonStyleHover" 
         @setFavorite="onAddFavourite"
         @unsetFavorite="onUnselectFavourite"
         @setBackInStock="onAddBackInStock"
         @unsetBackInStock="onUnselectBackInStock"
+        @onVariantClick="getAllProductFromVariant"
         basketButton
         :isLoadingFavourite
         :isLoadingRemindBackInStock
@@ -222,6 +313,35 @@ const onUnselectBackInStock = async (product: ProductResource) => {
         :bestSeller="bestSeller"
         :screenType
     />
+
+    <div
+        v-if="showVariantPopover"
+        class="fixed inset-0 z-40"
+        @click="closePopover"
+    />
+
+    <!-- POPOVER -->
+    <transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0 translate-y-1"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-1"
+    >
+            <div v-if="showVariantPopover" class="absolute z-50 inline-block w-max max-w-[180px] md:max-w-[200px] lg:max-w-[260px] rounded-lg border bg-white shadow- top-[10rem] md:mt-[-15rem] md:top-[14rem]  lg:top-[13rem] " @keydown.esc="closePopover" tabindex="0">
+                <div class="p-4 text-sm break-words">
+                    <variant-dialog-content 
+                        :variants="listProducts" 
+                        :hasInBasketList="hasInBasketList" 
+                        @setBackInStock="onAddBackInStock"
+                        @unsetBackInStock="onUnselectBackInStock"
+                        :isLoadingRemindBackInStock="isLoadingRemindBackInStock"
+                    />
+                </div>
+            </div>
+        </transition>
+    </div>
 </template>
 
 <style scoped></style>

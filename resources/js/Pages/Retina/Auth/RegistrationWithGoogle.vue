@@ -35,7 +35,11 @@ const props = defineProps<{
 		contact_name: string
 
 	}
-	googleData: {}
+	googleData: {},
+    registration_settings: {
+		marketing_opt_in_label: string
+		marketing_opt_in_default: boolean
+	}
 }>()
 
 const initialPollReplies = props.polls.map((poll) => ({
@@ -51,10 +55,10 @@ const form = useForm({
 	email: props.googleData?.email || "",
 	phone: "",
 	company_name: "",
-	website: "",
+	contact_website: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
-	is_opt_in: false,
+	is_opt_in: props.registration_settings?.marketing_opt_in_default || false,
 	interest: [],
 	tax_number: "",
 })

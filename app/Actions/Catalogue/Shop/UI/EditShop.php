@@ -196,6 +196,40 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Catalogue'),
+                    'icon'   => 'fal fa-books',
+                    'fields' => [
+                        'department_follow_master' => [
+                            'label'         => 'Department Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.department_follow_master', false),
+                            'information'   => __('This would force all Department under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'sub_department_follow_master' => [
+                            'label'         => 'Sub Department Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.sub_department_follow_master', false),
+                            'information'   => __('This would force all Sub Department under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'family_follow_master' => [
+                            'label'         => 'Family Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.family_follow_master', false),
+                            'information'   => __('This would force all Family under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'product_follow_master' => [
+                            'label'         => 'Product Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.product_follow_master', false),
+                            'information'   => __('This would force all Product under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                    ]
+                ],
+                [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => [
@@ -324,7 +358,7 @@ class EditShop extends OrgAction
                             'options'     => GetLanguagesOptions::make()->all(),
                             'searchable'  => true
                         ],
-                        'extra_languages' => [
+                      /*   'extra_languages' => [
                             'type'        => 'select',
                             'label'       => __('Extra language'),
                             'placeholder' => __('Select your language'),
@@ -335,7 +369,7 @@ class EditShop extends OrgAction
                             'mode'        => 'tags',
                             'labelProp'   => 'name',
                             'valueProp'   => 'id',
-                        ]
+                        ] */
                     ],
                 ],
                 [

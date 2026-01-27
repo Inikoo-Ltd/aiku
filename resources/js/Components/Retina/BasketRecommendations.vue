@@ -15,6 +15,7 @@ import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { reactive } from 'vue'
+import LinkIris from '../Iris/LinkIris.vue'
 // import { Carousel } from 'primevue'
 library.add(faCircle)
 
@@ -187,7 +188,7 @@ onBeforeUnmount(() => {
                 >
                     <div class="">
                         <!-- Product Image - Always a link -->
-                        <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
+                        <component :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
                             :href="product.attributes.web_url?.[0]"
                             class="block rounded aspect-[5/4] w-full overflow-hidden">
                             <img :src="product.attributes.image_link" :alt="product.attributes.title"
@@ -195,7 +196,7 @@ onBeforeUnmount(() => {
                         </component>
                         
                         <!-- Title - Always a link -->
-                        <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
+                        <component :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
                             :href="product.attributes.web_url?.[0]"
                             class="font-bold text-xxs md:text-sm !mt-2 md:mt-2 md:mb-1 text-justify md:text-left inline-block">
                             {{ product.attributes.title }}

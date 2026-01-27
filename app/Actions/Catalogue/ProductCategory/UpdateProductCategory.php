@@ -21,6 +21,7 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Discounts\Offer;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -41,7 +42,6 @@ class UpdateProductCategory extends OrgAction
     {
         $originalImageId = $productCategory->image_id;
 
-
         if (Arr::has($modelData, 'department_id')) {
             $departmentId = Arr::pull($modelData, 'department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -55,7 +55,7 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
-        if (Arr::has($modelData, 'sub_department_id')) {
+        if (Arr::has($modelData, 'sub_department_id') && data_get($modelData, 'sub_department_id')) { // Null handling. If key is present but value is null, will be ignored. HELP-1083 fix.
             $subDepartmentId = Arr::pull($modelData, 'sub_department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
                 $productCategory = UpdateFamilySubDepartment::make()->action($productCategory, [
@@ -114,8 +114,16 @@ class UpdateProductCategory extends OrgAction
                     'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
                 ]
             ]);
-
         }
+
+        //        if (Arr::has($changes, 'offers_data')) {
+        //            $offers = Offer::whereIn('id', array_keys($modelData['offers_data']))->get();
+        //            foreach ($offers as $offer) {
+        //                $offer->update([
+        //                    'label' => data_get($modelData, "offers_data.{$offer->id}.label")
+        //                ]);
+        //            }
+        //        }
 
         if (Arr::has($changes, 'description_title')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
@@ -170,11 +178,6 @@ class UpdateProductCategory extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if ($this->has('vol_gr')) {
-            $offersData = $this->productCategory->offers_data ?? [];
-            $offersData['vol_gr'] = $this->attributes['vol_gr'][0];
-            $this->set('offers_data', $offersData);
-        }
         if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -225,7 +228,7 @@ class UpdateProductCategory extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-            'offers_data'                => ['sometimes', 'array'],
+           // 'offers_data'                => ['sometimes', 'array'],
             'follow_master'              => ['sometimes', 'boolean'],
             'image'                      => [
                 'sometimes',

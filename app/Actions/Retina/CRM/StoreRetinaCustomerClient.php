@@ -16,6 +16,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Traits\SanitizeInputs;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,6 +25,7 @@ class StoreRetinaCustomerClient extends RetinaAction
 {
     use WithModelAddressActions;
     use WithNoStrictRules;
+    use SanitizeInputs;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerClient
     {
@@ -38,6 +40,17 @@ class StoreRetinaCustomerClient extends RetinaAction
         }
 
         return true;
+    }
+
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields([
+            'contact_name',
+            'company_name',
+            'phone',
+            'address',
+        ]);
+        $this->sanitizeInputs();
     }
 
     public function rules(): array
@@ -64,6 +77,7 @@ class StoreRetinaCustomerClient extends RetinaAction
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerClient
     {
+        $this->enableSanitize();
         $this->initialisation($request);
 
         return $this->handle($customerSalesChannel, $this->validatedData);

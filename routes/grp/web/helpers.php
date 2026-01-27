@@ -14,6 +14,7 @@ use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopLink;
+use App\Actions\Helpers\Redirects\RedirectMailshotWorkshopLink;
 use App\Actions\Helpers\Redirects\RedirectMasterCollectionLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductLink;
@@ -25,6 +26,7 @@ use App\Actions\Helpers\Redirects\RedirectPickingSessionLink;
 use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
 use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
+use App\Actions\Helpers\Redirects\RedirectUnsubscribe;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
 use Illuminate\Support\Facades\Route;
@@ -64,3 +66,7 @@ Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {
     Route::get('records', ShowUpload::class)->name('records.show');
     Route::get('download', DownloadUploads::class)->name('records.download');
 });
+
+Route::get('redirect-mailshot-workshop/{mailshot:id}', RedirectMailshotWorkshopLink::class)->name('redirect_mailshot_workshop');
+
+Route::get('redirect-unsubscribe/{dispatchedEmail:uuid}', RedirectUnsubscribe::class)->name('redirect_unsubscribe');

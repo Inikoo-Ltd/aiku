@@ -7,6 +7,7 @@
  * copyright 2025
 */
 
+
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Iris\Basket\UpdateEcomBasketTransaction;
 use App\Actions\Iris\CRM\DeleteIrisBackInStockReminder;
@@ -16,6 +17,7 @@ use App\Actions\Iris\CRM\StoreIrisFavourites;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderEligibleGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
@@ -40,6 +42,7 @@ Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::c
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
+    Route::patch('update-eligible-gift', UpdateRetinaOrderEligibleGift::class)->name('update_eligible_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');

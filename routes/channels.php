@@ -105,6 +105,10 @@ Broadcast::channel("upload-portfolio-to-r2.{randomString}", function () {
 });
 
 
+Broadcast::channel("updateWebblocks.{websiteSlug}", function () {
+    return true;
+});
+
 Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $ulid) {
     $session = ChatSession::where('ulid', $ulid)->first();
     if ($session) {

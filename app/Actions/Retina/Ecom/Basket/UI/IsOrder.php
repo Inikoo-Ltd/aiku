@@ -70,9 +70,15 @@ trait IsOrder
                 ];
             }
 
+            if ($invoice->in_process) {
+                $routeDownload = null;
+            }
+
             $invoicesData[] = [
-                'reference' => $invoice->reference,
-                'routes'    => [
+                'type_label' => $invoice->type->capitalizedLabels()[$invoice->type->value],
+                'reference'  => $invoice->reference,
+                'in_process' => $invoice->in_process,
+                'routes'     => [
                     'show'     => $routeShow,
                     'download' => $routeDownload,
                 ]
@@ -172,14 +178,15 @@ trait IsOrder
             [
                 'label'       => __('Charges'),
                 'information' => '',
-                'price_total' => $order->charges_amount
+                'price_total' => $order->charges_amount,
+                'slot_name'   => 'charges',
             ],
             [
-                'label'                     => __('Shipping'),
-                'information'               => '',
-                'price_total'               => $order->shipping_amount,
-                'slot_name'                 => 'shipping',
-                'data'                      => [
+                'label'       => __('Shipping'),
+                'information' => '',
+                'price_total' => $order->shipping_amount,
+                'slot_name'   => 'shipping',
+                'data'        => [
                     'shipping_amount'     => $order->shipping_amount,
                     'new_shipping_amount' => $order->shipping_amount,  // FE Helper
                     'engine'              => $order->shipping_engine,

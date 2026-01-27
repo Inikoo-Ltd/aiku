@@ -75,6 +75,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
  * @property string|null $legacy_password source password
+ * @property string|null $google2fa_secret
+ * @property bool $is_two_factor_required
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations

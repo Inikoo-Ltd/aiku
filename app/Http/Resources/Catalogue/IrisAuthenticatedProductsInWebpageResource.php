@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -41,6 +42,8 @@ use App\Http\Resources\Traits\HasPriceMetrics;
  * @property mixed $shop_id
  * @property mixed $quantity_ordered
  * @property mixed $canonical_url
+ * @property mixed $offers_data
+ * @property mixed $product_offers_data
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
@@ -50,9 +53,10 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
+        $favourite        = false;
+        $back_in_stock_id = null;
+        $back_in_stock    = false;
 
-
-        $favourite = false;
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
@@ -60,8 +64,6 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             }
         }
 
-        $back_in_stock_id = null;
-        $back_in_stock    = false;
 
         if ($request->user()) {
             $customer = $request->user()->customer;
@@ -79,9 +81,17 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
 
         $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
-
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
+        $productOffersData = json_decode($this->product_offers_data, true);
+
+        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
+        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
+
+        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
+
+
+        $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
 
         return [
             'id'                   => $this->id,
@@ -114,7 +124,21 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'available_quantity'   => $this->available_quantity,
             'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'         => $this->is_on_demand,
-            'is_variant'           => $this->variant_id ? true : false,
+            'variant'              => $this->variant_id,
+            'product_offers_data'  => $productOffersData,
+            'offers_data'          => $this->offers_data, // this come3 from transaction.offers_data
+
+
+            'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
+            'discounted_price_per_unit'  => $pricePerUnitDiscounted,
+            'discounted_profit'          => $profitDiscounted,
+            'discounted_profit_per_unit' => $profitPerUnitDiscounted,
+            'discounted_margin'          => $marginDiscounted,
+            'discounted_percentage'      => percentage($bestPercentageOff, 1),
+
+            'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
+            'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
+
         ];
     }
 

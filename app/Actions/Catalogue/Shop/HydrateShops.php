@@ -41,6 +41,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerBalances;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDepartments;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamilies;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
@@ -121,6 +122,7 @@ class HydrateShops
         ShopHydrateRegistrationIntervals::run($shop->id);
         ShopHydrateOrderIntervals::run($shop);
         ShopHydrateMailshots::run($shop);
+        ShopHydrateEmailTemplates::run($shop);
         ShopHydrateOrderInBasketAtCreatedIntervals::run($shop);
         ShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($shop);
         ShopHydrateFamiliesWithNoDepartment::run($shop);

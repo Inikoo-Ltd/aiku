@@ -13,6 +13,7 @@ import { faPlay } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
+import Image from "@/Components/Image.vue";
 import Tag from "@/Components/Tag.vue";
 
 
@@ -37,6 +38,11 @@ function collectionRoute(collection): string {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+         <template #cell(image)="{ item: item }">
+            <div class="flex justify-center">
+                <Image :src="item['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            </div>
+        </template>
         <template #cell(state)="{ item: collection }">
             <Tag :label="collection.state_icon.tooltip" v-tooltip="collection.state_icon.tooltip">
                 <template #label>

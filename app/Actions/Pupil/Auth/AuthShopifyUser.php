@@ -34,7 +34,7 @@ class AuthShopifyUser extends AuthController
 
         // Get the shop domain
         $shopDomain = $request->has('shop')
-            ? ShopDomain::fromNative($request->get('shop'))
+            ? ShopDomain::fromNative($request->input('shop'))
             : $request->user()->getDomain();
 
         // If the domain is obtained from $request->user()
@@ -63,9 +63,9 @@ class AuthShopifyUser extends AuthController
                 [
                     'apiKey' => Util::getShopifyConfig('api_key', $shopOrigin),
                     'url' => $result['url'],
-                    'host' => $request->get('host'),
+                    'host' => $request->input('host'),
                     'shopDomain' => $shopDomain,
-                    'locale' => $request->get('locale'),
+                    'locale' => $request->input('locale'),
                 ]
             );
         } else {
@@ -73,8 +73,8 @@ class AuthShopifyUser extends AuthController
                 Util::getShopifyConfig('route_names.home'),
                 [
                     'shop' => $shopDomain->toNative(),
-                    'host' => $request->get('host'),
-                    'locale' => $request->get('locale'),
+                    'host' => $request->input('host'),
+                    'locale' => $request->input('locale'),
                 ]
             );
         }
@@ -92,15 +92,15 @@ class AuthShopifyUser extends AuthController
             // remove "token" from the target's query string
             $params = Util::parseQueryString($query);
             $params['shop'] = $params['shop'] ?? $shopDomain->toNative() ?? '';
-            $params['host'] = $request->get('host');
-            $params['locale'] = $request->get('locale');
+            $params['host'] = $request->input('host');
+            $params['locale'] = $request->input('locale');
             unset($params['token']);
 
         } else {
             $params = [
                 'shop' => $shopDomain->toNative() ?? '',
-                'host' => $request->get('host'),
-                'locale' => $request->get('locale'),
+                'host' => $request->input('host'),
+                'locale' => $request->input('locale'),
             ];
         }
 

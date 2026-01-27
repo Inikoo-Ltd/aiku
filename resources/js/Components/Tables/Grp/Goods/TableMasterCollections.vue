@@ -9,21 +9,22 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import Icon from "@/Components/Icon.vue"
-import { faTrash, faEdit, faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree, faFolderDownload } from "@fal"
-import { faPlay, faTimesCircle, faCheckCircle as fasCheckCircle } from "@fas"
+import { faTrash, faEdit, faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree, faFolderDownload, faMinus } from "@fal"
+import { faPlay, faTimesCircle, faCheckCircle as fasCheckCircle, faTriangle, faEquals } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Dialog from 'primevue/dialog'
 import TableShopPicker from "@/Components/Master/TableShopPicker.vue"
 import TableCollectionInShopPicker from "@/Components/Master/TableCollectionInShopPicker.vue"
 
-library.add(fasCheckCircle, faTimesCircle, faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit)
+library.add(fasCheckCircle, faTimesCircle, faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit, faTriangle, faEquals, faMinus)
 
 const props = defineProps<{
     data: {}
@@ -39,6 +40,7 @@ const props = defineProps<{
 }>()
 
 const inMasterCollection = route().current() === 'grp.masters.master_shops.show.master_collections.index';
+const locale = inject("locale", aikuLocaleStructure)
 const showDeleteDialog = ref(false)
 const selectedItem = ref<any>(null)
 const shopIndex =  ref(props.shopsData.data)
@@ -121,6 +123,27 @@ function masterSubDepartmentRoute(master) {
     );
 }
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return {
+            icon: faTriangle
+        }
+    } else if (!isPositive) {
+        return {
+            icon: faTriangle,
+            class: 'rotate-180'
+        }
+    }
+}
+
+const getIntervalStateColor = (isPositive: boolean) => {
+    if (isPositive) {
+        return 'text-green-500'
+    } else if (!isPositive) {
+        return 'text-red-500'
+    }
+}
+
 console.log('ssss', props)
 </script>
 
@@ -186,6 +209,82 @@ console.log('ssss', props)
                     <span v-if="index < subdepartment.sub_departments_data.length - 1">, </span>
                 </template>
             </span>
+        </template>
+
+         <template #cell(sales)="{ item: collection }">
+            <span class="tabular-nums">{{ locale.currencyFormat(collection.currency_code, collection.sales) }}</span>
+        </template>
+
+        <template #cell(sales_delta)="{ item }">
+            <div v-if="item.sales_delta">
+                <span>{{ item.sales_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #cell(invoices_delta)="{ item }">
+            <div v-if="item.invoices_delta">
+                <span>{{ item.invoices_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.invoices_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
         </template>
 
         <template #cell(actions)="{ item }">

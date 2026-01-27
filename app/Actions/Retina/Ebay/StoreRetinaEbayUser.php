@@ -14,6 +14,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
+use App\Traits\SanitizeInputs;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,10 +24,17 @@ class StoreRetinaEbayUser extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use SanitizeInputs;
 
     public function handle(Customer $customer, array $modelData): EbayUser
     {
         return StoreEbayUser::run($customer, $modelData);
+    }
+
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields(['name']);
+        $this->sanitizeInputs();
     }
 
     public function rules(): array
@@ -38,6 +46,7 @@ class StoreRetinaEbayUser extends RetinaAction
 
     public function asController(ActionRequest $request): EbayUser
     {
+        $this->enableSanitize();
         $this->initialisation($request);
 
         return $this->handle($this->customer, $this->validatedData);

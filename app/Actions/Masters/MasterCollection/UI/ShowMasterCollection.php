@@ -25,6 +25,7 @@ use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Catalogue\FamiliesInCollectionResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterCollectionsResource;
+use App\Http\Resources\Masters\MasterCollectionTimeSeriesResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
@@ -211,6 +212,14 @@ class ShowMasterCollection extends GrpAction
                     fn () => GetMasterCollectionShowcase::run($masterCollection)
                     : Inertia::lazy(fn () => GetMasterCollectionShowcase::run($masterCollection)),
 
+                'salesData' => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
+                    fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)
+                    : Inertia::lazy(fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)),
+
+                MasterCollectionTabsEnum::SALES->value => $this->tab == MasterCollectionTabsEnum::SALES->value ?
+                    fn () => MasterCollectionTimeSeriesResource::collection(IndexMasterCollectionTimeSeries::run($masterCollection, MasterCollectionTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterCollectionTimeSeriesResource::collection(IndexMasterCollectionTimeSeries::run($masterCollection, MasterCollectionTabsEnum::SALES->value))),
+
                 MasterCollectionTabsEnum::FAMILIES->value => $this->tab == MasterCollectionTabsEnum::FAMILIES->value ?
                     fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))
                     : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))),
@@ -260,6 +269,8 @@ class ShowMasterCollection extends GrpAction
             IndexHistory::make()->tableStructure(
                 prefix: MasterCollectionTabsEnum::HISTORY->value,
             )
+        )->table(
+            IndexMasterCollectionTimeSeries::make()->tableStructure(MasterCollectionTabsEnum::SALES->value)
         );
     }
 

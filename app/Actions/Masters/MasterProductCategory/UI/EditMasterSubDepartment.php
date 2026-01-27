@@ -52,6 +52,12 @@ class EditMasterSubDepartment extends OrgAction
         return Inertia::render(
             'EditModel',
             [
+                'warning'     => $masterProductCategory->productCategories ? [
+                    'type'  => 'warning',
+                    'title' => __('Important'),
+                    'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                  'breadcrumbs' => $this->getBreadcrumbs(
                      $masterProductCategory,
                      $request->route()->getName(),
@@ -99,11 +105,11 @@ class EditMasterSubDepartment extends OrgAction
                                     'label' => __('Name'),
                                     'value' => $masterProductCategory->name
                                 ],
-                                'description_title' => [
-                                    'type'  => 'input',
-                                    'label' => __('Description title'),
-                                    'value' => $masterProductCategory->description_title
-                                ],
+//                                'description_title' => [
+//                                    'type'  => 'input',
+//                                    'label' => __('Description title'),
+//                                    'value' => $masterProductCategory->description_title
+//                                ],
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Description'),

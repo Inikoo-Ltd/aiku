@@ -47,6 +47,15 @@ class UpdateMasterProductCategoryImages extends GrpAction
                 $media = Media::find($mediaId);
 
                 if ($media) {
+                    $masterProductCategory->images()
+                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                        ->updateExistingPivot(
+                            $masterProductCategory->images()
+                                ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                                ->first()?->id,
+                            ['sub_scope' => null]
+                        );
+
                     $masterProductCategory->images()->updateExistingPivot(
                         $media->id,
                         ['sub_scope' => $imageTypeMapping[$imageKey]]

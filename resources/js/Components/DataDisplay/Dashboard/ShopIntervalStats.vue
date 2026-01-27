@@ -97,25 +97,10 @@ const getHistoricCLV = computed(() => {
         parseFloat(historicClv)
     )
 })
-
-const visitorsCount = computed(() => {
-    return props.shopBlocks?.interval_data?.visitors?.all?.formatted_value ?? '0'
-})
 </script>
 
 <template>
     <div v-if="props.shopBlocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
-        <!-- Visitors -->
-        <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
-            <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">Visitors</p>
-                <span class="text-2xl font-bold">
-                    {{ visitorsCount }}
-                </span>
-                <p class="text-xs text-gray-500 mt-1">Total visitors</p>
-            </div>
-        </div>
-
         <!-- Expected Sales -->
         <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
             <div class="text-sm w-full">

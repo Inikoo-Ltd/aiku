@@ -47,13 +47,15 @@ class UpdateDeliveryNoteItem extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity_picked'     => ['sometimes', 'numeric'],
-            'quantity_packed'     => ['sometimes', 'numeric'],
-            'state'               => ['sometimes', new Enum(DeliveryNoteItemStateEnum::class)],
-            'dispatched_at'       => ['sometimes', 'nullable', 'date'],
+            'quantity_picked'    => ['sometimes', 'numeric'],
+            'quantity_packed'    => ['sometimes', 'numeric'],
+            'state'              => ['sometimes', new Enum(DeliveryNoteItemStateEnum::class)],
+            'dispatched_at'      => ['sometimes', 'nullable', 'date'],
             'finalised_at'       => ['sometimes', 'nullable', 'date'],
-            'cancel_state'               => ['sometimes', new Enum(DeliveryNoteItemCancelStateEnum::class)],
-            'picking_session_id'  => ['sometimes']
+            'cancel_state'       => ['sometimes', new Enum(DeliveryNoteItemCancelStateEnum::class)],
+            'picking_session_id' => ['sometimes'],
+            'batch_code'         => ['sometimes', 'nullable', 'string', 'max:255'],
+            'expiry_date'        => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {
@@ -69,6 +71,7 @@ class UpdateDeliveryNoteItem extends OrgAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
+
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 

@@ -133,14 +133,15 @@ class IndexRetinaFamilies extends RetinaAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->withModelOperations($modelOperations);
 
+            $table->column(key: 'image', label: __('Image'), type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'sub_department_name', label: __('Sub department'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
 
 
             if (class_basename($parent) != 'Collection') {
-                $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: false, searchable: false);
+                $table->column(key: 'number_current_products', label: __('Current products'), canBeHidden: false, sortable: false, searchable: false);
             }
         };
     }
@@ -212,7 +213,7 @@ class IndexRetinaFamilies extends RetinaAction
         )->table($this->tableStructure(parent: $this->parent));
     }
 
-    public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

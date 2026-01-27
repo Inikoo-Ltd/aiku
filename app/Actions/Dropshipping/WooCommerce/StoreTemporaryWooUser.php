@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
+use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,6 +23,7 @@ class StoreTemporaryWooUser extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use SanitizeInputs;
 
     public function handle(Customer $customer, array $modelData): string
     {
@@ -42,6 +44,15 @@ class StoreTemporaryWooUser extends RetinaAction
         return $uniqueIdCache;
     }
 
+    public function prepareForValidation(ActionRequest $request)
+    {
+        $this->setSanitizeFields([
+            'name',
+            'url'
+        ]);
+        $this->sanitizeInputs();
+    }
+
     public function rules(): array
     {
         return [
@@ -54,6 +65,7 @@ class StoreTemporaryWooUser extends RetinaAction
 
     public function asController(ActionRequest $request): string
     {
+        $this->enableSanitize();
         $this->initialisation($request);
 
         return $this->handle($this->customer, $this->validatedData);

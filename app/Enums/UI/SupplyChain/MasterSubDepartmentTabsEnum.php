@@ -22,11 +22,16 @@ enum MasterSubDepartmentTabsEnum: string
     case SHOWCASE = 'showcase';
     case HISTORY  = 'history';
     case SUB_DEPARTMENTS = 'sub_departments';
+    case SALES    = 'sales';
     case IMAGES    = 'images';
 
     public function blueprint(): array
     {
         return match ($this) {
+            MasterSubDepartmentTabsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-money-bill-wave',
+            ],
 
             MasterSubDepartmentTabsEnum::HISTORY => [
                 'align' => 'right',

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import Image from "@/Components/Image.vue";
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 const props = defineProps<{
     blogs: any
 }>()
 
-console.log(props.blogs)
 </script>
 
 <template>
@@ -35,7 +35,7 @@ console.log(props.blogs)
                     />
                     <div class="p-6 flex flex-col h-full justify-between">
                         <div class="text-sm text-gray-500 mb-2">
-                            <time :datetime="post.published_at">{{ post.published_at }}</time>
+                            <time :datetime="post.published_at">{{ useFormatTime(post.published_at) }}</time>
                         </div>
                         <span class="text-sm font-semibold text-gray-800 mb-3 line-clamp-2">
                             <a :href="post.href" class="block">

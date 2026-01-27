@@ -25,8 +25,10 @@ const onPickBlock = (block: any) => {
 const getWebBlockTypes = async () => {
 	try {
 		const { data } = await axios.get(route('grp.json.web-block-types.index'))
-		const setdata = data.data.filter((item)=>item.scope == 'webpage')
+		const setdata = data.data
+		console.log(data)
 		webBlockTypes.value = {data :setdata }
+		modelModalBlocklist.value = true
 	} catch (error) {
 		notify({
 			title: trans("Something went wrong"),
@@ -44,14 +46,13 @@ const getWebBlockTypes = async () => {
 provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 
 
-onMounted(() => {
+/* onMounted(() => {
 	getWebBlockTypes()
-})
+}) */
 </script>
 
 <template>
-	<div class="group hover:bg-gray-100 relative border border-gray-400 border-dashed overflow-hidden rounded-md text-center cursor-pointer"
-		@click="modelModalBlocklist = true">
+	<div class="group hover:bg-gray-100 relative border border-gray-400 border-dashed overflow-hidden rounded-md text-center cursor-pointer" @click="getWebBlockTypes">
 		<div v-if="!model" class="text-sm">
 			<div class="py-3">
 				<p>{{ trans("Pick Block") }}</p>

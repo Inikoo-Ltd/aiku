@@ -49,6 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Accounting\InvoiceCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Accounting\InvoiceCategoryStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceCategoryTimeSeries> $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory query()
@@ -122,5 +123,10 @@ class InvoiceCategory extends Model implements Auditable
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(InvoiceCategoryTimeSeries::class);
     }
 }

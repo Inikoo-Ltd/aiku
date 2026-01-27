@@ -16,6 +16,7 @@ use App\Actions\Helpers\Snapshot\StoreEmailSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Enums\Comms\Email\EmailBuilderEnum;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunStatusEnum;
+use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -25,6 +26,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Outbox;
+use App\Models\Comms\Mailshot;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
@@ -196,6 +198,45 @@ trait WithOutboxBuilder
         );
 
         return $emailOngoingRun;
+    }
+
+    /**
+     * @throws \Throwable
+     * NOTE: Make sure the model parameters
+     */
+    protected function createMailShotEmail(Organisation|Shop|Fulfilment|Website $model, OutboxCodeEnum $case, Mailshot $mailshot, Outbox $outbox): void
+    {
+
+        $emailTemplate = EmailTemplate::where('state', EmailTemplateStateEnum::ACTIVE)
+        ->where('builder', EmailTemplateBuilderEnum::BEEFREE)
+        ->whereJsonContains('data->outboxes', $outbox->code)->first();
+
+        if ($emailTemplate) {
+            StoreEmail::make()->action(
+                $mailshot,
+                $emailTemplate,
+                modelData: [
+                'subject'               => $mailshot->subject ?? $case->label(),
+                'snapshot_state'        => SnapshotStateEnum::LIVE,
+                'snapshot_published_at' => $model->created_at,
+                'snapshot_recyclable'   => false,
+                'snapshot_first_commit' => true,
+                'builder'               => match ($this->getDefaultBuilder($case, $model)) {
+                    OutboxBuilderEnum::BEEFREE => EmailBuilderEnum::BEEFREE,
+                    OutboxBuilderEnum::BLADE => EmailBuilderEnum::BLADE,
+                    default => null
+                }
+            ],
+                strict: false
+            );
+
+            UpdateOutbox::make()->action(
+                $outbox,
+                [
+                    'state'    => OutboxStateEnum::ACTIVE
+                ]
+            );
+        }
     }
 
 

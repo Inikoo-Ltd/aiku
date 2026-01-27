@@ -29,8 +29,10 @@ class MailshotResource extends JsonResource
         foreach (MailshotStateEnum::cases() as $state) {
             if ($state === MailshotStateEnum::IN_PROCESS) {
                 $timestamp = $mailshot->created_at;
+            } elseif ($state === MailshotStateEnum::SENDING) {
+                $timestamp = $mailshot->start_sending_at;
             } else {
-                $timestamp = $mailshot->{$state->snake().'_at'} ? $mailshot->{$state->snake().'_at'} : null;
+                $timestamp = $mailshot->{$state->snake() . '_at'} ? $mailshot->{$state->snake() . '_at'} : null;
             }
 
             // If all possible values are null, set the timestamp to null explicitly

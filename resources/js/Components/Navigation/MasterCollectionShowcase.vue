@@ -12,6 +12,7 @@ import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
 import CollectionSelector from '@/Components/DepartmentAndFamily/CollectionSelector.vue'
 import { routeType } from '@/types/route'
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
 
@@ -41,6 +42,7 @@ const props = defineProps<{
       detach_parent : routeType
     }
   }
+  salesData?: object
 }>()
 console.log(props)
 
@@ -112,7 +114,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
 
 <template>
   <div class="p-4 space-y-6">
-    <div class="grid lg:grid-cols-[30%_40%] gap-4 max-w-6xl">
+    <div class="grid lg:grid-cols-[30%_40%_30%] gap-4 max-w-6xl">
       <!-- Info Card -->
       <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-3 h-fit">
         <div class="bg-white rounded-lg overflow-hidden">
@@ -183,6 +185,11 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             No sub departments assigned.
           </div>
         </div>
+      </div>
+
+      <!-- Sales Analytics - right sidebar -->
+      <div v-if="salesData">
+        <SalesAnalyticsCompact :salesData="salesData" />
       </div>
     </div>
   </div>

@@ -64,6 +64,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("internal-tags")
                     ->name("internal_tags.")
                     ->group(__DIR__."/internal_tags.php");
+                Route::prefix("system-tags")
+                    ->name("system_tags.")
+                    ->group(__DIR__."/system_tags.php");
             }
         );
 

@@ -21,6 +21,7 @@ enum MasterCollectionTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case SALES = 'sales';
 
     case PRODUCTS = 'products';
     case FAMILIES = 'families';
@@ -54,6 +55,10 @@ enum MasterCollectionTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
+            MasterCollectionTabsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-money-bill-wave',
+            ],
             MasterCollectionTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',

@@ -24,7 +24,7 @@ class RepairProductOrgStocks
     /**
      * @throws \Throwable
      */
-    public function handle(Shop|Product $subject, Command $command = null): void
+    public function handle(Shop|Product $subject, ?Command $command = null): void
     {
 
         if ($subject instanceof Product) {

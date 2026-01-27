@@ -28,12 +28,20 @@ import { router } from "@inertiajs/vue3"
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import TableMasterProductsEdit from "@/Components/Tables/TableMasterProductsEdit.vue"
+import { useTabChange } from '@/Composables/tab-change'
+import Tabs from "@/Components/Navigation/Tabs.vue"
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
+    tabs: {
+        current: string
+        navigation: {}
+    }
+    index?: {}
+    sales?: {}
     data: {}
     routes?: {
         master_families_route: routeType
@@ -46,6 +54,24 @@ const props = defineProps<{
     currency?: any
     variantSlugs?: Record<string, string>;
 }>()
+
+const currentTab = ref<string>(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const currentData = computed(() => {
+    if (currentTab.value === 'index' || currentTab.value === 'sales') {
+        return (props as any)[currentTab.value] || props.data
+    }
+    return props.data
+})
+
+const component = computed(() => {
+    const components: any = {
+        index: TableMasterProducts,
+        sales: TableMasterProducts,
+    }
+
+    return components[currentTab.value]
+})
 
 // dialog state
 const showDialog = ref(false)
@@ -100,14 +126,18 @@ const onVisit = () => {
         </template>
     </PageHeading>
 
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
     <!-- Products Table -->
-    <TableMasterProducts
-        :data="data"
+    <component
+        :is="component"
+        :key="currentTab"
+        :tab="currentTab"
+        :data="currentData"
         :variant-slugs="variantSlugs"
         isCheckBox
-        :key="key"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
-    />
+    ></component>
 
     <!-- Dialog Create Product -->
     <FormCreateMasterProduct
@@ -117,6 +147,7 @@ const onVisit = () => {
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
     />
+
 
 
     <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"

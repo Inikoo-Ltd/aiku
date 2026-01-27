@@ -78,6 +78,7 @@ use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
+use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -90,6 +91,8 @@ use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
+use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
+use App\Actions\Comms\Mailshot\GetMailshotTemplate;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
@@ -240,3 +243,8 @@ Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::c
 
 
 Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');
+
+Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
+Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
+
+Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');

@@ -22,7 +22,7 @@ class CheckWebsiteState
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         $status = $website->status;
 

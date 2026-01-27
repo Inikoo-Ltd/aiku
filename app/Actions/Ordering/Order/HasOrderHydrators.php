@@ -42,6 +42,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePac
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateSubmitted;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrderStats;
 
 trait HasOrderHydrators
 {
@@ -59,6 +60,7 @@ trait HasOrderHydrators
         }
         if ($order->customer_id) {
             CustomerHydrateOrders::dispatch($order->customer_id)->delay($this->hydratorsDelay);
+            CustomerHydrateOrderStats::dispatch($order->customer_id)->delay($this->hydratorsDelay);
         }
 
         if ($order->platform_id) {

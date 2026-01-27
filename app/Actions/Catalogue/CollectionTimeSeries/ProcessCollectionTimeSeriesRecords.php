@@ -54,8 +54,7 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(CollectionTimeSeries $timeSeries, string $from, string $to): void
     {
 
-        $assetsIDs = $timeSeries->collection->products->pluck('asset_id')->unique()->toArray();
-
+        $assetsIDs = $timeSeries->collection->products->pluck('id')->unique()->toArray();
 
         $results = DB::table('invoice_transactions')
             ->where('date', '>=', $from)

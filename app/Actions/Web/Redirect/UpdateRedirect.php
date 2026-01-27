@@ -39,6 +39,7 @@ class UpdateRedirect extends OrgAction
         return [
             'type'                     => ['sometimes', Rule::enum(RedirectTypeEnum::class)],
             'path'                     => ['sometimes', 'string', new NoDomainString()],
+            'to_webpage_id'            => ['sometimes', 'nullable', 'exists:webpages,id'],
         ];
     }
 

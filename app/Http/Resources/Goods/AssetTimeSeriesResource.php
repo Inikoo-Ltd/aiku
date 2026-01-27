@@ -16,7 +16,7 @@ class AssetTimeSeriesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $frequency = request()->get('frequency', TimeSeriesFrequencyEnum::DAILY->value);
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
         $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
 
         return [

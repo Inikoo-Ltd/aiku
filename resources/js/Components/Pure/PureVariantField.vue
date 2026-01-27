@@ -195,6 +195,7 @@ const buildNodes = computed<Node[]>(() => {
           label: Object.values(keyObj).join(" — "),
           product: getProduct(keyObj),
           is_leader: isLeaderByKey(keyObj),  
+          all_child_has_webpage: getChildHasWebpage(keyObj),
         }
       })
     }
@@ -205,18 +206,26 @@ const buildNodes = computed<Node[]>(() => {
 
 
 const setProduct = (node: Node, val: any | null) => {
-  const entryId = Object.keys(model.value.products).find(id =>
-    Object.keys(node.key).every(k => model.value.products[id][k] === node.key[k])
-  )
+  // cari semua entry lama dengan kombinasi variant yang sama
+  const sameVariantIds = Object.keys(model.value.products).filter(id => {
+    const p = model.value.products[id]
+    return Object.keys(node.key).every(k => p[k] === node.key[k])
+  })
 
-
+  // jika product di-unpick → hapus semua entry kombinasi itu
   if (!val) {
-    if (!entryId) return
-
-    delete model.value.products[entryId]
+    sameVariantIds.forEach(id => {
+      delete model.value.products[id]
+    })
     return
   }
 
+  // jika ganti product → hapus product lama dulu
+  sameVariantIds.forEach(id => {
+    delete model.value.products[id]
+  })
+
+  // lalu simpan product baru
   model.value.products[val.id] = {
     ...node.key,
     product: {
@@ -574,9 +583,13 @@ const noLeader = computed(() => {
 
                     <!-- Leader -->
                     <td class="px-4 text-center">
-                      <input type="checkbox" :disabled="!child.product" :checked="child.is_leader"
+                      <input 
+                        type="checkbox" 
+                        :disabled="!child.product || !child.all_child_has_webpage" 
+                        :checked="child.is_leader"
                         @change="setLeader(child, $event.target.checked)"
-                        class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
+                         v-tooltip="!child.all_child_has_webpage ? trans(`Unable to set this product as a leader. One or more of it's child has no webpage. A leader product is required to have webpage`) : ''"
+                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
                     <!-- Product -->

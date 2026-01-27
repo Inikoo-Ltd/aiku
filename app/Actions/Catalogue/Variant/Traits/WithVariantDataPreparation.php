@@ -13,7 +13,6 @@ use Illuminate\Support\Arr;
 use App\Models\Masters\MasterAsset;
 use App\Models\Catalogue\Product;
 use App\Http\Resources\Catalogue\ProductResourceForVariant;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 
 trait WithVariantDataPreparation
 {
@@ -47,7 +46,6 @@ trait WithVariantDataPreparation
                 $product = $masterProductList[data_get($variant, 'product.id')]
                     ->products()
                     ->where('shop_id', $this->shop->id)
-                    // ->whereNot('state', ProductStateEnum::DISCONTINUED)
                     ->first();
 
                 if (!$product) {

@@ -58,7 +58,7 @@ trait WithModelAddressActions
         }
     }
 
-    protected function addAddressToModelFromArray($model, array $addressData, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', bool $canShip = null)
+    protected function addAddressToModelFromArray($model, array $addressData, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', ?bool $canShip = null)
     {
         if (!$addressData) {
             return $model;
@@ -183,7 +183,7 @@ trait WithModelAddressActions
     }
 
 
-    protected function attachAddressToModel($model, Address $address, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', bool $canShip = null)
+    protected function attachAddressToModel($model, Address $address, $scope = 'default', $updateLocation = true, $updateAddressField = 'address_id', ?bool $canShip = null)
     {
         $groupId = $model->group_id;
         if ($model instanceof Group) {

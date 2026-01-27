@@ -126,6 +126,7 @@ class CollectionsResource extends JsonResource
             'invoices_ly'             => $this->invoices_ly ?? 0,
             'invoices_delta'          => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'current_interval'        => $this->current_interval ?? 'ytd',
+            'image_thumbnail'         => Arr::get($this->web_images, 'main.thumbnail'),
         ];
     }
 

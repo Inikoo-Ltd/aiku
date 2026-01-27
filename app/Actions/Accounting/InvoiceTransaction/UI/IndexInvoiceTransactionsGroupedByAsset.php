@@ -49,6 +49,8 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.model_type',
                 'invoice_transactions.in_process',
+                'invoice_transactions.is_tax_only',
+                'invoice_transactions.tax_amount',
                 'invoice_transactions.data',
                 'historic_assets.code',
                 'historic_assets.name as name',
@@ -71,6 +73,8 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 'historic_assets.code',
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.data',
+                'invoice_transactions.is_tax_only',
+                'invoice_transactions.tax_amount',
                 'historic_assets.name',
                 'assets.id',
                 'invoice_transactions.in_process',
@@ -97,8 +101,10 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
             $table->withModelOperations()->withGlobalSearch();
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Product name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            if (!$invoice->is_tax_only) {
+                $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            }
+            $table->column(key: 'net_amount', label: __($invoice->is_tax_only ? 'Tax' : 'Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             if ($invoice->type === InvoiceTypeEnum::REFUND && $invoice->in_process) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }

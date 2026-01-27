@@ -17,7 +17,6 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -28,30 +27,41 @@ class FixAuroraCategoryOffers
     use AsAction;
     use WithOrganisationSource;
 
-    public string $commandSignature = 'repair:aurora_category_offers {organisation}';
+    public string $commandSignature = 'repair:aurora_category_offers {shop}';
 
     /**
      * @throws \Exception
      */
     public function asCommand(Command $command): void
     {
-        $organisation       = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
+
+        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+
+        $organisation       = $shop->organisation;
         $organisationSource = $this->getOrganisationSource($organisation);
         $organisationSource->initialisation($organisation);
 
-        $shops          = Shop::where('organisation_id', $organisation->id)->where('is_aiku', true)->pluck('id');
-        $offerCampaigns = OfferCampaign::whereIn('shop_id', $shops)
+        $offerCampaigns = OfferCampaign::where('shop_id', $shop->id)
             ->where('type', OfferCampaignTypeEnum::CATEGORY_OFFERS)
             ->pluck('id');
 
-        $offers = Offer::whereIn('offer_campaign_id', $offerCampaigns)->whereNotNull('source_id')
+        $offers = Offer::whereIn('offer_campaign_id', $offerCampaigns)
+            ->whereNotNull('source_id')
             ->get();
+
+        $progressBar = $command->getOutput()->createProgressBar($offers->count());
 
         /** @var Offer $offer */
         foreach ($offers as $offer) {
+
+            $progressBar->advance();
             $sourceData = explode(':', $offer->source_id);
 
             $auroraDealData          = DB::connection('aurora')->table('Deal Dimension')->where('Deal Key', $sourceData[1])->first();
+            if (!$auroraDealData) {
+                continue;
+            }
+
             $auroraDealComponentData = DB::connection('aurora')->table('Deal Component Dimension')->where('Deal Component Deal Key', $auroraDealData->{'Deal Key'})->first();
 
 
@@ -118,6 +128,7 @@ class FixAuroraCategoryOffers
             }
 
 
+
             if ($offer->type == 'Category Quantity Ordered' || $offer->type == 'Category Ordered') {
                 if (!$offer->trigger) {
                     $offer->update([
@@ -178,6 +189,9 @@ class FixAuroraCategoryOffers
                 }
             }
         }
+
+        $progressBar->finish();
+        $command->getOutput()->newLine();
     }
 
 

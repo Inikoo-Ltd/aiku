@@ -31,7 +31,7 @@ trait WithUpdateModelImage
         string $field,
         string $imagePath,
         string $originalFilename,
-        string $extension = null,
+        ?string $extension = null,
         array $properties = []
     ): Website|Organisation|User|EmailTemplate|WebUser|Clocking {
         $checksum = md5_file($imagePath);

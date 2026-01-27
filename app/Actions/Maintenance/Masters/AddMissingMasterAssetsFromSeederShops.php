@@ -35,7 +35,7 @@ class AddMissingMasterAssetsFromSeederShops
     /**
      * @throws \Throwable
      */
-    public function handle(MasterShop $masterShop, Shop $seederShop, Command $command = null): void
+    public function handle(MasterShop $masterShop, Shop $seederShop, ?Command $command = null): void
     {
         Product::where('shop_id', $seederShop->id)->orderBy('id')
             ->chunk(1000, function ($models) use ($command, $masterShop) {

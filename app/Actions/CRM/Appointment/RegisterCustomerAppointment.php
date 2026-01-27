@@ -39,6 +39,6 @@ class RegisterCustomerAppointment
         $this->fillFromRequest($request);
         $request->validate();
 
-        return $this->handle($request->get('website')->shop, $request->validated());
+        return $this->handle($request->input('website')->shop, $request->validated());
     }
 }

@@ -90,6 +90,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_traffic_sources
  * @property int $number_outboxes_type_reorder_reminder_2nd
  * @property int $number_outboxes_type_reorder_reminder_3rd
+ * @property int $number_outboxes_type_credit_balance_notification_for_customer
+ * @property int $number_outboxes_type_credit_balance_notification_for_user
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCommsStats newModelQuery()
  * @method static Builder<static>|OrganisationCommsStats newQuery()

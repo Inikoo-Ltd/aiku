@@ -75,11 +75,14 @@ class UpdateTransaction extends OrgAction
 
         if ($this->strict) {
 
-            OrderHydrateCategoriesData::run($transaction->order);
+
+
 
             $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
 
+
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
+                OrderHydrateCategoriesData::run($transaction->order);
                 CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping);
             }
         }

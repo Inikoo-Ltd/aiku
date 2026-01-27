@@ -18,12 +18,12 @@ trait HasPriceMetrics
      */
     protected function getPriceMetrics(float|int|null $rrp, float|int $price, float|int $units): array
     {
-        $margin        = '';
-        $rrpPerUnit    = '';
-        $profit        = '';
+        $margin        = 0;
+        $rrpPerUnit    = 0;
+        $profit        = 0;
         $unitsInt      = (int)$units;
-        $profitPerUnit = '';
-        $pricePerUnit  = '';
+        $profitPerUnit = 0;
+        $pricePerUnit  = 0;
 
         if ($rrp > 0) {
             // Avoid division by zero for per-unit calculation

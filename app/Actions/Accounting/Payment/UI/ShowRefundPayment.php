@@ -148,7 +148,7 @@ class ShowRefundPayment extends OrgAction
 
     public function getBreadcrumbs(Payment $payment, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (Payment $payment, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (Payment $payment, array $routeParameters, ?string $suffix = null) {
             return [
                 [
 
@@ -170,7 +170,7 @@ class ShowRefundPayment extends OrgAction
             ];
         };
 
-        $headCrumbSimple = function (Payment $payment, array $routeParameters, string $suffix = null) {
+        $headCrumbSimple = function (Payment $payment, array $routeParameters, ?string $suffix = null) {
             return [
                 [
                     'type'   => 'simple',

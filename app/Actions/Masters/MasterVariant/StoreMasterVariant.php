@@ -8,8 +8,10 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -60,10 +62,35 @@ class StoreMasterVariant extends OrgAction
                 ]);
             }
 
+            $masterProducts = MasterAsset::whereIn('id', array_keys(data_get($masterVariant->data, 'products')))->get()->keyBy('code');
+            $masterProductsCode = (clone $masterProducts)->pluck('code')->toArray();
+
             foreach ($masterVariant->masterFamily->productCategories as $productCategory) {
-                if (!$productCategory->shop) {
+                if (!$productCategory->shop || $productCategory->shop->state == ShopStateEnum::CLOSED) {
                     continue;
                 }
+
+                $shop = $productCategory->shop;
+                $productsCode = $productCategory->getProducts()->whereIn('code', $masterProductsCode)->pluck('code');
+                $missingProducts = array_diff($masterProductsCode, $productsCode->toArray());
+
+                foreach ($missingProducts as $productCode) {
+                    StoreProductFromMasterProduct::make()->action(
+                        $masterProducts[$productCode],
+                        [
+                                'shop_products' => [
+                                    $shop->id => [
+                                        'price'          => $masterProducts[$productCode]->price,
+                                        'rrp'            => $masterProducts[$productCode]->rrp,
+                                        'create_webpage' => false,
+                                        'create_in_shop' => 'Yes'
+                                    ]
+                                ],
+                            ],
+                        generateVariant: false
+                    );
+                }
+
                 StoreVariantFromMaster::make()->action(
                     masterVariant: $masterVariant,
                     shop: $productCategory->shop,
@@ -79,8 +106,6 @@ class StoreMasterVariant extends OrgAction
 
             return $masterVariant;
         });
-
-        // TODO Hydrate Child
 
         return $masterVariant;
     }

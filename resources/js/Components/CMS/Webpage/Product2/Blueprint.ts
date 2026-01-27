@@ -1,5 +1,3 @@
-import BlueprintSideInformation from "./BlueprintSideInformation"
-
 export default {
 	blueprint: [
 		{
@@ -12,76 +10,73 @@ export default {
 					label: "Show Product Specs",
 					props_data: {},
 				},
+				{
+					key: ["payments_and_policy"],
+					type: "switch",
+					label: "Payments & Policy Section",
+					props_data: {},
+				},
+				{
+					key: ["appointment"],
+					type: "switch",
+					label: "Appointment",
+					props_data: {},
+				},
 			],
 		},
+		{
+			key: ["appointment_data"],
+			name: "Appointment",
+			replaceForm: [
+				{
+					key: ["text"],
+					type: "editorhtml",
+					label: "text",
+				},
+				{
+					key: ["link"],
+					type: "link",
+					label: "Link",
+				},
+			],
+		},
+
+		{
+			key: ["delivery_info"],
+			name: "Delivery Info",
+			replaceForm: [
+				{
+					key: ["text"],
+					type: "editorhtml",
+					label: "text",
+				},
+			],
+		},
+
 		{
 			key: ["paymentData"],
 			name: "Payment",
 			type: "payment_templates",
 		},
 		{
-			name: "Description",
-			key: ["description"],
+			name: "Button login",
+			key: ["buttonLogin", "properties"],
 			replaceForm: [
 				{
-					key: ["description_title","text"],
-					type: "textProperty",
-					label: "Description Title",
-					props_data: {},
+					key: ["background"],
+					label: "Background",
+					type: "background",
 				},
 				{
-					key: ["description_content","text"],
+					key: ["text"],
 					type: "textProperty",
-					label: "Description Content",
-					props_data: {},
 				},
 				{
-					key: ["description_extra","text"],
-					type: "textProperty",
-					label: "Description Extra",
-					props_data: {},
+					key: ["border"],
+					label: "Border",
+					type: "border",
 				},
 			],
 		},
-		{
-            name: "Button Add to basket / portofolio",
-            key: ["button", "properties"],
-            replaceForm: [
-                    {
-                        key: ["background"],
-                        label : "Background",
-                        type: "background",
-                    },
-                    {
-                        key: ["text"],
-                        type: "textProperty",
-                    },
-                    {
-                        key: ["border"],
-                        label : "Border",
-                        type: "border",
-                    },
-                ],
-        },
-		{
-            name: "Button login",
-            key: ["buttonLogin", "properties"],
-            replaceForm: [
-                    {
-                        key: ["background"],
-                        label : "Background",
-                        type: "background",
-                    },
-                    {
-                        key: ["text"],
-                        type: "textProperty",
-                    },
-                    {
-                        key: ["border"],
-                        label : "Border",
-                        type: "border",
-                    },
-                ],
-        },
 	],
 }

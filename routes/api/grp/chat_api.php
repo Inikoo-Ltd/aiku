@@ -14,7 +14,13 @@ use App\Actions\CRM\ChatSession\HandleChatTyping;
 use App\Actions\CRM\ChatSession\StoreChatSession;
 use App\Actions\CRM\ChatSession\StoreGuestProfile;
 use App\Actions\CRM\ChatSession\UpdateChatSession;
+use App\Actions\CRM\ChatSession\GetChatAgentByUserId;
+use App\Actions\CRM\ChatSession\DownloadChatAttachment;
 use App\Actions\CRM\ChatSession\SyncChatSessionByEmail;
+use App\Actions\CRM\ChatSession\TranslateSingleMessage;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\CRM\ChatSession\TranslateSessionMessages;
+use App\Actions\CRM\ChatSession\GetChatAgentSpecializations;
 
 Route::get('/ping', function () {
     return 'pong';
@@ -39,15 +45,24 @@ Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail:
     ->name('sessions.sync_by_email');
 
 Route::get('agents', GetChatAgents::class)->name('agents.index');
+Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');
 
-Route::put('/agents/{chatAgent:id}/update', UpdateChatAgent::class, 'agents.update')
-    ->name('agents.update');
+Route::put('/agents/{id}/update', UpdateChatAgent::class)->name('agents.update');
+
+Route::get('/agents/{id}', GetChatAgentByUserId::class)->name('agent.show');
 
 Route::post('/typing', HandleChatTyping::class, 'typing')
     ->name('typing');
 
 Route::post('/read', HandleChatRead::class, 'read')
     ->name('read');
+
+Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)
+    ->name('chat.attachment.download');
+
+Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
+Route::post('/messages/{chatMessage}/translate', TranslateSingleMessage::class)->name('messages.translate');
+Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::class)->name('sessions.translate');

@@ -89,8 +89,8 @@ test('run seed post rooms command', function () {
 test('seed organisation outboxes customers command', function () {
     $this->artisan('org:seed_outboxes '.$this->organisation->slug)->assertExitCode(0);
     $this->artisan('org:seed_outboxes')->assertExitCode(0);
-    expect($this->group->commsStats->number_outboxes)->toBe(13)
-        ->and($this->organisation->commsStats->number_outboxes)->toBe(13)
+    expect($this->group->commsStats->number_outboxes)->toBe(15)
+        ->and($this->organisation->commsStats->number_outboxes)->toBe(15)
         ->and($this->organisation->commsStats->number_outboxes_type_test)->toBe(1)
         ->and($this->organisation->commsStats->number_outboxes_state_active)->toBe(4);
 });
@@ -99,9 +99,9 @@ test(
     'outbox seeded when shop created',
     function () {
         $shop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
-        expect($shop->group->commsStats->number_outboxes)->toBe(25)
-            ->and($shop->organisation->commsStats->number_outboxes)->toBe(25)
-            ->and($shop->commsStats->number_outboxes)->toBe(12);
+        expect($shop->group->commsStats->number_outboxes)->toBe(29)
+            ->and($shop->organisation->commsStats->number_outboxes)->toBe(29)
+            ->and($shop->commsStats->number_outboxes)->toBe(14);
 
         return $shop;
     }
@@ -109,7 +109,7 @@ test(
 
 test('seed shop outboxes by command', function (Shop $shop) {
     $this->artisan('shop:seed_outboxes')->assertExitCode(0);
-    expect($shop->group->commsStats->number_outboxes)->toBe(25);
+    expect($shop->group->commsStats->number_outboxes)->toBe(29);
 })->depends('outbox seeded when shop created');
 
 test('outbox seeded when website created', function (Shop $shop) {
@@ -120,9 +120,9 @@ test('outbox seeded when website created', function (Shop $shop) {
         Website::factory()->definition()
     );
 
-    expect($website->group->commsStats->number_outboxes)->toBe(36)
-        ->and($website->organisation->commsStats->number_outboxes)->toBe(36)
-        ->and($website->shop->commsStats->number_outboxes)->toBe(23);
+    expect($website->group->commsStats->number_outboxes)->toBe(40)
+        ->and($website->organisation->commsStats->number_outboxes)->toBe(40)
+        ->and($website->shop->commsStats->number_outboxes)->toBe(25);
 
     /** @var Outbox $outbox */
     $forgotPasswordOutbox = $website->shop->outboxes()->where('code', 'password_reminder')->first();
@@ -148,7 +148,7 @@ test('outbox seeded when website created', function (Shop $shop) {
 test('seed websites outboxes by command', function (Website $website) {
     $this->artisan('website:seed_outboxes '.$website->slug)->assertExitCode(0);
     $this->artisan('website:seed_outboxes')->assertExitCode(0);
-    expect($website->group->commsStats->number_outboxes)->toBe(36);
+    expect($website->group->commsStats->number_outboxes)->toBe(40);
 })->depends('outbox seeded when website created');
 
 
@@ -156,9 +156,9 @@ test(
     'outbox seeded when fulfilment created',
     function () {
         $fulfilment = createFulfilment($this->organisation);
-        expect($fulfilment->group->commsStats->number_outboxes)->toBe(50)
-            ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe(50)
-            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe(14);
+        expect($fulfilment->group->commsStats->number_outboxes)->toBe(56)
+            ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe(56)
+            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe(16);
 
         return $fulfilment;
     }
@@ -167,7 +167,7 @@ test(
 test('seed fulfilments outboxes by command', function (Fulfilment $fulfilment) {
     $this->artisan('fulfilment:seed_outboxes '.$fulfilment->slug)->assertExitCode(0);
     $this->artisan('fulfilment:seed_outboxes')->assertExitCode(0);
-    expect($fulfilment->group->commsStats->number_outboxes)->toBe(50);
+    expect($fulfilment->group->commsStats->number_outboxes)->toBe(56);
 })->depends('outbox seeded when fulfilment created');
 
 
@@ -730,7 +730,7 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
 
     $response->assertInertia(function (AssertableInertia $page) use ($mailShot) {
         $page
-            ->component('Org/Web/Workshop/Outbox/OutboxWorkshop')
+            ->component('Org/Web/Workshop/Mailshot/MailshotWorkshop')
             ->has('title')
             ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', $mailShot->subject)->etc())
             ->has('snapshot')

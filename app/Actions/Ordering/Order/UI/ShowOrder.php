@@ -223,8 +223,12 @@ class ShowOrder extends OrgAction
                     'tooltip' => __('Edit the order reference'),
                     'label'   => __('Edit'),
                     'route'   => [
-                        'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                        'parameters' => array_values($request->route()->originalParameters())
+                        'name'       => 'grp.org.shops.show.ordering.orders.edit',
+                        'parameters' => [
+                            'organisation' => $order->organisation->slug,
+                            'shop'         => $order->shop->slug,
+                            'order'        => $order->slug
+                        ]
                     ]
                 ]
             ];
@@ -355,6 +359,12 @@ class ShowOrder extends OrgAction
                     ],
                     'products_list_modification' => [
                         'name'       => 'grp.json.order.products_for_modify',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'update_discount'            => [
+                        'name'       => 'grp.models.order.discount.update',
                         'parameters' => [
                             'order' => $order->id
                         ]

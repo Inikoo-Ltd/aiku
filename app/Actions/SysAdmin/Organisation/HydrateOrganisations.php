@@ -44,6 +44,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOutboxes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletDeliveries;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletReturns;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePallets;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePickedBays;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePickingTrolleys;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProducts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductsWithNoFamily;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
@@ -188,6 +190,9 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateFamiliesWithNoDepartment::run($organisation);
             OrganisationHydrateProductsWithNoFamily::run($organisation);
             OrganisationHydrateWebUserRequests::run($organisation->id);
+
+            OrganisationHydratePickingTrolleys::run($organisation);
+            OrganisationHydratePickedBays::run($organisation);
 
             foreach (DeliveryNoteStateEnum::cases() as $case) {
                 OrganisationHydrateDeliveryNotesState::run($organisation->id, $case);

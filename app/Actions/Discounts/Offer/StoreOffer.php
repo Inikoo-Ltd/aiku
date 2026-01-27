@@ -19,6 +19,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Rules\IUnique;
@@ -39,11 +40,9 @@ class StoreOffer extends OrgAction
      */
     public function handle(OfferCampaign $offerCampaign, array $modelData): Offer
     {
-
-        $modelData = $this->prepareOfferData($offerCampaign, $modelData);
+        $modelData  = $this->prepareOfferData($offerCampaign, $modelData);
         $allowances = Arr::pull($modelData, 'allowances', []);
-        $offer = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
-
+        $offer      = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
             /** @var Offer $offer */
             $offer = $offerCampaign->offers()->create($modelData);
             $offer->stats()->create();
@@ -53,6 +52,14 @@ class StoreOffer extends OrgAction
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
             UpdateOfferAllowanceSignature::run($offer);
+
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                $offer->timeSeries()->create(
+                    [
+                        'frequency' => $frequency,
+                    ]
+                );
+            }
 
             return $offer;
         });
@@ -92,6 +99,7 @@ class StoreOffer extends OrgAction
                 'alpha_dash'
             ],
             'name'         => ['required', 'max:250', 'string'],
+            'label'        => ['sometimes', 'nullable', 'max:1028', 'string'],
             'data'         => ['sometimes', 'required'],
             'settings'     => ['sometimes', 'required'],
             'trigger_data' => ['sometimes', 'required'],
@@ -100,17 +108,17 @@ class StoreOffer extends OrgAction
             'type'         => ['required', 'string'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
             'allowances'   => ['sometimes', 'nullable', 'array'],
-            'duration'     => ['sometimes', OfferDurationEnum::class],
+            'duration'     => ['sometimes', Rule::enum(OfferDurationEnum::class)],
         ];
         if (!$this->strict) {
-            $rules['start_at']  = ['sometimes', 'nullable', 'date'];
-            $rules['finish_at'] = ['sometimes', 'nullable', 'date'];
-            $rules['state']     = ['sometimes', Rule::enum(OfferStateEnum::class)];
+            $rules['start_at']         = ['sometimes', 'nullable', 'date'];
+            $rules['finish_at']        = ['sometimes', 'nullable', 'date'];
+            $rules['state']            = ['sometimes', Rule::enum(OfferStateEnum::class)];
             $rules['is_discretionary'] = ['sometimes', 'boolean'];
-            $rules['is_locked'] = ['sometimes', 'boolean'];
-            $rules['source_data'] = ['sometimes', 'array'];
-
-            $rules = $this->noStrictStoreRules($rules);
+            $rules['is_locked']        = ['sometimes', 'boolean'];
+            $rules['source_data']      = ['sometimes', 'array'];
+            $rules['label']            = ['sometimes', 'max:1028', 'string'];
+            $rules                     = $this->noStrictStoreRules($rules);
         }
 
         return $rules;

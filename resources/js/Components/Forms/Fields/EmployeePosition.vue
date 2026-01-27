@@ -648,7 +648,7 @@ watch(() => newForm, () => {
                             <div v-if="jobGroup.scope !== 'shop' && (departmentName === 'prod'  && productionsLength > 0) || departmentName !== 'prod'"
                                  class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-50 transition-all duration-200 ease-in-out">
                                 <!-- Section: Department label -->
-                                <div class="flex items-center gap-x-1.5">
+                                <div class="flex items-center gap-x-1.5 py-2">
                                     <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400 fixed-width" aria-hidden="true" />
                                     {{ jobGroup.department }}
                                 </div>
@@ -789,12 +789,17 @@ watch(() => newForm, () => {
                                     </Transition>
                                 </div>
                             </div>
+                            <div v-else>
+
+                            </div>
                         </Teleport>
                     </template>
                 </template>
 
                 <!-- To grouping the Shope into same area -->
-                <div v-if="shopsLength" :id="'scopeShop' + fieldName" class="overflow-hidden mt-2 border-t border-gray-300 ">
+                <div :id="'scopeShop' + fieldName" class="overflow-hidden mt-2 border-t border-gray-300 "
+                    :class="shopsLength ? '' : 'hidden'"
+                >
 
                 </div>
             </div>

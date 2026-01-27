@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -47,10 +48,15 @@ class CalculateOrderDiscounts
                     'sub_department_id',
                     'department_id'
                 ])
-                ->where('order_id', $order->id)->where('model_type', 'Product')->get();
+                ->where('order_id', $order->id)
+                ->where('model_type', 'Product')
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('id');
 
             $this->processAllowances();
         }
+        $this->processDiscretionaryOffers($order);
 
         DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->delete();
         DB::table('transactions')->where('order_id', $order->id)->update([
@@ -196,11 +202,12 @@ class CalculateOrderDiscounts
             return $this->daysSinceLastInvoiced;
         }
 
-        $lastInvoiced                = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
+        $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
             return $order->customer->last_invoiced_at;
         });
-        $this->isLastInvoicedSet     = true;
-        $this->daysSinceLastInvoiced = $lastInvoiced ? -now()->diffInDays($lastInvoiced) : null;
+        $this->isLastInvoicedSet = true;
+        // Explicitly cast to int to prevent PHP 8.4+ precision loss warnings
+        $this->daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
         return $this->daysSinceLastInvoiced;
     }
@@ -288,7 +295,7 @@ class CalculateOrderDiscounts
                 continue;
             }
 
-            $current = property_exists($transaction, 'percentage_off') ? $transaction->percentage_off : null;
+            $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
 
             // Apply only if undefined or lower than the new percentage
             if ($current === null || (is_numeric($current) && (float)$current < $percentageOff)) {
@@ -304,6 +311,56 @@ class CalculateOrderDiscounts
                 $transaction->offer_label           = $offerData['offer_label'];
                 $transaction->allowance_type        = 'percentage';
                 $transaction->sub_trigger           = Arr::get($offerData, 'sub_trigger');
+            }
+        }
+    }
+
+    private function applyDiscretionaryOffer(object $transaction, float $percentageOff, string $label, OfferAllowance $allowance): void
+    {
+        $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
+
+        $transaction->with_offer            = true;
+        $transaction->discounted_percentage = $percentageOff;
+        $transaction->net_amount            = $transaction->gross_amount - $discountedAmount;
+        $transaction->discounted_amount     = $discountedAmount;
+        $transaction->offer_id              = $allowance->offer_id;
+        $transaction->offer_campaign_id     = $allowance->offer_campaign_id;
+        $transaction->offer_allowance_id    = $allowance->id;
+        $transaction->offer_label           = $label;
+        $transaction->allowance_type        = 'percentage';
+        $transaction->sub_trigger           = null;
+    }
+
+    public function processDiscretionaryOffers(Order $order): void
+    {
+        if (count($order->discretionary_offers_data) == 0) {
+            return;
+        }
+
+        $discretionaryOfferAllowance = OfferAllowance::where('shop_id', $order->shop_id)->where('is_discretionary', true)->first();
+
+        foreach ($order->discretionary_offers_data as $transactionId => $discretionaryOffer) {
+            $percentageOff = max(0.0, min(1.0, $discretionaryOffer['percentage']));
+            $label         = $discretionaryOffer['label'];
+
+
+            $transaction = $this->transactions->get($transactionId);
+
+
+            if (!$transaction) {
+                continue;
+            }
+
+            $hasOffer = property_exists($transaction, 'with_offer') && $transaction->with_offer;
+
+
+            if ($hasOffer) {
+                $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
+                if ((float)$current < $percentageOff) {
+                    $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
+                }
+            } else {
+                $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
             }
         }
     }

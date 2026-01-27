@@ -50,7 +50,7 @@ class ShopifyApiResponseException extends Exception
         ?int $statusCode = null,
         string $service = 'API',
         int $code = 0,
-        \Throwable $previous = null
+        ?\Throwable $previous = null
     ) {
         parent::__construct($message, $code, $previous);
 

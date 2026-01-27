@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -31,6 +32,7 @@ class StoreMailshot extends OrgAction
     use HasUIMailshots;
     use WithCatalogueAuthorisation;
     use WithNoStrictRules;
+    use WithOutboxBuilder;
 
     /**
      * @throws \Throwable
@@ -56,6 +58,16 @@ class StoreMailshot extends OrgAction
         OutboxHydrateMailshots::dispatch($outbox)->delay($this->hydratorsDelay);
         ShopHydrateMailshots::dispatch($outbox->shop)->delay($this->hydratorsDelay);
 
+        $outboxCode = match ($mailshot->type) {
+            MailshotTypeEnum::MARKETING => OutboxCodeEnum::MARKETING,
+            MailshotTypeEnum::NEWSLETTER => OutboxCodeEnum::NEWSLETTER,
+            MailshotTypeEnum::INVITE => OutboxCodeEnum::INVITE,
+            MailshotTypeEnum::ABANDONED_CART => OutboxCodeEnum::ABANDONED_CART,
+            default => OutboxCodeEnum::NEWSLETTER,
+        };
+
+        // create email
+        $this->createMailShotEmail($outbox->shop, $outboxCode, $mailshot, $outbox);
 
         return $mailshot;
     }
@@ -137,9 +149,18 @@ class StoreMailshot extends OrgAction
     public function htmlResponse(Mailshot $mailshot): \Symfony\Component\HttpFoundation\Response
     {
 
-        return Inertia::location(route('grp.org.shops.show.marketing.mailshots.index', [
+        $routeName = match ($mailshot->type) {
+            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.show',
+            MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.show',
+            MailshotTypeEnum::INVITE => 'grp.org.shops.show.marketing.mailshots.show',
+            MailshotTypeEnum::ABANDONED_CART => 'grp.org.shops.show.marketing.mailshots.show',
+            default => null
+        };
+
+        return Inertia::location(route($routeName, [
             'organisation' => $mailshot->shop->organisation->slug,
-            'shop'         => $mailshot->shop->slug
+            'shop'         => $mailshot->shop->slug,
+            'mailshot'     => $mailshot->slug
         ]));
     }
 }

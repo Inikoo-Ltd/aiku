@@ -50,7 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_locked
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $start_at
+ * @property \Illuminate\Support\Carbon|null $start_at
  * @property \Illuminate\Support\Carbon|null $end_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
@@ -62,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $bracket
  * @property string|null $trigger_sub_type
  * @property \Illuminate\Support\Carbon|null $last_suspended_at
+ * @property string|null $label
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -70,6 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read Model|\Eloquent|null $trigger
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
@@ -92,18 +94,18 @@ class Offer extends Model implements Auditable
     use HasUniversalSearch;
 
     protected $casts = [
-        'data'            => 'array',
-        'settings'        => 'array',
-        'trigger_data'    => 'array',
-        'source_data'     => 'array',
-        'begin_at'          => 'datetime',
+        'data'              => 'array',
+        'settings'          => 'array',
+        'trigger_data'      => 'array',
+        'source_data'       => 'array',
+        'start_at'          => 'datetime',
         'end_at'            => 'datetime',
         'last_suspended_at' => 'datetime',
         'fetched_at'        => 'datetime',
-        'last_fetched_at' => 'datetime',
-        'status'          => 'boolean',
-        'state'           => OfferStateEnum::class,
-        'duration'        => OfferDurationEnum::class,
+        'last_fetched_at'   => 'datetime',
+        'status'            => 'boolean',
+        'state'             => OfferStateEnum::class,
+        'duration'          => OfferDurationEnum::class,
     ];
 
     protected $attributes = [
@@ -123,6 +125,7 @@ class Offer extends Model implements Auditable
     protected array $auditInclude = [
         'code',
         'name',
+        'label',
         'type',
         'status',
         'state',
@@ -146,6 +149,11 @@ class Offer extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(OfferStats::class);
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(OfferTimeSeries::class);
     }
 
     public function offerCampaign(): BelongsTo

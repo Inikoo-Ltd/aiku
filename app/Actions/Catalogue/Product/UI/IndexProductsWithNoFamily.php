@@ -193,7 +193,7 @@ class IndexProductsWithNoFamily extends OrgAction
             ->table(IndexProducts::make()->tableStructure(shop: $shop, prefix: ProductsTabsEnum::SALES->value));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

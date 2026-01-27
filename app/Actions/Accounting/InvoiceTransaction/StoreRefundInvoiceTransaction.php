@@ -38,7 +38,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
         $isRefundAll = Arr::pull($modelData, 'refund_all', false);
 
         $netAmount = Arr::get($modelData, 'net_amount', 0) * -1;
-        if ($netAmount === 0) {
+        if ($netAmount === 0 && !Arr::has($modelData, 'is_tax_only')) {
             $invoiceTransaction->transactionRefunds()->where('invoice_id', $refund->id)->forceDelete();
             if (!$isRefundAll) {
                 CalculateInvoiceTotals::run($refund);
@@ -49,7 +49,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
 
         $totalTrRefunded = $invoiceTransaction->transactionRefunds->where('in_process', false)->sum('net_amount');
 
-        if (abs($netAmount) == $invoiceTransaction->net_amount) {
+        if (abs($netAmount) == $invoiceTransaction->net_amount && !Arr::has($modelData, 'is_tax_only')) {
             $netAmount = (abs($netAmount) - abs($totalTrRefunded)) * -1;
 
             if ($netAmount == 0) {
@@ -83,9 +83,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
             $quantity = $netAmount / $unitNetPrice;
         }
 
-
-        data_set($modelData, 'quantity', $quantity);
-
+        if (! Arr::has($modelData, 'quantity')) {
+            data_set($modelData, 'quantity', $quantity);
+        }
 
         data_set($modelData, 'invoice_id', $refund->id);
         data_set($modelData, 'group_id', $invoiceTransaction->group_id);
@@ -106,7 +106,6 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'historic_asset_id', $invoiceTransaction->historic_asset_id);
 
         data_set($modelData, 'in_process', true);
-
 
         $invoiceTransaction = $invoiceTransaction->transactionRefunds()->create($modelData);
 

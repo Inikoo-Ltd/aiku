@@ -30,6 +30,7 @@ import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
+import EligibleGift from '@/Components/Order/EligibleGift.vue'
 library.add(faTag, faCheck)
 
 interface ChargeResource {
@@ -107,6 +108,17 @@ const props = defineProps<{
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
         insurance?: ChargeResource
+    }
+    eligible_gifts: {
+        is_customer_eligible: boolean
+        selected_gift: {
+            label: string
+            value: string
+        }
+        available_gifts: {
+            label: string
+            value: string
+        }[]
     }
 }>()
 
@@ -571,6 +583,17 @@ const onChangeInsurance = async (val: boolean) => {
                 :data="transactions"
                 :updateRoute="routes.update_route"
             />
+
+            <div v-if="layout.app.environment === 'local' && eligible_gifts?.is_customer_eligible" class="flex justify-end pr-2 md:pr-6 mt-4">
+                <EligibleGift
+                    :routeUpdate="{
+                        name: 'retina.models.order.update_eligible_gift',
+                        parameters: order?.id
+                    }"
+                    :selectedGift="eligible_gifts?.selected_gift"
+                    :giftOptions="eligible_gifts?.available_gifts"
+                />
+            </div>
             
             <!-- Section: Charge Premium Dispatch -->
             <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">

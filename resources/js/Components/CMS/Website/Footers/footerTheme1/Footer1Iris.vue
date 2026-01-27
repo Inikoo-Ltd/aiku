@@ -16,6 +16,7 @@ import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { isObject } from 'lodash-es'
+import { secondsToMilliseconds } from 'date-fns'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faFacebook, faWhatsapp)
 
@@ -43,14 +44,14 @@ const onSubmitSubscribe = async () => {
     // }
 
 
-    if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
+    if (!layout?.iris?.website?.id) {
         console.log('--1')
         setTimeout(() => {
             inputEmail.value = ""
             currentState.value = 'success'
             isLoadingSubmit.value = false
         }, 700)
-    } else {  // If in Iris or Retina
+    } else { 
         try {
             await axios.post(
                 window.origin + '/app/webhooks/subscribe-newsletter',
@@ -118,8 +119,14 @@ const getValueColumn4Transleted = (value: string) => {
             <div>
                 <component v-if="modelValue?.logo?.source" :is="'span'" rel="noopener noreferrer"
                     class="mx-auto md:mx-0 block w-fit h-auto pt-3">
-                    <Image :style="getStyles(modelValue.logo.properties, screenType)" :alt="modelValue?.logo?.alt"
-                        :imageCover="true" :src="modelValue?.logo?.source">
+                    <Image 
+                        :style="getStyles(modelValue.logo.properties, screenType)" 
+                        :alt="modelValue?.logo?.alt" 
+                        :imageCover="true" 
+                        :src="modelValue?.logo?.source"
+                        :height="getStyles(modelValue.logo.properties, screenType,false).height"
+                        :width="getStyles(modelValue.logo.properties, screenType,false).width"
+                    >
                     </Image>
                 </component>
             </div>
@@ -342,9 +349,15 @@ const getValueColumn4Transleted = (value: string) => {
                     </div>
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
-                        <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
-                            <img :src="payment.image" :alt="payment.alt"
-                                class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
+                        <div v-for="(payment,index) of modelValue.paymentData.data" :key="payment.key">
+                            <img 
+                                :src="payment?.image" 
+                                :alt="payment?.alt || 'payment' + index"
+                                class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain"
+                                :srcset="`${payment.image} 1x, ${payment.image} 2x`"
+                                sizes="(max-width: 768px) 50px, 100px"
+                                loading="lazy"
+                            />
                         </div>
                     </div>
                 </div>
@@ -418,7 +431,7 @@ const getValueColumn4Transleted = (value: string) => {
                 </h2> -->
 
                 <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-6 justify-center">
-                    <a v-for="socmed of modelValue?.socialMedia" target="_blank" :href="socmed.link">
+                    <a v-for="(socmed,index) of modelValue?.socialMedia" target="_blank" :href="socmed.link" :name="socmed.type || 'sosmed' + index">
                         <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl"></FontAwesomeIcon>
                     </a>
                 </div>

@@ -20,7 +20,7 @@ import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
-import { faShapes, faStar } from "@fas"
+import { faShapes, faStar, faTriangle, faEquals } from "@fas"
 
 const props = defineProps<{
     data: {}
@@ -237,10 +237,31 @@ function getClassColorIcon(varSlug: string) {
     return color ? { color: `${color} !important` } : {};
 }
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return {
+            icon: faTriangle
+        }
+    } else if (!isPositive) {
+        return {
+            icon: faTriangle,
+            class: 'rotate-180'
+        }
+    }
+}
+
+const getIntervalStateColor = (isPositive: boolean) => {
+    if (isPositive) {
+        return 'text-green-500'
+    } else if (!isPositive) {
+        return 'text-red-500'
+    }
+}
+
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox || editable_table"
+    <Table :resource="data" :name="tab" class="mt-5 table-product" :isCheckBox="isCheckBox || editable_table"
         @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
 
         <template #cell(image_thumbnail)="{ item: collection }">
@@ -282,9 +303,13 @@ function getClassColorIcon(varSlug: string) {
         </template>
 
         <template #cell(code)="{ item: masterProduct }">
-            <Link v-if="masterProduct.code" v-tooltip="masterProduct.code" :href="(masterProductRoute(masterProduct) as string)" class="secondaryLink">
-                {{ masterProduct["code"] }}
-            </Link>
+            <div class="inline-block">
+                <Link v-if="masterProduct.code" v-tooltip="masterProduct.code"
+                    :href="masterProductRoute(masterProduct) as string"
+                    class="secondaryLink whitespace-nowrap w-max inline-block">
+                    {{ masterProduct.code }}
+                </Link>
+            </div>
         </template>
 
         <template #cell(code_product)="{ item: masterProduct }">
@@ -379,6 +404,82 @@ function getClassColorIcon(varSlug: string) {
 
         </template>
 
+        <template #cell(sales)="{ item: product }">
+            <span class="tabular-nums">{{ locale.currencyFormat(product.currency_code, product.sales) }}</span>
+        </template>
+
+        <template #cell(sales_delta)="{ item }">
+            <div v-if="item.sales_delta">
+                <span>{{ item.sales_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #cell(invoices_delta)="{ item }">
+            <div v-if="item.invoices_delta">
+                <span>{{ item.invoices_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.invoices_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faMinus"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon
+                    :icon="faEquals"
+                    class="text-xxs md:text-sm"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
         <template #cell(actions)="{ item: item}">
             <div v-if="editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
@@ -406,5 +507,3 @@ function getClassColorIcon(varSlug: string) {
 
     </Table>
 </template>
-
-

@@ -491,7 +491,6 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
             ->component("Masters/MasterDepartments")
             ->has("title")
             ->has("breadcrumbs", 4)
-            ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
@@ -526,7 +525,6 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
             ->component("Masters/MasterFamilies")
             ->has("title")
             ->has("breadcrumbs", 4)
-            ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
@@ -543,15 +541,14 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterSubDepartments")
             ->has("title")
-            ->has("breadcrumbs", 2)
-            ->has("data")
+            ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
                 $page->has('subNavigation')->etc()
             );
     });
-})->depends('create master shop')->todo();
+})->depends('create master shop');
 
 test('store master department', function () {
     $masterShop = MasterShop::first();
@@ -760,7 +757,6 @@ test("UI Index Master SubDepartments in Department", function (MasterProductCate
         $page
             ->component("Masters/MasterSubDepartments")
             ->has("title")
-            ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>

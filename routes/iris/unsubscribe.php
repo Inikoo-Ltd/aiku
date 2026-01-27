@@ -10,5 +10,5 @@ use App\Actions\Comms\Unsubscribe\ShowUnsubscribeMailshot;
 use App\Actions\Comms\Unsubscribe\UnsubscribeMailshot;
 use Illuminate\Support\Facades\Route;
 
-Route::get('{dispatchedEmail:ulid}', ShowUnsubscribeMailshot::class)->name('show');
-Route::post('{dispatchedEmail:ulid}', UnsubscribeMailshot::class)->name('update');
+Route::get('{dispatchedEmail:uuid}', ShowUnsubscribeMailshot::class)->name('show');
+Route::post('{dispatchedEmail:uuid}', UnsubscribeMailshot::class)->name('update');

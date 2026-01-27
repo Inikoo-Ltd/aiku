@@ -29,8 +29,10 @@ const props = defineProps<{
 }>()
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle } from '@fal'
+import ComsDashboard from "@/Components/Coms/ComsDashboard.vue";
 
-library.add( faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle )
+library.add(faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle)
+
 const isModalUploadOpen = ref(false)
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -41,11 +43,12 @@ const component = computed(() => {
         details: ModelDetails,
         history: ModelChangelog,
         attachments: TableAttachments,
+        SHOWCASE: ComsDashboard,
+        items: ComsDashboard,
     }
     return components[currentTab.value]
 
 });
-
 </script>
 
 <template>

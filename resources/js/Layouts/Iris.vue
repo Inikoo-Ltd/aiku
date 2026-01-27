@@ -15,8 +15,8 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faMedal } from '@fal'
-import { faMedal as fasMedal } from '@fas'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
+import { faMedal as fasMedal, faCircle } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -30,7 +30,7 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 
-library.add(faHome, faImage, faSparkles, faExclamationTriangle, faMedal, fasMedal, fadMedal, faWhatsapp)
+library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -42,7 +42,6 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 const propsAnnouncementsTopbar = ref([])
 const propsAnnouncementsBottomMenu =  ref([])
 const propsAnnouncementsTopFooter =  ref([])
-console.log('usePage',usePage().props)
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
