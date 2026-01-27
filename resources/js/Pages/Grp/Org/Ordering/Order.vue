@@ -81,7 +81,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
-import { get, set } from "lodash"
+import { debounce, get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
@@ -837,6 +837,16 @@ const updateCharge = async (charge: {}) => {
             }
         )
         
+        charge.isRecentlySuccess = true
+        setTimeout(() => {
+            charge.isRecentlySuccess = false
+        }, 2000)
+        notify({
+            title: trans("Success!"),
+            text: "Successfully edit net amount of the charge",
+            type: "success",
+        })
+
         console.log('Response axios:', response.data)
     } catch (error: any) {
         notify({
@@ -848,6 +858,7 @@ const updateCharge = async (charge: {}) => {
         charge.isLoading = false
     }
 }
+const updateDebCharge = debounce((charge) => updateCharge(charge), 400)
 const addCharge = async (charge: {}) => {
     
     notify({
@@ -1889,7 +1900,7 @@ const submitNewCharge = async () => {
         </div>
     </Modal>
 
-    <!-- Modal: Edit Discretionary Discount -->
+    <!-- Modal: Charges list -->
     <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
         width="w-full max-w-3xl " :isClosableInBackground="false" closeButton>
         <div class="isolate bg-white px-6 lg:px-8 relative">
@@ -1901,20 +1912,41 @@ const submitNewCharge = async () => {
 
             <div class="h-full max-h-[600px] overflow-y-scroll pr-2">
                 <DataTable :value="chargesList" tableStyle="xmin-width: 50rem">
-                    <Column field="name" header="Name"></Column>
-                    <Column field="net_amount" header="Net Amount">
+                    <Column field="name" header="Name">
                         <template #body="{ data }">
                             <div>
+                                {{ data.name }}
+                                <!-- <span v-if="data.is_discretionary" @click="data.is_editing_net_amount = true">
+                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                                </span> -->
+                            </div>
+                        </template>
+                    </Column>
+                    <Column field="net_amount" header="Net Amount">
+                        <template #body="{ data }">
+                            <div v-if="!data.is_editing_net_amount">
                                 {{ locale.currencyFormat(currency.code, data.net_amount) }}
-                                <span @click="data.is_editing_net_amount = true">
+                                <span @click="data.is_editing_net_amount = true" class="opacity-80 hover:opacity-100 cursor-pointer">
                                     <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
                                 </span>
                             </div>
 
-                            <div>
+                            <div v-else>
+                                <InputNumber
+                                    v-model="data.net_amount"
+                                    :modelValue="data.net_amount"
+                                    @input="(val) => (data.net_amount = val.value, updateDebCharge(data))"
+                                    :min="0"
+                                    mode="currency"
+                                    :currency="currency.code"
+                                    size="small"
+                                    :inputClass="data.isRecentlySuccess ? '!border-green-500' : ''"
+                                />
                                 
+                                <span @click="data.is_editing_net_amount = false" class="text-red-500 cursor-pointer underline inline-block ml-2">
+                                    {{ trans("cancel") }}
+                                </span>
                             </div>
-                            {{ data.is_editing_net_amount }}
                         </template>
                     </Column>
                 </DataTable>
@@ -1924,13 +1956,6 @@ const submitNewCharge = async () => {
                 <Button @click="() => isOpenModalAddCharges = true" type="dashed" size="xs" label="Add discretionary charges" icon="fal fa-plus" full />
             </div>
 
-
-            
-            <!-- <div class="flex gap-3 mt-4">
-                <Button type="negative" icon="far fa-arrow-left"
-                    @click="isOpenModalDiscretionaryCharge = false" :label="trans('Cancel')" />
-
-            </div> -->
         </div>
     </Modal>
 
