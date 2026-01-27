@@ -197,23 +197,26 @@ class UpdateMasterAsset extends OrgAction
             $english      = Language::where('code', 'en')->first();
 
             foreach ($masterAsset->products as $product) {
-                $shopLanguage = $product->shop->language;
+                $shop = $product->shop;
+                if(!data_get($shop->settings, 'catalog.product_follow_master')) continue;
+                
+                $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
 
                 // Updates affected field name using translate if follow_master_{field} is true
-                if ($masterAsset->wasChanged('name') && $product->follow_master_name) {
+                if ($masterAsset->wasChanged('name')) {
                     $dataToBeUpdated['name'] = Translate::run($masterAsset->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
-                if ($masterAsset->wasChanged('description_title') && $product->follow_master_description_title) {
+                if ($masterAsset->wasChanged('description_title')) {
                     $dataToBeUpdated['description_title'] = Translate::run($masterAsset->description_title, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
-                if ($masterAsset->wasChanged('description') && $product->follow_master_description) {
+                if ($masterAsset->wasChanged('description')) {
                     $dataToBeUpdated['description'] = Translate::run($masterAsset->description, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
-                if ($masterAsset->wasChanged('description_extra') && $product->follow_master_description_extra) {
+                if ($masterAsset->wasChanged('description_extra')) {
                     $dataToBeUpdated['description_extra'] = Translate::run($masterAsset->description_extra, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
