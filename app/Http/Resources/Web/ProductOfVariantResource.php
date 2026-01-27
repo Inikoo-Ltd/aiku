@@ -52,9 +52,9 @@ class ProductOfVariantResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
-        if(is_string($product->offers_data)) {
+        if (is_string($product->offers_data)) {
             $productOffersData = json_decode($product->offers_data, true);
-        }else{
+        } else {
             $productOffersData = $product->offers_data;
         }
 

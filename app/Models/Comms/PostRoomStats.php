@@ -85,6 +85,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_pallet_deleted
  * @property int $number_outboxes_type_reorder_reminder_2nd
  * @property int $number_outboxes_type_reorder_reminder_3rd
+ * @property int $number_outboxes_type_credit_balance_notification_for_customer
+ * @property int $number_outboxes_type_credit_balance_notification_for_user
  * @property-read \App\Models\Comms\PostRoom|null $postRoom
  * @method static Builder<static>|PostRoomStats newModelQuery()
  * @method static Builder<static>|PostRoomStats newQuery()

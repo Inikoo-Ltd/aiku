@@ -111,7 +111,9 @@ class UpdateMasterProductCategory extends OrgAction
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $shop = $productCategory->shop;
-                if(!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) continue;
+                if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
+                    continue;
+                }
 
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
@@ -121,22 +123,22 @@ class UpdateMasterProductCategory extends OrgAction
                     $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
-                
+
                 if (Arr::has($changed, 'description_title')) {
                     $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
-                
+
                 if (Arr::has($changed, 'description')) {
                     $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
-                
+
                 if (Arr::has($changed, 'description_extra')) {
                     $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
-                
+
                 if (Arr::has($changed, 'code')) {
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
                 }

@@ -202,6 +202,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_items_state_inspected
  * @property int $number_return_items_state_restocked
  * @property int $number_return_items_state_cancelled
+ * @property int $number_current_picking_trolleys Total picking trolleys status=true
+ * @property int $number_current_picking_trolleys_in_use Total picking trolleys in use status=true, delivery_note_id not null
+ * @property int $number_picking_trolleys Total picking trolleys including status=false ones
+ * @property int $number_current_picked_bays Total picking trolleys status=true
+ * @property int $number_current_picked_bays_in_use Total picking trolleys in use status=true, delivery_note_id not null
+ * @property int $number_picked_bays Total picking trolleys including status=false ones
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

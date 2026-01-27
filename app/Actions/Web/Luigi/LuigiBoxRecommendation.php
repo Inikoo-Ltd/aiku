@@ -22,7 +22,7 @@ class LuigiBoxRecommendation extends IrisAction
 {
     public function handle(ActionRequest $request): LengthAwarePaginator|array
     {
-        
+
         // THIS ONE IS UNUSED. WILL DELETE SOON AFTER IT IS REMOVED FROM FE TOTALLY
 
         $customer = $request->user();

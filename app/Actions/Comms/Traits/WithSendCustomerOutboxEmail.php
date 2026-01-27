@@ -39,7 +39,7 @@ trait WithSendCustomerOutboxEmail
         $outbox = $customer->shop->outboxes()->where('code', $code->value)->first();
 
         $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
-        if($emailHtmlBody === null) {
+        if ($emailHtmlBody === null) {
             Sentry::captureMessage('Email live snapshot not found for outbox code: ' . $code->value.' outobox id: '.$outbox->id.'');
             return null;
         }

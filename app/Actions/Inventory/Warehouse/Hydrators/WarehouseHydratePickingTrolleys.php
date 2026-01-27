@@ -10,7 +10,6 @@ namespace App\Actions\Inventory\Warehouse\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 

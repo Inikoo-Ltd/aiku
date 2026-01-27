@@ -198,8 +198,10 @@ class UpdateMasterAsset extends OrgAction
 
             foreach ($masterAsset->products as $product) {
                 $shop = $product->shop;
-                if(!data_get($shop->settings, 'catalog.product_follow_master')) continue;
-                
+                if (!data_get($shop->settings, 'catalog.product_follow_master')) {
+                    continue;
+                }
+
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
 

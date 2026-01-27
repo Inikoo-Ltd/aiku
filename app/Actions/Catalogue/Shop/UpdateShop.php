@@ -79,19 +79,19 @@ class UpdateShop extends OrgAction
             );
         }
 
-        if (Arr::has($modelData, 'department_follow_master')){
+        if (Arr::has($modelData, 'department_follow_master')) {
             data_set($modelData, 'settings.catalog.department_follow_master', Arr::pull($modelData, 'department_follow_master'));
         }
-        
-        if (Arr::has($modelData, 'sub_department_follow_master')){
+
+        if (Arr::has($modelData, 'sub_department_follow_master')) {
             data_set($modelData, 'settings.catalog.sub_department_follow_master', Arr::pull($modelData, 'sub_department_follow_master'));
         }
-        
-        if (Arr::has($modelData, 'family_follow_master')){
+
+        if (Arr::has($modelData, 'family_follow_master')) {
             data_set($modelData, 'settings.catalog.family_follow_master', Arr::pull($modelData, 'family_follow_master'));
         }
 
-        if (Arr::has($modelData, 'product_follow_master')){
+        if (Arr::has($modelData, 'product_follow_master')) {
             data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
         }
 

@@ -220,6 +220,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentAccount> $paymentAccounts
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
+ * @property-read LaravelCollection<int, PickedBay> $pickedBays
+ * @property-read LaravelCollection<int, PickingTrolley> $pickingTrolleys
  * @property-read LaravelCollection<int, Picking> $pickings
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read \App\Models\SysAdmin\OrganisationProcurementStats|null $procurementStats

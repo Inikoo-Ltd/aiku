@@ -12,8 +12,6 @@ namespace App\Actions\Web\Luigi;
 use App\Actions\IrisAction;
 use App\Services\QueryBuilder;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Arr;
 use App\Http\Resources\Catalogue\IrisLuigiBoxRecommendationResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
@@ -22,7 +20,6 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class LuigiBoxGetProductDetail extends IrisAction
 {
-
     use HasPriceMetrics;
 
     public function handle(array $modelData): LengthAwarePaginator
@@ -46,7 +43,7 @@ class LuigiBoxGetProductDetail extends IrisAction
             'products.price',
             'webpages.canonical_url as url',
         ]);
-        
+
 
         return $queryBuilder
             ->withIrisPaginator(25)

@@ -37,13 +37,13 @@ class UpdateTransactionChargeAmount extends OrgAction
             abort(403);
         }
 
-//        if (Arr::get($modelData, 'discretionary_offer') == 0) {
-//            $modelData['discretionary_offer'] = null;
-//        }
-//
-//        $transaction->update($modelData);
-//        OrderHydrateDiscretionaryOffersData::run($transaction->order);
-//        CalculateOrderDiscounts::run($transaction->order);
+        //        if (Arr::get($modelData, 'discretionary_offer') == 0) {
+        //            $modelData['discretionary_offer'] = null;
+        //        }
+        //
+        //        $transaction->update($modelData);
+        //        OrderHydrateDiscretionaryOffersData::run($transaction->order);
+        //        CalculateOrderDiscounts::run($transaction->order);
 
 
         return $transaction;

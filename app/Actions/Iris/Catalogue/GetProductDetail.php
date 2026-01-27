@@ -11,7 +11,6 @@ namespace App\Actions\Iris\Catalogue;
 
 use App\Actions\IrisAction;
 use App\Http\Resources\Traits\HasPriceMetrics;
-use App\Http\Resources\Web\WebBlockProductTODOPROCUCTDEAILIRISPRODUCTPAGEResource;
 use App\Models\Catalogue\Product;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
