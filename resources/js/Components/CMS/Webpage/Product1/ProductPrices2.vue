@@ -34,10 +34,10 @@ const locale = useLocaleStore()
             <div class="border-b border-gray-300 pb-1">
                 <span v-tooltip="trans('Recommended Retail Price')" class="inline-block">{{ trans("RRP") }}
 
-                    <span class="whitespace-nowrap ml-1 bg-gray-300 border border-gray-400 px-1 py-0.5 rounded-full text-xxs align-middle inline">
+                   <!--  <span class="whitespace-nowrap ml-1 bg-gray-300 border border-gray-400 px-1 py-0.5 rounded-full text-xxs align-middle inline">
                         <FontAwesomeIcon icon="fas fa-circle" class="text-white text-xs" fixed-width aria-hidden="true" />
                         {{ trans("Excl. Tax") }}
-                    </span>
+                    </span> -->
                 </span>
             </div>
         </div>

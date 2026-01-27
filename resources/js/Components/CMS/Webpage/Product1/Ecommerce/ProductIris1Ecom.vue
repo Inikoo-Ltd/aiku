@@ -255,7 +255,7 @@ onMounted(async () => {
                     </div>
 
                     <!-- FAVOURITE -->
-                    <div v-if="layout?.retina?.type !== 'dropshipping' && layout?.iris?.is_logged_in">
+                    <div v-if="layout?.iris?.is_logged_in">
                         <LoadingIcon v-if="isLoadingFavourite" class="text-gray-500 text-2xl" />
                         <div v-else class="cursor-pointer text-2xl" @click="
                             customerData?.is_favourite
@@ -278,13 +278,14 @@ onMounted(async () => {
                 /> -->
 
                 <ProductPrices2
+                    v-if="layout?.iris?.is_logged_in"
                     :field-value="fieldValue"
                     :product="product"
                     :key="product.code"
                 />
 
                 <!-- Section: Member/Non Member label, Profit -->
-                <div class="flex justify-between mt-1">
+                <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
                     <template v-if="product.offers_data?.number_offers > 0">
                         <div v-if="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
                             class="flex flex-col w-fit"
