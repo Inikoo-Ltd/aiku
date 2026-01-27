@@ -23,6 +23,7 @@ import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -153,9 +154,9 @@ const getBestOffer = (offerId: string) => {
                     </slot>
 
                     <!-- Section: Discounts -->
-                    <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
-                        <Discount v-if="product?.offers_data?.number_offers > 0" :template="'agnes_and_cat'" :offers_data="product.offers_data"  />
-                    </div>
+                   <!--  <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
+                         <DiscountByType :offers_data="product?.product_offers_data" />
+                    </div> -->
 
                     <!-- FAVOURITE -->
                     <template v-if="layout?.iris?.is_logged_in && !product.variant">

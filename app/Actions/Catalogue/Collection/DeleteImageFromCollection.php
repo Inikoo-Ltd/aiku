@@ -36,7 +36,7 @@ class DeleteImageFromCollection extends OrgAction
         if (!empty($updateData)) {
             $collection->update($updateData);
         }
-        
+
         $changes = Arr::except($collection->getChanges(), ['updated_at']);
 
         if (Arr::has($changes, 'image_id')) {

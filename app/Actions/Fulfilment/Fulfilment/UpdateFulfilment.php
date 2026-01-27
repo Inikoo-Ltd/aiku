@@ -37,13 +37,15 @@ class UpdateFulfilment extends OrgAction
             'ebay_warehouse_city',
             'ebay_warehouse_state',
             'ebay_warehouse_country'])) {
-            UpdateShop::make()->action($fulfilment->shop, Arr::only($modelData,
+            UpdateShop::make()->action($fulfilment->shop, Arr::only(
+                $modelData,
                 ['invoice_serial_references',
                     'ebay_redirect_key',
                     'ebay_marketplace_id',
                     'ebay_warehouse_city',
                     'ebay_warehouse_state',
-                    'ebay_warehouse_country']));
+                    'ebay_warehouse_country']
+            ));
             data_forget($modelData, 'invoice_serial_references');
             data_forget($modelData, 'ebay_redirect_key');
             data_forget($modelData, 'ebay_marketplace_id');
