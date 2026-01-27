@@ -48,6 +48,8 @@ class GetChargesInOrder extends OrgAction
                 'transactions.id',
                 'transactions.gross_amount',
                 'transactions.net_amount',
+                'transactions.offers_data',
+                'transactions.label as transaction_label',
                 'historic_asset_id',
                 'charges.code',
                 'charges.type',

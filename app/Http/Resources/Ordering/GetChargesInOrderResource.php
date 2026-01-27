@@ -21,6 +21,8 @@ use Illuminate\Support\Arr;
  * @property mixed $description
  * @property mixed $historic_asset_id
  * @property mixed $type
+ * @property mixed $offers_data
+ * @property mixed $transaction_label
  */
 class GetChargesInOrderResource extends JsonResource
 {
@@ -30,9 +32,8 @@ class GetChargesInOrderResource extends JsonResource
         $percentageDiscount = null;
 
         if (!$isDiscretionary) {
-            $offerData = json_decode($this->description, true);
-            if (Arr::has($offerData, 'p')) {
-                $percentageDiscount = $offerData['p'];
+            if (Arr::has($this->offers_data, 'o.p')) {
+                $percentageDiscount = Arr::get($this->offers_data, 'o.p');
             }
         }
 
@@ -47,7 +48,9 @@ class GetChargesInOrderResource extends JsonResource
             'historic_asset_id'   => $this->historic_asset_id,
             'type'                => $this->type,
             'is_discretionary'    => $isDiscretionary,
-            'percentage_discount' => $percentageDiscount
+            'percentage_discount' => $percentageDiscount,
+            'offers_data'         => $this->offers_data,
+            'transaction_label'   => $this->transaction_label,
 
         ];
     }

@@ -1915,10 +1915,10 @@ const submitNewCharge = async () => {
                     <Column field="name" header="Name">
                         <template #body="{ data }">
                             <div>
-                                {{ data.name }}
-                                <!-- <span v-if="data.is_discretionary" @click="data.is_editing_net_amount = true">
+                                {{ data.name }} {{ data.transaction_label }}
+                                <span v-if="data.is_discretionary" @click="data.is_editing_net_amount = true">
                                     <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
-                                </span> -->
+                                </span>
                             </div>
                         </template>
                     </Column>
@@ -1946,6 +1946,13 @@ const submitNewCharge = async () => {
                                 <span @click="data.is_editing_net_amount = false" class="text-red-500 cursor-pointer underline inline-block ml-2">
                                     {{ trans("cancel") }}
                                 </span>
+                            </div>
+                        </template>
+                    </Column>
+                    <Column field="discounts" header="">
+                        <template #body="{ data }">
+                            <div>
+                                -{{ data.percentage_discount }}
                             </div>
                         </template>
                     </Column>
