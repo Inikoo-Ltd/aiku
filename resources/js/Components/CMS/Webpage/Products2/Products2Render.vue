@@ -154,11 +154,7 @@ const getBestOffer = (offerId: string) => {
 
                     <!-- Section: Discounts -->
                     <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
-                       <!--  <Discount :template="'agnes_and_cat'" :offers_data="product.offers_data"  /> -->
-                        <AvailableVolOfferLabel class="w-48"
-                            v-if="(product.stock && basketButton && !product.is_coming_soon) && !layout?.user?.gr_data?.customer_is_gr"
-                            :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
-                        />
+                        <Discount v-if="product?.offers_data?.number_offers > 0" :template="'agnes_and_cat'" :offers_data="product.offers_data"  />
                     </div>
 
                     <!-- FAVOURITE -->
