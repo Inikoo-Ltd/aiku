@@ -22,7 +22,6 @@ class RedoMasterAssetTimeSeries
 
 
     public string $commandSignature = 'master_assets:redo_time_series {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
-    public string $jobQueue = 'default-long';
 
     public function __construct()
     {
