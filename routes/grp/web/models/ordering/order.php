@@ -37,6 +37,7 @@ use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransactionChargeAmount;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
@@ -47,6 +48,8 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
+    Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
+
 });
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
