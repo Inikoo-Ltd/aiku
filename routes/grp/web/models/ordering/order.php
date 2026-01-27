@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
@@ -49,10 +50,12 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
     Route::patch('', UpdateTransaction::class)->name('update');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
-
 });
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
+    Route::post('discretionary-charge-transaction', StoreDiscretionaryChargeTransaction::class)->name('discretionary_charge_transaction');
+
+
     Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
 
     Route::patch('update', UpdateOrder::class)->name('update');
