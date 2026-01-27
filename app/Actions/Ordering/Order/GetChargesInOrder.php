@@ -43,7 +43,7 @@ class GetChargesInOrder extends OrgAction
 
 
         $queryBuilder
-            ->defaultSort('transactions.code')
+            ->defaultSort('charges.code')
             ->select([
                 'transactions.id',
                 'transactions.gross_amount',

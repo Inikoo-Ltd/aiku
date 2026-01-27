@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -818,44 +818,52 @@ const onSubmitEditAllPercentage = async () => {
 // Section: Edit Discretionary Charge
 const isOpenModalDiscretionaryCharge = ref(false)
 const isLoadingSaveDiscretionaryCharge = ref(false)
+const chargesList = ref([])
 const dataDiscretionaryChargeToChange = ref({
     label: '',
     amount: ''
 })
-const onSaveDiscretionaryCharges = () => {
-    // Section: Submit
-    router.post(
-        'xxxx',
-        {
-            data: dataDiscretionaryChargeToChange.value
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingSaveDiscretionaryCharge.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSaveDiscretionaryCharge.value = false
-            },
-        }
-    )
+const updateCharge = async (charge: {}) => {
+    try {
+        charge.isLoading = true
+        const response = await axios.patch(
+            route(
+                'grp.models.transaction.update_charge_amount',
+                {
+                    transaction: charge.transaction_id
+                }
+            ), {
+                amount: charge.net_amount
+            }
+        )
+        
+        console.log('Response axios:', response.data)
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        charge.isLoading = false
+    }
 }
-watch(isOpenModalDiscretionaryCharge, async () => {
+const addCharge = async (charge: {}) => {
+    
+    notify({
+        title: trans("Something went wrong"),
+        text: "Route to add new charge is not available yet.",
+        type: "error",
+    })
+}
+const onSaveCharge = async (charge: {}) => {
+    if ( charge.transaction_id ) {
+        updateCharge(charge)
+    } else {
+        addCharge(charge)
+    }
+}
+const fetchChargesList = async () => {
     try {
         const response = await axios.get(
             route(
@@ -866,6 +874,7 @@ watch(isOpenModalDiscretionaryCharge, async () => {
             ),
         )
         
+        chargesList.value = response.data.data
         console.log('Response axios:', response.data)
     } catch (error: any) {
         notify({
@@ -874,7 +883,55 @@ watch(isOpenModalDiscretionaryCharge, async () => {
             type: 'error'
         })
     }
+}
+watch(isOpenModalDiscretionaryCharge, async () => {
+    fetchChargesList()
 })
+
+
+// Section: add new charge
+const isOpenModalAddCharges = ref(false)
+const dataNewChargeToAdd = ref({
+    label: '',
+    amount: 0
+})
+const isLoadingAddNewCharge = ref(false)
+const submitNewCharge = async () => {
+
+    try {
+        isLoadingAddNewCharge.value = true
+        const response = await axios.post(
+            route('grp.models.order.discretionary_charge_transaction', {
+                order: props.data?.data?.id
+            }),
+            {
+                amount: dataNewChargeToAdd.value.amount,
+                label: dataNewChargeToAdd.value.label,
+            }
+        )
+        console.log('Response axios:', response.data)
+
+        fetchChargesList()
+        dataNewChargeToAdd.value.label = ''
+        dataNewChargeToAdd.value.amount = 0
+        isOpenModalAddCharges.value = false
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully add new charge"),
+            type: "success"
+        })
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to add new charge"),
+            type: "error"
+        })
+    } finally {
+        isLoadingAddNewCharge.value = false
+    }
+
+}
+
 </script>
 
 <template>
@@ -1834,58 +1891,92 @@ watch(isOpenModalDiscretionaryCharge, async () => {
 
     <!-- Modal: Edit Discretionary Discount -->
     <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
-        width="w-full max-w-xl">
-        <div class="isolate bg-white px-6 lg:px-8">
+        width="w-full max-w-3xl " :isClosableInBackground="false" closeButton>
+        <div class="isolate bg-white px-6 lg:px-8 relative">
             <div class="mx-auto max-w-2xl text-center mb-4">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
-                    {{ trans("Discretionary Charges") }}
+                    {{ trans("Charges") }}
                 </h2>
             </div>
 
-            <!-- Input: Label -->
-            <div class="w-full "
-                vxif="!(['finalised', 'dispatched', 'cancelled'].includes(data.data.state))">
-                <label class="block text-sm font-medium mb-2">
-                    {{ trans("Label") }}
-                    <InformationIcon :information="trans('Label to show to customer')" />
-                    :
-                </label>
-                <InputText v-model="labelPercentage" :disabled="isLoadingSubmitNetAmount"
-                    class="w-full" />
+            <div class="h-full max-h-[600px] overflow-y-scroll pr-2">
+                <DataTable :value="chargesList" tableStyle="xmin-width: 50rem">
+                    <Column field="name" header="Name"></Column>
+                    <Column field="net_amount" header="Net Amount">
+                        <template #body="{ data }">
+                            <div>
+                                {{ locale.currencyFormat(currency.code, data.net_amount) }}
+                                <span @click="data.is_editing_net_amount = true">
+                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                                </span>
+                            </div>
+
+                            <div>
+                                
+                            </div>
+                            {{ data.is_editing_net_amount }}
+                        </template>
+                    </Column>
+                </DataTable>
             </div>
 
-            
-            <div class="mt-6">
-                <label class="block text-sm font-medium mb-2">
-                    {{ trans('Amount') }}
-                    <InformationIcon :information="trans('Enter 0 to remove the charge')" />
-                    :
-                </label>
-                <InputNumber v-model="editedAllPercentage" :min="0" suffix="%" class="w-full" />
+            <div class="absolute top-2 right-4">
+                <Button @click="() => isOpenModalAddCharges = true" type="dashed" size="xs" label="Add discretionary charges" icon="fal fa-plus" full />
             </div>
 
+
             
-            <div class="flex gap-3 mt-4">
+            <!-- <div class="flex gap-3 mt-4">
                 <Button type="negative" icon="far fa-arrow-left"
                     @click="isOpenModalDiscretionaryCharge = false" :label="trans('Cancel')" />
 
-                <Button type="primary" icon="fad fa-save" :loading="isLoadingSaveDiscretionaryCharge"
-                    @click="onSaveDiscretionaryCharges" full :label="trans('Save')" />
+            </div> -->
+        </div>
+    </Modal>
+
+    <!-- Modal: Add new Charges -->
+    <Modal :isOpen="isOpenModalAddCharges" @onClose="isOpenModalAddCharges = false"
+        width="w-full max-w-lg" :isClosableInBackground="false" closeButton>
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Add Discretionary Charges") }}
+                </h2>
             </div>
 
-            <!-- 
-            <div class="flex flex-col gap-2">
-                <div>{{ trans("Select additional information to included:") }}</div>
-                <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
-                    <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
-                    <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
+            <div class=" mb-6 xflex gap-x-6">
+                <div class=" w-full col-span-2">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans("Label") }}
+                        <InformationIcon :information="trans('Label to show to customer')" />
+                        :
+                    </label>
+                    <InputText
+                        v-model="dataNewChargeToAdd.label"
+                        :disabled="isLoadingSubmitNetAmount"
+                        size="small"
+                        class="w-full"
+                    />
+                </div>
+    
+                
+                <div class="mt-6">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans('Amount') }}
+                        <InformationIcon :information="trans('Enter 0 to remove the charge')" />
+                        :
+                    </label>
+                    <InputNumber
+                        v-model="dataNewChargeToAdd.amount"
+                        :min="0"
+                        mode="currency"
+                        :currency="currency.code" class="w-full" size="small" />
                 </div>
             </div>
 
-            <a aclick="() => onClickProforma()" :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
-                class="w-full block mt-6" xdownload>
-                <Button full :label="trans('Download Proforma Invoice')" />
-            </a> -->
+            <div>
+                <Button @click="submitNewCharge" label="Add Charge" full :loading="isLoadingAddNewCharge" />
+            </div>
         </div>
     </Modal>
 
