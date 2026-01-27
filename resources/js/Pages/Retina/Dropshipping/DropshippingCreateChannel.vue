@@ -594,67 +594,6 @@ provide("goNext", goNext)
 					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
-
-			<!-- Section: Faire -->
-			<div
-				v-if="layout?.app?.environment === 'local'"
-				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-				<div
-					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-					<img src="https://i.ibb.co.com/9mCLCxLh/faire.png" alt="" class="h-12 filter" />
-
-					<div class="flex flex-col">
-						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
-							Faire
-						</div>
-						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.faire ?? 0 }} {{ trans("Channels") }}
-						</div>
-					</div>
-				</div>
-
-				<div class="w-full flex justify-end">
-					<Button
-						v-if="layout?.app?.environment === 'local'"
-						:label="trans('Connect')"
-						type="primary"
-						full
-						@click="() => (isModalMagento = true)" />
-					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
-				</div>
-			</div>
-
-			<!-- Section: Wix -->
-			<div
-				v-if="layout?.app?.environment === 'local'"
-				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-				<div
-					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-					<img
-						src="https://cdn-icons-png.flaticon.com/512/5968/5968762.png"
-						alt=""
-						class="h-12 filter" />
-
-					<div class="flex flex-col">
-						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
-							Wix
-						</div>
-						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.wix ?? 0 }} {{ trans("Channels") }}
-						</div>
-					</div>
-				</div>
-
-				<div class="w-full flex justify-end">
-					<Button
-						v-if="layout?.app?.environment === 'local'"
-						:label="trans('Connect')"
-						type="primary"
-						full
-						@click="() => (isModalMagento = true)" />
-					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
-				</div>
-			</div>
 		</div>
 	</div>
 
