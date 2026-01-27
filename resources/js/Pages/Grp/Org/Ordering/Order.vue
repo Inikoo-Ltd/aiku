@@ -874,8 +874,10 @@ const onSaveCharge = async (charge: {}) => {
         addCharge(charge)
     }
 }
+const isLoadingFetchCharges = ref(false)
 const fetchChargesList = async () => {
     try {
+        isLoadingFetchCharges.value = true
         const response = await axios.get(
             route(
                 'grp.json.charges_in_order.index',
@@ -893,10 +895,14 @@ const fetchChargesList = async () => {
             text: error.message || trans("Please try again or contact administrator"),
             type: 'error'
         })
+    } finally {
+        isLoadingFetchCharges.value = false
     }
 }
-watch(isOpenModalDiscretionaryCharge, async () => {
-    fetchChargesList()
+watch(isOpenModalDiscretionaryCharge, async (val) => {
+    if (val) {
+        fetchChargesList()
+    }
 })
 
 
@@ -1910,15 +1916,18 @@ const submitNewCharge = async () => {
                 </h2>
             </div>
 
-            <div class="h-full max-h-[600px] overflow-y-scroll pr-2">
+            <div v-if="isLoadingFetchCharges" class="grid grid-cols-3 h-36 gap-x-4 gap-y-2">
+                <div v-for="xxx in 9" class="skeleton rounded">
+
+                </div>
+            </div>
+
+            <div v-else class="h-full max-h-[600px] overflow-y-scroll pr-2">
                 <DataTable :value="chargesList" tableStyle="xmin-width: 50rem">
                     <Column field="name" header="Name">
                         <template #body="{ data }">
                             <div>
                                 {{ data.name }} {{ data.transaction_label }}
-                                <span v-if="data.is_discretionary" @click="data.is_editing_net_amount = true">
-                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
-                                </span>
                             </div>
                         </template>
                     </Column>
