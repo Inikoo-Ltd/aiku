@@ -62,6 +62,7 @@ class UpdateProductCategoryOffersData
                 $productOfferData['number_offers'] = count(Arr::get($productOfferData, 'offers', []));
                 $productOfferData                  = $this->getBestOffers($productOfferData);
                 $productOfferData['v']             = 1;
+
                 $product->update(['offers_data' => $productOfferData]);
             }
         }
@@ -106,43 +107,48 @@ class UpdateProductCategoryOffersData
         $categoryQuantityTrigger = null;
         $productsTriggerLabel    = null;
 
-        if ($offer->type == 'Category Quantity Ordered Order Interval') {
-            $currentLocale = app()->getLocale();
-            $locale        = $offer->shop->language->code;
-            app()->setLocale($locale);
+        $currentLocale = app()->getLocale();
+        $locale        = $offer->shop->language->code;
+        app()->setLocale($locale);
 
+        $categoryLink = '';
+        /** @var ProductCategory $category */
+        $category = $offer->trigger;
+        if ($category) {
+            $categoryLink = $category->code;
+            if ($category->webpage && $category->webpage->state == WebpageStateEnum::LIVE) {
+                $categoryLink = '<a href="'.e($category->webpage->canonical_url).'" class="underline">'.e($category->code).'</a>';
+            }
+        }
+
+        $percentage = $maxPercentageDiscount;
+        if ($percentage == '') {
+            $percentage = 'X';
+        } else {
+            $percentage = percentage($maxPercentageDiscount, 1, null);
+        }
+
+        if ($offer->type == 'Category Quantity Ordered Order Interval') {
             $triggerLabels[] = __('Order :n or more', ['n' => $offer->trigger_data['item_quantity']]);
             $triggerLabels[] = __('Order with in :n days', ['n' => $offer->trigger_data['interval']]);
 
             $categoryQuantityTrigger = $offer->trigger_data['item_quantity'];
 
-            $categoryLink = '';
-            /** @var ProductCategory $category */
-            $category = $offer->trigger;
-            if ($category) {
-                $categoryLink = $category->code;
-                if ($category->webpage && $category->webpage->state == WebpageStateEnum::LIVE) {
-                    $categoryLink = '<a href="'.e($category->webpage->canonical_url).'" class="underline">'.e($category->code).'</a>';
-                }
-
-            }
-
-
-            $percentage = $maxPercentageDiscount;
-            if ($percentage == '') {
-                $percentage = 'X';
-            } else {
-                $percentage = percentage($maxPercentageDiscount, 1, null);
-            }
 
             $productsTriggerLabel = __('Order :n+ from :category range to get :percentage off', [
-                'n'          => (int) $offer->trigger_data['item_quantity'],
+                'n'          => (int)$offer->trigger_data['item_quantity'],
                 'category'   => $categoryLink,
                 'percentage' => $percentage
             ]);
+        } elseif ($offer->type == 'Category Ordered') {
+            $triggerLabels[] = __('Order any product in this range');
 
-            app()->setLocale($currentLocale);
+            $productsTriggerLabel = __('Order any product from :category range to get :percentage off', [
+                'category'   => $categoryLink,
+                'percentage' => $percentage
+            ]);
         }
+        app()->setLocale($currentLocale);
 
 
         $offerData = [
