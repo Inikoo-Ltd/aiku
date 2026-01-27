@@ -165,9 +165,9 @@ onBeforeUnmount(() => {
     <div v-if="selectedProduct" class="mt-2">
         <ecom-add-to-basketv2 v-if="selectedProduct.stock > 0" 
             class="order-input-button"
-            :classContainer="!hasInBasketList[selectedProduct.id].quantity_ordered && !hasInBasketList[selectedProduct.id].quantity_ordered_new ? 'flex items-center gap-2 relative' : 'relative'"
+            :classContainer="!hasInBasketList[selectedProduct.id].quantity_ordered && !hasInBasketList[selectedProduct.id].quantity_ordered_new ? 'relative' : 'relative'"
             :customer-data="hasInBasketList[selectedProduct.id]" v-model:product="selectedProduct">
-            <template v-if="isMobile" #qty-add-button="{ data }">
+            <!-- <template v-if="isMobile" #qty-add-button="{ data }">
                 <div v-if="!data.customer.quantity_ordered && !data.customer.quantity_ordered_new">
                     <button @click="data.onAddToBasket(data.product, 1)" :disabled="data.isLoadingSubmitQuantityProduct"
                         class="rounded-full option-primary bg-gray-800 hover:bg-green-700
@@ -178,6 +178,9 @@ onBeforeUnmount(() => {
                         <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
                     </button>
                 </div>
+            </template> -->
+            <template #qty-add-button="{ data }">
+                <div></div>
             </template>
         </ecom-add-to-basketv2>
 
@@ -225,6 +228,9 @@ summary::-webkit-details-marker {
 }
  */
 
+ :deep(.order-input-button .qty-control) {
+    min-width: 100%;
+}
 
 :deep(.order-input-button .qty-input:focus) {
     outline: none;

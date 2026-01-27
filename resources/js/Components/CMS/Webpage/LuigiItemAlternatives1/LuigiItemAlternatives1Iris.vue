@@ -161,20 +161,20 @@ const fetchRecommenders = async () => {
  */
 
 
-  const fetchRecommendersToGetProducts = async () => {
-    const productListid = listProductsFromLuigi.value?.map((item)=>item.attributes.product_id[0])
-    console.log(productListid)
-
+const fetchRecommendersToGetProducts = async () => {
+    const productListid = listProductsFromLuigi.value?.map((item) => item.attributes.product_id[0])
     try {
         isLoadingFetch.value = true
 
-        const response = await axios.post(
+        const response = await axios.get(
             route('iris.json.luigi.product_details'),
             {
-                product_ids: productListid
+                params: {
+                    product_ids: productListid?.join(',')
+                }
             }
         )
-        listProducts.value = response.data
+        listProducts.value = response.data.data
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
@@ -186,13 +186,13 @@ const fetchRecommenders = async () => {
 
 onMounted(() => {
     fetchRecommenders()
-    window.luigiItemAlternatives = fetchRecommenders()
+    window.luigiItemAlternatives = fetchRecommenders
 })
 
 </script>
 
 <template>
-    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6" :style="{
+    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
@@ -224,7 +224,7 @@ onMounted(() => {
 
                     <template v-else>
                         <SwiperSlide
-                            v-for="(product, index) in listProductsFromLuigi"
+                            v-for="(product, index) in listProducts"
                             :key="index"
                             class="w-full cursor-grab relative !grid  min-h-full"
                         >
