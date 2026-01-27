@@ -20,4 +20,12 @@ enum RedirectTypeEnum: string
     case PERMANENT  = '301';
     case TEMPORAL  = '302';
 
+
+    public function label(): string
+    {
+        return match ($this) {
+            RedirectTypeEnum::PERMANENT => __('Permanent') . ' (' . (301) . ')',
+            RedirectTypeEnum::TEMPORAL => __('Temporal') . ' (' . (302) . ')',
+        };
+    }
 }
