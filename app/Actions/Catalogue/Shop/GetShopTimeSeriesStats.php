@@ -68,7 +68,7 @@ class GetShopTimeSeriesStats
             $timeSeriesId = $shopToTimeSeriesMap[$shop->id] ?? null;
             $stats = $allStats[$timeSeriesId] ?? [];
 
-            $intervals = ['1d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ld', 'lq', 'ly', 'tly', 'py', 'pq', 'pm', 'pw'];
+            $intervals = ['1d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ld', 'lq', 'ly', 'tly', 'py', 'pq', 'pm', 'pw', 'ctm'];
             $registrationsData = [];
 
             foreach ($intervals as $interval) {
