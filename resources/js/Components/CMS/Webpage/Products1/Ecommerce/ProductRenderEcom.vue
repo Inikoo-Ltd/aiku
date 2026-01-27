@@ -104,7 +104,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
-                :type="typeOfLink" class="block w-full mb-1 rounded xsm:h-[305px] xh-[180px] aspect-square relative"
+                :type="typeOfLink"   class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false"
             >
                 <slot name="image" :product="product">
