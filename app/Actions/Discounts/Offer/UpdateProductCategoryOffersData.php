@@ -122,7 +122,7 @@ class UpdateProductCategoryOffersData
             if ($category) {
                 $categoryLink = $category->code;
                 if ($category->webpage && $category->webpage->state == WebpageStateEnum::LIVE) {
-                    $categoryLink = '<a href="'.e($category->webpage->canonical_url).'" target="_blank" class="underline">'.e($category->code).'</a>';
+                    $categoryLink = '<a href="'.e($category->webpage->canonical_url).'" class="underline">'.e($category->code).'</a>';
                 }
 
             }
