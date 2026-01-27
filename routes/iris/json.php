@@ -40,6 +40,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesCh
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
+use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -91,4 +92,5 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant');
     Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
+    Route::get('luigi-product-details', LuigiBoxGetProductDetail::class)->name('luigi.product_details');
 });

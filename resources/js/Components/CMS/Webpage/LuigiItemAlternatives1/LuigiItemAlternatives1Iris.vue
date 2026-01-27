@@ -169,12 +169,9 @@ const fetchRecommenders = async () => {
         isLoadingFetch.value = true
 
         const response = await axios.post(
-            route('iris.json.luigi.product_recommendation'),
+            route('iris.json.luigi.product_details'),
             {
-                luigi_identity: '',
-                recommendation_type : 'item_detail_alternatives',
-                recommender_client_identifier : 'item_detail_alternatives',
-                cookies_lb: Cookies.get('_lb') ?? null,
+                product_ids: productListid
             }
         )
         listProducts.value = response.data
