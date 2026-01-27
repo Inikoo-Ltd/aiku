@@ -39,7 +39,7 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $subdepartments = ProductCategory::query()
@@ -48,14 +48,14 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $interestTags = Tag::query()
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $filtersStructure = [
@@ -123,13 +123,24 @@ class ShowMailshotRecipients extends OrgAction
                     ],
                     'by_subdepartment' => [
                         'label'       => 'By Subdepartment',
-                        'type'        => 'multiselect',
+                        'type'        => 'entity_behaviour',
                         'description' => 'Target customers based on interaction with sub-departments.',
-                        'multiple'    => true,
-                        'options'     => $subdepartments,
-                        'behavior_options' => [
-                            ['value' => 'purchased', 'label' => 'Purchased products in the past'],
-                            ['value' => 'in_basket', 'label' => 'Added to basket (not completed)'],
+                        'fields'      => [
+                            'content' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'By Subdepartment',
+                                'placeholder' => 'Select',
+                                'multiple'    => true,
+                                'options'     => $subdepartments,
+                            ],
+                            'behaviours'   => [
+                                'type'    => 'select',
+                                'label'   => 'Customer Behaviour',
+                                'options' => [
+                                    ['value' => 'purchased', 'label' => 'Purchased products in the past'],
+                                    ['value' => 'in_basket', 'label' => 'Added to basket (not completed)'],
+                                ]
+                            ],
                         ]
                     ],
                     'gold_reward_status' => [
@@ -244,7 +255,7 @@ class ShowMailshotRecipients extends OrgAction
                 'filters'          => $currentFilters,
                 'customers'        => $customers,
                 'recipientFilterRoute' => [
-                     'name'       => 'grp.models.shop.mailshot.recipient-filter.update',
+                    'name'       => 'grp.models.shop.mailshot.recipient-filter.update',
                     'parameters' => [
                         'shop' => $mailshot->shop_id,
                         'mailshot' => $mailshot->id

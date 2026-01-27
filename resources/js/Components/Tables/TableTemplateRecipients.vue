@@ -24,7 +24,7 @@ import {
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "../Icon.vue";
-import { inject, reactive, computed, watch, ref } from "vue";
+import { inject, reactive, computed, watch, ref, onMounted } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -77,10 +77,13 @@ const props = defineProps<{
     filters: Record<string, any>,
     filtersStructure: Record<string, any>
     recipientFilterRoute: routeType
+    recipientsRecipe: any,
+    recipientData?: any
 }>();
 
 const locale = inject("locale", aikuLocaleStructure);
 
+const filterMenu = ref()
 const activeFilters = ref<Record<string, any>>(
     props.filters ? { ...props.filters } : {}
 )
@@ -96,7 +99,6 @@ const tableState = reactive({
     sortOrder: null
 })
 
-const filterMenu = ref()
 const availableFilters = computed(() => {
     const list: any[] = []
 
@@ -124,17 +126,49 @@ function normalizeCurrency(currency: string) {
     return map[currency] ?? currency
 }
 
+// validasi filter
+const FILTER_CONFLICTS: Record<string, string[]> = {
+    registered_never_ordered: [
+        'orders_in_basket',
+        'by_order_value',
+        'orders_collection',
+        'by_family',
+        'by_subdepartment'
+    ],
+    orders_in_basket: ['registered_never_ordered'],
+    // by_order_value: ['registered_never_ordered'],
+    // orders_collection: ['registered_never_ordered']
+}
+function hasConflict(newKey: string) {
+    const activeKeys = Object.keys(activeFilters.value)
+
+    const conflicts = FILTER_CONFLICTS[newKey] || []
+
+    const found = activeKeys.find(k => conflicts.includes(k))
+
+    return found || null
+}
+
 const addFilter = (key: string, config: any) => {
+    const conflictWith = hasConflict(key)
+    if (conflictWith) {
+        notify({
+            title: "Filter conflict",
+            text: `"${config.label}" cannot be combined with "${activeFilters.value[conflictWith].config.label}"`,
+            type: "error"
+        })
+        return
+    }
+
     let value: any = true
     if (!key) {
         console.warn('[addFilter] invalid key', key, config)
         return
     }
     if (config.type === 'boolean') {
-        value = { value: true }
 
         if (key === 'orders_in_basket') {
-            value._ui_preset = null
+            value.date_range_preset = null
             value.date_range = null
         }
 
@@ -149,13 +183,7 @@ const addFilter = (key: string, config: any) => {
 
     else if (config.type === 'families') {
         value = {
-            family_ids: [],
-            behaviors: {
-                purchased: false,
-                favourited: false,
-                basket_only: false
-            },
-            combine_logic: 'or'
+
         }
     }
 
@@ -163,7 +191,7 @@ const addFilter = (key: string, config: any) => {
     if (config.type === 'multiselect') {
         value = config.behavior_options
             ? { ids: [], behaviors: ['purchased'], combine_logic: 'or' }
-            : []
+            : { ids: [] }
     }
 
     if (config.type === 'daterange') {
@@ -185,7 +213,7 @@ const addFilter = (key: string, config: any) => {
 const onPresetChange = (filter: any, event: any) => {
     const preset = event.value
 
-    filter.value._ui_preset = preset
+    filter.value.date_range_preset = preset
 
     if (preset === 'custom') {
         filter.value.date_range = null
@@ -207,6 +235,67 @@ const removeFilter = (key: string) => {
 
 const clearAllFilters = () => {
     activeFilters.value = {}
+}
+
+function findConfigByKey(structure: any, key: string) {
+    for (const group of Object.values(structure)) {
+        if (group.filters?.[key]) return group.filters[key]
+    }
+    return null
+}
+
+function hydrateSavedFilters(saved: any, structure: any) {
+    const hydrated: any = {}
+
+    Object.entries(saved || {}).forEach(([key, wrapper]: any) => {
+        const config = findConfigByKey(structure, key)
+        if (!config) return
+
+        const val = wrapper?.value ?? wrapper
+
+        let uiValue: any = {}
+
+        if (config.type === 'boolean') {
+            uiValue = {
+                date_range: val.date_range ?? null,
+                amount_range: val.amount_range ?? { min: null, max: null },
+                date_range_preset: null
+            }
+        }
+
+        else if (config.type === 'select') {
+            uiValue = val
+        }
+
+        else if (config.type === 'multiselect') {
+            uiValue = config.behavior_options
+                ? {
+                    ids: val.ids ?? [],
+                    behaviors: val.behaviors ?? ['purchased'],
+                    combine_logic: val.combine_logic ?? 'or'
+                }
+                : { ids: val.ids ?? val ?? [] }
+        }
+
+        else if (config.type === 'entity_behaviour') {
+            uiValue = {
+                ids: val.ids ?? [],
+                behaviors: val.behaviors ?? [],
+                combine_logic: val.combine_logic ?? 'or'
+            }
+        }
+
+        else if (config.type === 'location') {
+            uiValue = {
+                location: val.location ?? '',
+                radius: val.radius ?? '5km'
+            }
+        }
+
+        hydrated[key] = { config, value: uiValue }
+    })
+
+    return hydrated
 }
 
 const fetchCustomers = debounce(() => {
@@ -242,7 +331,45 @@ const filtersPayload = computed(() => {
     const payload: any = {}
 
     Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
-        payload[key] = filter.value
+        const val = filter.value
+        const config = filter.config
+
+        if (config.type === 'boolean') {
+            payload[key] = {
+                value: val.value ?? true
+            }
+            if (val.date_range) payload[key].date_range = val.date_range
+            if (val.amount_range) payload[key].amount_range = val.amount_range
+            return
+        }
+
+        if (config.type === 'select') {
+            payload[key] = val
+            return
+        }
+
+        if (config.type === 'multiselect') {
+            payload[key] = config.behavior_options
+                ? {
+                    ids: val.ids ?? [],
+                    behaviors: val.behaviors ?? [],
+                    combine_logic: val.combine_logic ?? 'or'
+                }
+                : val.ids ?? []
+            return
+        }
+
+        if (config.type === 'entity_behaviour') {
+            payload[key] = {
+                ids: val.ids ?? [],
+                behaviors: val.behaviors ?? [],
+                combine_logic: val.combine_logic ?? 'or'
+            }
+        }
+
+        if (config.type === 'location') {
+            payload[key] = val
+        }
     })
 
     return payload
@@ -251,44 +378,12 @@ const filtersPayload = computed(() => {
 const saveFilters = async () => {
     console.log('[SAVE FILTER PAYLOAD]', filtersPayload.value)
     console.log('SAVE JSON', JSON.stringify(filtersPayload.value))
-    // return;
-    // grp.models.shop.mailshot.recipient-filter.update
-    // router.post(
-    //     route('mailshots.filters.save'), // ganti sesuai route
-    //     {
-    //         filters: filtersPayload.value
-    //     },
-    //     {
-    //         preserveState: true,
-    //         preserveScroll: true
-    //     }
-    // )
 
     axios
         .patch(
             route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters),
             {
-                recipients_recipe: {
-                    "registered_never_ordered": {
-                        "value": true,
-                        "date_range": [
-                            "2025-12-31T16:00:00.000Z",
-                            "2026-01-30T16:00:00.000Z"
-                        ]
-                    },
-                    "by_family_never_ordered": 33048,
-                    "orders_in_basket": {
-                        "value": true,
-                        "_ui_preset": 14,
-                        "date_range": null,
-                        "amount_range": {
-                            "min": 12,
-                            "max": 32
-                        }
-                    },
-                    "by_interest": [],
-                    "gold_reward_status": "gold"
-                }
+                recipients_recipe: filtersPayload.value
             },
         )
         .then((response) => {
@@ -310,7 +405,16 @@ const saveFilters = async () => {
         });
 }
 
+onMounted(() => {
+    if (props.recipientsRecipe) {
+        console.log('EDIT MODE', props.recipientsRecipe)
 
+        activeFilters.value = hydrateSavedFilters(
+            props.recipientsRecipe,
+            props.filtersStructure
+        )
+    }
+})
 watch(activeFilters, fetchCustomers, { deep: true })
 watch(tableState, fetchCustomers, { deep: true })
 console.log("props table", props)
@@ -346,9 +450,12 @@ console.log("props table", props)
                 </span>
                 <!-- BOOLEAN -->
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
+                    <template v-if="key === 'orders_collection' || key === 'by_showroom_orders'">
+                        <ToggleButton v-model="filter.value" onLabel="Active" offLabel="Inactive" class="mb-3 w-full" />
+                    </template>
                     <template v-if="key === 'orders_in_basket'">
                         <!-- TIME FRAME -->
-                        <Dropdown v-model="filter.value._ui_preset" :options="[
+                        <Dropdown v-model="filter.value.date_range" :options="[
                             { label: '1–3 Days ago', value: 3 },
                             { label: 'Last 7 Days', value: 7 },
                             { label: 'Last 14 Days', value: 14 },
@@ -358,7 +465,7 @@ console.log("props table", props)
 
 
                         <!-- DATE RANGE (only custom) -->
-                        <Calendar v-if="filter.value._ui_preset === 'custom'" v-model="filter.value.date_range"
+                        <Calendar v-if="filter.value.date_range_preset === 'custom'" v-model="filter.value.date_range"
                             placeholder="Select a date range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
                             class="w-full" appendTo="body" />
 
@@ -370,13 +477,13 @@ console.log("props table", props)
 
                         <!-- PRESET SELECT (if exists) -->
                         <Dropdown v-if="filter.config.options.date_range.presets"
-                            :options="filter.config.options.date_range.presets" v-model="filter.value._ui_preset"
+                            :options="filter.config.options.date_range.presets" v-model="filter.value.date_range_preset"
                             class="w-full mb-2" placeholder="Select time frame"
                             @change="onPresetChange(filter, $event)" />
 
                         <!-- CALENDAR -->
                         <Calendar
-                            v-if="filter.value._ui_preset === 'custom' || !filter.config.options.date_range.presets"
+                            v-if="filter.value.date_range_preset === 'custom' || !filter.config.options.date_range.presets"
                             v-model="filter.value.date_range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
                             placeholder="Select a date range" class="w-full" appendTo="body" />
                     </template>
@@ -453,50 +560,6 @@ console.log("props table", props)
                             ([value, label]) => ({ value, label })
                         )" optionLabel="label" optionValue="value" placeholder="Select radius" class="w-full"
                             appendTo="body" />
-                    </div>
-                </template>
-
-                <!-- FAMILIES FILTER -->
-                <template v-else-if="filter.config.type === 'families'">
-
-                    <!-- FAMILY MULTISELECT -->
-                    <div class="mb-3">
-                        <label class="block text-xs font-medium text-gray-500 mb-1">
-                            Product families
-                        </label>
-
-                        <MultiselectTagsInfiniteScroll :form="filter.value.family_ids" fieldName="ids" :fieldData="{
-                            options: filter.config.options.families,
-                            labelProp: 'label',
-                            valueProp: 'value',
-                            placeholder: 'Select items...'
-                        }" />
-                    </div>
-
-                    <!-- BEHAVIOR CHECKBOXES -->
-                    <div v-for="behavior in filter.config.options.behaviors" :key="behavior.value"
-                        class="flex items-center gap-2">
-                        <Checkbox v-model="filter.value.behaviors[behavior.value]" :binary="true" />
-                        <span>{{ behavior.label }}</span>
-                    </div>
-
-                    <!-- COMBINATION LOGIC -->
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-2">
-                            Combination logic
-                        </label>
-
-                        <div class="flex gap-4">
-                            <div class="flex items-center gap-2">
-                                <RadioButton v-model="filter.value.combine_logic" inputId="or" value="or" />
-                                <label for="or" class="text-sm">Match any (OR)</label>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <RadioButton v-model="filter.value.combine_logic" inputId="and" value="and" />
-                                <label for="and" class="text-sm">Match all (AND)</label>
-                            </div>
-                        </div>
                     </div>
                 </template>
             </div>
