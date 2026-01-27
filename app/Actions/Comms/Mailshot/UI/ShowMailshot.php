@@ -85,6 +85,20 @@ class ShowMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
+                        $isShowActions & $mailshot->type === MailshotTypeEnum::MARKETING ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Set Up Recipients'),
+                            'icon'  => ["fal", "fa-sliders-h"],
+                            'route' => [
+                                'name'       => "grp.org.shops.show.marketing.mailshots.recipients",
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug,
+                                    $mailshot->slug
+                                ]
+                            ]
+                        ] : [],
                         $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',

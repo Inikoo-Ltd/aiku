@@ -96,12 +96,10 @@ class GetMailshotRecipientsQueryBuilder
 
         // Filter Registered Never Ordered
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);
+
         // Filter By Family Never Ordered
-        $familyFilter = Arr::get($filters, 'by_family_never_ordered');
-        $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
-        if ($familyId) {
-            (new FilterByFamilyNeverOrdered())->apply($query, $familyId);
-        }
+        (new FilterByFamilyNeverOrdered())->apply($query, $filters);
+
         // Filter Gold Reward Status
         $goldFilter = Arr::get($filters, 'gold_reward_status');
         $goldStatus = is_array($goldFilter) ? ($goldFilter['value'] ?? null) : $goldFilter;
