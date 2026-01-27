@@ -38,7 +38,7 @@ class CloneAuroraVolGROffers
         $organisationSource->initialisation($organisation);
 
         $fromShop = Shop::where('organisation_id', $organisation->id)->where('slug', $command->argument('from_shop'))->firstOrFail();
-        $toShop   = Shop::where('organisation_id', $organisation->id)->where('slug', $command->argument('to_shop'))->firstOrFail();
+        $toShop   = Shop::where('slug', $command->argument('to_shop'))->firstOrFail();
         //        if ($fromShop->id == $toShop->id) {
         //            $command->error('From and To shops must be different.');
         //
@@ -61,7 +61,7 @@ class CloneAuroraVolGROffers
                 foreach ($auroraOffers as $auroraOffer) {
                     $fromFamily = ProductCategory::where('source_family_id', $organisation->id.':'.$auroraOffer->{'Deal Trigger Key'})->first();
                     if (!$fromFamily) {
-                        $command->error("Family not found for ".$auroraOffer->{'Deal Description'});
+                        $command->error("Family not found for DK ".$auroraOffer->{'Deal Key'}."  ".$auroraOffer->{'Deal Name'});
                         continue;
                     }
 
