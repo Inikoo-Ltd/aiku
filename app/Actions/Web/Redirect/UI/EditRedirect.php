@@ -30,17 +30,31 @@ class EditRedirect extends OrgAction
      */
     public function handle(Redirect $redirect, ActionRequest $request): Response
     {
-
         $title = __('Edit Redirect');
+
+        $webpage = Webpage::find($redirect->to_webpage_id);
+
         return Inertia::render(
-            'CreateModel',
+            'EditModel',
             [
                 // 'breadcrumbs' => $this->getBreadcrumbs(
                 //     $request->route()->originalParameters()
                 // ),
                 'title'       => $title,
                 'pageHead'    => [
-                    'title' => $title,
+                    'icon'  => 'fal fa-terminal',
+                    'model' => $title,
+                    'title' => $redirect->from_url,
+                    // 'actions'   => [
+                    //     [
+                    //         'type'  => 'button',
+                    //         'style' => 'exitEdit',
+                    //         'route' => [
+                    //             'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ]
+                    // ],
                 ],
                 'formData'    => [
                     'fullLayout' => true,
@@ -52,23 +66,50 @@ class EditRedirect extends OrgAction
                                     'type' => [
                                         'type'     => 'select',
                                         'label'    => __('Type'),
-                                        'options'  => Options::forEnum(RedirectTypeEnum::class),
+                                        'options'  => collect(RedirectTypeEnum::cases())->map(fn ($case) => [
+                                            'label' => $case->label(),
+                                            'value' => $case->value,
+                                        ])->values()->toArray(),
+                                        'required'  => true,
                                         'value'    => $redirect->type
                                     ],
-                                    'path' => [
-                                        'type'     => 'input',
-                                        'label'    => __('path'),
-                                        'value'    => $redirect->path
+                                    // 'path' => [
+                                    //     'type'     => 'input',
+                                    //     'label'    => __('path'),
+                                    //     'value'    => $redirect->path
+                                    // ],
+                                    'to_webpage_id' => [
+                                        'type'     => 'select_infinite',
+                                        'fetchRoute'    => [
+                                            'name'  => 'grp.json.active_webpages.index',
+                                            'parameters' => [
+                                                'shop'  => $redirect->shop->slug
+                                            ]
+                                        ],
+                                        'options'   => $webpage ? [
+                                            [
+                                                'code'          => $webpage->code,
+                                                'canonical_url' => $webpage->canonical_url,
+                                                'id'            => $redirect->to_webpage_id
+                                            ]
+                                        ] : [],
+                                        'labelProp'             => 'code',
+                                        'labelAdditionalProp'   => 'canonical_url',
+                                        'valueProp'             => 'id',
+                                        'label'                 => __('Target URL'),
+                                        'value'                 => $redirect->to_webpage_id
                                     ],
                                 ]
                             ]
                         ],
-                    'route'      => [
-                        'name' => 'grp.models.redirect.update',
-                        'parameters' => [
-                            'redirect' => $redirect->id
-                        ]
-                    ]
+                    'args'      => [
+                        'updateRoute' => [
+                            'name' => 'grp.models.redirect.update',
+                            'parameters' => [
+                                'redirect' => $redirect->id
+                            ]
+                        ],
+                    ],
                 ],
 
             ]

@@ -101,6 +101,7 @@ class IndexRedirects extends OrgAction
             if ($parent instanceof Website) {
                 $table
                     ->column(key: 'to_webpage_url', label: __('To Webpage'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'actions_from_website', label: '', canBeHidden: false, sortable: false, searchable: true);
             }
         };
     }

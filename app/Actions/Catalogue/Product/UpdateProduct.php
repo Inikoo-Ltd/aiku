@@ -56,13 +56,6 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-        if(Arr::has($modelData, 'follow_master_fields')){
-            $followMasterAll = Arr::pull($modelData, 'follow_master_fields');
-            data_set($modelData, 'follow_master_name', $followMasterAll);
-            data_set($modelData, 'follow_master_description_title', $followMasterAll);
-            data_set($modelData, 'follow_master_description', $followMasterAll);
-            data_set($modelData, 'follow_master_description_extra', $followMasterAll);
-        }
         // hack because in tests $product->getChanges() do not work
         $oldState = $product->state;
 
@@ -89,7 +82,6 @@ class UpdateProduct extends OrgAction
                 'family_id' => Arr::pull($modelData, 'family_id'),
             ]);
         }
-
 
         // todo: remove this after total aurora migration
         if (!$this->strict) {
@@ -449,13 +441,6 @@ class UpdateProduct extends OrgAction
             'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'has_live_webpage'             => ['sometimes', 'boolean'],
-
-            // Follow master
-            'follow_master_fields'              => ['sometimes', 'boolean'],
-            'follow_master_name'                => ['sometimes', 'boolean'],
-            'follow_master_description_title'   => ['sometimes', 'boolean'],
-            'follow_master_description'         => ['sometimes', 'boolean'],
-            'follow_master_description_extra'   => ['sometimes', 'boolean'],
         ];
 
 

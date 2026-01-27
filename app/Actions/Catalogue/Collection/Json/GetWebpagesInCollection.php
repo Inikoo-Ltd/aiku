@@ -107,6 +107,7 @@ class GetWebpagesInCollection extends OrgAction
                 'webpages.type',
                 'webpages.slug',
                 'webpages.level',
+                'webpages.canonical_url',
                 'webpages.sub_type',
                 'webpages.url',
                 'organisations.slug as organisation_slug',
