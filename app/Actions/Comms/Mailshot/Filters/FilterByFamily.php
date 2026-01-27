@@ -22,8 +22,20 @@ class FilterByFamily
      * @param int|string $familyId
      * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, ?array $options)
+    public function apply($query, ?array $filters)
     {
+
+        // make sure $filters is an array
+        $options = Arr::get($filters, 'by_family', []);
+        if (empty($options)) {
+            return $query;
+        }
+
+
+
+
+        return $query;
+
         $familyIds = Arr::get($options, 'family_ids');
         $behaviours = Arr::get($options, 'behaviours');
         $combinationLogic = Arr::get($options, 'combination_logic');

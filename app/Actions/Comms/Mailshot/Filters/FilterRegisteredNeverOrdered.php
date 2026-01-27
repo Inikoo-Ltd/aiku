@@ -15,20 +15,36 @@ class FilterRegisteredNeverOrdered
      * @param array $options
      * @return Builder|QueryBuilder
      */
-    public function apply($query, array $options): Builder|QueryBuilder
+    public function apply($query, array $filters): Builder|QueryBuilder
     {
-        $query->whereDoesntHave('orders');
+        $regNeverOrdered = Arr::get($filters, 'registered_never_ordered', []);
 
-        if ($dateRange = Arr::get($options, 'date_range')) {
-            $startDate = Arr::get($dateRange, 'start');
-            $endDate   = Arr::get($dateRange, 'end');
+        if (!empty($regNeverOrdered)) {
+            $options = [];
 
-            if ($startDate) {
-                $query->whereDate('created_at', '>=', $startDate);
+            if (is_array($regNeverOrdered) && isset($regNeverOrdered['date_range'])) {
+                $rawDateRange = $regNeverOrdered['date_range'];
+                if (is_array($rawDateRange) && count($rawDateRange) == 2) {
+                    $options['date_range'] = [
+                        'start' => $rawDateRange[0],
+                        'end'   => $rawDateRange[1]
+                    ];
+                }
             }
 
-            if ($endDate) {
-                $query->whereDate('created_at', '<=', $endDate);
+            $query->whereDoesntHave('orders');
+
+            if ($dateRange = Arr::get($options, 'date_range')) {
+                $startDate = Arr::get($dateRange, 'start');
+                $endDate   = Arr::get($dateRange, 'end');
+
+                if ($startDate) {
+                    $query->whereDate('created_at', '>=', $startDate);
+                }
+
+                if ($endDate) {
+                    $query->whereDate('created_at', '<=', $endDate);
+                }
             }
         }
 

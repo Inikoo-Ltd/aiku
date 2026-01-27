@@ -95,29 +95,7 @@ class GetMailshotRecipientsQueryBuilder
         $filters = Arr::get($mailshot->recipients_recipe, 'customer_query', []);
 
         // Filter Registered Never Ordered
-        $regNeverOrdered = Arr::get($filters, 'registered_never_ordered');
-        $isRegNeverOrderedActive = is_array($regNeverOrdered) ? ($regNeverOrdered['value'] ?? false) : $regNeverOrdered;
-
-        if ($isRegNeverOrderedActive) {
-            $options = [];
-
-            if (is_array($regNeverOrdered) && isset($regNeverOrdered['value'])) {
-                $val = $regNeverOrdered['value'];
-
-                if (is_array($val) && isset($val['date_range'])) {
-                    $rawDateRange = $val['date_range'];
-
-                    if (is_array($rawDateRange) && count($rawDateRange) >= 2) {
-                        $options['date_range'] = [
-                            'start' => $rawDateRange[0],
-                            'end'   => $rawDateRange[1]
-                        ];
-                    }
-                }
-            }
-
-            (new FilterRegisteredNeverOrdered())->apply($query, $options);
-        }
+        (new FilterRegisteredNeverOrdered())->apply($query, $filters);
         // Filter By Family Never Ordered
         $familyFilter = Arr::get($filters, 'by_family_never_ordered');
         $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
@@ -239,11 +217,7 @@ class GetMailshotRecipientsQueryBuilder
         }
 
         // FILTER: By Family
-        $familyFilter = Arr::get($filters, 'by_family');
-        $familyOptions = Arr::get($familyFilter, 'value', []);
-        if ($familyFilter) {
-            (new FilterByFamily())->apply($query, $familyOptions);
-        }
+        (new FilterByFamily())->apply($query, $filters);
 
         return $query;
     }
