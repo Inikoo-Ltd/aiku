@@ -724,8 +724,8 @@ const layout = inject("layout", layoutStructure)
 				" />
 		</template>
 
-		<template v-if="props.product_count && !props.is_closed" #other>
-			<div class="rounded-md">
+		<template v-if="!props.is_closed" #other>
+			<div class="rounded-md" v-if="props.product_count">
 				<a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
 					<Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
 				</a>
