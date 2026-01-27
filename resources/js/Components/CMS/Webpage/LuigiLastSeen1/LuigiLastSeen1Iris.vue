@@ -23,6 +23,8 @@ import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 library.add(faChevronLeft, faChevronRight)
 
+library.add(faChevronLeft, faChevronRight)
+
 const props = defineProps<{
     fieldValue: {
         product: {
@@ -44,10 +46,10 @@ const slidesPerView = computed(() => {
     }[props.screenType] ?? 5
 })
 
-const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<ProductHit[] | null>()
+const listProductsFromLuigi = ref<ProductHit[] | null>()
+const listProducts= ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
 
 const listLoadingProducts = ref<Record<string, string>>({})
@@ -56,46 +58,49 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
-const luigiFetchRecommenders = async () => {
-    try {
-        // isLoadingFetch.value = true
-        const response = await axios.post(
-            `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-            [
-                {
-                    "blacklisted_item_ids": [],
-                    "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
-                    "recommendation_type": "last_seen",
-                    "recommender_client_identifier": "last_seen",
-                    "size": 25,
-                    "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
-                    "recommendation_context": {},
-                    // "hit_fields": ["url", "title"]
-                }
-            ],
-            {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                }
-            }
-        )
-        if (response.status !== 200) {
-            console.error('Error fetching recommenders:', response.statusText)
-        }
-        // RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
-        console.log('LLS1:', response.data)
+// const luigiFetchRecommenders = async () => {
+//     try {
+//         isLoadingFetch.value = true
+//         const response = await axios.post(
+//             `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+//             [
+//                 {
+//                     "blacklisted_item_ids": [],
+//                     "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
+//                     "recommendation_type": "item_detail_alternatives",
+//                     "recommender_client_identifier": "item_detail_alternatives",
+//                     "size": 25,
+//                     "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
+//                     "recommendation_context": {},
+//                     // "hit_fields": ["url", "title"]
+//                 }
+//             ],
+//             {
+//                 headers: {
+//                     'Content-Type': 'application/json;charset=utf-8'
+//                 }
+//             }
+//         )
+//         if (response.status !== 200) {
+//             console.error('Error fetching recommenders:', response.statusText)
+//         }
 
-        // listProducts.value = response.data[0].hits
-    } catch (error: any) {
-        console.error('Error on fetching recommendations:', error)
-    } finally {
-        // isFetched.value = true
-    }
-    // isLoadingFetch.value = false
-}
+//         console.log('LIA1:', response.data)
+//         // RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
+
+//         listProductsFromLuigi.value = response.data[0].hits
+//     } catch (error: any) {
+//         console.error('Error on fetching recommendations:', error)
+//     } finally {
+//         // isFetched.value = true
+//     }
+//     // isLoadingFetch.value = false
+// }
+
+
 const fetchRecommenders = async () => {
     try {
-        // isLoadingFetch.value = true
+        isLoadingFetch.value = true
         const response = await axios.post(
             `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
             [
@@ -119,10 +124,12 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
-        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
-        console.log('LLS1:', response.data)
 
-        listProducts.value = response.data[0].hits
+        console.log('LIA1:', response.data)
+        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
+
+        listProductsFromLuigi.value = response.data[0].hits
+        fetchRecommendersToGetProducts()
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
@@ -131,41 +138,56 @@ const fetchRecommenders = async () => {
     isLoadingFetch.value = false
 }
 
-// const fetchRecommenders = async () => {
-//     try {
-//         isLoadingFetch.value = true
+/*  const fetchRecommenders = async () => {
+    try {
+        isLoadingFetch.value = true
 
-//         const luigiIdentity = props.fieldValue?.product?.luigi_identity
+        const response = await axios.post(
+            route('iris.json.luigi.product_recommendation'),
+            {
+                luigi_identity: '',
+                recommendation_type : 'item_detail_alternatives',
+                recommender_client_identifier : 'item_detail_alternatives',
+                cookies_lb: Cookies.get('_lb') ?? null,
+            }
+        )
+        listProductsFromLuigi.value = response.data
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isFetched.value = true
+        isLoadingFetch.value = false
+    }
+}
+ */
 
-//         if (!luigiIdentity) {
-//             listProducts.value = []
-//             return
-//         }
 
-//         const response = await axios.post(
-//             route('iris.json.luigi.product_recommendation'),
-//             {
-//                 luigi_identity: luigiIdentity,
-//                 recommendation_type : 'last_seen',
-//                 recommender_client_identifier : 'last_seen',
-//                 cookies_lb: Cookies.get('_lb') ?? null,
-//             }
-//         )
+const fetchRecommendersToGetProducts = async () => {
+    const productListid = listProductsFromLuigi.value?.map((item) => item.attributes.product_id[0])
+    try {
+        isLoadingFetch.value = true
 
-//         listProducts.value = response.data
-//     } catch (error: any) {
-//         console.error('Error on fetching recommendations:', error)
-//     } finally {
-//         isFetched.value = true
-//         isLoadingFetch.value = false
-//     }
-// }
-
+        const response = await axios.get(
+            route('iris.json.luigi.product_details'),
+            {
+                params: {
+                    product_ids: productListid?.join(',')
+                }
+            }
+        )
+        listProducts.value = response.data.data
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isFetched.value = true
+        isLoadingFetch.value = false
+    }
+}
 
 
 onMounted(() => {
     fetchRecommenders()
-    window.luigiLastSeen = luigiFetchRecommenders
+    window.luigiLastSeen = fetchRecommenders
 })
 </script>
 
@@ -208,7 +230,7 @@ onMounted(() => {
                             :key="index"
                             class="w-full cursor-grab relative !grid h-full min-h-full"
                         >
-                            <RecommendationSlideIris
+                            <RecommendationSlideLastSeen
                                 :product
                                 :isProductLoading
                             />

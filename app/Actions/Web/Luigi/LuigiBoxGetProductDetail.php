@@ -27,12 +27,10 @@ class LuigiBoxGetProductDetail extends IrisAction
 
     public function handle(array $modelData): LengthAwarePaginator
     {
+        $productIdString = data_get($modelData, 'product_ids');
         $queryBuilder = QueryBuilder::for(Product::class)
-            ->whereIn('products.id', data_get($modelData, 'product_ids'))
-            ->leftJoin('webpages', function ($join) {
-                $join->on('webpages.id', 'product.we')
-                    ->where('webpages.model_type', Product::class);
-            });
+            ->whereIn('products.id', json_decode("[{$productIdString}]"))
+             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
         $queryBuilder->select([
             'products.id',
@@ -43,11 +41,13 @@ class LuigiBoxGetProductDetail extends IrisAction
             'products.rrp',
             'products.web_images',
             'products.unit',
+            'products.units',
             'products.offers_data',
             'products.price',
             'webpages.canonical_url as url',
         ]);
         
+
         return $queryBuilder
             ->withIrisPaginator(25)
             ->withQueryString();
@@ -56,7 +56,7 @@ class LuigiBoxGetProductDetail extends IrisAction
     public function rules(): array
     {
         return [
-            'product_ids'   => ['required', 'array'],
+            'product_ids'   => ['required', 'string'],
         ];
     }
 
@@ -64,7 +64,7 @@ class LuigiBoxGetProductDetail extends IrisAction
     {
         $this->initialisation($request);
 
-        return $this->handle($request->validatedData);
+        return $this->handle($this->validatedData);
     }
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
