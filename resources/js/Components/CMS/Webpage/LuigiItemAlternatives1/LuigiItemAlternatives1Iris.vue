@@ -160,26 +160,27 @@ const fetchRecommenders = async () => {
 }
  */
 
-
 const fetchRecommendersToGetProducts = async () => {
     const productListid = listProductsFromLuigi.value?.map((item) => item.attributes.product_id[0])
-    try {
-        isLoadingFetch.value = true
+    if (productListid?.length) {
+        try {
+            isLoadingFetch.value = true
 
-        const response = await axios.get(
-            route('iris.json.luigi.product_details'),
-            {
-                params: {
-                    product_ids: productListid?.join(',')
+            const response = await axios.get(
+                route('iris.json.luigi.product_details'),
+                {
+                    params: {
+                        product_ids: productListid?.join(',')
+                    }
                 }
-            }
-        )
-        listProducts.value = response.data.data
-    } catch (error: any) {
-        console.error('Error on fetching recommendations:', error)
-    } finally {
-        isFetched.value = true
-        isLoadingFetch.value = false
+            )
+            listProducts.value = response.data.data
+        } catch (error: any) {
+            console.error('Error on fetching recommendations:', error)
+        } finally {
+            isFetched.value = true
+            isLoadingFetch.value = false
+        }
     }
 }
 
