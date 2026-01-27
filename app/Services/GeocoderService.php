@@ -9,6 +9,7 @@ use Geocoder\StatefulGeocoder;
 use Http\Adapter\Guzzle7\Client as GuzzleAdapter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use App\Models\Helpers\Country;
 
 class GeocoderService
 {
@@ -32,13 +33,14 @@ class GeocoderService
     }
 
     /**
-     * Geocode address string to coordinates
+     * Geocode address string to coordinates with Layered Fallback
      */
-     public function geocodeLayered(array $addressData): ?array
+    public function geocodeLayered(array $addressData): ?array
     {
         $layers = $this->buildGeocodingLayers($addressData);
 
-        Log::info('🔍 Geocoding started', [
+
+        Log::info('📍 Geocoding started', [
             'input' => $addressData,
             'total_layers' => count($layers),
             'layers' => array_map(fn($l) => $l['name'] . ': ' . $l['query'], $layers),
@@ -70,7 +72,7 @@ class GeocoderService
             usleep(100000);
         }
 
-        Log::warning('❌ Geocoding FAILED for all layers', [
+        Log::warning('⏭ Geocoding FAILED for all layers', [
             'address_data' => $addressData,
             'layers_tried' => count($layers),
         ]);
@@ -83,114 +85,100 @@ class GeocoderService
     {
         $layers = [];
 
+        $street = trim($data['address_line_1'] ?? '');
+        if (empty($street)) {
+            $street = trim($data['address_line_2'] ?? '');
+        }
+
         $parts = [
-            'address_line_1' => trim($data['address_line_1'] ?? ''),
-            'address_line_2' => trim($data['address_line_2'] ?? ''),
-            'locality' => trim($data['locality'] ?? ''),
-            'postal_code' => trim($data['postal_code'] ?? ''),
-            'administrative_area' => trim($data['administrative_area'] ?? ''),
-            'country_code' => strtoupper(trim($data['country_code'] ?? '')),
+            'street'              => $street,
+            'dependent_locality'  => $data['dependent_locality'] ?? '',
+            'locality'            => $data['locality'] ?? '',
+            'postal_code'         => trim($data['postal_code'] ?? ''),
+            'administrative_area' => $data['administrative_area'] ?? '',
+            'country_name'        => $data['country_name'] ?? '',
         ];
 
-        $availableParts = array_filter($parts);
-
-        $buildQuery = function(array $selectedParts) {
+        $buildQuery = function (array $selectedParts) {
             return implode(', ', array_filter($selectedParts));
         };
 
-
-        if (count($availableParts) >= 4) {
+        if (!empty($parts['street']) && !empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'all_parts',
-                'query' => $buildQuery($availableParts),
+                'name' => 'full_specific',
+                'query' => $buildQuery([
+                    $parts['street'],
+                    $parts['locality'],
+                    $parts['administrative_area'],
+                    $parts['country_name'],
+                ]),
                 'confidence_base' => 95,
             ];
         }
 
-        $withoutLine2 = $availableParts;
-        unset($withoutLine2['address_line_2']);
-        if (count($withoutLine2) >= 3) {
+        if (!empty($parts['street']) && !empty($parts['locality']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'without_line2',
-                'query' => $buildQuery($withoutLine2),
-                'confidence_base' => 90,
+                'name' => 'street_city_country',
+                'query' => $buildQuery([
+                    $parts['street'],
+                    $parts['locality'],
+                    $parts['country_name'],
+                ]),
+                'confidence_base' => 85,
             ];
         }
 
-        if (!empty($parts['address_line_1']) && !empty($parts['locality']) && !empty($parts['country_code'])) {
+        if (!empty($parts['dependent_locality']) && !empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'address_locality_country',
+                'name' => 'district_level',
                 'query' => $buildQuery([
-                    $parts['address_line_1'],
+                    $parts['dependent_locality'],
                     $parts['locality'],
-                    $parts['country_code'],
+                    $parts['administrative_area'],
+                    $parts['country_name'],
                 ]),
                 'confidence_base' => 80,
             ];
         }
 
-        if (!empty($parts['locality']) && !empty($parts['postal_code']) && !empty($parts['country_code'])) {
+        if (!empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'locality_postal_country',
-                'query' => $buildQuery([
-                    $parts['locality'],
-                    $parts['postal_code'],
-                    $parts['country_code'],
-                ]),
-                'confidence_base' => 70,
-            ];
-        }
-
-        if (!empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_code'])) {
-            $layers[] = [
-                'name' => 'locality_admin_country',
+                'name' => 'city_province_level',
                 'query' => $buildQuery([
                     $parts['locality'],
                     $parts['administrative_area'],
-                    $parts['country_code'],
+                    $parts['country_name'],
                 ]),
                 'confidence_base' => 65,
             ];
         }
 
-        if (!empty($parts['locality']) && !empty($parts['country_code'])) {
+        if (!empty($parts['locality']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'locality_country',
+                'name' => 'city_only',
                 'query' => $buildQuery([
                     $parts['locality'],
-                    $parts['country_code'],
+                    $parts['country_name'],
+                ]),
+                'confidence_base' => 55,
+            ];
+        }
+
+        if (!empty($parts['postal_code']) && !empty($parts['country_name'])) {
+            $layers[] = [
+                'name' => 'postal_code_level',
+                'query' => $buildQuery([
+                    $parts['postal_code'],
+                    $parts['country_name'],
                 ]),
                 'confidence_base' => 60,
             ];
         }
 
-        if (!empty($parts['administrative_area']) && !empty($parts['country_code'])) {
+        if (!empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'admin_country',
-                'query' => $buildQuery([
-                    $parts['administrative_area'],
-                    $parts['country_code'],
-                ]),
-                'confidence_base' => 50,
-            ];
-        }
-
-        if (!empty($parts['postal_code']) && !empty($parts['country_code'])) {
-            $layers[] = [
-                'name' => 'postal_country',
-                'query' => $buildQuery([
-                    $parts['postal_code'],
-                    $parts['country_code'],
-                ]),
-                'confidence_base' => 45,
-            ];
-        }
-
-        if (!empty($parts['country_code'])) {
-            $countryName = $this->getCountryName($parts['country_code']);
-            $layers[] = [
-                'name' => 'country_only',
-                'query' => $countryName ?: $parts['country_code'],
+                'name' => 'country_level',
+                'query' => $parts['country_name'],
                 'confidence_base' => 30,
             ];
         }
@@ -201,36 +189,21 @@ class GeocoderService
 
     protected function getCountryName(string $code): ?string
     {
-        $countries = [
-            'ID' => 'Indonesia',
-            'SG' => 'Singapore',
-            'MY' => 'Malaysia',
-            'US' => 'United States',
-            'GB' => 'United Kingdom',
-            'AU' => 'Australia',
-            'JP' => 'Japan',
-            'CN' => 'China',
-            'IN' => 'India',
-            'TH' => 'Thailand',
-            'PH' => 'Philippines',
-            'VN' => 'Vietnam',
-        ];
-
-        return $countries[$code] ?? null;
+        return Cache::remember("country_name_{$code}", 86400, function () use ($code) {
+            return Country::where('code', $code)->value('name');
+        });
     }
+
 
 
     protected function performLayeredGeocode(array $layer): ?array
     {
         try {
             $query = GeocodeQuery::create($layer['query']);
-
-
-
             $results = $this->geocoder->geocodeQuery($query);
 
             if ($results->isEmpty()) {
-                Log::info('❌ Layer gagal', [
+                Log::info('⏭ Layer gagal', [
                     'layer' => $layer['name'],
                     'query' => $layer['query'],
                 ]);
@@ -239,10 +212,7 @@ class GeocoderService
 
             $location = $results->first();
             $coordinates = $location->getCoordinates();
-
-
             $confidenceScore = $this->calculateConfidenceScore($location, $layer['confidence_base']);
-
             $bounds = $location->getBounds();
 
             return [
@@ -265,14 +235,12 @@ class GeocoderService
                     'east' => $bounds->getEast(),
                 ] : null,
             ];
-
         } catch (\Exception $e) {
             Log::debug('Geocoding exception for layer', [
                 'layer' => $layer['name'],
                 'query' => $layer['query'],
                 'error' => $e->getMessage(),
             ]);
-
             return null;
         }
     }
@@ -282,23 +250,12 @@ class GeocoderService
     {
         $score = $baseScore;
 
-        if ($location->getStreetNumber()) {
-            $score += 5;
-        }
+        if ($location->getStreetNumber()) $score += 5;
+        if ($location->getStreetName()) $score += 5;
+        if ($location->getPostalCode()) $score += 5; // Poin plus untuk kode pos
+        if ($location->getLocality()) $score += 2;
+        if ($location->getSubLocality()) $score += 3; // Poin plus untuk kecamatan/sub-district
 
-        if ($location->getStreetName()) {
-            $score += 5;
-        }
-
-        if ($location->getPostalCode()) {
-            $score += 3;
-        }
-
-        if ($location->getLocality()) {
-            $score += 2;
-        }
-
-        // Cap antara 0-100
         return max(0, min(100, $score));
     }
 
@@ -321,12 +278,8 @@ class GeocoderService
     protected function normalizeAddress(string $address): string
     {
         $address = preg_replace('/\s+/', ' ', $address);
-
         $address = preg_replace('/,+/', ',', $address);
-
-        $address = trim($address, ', ');
-
-        return $address;
+        return trim($address, ', ');
     }
 
 
@@ -339,9 +292,7 @@ class GeocoderService
                 $query = ReverseQuery::fromCoordinates($lat, $lng);
                 $results = $this->geocoder->reverseQuery($query);
 
-                if ($results->isEmpty()) {
-                    return null;
-                }
+                if ($results->isEmpty()) return null;
 
                 $location = $results->first();
 
@@ -355,31 +306,22 @@ class GeocoderService
                     'country_code' => $location->getCountry()?->getCode(),
                     'administrative_area' => $location->getAdminLevels()->first()?->getName(),
                 ];
-
             } catch (\Exception $e) {
-                Log::warning('Reverse geocoding failed', [
-                    'lat' => $lat,
-                    'lng' => $lng,
-                    'error' => $e->getMessage(),
-                ]);
-
                 return null;
             }
         });
     }
 
-
+    // Support fungsi lama untuk kompatibilitas
     public function geocode(string $address, bool $enableFallback = true): ?array
     {
         $parts = array_map('trim', explode(',', $address));
-
         $addressData = [
             'address_line_1' => $parts[0] ?? '',
             'locality' => $parts[1] ?? null,
             'postal_code' => $this->extractPostalCode($address),
             'country_code' => $parts[count($parts) - 1] ?? '',
         ];
-
         return $this->geocodeLayered($addressData);
     }
 
@@ -392,13 +334,9 @@ class GeocoderService
             '/\b[A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2}\b/i',
             '/\b\d{4,6}\b/',
         ];
-
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $text, $matches)) {
-                return trim($matches[0]);
-            }
+            if (preg_match($pattern, $text, $matches)) return trim($matches[0]);
         }
-
         return null;
     }
 }
