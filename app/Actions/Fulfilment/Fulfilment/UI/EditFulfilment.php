@@ -347,6 +347,39 @@ class EditFulfilment extends OrgAction
                                 ]
                             ],
                         ],
+                        [
+                            'label'  => __('Ebay Redirect Key'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => [
+                                'ebay_redirect_key' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Redirect Key'),
+                                    'value' => Arr::get($shop->settings, 'ebay.redirect_key', ''),
+                                ],
+                                'ebay_marketplace_id' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Marketplace Id'),
+                                    'value' => Arr::get($shop->settings, 'ebay.marketplace_id', ''),
+                                ],
+                                'ebay_warehouse_city' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Warehouse City'),
+                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_city', ''),
+                                ],
+                                'ebay_warehouse_state' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Warehouse State'),
+                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_state', ''),
+                                ],
+                                'ebay_warehouse_country' => [
+                                    'type'  => 'select',
+                                    'label' => __('Ebay Warehouse Country'),
+                                    'value' => Arr::get($shop->settings, 'ebay.warehouse_country', ''),
+                                    'options'     => GetCountriesOptions::run(),
+                                    'mode'        => 'single'
+                                ],
+                            ],
+                        ]
                     ],
                     'args'      => [
                         'updateRoute' => [

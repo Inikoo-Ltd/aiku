@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Collection\DeleteImageFromCollection;
 use App\Actions\GrpAction;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterCollection;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImageFromMasterCollection extends GrpAction
@@ -38,6 +39,12 @@ class DeleteImageFromMasterCollection extends GrpAction
 
         if ($updateDependants) {
             $this->updateDependants($masterCollection, $media);
+        }
+        
+        $changes = Arr::except($masterCollection->getChanges(), ['updated_at']);
+        
+        if (Arr::has($changes, 'image_id')) {
+            UpdateMasterCollectionWebImages::run($masterCollection);
         }
 
         return $masterCollection;

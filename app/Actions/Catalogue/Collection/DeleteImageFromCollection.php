@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Collection;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Collection;
 use App\Models\Helpers\Media;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImageFromCollection extends OrgAction
@@ -34,6 +35,12 @@ class DeleteImageFromCollection extends OrgAction
 
         if (!empty($updateData)) {
             $collection->update($updateData);
+        }
+        
+        $changes = Arr::except($collection->getChanges(), ['updated_at']);
+
+        if (Arr::has($changes, 'image_id')) {
+            UpdateCollectionWebImages::run($collection);
         }
 
 
