@@ -40,7 +40,7 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $subdepartments = ProductCategory::query()
@@ -49,14 +49,14 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $interestTags = Tag::query()
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $filtersStructure = [
@@ -180,24 +180,50 @@ class ShowMailshotRecipients extends OrgAction
                     ],
                     'by_family'              => [
                         'label'       => 'By Family',
-                        'type'        => 'location',
-                        'description' => 'Enable email targeting based on customer location with radius.',
+                        'type'        => 'entity_behaviour',
+                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+
                         'fields'      => [
-                            'family_ids' => [
-                                'type'        => 'input',
-                                'label'       => 'Location (Postcode, City, etc.)',
-                                'placeholder' => 'Enter location'
+                            'content' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'By Family',
+                                'placeholder' => 'Select',
+                                'multiple'    => false,
+                                'options'     => $productFamilies,
                             ],
                             'behaviours'   => [
                                 'type'    => 'select',
                                 'label'   => 'Radius',
                                 'options' => [
-                                    'purchased'    => 'Purchased',
-                                    'in_basket'   => 'In Basket',
-                                    'basket_not_purchased'   => 'Basket Not Purchased'
+                                    ['value' => 'purchased', 'label' => 'Purchased'],
+                                    ['value' => 'favourited', 'label' => 'Favourited'],
+                                    ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
                                 ]
                             ]
                         ]
+                    ],
+                    'by_departments'              => [
+                        'label'       => 'By Departments',
+                        'type'        => 'entity_behaviour',
+                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+                        'fields'      => [
+                            'content' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'By Family',
+                                'placeholder' => 'Select',
+                                'multiple'    => true,
+                                'options'     => $subdepartments,
+                            ],
+                            'behaviours'   => [
+                                'type'    => 'select',
+                                'label'   => 'Customer Behaviour',
+                                'options' => [
+                                    ['value' => 'purchased', 'label' => 'Purchased'],
+                                    ['value' => 'favourited', 'label' => 'Favourited'],
+                                    ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
+                                ]
+                            ]
+                        ],
                     ]
                 ]
             ]

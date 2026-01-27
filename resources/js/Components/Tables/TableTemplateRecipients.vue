@@ -95,7 +95,7 @@ const filterMenu = ref()
 const availableFilters = computed(() => {
     const list: any[] = []
 
-    Object.values(filtersStructureMerged.value).forEach((group: any) => {
+    Object.values(props.filtersStructure).forEach((group: any) => {
         Object.entries(group.filters).forEach(([key, filter]: any) => {
             if (!activeFilters.value[key]) {
                 list.push({
@@ -129,7 +129,7 @@ const addFilter = (key: string, config: any) => {
         value = { value: true }
 
         if (key === 'orders_in_basket') {
-            value._ui_preset = null      // UI only
+            value._ui_preset = null
             value.date_range = null
         }
 
@@ -196,7 +196,6 @@ const onPresetChange = (filter: any, event: any) => {
     }
 }
 
-
 const removeFilter = (key: string) => {
     delete activeFilters.value[key]
 }
@@ -207,7 +206,7 @@ const clearAllFilters = () => {
 
 const fetchCustomers = debounce(() => {
     const filtersPayload: any = {}
-
+    console.log("activeFilters", activeFilters.value)
     Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
         filtersPayload[key] = {
             value: filter.value
@@ -246,6 +245,7 @@ const filtersPayload = computed(() => {
 
 const saveFilters = () => {
     console.log('[SAVE FILTER PAYLOAD]', filtersPayload.value)
+    console.log('SAVE JSON', JSON.stringify(filtersPayload.value))
     return;
     router.post(
         route('mailshots.filters.save'), // ganti sesuai route
@@ -259,66 +259,7 @@ const saveFilters = () => {
     )
 }
 
-const filtersStructureMerged = computed(() => {
-    return {
-        ...props.filtersStructure,
-        marketing: {
-            ...props.filtersStructure.marketing,
-            filters: {
-                ...props.filtersStructure.marketing.filters,
 
-                by_families: {
-                    label: 'By Product Families',
-                    type: 'families',
-                    options: {
-                        families: [
-                            { label: 'Electronics', value: 1 },
-                            { label: 'Furniture', value: 2 },
-                            { label: 'Clothing', value: 3 },
-                            { label: 'Accessories', value: 4 }
-                        ],
-                        behaviors: [
-                            { label: 'Purchased from selected families', value: 'purchased' },
-                            { label: 'Added to favourites', value: 'favourited' },
-                            { label: 'Added to basket but not purchased', value: 'basket_only' }
-                        ]
-                    }
-                },
-                by_departments: {
-                    label: 'By Departments',
-                    type: 'multiselect',
-                    behavior_options: [
-                        {
-                            label: 'Purchased products from these departments',
-                            value: 'purchased'
-                        },
-                        {
-                            label: 'Added to basket but not purchased',
-                            value: 'basket_only'
-                        }
-                    ],
-                    combine_logic: {
-                        enabled: true,
-                        options: [
-                            { label: 'Match any selected behaviour (OR)', value: 'or' },
-                            { label: 'Match all selected behaviours (AND)', value: 'and' }
-                        ]
-                    },
-                    options: [
-                        // dummy sub-departments
-                        { label: 'Mobile Phones', value: 101 },
-                        { label: 'Laptops', value: 102 },
-                        { label: 'Home Appliances', value: 201 },
-                        { label: 'Kitchen Appliances', value: 202 },
-                        { label: 'Men Clothing', value: 301 },
-                        { label: 'Women Clothing', value: 302 }
-                    ]
-                }
-
-            }
-        }
-    }
-})
 watch(activeFilters, fetchCustomers, { deep: true })
 watch(tableState, fetchCustomers, { deep: true })
 console.log("props table", props)
@@ -348,10 +289,12 @@ console.log("props table", props)
                     <span class="font-medium">{{ filter.config.label }}</span>
                     <Button :icon="faTimes" type="negative" @click="removeFilter(key)" />
                 </div>
-
+                <span
+                    class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mb-2">
+                    Active
+                </span>
                 <!-- BOOLEAN -->
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
-                    <ToggleButton v-model="filter.value.value" onLabel="Active" offLabel="Inactive" class="mb-3" />
                     <template v-if="key === 'orders_in_basket'">
                         <!-- TIME FRAME -->
                         <Dropdown v-model="filter.value._ui_preset" :options="[
@@ -405,16 +348,24 @@ console.log("props table", props)
                 <template v-else-if="filter.config.type === 'multiselect'">
                     <div class="min-w-0 w-full">
                         <MultiselectTagsInfiniteScroll :form="filter.value" fieldName="ids" :fieldData="{
-                            options: filter.config.options,
+                            options: filter.config.options || filter.config.fields.content.options,
                             labelProp: 'label',
                             valueProp: 'value',
                             placeholder: 'Select items...'
                         }" />
                     </div>
-
-
-                    <div v-if="filter.config.behavior_options" class="mt-3">
-                        <div v-for="behavior in filter.config.behavior_options" :key="behavior.value"
+                </template>
+                <template v-else-if="filter.config.type === 'entity_behaviour'">
+                    <div class="min-w-0 w-full">
+                        <MultiselectTagsInfiniteScroll :form="filter.value" fieldName="ids" :fieldData="{
+                            options: filter.config.options || filter.config.fields.content.options,
+                            labelProp: 'label',
+                            valueProp: 'value',
+                            placeholder: 'Select items...'
+                        }" />
+                    </div>
+                    <div v-if="filter.config.fields.behaviours" class="mt-3">
+                        <div v-for="behavior in filter.config.fields.behaviours.options" :key="behavior.value"
                             class="flex items-center gap-2">
                             <Checkbox v-model="filter.value.behaviors" :value="behavior.value" />
                             <label>{{ behavior.label }}</label>
