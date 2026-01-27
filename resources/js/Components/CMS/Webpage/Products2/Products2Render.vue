@@ -22,6 +22,7 @@ import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
+import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -57,7 +58,8 @@ const emit = defineEmits([
     'setFavorite',
     'unsetFavorite',
     'setBackInStock',
-    'unsetBackInStock'
+    'unsetBackInStock',
+    'onVariantClick'
 ])
 
 const currency = layout?.iris?.currency
@@ -79,6 +81,18 @@ const toggleBackInStock = () =>
         ? emit('unsetBackInStock', props.product)
         : emit('setBackInStock', props.product)
 
+
+const onClickVariant = (product: ProductResource) => {
+    emit('onVariantClick', product.variant)
+}
+
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
+}
 
 
 </script>
@@ -103,9 +117,18 @@ const toggleBackInStock = () =>
                                 opacity: product.stock > 0 ? 1 : 0.4
                             }" />
 
-                        <FontAwesomeIcon v-else icon="fal fa-image"
+                         <FontAwesomeIcon v-else icon="fal fa-image"
                             class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
                             fixed-width />
+
+
+                        <div v-if="layout?.iris?.is_logged_in && product.variant"
+                            class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
+                            <div class="flex justify-center">
+                                <Button :label="trans('Choose variants')" size="xs"
+                                    @click.prevent.stop="onClickVariant(product)" />
+                            </div>
+                        </div>
 
                        <div
                             v-if="!product.stock > 0"
@@ -131,7 +154,11 @@ const toggleBackInStock = () =>
 
                     <!-- Section: Discounts -->
                     <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
-                        <Discount :template="'agnes_and_cat'" :offers_data="product.offers_data"  />
+                       <!--  <Discount :template="'agnes_and_cat'" :offers_data="product.offers_data"  /> -->
+                        <AvailableVolOfferLabel class="w-48"
+                            v-if="(product.stock && basketButton && !product.is_coming_soon) && !layout?.user?.gr_data?.customer_is_gr"
+                            :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
+                        />
                     </div>
 
                     <!-- FAVOURITE -->
