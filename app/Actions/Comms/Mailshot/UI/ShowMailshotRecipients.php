@@ -20,14 +20,11 @@ class ShowMailshotRecipients extends OrgAction
     public function handle(Mailshot $mailshot, ActionRequest $request): Response
     {
         $requestFilters = $request->input('filters', []);
-        $savedFilters = $mailshot->recipients_recipe['customer_query'] ?? [];
-        $currentFilters = empty($requestFilters) ? $savedFilters : $requestFilters;
+
+        $currentFilters = empty($requestFilters) ? [] : $requestFilters;
         $previewMailshot = $mailshot->replicate();
         $previewMailshot->id = $mailshot->id;
-        $previewMailshot->recipients_recipe = array_merge(
-            $mailshot->recipients_recipe ?? [],
-            ['customer_query' => $currentFilters]
-        );
+        $previewMailshot->recipients_recipe = $currentFilters;
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
 
@@ -39,7 +36,7 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $subdepartments = ProductCategory::query()
@@ -48,14 +45,14 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $interestTags = Tag::query()
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $filtersStructure = [

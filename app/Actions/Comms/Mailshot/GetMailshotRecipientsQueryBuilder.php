@@ -40,9 +40,12 @@ class GetMailshotRecipientsQueryBuilder
      */
     public function handle(Mailshot $mailshot): ?QueryBuilder
     {
-        if (Arr::has($mailshot->recipients_recipe, 'customer_query')) {
+
+        if (!empty($mailshot->recipients_recipe)) {
             return $this->getRecipientsFromCustomQuery($mailshot);
         }
+
+        return null;
         // return match (Arr::get($mailshot->recipients_recipe, 'recipient_builder_type')) {
         //     'query' => $this->getRecipientsFromQuery($mailshot),
         //     'prospects' => $this->getRecipientsFromProspectsList(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.prospects')),
@@ -92,7 +95,7 @@ class GetMailshotRecipientsQueryBuilder
             $query->whereRaw('1 = 0');
         }
         $query->whereNotNull('email');
-        $filters = Arr::get($mailshot->recipients_recipe, 'customer_query', []);
+        $filters = $mailshot->recipients_recipe;
 
         // Filter Registered Never Ordered
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);

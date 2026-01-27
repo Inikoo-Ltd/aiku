@@ -15,10 +15,7 @@ use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Models\Comms\Email;
 use App\Models\Comms\Mailshot;
-use App\Models\CRM\Customer;
-use App\Services\QueryBuilder;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,13 +36,7 @@ class ProcessSendMailshot
         $counter      = 0;
 
         // Update this section using GetMailshotRecipientsQueryBuilder
-        $queryBuilder = QueryBuilder::for(Customer::class);
-
-        // ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
-        // ->where('shop_id', $mailshot->shop_id)
-        // ->where('customer_comms.is_subscribed_to_newsletter', true)
-        // ->where('customers.email', '!=', null)
-        // ->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
+        $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
