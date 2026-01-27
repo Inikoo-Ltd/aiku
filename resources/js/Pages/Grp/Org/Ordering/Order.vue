@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, Select, InputText, Column, DataTable, Dialog, ToggleSwitch } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -63,7 +63,7 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy, faParachuteBox, faSortNumericDown,faMoneyCheckEditAlt
+    faCopy, faParachuteBox, faSortNumericDown, faMoneyCheckEditAlt
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -73,18 +73,18 @@ import { faSpinnerThird } from "@far"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
-import { useConfirm } from "primevue/useconfirm";
-import ConfirmDialog from 'primevue/confirmdialog';
+import { useConfirm } from "primevue/useconfirm"
+import ConfirmDialog from "primevue/confirmdialog"
 import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
-import { debounce, get, set } from "lodash"
+import { get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import error from "@/Components/Utils/Error.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -106,7 +106,7 @@ const props = defineProps<{
     tabs: TSTabs
 
     products?: TableTS
-    shop_type: 'b2b' | 'dropshipping'
+    shop_type: "b2b" | "dropshipping"
     data?: {
         data: {
             id: number
@@ -163,9 +163,7 @@ const props = defineProps<{
                 id: number
             }
         }
-        payments_accounts: {
-
-        }[]
+        payments_accounts: {}[]
         customer_client?: {
             contact_name: string
             company_name: string
@@ -243,13 +241,14 @@ const props = defineProps<{
     dispatched_emails?: {}
     payments_accounts: Array<{ id: number, name: string }>
     payments_data: Array<{ id: number, name: string }>
+    state: string
 }>()
 
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
 const locale = inject("locale", aikuLocaleStructure)
-const confirm = useConfirm();
+const confirm = useConfirm()
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -304,7 +303,7 @@ const paymentData = ref({
     payment_reference: ""
 })
 
-const layout = inject("layout", {});
+const layout = inject("layout", {})
 const currentAction = ref(null)
 const isOpenModalPayment = ref(false)
 const isLoadingPayment = ref(false)
@@ -358,8 +357,8 @@ const onSubmitNote = async (closePopup: Function) => {
 
     try {
         router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
-            [noteToSubmit.value.selectedNote]: noteToSubmit.value.value
-        },
+                [noteToSubmit.value.selectedNote]: noteToSubmit.value.value
+            },
             {
                 headers: { "Content-Type": "application/json" },
                 onStart: () => isLoadingButton.value = "submitNote",
@@ -412,7 +411,7 @@ const last_payment = computed(() => {
 
 
 const generateRouteDeliveryNote = (slug: string) => {
-    if (!slug) return ''
+    if (!slug) return ""
 
     return route(props.routes.delivery_note.deliveryNoteRoute.name, {
         ...props.routes.delivery_note.deliveryNoteRoute.parameters,
@@ -423,17 +422,17 @@ const generateRouteDeliveryNote = (slug: string) => {
 const cancelLoading = ref(false)
 const confirm2 = (action) => {
     confirm.require({
-        message: trans('Do you want to cancel this order?'),
-        header: trans('Cancel Order'),
-        rejectLabel: trans('Cancel'),
+        message: trans("Do you want to cancel this order?"),
+        header: trans("Cancel Order"),
+        rejectLabel: trans("Cancel"),
         rejectProps: {
-            label: trans('No'),
-            severity: 'secondary',
+            label: trans("No"),
+            severity: "secondary",
             outlined: true
         },
         acceptProps: {
-            label: trans('Yes'),
-            severity: 'danger'
+            label: trans("Yes"),
+            severity: "danger"
         },
         accept: () => {
             router[action.route.method](
@@ -450,26 +449,26 @@ const confirm2 = (action) => {
                         notify({
                             title: trans("Success"),
                             text: trans("Successfully cancel order"),
-                            type: "success",
+                            type: "success"
                         })
                     },
                     onError: () => {
                         notify({
                             title: trans("Error"),
                             text: trans("Failed to cancel order"),
-                            type: "error",
+                            type: "error"
                         })
                     }
                 }
             )
-        },
+        }
 
-    });
-};
+    })
+}
 
 //start: collection feature
 const isCollection = ref<boolean>(props.delivery_address_management.addresses.collection_address_id ? true : false)
-const collectionBy = ref<string>(props.box_stats?.shipping_notes ? 'thirdParty' : 'myself')
+const collectionBy = ref<string>(props.box_stats?.shipping_notes ? "thirdParty" : "myself")
 const textValue = ref<string | null>(props.box_stats?.shipping_notes)
 const labelPercentage = ref("")
 const updateCollection = async (e: Event) => {
@@ -486,17 +485,17 @@ const updateCollection = async (e: Event) => {
         notify({
             title: trans("Something went wrong."),
             text: trans("Failed to update to collection"),
-            type: "error",
+            type: "error"
         })
     }
 }
 
 const updateCollectionType = () => {
     const payload: Record<string, any> = {
-        collection_by: collectionBy.value,
+        collection_by: collectionBy.value
     }
 
-    if (collectionBy.value === 'myself') {
+    if (collectionBy.value === "myself") {
         payload.shipping_notes = null
         textValue.value = null // also clear in frontend
     }
@@ -510,16 +509,16 @@ const updateCollectionType = () => {
                 notify({
                     title: trans("Success"),
                     text: trans("Collection type updated successfully"),
-                    type: "success",
+                    type: "success"
                 })
             },
             onError: () => {
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to update collection type"),
-                    type: "error",
+                    type: "error"
                 })
-            },
+            }
         }
     )
 }
@@ -534,16 +533,16 @@ const updateCollectionNotes = () => {
                 notify({
                     title: trans("Success"),
                     text: trans("Text updated successfully"),
-                    type: "success",
+                    type: "success"
                 })
             },
             onError: () => {
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to update text"),
-                    type: "error",
+                    type: "error"
                 })
-            },
+            }
         }
     )
 }
@@ -554,21 +553,21 @@ const onCreateReplacement = (action: any) => {
     router[action.route.method](
         route(action.route.name, action.route.parameters),
         {}, {
-        preserveScroll: true,
-        onStart: () => {
-            replacementLoading.value = true
-        },
-        onFinish: () => {
-            replacementLoading.value = false
-        },
-        onError: () => {
-            notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to create replacement"),
-                type: "error",
-            })
-        },
-    }
+            preserveScroll: true,
+            onStart: () => {
+                replacementLoading.value = true
+            },
+            onFinish: () => {
+                replacementLoading.value = false
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to create replacement"),
+                    type: "error"
+                })
+            }
+        }
     )
 }
 
@@ -577,28 +576,28 @@ const onCreateReturn = (action: any) => {
     router[action.route.method](
         route(action.route.name, action.route.parameters),
         {}, {
-        preserveScroll: true,
-        onStart: () => {
-            returnLoading.value = true
-        },
-        onFinish: () => {
-            returnLoading.value = false
-        },
-        onSuccess: () => {
-            notify({
-                title: trans("Success"),
-                text: trans("Return created successfully"),
-                type: "success",
-            })
-        },
-        onError: () => {
-            notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to create return"),
-                type: "error",
-            })
-        },
-    }
+            preserveScroll: true,
+            onStart: () => {
+                returnLoading.value = true
+            },
+            onFinish: () => {
+                returnLoading.value = false
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Return created successfully"),
+                    type: "success"
+                })
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to create return"),
+                    type: "error"
+                })
+            }
+        }
     )
 }
 
@@ -608,27 +607,27 @@ const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
 const compSelectedDeck = computed(() => {
     const xxx = selectedCheck.value?.reduce((acc, curr) => {
-        acc[curr] = true;
-        return acc;
+        acc[curr] = true
+        return acc
     }, {})
 
     return route(props.proforma_invoice.route_download_pdf.name, { ...props.proforma_invoice.route_download_pdf.parameters, ...xxx })
 })
 const isShowProforma = computed(() => {
-    return props.proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))
+    return props.proforma_invoice && !props.box_stats?.invoices?.length && !(["dispatched", "cancelled"].includes(props.data?.data?.state))
 })
 
 
 const labelToBePaid = (toBePaidValue: string) => {
-    if (toBePaidValue.toLowerCase() === 'cash_on_delivery') {
-        return 'COD'
+    if (toBePaidValue.toLowerCase() === "cash_on_delivery") {
+        return "COD"
     }
 
-    if (toBePaidValue.toLowerCase() === 'bank_transfer' || toBePaidValue.toLowerCase() === 'bank') {
-        return 'Bank Transfer'
+    if (toBePaidValue.toLowerCase() === "bank_transfer" || toBePaidValue.toLowerCase() === "bank") {
+        return "Bank Transfer"
     }
 
-    return ''
+    return ""
 }
 
 // Section: change shipping price (in Summary)
@@ -638,7 +637,7 @@ const updateShippingTbcAmount = (value: number, oldValue: number | null) => {
         return
     }
     router.patch(
-        route('grp.models.order.set_shipping_tbc_amount', {
+        route("grp.models.order.set_shipping_tbc_amount", {
             order: props.data?.data?.id
         }),
         {
@@ -666,7 +665,7 @@ const updateShippingTbcAmount = (value: number, oldValue: number | null) => {
             },
             onFinish: () => {
                 isLoadingUpdateShippingTbcAmount.value = false
-            },
+            }
         }
     )
 }
@@ -675,7 +674,7 @@ const isLoadingShippingManual = ref(false)
 const setShippingManualAmount = (v: number) => {
     // Section: Submit
     router.patch(
-        route('grp.models.order.set_shipping_engine_manual', {
+        route("grp.models.order.set_shipping_engine_manual", {
             order: props.data?.data?.id
         }),
         {
@@ -703,14 +702,14 @@ const setShippingManualAmount = (v: number) => {
             },
             onFinish: () => {
                 isLoadingShippingManual.value = false
-            },
+            }
         }
     )
 }
 const setShippingToAuto = () => {
     // Section: Submit
     router.get(
-        route('grp.models.order.set_shipping_engine_auto', {
+        route("grp.models.order.set_shipping_engine_auto", {
             order: props.data?.data?.id
         }),
         {},
@@ -736,7 +735,7 @@ const setShippingToAuto = () => {
             },
             onFinish: () => {
                 isLoadingShippingManual.value = false
-            },
+            }
         }
     )
 }
@@ -760,9 +759,9 @@ const isValidPercentage = (val: number | null) => {
 const onSubmitEditAllPercentage = async () => {
     if (!isValidPercentage(editedAllPercentage.value)) {
         notify({
-            title: trans('Invalid value'),
-            text: trans('Percentage must be between 0 and 100'),
-            type: 'warning',
+            title: trans("Invalid value"),
+            text: trans("Percentage must be between 0 and 100"),
+            type: "warning"
         })
         return
     }
@@ -771,8 +770,8 @@ const onSubmitEditAllPercentage = async () => {
 
     if (!routeConfig) {
         notify({
-            title: trans('Route not configured'),
-            type: 'error',
+            title: trans("Route not configured"),
+            type: "error"
         })
         return
     }
@@ -791,28 +790,27 @@ const onSubmitEditAllPercentage = async () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans('Success'),
-                    text: trans('Successfully applied discount to all products'),
-                    type: 'success',
+                    title: trans("Success"),
+                    text: trans("Successfully applied discount to all products"),
+                    type: "success"
                 })
                 closeEditAllPercentageModal()
             },
             onError: (errors) => {
                 notify({
-                    title: trans('Something went wrong'),
+                    title: trans("Something went wrong"),
                     text:
                         errors?.discretionary_discount_percentage ||
-                        trans('Failed to apply discount'),
-                    type: 'error',
+                        trans("Failed to apply discount"),
+                    type: "error"
                 })
             },
             onFinish: () => {
                 isLoadingSubmitNetAmount.value = false
-            },
+            }
         }
     )
 }
-
 
 
 // Section: Edit Discretionary Charge
@@ -822,18 +820,18 @@ const updateCharge = (charge: {}) => {
     // Section: Submit
     router.patch(
         route(
-                'grp.models.transaction.update_charge_amount',
-                {
-                    transaction: charge.transaction_id
-                }
-            ),
+            "grp.models.transaction.update_charge_amount",
             {
-                amount: charge.net_amount
-            },
+                transaction: charge.transaction_id
+            }
+        ),
+        {
+            amount: charge.net_amount
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 charge.isLoading = true
             },
             onSuccess: () => {
@@ -844,178 +842,135 @@ const updateCharge = (charge: {}) => {
                 notify({
                     title: trans("Success!"),
                     text: "Successfully edit net amount of the charge",
-                    type: "success",
-                })
-            },
-            onError: errors => {
-                notify({
-                title: trans("Something went wrong"),
-                text: error.message || trans("Please try again or contact administrator"),
-                type: 'error'
-            })
-            },
-            onFinish: () => {
-                charge.isLoading = false
-            },
-        }
-    )
-
-    
-    // try {
-    //     charge.isLoading = true
-    //     const response = await axios.patch(
-    //         route(
-    //             'grp.models.transaction.update_charge_amount',
-    //             {
-    //                 transaction: charge.transaction_id
-    //             }
-    //         ), {
-    //             amount: charge.net_amount
-    //         }
-    //     )
-        
-    //     charge.isRecentlySuccess = true
-    //     setTimeout(() => {
-    //         charge.isRecentlySuccess = false
-    //     }, 2000)
-    //     notify({
-    //         title: trans("Success!"),
-    //         text: "Successfully edit net amount of the charge",
-    //         type: "success",
-    //     })
-
-    //     console.log('Response axios:', response.data)
-    // } catch (error: any) {
-    //     notify({
-    //         title: trans("Something went wrong"),
-    //         text: error.message || trans("Please try again or contact administrator"),
-    //         type: 'error'
-    //     })
-    // } finally {
-    //     charge.isLoading = false
-    // }
-}
-// const updateDebCharge = debounce((charge) => updateCharge(charge), 400)
-// const addCharge = async (charge: {}) => {
-    
-//     notify({
-//         title: trans("Something went wrong"),
-//         text: "Route to add new charge is not available yet.",
-//         type: "error",
-//     })
-// }
-const isLoadingFetchCharges = ref(false)
-const fetchChargesList = async () => {
-    try {
-        isLoadingFetchCharges.value = true
-        const response = await axios.get(
-            route(
-                'grp.json.charges_in_order.index',
-                {
-                    order: props.data?.data?.id
-                }
-            ),
-        )
-        
-        chargesList.value = response.data.data
-        console.log('Response axios:', response.data)
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
-            type: 'error'
-        })
-    } finally {
-        isLoadingFetchCharges.value = false
-    }
-}
-watch(isOpenModalDiscretionaryCharge, async (val) => {
-    if (val) {
-        fetchChargesList()
-    }
-})
-const isLoadingRemoveCharge = ref<number[]>([])
-const onRemoveCharge = (charge) => {
-    // Section: Submit
-    router.delete(
-        route('grp.models.transaction.delete', {
-            transaction: charge.transaction_id
-        }),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingRemoveCharge.value.push(charge.transaction_id)
-            },
-            onSuccess: () => {
-                // notifySuccess(trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label }))
-                notify({
-                    title: trans("Success"),
-                    text: trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label ?? '' }),
                     type: "success"
                 })
-                chargesList.value = chargesList.value.filter((item) => item.transaction_id !== charge.transaction_id)
             },
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to remove charge :chargeLabel", { chargeLabel: charge.label ?? '' }),
+                    text: error.message || trans("Please try again or contact administrator"),
                     type: "error"
                 })
             },
             onFinish: () => {
-                const idx = isLoadingRemoveCharge.value.indexOf(charge.transaction_id)
-                if (idx !== -1) {
-                    isLoadingRemoveCharge.value.splice(idx, 1)
-                }
-            },
+                charge.isLoading = false
+            }
         }
     )
-}
+
+
+    const isLoadingFetchCharges = ref(false)
+    const fetchChargesList = async () => {
+        try {
+            isLoadingFetchCharges.value = true
+            const response = await axios.get(
+                route(
+                    "grp.json.charges_in_order.index",
+                    {
+                        order: props.data?.data?.id
+                    }
+                )
+            )
+
+            chargesList.value = response.data.data
+            console.log("Response axios:", response.data)
+        } catch (error: any) {
+            notify({
+                title: trans("Something went wrong"),
+                text: error.message || trans("Please try again or contact administrator"),
+                type: "error"
+            })
+        } finally {
+            isLoadingFetchCharges.value = false
+        }
+    }
+    watch(isOpenModalDiscretionaryCharge, async (val) => {
+        if (val) {
+            fetchChargesList()
+        }
+    })
+    const isLoadingRemoveCharge = ref<number[]>([])
+    const onRemoveCharge = (charge) => {
+        // Section: Submit
+        router.delete(
+            route("grp.models.transaction.delete", {
+                transaction: charge.transaction_id
+            }),
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => {
+                    isLoadingRemoveCharge.value.push(charge.transaction_id)
+                },
+                onSuccess: () => {
+                    // notifySuccess(trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label }))
+                    notify({
+                        title: trans("Success"),
+                        text: trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label ?? "" }),
+                        type: "success"
+                    })
+                    chargesList.value = chargesList.value.filter((item) => item.transaction_id !== charge.transaction_id)
+                },
+                onError: errors => {
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: trans("Failed to remove charge :chargeLabel", { chargeLabel: charge.label ?? "" }),
+                        type: "error"
+                    })
+                },
+                onFinish: () => {
+                    const idx = isLoadingRemoveCharge.value.indexOf(charge.transaction_id)
+                    if (idx !== -1) {
+                        isLoadingRemoveCharge.value.splice(idx, 1)
+                    }
+                }
+            }
+        )
+    }
 
 
 // Section: add new charge
-const isOpenModalAddCharges = ref(false)
-const dataNewChargeToAdd = ref({
-    label: '',
-    amount: 0
-})
-const isLoadingAddNewCharge = ref(false)
-const submitNewCharge = async () => {
+    const isOpenModalAddCharges = ref(false)
+    const dataNewChargeToAdd = ref({
+        label: "",
+        amount: 0
+    })
+    const isLoadingAddNewCharge = ref(false)
+    const submitNewCharge = async () => {
 
-    try {
-        isLoadingAddNewCharge.value = true
-        const response = await axios.post(
-            route('grp.models.order.discretionary_charge_transaction', {
-                order: props.data?.data?.id
-            }),
-            {
-                amount: dataNewChargeToAdd.value.amount,
-                label: dataNewChargeToAdd.value.label,
-            }
-        )
-        console.log('Response axios:', response.data)
+        try {
+            isLoadingAddNewCharge.value = true
+            const response = await axios.post(
+                route("grp.models.order.discretionary_charge_transaction", {
+                    order: props.data?.data?.id
+                }),
+                {
+                    amount: dataNewChargeToAdd.value.amount,
+                    label: dataNewChargeToAdd.value.label
+                }
+            )
+            console.log("Response axios:", response.data)
 
-        fetchChargesList()
-        dataNewChargeToAdd.value.label = ''
-        dataNewChargeToAdd.value.amount = 0
-        isOpenModalAddCharges.value = false
-        notify({
-            title: trans("Success"),
-            text: trans("Successfully add new charge"),
-            type: "success"
-        })
-        router.reload()
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to add new charge"),
-            type: "error"
-        })
-    } finally {
-        isLoadingAddNewCharge.value = false
+            fetchChargesList()
+            dataNewChargeToAdd.value.label = ""
+            dataNewChargeToAdd.value.amount = 0
+            isOpenModalAddCharges.value = false
+            notify({
+                title: trans("Success"),
+                text: trans("Successfully add new charge"),
+                type: "success"
+            })
+            router.reload()
+        } catch (error: any) {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans("Failed to add new charge"),
+                type: "error"
+            })
+        } finally {
+            isLoadingAddNewCharge.value = false
+        }
     }
-}
 
 </script>
 
@@ -1032,46 +987,45 @@ const submitNewCharge = async () => {
         <template #button-add-product="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
-                    :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+                        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
             </div>
         </template>
 
         <template #button-cancel="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="cancelLoading"
-                    @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
-                    :tooltip="action.tooltip" />
+                        @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
+                        :tooltip="action.tooltip" />
             </div>
         </template>
 
         <template #button-group-upload-add="{ action }">
             <div class="relative">
                 <Button v-if="upload_excel" :style="action.button[0].style" :label="action.button[0].label"
-                    :icon="action.button[0].icon" @click="() => isModalUploadExcel = true"
-                    :key="`ActionButton${action.button[0].label}${action.button[0].style}`"
-                    :tooltip="action.button[0].tooltip" />
+                        :icon="action.button[0].icon" @click="() => isModalUploadExcel = true"
+                        :key="`ActionButton${action.button[0].label}${action.button[0].style}`"
+                        :tooltip="action.button[0].tooltip" />
             </div>
         </template>
-
 
 
         <template #other>
             <div v-if="!props.readonly || isShowProforma" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
-                    icon="upload" />
+                        icon="upload" />
             </div>
         </template>
 
         <template #button-replacement="{ action }">
             <Button @click="() => onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
-                icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
-                v-tooltip="trans('Create replacement')" />
+                    icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
+                    v-tooltip="trans('Create replacement')" />
         </template>
 
         <template #button-return="{ action }">
             <Button @click="() => onCreateReturn(action)" :label="trans('Return')" xsize="xs" type="secondary"
-                icon="fal fa-undo-alt" key="2" :disabled="returnLoading" :loading="returnLoading"
-                v-tooltip="trans('Create return')" />
+                    icon="fal fa-undo-alt" key="2" :disabled="returnLoading" :loading="returnLoading"
+                    v-tooltip="trans('Create return')" />
         </template>
 
         <template #wrapped-add-note="{ action }">
@@ -1085,16 +1039,16 @@ const submitNewCharge = async () => {
                         <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
                         <div class="">
                             <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
-                                required
-                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                valueProp="value" />
+                                             @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
+                                             required
+                                             :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                             valueProp="value" />
                         </div>
 
                         <div class="mt-3">
                             <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
                             <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                @keydown.enter="() => onSubmitNote(closed)" />
+                                          @keydown.enter="() => onSubmitNote(closed)" />
                         </div>
 
                         <p v-if="errorNote" class="mt-2 text-sm text-red-600">
@@ -1103,14 +1057,14 @@ const submitNewCharge = async () => {
 
                         <div class="flex justify-end mt-3">
                             <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
-                                full />
+                                    :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
+                                    full />
                         </div>
 
                         <div v-if="isLoadingButton === 'submitNote'"
-                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                             class="bg-white/50 absolute inset-0 flex place-content-center items-center">
                             <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
-                                aria-hidden="true" />
+                                             aria-hidden="true" />
                         </div>
                     </div>
                 </template>
@@ -1119,13 +1073,13 @@ const submitNewCharge = async () => {
             <div class="flex flex-col gap-2">
                 <!-- Button: Undispatched -->
                 <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
-                    :routeDelete="routes.rollback_dispatch"
-                    :title="trans('Are you sure you want to rollback the Order??')"
-                    :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
-                    :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
+                                         :routeDelete="routes.rollback_dispatch"
+                                         :title="trans('Are you sure you want to rollback the Order??')"
+                                         :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
+                                         :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
                     <template #default="{ changeModel }">
                         <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
-                            :tooltip="trans('Rollback the dispatch')" />
+                                :tooltip="trans('Rollback the dispatch')" />
                     </template>
                 </ModalConfirmationDelete>
 
@@ -1140,11 +1094,11 @@ const submitNewCharge = async () => {
 
         <template #afterTitle2>
             <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
-                icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                             icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
             <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')"
-                icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                             icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
             <FontAwesomeIcon v-if="data?.data.has_insurance" v-tooltip="trans('Insurance')" icon="fas fa-shield-alt"
-                class="text-yellow-500" fixed-width aria-hidden="true" />
+                             class="text-yellow-500" fixed-width aria-hidden="true" />
         </template>
     </PageHeading>
 
@@ -1157,22 +1111,22 @@ const submitNewCharge = async () => {
     <div class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+                 class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                    :updateRoute="routes.updateOrderRoute" />
+                         :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
     </div>
 
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'"
-        class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
+         class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
         <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"
-            formatTime="EEE, do MMM yy, HH:mm" />
+                  formatTime="EEE, do MMM yy, HH:mm" />
     </div>
 
     <div v-if="currentTab != 'products'"
-        class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
+         class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
         <!-- start: Order Section -->
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
@@ -1186,11 +1140,11 @@ const submitNewCharge = async () => {
                     <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width
-                                aria-hidden="true" />
+                                             aria-hidden="true" />
                         </div>
                         <Link as="a" v-tooltip="trans('Customer client')"
-                            :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
-                            class="text-sm text-gray-500 cursor-pointer secondaryLink">
+                              :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                              class="text-sm text-gray-500 cursor-pointer secondaryLink">
                             {{ box_stats?.customer_client.contact_name }}
                         </Link>
                         <CopyButton :text="box_stats?.customer_client.contact_name" />
@@ -1199,13 +1153,13 @@ const submitNewCharge = async () => {
 
                     <!-- Field: Reference Number -->
                     <div v-if="box_stats?.customer.reference || box_stats?.customer.name"
-                        class="pl-1 flex items-center w-full gap-x-2">
+                         class="pl-1 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
                         </div>
                         <Link as="a"
-                            :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                            class="text-sm text-gray-500 cursor-pointer primaryLink">
+                              :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
+                              class="text-sm text-gray-500 cursor-pointer primaryLink">
                             {{ box_stats?.customer.name }} ({{ box_stats?.customer.reference }})
                         </Link>
                     </div>
@@ -1215,7 +1169,7 @@ const submitNewCharge = async () => {
                     <dl v-else-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Contact name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
-                                aria-hidden="true" />
+                                             aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
                         <CopyButton :text="box_stats?.customer.contact_name" />
@@ -1226,7 +1180,7 @@ const submitNewCharge = async () => {
                         class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Company name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
-                                aria-hidden="true" />
+                                             aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
                         <CopyButton :text="box_stats?.customer.company_name" />
@@ -1236,10 +1190,10 @@ const submitNewCharge = async () => {
                     <dl v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Customer email')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
-                                aria-hidden="true" />
+                                             aria-hidden="true" />
                         </dt>
                         <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
-                            class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
+                           class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
                                 box_stats?.customer.email
                             }}</a>
                         <CopyButton :text="box_stats?.customer.email" />
@@ -1251,7 +1205,7 @@ const submitNewCharge = async () => {
                             <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
-                            class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
+                           class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
                         <CopyButton :text="box_stats?.customer.phone" />
                     </dl>
 
@@ -1260,7 +1214,7 @@ const submitNewCharge = async () => {
                         class="pl-1 flex items-start w-full flex-none gap-x-2">
                         <dt v-tooltip="trans('Billing address')" class="flex-none pt-2">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
-                                aria-hidden="true" />
+                                             aria-hidden="true" />
                         </dt>
                         <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
                             v-html="box_stats?.customer.addresses.billing.formatted_address">
@@ -1269,9 +1223,9 @@ const submitNewCharge = async () => {
 
                     <!-- Collection Toggle -->
                     <div v-if="props.data?.data?.state !== 'dispatched'"
-                        class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
-                        <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
-                            aria-hidden='true' />
+                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
+                        <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width
+                                         aria-hidden="true" />
                         <ToggleSwitch v-model="isCollection" @change="updateCollection" />
                         <span class="text-sm text-gray-500">Collection</span>
                     </div>
@@ -1282,20 +1236,20 @@ const submitNewCharge = async () => {
                             <div class="flex space-x-4">
                                 <label class="inline-flex items-center">
                                     <input type="radio" value="myself" v-model="collectionBy"
-                                        @change="updateCollectionType" class="form-radio" />
+                                           @change="updateCollectionType" class="form-radio" />
                                     <span class="ml-2">{{ trans("My Self") }}</span>
                                 </label>
                                 <label class="inline-flex items-center">
                                     <input type="radio" value="thirdParty" v-model="collectionBy"
-                                        @change="updateCollectionType" class="form-radio" />
+                                           @change="updateCollectionType" class="form-radio" />
                                     <span class="ml-2">{{ trans("Third Party") }}</span>
                                 </label>
                             </div>
 
                             <div v-if="collectionBy === 'thirdParty'" class="mt-3">
                                 <textarea v-model="textValue" @blur="updateCollectionNotes" rows="5"
-                                    class="w-full border border-gray-300 rounded-md p-2"
-                                    placeholder="Type additional notes..."></textarea>
+                                          class="w-full border border-gray-300 rounded-md p-2"
+                                          placeholder="Type additional notes..."></textarea>
                             </div>
                         </div>
 
@@ -1304,14 +1258,14 @@ const submitNewCharge = async () => {
                             class="mt-2 pt-1 flex items-start w-full flex-none gap-x-2">
                             <dt v-tooltip="trans('Shipping address')" class="flex-none pt-2">
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true" />
                             </dt>
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
                                 <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
-                                    @click="() => isModalAddress = true"
-                                    class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                     @click="() => isModalAddress = true"
+                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
                             </dd>
@@ -1323,16 +1277,16 @@ const submitNewCharge = async () => {
                             <dt v-tooltip="trans('Shipping address and Billing address')"
                                 class="flex-none flex flex-col gap-y-2 pt-2">
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true" />
                                 <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true" />
                             </dt>
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                 <div v-html="box_stats?.customer?.addresses?.delivery?.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
-                                    @click="() => isModalAddress = true"
-                                    class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                     @click="() => isModalAddress = true"
+                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
                             </dd>
@@ -1353,98 +1307,74 @@ const submitNewCharge = async () => {
 
                     <!-- Field: Billing -->
                     <dl class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
-                        <!-- <dt class="flex-none pt-0.5 pl-1">
-                            <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
-                                class="text-gray-500" />
-                        </dt> -->
+
 
                         <div v-if="data.data?.state === 'cancelled'" class="">
                             <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true" />
                                 {{ trans("Order cancelled, payments returned to balance") }}
                             </div>
                         </div>
 
                         <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && Number(box_stats.products.payment.total_amount) > 0"
-                            class="w-full">
+                             class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
                             <div class="w-full rounded-md shadow pxb-2 isolate border" :class="[
                                 Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
                             ]">
                                 <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
-                                    :paidAmount="box_stats.products.payment.paid_amount"
-                                    :payAmount="box_stats.products.payment.pay_amount"
-                                    :balance="box_stats?.customer?.balance" :payments="payments_data"
-                                    :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
-                                    :order="data?.data" :handleTabUpdate="handleTabUpdate">
+                                             :paidAmount="box_stats.products.payment.paid_amount"
+                                             :payAmount="box_stats.products.payment.pay_amount"
+                                             :balance="box_stats?.customer?.balance" :payments="payments_data"
+                                             :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
+                                             :order="data?.data" :handleTabUpdate="handleTabUpdate">
                                     <template #default>
-
 
 
                                     </template>
                                 </NeedToPayV2>
 
 
-
-                                <!-- <div v-if="
-                                    box_stats.products.payment.pay_amount > 0
-                                    && box_stats.products.payment.pay_amount <= box_stats?.customer?.balance
-                                    && props.data?.data?.state === 'submitted'
-                                " class="-ml-2 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded pl-4 pr-2">
-                                    <div class="text-yellow-700">
-                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-                                        {{ trans("Order :xorder is not paid yet", { xorder: data?.data?.reference }) }}
-                                    </div>
-                                    <div class="mt-2 whitespace-nowrap text-xs xtext-center">{{ trans("Customer balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(currency.code, Number(box_stats?.customer?.balance)) }}</span></div>
-                                    <div class="mt-1">
-                                        <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(currency.code, Number(box_stats.products.payment.pay_amount)) })" size="xxs" type="secondary" :loading="isLoadingPayWithBalance" />
-                                    </div>
-
-                                    <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
-                                        <LoadingIcon />
-                                    </div>
-                                </div> -->
-
                                 <!-- Pay: Refund -->
                                 <div v-if="false && box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
-                                    class="pt-1 border-t border-green-300 text-xxs">
+                                     class="pt-1 border-t border-green-300 text-xxs">
                                     <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
-                                        type="secondary" size="xxs" />
+                                            type="secondary" size="xxs" />
                                 </div>
 
                                 <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
-                                    class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
+                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
                                     <div v-if="data?.data?.to_be_paid_by?.value"
-                                        class="mx-auto w-fit flex items-center">
+                                         class="mx-auto w-fit flex items-center">
                                         <Button @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
-                                            xtype="secondary"
-                                            :label="trans('Mark :toBePaidBy as received', { toBePaidBy: labelToBePaid(data?.data?.to_be_paid_by?.value) })"
-                                            size="sm" class="rounded-r-none !border-r-0" />
+                                                xtype="secondary"
+                                                :label="trans('Mark :toBePaidBy as received', { toBePaidBy: labelToBePaid(data?.data?.to_be_paid_by?.value) })"
+                                                size="sm" class="rounded-r-none !border-r-0" />
                                         <Button @click.prevent="() => onClickPayInvoice()" xtype="secondary"
-                                            icon="far fa-ellipsis-v" xlabel="trans('Pay with other')" size="sm"
-                                            class="rounded-l-none !border-l-0" />
+                                                icon="far fa-ellipsis-v" xlabel="trans('Pay with other')" size="sm"
+                                                class="rounded-l-none !border-l-0" />
                                     </div>
                                     <div v-else class="mx-auto w-fit flex items-center">
                                         <Button @click.prevent="() => onClickPayInvoice()" xtype="secondary"
-                                            xicon="far fa-ellipsis-v" :label="trans('Pay')" size="sm"
-                                            xclass="rounded-l-none !border-l-0" />
+                                                xicon="far fa-ellipsis-v" :label="trans('Pay')" size="sm"
+                                                xclass="rounded-l-none !border-l-0" />
                                     </div>
                                 </div>
 
                                 <!-- Pay: excesses balance -->
                                 <div v-if="box_stats.products.excesses_payment?.amount > 0"
-                                    class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
+                                     class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
                                     <p class="text-yellow-600 mb-1 flex justify-between">
                                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70"
-                                            fixed-width aria-hidden="true" />
+                                                         fixed-width aria-hidden="true" />
                                         <span class="">
                                             {{ trans("The order is overpaid") }}:
                                             <strong>{{ locale.currencyFormat(currency.code,
                                                 Number(box_stats.products.excesses_payment?.amount)) }}</strong>
                                         </span>
                                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70"
-                                            fixed-width aria-hidden="true" />
+                                                         fixed-width aria-hidden="true" />
                                     </p>
 
                                     <ButtonWithLink
@@ -1463,25 +1393,25 @@ const submitNewCharge = async () => {
 
                     <!-- Section: Delivery Notes -->
                     <div v-if="box_stats?.delivery_notes?.length"
-                        class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
+                         class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                             <div class="text-sm font-semibold text-gray-800">
-                                {{ trans('Delivery Notes') }}
+                                {{ trans("Delivery Notes") }}
                             </div>
                         </div>
 
                         <!-- Delivery Note Items -->
                         <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
-                            class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+                             class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
 
                             <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                                 <FontAwesomeIcon :icon="faTruck"
-                                    :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'"
-                                    fixed-width />
+                                                 :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'"
+                                                 fixed-width />
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
-                                    note?.reference
-                                }}
+                                        note?.reference
+                                    }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                                     {{ trans(note?.state?.tooltip) }}
@@ -1491,7 +1421,7 @@ const submitNewCharge = async () => {
 
                             <!-- Shipments -->
                             <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
-                                <p class="text-gray-700 font-medium mb-1">{{ trans('Shipments') }}:</p>
+                                <p class="text-gray-700 font-medium mb-1">{{ trans("Shipments") }}:</p>
                                 <ul class="list-disc pl-4 space-y-1">
                                     <li v-for="(shipment, i) in note.shipments" :key="i">
                                         <template v-if="shipment?.formatted_tracking_urls?.length">
@@ -1499,7 +1429,7 @@ const submitNewCharge = async () => {
                                             <div v-for="trackingData in shipment.formatted_tracking_urls">
 
                                                 <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
-                                                    class="secondaryLink" v-tooltip="trans('Click to track shipment')">
+                                                   class="secondaryLink" v-tooltip="trans('Click to track shipment')">
                                                     {{ trackingData.tracking }}
                                                 </a>
                                             </div>
@@ -1515,31 +1445,16 @@ const submitNewCharge = async () => {
                                 </ul>
                             </div>
 
-                            <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
-                                {{ trans('No shipments') }}
-                            </div>-->
                         </div>
                     </div>
 
 
-
-                    <!-- Field: number of order -->
-                    <!-- <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                        <dt zv-tooltip="trans('Weight')" class="flex-none pl-1">
-                            <FontAwesomeIcon icon="fal fa-sort-numeric-down" fixed-width aria-hidden="true" class="text-gray-500" />
-                        </dt>
-                        <dd class="text-gray-500" v-tooltip="box_stats?.order_properties?.customer_order_ordinal_tooltip ?? trans('Customer order number')">
-                            {{ box_stats?.order_properties?.customer_order_ordinal || 0 }}
-                        </dd>
-                    </dl> -->
-
-
                     <!-- Field: Invoices -->
                     <div v-if="props.box_stats?.invoices?.length"
-                        class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
+                         class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
                         <div v-tooltip="trans('Invoices')" class="flex-none mt-1">
                             <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
-                                class="text-gray-500" />
+                                             class="text-gray-500" />
                         </div>
 
                         <ul class="w-full list-inside list-disc">
@@ -1547,26 +1462,23 @@ const submitNewCharge = async () => {
                                 class="flex justify-between">
                                 <div class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
                                     <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
-                                        class="text-gray-500 secondaryLink" v-tooltip="invoice?.type_label">
+                                          class="text-gray-500 secondaryLink" v-tooltip="invoice?.type_label">
                                         {{ invoice?.reference }}
                                     </Link>
                                     <FontAwesomeIcon v-if="invoice?.in_process" icon="fal fa-seedling" fixed-width
-                                        aria-hidden="true" class="text-green-500" v-tooltip="trans('In Process')" />
+                                                     aria-hidden="true" class="text-green-500" v-tooltip="trans('In Process')" />
 
                                 </div>
 
                                 <a v-if="invoice?.routes?.download?.name"
-                                    :href="route(invoice?.routes?.download?.name, invoice?.routes?.download.parameters)"
-                                    as="a" target="_blank"
-                                    class="flex items-center text-gray-400 hover:text-orange-600">
+                                   :href="route(invoice?.routes?.download?.name, invoice?.routes?.download.parameters)"
+                                   as="a" target="_blank"
+                                   class="flex items-center text-gray-400 hover:text-orange-600">
                                     <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                                 </a>
                             </li>
                         </ul>
                     </div>
-
-
-
 
 
                 </div>
@@ -1576,9 +1488,6 @@ const submitNewCharge = async () => {
         <!-- Box: Order summary -->
         <BoxStatPallet class="pb-4 border-t lg:border-t-0 border-gray-300">
             <div class="text-xs md:text-sm">
-                <!-- <div class="px-3 font-semibold xmb-2 text-base">
-                    {{ trans("Summary") }}
-                </div> -->
 
 
                 <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-4 lg:mt-0">
@@ -1595,29 +1504,29 @@ const submitNewCharge = async () => {
                                 </dd>
                             </div>
                             <!-- button edit all percentage -->
-                            <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
+                            <div class="text-right text-purple-600 w-full mr-1">{{ trans("Global discount") }}</div>
 
                             <button
                                 v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'x'))"
                                 class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                 v-tooltip="trans('Apply discount to all products')">
                                 <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                    class="h-4 text-purple-400 hover:text-gray-600" />
+                                                 class="h-4 text-purple-400 hover:text-gray-600" />
                             </button>
                         </dl>
 
                         <Modal :isOpen="isOpenEditAllPercentageModal" @onClose="closeEditAllPercentageModal"
-                            width="w-full max-w-md">
+                               width="w-full max-w-md">
                             <div class="text-center mb-4">
                                 <div class="font-semibold text-xl">
-                                    {{ trans('Update all discretionary discount percentage') }}
+                                    {{ trans("Update all discretionary discount percentage") }}
                                 </div>
                             </div>
 
                             <div class="flex flex-col gap-4">
                                 <div>
                                     <label class="block text-sm font-medium mb-2">
-                                        {{ trans('Discretionary discount percentage: (%)') }}
+                                        {{ trans("Discretionary discount percentage: (%)") }}
                                     </label>
                                     <InputNumber v-model="editedAllPercentage" :min="0" suffix="%" class="w-full" />
                                 </div>
@@ -1625,20 +1534,20 @@ const submitNewCharge = async () => {
 
                                 <!-- Input: Label -->
                                 <div class="w-full "
-                                    v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data.data.state))">
+                                     v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data.data.state))">
                                     <label class="block text-sm font-medium mb-2">
                                         {{ trans("Discretionary discount Label") }}:
                                     </label>
                                     <InputText v-model="labelPercentage" :disabled="isLoadingSubmitNetAmount"
-                                        class="w-full" />
+                                               class="w-full" />
                                 </div>
 
                                 <div class="flex gap-3 mt-4">
                                     <Button type="negative" icon="far fa-arrow-left"
-                                        @click="closeEditAllPercentageModal" :label="trans('Cancel')" />
+                                            @click="closeEditAllPercentageModal" :label="trans('Cancel')" />
 
                                     <Button type="primary" icon="fad fa-save" :loading="isLoadingSubmitNetAmount"
-                                        @click="onSubmitEditAllPercentage" full :label="trans('Save')" />
+                                            @click="onSubmitEditAllPercentage" full :label="trans('Save')" />
                                 </div>
                             </div>
                         </Modal>
@@ -1652,12 +1561,13 @@ const submitNewCharge = async () => {
                                         {{ fieldSummary.label }}
                                     </span>
                                     <span @click="isOpenModalDiscretionaryCharge = true"
-                                        class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
+                                          v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                          class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
                                 </div>
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
-                                    class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+                                      class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
 
                             </dt>
                         </template>
@@ -1668,27 +1578,29 @@ const submitNewCharge = async () => {
                                         <span>{{ fieldSummary.label }}</span>
                                         <span
                                             class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
-                                            {{ trans('Manual') }}
+                                            {{ trans("Manual") }}
                                         </span>
                                     </span>
                                     <span v-else>
                                         <span>{{ fieldSummary.label }}</span>
                                         <span v-if="fieldSummary.data.shipping_zone?.code"
-                                            v-tooltip="trans('Shipping zone code')">
+                                              v-tooltip="trans('Shipping zone code')">
                                             ({{ fieldSummary.data.shipping_zone?.code }})
                                         </span>
                                     </span>
-                                    <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle'
-                                        v-tooltip="fieldSummary.information_icon"
-                                        class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
-                                        aria-hidden='true' />
+                                    <FontAwesomeIcon v-if="fieldSummary.information_icon" icon="fal fa-question-circle"
+                                                     v-tooltip="fieldSummary.information_icon"
+                                                     class="ml-1 cursor-pointer text-gray-400 hover:text-gray-500" fixed-width
+                                                     aria-hidden="true" />
+
                                     <span @click="_shipping_price_method?.toggle"
-                                        class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
+                                          v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                          class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
                                 </div>
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
-                                    class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+                                      class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
 
 
                                 <!-- Popover: Select shipping price method -->
@@ -1700,22 +1612,22 @@ const submitNewCharge = async () => {
                                         <div class="grid grid-cols-1 gap-2">
                                             <div class="flex items-center gap-2">
                                                 <input type="radio"
-                                                    :checked="get(fieldSummary, ['data', 'engine'], null) === 'auto'"
-                                                    @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(); }"
-                                                    id="ingredient1" name="pizza" value="auto"
-                                                    class="focus:ring-0 focus:border-none" />
+                                                       :checked="get(fieldSummary, ['data', 'engine'], null) === 'auto'"
+                                                       @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(); }"
+                                                       id="ingredient1" name="pizza" value="auto"
+                                                       class="focus:ring-0 focus:border-none" />
                                                 <label for="ingredient1">{{ trans("Auto") }}</label>
                                             </div>
                                             <div>
                                                 <div class="flex items-start gap-2">
                                                     <input type="radio"
-                                                        :checked="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
-                                                        @change="() => { set(fieldSummary, ['data', 'engine'], 'manual') }"
-                                                        id="ingredient2" name="pizza" value="manual"
-                                                        class="mt-1 focus:ring-0 focus:border-none" />
+                                                           :checked="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
+                                                           @change="() => { set(fieldSummary, ['data', 'engine'], 'manual') }"
+                                                           id="ingredient2" name="pizza" value="manual"
+                                                           class="mt-1 focus:ring-0 focus:border-none" />
                                                     <div>
                                                         <label for="ingredient2" class="block">{{ trans("Manual")
-                                                        }}</label>
+                                                            }}</label>
                                                         <InputNumber
                                                             :modelValue="get(fieldSummary, ['data', 'new_shipping_amount'], get(fieldSummary, ['data', 'shipping_amount'], null))"
                                                             @update:modelValue="(v) => set(fieldSummary, ['data', 'new_shipping_amount'], v)"
@@ -1734,17 +1646,17 @@ const submitNewCharge = async () => {
                                                             " class="cursor-pointer ml-1">
                                                             <LoadingIcon v-if="isLoadingShippingManual" />
                                                             <FontAwesomeIcon v-else icon="fad fa-save"
-                                                                class="text-lg align-middle"
-                                                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
-                                                                fixed-width aria-hidden="true"
-                                                                :class="get(fieldSummary, ['data', 'new_shipping_amount'], null) == get(fieldSummary, ['data', 'shipping_amount'], null) ? 'grayscale opacity-50' : ''" />
+                                                                             class="text-lg align-middle"
+                                                                             :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
+                                                                             fixed-width aria-hidden="true"
+                                                                             :class="get(fieldSummary, ['data', 'new_shipping_amount'], null) == get(fieldSummary, ['data', 'shipping_amount'], null) ? 'grayscale opacity-50' : ''" />
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div v-if="isLoadingShippingManual"
-                                                class="absolute inset-0 bg-black/50 text-white text-2xl flex items-center justify-center rounded">
+                                                 class="absolute inset-0 bg-black/50 text-white text-2xl flex items-center justify-center rounded">
                                                 <LoadingIcon />
                                             </div>
                                         </div>
@@ -1757,12 +1669,12 @@ const submitNewCharge = async () => {
                             <div class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
                                 <Transition name="spin-to-right">
                                     <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc"
-                                        class="-mr-2"
-                                        :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''">
+                                         class="-mr-2"
+                                         :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''">
                                         <span v-if="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
-                                            v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null">
+                                              v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null">
                                             <FontAwesomeIcon icon="fal fa-exclamation-triangle"
-                                                class="mr-1 text-red-500" fixed-width aria-hidden="true" />
+                                                             class="mr-1 text-red-500" fixed-width aria-hidden="true" />
                                         </span>
                                         <InputNumber
                                             :modelValue="get(fieldSummary, ['data', 'shipping_tbc_amount'], null)"
@@ -1787,30 +1699,30 @@ const submitNewCharge = async () => {
     </div>
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-        @update:tab="handleTabUpdate" />
+          @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-            :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
-            :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
-            :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
-            @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
-            :routesProductsListModification="routes.products_list_modification" />
+                   :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
+                   :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
+                   :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
+                   @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
+                   :routesProductsListModification="routes.products_list_modification" />
     </div>
 
     <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
-        :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
+                      :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <!-- Section: address edit -->
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-xl">
         <AddressEditModal v-if="props.shop_type === 'b2b'" :addresses="delivery_address_management.addresses"
-            :address="box_stats?.customer.addresses.delivery"
-            :updateRoute="delivery_address_management.address_update_route" @submitted="() => (isModalAddress = false)"
-            closeButton :copyAddress="contact_address">
+                          :address="box_stats?.customer.addresses.delivery"
+                          :updateRoute="delivery_address_management.address_update_route" @submitted="() => (isModalAddress = false)"
+                          closeButton :copyAddress="contact_address">
             <template #copy_address="{ address, isEqual }">
                 <div v-if="isEqual" class="text-gray-500 text-sm">
                     {{ trans("Same as the contact address") }}
                     <FontAwesomeIcon v-if="isEqual" v-tooltip="trans('Same as contact address')" icon="fal fa-check"
-                        class="text-green-500" fixed-width aria-hidden="true" />
+                                     class="text-green-500" fixed-width aria-hidden="true" />
                 </div>
 
                 <div v-else class="underline text-sm text-gray-500 hover:text-blue-700 cursor-pointer">
@@ -1820,9 +1732,9 @@ const submitNewCharge = async () => {
         </AddressEditModal>
 
         <DeliveryAddressManagementModal v-else :address_modal_title="delivery_address_management.address_modal_title"
-            :addresses="delivery_address_management.addresses"
-            :updateRoute="delivery_address_management.address_update_route" keyPayloadEdit="address"
-            @onDone="() => (isModalAddress = false)" />
+                                        :addresses="delivery_address_management.addresses"
+                                        :updateRoute="delivery_address_management.address_update_route" keyPayloadEdit="address"
+                                        @onDone="() => (isModalAddress = false)" />
     </Modal>
 
 
@@ -1844,7 +1756,7 @@ const submitNewCharge = async () => {
                     </label>
                     <div class="mt-1">
                         <Select v-model="paymentData.payment_method" :options="payments_accounts" optionLabel="name"
-                            optionValue="id" fluid :placeholder="trans('Select payment method')" />
+                                optionValue="id" fluid :placeholder="trans('Select payment method')" />
                     </div>
                 </div>
 
@@ -1857,14 +1769,14 @@ const submitNewCharge = async () => {
                     </div>
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
-                            trans("Need to pay")
+                                trans("Need to pay")
                             }}: {{
                                 locale.currencyFormat(currency.code,
                                     box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
-                            :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
-                            type="tertiary" :label="trans('Pay all')" size="xxs" />
+                                :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
+                                type="tertiary" :label="trans('Pay all')" size="xxs" />
                     </div>
                 </div>
 
@@ -1879,10 +1791,10 @@ const submitNewCharge = async () => {
 
             <div class="mt-6 mb-4 relative">
                 <Button @click="() => onSubmitPayment()" label="Submit" :disabled="!(!!paymentData.payment_method)"
-                    :loading="isLoadingPayment" full />
+                        :loading="isLoadingPayment" full />
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
-                        errorPaymentMethod
+                            errorPaymentMethod
                         }}</p>
                 </Transition>
             </div>
@@ -1905,27 +1817,27 @@ const submitNewCharge = async () => {
                     </label>
                     <div class="mt-1">
                         <PureMultiselect v-model="paymentData.payment_method" :options="listPaymentMethod"
-                            :isLoading="isLoadingFetch" label="name" valueProp="id" required caret />
+                                         :isLoading="isLoadingFetch" label="name" valueProp="id" required caret />
                     </div>
                 </div>
 
                 <div class="col-span-2">
                     <label for="last-name" class="block text-sm font-medium leading-6">
-                        {{ trans('Refund amount') }}
+                        {{ trans("Refund amount") }}
                     </label>
                     <div class="mt-1">
                         <PureInputNumber v-model="paymentData.payment_amount" />
                     </div>
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
-                            trans("Need to refund")
+                                trans("Need to refund")
                             }}: {{
                                 locale.currencyFormat(currency.code,
                                     box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
-                            :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
-                            type="tertiary" :label="trans('Refund all payment')" size="xxs" />
+                                :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
+                                type="tertiary" :label="trans('Refund all payment')" size="xxs" />
                     </div>
                 </div>
 
@@ -1940,7 +1852,7 @@ const submitNewCharge = async () => {
 
             <div class="mt-6 mb-4 relative">
                 <Button @click="() => onSubmitPayment(true)" label="Submit" :disabled="!(!!paymentData.payment_method)"
-                    :loading="isLoadingPayment" full />
+                        :loading="isLoadingPayment" full />
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
                         *{{ errorPaymentMethod }}</p>
@@ -1951,7 +1863,7 @@ const submitNewCharge = async () => {
 
     <!-- Modal: Proforma -->
     <Modal v-if="proforma_invoice" :isOpen="isOpenModalProforma" @onClose="isOpenModalProforma = false"
-        width="w-full max-w-lg">
+           width="w-full max-w-lg">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center mb-4">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
@@ -1968,7 +1880,7 @@ const submitNewCharge = async () => {
             </div>
 
             <a aclick="() => onClickProforma()" :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
-                class="w-full block mt-6" xdownload>
+               class="w-full block mt-6" xdownload>
                 <Button full :label="trans('Download Proforma Invoice')" />
             </a>
         </div>
@@ -1976,7 +1888,7 @@ const submitNewCharge = async () => {
 
     <!-- Modal: Charges list -->
     <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
-        width="w-full max-w-4xl " :isClosableInBackground="false" closeButton>
+           width="w-full max-w-4xl " :isClosableInBackground="false" closeButton>
         <div class="isolate bg-white px-6 lg:px-8 relative">
             <div class="mx-auto max-w-2xl text-center mb-4">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
@@ -2025,25 +1937,19 @@ const submitNewCharge = async () => {
                                 <span v-else @click="() => updateCharge(data)" class="cursor-pointer">
                                     <FontAwesomeIcon icon="fad fa-save" class="text-4xl leading-none" fixed-width aria-hidden="true" />
                                 </span>
-                                
+
                                 <span @click="data.is_editing_net_amount = false" class="text-red-500 cursor-pointer underline inline-block ml-2">
                                     {{ trans("cancel") }}
                                 </span>
                             </div>
                         </template>
                     </Column>
-                    <!-- <Column field="discounts" header="">
-                        <template #body="{ data }">
-                            <div v-if="data.percentage_discount">
-                                -{{ data.percentage_discount }}
-                            </div>
-                        </template>
-                    </Column> -->
+
 
                     <Column field="actions" header="">
                         <template #body="{ data }">
                             <div>
-                                <Button 
+                                <Button
                                     v-if="data.is_discretionary"
                                     @click="() => onRemoveCharge(data)"
                                     v-tooltip="trans('Remove Charge')"
@@ -2072,11 +1978,7 @@ const submitNewCharge = async () => {
 
     <Dialog v-model:visible="isOpenModalAddCharges" modal :header="trans('Add Discretionary Charges')" class="w-full max-w-lg" xstyle="{ width: '25rem' }">
         <div class="isolate bg-white px-6 lg:px-8">
-            <!-- <div class="mx-auto max-w-2xl text-center mb-4">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
-                    {{ trans("Add Discretionary Charges") }}
-                </h2>
-            </div> -->
+
 
             <div class="mt-6 mb-6 xflex gap-x-6">
                 <div class=" w-full col-span-2">
@@ -2092,11 +1994,11 @@ const submitNewCharge = async () => {
                         class="w-full"
                     />
                 </div>
-    
-                
+
+
                 <div class="mt-6">
                     <label class="block text-sm font-medium mb-2">
-                        {{ trans('Amount') }}
+                        {{ trans("Amount") }}
                         <InformationIcon :information="trans('Enter 0 to remove the charge')" />
                         :
                     </label>
@@ -2111,23 +2013,18 @@ const submitNewCharge = async () => {
 
             <div>
                 <Button @click="submitNewCharge" label="Add Charge" full :loading="isLoadingAddNewCharge"
-                    v-tooltip="dataNewChargeToAdd.amount <= 0 ? 'Amount can not be 0 or less' : ''"
-                    :disabled="dataNewChargeToAdd.amount <= 0"
+                        v-tooltip="dataNewChargeToAdd.amount <= 0 ? 'Amount can not be 0 or less' : ''"
+                        :disabled="dataNewChargeToAdd.amount <= 0"
                 />
             </div>
         </div>
     </Dialog>
 
-    <!-- Modal: Add new discretionary Charges -->
-    <!-- <Modal :isOpen="isOpenModalAddCharges" @onClose="isOpenModalAddCharges = false"
-        width="w-full max-w-lg" :isClosableInBackground="false" closeButton>
-        
-    </Modal> -->
 
     <UploadExcel v-if="props.upload_excel" v-model="isModalUploadExcel" :title="upload_excel.title"
-        :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"
-        :preview_template="upload_excel.preview_template" :propsRefreshAfterFinish="['transactions', 'box_stats']"
-        :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined" />
+                 :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"
+                 :preview_template="upload_excel.preview_template" :propsRefreshAfterFinish="['transactions', 'box_stats']"
+                 :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined" />
 
     <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
