@@ -20,7 +20,6 @@ class RedoCollectionTimeSeries
     use WithHydrateCommand;
 
     public string $commandSignature = 'collections:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
-    public string $jobQueue = 'default-long';
 
     public function __construct()
     {
