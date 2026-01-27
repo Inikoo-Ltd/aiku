@@ -72,6 +72,14 @@ const addFilter = (filterKey: string, filterConfig: any) => {
             if (!value.date_range) value.date_range = null;
             if (!value.amount_range) value.amount_range = { min: null, max: null };
         }
+    } else if (filterConfig.type === 'location') {
+        value = {
+            mode: 'direct',
+            country_ids: [],
+            postal_codes: [],
+            location: '',
+            radius: ''
+        }
     }
 
     activeFilters.value[filterKey] = {
@@ -114,6 +122,33 @@ const onPresetChange = (filter: any, event: Event) => {
             start.setDate(end.getDate() - days);
             filter.value.date_range = [start, end];
         }
+    }
+}
+
+const addTag = (filterValue: any, field: string, event: any) => {
+    const val = event.target.value.trim();
+    if (!val) return;
+
+    if (!filterValue[field]) filterValue[field] = [];
+    if (!filterValue[field].includes(val)) {
+        filterValue[field].push(val);
+    }
+    event.target.value = '';
+}
+
+const removeTag = (filterValue: any, field: string, index: number) => {
+    if (filterValue[field]) {
+        filterValue[field].splice(index, 1);
+    }
+}
+
+const onLocationModeChange = (filterValue: any) => {
+    if (filterValue.mode === 'direct') {
+        filterValue.location = '';
+        filterValue.radius = '';
+    } else {
+        filterValue.country_ids = [];
+        filterValue.postal_codes = [];
     }
 }
 
@@ -339,6 +374,78 @@ watch(activeFilters, () => {
                             <p class="text-xs text-gray-500">
                                 * Customers matching <strong>any</strong> of the selected tags will be included.
                             </p>
+                        </div>
+
+
+                        <!-- Location Filter (NEW) -->
+                        <div v-else-if="filter.config.type === 'location'" class="space-y-4">
+
+                            <!-- Mode Selector -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Filter Mode</label>
+                                <select v-model="filter.value.mode" @change="onLocationModeChange(filter.value)"
+                                    class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6">
+                                    <option value="direct">By Country & Postcode</option>
+                                    <option value="radius">By Radius (Geocoding)</option>
+                                </select>
+                            </div>
+
+                            <!-- MODE: DIRECT (Country & Postcode) -->
+                            <div v-if="filter.value.mode === 'direct'" class="space-y-3">
+                                <!-- Country Multiselect -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Countries</label>
+                                    <MultiselectTagsInfiniteScroll :form="filter.value" fieldName="country_ids"
+                                        :fieldData="{
+                                            options: filter.config.fields.country_ids.options,
+                                            labelProp: 'label',
+                                            valueProp: 'value',
+                                            placeholder: 'Select countries...',
+                                            mode: 'tags'
+                                        }" />
+                                </div>
+
+                                <!-- Postal Codes (Tag Input) -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Postal Codes</label>
+                                    <div class="relative">
+                                        <input type="text" placeholder="Type postcode & hit Enter"
+                                            class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6"
+                                            @keydown.enter.prevent="addTag(filter.value, 'postal_codes', $event)" />
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 mt-2"
+                                        v-if="filter.value.postal_codes && filter.value.postal_codes.length">
+                                        <span v-for="(code, idx) in filter.value.postal_codes" :key="idx"
+                                            class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+                                            {{ code }}
+                                            <button type="button" @click="removeTag(filter.value, 'postal_codes', idx)"
+                                                class="ml-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-indigo-400 hover:bg-indigo-200 hover:text-indigo-500 focus:bg-indigo-500 focus:text-white focus:outline-none">
+                                                <span class="sr-only">Remove</span>
+                                                <FontAwesomeIcon icon="fas fa-times" class="h-2 w-2" />
+                                            </button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- MODE: RADIUS -->
+                            <div v-if="filter.value.mode === 'radius'" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Center Location</label>
+                                    <input type="text" v-model="filter.value.location" placeholder="e.g. London, UK"
+                                        class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Radius</label>
+                                    <select v-model="filter.value.radius"
+                                        class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6">
+                                        <option v-for="(label, val) in filter.config.fields.radius.options" :key="val"
+                                            :value="val">
+                                            {{ label }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                     </div>

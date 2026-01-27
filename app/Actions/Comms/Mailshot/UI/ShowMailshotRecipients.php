@@ -14,6 +14,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Helpers\Tag;
+use App\Models\Helpers\Country;
 
 class ShowMailshotRecipients extends OrgAction
 {
@@ -57,6 +58,15 @@ class ShowMailshotRecipients extends OrgAction
             ->orderBy('name')
             ->get()
             ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->toArray();
+
+        $countries = Country::query()
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($country) => [
+                'value' => $country->id,
+                'label' => $country->name,
+            ])
             ->toArray();
 
         $filtersStructure = [
@@ -159,22 +169,52 @@ class ShowMailshotRecipients extends OrgAction
                     'by_location'              => [
                         'label'       => 'By Location',
                         'type'        => 'location',
-                        'description' => 'Enable email targeting based on customer location with radius.',
+                        'description' => 'Target customers based on Country/Postcode OR Radius from a location.',
                         'fields'      => [
+
+                            'mode' => [
+                                'type'    => 'select',
+                                'label'   => 'Filter Mode',
+                                'default' => 'direct',
+                                'options' => [
+                                    'direct' => 'By Country & Postcode',
+                                    'radius' => 'By Radius (Geocoding)',
+                                ]
+                            ],
+
+                            'country_ids' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'Countries',
+                                'placeholder' => 'Select countries',
+                                'options'     => $countries,
+                                'dependency'  => ['mode' => 'direct']
+                            ],
+
+                            'postal_codes' => [
+                                'type'        => 'tags',
+                                'label'       => 'Postal Codes',
+                                'placeholder' => 'Type postcode and hit enter',
+                                'dependency'  => ['mode' => 'direct']
+                            ],
+
                             'location' => [
                                 'type'        => 'input',
-                                'label'       => 'Location (Postcode, City, etc.)',
-                                'placeholder' => 'Enter location'
+                                'label'       => 'Center Location (Address/City)',
+                                'placeholder' => 'e.g. London, UK',
+                                'dependency'  => ['mode' => 'radius']
                             ],
+
                             'radius'   => [
                                 'type'    => 'select',
-                                'label'   => 'Radius',
+                                'label'   => 'Radius Distance',
                                 'options' => [
                                     '5km'    => '5 km',
                                     '10km'   => '10 km',
                                     '25km'   => '25 km',
-                                    'custom' => 'Custom'
-                                ]
+                                    '50km'   => '50 km',
+                                    '100km'  => '100 km',
+                                ],
+                                'dependency' => ['mode' => 'radius']
                             ]
                         ]
                     ]
