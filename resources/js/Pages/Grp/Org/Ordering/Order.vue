@@ -817,12 +817,7 @@ const onSubmitEditAllPercentage = async () => {
 
 // Section: Edit Discretionary Charge
 const isOpenModalDiscretionaryCharge = ref(false)
-const isLoadingSaveDiscretionaryCharge = ref(false)
 const chargesList = ref([])
-const dataDiscretionaryChargeToChange = ref({
-    label: '',
-    amount: ''
-})
 const updateCharge = (charge: {}) => {
     // Section: Submit
     router.patch(
@@ -900,22 +895,15 @@ const updateCharge = (charge: {}) => {
     //     charge.isLoading = false
     // }
 }
-const updateDebCharge = debounce((charge) => updateCharge(charge), 400)
-const addCharge = async (charge: {}) => {
+// const updateDebCharge = debounce((charge) => updateCharge(charge), 400)
+// const addCharge = async (charge: {}) => {
     
-    notify({
-        title: trans("Something went wrong"),
-        text: "Route to add new charge is not available yet.",
-        type: "error",
-    })
-}
-const onSaveCharge = async (charge: {}) => {
-    if ( charge.transaction_id ) {
-        updateCharge(charge)
-    } else {
-        addCharge(charge)
-    }
-}
+//     notify({
+//         title: trans("Something went wrong"),
+//         text: "Route to add new charge is not available yet.",
+//         type: "error",
+//     })
+// }
 const isLoadingFetchCharges = ref(false)
 const fetchChargesList = async () => {
     try {
@@ -2044,13 +2032,13 @@ const submitNewCharge = async () => {
                             </div>
                         </template>
                     </Column>
-                    <Column field="discounts" header="Percentage Change">
+                    <!-- <Column field="discounts" header="">
                         <template #body="{ data }">
-                            <div>
+                            <div v-if="data.percentage_discount">
                                 -{{ data.percentage_discount }}
                             </div>
                         </template>
-                    </Column>
+                    </Column> -->
 
                     <Column field="actions" header="">
                         <template #body="{ data }">
@@ -2073,6 +2061,10 @@ const submitNewCharge = async () => {
 
             <div class="absolute top-2 right-4">
                 <Button @click="() => isOpenModalAddCharges = true" type="dashed" size="xs" label="Add discretionary charges" icon="fal fa-plus" full />
+            </div>
+
+            <div class="absolute top-2 left-4">
+                <Button @click="() => isOpenModalDiscretionaryCharge = false" type="negative" size="xs" label="Close" icon="far fa-arrow-left" full />
             </div>
 
         </div>
@@ -2109,7 +2101,8 @@ const submitNewCharge = async () => {
                         :
                     </label>
                     <InputNumber
-                        v-model="dataNewChargeToAdd.amount"
+                        :modelValue="dataNewChargeToAdd.amount"
+                        @input="(val) => (dataNewChargeToAdd.amount = val.value)"
                         :min="0"
                         mode="currency"
                         :currency="currency.code" class="w-full" size="small" />
@@ -2117,7 +2110,10 @@ const submitNewCharge = async () => {
             </div>
 
             <div>
-                <Button @click="submitNewCharge" label="Add Charge" full :loading="isLoadingAddNewCharge" />
+                <Button @click="submitNewCharge" label="Add Charge" full :loading="isLoadingAddNewCharge"
+                    v-tooltip="dataNewChargeToAdd.amount <= 0 ? 'Amount can not be 0 or less' : ''"
+                    :disabled="dataNewChargeToAdd.amount <= 0"
+                />
             </div>
         </div>
     </Dialog>
