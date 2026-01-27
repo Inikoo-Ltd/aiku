@@ -62,10 +62,6 @@ class ShowMailshot extends OrgAction
     {
         $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]);
 
-        // NOTE: In this step, enable the process only for newsletters
-        // next step remove this condition
-        $isShowProcessButton = in_array($mailshot->type, [MailshotTypeEnum::NEWSLETTER]);
-
         return Inertia::render(
             'Comms/Mailshot',
             [
@@ -195,8 +191,6 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'status' => $mailshot->state->value,
-                'isShowProcessButton' => $isShowProcessButton,
-
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(

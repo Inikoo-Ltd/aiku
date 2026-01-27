@@ -43,7 +43,6 @@ const props = defineProps<{
     indexRoute?: routeType
     cancelScheduleMailshotRoute?: routeType
     status?: string
-    isShowProcessButton?: boolean
 }>();
 
 
@@ -66,7 +65,7 @@ const filteredTabs = computed(() => {
 
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
-    return props.status && props.status.toLowerCase() === 'ready' && props.isShowProcessButton;
+    return props.status && props.status.toLowerCase() === 'ready';
 });
 
 const shouldShowDeleteButton = computed(() => {
