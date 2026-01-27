@@ -432,10 +432,10 @@ test('create services in fulfilment shop', function (Fulfilment $fulfilment) {
     expect($service1)->toBeInstanceOf(Service::class)
         ->and($service1->asset)->toBeInstanceOf(Asset::class)
         ->and($service2->organisation->catalogueStats->number_assets_type_service)->toBe(3)
-        ->and($service2->organisation->catalogueStats->number_assets)->toBe(3)
+        ->and($service2->organisation->catalogueStats->number_assets)->toBe(4)
         ->and($service2->shop->stats->number_services)->toBe(3)
         ->and($service2->shop->stats->number_services_state_active)->toBe(3)
-        ->and($service2->shop->stats->number_assets)->toBe(3)
+        ->and($service2->shop->stats->number_assets)->toBe(4)
         ->and($service2->asset->stats->number_historic_assets)->toBe(1);
 
     return $service1;
@@ -458,9 +458,9 @@ test('create rental product to fulfilment shop', function (Fulfilment $fulfilmen
 
     expect($rental)->toBeInstanceOf(Rental::class)
         ->and($rental->asset)->toBeInstanceOf(Asset::class)
-        ->and($rental->organisation->catalogueStats->number_assets)->toBe(4)
+        ->and($rental->organisation->catalogueStats->number_assets)->toBe(5)
         ->and($rental->organisation->catalogueStats->number_assets_type_rental)->toBe(1)
-        ->and($rental->shop->stats->number_assets)->toBe(4)
+        ->and($rental->shop->stats->number_assets)->toBe(5)
         ->and($rental->asset->stats->number_historic_assets)->toBe(1);
 
     return $rental;
@@ -508,9 +508,9 @@ test('create auto assign rental product to fulfilment shop', function (Fulfilmen
 
     expect($palletRental)->toBeInstanceOf(Rental::class)
         ->and($palletRental->asset)->toBeInstanceOf(Asset::class)
-        ->and($palletRental->organisation->catalogueStats->number_assets)->toBe(7)
+        ->and($palletRental->organisation->catalogueStats->number_assets)->toBe(8)
         ->and($palletRental->organisation->catalogueStats->number_assets_type_rental)->toBe(4)
-        ->and($palletRental->shop->stats->number_assets)->toBe(7)
+        ->and($palletRental->shop->stats->number_assets)->toBe(8)
         ->and($palletRental->asset->stats->number_historic_assets)->toBe(1);
 
     return $palletRental;
