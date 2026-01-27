@@ -10,7 +10,7 @@ import { Head, Link, router, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
@@ -84,6 +84,7 @@ import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
 import { get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -811,6 +812,69 @@ const onSubmitEditAllPercentage = async () => {
         }
     )
 }
+
+
+
+// Section: Edit Discretionary Charge
+const isOpenModalDiscretionaryCharge = ref(false)
+const isLoadingSaveDiscretionaryCharge = ref(false)
+const dataDiscretionaryChargeToChange = ref({
+    label: '',
+    amount: ''
+})
+const onSaveDiscretionaryCharges = () => {
+    // Section: Submit
+    router.post(
+        'xxxx',
+        {
+            data: dataDiscretionaryChargeToChange.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSaveDiscretionaryCharge.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSaveDiscretionaryCharge.value = false
+            },
+        }
+    )
+}
+watch(isOpenModalDiscretionaryCharge, async () => {
+    try {
+        const response = await axios.get(
+            route(
+                'grp.json.charges_in_order.index',
+                {
+                    order: props.data?.data?.id
+                }
+            ),
+        )
+        
+        console.log('Response axios:', response.data)
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    }
+})
 </script>
 
 <template>
@@ -1439,6 +1503,22 @@ const onSubmitEditAllPercentage = async () => {
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
+                        <template v-if="layout.app.environment === 'local'" #cell_charges_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>
+                                        {{ fieldSummary.label }}
+                                    </span>
+                                    <span @click="isOpenModalDiscretionaryCharge = true"
+                                        class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
+                                        <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
+                                    </span>
+                                </div>
+                                <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
+                                    class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+
+                            </dt>
+                        </template>
                         <template #cell_shipping_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
@@ -1749,6 +1829,63 @@ const onSubmitEditAllPercentage = async () => {
                 class="w-full block mt-6" xdownload>
                 <Button full :label="trans('Download Proforma Invoice')" />
             </a>
+        </div>
+    </Modal>
+
+    <!-- Modal: Edit Discretionary Discount -->
+    <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
+        width="w-full max-w-xl">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Discretionary Charges") }}
+                </h2>
+            </div>
+
+            <!-- Input: Label -->
+            <div class="w-full "
+                vxif="!(['finalised', 'dispatched', 'cancelled'].includes(data.data.state))">
+                <label class="block text-sm font-medium mb-2">
+                    {{ trans("Label") }}
+                    <InformationIcon :information="trans('Label to show to customer')" />
+                    :
+                </label>
+                <InputText v-model="labelPercentage" :disabled="isLoadingSubmitNetAmount"
+                    class="w-full" />
+            </div>
+
+            
+            <div class="mt-6">
+                <label class="block text-sm font-medium mb-2">
+                    {{ trans('Amount') }}
+                    <InformationIcon :information="trans('Enter 0 to remove the charge')" />
+                    :
+                </label>
+                <InputNumber v-model="editedAllPercentage" :min="0" suffix="%" class="w-full" />
+            </div>
+
+            
+            <div class="flex gap-3 mt-4">
+                <Button type="negative" icon="far fa-arrow-left"
+                    @click="isOpenModalDiscretionaryCharge = false" :label="trans('Cancel')" />
+
+                <Button type="primary" icon="fad fa-save" :loading="isLoadingSaveDiscretionaryCharge"
+                    @click="onSaveDiscretionaryCharges" full :label="trans('Save')" />
+            </div>
+
+            <!-- 
+            <div class="flex flex-col gap-2">
+                <div>{{ trans("Select additional information to included:") }}</div>
+                <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
+                    <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
+                    <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
+                </div>
+            </div>
+
+            <a aclick="() => onClickProforma()" :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
+                class="w-full block mt-6" xdownload>
+                <Button full :label="trans('Download Proforma Invoice')" />
+            </a> -->
         </div>
     </Modal>
 
