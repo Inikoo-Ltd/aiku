@@ -74,7 +74,7 @@ class IndexInvoices extends OrgAction
         }
 
 
-        $queryBuilder = QueryBuilder::for(Invoice::class)->withTrashed();
+        $queryBuilder = QueryBuilder::for(Invoice::class);
         $queryBuilder->where('invoices.type', InvoiceTypeEnum::INVOICE);
         $queryBuilder->whereNot('invoices.in_process', true);
 

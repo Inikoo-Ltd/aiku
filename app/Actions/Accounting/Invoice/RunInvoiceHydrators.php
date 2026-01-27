@@ -12,16 +12,19 @@ use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
+use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
+use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRevenue;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
+use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsInvoices;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSales;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
@@ -34,8 +37,10 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
+use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -75,11 +80,56 @@ class RunInvoiceHydrators
         $queueOrRun(OrganisationHydrateInvoices::class, [$invoice->organisation]);
         $queueOrRun(GroupHydrateInvoices::class, [$invoice->group]);
 
+        // --- Basic Time Series ---
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            $queueOrRun(ProcessShopTimeSeriesRecords::class, [
+                $invoice->shop_id,
+                $frequency,
+                match ($frequency) {
+                    TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                    TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                    TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                    TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                    TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                },
+                now()->toDateString(),
+            ]);
+
+            $queueOrRun(ProcessOrganisationTimeSeriesRecords::class, [
+                $invoice->organisation_id,
+                $frequency,
+                match ($frequency) {
+                    TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                    TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                    TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                    TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                    TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                },
+                now()->toDateString(),
+            ]);
+        }
+
         // --- Invoice Category ---
         if ($invoice->invoiceCategory) {
             $queueOrRun(InvoiceCategoryHydrateInvoices::class, [$invoice->invoiceCategory]);
             $queueOrRun(InvoiceCategoryHydrateSalesIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
             $queueOrRun(InvoiceCategoryHydrateOrderingIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
+
+            // --- Invoice Category Time Series ---
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                $queueOrRun(ProcessInvoiceCategoryTimeSeriesRecords::class, [
+                    $invoice->invoice_category_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                    },
+                    now()->toDateString(),
+                ]);
+            }
         }
 
         // --- Sales Intervals ---
@@ -104,10 +154,27 @@ class RunInvoiceHydrators
             $queueOrRun(ShopHydratePlatformSalesIntervalsSales::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
             $queueOrRun(ShopHydratePlatformSalesIntervalsSalesOrgCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
             $queueOrRun(ShopHydratePlatformSalesIntervalsSalesGrpCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
+
+            // --- Platform Time Series ---
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                $queueOrRun(ProcessPlatformTimeSeriesRecords::class, [
+                    $invoice->platform_id,
+                    $invoice->shop_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                    },
+                    now()->toDateString(),
+                ]);
+            }
         }
 
         if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
-            SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
+            $queueOrRun(SendInvoiceToFulfilmentCustomerEmail::class, [$invoice]);
         }
     }
 
