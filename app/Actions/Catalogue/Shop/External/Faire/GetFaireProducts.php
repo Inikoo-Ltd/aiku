@@ -32,24 +32,23 @@ class GetFaireProducts extends OrgAction
         foreach (Arr::get($faireProducts, 'products', []) as $faireProduct) {
             foreach ($faireProduct['variants'] as $variant) {
                 if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
-                    echo "Updated: ".$variant['sku']."\n";
                     $product = Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->first();
-                    //                    $product = UpdateProduct::make()->action($product, [
-                    //                        'code'         => $variant['sku'],
-                    //                        'name'         => $faireProduct['name'].' - '.$variant['name'],
-                    //                        'description'  => $faireProduct['description'],
-                    //                        'rrp'          => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                    //                        'price'        => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
-                    //                        'units'        => $faireProduct['unit_multiplier'],
-                    //                        'data'         => [
-                    //                            'faire' => $variant
-                    //                        ]
-                    //                    ], strict: false);
+                    UpdateProduct::make()->action($product, [
+                        'code'        => $variant['sku'],
+                        'name'        => $faireProduct['name'].' - '.$variant['name'],
+                        'description' => $faireProduct['description'],
+                        'rrp'         => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
+                        'price'       => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                        'units'       => $faireProduct['unit_multiplier'],
+                        'data'        => [
+                            'faire' => $variant
+                        ]
+                    ], strict: false);
 
                     continue;
                 }
 
-                $product = StoreProduct::make()->action($shop, [
+                StoreProduct::make()->action($shop, [
                     'code'         => $variant['sku'],
                     'name'         => $faireProduct['name'].' - '.$variant['name'],
                     'description'  => $faireProduct['description'],
@@ -65,9 +64,6 @@ class GetFaireProducts extends OrgAction
                         'faire' => $variant
                     ]
                 ], strict: false);
-
-
-                echo "Created: ".$product->code."\n";
             }
         }
     }
