@@ -9,6 +9,9 @@
 namespace App\Enums\Discounts\Offer;
 
 use App\Enums\EnumHelperTrait;
+use App\Models\Catalogue\Shop;
+use App\Models\Discounts\OfferCampaign;
+use App\Models\SysAdmin\Group;
 
 enum OfferStateEnum: string
 {
@@ -66,5 +69,13 @@ enum OfferStateEnum: string
         ];
     }
 
-
+    // public static function count(Group|Shop|OfferCampaign $parent): array
+    // {
+    //     return [
+    //         'in_process' => 0,
+    //         'active'     => 0,
+    //         'finished'   => 0,
+    //         'suspended'  => 0,
+    //     ];
+    // }
 }
