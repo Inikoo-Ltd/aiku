@@ -33,7 +33,7 @@ import { debounce } from 'lodash'
 import { router } from '@inertiajs/vue3'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabel, IconField, InputIcon, InputNumber, InputText, MultiSelect, Popover, RadioButton, Rating, Select, Skeleton, Tag, Textarea, Toolbar } from 'primevue'
+import { Button as ButtonPrime, InputNumber, InputText, RadioButton } from 'primevue'
 import Menu from 'primevue/menu'
 import Badge from 'primevue/badge'
 import Dropdown from 'primevue/dropdown'
@@ -46,6 +46,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
+import { LMap, LTileLayer, LMarker } from "@vue-leaflet/vue-leaflet"
 
 library.add(
     faSpellCheck,
@@ -168,7 +169,6 @@ const addFilter = (key: string, config: any) => {
 
     if (config.type === 'boolean') {
         value = {
-            // value: true,
             date_range: null,
             amount_range: { min: null, max: null },
             date_range_preset: null
@@ -241,6 +241,19 @@ const clearAllFilters = () => {
     activeFilters.value = {}
 }
 
+const onMapClick = (e: any) => {
+    filter.value.lat = e.latlng.lat
+    filter.value.lng = e.latlng.lng
+}
+
+const onMarkerDrag = (e: any) => {
+    const marker = e.target
+    const pos = marker.getLatLng()
+
+    filter.value.lat = pos.lat
+    filter.value.lng = pos.lng
+}
+
 function findConfigByKey(structure: any, key: string) {
     for (const group of Object.values(structure)) {
         if (group.filters?.[key]) return group.filters[key]
@@ -273,11 +286,9 @@ function hydrateSavedFilters(saved: any, structure: any) {
         let uiValue: any = {}
 
         if (config.type === 'boolean') {
-
             const clean = unwrapBoolean(val)
 
             if (key === 'orders_in_basket') {
-                const isPreset = typeof clean.date_range === 'number'
                 const isCustom = Array.isArray(clean.date_range)
 
                 uiValue = {
@@ -358,7 +369,6 @@ function hydrateSavedFilters(saved: any, structure: any) {
                 lng: v.lng ?? null
             }
         }
-
 
         hydrated[key] = { config, value: uiValue }
     })
@@ -445,7 +455,7 @@ function getEntityFetchRoute(key: string) {
     return null
 }
 
-function onBasketModeChange(filter, event) {
+function onBasketModeChange(filter: { value: { mode: any; date_range: null; }; }, event: { value: any; }) {
     const val = event.value
 
     filter.value.mode = val
@@ -453,14 +463,30 @@ function onBasketModeChange(filter, event) {
     if (val === 'custom') {
         filter.value.date_range = null
     } else {
-        filter.value.date_range = val // number: 3,7,14
+        filter.value.date_range = val
     }
 }
-
 
 const isAllCustomers = computed(() => {
     return Object.keys(activeFilters.value).length === 0
 })
+
+const geocodeLocation = async (filter: any) => {
+    const text = filter.value.location
+    if (!text) return
+
+    const res = await fetch(
+        `/api/geocode?query=${encodeURIComponent(text)}`
+    )
+
+    const data = await res.json()
+
+    if (data.lat) {
+        filter.value.lat = data.lat
+        filter.value.lng = data.lng
+        filter.value.zoom = 12
+    }
+}
 
 const filtersPayload = computed(() => {
     const payload: any = {}
@@ -498,7 +524,9 @@ const filtersPayload = computed(() => {
             payload[key] = {
                 value: {
                     ids: val.ids ?? [],
-                    behaviors: val.behaviors ?? [],
+                    behaviors: val.combine_logic
+                        ? (val.behaviors ?? [])
+                        : (val.behaviors?.length ? [val.behaviors[0]] : []),
                     combine_logic: val.combine_logic ?? true
                 }
             }
@@ -539,14 +567,13 @@ const filtersPayload = computed(() => {
             return
         }
 
-        // FALLBACK
         payload[key] = { value: val }
     })
 
     return payload
 })
 
-function shouldShowMap(val) {
+function shouldShowMap(val: { mode: string; country_ids: string | any[]; postal_codes: string | any[]; location: any; lat: any; lng: any; }) {
     if (val.mode === 'direct') {
         return val.country_ids.length > 0 || val.postal_codes.length > 0
     }
@@ -617,6 +644,28 @@ onMounted(async () => {
         console.log("activeFilters.value onmounted", activeFilters.value)
     }
 })
+watch(
+    () => activeFilters.value,
+    (filters) => {
+        Object.values(filters).forEach((filter: any) => {
+            if (filter.config.type === 'entity_behaviour') {
+                watch(
+                    () => filter.value.combine_logic,
+                    (isMulti) => {
+                        if (!isMulti) {
+                            filter.value.behaviors = filter.value.behaviors?.length
+                                ? [filter.value.behaviors[0]]
+                                : []
+                        }
+                    },
+                    { immediate: true }
+                )
+            }
+        })
+    },
+    { deep: true, immediate: true }
+)
+
 watch(activeFilters, fetchCustomers, { deep: true })
 watch(tableState, fetchCustomers, { deep: true })
 console.log("props table", props)
@@ -638,10 +687,11 @@ console.log("props table", props)
             <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="tertiary" class="h-10 px-4"
                 @click="clearAllFilters" />
 
-            <Button label="Save" type="save" @click="saveFilters" class="h-10 px-4" />
-            <span v-if="isAllCustomers" class="text-blue-600 font-medium">
+            <span v-if="isAllCustomers" class="text-blue-600 font-medium ml-auto">
                 Audience: All Customers
             </span>
+            <Button label="Save" type="save" @click="saveFilters" class="h-10 px-4 ml-auto" />
+
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div v-for="(filter, key) in activeFilters" :key="key"
@@ -787,8 +837,9 @@ console.log("props table", props)
                         <template v-else>
 
                             <InputText v-model="filter.value.location"
-                                :placeholder="filter.config.fields.location.placeholder" class="w-full" />
-
+                                :placeholder="filter.config.fields.location.placeholder" class="w-full"
+                                @blur="geocodeLocation(filter)" />
+                            <!-- <Button label="Find on Map" @click="geocodeLocation(filter)" /> -->
                             <Dropdown v-model="filter.value.radius"
                                 :options="Object.entries(filter.config.fields.radius.options).map(([value, label]) => ({ value, label }))"
                                 optionLabel="label" optionValue="value" class="w-full" />
@@ -798,7 +849,15 @@ console.log("props table", props)
                         <!-- MAP PLACEHOLDER -->
                         <div v-if="shouldShowMap(filter.value)"
                             class="h-64 bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                            Map preview here (Leaflet later)
+                            <div v-if="filter.value.lat && filter.value.lng" class="h-72 rounded">
+                                <l-map v-model:zoom="filter.value.zoom" :center="[filter.value.lat, filter.value.lng]"
+                                    @click="onMapClick">
+                                    <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+                                    <l-marker :lat-lng="[filter.value.lat, filter.value.lng]" :draggable="true"
+                                        @dragend="onMarkerDrag" />
+                                </l-map>
+                            </div>
                         </div>
 
                     </div>
