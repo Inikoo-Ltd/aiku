@@ -52,6 +52,7 @@ class GetFaireProducts extends OrgAction
                         'rrp'         => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
                         'price'       => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
                         'units'       => $faireProduct['unit_multiplier'],
+                        'marketplace_id' => $faireProduct['id'],
                         'data'        => [
                             'faire' => $variant
                         ]
@@ -72,6 +73,7 @@ class GetFaireProducts extends OrgAction
                     'trade_config' => ProductTradeConfigEnum::AUTO,
                     'status'       => ProductStatusEnum::FOR_SALE,
                     'state'        => ProductStateEnum::IN_PROCESS,
+                    'marketplace_id' => $faireProduct['id'],
                     'data'         => [
                         'faire' => $variant
                     ]

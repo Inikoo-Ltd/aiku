@@ -263,6 +263,9 @@ class StoreProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
             'master_product_id'         => ['sometimes'],
+            'marketplace_id'            => ['sometimes', Rule::unique('products', 'marketplace_id')->where(function ($query) {
+                $query->where('group_id', $this->shop->group_id);
+            })],
             'marketing_weight'          => ['sometimes', 'numeric', 'min:0'],
             'gross_weight'              => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'      => ['sometimes'],
