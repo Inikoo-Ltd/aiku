@@ -12,11 +12,29 @@ class FilterByOrderValue
      * Apply the "By Order Value" filter.
      *
      * @param SpatieQueryBuilder|Builder $query
-     * @param array $options
+     * @param array $filters
      * @return mixed
      */
-    public function apply($query, array $options = [])
+    public function apply($query, array $filters)
     {
+        $orderValueFilter = Arr::get($filters, 'by_order_value');
+        $isOrderValueActive = is_array($orderValueFilter) ? ($orderValueFilter['value'] ?? false) : $orderValueFilter;
+
+        if (!$isOrderValueActive) {
+            return $query;
+        }
+
+        $options = [];
+
+        if (is_array($orderValueFilter) && isset($orderValueFilter['value'])) {
+            $val = $orderValueFilter['value'];
+
+            if (isset($val['amount_range']) && is_array($val['amount_range'])) {
+                $options['min'] = $val['amount_range']['min'] ?? null;
+                $options['max'] = $val['amount_range']['max'] ?? null;
+            }
+        }
+
         $min = Arr::get($options, 'min');
         $max = Arr::get($options, 'max');
 

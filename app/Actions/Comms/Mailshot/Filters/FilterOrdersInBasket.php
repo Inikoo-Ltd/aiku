@@ -13,11 +13,37 @@ class FilterOrdersInBasket
      * Apply the "Orders In Basket" filter.
      *
      * @param Builder|SpatieQueryBuilder $query
-     * @param array $options
+     * @param array $filters
      * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, array $options = [])
+    public function apply($query, array $filters)
     {
+        $basketFilter = Arr::get($filters, 'orders_in_basket');
+        $isBasketActive = is_array($basketFilter) ? ($basketFilter['value'] ?? false) : $basketFilter;
+
+        if (!$isBasketActive) {
+            return $query;
+        }
+
+        $options = [];
+
+        if (is_array($basketFilter) && isset($basketFilter['value'])) {
+            $val = $basketFilter['value'];
+
+            if (isset($val['date_range']) && is_array($val['date_range']) && count($val['date_range']) >= 2) {
+                $options['date_range'] = [
+                    'start' => $val['date_range'][0],
+                    'end'   => $val['date_range'][1]
+                ];
+            }
+
+            if (isset($val['amount_range']) && is_array($val['amount_range'])) {
+                $options['amount_range'] = [
+                    'min' => $val['amount_range']['min'] ?? null,
+                    'max' => $val['amount_range']['max'] ?? null,
+                ];
+            }
+        }
 
         $query->whereHas('orders', function ($q) use ($options) {
             $q->where('state', OrderStateEnum::CREATING);

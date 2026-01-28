@@ -28,6 +28,8 @@ class FilterByFamilyNeverOrdered
 
         $familyIds = is_array($familyId) ? $familyId : [$familyId];
 
+        \Log::info($familyIds);
+
         $query->whereNotExists(function ($subQuery) use ($familyIds) {
             $subQuery->select(DB::raw(1))
                 ->from('invoice_transactions')

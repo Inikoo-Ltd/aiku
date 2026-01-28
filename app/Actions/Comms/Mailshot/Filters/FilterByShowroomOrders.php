@@ -2,6 +2,7 @@
 
 namespace App\Actions\Comms\Mailshot\Filters;
 
+use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
 
@@ -11,12 +12,15 @@ class FilterByShowroomOrders
      * Apply the "By Showroom Orders" filter to the query.
      *
      * @param Builder|SpatieQueryBuilder $query
-     * @param bool $active
+     * @param array $filters
      * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, $active = true)
+    public function apply($query, array $filters)
     {
-        if (!$active) {
+        $showroomFilter = Arr::get($filters, 'by_showroom_orders');
+        $isShowroomActive = is_array($showroomFilter) ? ($showroomFilter['value'] ?? false) : $showroomFilter;
+
+        if (!$isShowroomActive) {
             return $query;
         }
 
