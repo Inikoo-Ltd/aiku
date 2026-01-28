@@ -320,6 +320,9 @@ class StoreOrder extends OrgAction
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
             'data'                      => ['sometimes', 'array'],
+            'marketplace_id'            => ['sometimes', Rule::unique('orders', 'marketplace_id')->where(function ($query) {
+                $query->where('group_id', $this->shop->group_id);
+            })],
             'sales_channel_id'          => [
                 'sometimes',
                 'required',

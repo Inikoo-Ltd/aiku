@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Comms\Outbox $outbox
+ * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read User|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutBoxHasSubscriber newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutBoxHasSubscriber newQuery()

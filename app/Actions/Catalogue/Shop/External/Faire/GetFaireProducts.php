@@ -2,7 +2,6 @@
 
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
-use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
@@ -13,8 +12,10 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class GetFaireProducts extends OrgAction
 {
@@ -24,12 +25,22 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop): void
     {
-        $faireProducts = $shop->getFaireProducts([
-            'limit' => 250
-        ]);
-        // foreach to support of faire has more than 250 products
+        $faireProducts = [];
+        $limit = 50;
+        $page = 1;
 
-        foreach (Arr::get($faireProducts, 'products', []) as $faireProduct) {
+        do {
+            $response = $shop->getFaireProducts([
+                'limit' => $limit,
+                'page' => $page
+            ]);
+            $fetchedProducts = Arr::get($response, 'products');
+            $faireProducts = array_merge($faireProducts, $fetchedProducts);
+
+            $page++;
+        } while (count($fetchedProducts) === $limit);
+
+        foreach ($faireProducts as $faireProduct) {
             foreach ($faireProduct['variants'] as $variant) {
                 if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
                     $product = Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->first();
@@ -40,6 +51,7 @@ class GetFaireProducts extends OrgAction
                         'rrp'         => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
                         'price'       => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
                         'units'       => $faireProduct['unit_multiplier'],
+                        'marketplace_id' => $faireProduct['id'],
                         'data'        => [
                             'faire' => $variant
                         ]
@@ -60,6 +72,7 @@ class GetFaireProducts extends OrgAction
                     'trade_config' => ProductTradeConfigEnum::AUTO,
                     'status'       => ProductStatusEnum::FOR_SALE,
                     'state'        => ProductStateEnum::IN_PROCESS,
+                    'marketplace_id' => $faireProduct['id'],
                     'data'         => [
                         'faire' => $variant
                     ]
@@ -73,6 +86,13 @@ class GetFaireProducts extends OrgAction
         $shop = Shop::where('type', ShopTypeEnum::EXTERNAL)->where('engine', ShopEngineEnum::FAIRE)
             ->where('slug', $command->argument('shop'))
             ->first();
+
+        $this->handle($shop);
+    }
+
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): void
+    {
+        $this->initialisation($organisation, $request);
 
         $this->handle($shop);
     }

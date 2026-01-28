@@ -126,6 +126,8 @@ const _popoverProfit = ref(null)
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }} ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/<span class="font-normal">{{ product.unit }}</span>)
                 </span>
             </div>
+            <div v-else class="h-5">
+            </div>
 
 
             <!-- Section: Profit, label Gold Reward Member -->

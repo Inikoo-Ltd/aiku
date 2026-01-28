@@ -99,6 +99,7 @@ class IndexOffers extends OrgAction
                 'offers.id',
                 'offers.slug',
                 'offers.state',
+                'offers.type',
                 'offers.code',
                 'offers.name',
                 'offer_campaigns.slug as offer_campaign_slug',
@@ -148,6 +149,7 @@ class IndexOffers extends OrgAction
 
             $table->column(key: 'state', label: '', type: 'icon', sortable: false);
             $table->column(key: 'name', label: __('Name'), sortable: true, );
+            $table->column(key: 'type', label: __('Type'), sortable: true, );
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), sortable: true, )
                         ->column(key: 'shop_name', label: __('Shop'), sortable: true, );
@@ -197,6 +199,7 @@ class IndexOffers extends OrgAction
                 ),
                 'title'       => __('Offers'),
                 'pageHead'    => [
+                    'model'      => $this->parent->code,
                     'title'      => $title,
                     'afterTitle' => $afterTitle,
                     'iconRight'  => $iconRight,
