@@ -21,7 +21,6 @@ use App\Http\Resources\Fulfilment\StoredItemAuditsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Http\Resources\Fulfilment\StoredItemsInWarehouseResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
@@ -252,16 +251,16 @@ class IndexStoredItems extends OrgAction
                 ],
 
                 StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value => $this->tab == StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value ?
-                    fn() => StoredItemsInWarehouseResource::collection($storedItems)
-                    : Inertia::lazy(fn() => StoredItemsInWarehouseResource::collection($storedItems)),
+                    fn () => StoredItemsInWarehouseResource::collection($storedItems)
+                    : Inertia::lazy(fn () => StoredItemsInWarehouseResource::collection($storedItems)),
 
                 StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value => $this->tab == StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value ?
-                    fn() => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value))
-                    : Inertia::lazy(fn() => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value))),
+                    fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value))
+                    : Inertia::lazy(fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value))),
 
                 StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value => $this->tab == StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value ?
-                    fn() => StoredItemAuditsResource::collection(IndexStoredItemAudits::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value))
-                    : Inertia::lazy(fn() => StoredItemAuditsResource::collection(IndexStoredItemAudits::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value))),
+                    fn () => StoredItemAuditsResource::collection(IndexStoredItemAudits::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value))
+                    : Inertia::lazy(fn () => StoredItemAuditsResource::collection(IndexStoredItemAudits::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value))),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value))
@@ -351,7 +350,7 @@ class IndexStoredItems extends OrgAction
 
     protected function buildUploadSpreadsheetConfig(FulfilmentCustomer|Group $customer): array
     {
-        if($customer instanceof Group) {
+        if ($customer instanceof Group) {
             return [];
         }
 

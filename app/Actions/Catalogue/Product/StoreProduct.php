@@ -111,7 +111,7 @@ class StoreProduct extends OrgAction
 
             if ($tradeUnits) {
                 $product = SyncProductTradeUnits::run($product, $tradeUnits);
-            } else if ($orgStocks) {
+            } elseif ($orgStocks) {
                 //todo: remove this when total migration from aurora
                 $product = $this->syncOrgStocksToBeDeleted($product, $orgStocks);
             }

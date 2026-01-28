@@ -79,6 +79,10 @@ class UpdateShop extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'collection_follow_master')) {
+            data_set($modelData, 'settings.catalog.collection_follow_master', Arr::pull($modelData, 'collection_follow_master'));
+        }
+
         if (Arr::has($modelData, 'department_follow_master')) {
             data_set($modelData, 'settings.catalog.department_follow_master', Arr::pull($modelData, 'department_follow_master'));
         }
@@ -333,10 +337,11 @@ class UpdateShop extends OrgAction
                     ->max(12 * 1024)
             ],
             'colour'                        => ['sometimes', 'string'],
-            'product_follow_master'         => ['sometimes', 'boolean'],
+            'collection_follow_master'      => ['sometimes', 'boolean'],
             'department_follow_master'      => ['sometimes', 'boolean'],
             'sub_department_follow_master'  => ['sometimes', 'boolean'],
             'family_follow_master'          => ['sometimes', 'boolean'],
+            'product_follow_master'         => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

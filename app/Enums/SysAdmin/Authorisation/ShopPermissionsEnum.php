@@ -52,10 +52,7 @@ enum ShopPermissionsEnum: string
 
     public static function getAllValues(Shop $shop): array
     {
-        $rawPermissionsNames = array_column(
-            self::allowedForShop($shop),
-            'value'
-        );
+        $rawPermissionsNames = array_column(ShopPermissionsEnum::cases(), 'value');
 
         $permissionsNames = [];
         foreach ($rawPermissionsNames as $rawPermissionsName) {
@@ -71,33 +68,5 @@ enum ShopPermissionsEnum: string
         $permissionComponents = array_merge(array_slice($permissionComponents, 0, 1), [$shop->id], array_slice($permissionComponents, 1));
 
         return join('.', $permissionComponents);
-    }
-
-    private static function allowedForShop(Shop $shop): array
-    {
-        return self::cases();
-    }
-
-    private static function permissionsForFaireShop(): array
-    {
-        return [
-            self::SHOP_ADMIN,
-
-            self::PRODUCTS,
-            self::PRODUCTS_EDIT,
-            self::PRODUCTS_VIEW,
-
-            self::ORDERS,
-            self::ORDERS_VIEW,
-            self::ORDERS_EDIT,
-
-            self::CRM,
-            self::CRM_VIEW,
-            self::CRM_EDIT,
-            self::CRM_PROSPECTS_VIEW,
-
-            self::SUPERVISOR_PRODUCTS,
-            self::SUPERVISOR_ORDERS,
-        ];
     }
 }

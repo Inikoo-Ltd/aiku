@@ -228,16 +228,17 @@ defineExpose({
                 <div class="">
                     <div class="font-extrabold text-black text-sm">
                         {{ trans("Price") }}:
-                        <template v-if="Object.keys(product.offers_data || {})?.length">
+                        <template v-if="product?.product_offers_data?.number_offers">
                             <span class="mr-1.5 line-through text-gray-500 text-xs font-normal opacity-60">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
-                            <span class="text-red-600">{{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}</span>
+                            <span class="text-red-600">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span>
                         </template>
                         <span v-else class="text-black">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
                     </div>
 
+                    
                     <div class="mt-1 mr-9">
-                        <span v-if="Object.keys(product.offers_data || {})?.length" v-tooltip="trans('Discounted from :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.price_per_unit) })" class="text-red-600">
-                            ({{ locale.currencyFormat(currency?.code, product.offer_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
+                        <span v-if="product?.product_offers_data?.number_offers"  v-tooltip="trans('Discounted to :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.discounted_price_per_unit) })" class="text-red-600">
+                            ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
                         </span>
                         <span v-else class="">
                             ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}<span class="">/{{ product.unit }}</span>)
