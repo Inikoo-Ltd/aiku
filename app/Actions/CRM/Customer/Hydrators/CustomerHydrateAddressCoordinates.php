@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
 use App\Services\GeocoderService;
@@ -14,7 +15,7 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $commandSignature = 'hydrate:customers-address-coordinates';
+    public string $commandSignature = 'hydrate:customers-address-coordinates {--shop_code= : Filter by Shop Code}';
     public string $commandDescription = 'Hydrate latitude and longitude for customer addresses';
 
     public function getJobUniqueId(int|null $customerId): string
@@ -34,7 +35,6 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
         }
 
         $address = $customer->address;
-        // this option is to skip if coordinates already exist
         if ($address->latitude && $address->longitude) {
             return;
         }
@@ -79,6 +79,19 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
         $command->info('Starting hydration of customer address coordinates...');
 
         $query = Customer::has('address');
+
+        if ($shopCode = $command->option('shop_code')) {
+            $shop = Shop::where('code', $shopCode)->first();
+
+            if (! $shop) {
+                $command->error("Shop with code '{$shopCode}' not found.");
+                return;
+            }
+
+            $query->where('shop_id', $shop->id);
+            $command->info("Filtering by Shop: {$shop->name} ({$shopCode})");
+        }
+
         $totalCustomers = $query->count();
 
         $bar = $command->getOutput()->createProgressBar($totalCustomers);
