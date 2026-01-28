@@ -259,7 +259,8 @@ class ShowMailshotRecipients extends OrgAction
                     ],
                     'method' => 'patch'
                 ],
-                'recipients_recipe' => $mailshot->recipients_recipe
+                'recipients_recipe' => $mailshot->recipients_recipe,
+                'shop_id' => $mailshot->shop_id
             ]
         );
     }
