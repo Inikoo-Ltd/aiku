@@ -207,7 +207,7 @@ onMounted(() => {
     }">
         <template v-if="!isFetched || listProductsFromLuigi?.length">
             <!-- Title -->
-            <div class="px-3 py-6 pb-2">
+            <div class="px-3 py-6 pb-6">
                 <div class="text-3xl font-semibold">
                     <div>
                         <p style="text-align: center">{{ trans("Trending") }}</p>
@@ -215,7 +215,7 @@ onMounted(() => {
                 </div>
             </div>
             
-            <div class="py-4" id="LuigiTrends1">
+            <div class="py-4  px-12" id="LuigiTrends1">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"

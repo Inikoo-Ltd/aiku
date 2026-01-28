@@ -194,7 +194,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6" :style="{
+    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
@@ -210,7 +210,7 @@ onMounted(() => {
                 </div>
             </div>
             
-            <div class="py-4">
+            <div class="py-4  px-12">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
