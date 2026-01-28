@@ -73,7 +73,6 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 </script>
 
 <template>
-
   <div id="family-1-iris">
 
   
@@ -95,7 +94,6 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
                 <FamilyOfferLabelGR v-if="offer.type == 'Category Quantity Ordered Order Interval'" />
 
                 <FamilyOfferLabelDiscount
-                    v-if="offer.type == 'Category Quantity Ordered Order Interval'"
                     :offer="offer"
                 />
             </template>
