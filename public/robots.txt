@@ -5,6 +5,7 @@ Disallow: /privacy_policy
 Disallow: /cookie_policy
 Disallow: /cookies
 Disallow: /attachment.php*
+Disallow: /attachment/*
 Disallow: /asset_label*
 Disallow: /page.php*
 Disallow: /*.sys$

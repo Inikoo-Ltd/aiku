@@ -18,16 +18,15 @@ class DashboardPlatformSalesResource extends JsonResource
             'label' => [
                 'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
                 'align'           => 'left',
-                'icon'            => $data['slug'] ?? $data['code'] ?? 'Unknown',
+                'icon'            => $data['slug'] ?? 'unknown',
             ],
             'label_minified' => [
                 'formatted_value' => $data['slug'] ?? $data['code'] ?? 'Unknown',
                 'align'           => 'left',
-                'icon'            => $data['slug'] ?? $data['code'] ?? 'Unknown',
+                'icon'            => $data['slug'] ?? 'unknown',
             ]
         ];
 
-        // Common columns for all contexts
         $columns = array_merge(
             $columns,
             $this->getDashboardColumnsFromArray($data, [
@@ -36,15 +35,13 @@ class DashboardPlatformSalesResource extends JsonResource
                 'sales_grp_currency',
                 'sales_grp_currency_minified',
                 'sales_grp_currency_delta',
-                'sales_percentage' // Now available from GetPlatformTimeSeriesStats
+                'sales_percentage'
             ])
         );
 
         if ($this->isShopContext($data)) {
-            // Build route targets
             $routeTargets = $this->buildRouteTargets($data);
 
-            // Add shop-specific columns with route targets
             $columns = array_merge(
                 $columns,
                 $this->getDashboardColumnsFromArray($data, [
@@ -57,16 +54,15 @@ class DashboardPlatformSalesResource extends JsonResource
                     'customers_minified' => $routeTargets['customers'],
                     'portfolios' => $routeTargets['portfolios'],
                     'portfolios_minified' => $routeTargets['portfolios'],
-                    'sales',
-                    'sales_minified',
-                    'sales_delta',
-                    'sales_org_currency',
-                    'sales_org_currency_minified',
-                    'sales_org_currency_delta',
+                    // 'sales',
+                    // 'sales_minified',
+                    // 'sales_delta',
+                    // 'sales_org_currency',
+                    // 'sales_org_currency_minified',
+                    // 'sales_org_currency_delta',
                 ])
             );
         } else {
-            // Add non-shop columns (without route targets)
             $columns = array_merge(
                 $columns,
                 $this->getDashboardColumnsFromArray($data, [
@@ -79,21 +75,25 @@ class DashboardPlatformSalesResource extends JsonResource
                     'customers_minified',
                     'portfolios',
                     'portfolios_minified',
-                    'sales',
-                    'sales_minified',
-                    'sales_delta',
-                    'sales_org_currency',
-                    'sales_org_currency_minified',
-                    'sales_org_currency_delta',
+                    // 'sales_org_currency',
+                    // 'sales_org_currency_minified',
+                    // 'sales_org_currency_delta',
                 ])
             );
         }
+
+        $columns['sales'] = $columns['sales_grp_currency'];
+        $columns['sales_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_delta'] = $columns['sales_grp_currency_delta'];
+        $columns['sales_org_currency'] = $columns['sales_grp_currency'];
+        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
 
         return [
             'slug'    => $data['slug'] ?? 'unknown',
             'state'   => $data['state'] ?? 'active',
             'columns' => $columns,
-            'colour'  => ''
+            'colour'  => null
         ];
     }
 

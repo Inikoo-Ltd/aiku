@@ -106,6 +106,10 @@ class CallApiDpdSkShipping extends OrgAction
             $errorData['address'] = $errorMessage;
         }
 
+        $modelData['data']=[
+            'debug'=>Arr::get($params, 'params.shipment', []),
+        ];
+
         return [
             'status'    => $status,
             'modelData' => $modelData,

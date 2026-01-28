@@ -42,7 +42,6 @@ class GetPlatformTimeSeriesStats
 
         $allStats = [];
         if (!empty($timeSeriesIds)) {
-            // Determine additional where conditions based on parent type
             $additionalWhere = [];
 
             if ($parent instanceof Organisation) {
@@ -71,7 +70,6 @@ class GetPlatformTimeSeriesStats
             );
         }
 
-        // Calculate total sales per interval based on parent type
         $totalSalesByInterval = $this->calculateTotalSales($allStats, $parent);
 
         $results = [];
@@ -109,10 +107,11 @@ class GetPlatformTimeSeriesStats
         $totals = [];
         $intervals = DateIntervalEnum::cases();
 
-        // Determine which sales field to use based on parent type
         $salesField = match (true) {
-            $parent instanceof Shop => 'sales',
-            $parent instanceof Organisation => 'sales_org_currency',
+            // $parent instanceof Shop => 'sales',
+            $parent instanceof Shop => 'sales_grp_currency',
+            // $parent instanceof Organisation => 'sales_org_currency',
+            $parent instanceof Organisation => 'sales_grp_currency',
             $parent instanceof Group => 'sales_grp_currency',
         };
 
@@ -135,10 +134,11 @@ class GetPlatformTimeSeriesStats
     {
         $intervals = DateIntervalEnum::cases();
 
-        // Determine which sales field to use
         $salesField = match (true) {
-            $parent instanceof Shop => 'sales',
-            $parent instanceof Organisation => 'sales_org_currency',
+            // $parent instanceof Shop => 'sales',
+            $parent instanceof Shop => 'sales_grp_currency',
+            // $parent instanceof Organisation => 'sales_org_currency',
+            $parent instanceof Organisation => 'sales_grp_currency',
             $parent instanceof Group => 'sales_grp_currency',
         };
 
@@ -147,14 +147,12 @@ class GetPlatformTimeSeriesStats
             $totalSales = $totalSalesByInterval[$key] ?? 0;
             $platformSales = (float)($stats[$key] ?? 0);
 
-            // Calculate percentage
             if ($totalSales > 0) {
                 $percentage = ($platformSales / $totalSales) * 100;
             } else {
                 $percentage = 0;
             }
 
-            // Add to stats with interval suffix
             $stats['sales_percentage_' . $interval->value] = round($percentage, 2);
         }
 

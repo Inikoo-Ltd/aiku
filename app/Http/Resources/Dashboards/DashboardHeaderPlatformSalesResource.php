@@ -36,7 +36,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
             ]
         ];
 
-        $newChannelsColumns = [
+        $channelsColumns = [
             'channels' => [
                 'formatted_value'   => __('Channels'),
                 'currency_type'     => 'always',
@@ -56,7 +56,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
             ]
         ];
 
-        $newPortfoliosColumns = [
+        $portfoliosColumns = [
             'portfolios' => [
                 'formatted_value'   => __('Portfolios'),
                 'currency_type'     => 'always',
@@ -75,7 +75,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
             ]
         ];
 
-        $newCustomersColumns = [
+        $customersColumns = [
             'customers' => [
                 'formatted_value'   => __('Customers'),
                 'currency_type'     => 'always',
@@ -94,7 +94,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
             ]
         ];
 
-        $newCustomerClientsColumns = [
+        $customerClientsColumns = [
             'customer_clients' => [
             'formatted_value'   => __('Customer Clients'),
                 'currency_type'     => 'always',
@@ -237,10 +237,10 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
 
         $columns = array_merge(
             $columns,
-            $newChannelsColumns,
-            $newPortfoliosColumns,
-            $newCustomersColumns,
-            $newCustomerClientsColumns,
+            $channelsColumns,
+            $portfoliosColumns,
+            $customersColumns,
+            $customerClientsColumns,
             $invoicesColumns,
             $salesColumns,
             $salesOrgCurrencyColumns,
