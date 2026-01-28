@@ -18,7 +18,26 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import TableStoredItemsAudits from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsAudits.vue'
 import TableStoredItemsInWarehouse from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsInWarehouse.vue";
 import TablePalletStoredItems from '@/Components/Tables/Grp/Org/Fulfilment/TablePalletStoredItems.vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+import { routeType } from "@/types/route"
+import { UploadPallet } from "@/types/Pallet"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
 library.add(faNarwhal, faBallotCheck)
+
+interface UploadSection {
+	title: {
+		label: string
+		information: string
+	}
+	progressDescription: string
+	upload_spreadsheet: UploadPallet
+	preview_template: {
+		header: string[]
+		rows: {}[]
+	}
+}
 
 const props = defineProps<{
     data: {}
@@ -28,6 +47,7 @@ const props = defineProps<{
         current: string;
         navigation: object;
     }
+	bulk_edit_upload: UploadSection
     stored_items : {}
     pallet_stored_items : {}
     stored_item_audits : {}
@@ -35,7 +55,7 @@ const props = defineProps<{
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 
-
+const isModalUploadSpreadsheet = ref(false)
 
 const component = computed(() => {
 
@@ -48,11 +68,40 @@ const component = computed(() => {
 
 });
 
+
+const onNoStructureUpload = () => {
+	notify({
+		title: trans("Something went wrong"),
+		text: trans("Upload structure is not provided. Please contact support."),
+		type: "error",
+	})
+}
+
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
+    <PageHeading :data="pageHead">
+		<template #button-edit-sku="{action}">
+			<Button
+				@click="() => bulk_edit_upload ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
+				type="tertiary"
+				:style="'edit'"
+				:label="'Bulk Edit SKU'"
+			/>
+		</template>
+	</PageHeading>
+
+	<UploadExcel
+		v-if="bulk_edit_upload"
+		v-model="isModalUploadSpreadsheet"
+		:title="bulk_edit_upload.title"
+		:progressDescription="bulk_edit_upload.progressDescription"
+		:preview_template="bulk_edit_upload.preview_template"
+		:upload_spreadsheet="bulk_edit_upload.upload_spreadsheet"
+		xxxadditionalDataToSend="interest.pallets_storage ? ['stored_items'] : undefined"
+	/>
+
+	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
     <component :is="component" :key="currentTab" :tab="currentTab" :data="props[currentTab as keyof typeof props]"></component>
 </template>
