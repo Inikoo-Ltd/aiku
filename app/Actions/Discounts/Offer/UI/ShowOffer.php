@@ -90,7 +90,7 @@ class ShowOffer extends OrgAction
                     // ],
                     'iconRight'  => $iconRight,
                     'icon'       => $icon,
-                    'actions'    => $actions
+                    'actions'    => app()->environment('local') ? $actions : [],
                 ],
                 'data'        => OfferResource::make($offer),
                 'currency_code' => $offer->shop->currency->code,
