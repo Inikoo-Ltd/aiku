@@ -148,6 +148,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $categories_data
  * @property bool $with_replacement
  * @property array<array-key, mixed> $discretionary_offers_data
+ * @property string|null $marketplace_id
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

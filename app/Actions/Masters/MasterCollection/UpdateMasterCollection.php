@@ -48,16 +48,16 @@ class UpdateMasterCollection extends GrpAction
                 $dataToBeUpdated = [];
                 $childShop = $collections->shop;
 
-                if (Arr::has($changed, 'code')){
+                if (Arr::has($changed, 'code')) {
                     $dataToBeUpdated['code'] = $masterCollection->code;
                 }
 
-                if(data_get($childShop->settings, 'catalog.collection_follow_master', false)){
-                    if(Arr::has($changed, 'name')){
-                    $dataToBeUpdated['name'] = $masterCollection->name;
+                if (data_get($childShop->settings, 'catalog.collection_follow_master', false)) {
+                    if (Arr::has($changed, 'name')) {
+                        $dataToBeUpdated['name'] = $masterCollection->name;
                     }
 
-                    if(Arr::has($changed, 'description')){
+                    if (Arr::has($changed, 'description')) {
                         $dataToBeUpdated['description'] = $masterCollection->description;
                     }
                 }

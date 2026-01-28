@@ -52,6 +52,8 @@ class StoreExternalShop extends OrgAction
     public function handle(Organisation $organisation, array $modelData): Shop
     {
         return DB::transaction(function () use ($organisation, $modelData) {
+
+            setPermissionsTeamId($organisation->group->id);
             $modelData['state'] = ShopStateEnum::OPEN;
             $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
 

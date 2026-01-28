@@ -69,7 +69,7 @@ class EditCollection extends OrgAction
     {
         $shop = $collection->shop;
         $warning = [];
-        if(data_get($shop->settings, 'catalog.collection_follow_master', false)){
+        if (data_get($shop->settings, 'catalog.collection_follow_master', false)) {
             $warning = [
                 'warning'     => [
                     'type'  => 'warning',

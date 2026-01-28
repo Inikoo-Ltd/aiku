@@ -202,7 +202,7 @@ class ShowCollection extends OrgAction
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false, 
+                        ] : false,
                     ],
             ],
                 'routes'      => [

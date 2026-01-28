@@ -337,7 +337,7 @@ class UpdateShop extends OrgAction
                     ->max(12 * 1024)
             ],
             'colour'                        => ['sometimes', 'string'],
-            'collection_follow_master'      => ['sometimes', 'boolean'],    
+            'collection_follow_master'      => ['sometimes', 'boolean'],
             'department_follow_master'      => ['sometimes', 'boolean'],
             'sub_department_follow_master'  => ['sometimes', 'boolean'],
             'family_follow_master'          => ['sometimes', 'boolean'],
