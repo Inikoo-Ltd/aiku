@@ -20,11 +20,10 @@ const props = defineProps<{
     filters: any
     customers: any
     recipientFilterRoute: routeType
-
     recipients_recipe: any
-
+    shop_slug: string
     shop_id: number
-    estimatedRecipients: number;
+    estimatedRecipients: number
 }>()
 </script>
 
@@ -36,5 +35,5 @@ const props = defineProps<{
 
     <TableTemplateRecipients :customers="customers" :filters="filters" :filters-structure="filtersStructure"
         :recipient-filter-route="recipientFilterRoute" :recipients-recipe="recipients_recipe" :shop-id="shop_id"
-        :estimated-recipients="estimatedRecipients" />
+        :shop-slug="shop_slug" :estimated-recipients="estimatedRecipients" />
 </template>

@@ -44,7 +44,7 @@ import { routeType } from '@/types/route'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from "laravel-vue-i18n"
-
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
 
 library.add(
@@ -77,7 +77,8 @@ const props = defineProps<{
     filtersStructure: Record<string, any>
     recipientsRecipe: any,
     shopId: number,
-    estimatedRecipients: number
+    estimatedRecipients: number,
+    shopSlug: string
 }>();
 
 const filterMenu = ref()
@@ -113,6 +114,7 @@ const availableFilters = computed(() => {
 
     return list
 })
+
 function normalizeCurrency(currency: string) {
     const map: Record<string, string> = {
         '£': 'GBP',
@@ -136,6 +138,7 @@ const FILTER_CONFLICTS: Record<string, string[]> = {
     // by_order_value: ['registered_never_ordered'],
     // orders_collection: ['registered_never_ordered']
 }
+
 function hasConflict(newKey: string) {
     const activeKeys = Object.keys(activeFilters.value)
 
@@ -165,16 +168,7 @@ const addFilter = (key: string, config: any) => {
 
     if (config.type === 'boolean') {
 
-        // if (key === 'orders_in_basket') {
-        //     value.date_range_preset = null
-        //     value.date_range = null
-        // }
 
-        // value = {
-        //     date_range: null,
-        //     amount_range: { min: null, max: null },
-        //     date_range_preset: null
-        // }
         value = {
             value: true,
             date_range: null,
@@ -201,7 +195,7 @@ const addFilter = (key: string, config: any) => {
         value = {
             ids: [],
             behaviors: [],
-            combine_logic: true // default = multi mode
+            combine_logic: true
         }
     }
 
@@ -211,10 +205,9 @@ const addFilter = (key: string, config: any) => {
             radius: '5km'
         }
     }
-    console.log("config.type", config.type)
     activeFilters.value[key] = { value, config }
 
-    console.log('[addFilter]', key, activeFilters.value)
+    console.log('addFilter', key, activeFilters.value)
 }
 
 const onPresetChange = (filter: any, event: any) => {
@@ -250,20 +243,29 @@ function findConfigByKey(structure: any, key: string) {
     }
     return null
 }
+
 function normalizeDate(d: string | null) {
     if (!d) return null
-    return d.split('T')[0]   // ambil YYYY-MM-DD saja
+    return d.split('T')[0]
 }
+
 function hydrateSavedFilters(saved: any, structure: any) {
     const hydrated: any = {}
 
     Object.entries(saved || {}).forEach(([key, wrapper]: any) => {
         const config = findConfigByKey(structure, key)
         if (!config) return
-        const val = typeof wrapper === 'object' && 'value' in wrapper
-            ? wrapper
-            : { value: wrapper }
+        let val
 
+        if (key === 'orders_in_basket') {
+            val = wrapper
+        } else {
+            val = typeof wrapper === 'object' && 'value' in wrapper
+                ? wrapper
+                : { value: wrapper }
+        }
+
+        const raw = val?.value ?? val
         let uiValue: any = {}
 
         if (config.type === 'boolean') {
@@ -273,15 +275,12 @@ function hydrateSavedFilters(saved: any, structure: any) {
                 const isCustom = Array.isArray(val.date_range)
 
                 uiValue = {
-                    value: val.value ?? true,
-                    mode: typeof val.date_range === 'number' ? val.date_range : 'custom',
-                    // preset_days: isPreset ? val.date_range : null,
+                    value: true,
 
-                    date_range: Array.isArray(val.date_range)
-                        ? [
-                            normalizeDate(val.date_range[0]),
-                            normalizeDate(val.date_range[1])
-                        ]
+                    mode: isPreset ? val.date_range : 'custom',
+
+                    date_range: isCustom
+                        ? [normalizeDate(val.date_range[0]), normalizeDate(val.date_range[1])]
                         : null,
 
                     amount_range: val.amount_range ?? { min: null, max: null }
@@ -309,7 +308,6 @@ function hydrateSavedFilters(saved: any, structure: any) {
         }
 
         else if (config.type === 'multiselect') {
-            console.log("uivalue", uiValue)
             if (config.behavior_options) {
                 uiValue = {
                     ids: val?.ids ?? [],
@@ -332,17 +330,16 @@ function hydrateSavedFilters(saved: any, structure: any) {
 
         else if (config.type === 'entity_behaviour') {
             uiValue = {
-                ids: val.ids ?? [],
-                behaviors: Array.isArray(val.behaviors)
-                    ? val.behaviors
-                    : val.behaviors
-                        ? [val.behaviors]
+                ids: raw.ids ?? [],
+                behaviors: Array.isArray(raw.behaviors)
+                    ? raw.behaviors
+                    : raw.behaviors
+                        ? [raw.behaviors]
                         : [],
-                combine_logic: typeof val.combine_logic === 'boolean'
-                    ? val.combine_logic
-                    : true // default multi
+                combine_logic: typeof raw.combine_logic === 'boolean'
+                    ? raw.combine_logic
+                    : true
             }
-
         }
 
         else if (config.type === 'location') {
@@ -360,14 +357,14 @@ function hydrateSavedFilters(saved: any, structure: any) {
 
 const fetchCustomers = debounce(() => {
     const filtersPayload: any = {}
-    console.log("activeFilters", activeFilters.value)
+    console.log("activeFilters di fetchCustomers", activeFilters.value)
     Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
         filtersPayload[key] = {
             value: filter.value
         }
     })
 
-    console.log('[filtersPayload]', filtersPayload)
+    console.log('filtersPayload di fetchCustomers', filtersPayload)
 
     router.get(
         route(route().current(), route().params),
@@ -383,42 +380,74 @@ const fetchCustomers = debounce(() => {
     )
 }, 400)
 
-const familyOptions = ref([])
-const subDeparmentsOptions = ref([])
-const fetchFamiliesList = async () => {
-    try {
-        const response = await axios.get(route('grp.json.shop.families', { shop: props.shopId }))
-        console.log("response", response)
-        familyOptions.value = response.data.data.map((f: { name: string; id: number; }) => ({
-            label: f.name,
-            value: f.id
-        }))
-    } catch (error) {
-        console.error('Error fetching products:', error)
+const preloadedEntities = reactive<Record<string, any[]>>({})
+const preloadEntityOptions = async (key: string, ids: number[]) => {
+    if (!ids?.length) return
+    const routeMap = {
+        by_family: {
+            name: 'grp.json.shop.families',
+            param: props.shopId
+        },
+        by_subdepartment: {
+            name: 'grp.json.shop.sub_departments',
+            param: props.shopId
+        },
+        by_departments: {
+            name: 'grp.json.shop.departments',
+            param: props.shopSlug
+        }
     }
+
+    const cfg = routeMap[key]
+    if (!cfg) return
+
+    const res = await axios.get(route(cfg.name, {
+        shop: cfg.param,
+        ids
+    }))
+
+    preloadedEntities[key] = res.data.data
 }
 
-const fetchSubDepartment = async () => {
-    try {
-        const response = await axios.get(route('grp.json.shop.sub_departments', { shop: props.shopId }))
-        console.log("response", response)
-        subDeparmentsOptions.value = response.data.data.map((f: { name: string; id: number; }) => ({
-            label: f.name,
-            value: f.id
-        }))
-    } catch (error) {
-        console.error('Error fetching products:', error)
+const entityModelMap = reactive<Record<string, any>>({})
+
+function getEntityModel(key: string, filter: any) {
+    if (!entityModelMap[key]) {
+        entityModelMap[key] = computed({
+            get() {
+                return filter.value.ids
+            },
+            set(val) {
+                filter.value.ids = Array.isArray(val) ? val : [val]
+            }
+        })
     }
+    return entityModelMap[key]
 }
 
-const getFilterOptions = (key, filter) => {
+function getEntityFetchRoute(key: string) {
     if (key === 'by_family') {
-        return familyOptions.value
-    } else if (key === 'by_subdepartment') {
-        return subDeparmentsOptions.value
+        return {
+            name: 'grp.json.shop.families',
+            parameters: { shop: props.shopId }
+        }
     }
 
-    return filter.config.options || filter.config.fields?.content?.options || []
+    if (key === 'by_subdepartment') {
+        return {
+            name: 'grp.json.shop.sub_departments',
+            parameters: { shop: props.shopId }
+        }
+    }
+
+    if (key === 'by_departments') {
+        return {
+            name: 'grp.json.shop.departments',
+            parameters: { shop: props.shopSlug }
+        }
+    }
+
+    return null
 }
 
 function onBasketModeChange(filter: { value: { date_range: null; mode: string; }; }, event: { value: any; }) {
@@ -519,9 +548,7 @@ const saveFilters = async () => {
         });
 }
 
-onMounted(() => {
-    fetchFamiliesList()
-    fetchSubDepartment()
+onMounted(async () => {
     if (props.recipientsRecipe) {
         console.log('EDIT MODE', props.recipientsRecipe)
 
@@ -529,6 +556,11 @@ onMounted(() => {
             props.recipientsRecipe,
             props.filtersStructure
         )
+        for (const [key, filter] of Object.entries(activeFilters.value)) {
+            if (filter.config.type === 'entity_behaviour') {
+                await preloadEntityOptions(key, filter.value.ids)
+            }
+        }
         console.log("activeFilters.value onmounted", activeFilters.value)
     }
 })
@@ -555,7 +587,7 @@ console.log("props table", props)
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div v-for="(filter, key) in activeFilters" :key="key"
-                class="border rounded p-4 bg-gray-50 relative min-w-0 overflow-hidden">
+                class="border rounded p-4 bg-gray-50 relative min-w-0">
 
                 <div class=" flex justify-between mb-2">
                     <span class="font-medium">{{ filter.config.label }}</span>
@@ -631,13 +663,10 @@ console.log("props table", props)
                     </div>
                 </template>
                 <template v-else-if="filter.config.type === 'entity_behaviour'">
-                    <div class="min-w-0 w-full">
-                        <MultiselectTagsInfiniteScroll :form="filter.value" fieldName="ids" :fieldData="{
-                            options: getFilterOptions(key, filter),
-                            labelProp: 'label',
-                            valueProp: 'value',
-                            placeholder: 'Select items...'
-                        }" />
+                    <div class="min-w-0 w-full mb-3">
+                        <PureMultiselectInfiniteScroll mode="multiple" v-model="filter.value.ids"
+                            :initOptions="preloadedEntities[key] || []" :fetchRoute="getEntityFetchRoute(key)"
+                            valueProp="id" labelProp="name" placeholder="Select items..." />
                     </div>
                     <div class="mb-3">
                         <div class="flex items-center gap-6">
@@ -689,6 +718,7 @@ console.log("props table", props)
         </div>
 
         <Button label="Save" type="save" @click="saveFilters" v-if="Object.keys(activeFilters).length" class="mb-4" />
+
         <div class="mt-8">
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
@@ -708,23 +738,6 @@ console.log("props table", props)
 
             </div>
         </div>
-
-        <!-- <DataTable :value="customers.data" lazy paginator :rows="customers.per_page" :totalRecords="customers.total"
-            :first="(customers.current_page - 1) * customers.per_page" @page="e => {
-                tableState.page = e.page + 1
-                tableState.rows = e.rows
-            }" @sort="e => {
-                tableState.sortField = e.sortField
-                tableState.sortOrder = e.sortOrder
-            }">
-            <Column field="contact_name" header="Name" sortable />
-            <Column field="email" header="Email" sortable />
-            <Column field="created_at" header="Joined">
-                <template #body="{ data }">
-                    {{ new Date(data.created_at).toLocaleDateString() }}
-                </template>
-            </Column>
-        </DataTable> -->
     </div>
 </template>
 <style scoped>
