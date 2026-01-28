@@ -39,7 +39,7 @@ class IndexOffers extends OrgAction
                 'label'    => __('State'),
                 'elements' => array_merge_recursive(
                     OfferStateEnum::labels(),
-                    // OfferStateEnum::count($parent)
+                    OfferStateEnum::count($parent)
                 ),
                 'engine' => function ($query, $elements) {
                     $query->whereIn('offers.state', $elements);

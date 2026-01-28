@@ -69,13 +69,13 @@ enum OfferStateEnum: string
         ];
     }
 
-    // public static function count(Group|Shop|OfferCampaign $parent): array
-    // {
-    //     return [
-    //         'in_process' => 0,
-    //         'active'     => 0,
-    //         'finished'   => 0,
-    //         'suspended'  => 0,
-    //     ];
-    // }
+    public static function count(Group|Shop|OfferCampaign $parent): array
+    {
+        return [
+            'in_process' => null,
+            'active'     => null,
+            'finished'   => null,
+            'suspended'  => null,
+        ];
+    }
 }
