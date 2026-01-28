@@ -99,7 +99,7 @@ class StoreExternalShop extends OrgAction
         $faireBrand = $this->getFaireBrand();
 
         if (! Arr::has($faireBrand, 'name')) {
-            throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
+            throw ValidationException::withMessages(['access_token' => __('Invalid Faire Access Token')]);
         }
 
         data_set($modelData, 'name', $faireBrand['name'].' Faire');
