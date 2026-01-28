@@ -102,7 +102,7 @@ class StoreExternalShop extends OrgAction
             throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
         }
 
-        data_set($modelData, 'name', $faireBrand['name']);
+        data_set($modelData, 'name', $faireBrand['name'].' Faire');
         data_set($modelData, 'settings.faire', array_merge($this->settings['faire'], [
             'brand' => $faireBrand['name']
         ]));
