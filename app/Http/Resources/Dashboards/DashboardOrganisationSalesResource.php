@@ -24,7 +24,7 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.accounting.invoices.index',
                     'parameters' => [
-                        'organisation' => $data['slug'] ?? '',
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
@@ -33,7 +33,7 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.overview.orders_in_basket.index',
                     'parameters' => [
-                        'organisation' => $data['slug'] ?? '',
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
@@ -42,7 +42,7 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.overview.customers.index',
                     'parameters' => [
-                        'organisation' => $data['slug'] ?? '',
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                     'key_date_filter' => 'between[registered_at]',
                 ],
@@ -51,7 +51,7 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.dashboard.show',
                     'parameters' => [
-                        'organisation' => $data['slug'] ?? '',
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                 ],
             ],
@@ -60,15 +60,15 @@ class DashboardOrganisationSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $data['name'] ?? '',
+                    'formatted_value' => $data['name'] ?? 'Unknown',
                     'align'           => 'left',
                     ...$routeTargets['organisations']
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => $data['code'] ?? '',
-                    'tooltip'         => $data['name'] ?? '',
+                    'formatted_value' => $data['code'] ?? 'Unknown',
+                    'tooltip'         => $data['name'] ?? 'Unknown',
                     'align'           => 'left',
                     ...$routeTargets['organisations']
                 ]
@@ -94,7 +94,7 @@ class DashboardOrganisationSalesResource extends JsonResource
         );
 
         return [
-            'slug'    => $data['slug'] ?? '',
+            'slug'    => $data['slug'] ?? 'unknown',
             'state'   => 'active',
             'columns' => $columns,
             'colour'  => $data['colour'] ?? null,

@@ -53,7 +53,7 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
             ],
         ];
 
-        $organisationCode = $data['organisation_code'] ?? '';
+        $organisationCode = $data['organisation_code'] ?? 'Unknown';
         $name = $data['name'] ?? 'Unknown';
         $label = $organisationCode ? $organisationCode . ': ' . $name : $name;
 
@@ -93,7 +93,7 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
             'slug'    => $data['slug'] ?? 'unknown',
             'state'   => ($data['state'] ?? InvoiceCategoryStateEnum::ACTIVE->value) == InvoiceCategoryStateEnum::ACTIVE->value ? 'active' : 'inactive',
             'columns' => $columns,
-            'colour'  => $data['colour'] ?? '',
+            'colour'  => $data['colour'] ?? null,
         ];
     }
 }

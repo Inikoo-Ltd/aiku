@@ -31,15 +31,14 @@ class DashboardTotalGroupInvoiceCategoriesSalesResource extends JsonResource
         $fields = [
             'refunds',
             'invoices',
-            'sales_org_currency',
             'sales_grp_currency',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
 
         $summedData = array_merge([
-            'organisation_slug' => $firstModel['organisation_slug'] ?? '',
-            'organisation_code' => $firstModel['organisation_code'] ?? '',
+            'organisation_slug' => $firstModel['organisation_slug'] ?? 'unknown',
+            'organisation_code' => $firstModel['organisation_code'] ?? 'unknown',
         ], $summedData);
 
         $routeTargets = [
@@ -80,15 +79,15 @@ class DashboardTotalGroupInvoiceCategoriesSalesResource extends JsonResource
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
 
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
-
                 'sales_grp_currency',
                 'sales_grp_currency_minified',
                 'sales_grp_currency_delta',
             ])
         );
+
+        $columns['sales_org_currency'] = $columns['sales_grp_currency'];
+        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
 
         return [
             'slug'    => 'totals',
