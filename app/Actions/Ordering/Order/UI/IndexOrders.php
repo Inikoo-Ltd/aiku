@@ -42,8 +42,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Models\Ordering\SalesChannel;
-use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 
 class IndexOrders extends OrgAction
 {
@@ -390,14 +389,6 @@ class IndexOrders extends OrgAction
             $shop = $this->parent->shop;
         }
 
-        $salesChannels = SalesChannel::whereIn('type', [
-            SalesChannelTypeEnum::WEBSITE,
-            SalesChannelTypeEnum::PHONE,
-            SalesChannelTypeEnum::SHOWROOM,
-            SalesChannelTypeEnum::EMAIL,
-            SalesChannelTypeEnum::OTHER,
-        ])->get(['id', 'name', 'code']);
-
         return Inertia::render(
             'Ordering/Orders',
             [
@@ -406,7 +397,7 @@ class IndexOrders extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'title'          => __('orders'),
-                'sales_channels' => $salesChannels,
+                'sales_channels' => GetSalesChannelOptions::make()->getOptions(),
                 'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
                 'pageHead'       => [
                     'title'         => $title,
@@ -430,23 +421,23 @@ class IndexOrders extends OrgAction
                 ],
 
                 OrdersTabsEnum::STATS->value => $this->tab == OrdersTabsEnum::STATS->value ?
-                    fn() => GetOrderStats::run($this->parent)
-                    : Inertia::lazy(fn() => GetOrderStats::run($this->parent)),
+                    fn () => GetOrderStats::run($this->parent)
+                    : Inertia::lazy(fn () => GetOrderStats::run($this->parent)),
 
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
-                    fn() => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn() => OrdersResource::collection($orders)),
+                    fn () => OrdersResource::collection($orders)
+                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
 
                 OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value => $this->tab == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                     ?
-                    fn() => OrdersResource::collection(
+                    fn () => OrdersResource::collection(
                         IndexOrders::run(
                             $shop,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )
-                    : Inertia::lazy(fn() => OrdersResource::collection(
+                    : Inertia::lazy(fn () => OrdersResource::collection(
                         IndexOrders::run(
                             $shop,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
@@ -455,12 +446,12 @@ class IndexOrders extends OrgAction
                     )),
 
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
-                    fn() => GetLastOrders::run($shop)
-                    : Inertia::lazy(fn() => GetLastOrders::run($shop)),
+                    fn () => GetLastOrders::run($shop)
+                    : Inertia::lazy(fn () => GetLastOrders::run($shop)),
 
                 OrdersTabsEnum::EXCESS_ORDERS->value => $this->tab == OrdersTabsEnum::EXCESS_ORDERS->value ?
-                    fn() => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
-                    : Inertia::lazy(fn() => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
+                    fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)

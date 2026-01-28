@@ -26,17 +26,17 @@ import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart } from "@fal"
+import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle } from "@fal"
 import { routeType } from "@/types/route"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import Select from '@/Components/Forms/Fields/Select.vue'
+import Icon from "@/Components/Icon.vue"
 import { useForm } from "@inertiajs/vue3"
 
-library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart)
+library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle)
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 
@@ -56,7 +56,7 @@ const props = defineProps<{
         }
     }
     orders?: {}
-    sales_channels: Array<{ id: number, name: string, code: string }>
+    sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: string }>
     can_add_order: boolean
     products?: {}
     dispatched_emails?: {}
@@ -149,21 +149,38 @@ const component = computed(() => {
     <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
-            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.') }}</p>
+            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')
+                }}</p>
 
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">{{ capitalize('Sales Channel') }}</label>
+            <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
+                <button v-for="channel in sales_channels" :key="channel.id"
+                    @click="orderForm.sales_channel_id = channel.id" type="button"
+                    class="relative min-h-[120px] text-left border rounded-md p-6 transition-all duration-200 flex flex-col justify-between group"
+                    :class="[
+                        orderForm.sales_channel_id === channel.id
+                            ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 z-10'
+                            : 'border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400'
+                    ]">
+                    <div class="flex justify-between items-start w-full mb-3">
+                        <div class="font-semibold text-gray-900 capitalize text-lg pr-2 leading-tight">
+                            {{ channel.name }}
+                        </div>
+                        <Icon :data="{ icon: channel.icon }" class="text-2xl flex-shrink-0 transition-colors"
+                            :class="orderForm.sales_channel_id === channel.id ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'" />
+                    </div>
 
-                <Select :form="orderForm" field-name="sales_channel_id"
-                    :options="sales_channels.map(sc => ({ value: sc.id, label: sc.name }))" :field-data="{
-                        placeholder: capitalize('Select Channel...'),
-                        required: true,
-                        searchable: true
-                    }" class="w-full" />
+                    <div class="mt-auto">
+                        <span
+                            class="inline-flex items-center px-2 py-1 rounded text-xs font-medium uppercase tracking-wide"
+                            :class="orderForm.sales_channel_id === channel.id ? 'bg-indigo-200 text-indigo-800' : 'bg-gray-200 text-gray-600'">
+                            {{ channel.type }}
+                        </span>
+                    </div>
+                </button>
             </div>
 
             <div class="mt-6 flex justify-end gap-3">
-                <Button label="Cancel" style="secondary" @click="isOrderModalOpen = false" />
+                <Button label="Cancel" type="secondary" @click="isOrderModalOpen = false" />
                 <Button label="Create Order" style="primary" @click="submitOrder"
                     :disabled="orderForm.processing || !orderForm.sales_channel_id" />
             </div>
