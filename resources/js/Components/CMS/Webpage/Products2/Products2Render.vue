@@ -150,7 +150,7 @@ defineExpose({
                     </slot>
 
                     <!-- Section: Discounts -->
-                    <div  class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer">
+                    <div class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer hidden md:block">
                          <DiscountByType :offers_data="product?.product_offers_data" />
                     </div>
 
@@ -247,7 +247,7 @@ defineExpose({
                 </div>
 
                 <!-- BUTTON -->
-                <div class="absolute right-2 bottom-1 flex items-center justify-end">
+                <div class="absolute right-2 top-[-3rem] lg:top-auto lg:bottom-1 flex items-center justify-end">
                     <template v-if="layout?.iris?.is_logged_in && !product.variant">
                         <!-- In stock -->
                         <NewAddToCartButton
@@ -288,7 +288,12 @@ defineExpose({
                             <Button :label="trans('Choose variants')" size="xs"
                                 @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
                         </div>
-                    </div>
+                </div>
+
+                <div class="md:hidden block">
+                    <DiscountByType :offers_data="product?.product_offers_data" />
+                </div>
+                 
             </div>          
         </div>
 
