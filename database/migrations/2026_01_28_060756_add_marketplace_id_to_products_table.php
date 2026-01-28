@@ -16,6 +16,14 @@ return new class extends Migration
         Schema::table('products', function (Blueprint $table) {
             $table->string("marketplace_id")->index()->nullable();
         });
+
+        Schema::table('orders', function (Blueprint $table) {
+            $table->string("marketplace_id")->index()->nullable();
+        });
+
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->string("marketplace_id")->index()->nullable();
+        });
     }
 
     /**
@@ -26,6 +34,14 @@ return new class extends Migration
     public function down()
     {
         Schema::table('products', function (Blueprint $table) {
+            $table->dropColumn("marketplace_id");
+        });
+
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropColumn("marketplace_id");
+        });
+
+        Schema::table('transactions', function (Blueprint $table) {
             $table->dropColumn("marketplace_id");
         });
     }
