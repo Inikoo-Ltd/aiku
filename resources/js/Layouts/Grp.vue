@@ -22,7 +22,7 @@ import Notification from "@/Components/Utils/Notification.vue"
 import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
 	faPoll,
-	faPhotoVideo,
+	faPhotoVideo, faQuestionCircle,
 	faBrowser,
 	faMegaphone,
 	faAllergies,
@@ -101,7 +101,7 @@ library.add(
 	faAtomAlt,
 	faOctopusDeploy,
 	faPoll,
-	faPhotoVideo,
+	faPhotoVideo, faQuestionCircle,
 	faBrowser,
 	faMegaphone,
 	faAllergies,

@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -32,7 +32,16 @@ const props = defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 
 
-
+const getCategoryLink = (productCategory: {}) => {
+    if (productCategory) {
+        return route('grp.org.shops.show.catalogue.families.show', {
+            organisation: route().params.organisation,
+            shop: route().params.shop,
+            family: productCategory.slug,
+        })
+    }
+    return '#'
+}
 </script>
 
 <template>
@@ -59,7 +68,7 @@ const locale = inject('locale', aikuLocaleStructure)
             <div v-if="data.data_allowance_signature.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
-                        <span>Affected product category</span>
+                        <span>Product category</span>
                         <FontAwesomeIcon icon='fal fa-question-circle' v-tooltip="'fieldSummary.information_icon'" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                     </div>
                     <!-- <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
@@ -69,9 +78,14 @@ const locale = inject('locale', aikuLocaleStructure)
         
                 <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
                     <dd class="">
-                        {{ data.data_allowance_signature.product_category?.name }}
+                        <Link :href="getCategoryLink(data.data_allowance_signature.product_category)" class="secondaryLink">
+                            {{ data.data_allowance_signature.product_category?.name }}
+                        </Link>
                     </dd>
                 </div>
+            </div>
+            <div v-else class="opacity-70 italic">
+                No additional details available.
             </div>
         </div>
 
