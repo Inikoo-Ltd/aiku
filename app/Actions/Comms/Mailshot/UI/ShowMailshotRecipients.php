@@ -21,17 +21,14 @@ class ShowMailshotRecipients extends OrgAction
     public function handle(Mailshot $mailshot, ActionRequest $request): Response
     {
         $requestFilters = $request->input('filters', []);
-        $savedFilters = $mailshot->recipients_recipe['customer_query'] ?? [];
-        $currentFilters = empty($requestFilters) ? $savedFilters : $requestFilters;
 
+        $currentFilters = empty($requestFilters) ? [] : $requestFilters;
         $previewMailshot = $mailshot->replicate();
         $previewMailshot->id = $mailshot->id;
-        $previewMailshot->recipients_recipe = array_merge(
-            $mailshot->recipients_recipe ?? [],
-            ['customer_query' => $currentFilters]
-        );
+        $previewMailshot->recipients_recipe = $currentFilters;
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
+        $estimatedRecipients = $queryBuilder?->count() ?? 0;
 
         $customers = $queryBuilder ? $queryBuilder->paginate(15)->withQueryString() : new LengthAwarePaginator([], 0, 15);
 
@@ -134,13 +131,24 @@ class ShowMailshotRecipients extends OrgAction
                     ],
                     'by_subdepartment' => [
                         'label'       => 'By Subdepartment',
-                        'type'        => 'multiselect',
+                        'type'        => 'entity_behaviour',
                         'description' => 'Target customers based on interaction with sub-departments.',
-                        'multiple'    => true,
-                        'options'     => $subdepartments,
-                        'behavior_options' => [
-                            ['value' => 'purchased', 'label' => 'Purchased products in the past'],
-                            ['value' => 'in_basket', 'label' => 'Added to basket (not completed)'],
+                        'fields'      => [
+                            'content' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'By Subdepartment',
+                                'placeholder' => 'Select',
+                                'multiple'    => true,
+                                'options'     => $subdepartments,
+                            ],
+                            'behaviours'   => [
+                                'type'    => 'select',
+                                'label'   => 'Customer Behaviour',
+                                'options' => [
+                                    ['value' => 'purchased', 'label' => 'Purchased products in the past'],
+                                    ['value' => 'in_basket', 'label' => 'Added to basket (not completed)'],
+                                ]
+                            ],
                         ]
                     ],
                     'gold_reward_status' => [
@@ -217,6 +225,53 @@ class ShowMailshotRecipients extends OrgAction
                                 'dependency' => ['mode' => 'radius']
                             ]
                         ]
+                    ],
+                    'by_family'              => [
+                        'label'       => 'By Family',
+                        'type'        => 'entity_behaviour',
+                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+
+                        'fields'      => [
+                            'content' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'By Family',
+                                'placeholder' => 'Select',
+                                'multiple'    => false,
+                                'options'     => $productFamilies,
+                            ],
+                            'behaviours'   => [
+                                'type'    => 'select',
+                                'label'   => 'Radius',
+                                'options' => [
+                                    ['value' => 'purchased', 'label' => 'Purchased'],
+                                    ['value' => 'favourited', 'label' => 'Favourited'],
+                                    ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
+                                ]
+                            ]
+                        ]
+                    ],
+                    'by_departments'              => [
+                        'label'       => 'By Departments',
+                        'type'        => 'entity_behaviour',
+                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+                        'fields'      => [
+                            'content' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'By Family',
+                                'placeholder' => 'Select',
+                                'multiple'    => true,
+                                'options'     => $subdepartments,
+                            ],
+                            'behaviours'   => [
+                                'type'    => 'select',
+                                'label'   => 'Customer Behaviour',
+                                'options' => [
+                                    ['value' => 'purchased', 'label' => 'Purchased'],
+                                    ['value' => 'favourited', 'label' => 'Favourited'],
+                                    ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
+                                ]
+                            ]
+                        ],
                     ]
                 ]
             ]
@@ -237,6 +292,18 @@ class ShowMailshotRecipients extends OrgAction
                 'filtersStructure' => $filtersStructure,
                 'filters'          => $currentFilters,
                 'customers'        => $customers,
+                'recipientFilterRoute' => [
+                    'name'       => 'grp.models.shop.mailshot.recipient-filter.update',
+                    'parameters' => [
+                        'shop' => $mailshot->shop_id,
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'recipients_recipe' => $mailshot->recipients_recipe,
+                'shop_id' => $mailshot->shop_id,
+                'shop_slug' => $this->shop->slug,
+                'estimatedRecipients' => $estimatedRecipients
             ]
         );
     }
@@ -262,6 +329,4 @@ class ShowMailshotRecipients extends OrgAction
             suffix: '(' . __('Recipients') . ')'
         );
     }
-
-
 }

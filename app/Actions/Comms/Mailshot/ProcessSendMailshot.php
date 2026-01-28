@@ -9,9 +9,12 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
+use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
+use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
-use App\Actions\Traits\WithCheckCanContactByEmail;
-use App\Models\Comms\Email;
+use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use Exception;
 use Illuminate\Console\Command;
@@ -20,9 +23,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessSendMailshot
 {
     use AsAction;
-    use WithCheckCanContactByEmail;
 
-    public string $jobQueue = 'default_long';
+    public string $jobQueue = 'default-long';
 
     public function tags(): array
     {
@@ -32,74 +34,68 @@ class ProcessSendMailshot
     public function handle(Mailshot $mailshot): void
     {
         $counter      = 0;
-        $queryBuilder = GetMailshotRecipientsQueryBuilder::run($mailshot);
 
-        $mailshotSendChannel = StoreMailshotSendChannel::run($mailshot);
-        foreach ($queryBuilder->get() as $recipient) {
+        // Update this section using GetMailshotRecipientsQueryBuilder
+        $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
+        foreach ($queryBuilder->cursor() as $recipient) {
             if ($counter >= 250) {
-
-
-                UpdateMailshotSendChannel::run(
-                    $mailshotSendChannel,
+                UpdateEmailDeliveryChannel::run(
+                    $emailDeliveryChannel,
                     [
-                        'number_emails' => $mailshot->recipients()->where('channel', $mailshotSendChannel->id)->count()
+                        'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
                     ]
                 );
-                SendMailshotChannel::dispatch($mailshotSendChannel);
-                $mailshotSendChannel = StoreMailshotSendChannel::run($mailshot);
+                SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+
+                // Note: create new delivery channel for next batch
+                $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
                 $counter             = 0;
             }
 
-
-
+            //  make sure this section
             $recipientExists = $mailshot->recipients()->where('recipient_id', $recipient->id)->where('recipient_type', class_basename($recipient))->exists();
-            if (!$recipientExists) {
-                if (!app()->environment('production') and config('mail.devel.rewrite_mailshot_recipients_email', true)) {
-                    $prefixes     = ['success' => 50, 'bounce' => 30, 'complaint' => 20];
-                    $prefix       = ArrayWIthProbabilities::make()->getRandomElement($prefixes);
-                    $emailAddress = "$prefix+$recipient->slug@simulator.amazonses.com";
-                } else {
-                    $emailAddress = $recipient->email;
-                }
+            if (!$recipientExists && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
 
-                $email = Email::firstOrCreate(['address' => $emailAddress]);
-
+                $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
                 $dispatchedEmail = StoreDispatchedEmail::run(
-                    email: $email,
-                    mailshot: $mailshot,
-                    modelData: [
-                        'recipient_type' => $recipient->getMorphClass(),
-                        'recipient_id'   => $recipient->id
-
-                    ]
-                );
-                // todo create this class
-                StoreMailshotRecipient::run(
                     $mailshot,
-                    $dispatchedEmail,
                     $recipient,
                     [
-                        'channel' => $mailshotSendChannel->id,
+                        'is_test'       => false,
+                        'outbox_id'     => $outbox->id,
+                        'email_address' => $recipient->email,
+                        'provider'      => DispatchedEmailProviderEnum::SES
                     ]
+                );
+
+                $modelData = [
+                    'dispatched_email_id' => $dispatchedEmail->id,
+                    'recipient_type' => class_basename($recipient),
+                    'recipient_id' => $recipient->id,
+                    'channel' => $emailDeliveryChannel->id,
+                ];
+                StoreMailshotRecipient::run(
+                    $mailshot,
+                    $modelData
                 );
             }
 
             $counter++;
-
         }
-        // todo create this class
-        UpdateMailshotSendChannel::run(
-            $mailshotSendChannel,
-            [
-                'number_emails' => $mailshot->recipients()->where('channel', $mailshotSendChannel->id)->count()
-            ]
-        );
-        // todo create this class
-        SendMailshotChannel::dispatch($mailshotSendChannel);
 
-
+        // Handle the final batch (if any recipients were processed)
+        if ($counter > 0) {
+            UpdateEmailDeliveryChannel::run(
+                $emailDeliveryChannel,
+                [
+                    'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+                ]
+            );
+            SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        }
 
         UpdateMailshot::run(
             $mailshot,
@@ -107,13 +103,12 @@ class ProcessSendMailshot
                 'recipients_stored_at' => now()
             ]
         );
+
+        // TODO: check another hydrator
         MailshotHydrateDispatchedEmails::run($mailshot);
-        // todo create this hydrator
-        //MailshotHydrateDispatchedEmailsState::run($mailshot);
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';
-
 
     public function asCommand(Command $command): int
     {
@@ -125,11 +120,8 @@ class ProcessSendMailshot
             return 1;
         }
 
-
         $this->handle($mailshot);
 
         return 0;
     }
-
-
 }

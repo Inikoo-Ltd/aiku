@@ -5,6 +5,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
+use Illuminate\Support\Arr;
 
 class FilterByFamilyNeverOrdered
 {
@@ -15,13 +16,19 @@ class FilterByFamilyNeverOrdered
      * @param int|string $familyId
      * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, $familyId)
+    public function apply($query, array $filters)
     {
+
+        // TODO: remove the 'value ' key
+        $familyFilter = Arr::get($filters, 'by_family_never_ordered');
+        $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
         if (empty($familyId)) {
             return $query;
         }
 
         $familyIds = is_array($familyId) ? $familyId : [$familyId];
+
+        \Log::info($familyIds);
 
         $query->whereNotExists(function ($subQuery) use ($familyIds) {
             $subQuery->select(DB::raw(1))

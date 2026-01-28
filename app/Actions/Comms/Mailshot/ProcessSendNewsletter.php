@@ -13,7 +13,6 @@ use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
-use App\Actions\Comms\Traits\WithSendCustomerOutboxEmail;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
@@ -26,7 +25,6 @@ use App\Services\QueryBuilder;
 class ProcessSendNewsletter
 {
     use AsAction;
-    use WithSendCustomerOutboxEmail;
 
     public string $jobQueue = 'default-long';
 
@@ -47,7 +45,8 @@ class ProcessSendNewsletter
 
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
-        foreach ($queryBuilder->get() as $recipient) {
+        // TODO: update this section using cursor() instead of get()
+        foreach ($queryBuilder->cursor() as $recipient) {
             if ($counter >= 250) {
                 UpdateEmailDeliveryChannel::run(
                     $emailDeliveryChannel,

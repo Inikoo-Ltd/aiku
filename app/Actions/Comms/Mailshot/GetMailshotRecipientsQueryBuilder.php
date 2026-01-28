@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Comms\Mailshot\Filters\FilterByFamily;
 use Illuminate\Support\Arr;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
@@ -40,9 +41,12 @@ class GetMailshotRecipientsQueryBuilder
      */
     public function handle(Mailshot $mailshot): ?QueryBuilder
     {
-        if (Arr::has($mailshot->recipients_recipe, 'customer_query')) {
+
+        if (!empty($mailshot->recipients_recipe)) {
             return $this->getRecipientsFromCustomQuery($mailshot);
         }
+
+        return null;
         // return match (Arr::get($mailshot->recipients_recipe, 'recipient_builder_type')) {
         //     'query' => $this->getRecipientsFromQuery($mailshot),
         //     'prospects' => $this->getRecipientsFromProspectsList(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.prospects')),
@@ -92,151 +96,37 @@ class GetMailshotRecipientsQueryBuilder
             $query->whereRaw('1 = 0');
         }
         $query->whereNotNull('email');
-        $filters = Arr::get($mailshot->recipients_recipe, 'customer_query', []);
+        $filters = $mailshot->recipients_recipe;
 
         // Filter Registered Never Ordered
-        $regNeverOrdered = Arr::get($filters, 'registered_never_ordered');
-        $isRegNeverOrderedActive = is_array($regNeverOrdered) ? ($regNeverOrdered['value'] ?? false) : $regNeverOrdered;
+        (new FilterRegisteredNeverOrdered())->apply($query, $filters);
 
-        if ($isRegNeverOrderedActive) {
-            $options = [];
-
-            if (is_array($regNeverOrdered) && isset($regNeverOrdered['value'])) {
-                $val = $regNeverOrdered['value'];
-
-                if (is_array($val) && isset($val['date_range'])) {
-                    $rawDateRange = $val['date_range'];
-
-                    if (is_array($rawDateRange) && count($rawDateRange) >= 2) {
-                        $options['date_range'] = [
-                            'start' => $rawDateRange[0],
-                            'end'   => $rawDateRange[1]
-                        ];
-                    }
-                }
-            }
-
-            (new FilterRegisteredNeverOrdered())->apply($query, $options);
-        }
         // Filter By Family Never Ordered
-        $familyFilter = Arr::get($filters, 'by_family_never_ordered');
-        $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
-        if ($familyId) {
-            (new FilterByFamilyNeverOrdered())->apply($query, $familyId);
-        }
-        // Filter Gold Reward Status
-        $goldFilter = Arr::get($filters, 'gold_reward_status');
-        $goldStatus = is_array($goldFilter) ? ($goldFilter['value'] ?? null) : $goldFilter;
+        (new FilterByFamilyNeverOrdered())->apply($query, $filters);
 
-        if ($goldStatus) {
-            (new FilterGoldRewardStatus())->apply($query, $goldStatus);
-        }
+        // Filter Gold Reward Status
+        (new FilterGoldRewardStatus())->apply($query, $filters);
 
         // Filter Orders In Basket
-        $basketFilter = Arr::get($filters, 'orders_in_basket');
-        $isBasketActive = is_array($basketFilter) ? ($basketFilter['value'] ?? false) : $basketFilter;
-
-        if ($isBasketActive) {
-            $options = [];
-
-            if (is_array($basketFilter) && isset($basketFilter['value'])) {
-                $val = $basketFilter['value'];
-
-                if (isset($val['date_range']) && is_array($val['date_range']) && count($val['date_range']) >= 2) {
-                    $options['date_range'] = [
-                        'start' => $val['date_range'][0],
-                        'end'   => $val['date_range'][1]
-                    ];
-                }
-
-                if (isset($val['amount_range']) && is_array($val['amount_range'])) {
-                    $options['amount_range'] = [
-                        'min' => $val['amount_range']['min'] ?? null,
-                        'max' => $val['amount_range']['max'] ?? null,
-                    ];
-                }
-            }
-
-            (new FilterOrdersInBasket())->apply($query, $options);
-        }
+        (new FilterOrdersInBasket())->apply($query, $filters);
 
         // FILTER: By Order Value
-        $orderValueFilter = Arr::get($filters, 'by_order_value');
-        $isOrderValueActive = is_array($orderValueFilter) ? ($orderValueFilter['value'] ?? false) : $orderValueFilter;
-
-        if ($isOrderValueActive) {
-            $options = [];
-
-            if (is_array($orderValueFilter) && isset($orderValueFilter['value'])) {
-                $val = $orderValueFilter['value'];
-
-                if (isset($val['amount_range']) && is_array($val['amount_range'])) {
-                    $options['min'] = $val['amount_range']['min'] ?? null;
-                    $options['max'] = $val['amount_range']['max'] ?? null;
-                }
-            }
-
-            (new FilterByOrderValue())->apply($query, $options);
-        }
+        (new FilterByOrderValue())->apply($query, $filters);
 
         // FILTER: By Subdepartment
-        $subDeptFilter = Arr::get($filters, 'by_subdepartment');
-        if ($subDeptFilter && !empty($subDeptFilter['value'])) {
-            $rawValue = $subDeptFilter['value'];
-            $valueToSend = [
-                'ids' => [],
-                'behaviors' => ['purchased']
-            ];
+        (new FilterBySubdepartment())->apply($query, $filters);
 
-            if (is_array($rawValue)) {
-
-                if (array_key_exists('ids', $rawValue)) {
-                    $valueToSend['ids'] = $rawValue['ids'] ?? [];
-
-                    if (isset($rawValue['behaviors']) && is_array($rawValue['behaviors'])) {
-                        $valueToSend['behaviors'] = $rawValue['behaviors'];
-                    }
-                } elseif (array_key_exists(0, $rawValue)) {
-                    $valueToSend['ids'] = $rawValue;
-                } elseif (isset($rawValue['behaviors'])) {
-                    $valueToSend['behaviors'] = $rawValue['behaviors'];
-                }
-            } else {
-
-                $valueToSend['ids'] = [$rawValue];
-            }
-
-            if (!empty($valueToSend['ids'])) {
-                (new FilterBySubdepartment())->apply($query, $valueToSend);
-            }
-        }
         // FILTER: By Showroom Orders
-        $showroomFilter = Arr::get($filters, 'by_showroom_orders');
-        $isShowroomActive = is_array($showroomFilter) ? ($showroomFilter['value'] ?? false) : $showroomFilter;
-
-        if ($isShowroomActive) {
-            (new FilterByShowroomOrders())->apply($query);
-        }
+        (new FilterByShowroomOrders())->apply($query, $filters);
 
         // FILTER: By Interest
-        $interestFilter = Arr::get($filters, 'by_interest');
-        $interestTags = is_array($interestFilter) ? ($interestFilter['value'] ?? []) : [];
-
-        if (!is_array($interestTags) && !is_null($interestTags)) {
-            $interestTags = [$interestTags];
-        }
-
-        if (!empty($interestTags)) {
-            (new FilterByInterest())->apply($query, $interestTags);
-        }
+        (new FilterByInterest())->apply($query, $filters);
 
         // FILTER: By Orders Collection
-        $collectionFilter = Arr::get($filters, 'orders_collection');
-        $isCollectionActive = is_array($collectionFilter) ? ($collectionFilter['value'] ?? false) : $collectionFilter;
+        (new FilterOrdersCollection())->apply($query, $filters);
 
-        if ($isCollectionActive) {
-            (new FilterOrdersCollection())->apply($query);
-        }
+        // FILTER: By Family
+        (new FilterByFamily())->apply($query, $filters);
 
         // FILTER: By Location (Radius & Country/Postcode)
         $locationFilter = Arr::get($filters, 'by_location');
@@ -252,5 +142,4 @@ class GetMailshotRecipientsQueryBuilder
 
         return $query;
     }
-
 }
