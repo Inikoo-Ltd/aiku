@@ -20,13 +20,12 @@ class FilterByShowroomOrders
         $showroomFilter = Arr::get($filters, 'by_showroom_orders');
         $isShowroomActive = is_array($showroomFilter) ? ($showroomFilter['value'] ?? false) : $showroomFilter;
 
-        if (!$isShowroomActive) {
-            return $query;
-        }
+        if ($isShowroomActive) {
 
-        $query->whereHas('stats', function (Builder $q) {
-            $q->where('number_orders_sales_channel_type_showroom', '>', 0);
-        });
+            $query->whereHas('stats', function (Builder $q) {
+                $q->where('number_orders_sales_channel_type_showroom', '>', 0);
+            });
+        }
 
         return $query;
     }

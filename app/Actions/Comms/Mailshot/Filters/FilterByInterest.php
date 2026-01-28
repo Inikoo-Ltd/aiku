@@ -20,17 +20,20 @@ class FilterByInterest
         $interestFilter = Arr::get($filters, 'by_interest');
         $interestTags = is_array($interestFilter) ? ($interestFilter['value'] ?? []) : [];
 
-        if (!is_array($interestTags) && !is_null($interestTags)) {
-            $interestTags = [$interestTags];
+        // Extract IDs from the nested structure
+        $tagIds = [];
+        if (isset($interestTags['ids']) && is_array($interestTags['ids'])) {
+            $tagIds = $interestTags['ids'];
+        } elseif (is_array($interestTags)) {
+            // If it's already a flat array of IDs
+            $tagIds = $interestTags;
         }
 
-        if (empty($interestTags)) {
-            return $query;
+        if (!empty($tagIds)) {
+            $query->whereHas('tags', function (Builder $q) use ($tagIds) {
+                $q->whereIn('tags.id', $tagIds);
+            });
         }
-
-        $query->whereHas('tags', function (Builder $q) use ($interestTags) {
-            $q->whereIn('tags.id', $interestTags);
-        });
 
         return $query;
     }

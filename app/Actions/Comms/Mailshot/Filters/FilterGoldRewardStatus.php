@@ -17,7 +17,6 @@ class FilterGoldRewardStatus
      */
     public function apply($query, array $filters)
     {
-
         $goldFilter = Arr::get($filters, 'gold_reward_status');
         $goldStatus = is_array($goldFilter) ? ($goldFilter['value'] ?? null) : $goldFilter;
 

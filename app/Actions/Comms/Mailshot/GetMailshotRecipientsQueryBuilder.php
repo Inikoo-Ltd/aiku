@@ -89,6 +89,7 @@ class GetMailshotRecipientsQueryBuilder
 
         $query = QueryBuilder::for($modelClass);
 
+        // TODO: add filter from comms setting
 
         if ($mailshot->shop_id) {
             $query->where('shop_id', $mailshot->shop_id);
@@ -129,16 +130,7 @@ class GetMailshotRecipientsQueryBuilder
         (new FilterByFamily())->apply($query, $filters);
 
         // FILTER: By Location (Radius & Country/Postcode)
-        $locationFilter = Arr::get($filters, 'by_location');
-        $locationValue = is_array($locationFilter) ? ($locationFilter['value'] ?? []) : [];
-        if (
-            !empty(Arr::get($locationValue, 'location')) ||
-            !empty(Arr::get($locationValue, 'country_ids')) ||
-            !empty(Arr::get($locationValue, 'postal_codes'))
-        ) {
-            (new FilterByLocation())->apply($query, $locationValue);
-        }
-
+        (new FilterByLocation())->apply($query, $filters);
 
         return $query;
     }

@@ -17,18 +17,25 @@ class FilterRegisteredNeverOrdered
      */
     public function apply($query, array $filters): Builder|QueryBuilder
     {
-        $regNeverOrdered = Arr::get($filters, 'registered_never_ordered', []);
 
-        if (!empty($regNeverOrdered)) {
+        $regNeverOrdered = Arr::get($filters, 'registered_never_ordered');
+        $isRegNeverOrderedActive = is_array($regNeverOrdered) ? ($regNeverOrdered['value'] ?? false) : $regNeverOrdered;
+
+        if ($isRegNeverOrderedActive) {
             $options = [];
 
-            if (is_array($regNeverOrdered) && isset($regNeverOrdered['date_range'])) {
-                $rawDateRange = $regNeverOrdered['date_range'];
-                if (is_array($rawDateRange) && count($rawDateRange) == 2) {
-                    $options['date_range'] = [
-                        'start' => $rawDateRange[0],
-                        'end'   => $rawDateRange[1]
-                    ];
+            if (is_array($regNeverOrdered) && isset($regNeverOrdered['value'])) {
+                $val = $regNeverOrdered['value'];
+
+                if (is_array($val) && isset($val['date_range'])) {
+                    $rawDateRange = $val['date_range'];
+
+                    if (is_array($rawDateRange) && count($rawDateRange) >= 2) {
+                        $options['date_range'] = [
+                            'start' => $rawDateRange[0],
+                            'end'   => $rawDateRange[1]
+                        ];
+                    }
                 }
             }
 

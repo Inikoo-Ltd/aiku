@@ -19,16 +19,14 @@ class FilterByFamilyNeverOrdered
     public function apply($query, array $filters)
     {
 
-        // TODO: remove the 'value ' key
         $familyFilter = Arr::get($filters, 'by_family_never_ordered');
         $familyId = is_array($familyFilter) ? ($familyFilter['value'] ?? null) : $familyFilter;
+
         if (empty($familyId)) {
             return $query;
         }
 
         $familyIds = is_array($familyId) ? $familyId : [$familyId];
-
-        \Log::info($familyIds);
 
         $query->whereNotExists(function ($subQuery) use ($familyIds) {
             $subQuery->select(DB::raw(1))

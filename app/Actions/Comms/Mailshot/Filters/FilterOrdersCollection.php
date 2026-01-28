@@ -20,13 +20,12 @@ class FilterOrdersCollection
         $collectionFilter = Arr::get($filters, 'orders_collection');
         $isCollectionActive = is_array($collectionFilter) ? ($collectionFilter['value'] ?? false) : $collectionFilter;
 
-        if (!$isCollectionActive) {
-            return $query;
-        }
+        if ($isCollectionActive) {
 
-        $query->whereHas('stats', function (Builder $q) {
-            $q->where('number_orders_handing_type_collection', '>', 0);
-        });
+            $query->whereHas('stats', function (Builder $q) {
+                $q->where('number_orders_handing_type_collection', '>', 0);
+            });
+        }
 
         return $query;
     }

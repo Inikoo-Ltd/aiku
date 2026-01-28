@@ -12,16 +12,27 @@ class FilterByLocation
     /**
      *
      * @param Builder $query
-     * @param array $value
+     * @param array $filters
      * @return Builder
      */
-    public function apply($query, $value)
+    public function apply($query, array $filters)
     {
-        $mode = Arr::get($value, 'mode', 'radius');
-        $countryIds = Arr::get($value, 'country_ids', []);
-        $postalCodes = Arr::get($value, 'postal_codes', []);
-        $location = Arr::get($value, 'location');
-        $radius = Arr::get($value, 'radius');
+        $locationFilter = Arr::get($filters, 'by_location');
+        $locationValue = is_array($locationFilter) ? ($locationFilter['value'] ?? []) : [];
+
+        if (
+            empty(Arr::get($locationValue, 'location')) &&
+            empty(Arr::get($locationValue, 'country_ids')) &&
+            empty(Arr::get($locationValue, 'postal_codes'))
+        ) {
+            return $query;
+        }
+
+        $mode = Arr::get($locationValue, 'mode', 'radius');
+        $countryIds = Arr::get($locationValue, 'country_ids', []);
+        $postalCodes = Arr::get($locationValue, 'postal_codes', []);
+        $location = Arr::get($locationValue, 'location');
+        $radius = Arr::get($locationValue, 'radius');
 
 
         if ($mode === 'direct' || (!empty($countryIds) || !empty($postalCodes))) {
