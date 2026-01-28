@@ -174,10 +174,6 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
- * @property bool $follow_master_name
- * @property bool $follow_master_description_title
- * @property bool $follow_master_description
- * @property bool $follow_master_description_extra
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\PickedBay\UI;
 
-use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
@@ -18,7 +17,6 @@ use App\Http\Resources\Inventory\PickedBayResource;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,7 +53,10 @@ class ShowPickedBay extends OrgAction
             'Org/Warehouse/PickedBay',
             [
                 'title'       => __('Warehouse'),
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'navigation'  => [
                     'previous' => $this->getPrevious($pickedBay, $request),
                     'next'     => $this->getNext($pickedBay, $request),
@@ -100,35 +101,22 @@ class ShowPickedBay extends OrgAction
         return new PickedBayResource($warehouse);
     }
 
-    public function getBreadcrumbs(array $routeParameters, $suffix = null): array
-    {
-        $warehouse = Warehouse::where('slug', $routeParameters['warehouse'])->first();
 
+    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
+    {
         return array_merge(
-            (new ShowOrganisationDashboard())->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+            IndexPickedBays::make()->getBreadcrumbs(
+                routeName: preg_replace('/show$/', 'index', $routeName),
+                routeParameters: $routeParameters,
+            ),
             [
                 [
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => [
-                                'name'       => 'grp.org.warehouses.index',
-                                'parameters' => $routeParameters['organisation']
-                            ],
-                            'label' => __('Warehouses'),
-                            'icon'  => 'fal fa-bars'
-                        ],
-                        'model' => [
-                            'route' => [
-                                'name'       => 'grp.org.warehouses.show.infrastructure.dashboard',
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => $warehouse?->code,
-                            'icon'  => 'fal fa-bars'
-                        ],
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => __($routeParameters['pickedBay'])
                     ],
-                    'suffix'         => $suffix,
-
+                    'suffix' => $suffix
                 ],
             ]
         );

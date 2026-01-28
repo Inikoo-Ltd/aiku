@@ -110,26 +110,35 @@ class UpdateMasterProductCategory extends OrgAction
             $english      = Language::where('code', 'en')->first();
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
-                $shopLanguage = $productCategory->shop->language;
+                $shop = $productCategory->shop;
+                if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
+                    continue;
+                }
+
+                $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
 
                 // Updates affected field name using translate if follow_master_{field} is true
-                if (Arr::has($changed, 'name') && $productCategory->follow_master_name) {
+                if (Arr::has($changed, 'name')) {
                     $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
-                if (Arr::has($changed, 'description_title') && $productCategory->follow_master_description_title) {
+
+                if (Arr::has($changed, 'description_title')) {
                     $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
-                if (Arr::has($changed, 'description') && $productCategory->follow_master_description) {
+
+                if (Arr::has($changed, 'description')) {
                     $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
-                if (Arr::has($changed, 'description_extra') && $productCategory->follow_master_description_extra) {
+
+                if (Arr::has($changed, 'description_extra')) {
                     $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
+
                 if (Arr::has($changed, 'code')) {
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
                 }

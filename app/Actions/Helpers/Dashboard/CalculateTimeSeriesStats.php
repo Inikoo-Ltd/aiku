@@ -49,10 +49,6 @@ class CalculateTimeSeriesStats
         }
 
         foreach ($intervals as $interval) {
-            if ($interval === DateIntervalEnum::CUSTOM) {
-                continue;
-            }
-
             $range = $this->getIntervalRange($interval, $now);
             if (!$range) {
                 continue;

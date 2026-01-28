@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
+use App\Actions\Billables\Charge\CreateDiscretionaryCharges;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
 use App\Actions\CRM\TrafficSource\SeedTrafficSources;
@@ -249,6 +250,7 @@ class StoreShop extends OrgAction
         if ($shop->master_shop_id) {
             MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
         }
+        CreateDiscretionaryCharges::run($shop);
 
         return $shop;
     }

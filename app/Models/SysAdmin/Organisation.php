@@ -72,6 +72,8 @@ use App\Models\HumanResources\Workplace;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
+use App\Models\Inventory\PickedBay;
+use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Adjustment;
@@ -218,6 +220,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentAccount> $paymentAccounts
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
+ * @property-read LaravelCollection<int, PickedBay> $pickedBays
+ * @property-read LaravelCollection<int, PickingTrolley> $pickingTrolleys
  * @property-read LaravelCollection<int, Picking> $pickings
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read \App\Models\SysAdmin\OrganisationProcurementStats|null $procurementStats
@@ -903,5 +907,15 @@ class Organisation extends Model implements HasMedia, Auditable
     public function holidays(): HasMany
     {
         return $this->hasMany(Holiday::class);
+    }
+
+    public function pickingTrolleys(): HasMany
+    {
+        return $this->hasMany(PickingTrolley::class);
+    }
+
+    public function pickedBays(): HasMany
+    {
+        return $this->hasMany(PickedBay::class);
     }
 }

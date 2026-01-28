@@ -8,12 +8,14 @@
 
 namespace App\Actions\UI\Dashboards;
 
+use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
+use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\GetOrganisationTimeSeriesStats;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
-use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -33,7 +35,6 @@ class ShowGroupDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
     use WithTabsBox;
-    use WithCustomRangeDashboard;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
@@ -45,7 +46,6 @@ class ShowGroupDashboard extends OrgAction
             $currentTab = Arr::first(GroupDashboardSalesTableTabsEnum::values());
         }
 
-        $customRangeData = $this->setupCustomRange($userSettings, $group);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
         $performanceDates = [null, null];
@@ -68,6 +68,9 @@ class ShowGroupDashboard extends OrgAction
         }
 
         $topPerformanceStats = GetTopPerformanceStats::run($group, $performanceDates[0], $performanceDates[1]);
+        $organisationTimeSeriesStats = GetOrganisationTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
+        $shopTimeSeriesStats = GetShopTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
+        $invoiceCategoryTimeSeriesStats = GetInvoiceCategoryTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
         $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
 
         $tabsBox = $this->getTabsBox($group);
@@ -92,7 +95,7 @@ class ShowGroupDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $customRangeData, $platformTimeSeriesStats),
+                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $organisationTimeSeriesStats, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats),
                             'charts'      => [], // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
                             'top_performance' => $topPerformanceStats,
                         ]

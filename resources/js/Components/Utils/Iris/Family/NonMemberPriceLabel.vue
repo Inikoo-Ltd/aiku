@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
-import { Popover } from 'primevue'
-import { inject, ref } from 'vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-
+import { trans } from "laravel-vue-i18n"
+import { Popover } from "primevue"
+import { ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+
 library.add(faQuestionCircle)
 
-const props = defineProps<{
+defineProps<{
     product: {}
 }>()
 
-const layout = inject('layout', layoutStructure)
 
 const _popoverQuestionCircle = ref(null)
 </script>
@@ -22,7 +20,7 @@ const _popoverQuestionCircle = ref(null)
     <div class="relative w-fit">
         <div class="bg-gray-400 rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
         <div class="my-1.5 text-xs text-balance">
-            {{ trans("NOT A MEMBER") }}? <span @click="_popoverQuestionCircle?.toggle" @mouseenter="_popoverQuestionCircle?.show" @mouseleave="_popoverQuestionCircle?.hide" class="cursor-pointer">
+            {{ trans("Not a member?") }} <span @click="_popoverQuestionCircle?.toggle" @mouseenter="_popoverQuestionCircle?.show" @mouseleave="_popoverQuestionCircle?.hide" class="cursor-pointer">
                 <FontAwesomeIcon icon="fal fa-question-circle" class="" fixed-width aria-hidden="true" />
             </span>
         </div>

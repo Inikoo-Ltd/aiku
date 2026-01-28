@@ -46,6 +46,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $model_type
  * @property mixed $product_id
  * @property mixed $discretionary_offer
+ * @property mixed $discretionary_offer_label
+ * @property mixed $transaction_label
  */
 class TransactionsResource extends JsonResource
 {
@@ -65,29 +67,30 @@ class TransactionsResource extends JsonResource
         }
 
         return [
-            'id'                  => $this->id,
-            'state'               => $this->state,
-            'status'              => $this->status,
-            'quantity_ordered'    => $this->quantity_ordered,
-            'quantity_bonus'      => $this->quantity_bonus,
-            'quantity_dispatched' => $this->quantity_dispatched,
-            'quantity_fail'       => $this->quantity_fail,
-            'quantity_cancelled'  => $this->quantity_cancelled,
-            'gross_amount'        => $this->gross_amount,
-            'net_amount'          => $this->net_amount,
-            'price'               => $this->price,
-            'asset_code'          => $this->asset_code,
-            'asset_name'          => $this->asset_name,
-            'asset_type'          => $this->asset_type,
-            'image'               => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
-            'product_slug'        => $this->product_slug,
-            'created_at'          => $this->created_at,
-            'currency_code'       => $this->currency_code,
-            'available_quantity'  => $this->available_quantity ?? 0,
-            'webpage_url'         => $webpageUrl,
-            'offers_data'         => $this->offers_data,
-            'discretionary_offer' => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
+            'id'                        => $this->id,
+            'state'                     => $this->state,
+            'status'                    => $this->status,
+            'quantity_ordered'          => $this->quantity_ordered,
+            'quantity_bonus'            => $this->quantity_bonus,
+            'quantity_dispatched'       => $this->quantity_dispatched,
+            'quantity_fail'             => $this->quantity_fail,
+            'quantity_cancelled'        => $this->quantity_cancelled,
+            'gross_amount'              => $this->gross_amount,
+            'net_amount'                => $this->net_amount,
+            'price'                     => $this->price,
+            'asset_code'                => $this->asset_code,
+            'asset_name'                => $this->asset_name,
+            'asset_type'                => $this->asset_type,
+            'image'                     => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
+            'product_slug'              => $this->product_slug,
+            'created_at'                => $this->created_at,
+            'currency_code'             => $this->currency_code,
+            'available_quantity'        => $this->available_quantity ?? 0,
+            'webpage_url'               => $webpageUrl,
+            'offers_data'               => $this->offers_data,
+            'discretionary_offer'       => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
             'discretionary_offer_label' => $this->discretionary_offer_label,
+            'transaction_label'         => $this->transaction_label,
 
 
             'deleteRoute' => $request->user() instanceof User

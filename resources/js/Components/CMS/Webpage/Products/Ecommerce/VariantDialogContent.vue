@@ -1,21 +1,38 @@
 <script setup lang="ts">
 import { ProductResource } from '@/types/Iris/Products'
-import { ref, inject } from 'vue';
+import { ref, inject, computed, onMounted, onBeforeUnmount } from 'vue';
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n';
-import { faCircle } from '@fas';
+import { faChevronCircleLeft, faChevronDown, faCircle } from '@fas';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue';
 import EcomAddToBasketv2 from '@/Components/Iris/Products/EcomAddToBasketv2.vue';
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import { faChevronCircleDown, faEnvelope, faShoppingCart } from '@far';
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 
 const props = withDefaults(defineProps<{
     variants: ProductResource
     hasInBasketList?: any
+    isLoadingRemindBackInStock? : boolean
 }>(), {})
+
+
+const emits = defineEmits<{
+    (e: 'setBackInStock', value: any[]): void
+    (e: 'unsetBackInStock', value: any[]): void
+}>()
 
 const layout = inject('layout', retinaLayoutStructure)
 const selectedIndex = ref(0)
 const selectedProduct = ref(props.variants[0])
+const width = ref(window.innerWidth)
+
+const isMobile = computed(() => width.value < 768)
+
+const onResize = () => {
+  width.value = window.innerWidth
+}
 
 const selectVariant = (variant: ProductResource, index: number) => {
     selectedIndex.value = index
@@ -23,7 +40,26 @@ const selectVariant = (variant: ProductResource, index: number) => {
 }
 
 const isActive = (index: number) => selectedIndex.value === index
-console.log('sss', props.variants)
+
+const onAddBackInStock = (product: ProductResource) => {
+     emits('setBackInStock', product)
+}
+
+const onUnselectBackInStock = (product: ProductResource) => {
+    emits('unsetBackInStock', product)
+}
+
+
+onMounted(() => {
+  window.addEventListener('resize', onResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onResize)
+})
+
+
+
 </script>
 
 <template>
@@ -78,31 +114,95 @@ console.log('sss', props.variants)
     </div>
 
     <!-- VARIANT LIST -->
-    <div class="flex gap-2 mt-2 flex-nowrap overflow-x-auto">
-        <button v-for="(variant, index) in variants" :key="index" type="button" :disabled="variant.stock === 0"
-            @click="variant.stock > 0 && selectVariant(variant, index)"
+    <!-- DESKTOP -->
+    <div class="hidden md:flex gap-2 mt-2 flex-nowrap overflow-x-auto">
+        <button v-for="(variant, index) in variants" :key="index" type="button" @click="selectVariant(variant, index)"
             class="relative border px-3 py-2 text-sm font-medium shrink-0 transition overflow-hidden" :class="[
                 isActive(index) && variant.stock > 0
                     ? 'option-primary'
                     : 'bg-white text-gray-700 hover:bg-gray-100',
 
-                variant.stock === 0 ? 'cursor-not-allowed opacity-60 after:content-[\'\'] after:absolute after:top-1/2 after:left-[-25%] after:w-[140%] after:h-[2px] after:bg-gray-400 after:-rotate-[34deg]' : ''
+                variant.stock === 0
+                    ? 'opacity-60 after:content-[\'\'] after:absolute after:top-1/2 after:left-[-25%] after:w-[140%] after:h-[2px] after:bg-gray-400 after:-rotate-[34deg]'
+                    : ''
             ]">
             {{ variant.variant_label }}
         </button>
     </div>
 
+    <!-- MOBILE -->
+    <div class="md:hidden mt-2">
+        <details class="group border rounded-lg">
+            <summary class="px-3 py-2 text-sm font-medium cursor-pointer flex justify-between items-center list-none">
+                <span>{{ trans('Choose variant') }}</span>
 
+                <font-awesome-icon :icon="faChevronDown"
+                    class="text-gray-400 transition-transform duration-200 group-open:rotate-180" />
+            </summary>
 
-    <div v-if="selectedProduct && selectedProduct.stock > 0" class="mt-2">
-        <ecom-add-to-basketv2 class="order-input-button" :customer-data="hasInBasketList[selectedProduct.id]"
-            v-model:product="selectedProduct"> </ecom-add-to-basketv2>
+            <div class="px-3 py-2 space-y-2">
+                <label v-for="(variant, index) in variants" :key="index"
+                    class="flex items-center gap-2 text-sm cursor-pointer"
+                    :class="variant.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''">
+                    <input type="radio" name="variant" class="accent-primary" :checked="isActive(index)"
+                       @change="selectVariant(variant, index)" />
+
+                    <span class="flex-1">
+                        {{ variant.variant_label }}
+                    </span>
+
+                    <span v-if="variant.stock === 0" class="flex items-center gap-1 text-xs text-gray-400">
+                        {{ trans('Out of stock') }}
+                        <font-awesome-icon :icon="faEnvelope" class="text-[10px]" />
+                    </span>
+
+                </label>
+            </div>
+        </details>
     </div>
 
 
+    <div v-if="selectedProduct" class="mt-2">
+        <ecom-add-to-basketv2 v-if="selectedProduct.stock > 0" 
+            class="order-input-button"
+            :classContainer="!hasInBasketList[selectedProduct.id].quantity_ordered && !hasInBasketList[selectedProduct.id].quantity_ordered_new ? 'relative' : 'relative'"
+            :customer-data="hasInBasketList[selectedProduct.id]" v-model:product="selectedProduct">
+            <!-- <template v-if="isMobile" #qty-add-button="{ data }">
+                <div v-if="!data.customer.quantity_ordered && !data.customer.quantity_ordered_new">
+                    <button @click="data.onAddToBasket(data.product, 1)" :disabled="data.isLoadingSubmitQuantityProduct"
+                        class="rounded-full option-primary bg-gray-800 hover:bg-green-700
+                       text-gray-300 h-10 w-10 flex items-center justify-center
+                       transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        v-tooltip="trans('Add to basket')">
+                        <LoadingIcon v-if="data.isLoadingSubmitQuantityProduct" class="text-gray-600" />
+                        <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
+                    </button>
+                </div>
+            </template> -->
+            <template #qty-add-button="{ data }">
+                <div></div>
+            </template>
+        </ecom-add-to-basketv2>
+
+        <button v-if="!selectedProduct.stock && layout?.outboxes?.oos_notification?.state == 'active'" v-tooltip="selectedProduct?.is_back_in_stock
+            ? trans('You will be notify via email when the product back in stock')
+            : trans('Click to be notified via email when the product back in stock')" @click="() =>
+                selectedProduct?.is_back_in_stock
+                    ? onUnselectBackInStock(selectedProduct)
+                    : onAddBackInStock(selectedProduct)
+            "
+            class=" w-full inline-flex flex-wrap items-center justify-center gap-2 rounded border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 text-center shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+            <LoadingIcon v-if="isLoadingRemindBackInStock" />
+
+            <FontAwesomeIcon v-else :icon="selectedProduct?.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                :class="selectedProduct?.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+
+            <span class="whitespace-normal">
+                {{ selectedProduct?.is_back_in_stock ? trans('Notified') : trans('Remind me') }}
+            </span>
+        </button>
+    </div>
 </template>
-
-
 
 
 <style scoped>
@@ -119,11 +219,18 @@ console.log('sss', props.variants)
     }
 }
 
-:deep(.order-input-button .qty-root) {
-    @apply flex-wrap gap-1;
+summary::-webkit-details-marker {
+    display: none;
 }
 
+/* :deep(.order-input-button .qty-root) {
+    @apply flex-wrap gap-1;
+}
+ */
 
+ :deep(.order-input-button .qty-control) {
+    min-width: 100%;
+}
 
 :deep(.order-input-button .qty-input:focus) {
     outline: none;
@@ -148,7 +255,7 @@ console.log('sss', props.variants)
 
 
 :deep(.order-input-button .qty-info) {
-    @apply ml-1 text-[11px];
+    @apply mt-2 text-[11px];
 }
 
 :deep(.order-input-button .qty-price),

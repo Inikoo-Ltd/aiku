@@ -7,6 +7,8 @@
  * copyright 2025
 */
 
+
+use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\IrisLogWebUserRequest;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
@@ -38,6 +40,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesCh
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
+use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -50,6 +53,9 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
+
+    Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data');
+
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
@@ -86,4 +92,5 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant');
     Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
+    Route::get('luigi-product-details', LuigiBoxGetProductDetail::class)->name('luigi.product_details');
 });

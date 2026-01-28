@@ -384,8 +384,7 @@ class ShowOrder extends OrgAction
 
                 'payments_data'     => $paymentsData,
                 'payments_accounts' => $paymentAccountData,
-
-
+                'state'             => $order->state->value,
                 'proforma_invoice' => [
                     'check_list'         => [
                         [
@@ -793,11 +792,11 @@ class ShowOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'shop'         => $order->shop->slug,
-                        'customer'     => $this->parent->customer->slug,
-                        'customerSalesChannel'  => $this->parent->platform->slug,
-                        'order'        => $order->slug
+                        'organisation'         => $this->organisation->slug,
+                        'shop'                 => $order->shop->slug,
+                        'customer'             => $this->parent->customer->slug,
+                        'customerSalesChannel' => $this->parent->platform->slug,
+                        'order'                => $order->slug
                     ]
 
                 ]

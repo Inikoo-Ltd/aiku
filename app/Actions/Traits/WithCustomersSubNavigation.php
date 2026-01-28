@@ -121,6 +121,19 @@ trait WithCustomersSubNavigation
                     'tooltip' => __('Internal tags')
                 ]
             ];
+
+            $meta[] = [
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.system_tags.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'number' => Tag::where('scope', TagScopeEnum::SYSTEM_CUSTOMER)->count() ?? 0,
+                'label' => __('System Tags'),
+                'leftIcon' => [
+                    'icon' => 'fal fa-tags',
+                    'tooltip' => __('System tags')
+                ]
+            ];
         }
 
         return $meta;

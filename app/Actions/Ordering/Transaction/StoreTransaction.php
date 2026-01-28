@@ -156,6 +156,7 @@ class StoreTransaction extends OrgAction
             'date'                    => ['sometimes', 'required', 'date'],
             'submitted_at'            => ['sometimes', 'required', 'date'],
             'data'                    => ['sometimes', 'array'],
+            'label'                   => ['sometimes', 'string', 'max:255'],
         ];
 
         if (!$this->strict) {

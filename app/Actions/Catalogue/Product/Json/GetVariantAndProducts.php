@@ -10,9 +10,9 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
+use App\Http\Resources\Web\ProductOfVariantResource;
 use App\Models\Catalogue\Variant;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Web\WebBlockProductResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class GetVariantAndProducts extends IrisAction
@@ -23,7 +23,7 @@ class GetVariantAndProducts extends IrisAction
 
         return [
             'variant_data' => $variant->data,
-            'products' => WebBlockProductResource::collection(
+            'products' => ProductOfVariantResource::collection(
                 $variant->allProduct
             )->resolve(),
         ];

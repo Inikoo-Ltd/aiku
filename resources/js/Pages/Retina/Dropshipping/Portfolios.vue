@@ -724,8 +724,8 @@ const layout = inject("layout", layoutStructure)
 				" />
 		</template>
 
-		<template v-if="props.product_count && !props.is_closed" #other>
-			<div class="rounded-md">
+		<template v-if="!props.is_closed" #other>
+			<div class="rounded-md" v-if="props.product_count">
 				<a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
 					<Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
 				</a>
@@ -774,7 +774,7 @@ const layout = inject("layout", layoutStructure)
 				@click="() => (isOpenModalPortfolios = true)"
 				:label="trans('Add products')"
 				:icon="'fas fa-plus'"
-				v-if="!customer_sales_channel.ban_stock_update_until" />
+				v-if="!customer_sales_channel?.ban_stock_update_until" />
 
 			<div class="rounded-md" v-if="channels?.data?.length">
 				<!-- Section: Download button -->
@@ -786,7 +786,7 @@ const layout = inject("layout", layoutStructure)
 					class="!px-2 h-full"
 					type="tertiary"
 					key=""
-					v-if="!customer_sales_channel.ban_stock_update_until" />
+					v-if="!customer_sales_channel?.ban_stock_update_until" />
 
 				<Popover ref="_clone_popover">
 					<div class="w-64 relative">
@@ -857,7 +857,7 @@ const layout = inject("layout", layoutStructure)
 
 		<PlatformWarningNotConnected v-else :customer_sales_channel="customer_sales_channel" />
 	</div>
-	<div v-if="ebay_warehouse_policy_msg.show_msg" class="flex justify-between mt-5 m-4">
+	<div v-if="ebay_warehouse_policy_msg?.show_msg" class="flex justify-between mt-5 m-4">
 		<div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
 			<div class="flex flex-col sm:flex-row sm:items-start">
 				<div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
@@ -878,7 +878,7 @@ const layout = inject("layout", layoutStructure)
 					<p class="text-sm text-red-700">
 						<strong class="hidden sm:inline">{{ trans("Important Notice:") }}</strong>
 						{{ trans("We noticed your account is registered in") }}
-						<strong> {{ ebay_warehouse_policy_msg.cust_country + "." }} </strong>
+						<strong> {{ ebay_warehouse_policy_msg?.cust_country + "." }} </strong>
 						{{
 							trans(
 								"In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas."

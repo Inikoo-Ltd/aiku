@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\PickingTrolley\UI;
 
-use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
@@ -18,7 +17,6 @@ use App\Http\Resources\Inventory\PickingTrolleyResource;
 use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -49,13 +47,14 @@ class ShowPickingTrolley extends OrgAction
 
     public function htmlResponse(PickingTrolley $pickingTrolley, ActionRequest $request): Response
     {
-        $routeParameters = $request->route()->originalParameters();
-
         return Inertia::render(
             'Org/Warehouse/PickingTrolley',
             [
                 'title'       => __('Warehouse'),
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'navigation'  => [
                     'previous' => $this->getPrevious($pickingTrolley, $request),
                     'next'     => $this->getNext($pickingTrolley, $request),
@@ -100,35 +99,21 @@ class ShowPickingTrolley extends OrgAction
         return new PickingTrolleyResource($warehouse);
     }
 
-    public function getBreadcrumbs(array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
-        $warehouse = Warehouse::where('slug', $routeParameters['warehouse'])->first();
-
         return array_merge(
-            (new ShowOrganisationDashboard())->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+            IndexPickingTrolleys::make()->getBreadcrumbs(
+                routeName: preg_replace('/show$/', 'index', $routeName),
+                routeParameters: $routeParameters,
+            ),
             [
                 [
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => [
-                                'name'       => 'grp.org.warehouses.index',
-                                'parameters' => $routeParameters['organisation']
-                            ],
-                            'label' => __('Warehouses'),
-                            'icon'  => 'fal fa-bars'
-                        ],
-                        'model' => [
-                            'route' => [
-                                'name'       => 'grp.org.warehouses.show.infrastructure.dashboard',
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => $warehouse?->code,
-                            'icon'  => 'fal fa-bars'
-                        ],
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => __($routeParameters['pickingTrolley'])
                     ],
-                    'suffix'         => $suffix,
-
+                    'suffix' => $suffix
                 ],
             ]
         );

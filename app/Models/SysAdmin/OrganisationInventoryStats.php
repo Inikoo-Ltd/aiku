@@ -80,6 +80,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_org_stock_movements_type_audit
+ * @property int $number_current_picking_trolleys Total picking trolleys status=true
+ * @property int $number_current_picking_trolleys_in_use Total picking trolleys in use status=true, delivery_note_id not null
+ * @property int $number_picking_trolleys Total picking trolleys including status=false ones
+ * @property int $number_current_picked_bays Total picking trolleys status=true
+ * @property int $number_current_picked_bays_in_use Total picking trolleys in use status=true, delivery_note_id not null
+ * @property int $number_picked_bays Total picking trolleys including status=false ones
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationInventoryStats newModelQuery()
  * @method static Builder<static>|OrganisationInventoryStats newQuery()
