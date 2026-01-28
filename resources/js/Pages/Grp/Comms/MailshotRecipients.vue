@@ -21,6 +21,10 @@ const props = defineProps<{
     customers: any
     recipientFilterRoute: routeType
 
+    recipients_recipe: any
+
+    shop_id: number
+    estimatedRecipients: number;
 }>()
 </script>
 
@@ -30,5 +34,7 @@ const props = defineProps<{
 
     <PageHeading :data="pageHead" />
 
-    <TableTemplateRecipients :customers="customers" :filters="filters" :filters-structure="filtersStructure" :recipient-filter-route="recipientFilterRoute" />
+    <TableTemplateRecipients :customers="customers" :filters="filters" :filters-structure="filtersStructure"
+        :recipient-filter-route="recipientFilterRoute" :recipients-recipe="recipients_recipe" :shop-id="shop_id"
+        :estimated-recipients="estimatedRecipients" />
 </template>
