@@ -167,10 +167,8 @@ const addFilter = (key: string, config: any) => {
     }
 
     if (config.type === 'boolean') {
-
-
         value = {
-            value: true,
+            // value: true,
             date_range: null,
             amount_range: { min: null, max: null },
             date_range_preset: null
@@ -269,33 +267,29 @@ function hydrateSavedFilters(saved: any, structure: any) {
         let uiValue: any = {}
 
         if (config.type === 'boolean') {
-            if (key === 'orders_in_basket') {
 
-                const isPreset = typeof val.date_range === 'number'
-                const isCustom = Array.isArray(val.date_range)
+            const clean = unwrapBoolean(val)
+
+            if (key === 'orders_in_basket') {
+                const isPreset = typeof clean.date_range === 'number'
+                const isCustom = Array.isArray(clean.date_range)
 
                 uiValue = {
                     value: true,
-
-                    mode: isPreset ? val.date_range : 'custom',
-
+                    mode: isPreset ? clean.date_range : 'custom',
                     date_range: isCustom
-                        ? [normalizeDate(val.date_range[0]), normalizeDate(val.date_range[1])]
+                        ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
                         : null,
-
-                    amount_range: val.amount_range ?? { min: null, max: null }
+                    amount_range: clean.amount_range ?? { min: null, max: null }
                 }
 
             } else {
                 uiValue = {
-                    value: val.value ?? true,
-                    date_range: Array.isArray(val.date_range)
-                        ? [
-                            normalizeDate(val.date_range[0]),
-                            normalizeDate(val.date_range[1])
-                        ]
+                    value: clean.value ?? true,
+                    date_range: Array.isArray(clean.date_range)
+                        ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
                         : null,
-                    amount_range: val.amount_range ?? { min: null, max: null },
+                    amount_range: clean.amount_range ?? { min: null, max: null },
                     date_range_preset: null
                 }
             }
@@ -409,22 +403,6 @@ const preloadEntityOptions = async (key: string, ids: number[]) => {
     preloadedEntities[key] = res.data.data
 }
 
-const entityModelMap = reactive<Record<string, any>>({})
-
-function getEntityModel(key: string, filter: any) {
-    if (!entityModelMap[key]) {
-        entityModelMap[key] = computed({
-            get() {
-                return filter.value.ids
-            },
-            set(val) {
-                filter.value.ids = Array.isArray(val) ? val : [val]
-            }
-        })
-    }
-    return entityModelMap[key]
-}
-
 function getEntityFetchRoute(key: string) {
     if (key === 'by_family') {
         return {
@@ -467,57 +445,77 @@ const filtersPayload = computed(() => {
         const val = filter.value
         const config = filter.config
 
+        // BOOLEAN
         if (config.type === 'boolean') {
             if (key === 'orders_in_basket') {
                 payload[key] = {
-                    date_range: val.date_range,
-                    amount_range: val.amount_range
+                    value: {
+                        date_range: val.mode !== 'custom' ? val.mode : val.date_range,
+                        amount_range: val.amount_range
+                    }
                 }
-                if (val.date_range) payload[key].date_range = val.date_range
-                if (val.amount_range) payload[key].amount_range = val.amount_range
                 return
             }
 
             payload[key] = {
-                value: val.value ?? true
-            }
-
-            if (val.date_range) payload[key].date_range = val.date_range
-            if (val.amount_range) payload[key].amount_range = val.amount_range
-            return
-        }
-
-        if (config.type === 'select') {
-            payload[key] = val
-            return
-        }
-
-        if (config.type === 'multiselect') {
-            payload[key] = config.behavior_options
-                ? {
-                    ids: val.ids ?? [],
-                    behaviors: val.behaviors ?? [],
-                    combine_logic: val.combine_logic ?? 'or'
+                value: {
+                    value: val.value ?? true,
+                    date_range: val.date_range ?? null,
+                    amount_range: val.amount_range ?? null
                 }
-                : val.ids ?? []
+            }
             return
         }
 
+        // ENTITY BEHAVIOUR
         if (config.type === 'entity_behaviour') {
             payload[key] = {
-                ids: val.ids ?? [],
-                behaviors: val.behaviors ?? [],
-                combine_logic: val.combine_logic ?? true
+                value: {
+                    ids: val.ids ?? [],
+                    behaviors: val.behaviors ?? [],
+                    combine_logic: val.combine_logic ?? true
+                }
             }
+            return
         }
 
-        if (config.type === 'location') {
-            payload[key] = val
+        // MULTISELECT (simple)
+        if (config.type === 'multiselect') {
+            payload[key] = {
+                value: val.ids ?? []
+            }
+            return
         }
+
+        // SELECT
+        if (config.type === 'select') {
+            payload[key] = {
+                value: val
+            }
+            return
+        }
+
+        // LOCATION
+        if (config.type === 'location') {
+            payload[key] = {
+                value: val
+            }
+            return
+        }
+
+        // FALLBACK
+        payload[key] = { value: val }
     })
 
     return payload
 })
+function unwrapBoolean(val: any) {
+    let v = val
+    while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
+        v = v.value
+    }
+    return v
+}
 
 const saveFilters = async () => {
     console.log('[SAVE FILTER PAYLOAD]', filtersPayload.value)
@@ -556,11 +554,13 @@ onMounted(async () => {
             props.recipientsRecipe,
             props.filtersStructure
         )
+
         for (const [key, filter] of Object.entries(activeFilters.value)) {
             if (filter.config.type === 'entity_behaviour') {
                 await preloadEntityOptions(key, filter.value.ids)
             }
         }
+
         console.log("activeFilters.value onmounted", activeFilters.value)
     }
 })
