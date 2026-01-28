@@ -1655,7 +1655,8 @@ const submitNewCharge = async () => {
                                         {{ fieldSummary.label }}
                                     </span>
                                     <span @click="isOpenModalDiscretionaryCharge = true"
-                                          v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-tooltip="trans('Edit charges')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
@@ -1687,8 +1688,10 @@ const submitNewCharge = async () => {
                                         class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
                                         aria-hidden='true' />
 
-                                    <span @click="_shipping_price_method?.toggle"
-                                          v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                    <span
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        @click="_shipping_price_method?.toggle"
+                                        v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
