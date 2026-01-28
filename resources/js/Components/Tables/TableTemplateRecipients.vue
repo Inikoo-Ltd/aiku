@@ -199,10 +199,16 @@ const addFilter = (key: string, config: any) => {
 
     if (config.type === 'location') {
         value = {
+            mode: 'direct',
+            country_ids: [],
+            postal_codes: [],
             location: '',
-            radius: '5km'
+            radius: '5km',
+            lat: null,
+            lng: null
         }
     }
+
     activeFilters.value[key] = { value, config }
 
     console.log('addFilter', key, activeFilters.value)
@@ -337,11 +343,22 @@ function hydrateSavedFilters(saved: any, structure: any) {
         }
 
         else if (config.type === 'location') {
+            const v = val?.value ?? {}
+
             uiValue = {
-                location: val.location ?? '',
-                radius: val.radius ?? '5km'
+                mode: v.mode ?? 'direct',
+
+                country_ids: v.country_ids ?? [],
+                postal_codes: v.postal_codes ?? [],
+
+                location: v.location ?? '',
+                radius: v.radius ?? '5km',
+
+                lat: v.lat ?? null,
+                lng: v.lng ?? null
             }
         }
+
 
         hydrated[key] = { config, value: uiValue }
     })
@@ -498,7 +515,17 @@ const filtersPayload = computed(() => {
         // LOCATION
         if (config.type === 'location') {
             payload[key] = {
-                value: val
+                value: {
+                    mode: val.mode,
+
+                    country_ids: val.country_ids,
+                    postal_codes: val.postal_codes,
+
+                    location: val.location,
+                    radius: val.radius,
+                    lat: val.lat,
+                    lng: val.lng
+                }
             }
             return
         }
@@ -509,6 +536,14 @@ const filtersPayload = computed(() => {
 
     return payload
 })
+
+function shouldShowMap(val) {
+    if (val.mode === 'direct') {
+        return val.country_ids.length > 0 || val.postal_codes.length > 0
+    }
+    return !!val.location || (val.lat && val.lng)
+}
+
 function unwrapBoolean(val: any) {
     let v = val
     while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
@@ -703,17 +738,49 @@ console.log("props table", props)
                 <!-- LOCATION -->
                 <template v-else-if="filter.config.type === 'location'">
                     <div class="space-y-3">
-                        <!-- Location input -->
-                        <InputText v-model="filter.value.location"
-                            :placeholder="filter.config.fields.location.placeholder" class="w-full" />
 
-                        <!-- Radius -->
-                        <Dropdown v-model="filter.value.radius" :options="Object.entries(filter.config.fields.radius.options).map(
-                            ([value, label]) => ({ value, label })
-                        )" optionLabel="label" optionValue="value" placeholder="Select radius" class="w-full"
-                            appendTo="body" />
+                        <!-- MODE -->
+                        <Dropdown v-model="filter.value.mode"
+                            :options="Object.entries(filter.config.fields.mode.options).map(([value, label]) => ({ value, label }))"
+                            optionLabel="label" optionValue="value" class="w-full" />
+
+                        <!-- DIRECT MODE -->
+                        <template v-if="filter.value.mode === 'direct'">
+
+                            <MultiselectTagsInfiniteScroll :form="filter.value" v-model="filter.value.country_ids"
+                                fieldName="country_ids" :fieldData="{
+                                    options: filter.config.fields.country_ids.options,
+                                    labelProp: 'label',
+                                    valueProp: 'value',
+                                    placeholder: filter.config.fields.country_ids.placeholder
+                                }" />
+
+                            <TagsInput v-model="filter.value.postal_codes"
+                                :placeholder="filter.config.fields.postal_codes.placeholder" />
+
+                        </template>
+
+                        <!-- RADIUS MODE -->
+                        <template v-else>
+
+                            <InputText v-model="filter.value.location"
+                                :placeholder="filter.config.fields.location.placeholder" class="w-full" />
+
+                            <Dropdown v-model="filter.value.radius"
+                                :options="Object.entries(filter.config.fields.radius.options).map(([value, label]) => ({ value, label }))"
+                                optionLabel="label" optionValue="value" class="w-full" />
+
+                        </template>
+
+                        <!-- MAP PLACEHOLDER -->
+                        <div v-if="shouldShowMap(filter.value)"
+                            class="h-64 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                            Map preview here (Leaflet later)
+                        </div>
+
                     </div>
                 </template>
+
             </div>
         </div>
 
