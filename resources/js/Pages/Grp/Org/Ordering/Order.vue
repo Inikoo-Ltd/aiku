@@ -849,6 +849,7 @@ const updateCharge = (charge: {}) => {
                     text: "Successfully edit net amount of the charge",
                     type: "success",
                 })
+                // fetchChargesList(true)
             },
             onError: errors => {
                 notify({
@@ -908,9 +909,12 @@ const updateCharge = (charge: {}) => {
 //     })
 // }
 const isLoadingFetchCharges = ref(false)
-const fetchChargesList = async () => {
+const fetchChargesList = async (noLoading?: boolean) => {
     try {
-        isLoadingFetchCharges.value = true
+        if (!noLoading) {
+            isLoadingFetchCharges.value = true
+        }
+
         const response = await axios.get(
             route(
                 'grp.json.charges_in_order.index',
@@ -929,7 +933,9 @@ const fetchChargesList = async () => {
             type: 'error'
         })
     } finally {
-        isLoadingFetchCharges.value = false
+        if (!noLoading) {
+            isLoadingFetchCharges.value = false
+        }
     }
 }
 watch(isOpenModalDiscretionaryCharge, async (val) => {
@@ -1655,7 +1661,8 @@ const submitNewCharge = async () => {
                                         {{ fieldSummary.label }}
                                     </span>
                                     <span @click="isOpenModalDiscretionaryCharge = true"
-                                          v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-tooltip="trans('Edit charges')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
@@ -1687,8 +1694,10 @@ const submitNewCharge = async () => {
                                         class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
                                         aria-hidden='true' />
 
-                                    <span @click="_shipping_price_method?.toggle"
-                                          v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                    <span
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        @click="_shipping_price_method?.toggle"
+                                        v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
@@ -2015,15 +2024,23 @@ const submitNewCharge = async () => {
                             </div>
 
                             <div v-else class="flex gap-x-2">
-                                <InputNumber
-                                    :modelValue="data.net_amount"
-                                    @input="(val) => (data.net_amount = val.value)"
-                                    :min="0"
-                                    mode="currency"
-                                    :currency="currency.code"
-                                    size="small"
-                                    :inputClass="data.isRecentlySuccess ? '!border-green-500' : ''"
-                                />
+                                <div class="grid">
+                                    <InputNumber
+                                        :modelValue="data.net_amount"
+                                        @input="(val) => (data.net_amount = val.value)"
+                                        :min="0"
+                                        mode="currency"
+                                        :currency="currency.code"
+                                        size="small"
+                                        :inputClass="data.isRecentlySuccess ? '!border-green-500' : ''"
+                                    />
+                                    <span
+                                        v-if="data.gross_amount != data.net_amount && !data.is_discretionary"
+                                        @click="data.net_amount = data.gross_amount, updateCharge(data)"
+                                        class="underline text-sm cursor-pointer opacity-70 hover:opacity-100 italic">
+                                        {{ trans("reset to original") }} ({{ locale.currencyFormat(currency.code, data.gross_amount) }})
+                                    </span>
+                                </div>
 
                                 <span v-if="data.isLoading">
                                     <LoadingIcon class="text-4xl leading-none" />
@@ -2032,12 +2049,13 @@ const submitNewCharge = async () => {
                                     <FontAwesomeIcon icon="fad fa-save" class="text-4xl leading-none" fixed-width aria-hidden="true" />
                                 </span>
 
-                                <span @click="data.is_editing_net_amount = false" class="text-red-500 cursor-pointer underline inline-block ml-2">
+                                <span @click="data.is_editing_net_amount = false" class="mt-1 text-red-500 cursor-pointer underline inline-block ml-2">
                                     {{ trans("cancel") }}
                                 </span>
                             </div>
                         </template>
                     </Column>
+
                     <!-- <Column field="discounts" header="">
                         <template #body="{ data }">
                             <div v-if="data.percentage_discount">
