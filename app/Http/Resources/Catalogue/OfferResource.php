@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -26,8 +27,10 @@ class OfferResource extends JsonResource
     public function toArray($request): array
     {
         preg_match('/percentage_off:([0-9]*\.?[0-9]+)/', $this->allowance_signature, $matches);
+        $percentage_off = isset($matches[1]) ? $matches[1] : null;
 
-        $percentage_off = $matches[1] ?? null;
+        preg_match('/^all_products_in_product_category(?::(\d+))?:/', $this->allowance_signature, $m);
+        $productCategory = isset($m[1]) ? ProductCategory::find($m[1]) : null;
 
         // dd($this);
         return [
@@ -46,6 +49,10 @@ class OfferResource extends JsonResource
             'updated_at'        => $this->updated_at,
             'data_allowance_signature' => [
                 'percentage_off'    => $percentage_off,
+                'product_category'  => $productCategory ? [
+                    'name'  => $productCategory->name,
+                    'slug'  => $productCategory->slug,
+                ] : null
             ]
         ];
     }
