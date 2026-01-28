@@ -35,6 +35,7 @@ import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList
 
 import { Navigation, Thumbs } from 'swiper/modules'
 import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
 
 
@@ -213,9 +214,9 @@ onMounted(async () => {
             <div class="col-span-5 self-start">
                 
                 
-                <div class="relative flex justify-between items-start mb-4">
+                <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
-                        <h1 class="text-3xl font-bold">
+                        <h1 class="text-3xl font-bold text-justify">
                             <span v-if="product.units > 1">{{ product.units }}x</span>
                             {{ product.name }}
                         </h1>
@@ -287,25 +288,21 @@ onMounted(async () => {
                 <!-- Section: Member/Non Member label, Profit -->
                 <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
                     <template v-if="product.offers_data?.number_offers > 0">
-                        <div v-if="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
-                            class="flex flex-col w-fit"
-                        >
-                            <MemberPriceLabel
-                                v-if="layout?.user?.gr_data?.customer_is_gr"
-                                :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)"
-                            />
-                            <NonMemberPriceLabel v-else
-                                :product
-                            />
+                        <div class="flex flex-col w-fit offer">
+                            <template v-if="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'">
+                                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)" />
+                                <NonMemberPriceLabel v-else :product />
+                            </template>
             
-                            <AvailableVolOfferLabel
+                            <!-- <AvailableVolOfferLabel
                                 v-if="
                                     (product.stock && !product.is_coming_soon)  // same as button add to basket conditions
                                     && !layout?.user?.gr_data?.customer_is_gr"
                                 :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)"
-                            />
+                            /> -->
+                             <DiscountByType v-if="(product.stock  && !product.is_coming_soon)" :offers_data="product?.offers_data" />
                         </div>
-                        <div v-else />
+                        <div />
                     </template>
                     <div v-else />
 

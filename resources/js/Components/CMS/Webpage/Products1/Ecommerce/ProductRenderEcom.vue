@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
-import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed } from 'vue'
+import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -19,16 +18,13 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
-import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import AvailableGROfferLabel from '@/Components/Utils/Iris/AvailableGROfferLabel.vue'
 import Prices2 from '../Prices2.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
-const locale = useLocaleStore()
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
@@ -61,7 +57,7 @@ const emits = defineEmits<{
     (e: 'onVariantClick', value: any[]): void
 }>()
 
-
+const _button_variant = ref(null)
 const currency = layout?.iris?.currency
 
 
@@ -82,8 +78,9 @@ const onUnselectBackInStock = (product: ProductResource) => {
 }
 
 
-const onClickVariant = (product: ProductResource) => {
-    emits('onVariantClick', product.variant)
+const onClickVariant = (product: ProductResource, event : Event) => {
+    emits('onVariantClick', product.variant, event)
+   
 }
 
 
@@ -91,7 +88,9 @@ const onClickVariant = (product: ProductResource) => {
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
-
+defineExpose({
+ _button_variant
+})
 
 </script>
 
@@ -162,7 +161,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
                         <Button :label="trans('Choose variants')" size="xs"
-                            @click.prevent.stop="onClickVariant(product)" />
+                             @click.prevent.stop="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant=e" />
                     </div>
                 </div>
 

@@ -28,6 +28,7 @@ use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
 use App\Actions\Comms\Mailshot\Filters\FilterByInterest;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersCollection;
+use App\Actions\Comms\Mailshot\Filters\FilterByLocation;
 
 class GetMailshotRecipientsQueryBuilder
 {
@@ -126,6 +127,18 @@ class GetMailshotRecipientsQueryBuilder
 
         // FILTER: By Family
         (new FilterByFamily())->apply($query, $filters);
+
+        // FILTER: By Location (Radius & Country/Postcode)
+        $locationFilter = Arr::get($filters, 'by_location');
+        $locationValue = is_array($locationFilter) ? ($locationFilter['value'] ?? []) : [];
+        if (
+            !empty(Arr::get($locationValue, 'location')) ||
+            !empty(Arr::get($locationValue, 'country_ids')) ||
+            !empty(Arr::get($locationValue, 'postal_codes'))
+        ) {
+            (new FilterByLocation())->apply($query, $locationValue);
+        }
+
 
         return $query;
     }

@@ -73,7 +73,6 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 </script>
 
 <template>
-
   <div id="family-1-iris">
 
   
@@ -95,19 +94,24 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
                 <FamilyOfferLabelGR v-if="offer.type == 'Category Quantity Ordered Order Interval'" />
 
                 <FamilyOfferLabelDiscount
-                    v-if="offer.type == 'Category Quantity Ordered Order Interval'"
                     :offer="offer"
                 />
             </template>
         </div>
 
-      <!-- Description Title (SEO: Heading) -->
-      <h1 v-if="fieldValue.family.name" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
-        {{ fieldValue.family.name }}
-      </h1>
+        <!-- Description Title (SEO: Heading) -->
+        <h1 v-if="fieldValue.family.name" class="text-[1.5rem] leading-[2rem] font-semibold">
+            {{ fieldValue.family.name }}
+        </h1>
 
-      <!-- Main Description -->
-      <div v-if="fieldValue.family.description" :style="{ marginTop: 0 }" v-html="fieldValue.family.description"></div>
+        <!-- Main Description -->
+        <div
+            v-if="fieldValue.family.description"
+            id="description-family-1-iris"
+            xstyle="{ marginTop: 0 }"
+            v-html="fieldValue.family.description"
+            class="mt-6 text-justify"
+        />
 
       <!-- Read More Extra Description -->
       <div v-if="fieldValue.family.description_extra" class="rounded-lg">
@@ -130,4 +134,17 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
   html {
     scroll-behavior: smooth;
   }
+
+    #description-family-1-iris h1 {
+        font-size: 1.5rem;
+        line-height: 2rem;
+        font-weight: 600;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    #description-family-1-iris p {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
 </style>

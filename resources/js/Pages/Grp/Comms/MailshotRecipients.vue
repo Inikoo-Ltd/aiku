@@ -33,6 +33,8 @@ const props = defineProps<{
 
     <PageHeading :data="pageHead" />
 
+    <Notification v-if="showNotification && notificationData" :notification="notificationData" />
+
     <TableTemplateRecipients :customers="customers" :filters="filters" :filters-structure="filtersStructure"
         :recipient-filter-route="recipientFilterRoute" :recipients-recipe="recipients_recipe" :shop-id="shop_id"
         :shop-slug="shop_slug" :estimated-recipients="estimatedRecipients" />
