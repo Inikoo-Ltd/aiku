@@ -28,12 +28,11 @@ class DashboardTotalPlatformSalesResource extends JsonResource
             'customers',
             'portfolios',
             'customer_clients',
+            // 'sales',
+            // 'sales_org_currency',
             'sales_grp_currency',
-            'sales',
-            'sales_org_currency',
         ];
 
-        // Sum all intervals (current + _ly)
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
 
         $summedData = array_merge([
@@ -71,19 +70,26 @@ class DashboardTotalPlatformSalesResource extends JsonResource
                 'portfolios',
                 'portfolios_minified',
 
+                // 'sales',
+                // 'sales_minified',
+                // 'sales_delta',
+
+                // 'sales_org_currency',
+                // 'sales_org_currency_minified',
+                // 'sales_org_currency_delta',
+
                 'sales_grp_currency',
                 'sales_grp_currency_minified',
                 'sales_grp_currency_delta',
-
-                'sales',
-                'sales_minified',
-                'sales_delta',
-
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
             ])
         );
+
+        $columns['sales'] = $columns['sales_grp_currency'];
+        $columns['sales_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_delta'] = $columns['sales_grp_currency_delta'];
+        $columns['sales_org_currency'] = $columns['sales_grp_currency'];
+        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
 
         return [
             'slug'    => 'totals',

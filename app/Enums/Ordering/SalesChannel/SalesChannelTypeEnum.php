@@ -51,4 +51,19 @@ enum SalesChannelTypeEnum: string
         };
     }
 
+    public function icon(): string
+    {
+        return match ($this) {
+            self::WEBSITE      => 'fal fa-globe',
+            self::PHONE        => 'fal fa-phone',
+            self::SHOWROOM     => 'fal fa-store-alt',
+            self::EMAIL        => 'fal fa-envelope',
+            self::OTHER        => 'fal fa-question-circle',
+            self::MARKETPLACE  => 'fal fa-shopping-cart',
+            self::SOCIAL_MEDIA => 'fal fa-social-media',
+            self::PLATFORM     => 'fal fa-cogs',
+            self::NA           => 'fal fa-question-circle',
+        };
+    }
+
 }

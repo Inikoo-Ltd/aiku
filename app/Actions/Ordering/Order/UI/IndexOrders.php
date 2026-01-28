@@ -42,8 +42,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Models\Ordering\SalesChannel;
-use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 
 class IndexOrders extends OrgAction
 {
@@ -390,14 +389,6 @@ class IndexOrders extends OrgAction
             $shop = $this->parent->shop;
         }
 
-        $salesChannels = SalesChannel::whereIn('type', [
-            SalesChannelTypeEnum::WEBSITE,
-            SalesChannelTypeEnum::PHONE,
-            SalesChannelTypeEnum::SHOWROOM,
-            SalesChannelTypeEnum::EMAIL,
-            SalesChannelTypeEnum::OTHER,
-        ])->get(['id', 'name', 'code']);
-
         return Inertia::render(
             'Ordering/Orders',
             [
@@ -406,7 +397,7 @@ class IndexOrders extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'title'          => __('orders'),
-                'sales_channels' => $salesChannels,
+                'sales_channels' => GetSalesChannelOptions::make()->getOptions(),
                 'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
                 'pageHead'       => [
                     'title'         => $title,

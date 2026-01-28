@@ -21,6 +21,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Catalogue\OfferResource;
+use App\Models\Catalogue\ProductCategory;
 
 class ShowOffer extends OrgAction
 {
@@ -58,9 +59,8 @@ class ShowOffer extends OrgAction
 
     public function htmlResponse(Offer $offer, ActionRequest $request): Response
     {
-        $title      = $this->offer->slug;
+        $afterTitle      = $offer->code;
         $icon       = ['fal', 'fa-badge-percent'];
-        $afterTitle = null;
         $iconRight  = null;
 
         if ($this->parent instanceof Shop) {
@@ -73,6 +73,10 @@ class ShowOffer extends OrgAction
                 ],
             ];
         }
+
+        preg_match('/^all_products_in_product_category(?::(\d+))?:/', $offer->allowance_signature, $m);
+        $productCategory = isset($m[1]) ? ProductCategory::find($m[1]) : null;
+
         return Inertia::render(
             'Org/Discounts/Offer',
             [
@@ -81,15 +85,26 @@ class ShowOffer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Offers'),
+                'title'       => __('Offer') . ' ' . $offer->code,
                 'pageHead'    => [
-                    'title'      => $title,
-                    'model'      => __('Offers'),
-                    'afterTitle' => $afterTitle,
+                    'title'      => $offer->name,
+                    'model'      => __('Offer'),
+                    // 'titleRight'    => $afterTitle,
+                    // 'afterTitle' => [
+                    //     'label' => $afterTitle
+                    // ],
                     'iconRight'  => $iconRight,
                     'icon'       => $icon,
-                    'actions'    => $actions
+                    'actions'    => app()->environment('local') ? $actions : [],
                 ],
+                'url_master'    =>  $productCategory && $offer->type === 'Category Quantity Ordered Order Interval' ? [
+                    'name'  => 'grp.masters.master_shops.show.master_families.edit',
+                    'parameters' => [
+                        'masterShop'        => $offer->shop->masterShop->slug,
+                        'masterFamily'     => $productCategory->masterProductCategory->slug,
+                        'section'           => '5'
+                    ]
+                ] : [],
                 'data'        => OfferResource::make($offer),
                 'currency_code' => $offer->shop->currency->code,
             ]
