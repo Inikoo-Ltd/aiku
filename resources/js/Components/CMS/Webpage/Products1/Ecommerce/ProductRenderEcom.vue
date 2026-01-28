@@ -22,7 +22,6 @@ import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.v
 import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import AvailableGROfferLabel from '@/Components/Utils/Iris/AvailableGROfferLabel.vue'
 import Prices2 from '../Prices2.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
