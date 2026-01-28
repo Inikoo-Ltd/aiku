@@ -67,6 +67,20 @@ class EditCollection extends OrgAction
 
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
+        $shop = $collection->shop;
+        $warning = [];
+        if(data_get($shop->settings, 'catalog.collection_follow_master', false)){
+            $warning = [
+                'warning'     => [
+                    'type'  => 'warning',
+                    'title' => 'Warning',
+                    // 'text'  => __('Changing name or description may affect master family.'), // Isn't true anymore. Not neccessarily the case. Turned off
+                    'text'  => __('This shop has enabled the Collections force follow master setting. Updates made on master will overwrite local changes'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle'],
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -77,6 +91,7 @@ class EditCollection extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                ...$warning,
                 'pageHead'    => [
                     'title'   => $collection->code,
                     'model'   => __('Edit collections'),
@@ -98,11 +113,11 @@ class EditCollection extends OrgAction
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
                             'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $collection->code
-                                ],
+                                // 'code' => [
+                                //     'type'  => 'input',
+                                //     'label' => __('Code'),
+                                //     'value' => $collection->code
+                                // ],
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('Name'),
@@ -134,21 +149,20 @@ class EditCollection extends OrgAction
                                 ],
                             ]
                         ],
-                        [
-                            'label'  => __('Image'),
-                            'icon'   => 'fa-light fa-image',
-                            'fields' => [
-                                "image"       => [
-                                    "type"    => "crop-image-full",
-                                    "label" => __("Main image"),
-                                    "value" => $collection->imageSources(720, 480),
-                                    "required" => false,
-                                    'noSaveButton' => true,
-                                    "full"         => true
-                                ],
-                            ]
-                        ]
-
+                        // [
+                        //     'label'  => __('Image'),
+                        //     'icon'   => 'fa-light fa-image',
+                        //     'fields' => [
+                        //         "image"       => [
+                        //             "type"    => "crop-image-full",
+                        //             "label" => __("Main image"),
+                        //             "value" => $collection->imageSources(720, 480),
+                        //             "required" => false,
+                        //             'noSaveButton' => true,
+                        //             "full"         => true
+                        //         ],
+                        //     ]
+                        // ]
                     ],
                     'args'      => [
                         'updateRoute' => [

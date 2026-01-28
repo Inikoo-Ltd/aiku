@@ -45,11 +45,24 @@ class UpdateMasterCollection extends GrpAction
 
         if (Arr::hasAny($changed, ['code', 'name', 'description'])) {
             foreach ($masterCollection->childrenCollections as $collections) {
-                UpdateCollection::make()->action($collections, [
-                    'code' => $masterCollection->code,
-                    'name' => $masterCollection->name,
-                    'description' => $masterCollection->description,
-                ]);
+                $dataToBeUpdated = [];
+                $childShop = $collections->shop;
+
+                if (Arr::has($changed, 'code')){
+                    $dataToBeUpdated['code'] = $masterCollection->code;
+                }
+
+                if(data_get($childShop->settings, 'catalog.collection_follow_master', false)){
+                    if(Arr::has($changed, 'name')){
+                    $dataToBeUpdated['name'] = $masterCollection->name;
+                    }
+
+                    if(Arr::has($changed, 'description')){
+                        $dataToBeUpdated['description'] = $masterCollection->description;
+                    }
+                }
+
+                UpdateCollection::make()->action($collections, $dataToBeUpdated);
             }
         }
 
