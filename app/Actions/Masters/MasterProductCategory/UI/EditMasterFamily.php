@@ -269,6 +269,7 @@ class EditMasterFamily extends OrgAction
                             'fields' => [
                                 'vol_gr' => [
                                     'label'  => 'Vol / GR',
+                                    'information' => __('Any changes will affect the offer in all shops.'),
                                     'type'   => 'input_twin',
                                     'value'  => [
                                         [

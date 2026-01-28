@@ -14,6 +14,8 @@ import Coupon from '@/Components/Utils/Coupon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { inject } from 'vue'
+import { routeType } from '@/types/route'
+import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
     title: string
@@ -27,6 +29,7 @@ const props = defineProps<{
             product_category: {} | null
         }
     }
+    url_master?: routeType
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -46,7 +49,20 @@ const getCategoryLink = (productCategory: {}) => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template #afterTitle2>
+            <div class="whitespace-nowrap">
+                <Link v-if="url_master?.name" :href="route(url_master.name,url_master.parameters)" v-tooltip="trans('Go to Master Family section Offer GR/Vol')" class="mr-1 opacity-70 hover:opacity-100">
+                    <FontAwesomeIcon
+                        icon="fab fa-octopus-deploy"
+                        color="#4B0082"
+                        fixed-width
+                    />
+                </Link>
+            </div>
+        </template>
+    </PageHeading>
+
     <div class="p-5 border-b border-gray-300 mb-4 flex flex-col items-center">
         <div class="">
             Type: <span class="font-bold">{{ data.type }}</span>
