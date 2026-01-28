@@ -349,24 +349,15 @@ class IndexStoredItems extends OrgAction
         return [
             'event'           => 'action-progress',
             'channel'         => 'grp.personal.'.$this->organisation->id,
-            'required_fields' => ['reference'],
+            'required_fields' => ['reference_do_not_modify', 'name'],
             'template'        => [
                 'label' => 'Download template (.xlsx)',
             ],
             'route'           => [
                 'upload'   => [
-                    'name'       => 'grp.models.pallet-return.pallet-return-item.upload.upload',
+                    'name'       => 'grp.models.fulfilment-customer.stored-items.bulk_edit.import',
                     'parameters' => [
-                        'palletReturn' => $customer->id
-                    ]
-                ],
-                'history'  => [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.uploads.history',
-                    'parameters' => [
-                        'organisation'       => $customer->organisation->slug,
-                        'fulfilment'         => $customer->fulfilment->slug,
-                        'fulfilmentCustomer' => $customer->slug,
-                        'palletReturn'       => $customer->slug
+                        'fulfilmentCustomer' => $customer->id
                     ]
                 ],
                 'download' => [
