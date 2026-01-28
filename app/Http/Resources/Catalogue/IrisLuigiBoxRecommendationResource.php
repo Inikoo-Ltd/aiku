@@ -43,7 +43,7 @@ class IrisLuigiBoxRecommendationResource extends JsonResource
             'unit'                          => $this->unit,
             'units'                         => $units,
             'offers_data'                   => $this->offers_data,
-            'discounted_price'              => round($this->price * $bestPercentageOffOfferFactor, 2),
+            'discounted_price'              => $bestPercentageOff ? round($this->price * $bestPercentageOffOfferFactor, 2) : null,
             'discounted_price_per_unit'     => $pricePerUnitDiscounted,
             'discounted_profit'             => $profitDiscounted,
             'discounted_profit_per_unit'    => $profitPerUnitDiscounted,
