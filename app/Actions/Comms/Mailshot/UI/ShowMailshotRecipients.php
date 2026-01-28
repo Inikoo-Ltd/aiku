@@ -27,6 +27,7 @@ class ShowMailshotRecipients extends OrgAction
         $previewMailshot->recipients_recipe = $currentFilters;
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
+        $estimatedRecipients = $queryBuilder?->count() ?? 0;
 
         $customers = $queryBuilder ? $queryBuilder->paginate(15)->withQueryString() : new LengthAwarePaginator([], 0, 15);
 
@@ -260,7 +261,8 @@ class ShowMailshotRecipients extends OrgAction
                     'method' => 'patch'
                 ],
                 'recipients_recipe' => $mailshot->recipients_recipe,
-                'shop_id' => $mailshot->shop_id
+                'shop_id' => $mailshot->shop_id,
+                'estimatedRecipients' => $estimatedRecipients
             ]
         );
     }
