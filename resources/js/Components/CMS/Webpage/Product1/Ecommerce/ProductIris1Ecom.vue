@@ -214,9 +214,9 @@ onMounted(async () => {
             <div class="col-span-5 self-start">
                 
                 
-                <div class="relative flex justify-between items-start mb-4">
+                <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
-                        <h1 class="text-3xl font-bold">
+                        <h1 class="text-3xl font-bold text-justify">
                             <span v-if="product.units > 1">{{ product.units }}x</span>
                             {{ product.name }}
                         </h1>

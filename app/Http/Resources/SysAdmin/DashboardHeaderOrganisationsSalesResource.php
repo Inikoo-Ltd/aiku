@@ -16,7 +16,6 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     public function toArray($request): array
     {
         /** @var Organisation $organisation */

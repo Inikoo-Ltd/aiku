@@ -16,14 +16,12 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
 {
     use WithDashboardIntervalValues;
 
-
     public function toArray($request): array
     {
         /** @var Organisation $organisation */
         $organisation = $this;
 
         $deltaTooltip = __('Change versus 1 Year ago');
-
 
         $columns = array_merge(
             [
@@ -101,7 +99,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
             [
                 'sales' => [
                     'formatted_value'   => __('Sales'),
-                    'currency_type'     => 'category',
+                    'currency_type'     => 'shop',
                     'data_display_type' => 'full',
                     'sortable'          => true,
                     'scope'             => 'sales',
@@ -110,8 +108,18 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
             [
                 'sales_minified' => [
                     'formatted_value'   => __('Sales'),
-                    'currency_type'     => 'category',
+                    'currency_type'     => 'shop',
                     'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'scope'             => 'sales',
+                ]
+            ],
+            [
+                'sales_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $deltaTooltip,
+                    'currency_type'     => 'shop',
+                    'data_display_type' => 'always',
                     'sortable'          => true,
                     'scope'             => 'sales',
                 ]
@@ -138,7 +146,7 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                 'sales_org_currency_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
-                    'currency_type'     => 'always',
+                    'currency_type'     => 'org',
                     'data_display_type' => 'always',
                     'sortable'          => true,
                     'scope'             => 'sales_org_currency',
@@ -146,12 +154,9 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
             ],
         );
 
-
         return [
             'slug'    => $organisation->slug,
             'columns' => $columns
-
-
         ];
     }
 }

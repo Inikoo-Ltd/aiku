@@ -263,7 +263,7 @@ class EditMasterFamily extends OrgAction
                             ],
 
                         ],
-                        [
+                        app()->environment('local') ? [
                             'label'  => __('Discounts'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
@@ -296,7 +296,7 @@ class EditMasterFamily extends OrgAction
                                     ]
                                 ],
                             ],
-                        ],
+                        ] : [],
                     ],
                     'args'      => [
                         'updateRoute' => [

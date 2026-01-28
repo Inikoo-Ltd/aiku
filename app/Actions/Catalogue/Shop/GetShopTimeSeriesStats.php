@@ -82,12 +82,13 @@ class GetShopTimeSeriesStats
             }
 
             $shopData = array_merge($shop->toArray(), $stats, $registrationsData, [
-                'slug' => $shop->slug ?? 'Unknown',
-                'organisation_slug' => $shop->organisation->slug ?? 'Unknown',
-                'group_slug' => $shop->group->slug ?? 'Unknown',
+                'slug' => $shop->slug ?? 'unknown',
+                'organisation_slug' => $shop->organisation->slug ?? 'unknown',
+                'group_slug' => $shop->group->slug ?? 'unknown',
                 'shop_currency_code' => $shop->currency->code ?? 'GBP',
                 'organisation_currency_code' => $shop->organisation->currency->code ?? 'GBP',
                 'group_currency_code' => $shop->group->currency->code ?? 'GBP',
+                'parent_type' => $parent instanceof Organisation ? 'Organisation' : 'Group',
             ]);
 
             $results[] = $shopData;

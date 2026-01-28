@@ -157,6 +157,9 @@ class StoreTransaction extends OrgAction
             'submitted_at'            => ['sometimes', 'required', 'date'],
             'data'                    => ['sometimes', 'array'],
             'label'                   => ['sometimes', 'string', 'max:255'],
+            'marketplace_id'          => ['sometimes', Rule::unique('transactions', 'marketplace_id')->where(function ($query) {
+                $query->where('group_id', $this->shop->group_id);
+            })],
         ];
 
         if (!$this->strict) {

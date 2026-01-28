@@ -52,6 +52,8 @@ class StoreExternalShop extends OrgAction
     public function handle(Organisation $organisation, array $modelData): Shop
     {
         return DB::transaction(function () use ($organisation, $modelData) {
+
+            setPermissionsTeamId($organisation->group->id);
             $modelData['state'] = ShopStateEnum::OPEN;
             $modelData['type'] = ShopTypeEnum::EXTERNAL->value;
 
@@ -64,6 +66,8 @@ class StoreExternalShop extends OrgAction
                 ]));
                 data_set($modelData, 'settings.shopify.shop_url', $shopifyUser->name);
             }
+            data_set($modelData, 'open_at', now());
+            data_set($modelData, 'is_aiku', true);
 
             $shop = StoreShop::make()->action($organisation, $modelData);
 
@@ -97,10 +101,10 @@ class StoreExternalShop extends OrgAction
         $faireBrand = $this->getFaireBrand();
 
         if (! Arr::has($faireBrand, 'name')) {
-            throw ValidationException::withMessages(['message' => 'Invalid Faire Access Token']);
+            throw ValidationException::withMessages(['access_token' => __('Invalid Faire Access Token')]);
         }
 
-        data_set($modelData, 'name', $faireBrand['name']);
+        data_set($modelData, 'name', $faireBrand['name'].' Faire');
         data_set($modelData, 'settings.faire', array_merge($this->settings['faire'], [
             'brand' => $faireBrand['name']
         ]));

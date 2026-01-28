@@ -58,7 +58,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class OrdersResource extends JsonResource
 {
-
     public function toArray($request): array
     {
         $payDetailedStatus        = '';

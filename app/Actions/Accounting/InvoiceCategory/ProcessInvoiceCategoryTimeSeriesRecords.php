@@ -31,16 +31,15 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $invoiceCategory = InvoiceCategory::find($invoiceCategoryId);
+
         if (!$invoiceCategory) {
             return;
         }
 
-        $timeSeries = InvoiceCategoryTimeSeries::where('invoice_category_id', $invoiceCategory->id)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = InvoiceCategoryTimeSeries::where('invoice_category_id', $invoiceCategory->id)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
-            $timeSeries = $invoiceCategory->timeSeries()->create([
-                'frequency' => $frequency,
-            ]);
+            $timeSeries = $invoiceCategory->timeSeries()->create(['frequency' => $frequency]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to);
@@ -51,10 +50,11 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(InvoiceCategoryTimeSeries $timeSeries, string $from, string $to): void
     {
         $results = DB::table('invoices')
+            ->where('invoices.invoice_category_id', $timeSeries->invoice_category_id)
+            ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)
             ->where('invoices.date', '<=', $to)
-            ->where('invoices.invoice_category_id', $timeSeries->invoice_category_id)
-            ->whereNot('invoices.in_process', true);
+            ->whereNull('invoices.deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
