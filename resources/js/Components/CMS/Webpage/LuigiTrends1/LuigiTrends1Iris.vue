@@ -215,7 +215,7 @@ onMounted(() => {
                 </div>
             </div>
             
-            <div class="py-4  px-12" id="LuigiTrends1">
+            <div class="py-4 px-3 md:px-12" id="LuigiTrends1">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
