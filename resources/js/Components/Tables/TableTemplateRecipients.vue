@@ -282,7 +282,7 @@ function hydrateSavedFilters(saved: any, structure: any) {
 
                 uiValue = {
                     value: true,
-                    mode: isPreset ? clean.date_range : 'custom',
+                    mode: isCustom ? 'custom' : clean.date_range,
                     date_range: isCustom
                         ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
                         : null,
@@ -445,15 +445,22 @@ function getEntityFetchRoute(key: string) {
     return null
 }
 
-function onBasketModeChange(filter: { value: { date_range: null; mode: string; }; }, event: { value: any; }) {
+function onBasketModeChange(filter, event) {
     const val = event.value
+
+    filter.value.mode = val
+
     if (val === 'custom') {
         filter.value.date_range = null
     } else {
-        filter.value.mode = 'preset'
-        filter.value.date_range = val
+        filter.value.date_range = val // number: 3,7,14
     }
 }
+
+
+const isAllCustomers = computed(() => {
+    return Object.keys(activeFilters.value).length === 0
+})
 
 const filtersPayload = computed(() => {
     const payload: any = {}
@@ -467,7 +474,9 @@ const filtersPayload = computed(() => {
             if (key === 'orders_in_basket') {
                 payload[key] = {
                     value: {
-                        date_range: val.mode !== 'custom' ? val.mode : val.date_range,
+                        date_range: val.mode === 'custom'
+                            ? val.date_range
+                            : val.mode,
                         amount_range: val.amount_range
                     }
                 }
@@ -554,12 +563,21 @@ function unwrapBoolean(val: any) {
 
 const saveFilters = async () => {
     console.log('[SAVE FILTER PAYLOAD]', filtersPayload.value)
+    let payload = filtersPayload.value
+
+    if (!payload || Object.keys(payload).length === 0) {
+        payload = {
+            all_customers: {
+                value: true
+            }
+        }
+    }
 
     axios
         .patch(
             route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters),
             {
-                recipients_recipe: filtersPayload.value
+                recipients_recipe: payload
             },
         )
         .then((response) => {
@@ -619,6 +637,11 @@ console.log("props table", props)
 
             <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="tertiary" class="h-10 px-4"
                 @click="clearAllFilters" />
+
+            <Button label="Save" type="save" @click="saveFilters" class="h-10 px-4" />
+            <span v-if="isAllCustomers" class="text-blue-600 font-medium">
+                Audience: All Customers
+            </span>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div v-for="(filter, key) in activeFilters" :key="key"
@@ -674,10 +697,10 @@ console.log("props table", props)
 
                     <!-- AMOUNT RANGE -->
                     <div v-if="filter.config.options?.amount_range" class="grid grid-cols-2 gap-2 mt-2">
-                        <InputNumber v-model="filter.value.amount_range.min" placeholder="Minimum amount" class="w-full"
-                            inputClass="w-full" />
+                        <InputNumber :min="0" v-model="filter.value.amount_range.min" placeholder="Minimum amount"
+                            class="w-full" inputClass="w-full" :max="filter.value.amount_range.max ?? undefined" />
                         <InputNumber v-model="filter.value.amount_range.max" placeholder="Maximum amount" class="w-full"
-                            inputClass="w-full" />
+                            inputClass="w-full" :min="filter.value.amount_range.min ?? undefined" />
                     </div>
                 </template>
 
@@ -783,8 +806,6 @@ console.log("props table", props)
 
             </div>
         </div>
-
-        <Button label="Save" type="save" @click="saveFilters" v-if="Object.keys(activeFilters).length" class="mb-4" />
 
         <div class="mt-8">
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
