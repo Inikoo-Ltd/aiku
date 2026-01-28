@@ -16,6 +16,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { inject } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
+import FamilyOfferLabelDiscount from '@/Components/Utils/Iris/Family/FamilyOfferLabelDiscount.vue'
 
 const props = defineProps<{
     title: string
@@ -64,12 +65,14 @@ const getCategoryLink = (productCategory: {}) => {
     </PageHeading>
 
     <div class="p-5 border-b border-gray-300 mb-4 flex flex-col items-center">
-        <div class="">
+        <div class="mb-2">
             Type: <span class="font-bold">{{ data.type }}</span>
         </div>
         
-        <Coupon :offer="data" :currency_code="currency_code" />
+        <FamilyOfferLabelDiscount v-if="data.type == 'Category Quantity Ordered Order Interval'" :offer="data" />
+        <Coupon v-else :offer="data" :currency_code="currency_code" />
     </div>
+    
 
     
     
