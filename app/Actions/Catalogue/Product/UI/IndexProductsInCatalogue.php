@@ -15,6 +15,7 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -309,6 +310,17 @@ class IndexProductsInCatalogue extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => [
+                        $shop->engine === ShopEngineEnum::FAIRE ? [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'label' => __('Fetch Faire Products'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.products.all_products.faire_products.index',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ],
+                        ] : []
+                    ]
                 ],
                 'data'                         => ProductsResource::collection($products),
                 'editable_table'               => true,

@@ -13,8 +13,10 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class GetFaireProducts extends OrgAction
 {
@@ -83,6 +85,13 @@ class GetFaireProducts extends OrgAction
         $shop = Shop::where('type', ShopTypeEnum::EXTERNAL)->where('engine', ShopEngineEnum::FAIRE)
             ->where('slug', $command->argument('shop'))
             ->first();
+
+        $this->handle($shop);
+    }
+
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): void
+    {
+        $this->initialisation($organisation, $request);
 
         $this->handle($shop);
     }
