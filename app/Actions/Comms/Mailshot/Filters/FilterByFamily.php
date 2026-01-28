@@ -26,121 +26,77 @@ class FilterByFamily
     {
 
         // make sure $filters is an array
-        $options = Arr::get($filters, 'by_family', []);
-        if (empty($options)) {
-            return $query;
-        }
+        $options = Arr::get($filters, 'by_family');
 
+        if (is_array($options) && isset($options['value'])) {
+            $val = $options['value'];
+            $familyIds = $val['ids'] ?? [];
+            $behaviours = $val['behaviors'] ?? [];
+            $combinationLogic = $val['combine_logic'] ?? true;
 
-
-
-        return $query;
-
-        $familyIds = Arr::get($options, 'family_ids');
-        $behaviours = Arr::get($options, 'behaviours');
-        $combinationLogic = Arr::get($options, 'combination_logic');
-
-        if (empty($familyIds)) {
-            return $query;
-        }
-
-        $familyIds = is_array($familyIds) ? $familyIds : [$familyIds];
-
-        // Collect all active behaviours
-        $activeBehaviours = [];
-        if ($behaviours['purchased'] ?? false) {
-            $activeBehaviours[] = 'purchased';
-        }
-        if ($behaviours['favourited'] ?? false) {
-            $activeBehaviours[] = 'favourited';
-        }
-        if ($behaviours['basket_not_purchased'] ?? false) {
-            $activeBehaviours[] = 'basket_not_purchased';
-        }
-
-        if (empty($activeBehaviours)) {
-            return $query;
-        }
-
-        // Apply filters based on combination logic
-        if ($combinationLogic) {
-            // OR conditions - use whereHas for first condition, orWhereHas for subsequent
-            $firstBehaviour = array_shift($activeBehaviours);
-
-            switch ($firstBehaviour) {
-                case 'purchased':
-                    $query->whereHas('orders', function ($q) use ($familyIds) {
-                        $q->where('state', '!=', OrderStateEnum::CREATING->value)
-                            ->whereHas('transactions', function ($tq) use ($familyIds) {
-                                $tq->whereIn('family_id', $familyIds);
-                            });
-                    });
-                    break;
-                case 'favourited':
-                    $query->whereHas('favourites', function ($q) use ($familyIds) {
-                        $q->whereIn('family_id', $familyIds);
-                    });
-                    break;
-                case 'basket_not_purchased':
-                    $query->whereHas('orders', function ($q) use ($familyIds) {
-                        $q->where('state', OrderStateEnum::CREATING->value)
-                            ->whereHas('transactions', function ($tq) use ($familyIds) {
-                                $tq->whereIn('family_id', $familyIds);
-                            });
-                    });
-                    break;
+            // Early return if required data is missing
+            if (empty($familyIds) || empty($behaviours)) {
+                return $query;
             }
 
-            // Apply remaining behaviours with OR conditions
-            foreach ($activeBehaviours as $behaviour) {
-                switch ($behaviour) {
-                    case 'purchased':
-                        $query->orWhereHas('orders', function ($q) use ($familyIds) {
-                            $q->where('state', '!=', OrderStateEnum::CREATING->value)
-                                ->whereHas('transactions', function ($tq) use ($familyIds) {
-                                    $tq->whereIn('family_id', $familyIds);
-                                });
-                        });
-                        break;
-                    case 'favourited':
-                        $query->orWhereHas('favourites', function ($q) use ($familyIds) {
-                            $q->whereIn('family_id', $familyIds);
-                        });
-                        break;
-                    case 'basket_not_purchased':
-                        $query->orWhereHas('orders', function ($q) use ($familyIds) {
-                            $q->where('state', OrderStateEnum::CREATING->value)
-                                ->whereHas('transactions', function ($tq) use ($familyIds) {
-                                    $tq->whereIn('family_id', $familyIds);
-                                });
-                        });
-                        break;
+            // Validate: AND logic should only have one behavior
+            if (!$combinationLogic && count($behaviours) > 1) {
+                \Log::warning('AND logic (combine_logic=false) requires exactly one behavior. Using first behavior only.');
+                $behaviours = [reset($behaviours)];
+            }
+
+            // Normalize family IDs to array
+            $familyIds = (array) $familyIds;
+
+            // Define behavior query builders
+            $behaviorQueries = [
+                'purchased' => function ($q) use ($familyIds) {
+                    return $q->whereHas('orders', function ($orderQuery) use ($familyIds) {
+                        $orderQuery->where('state', '!=', OrderStateEnum::CREATING->value)
+                            ->whereHas('transactions', function ($transactionQuery) use ($familyIds) {
+                                $transactionQuery->whereIn('family_id', $familyIds);
+                            });
+                    });
+                },
+                'favourited' => function ($q) use ($familyIds) {
+                    return $q->whereHas('favourites', function ($favouriteQuery) use ($familyIds) {
+                        $favouriteQuery->whereIn('family_id', $familyIds);
+                    });
+                },
+                'basket_not_purchased' => function ($q) use ($familyIds) {
+                    return $q->whereHas('orders', function ($orderQuery) use ($familyIds) {
+                        $orderQuery->where('state', OrderStateEnum::CREATING->value)
+                            ->whereHas('transactions', function ($transactionQuery) use ($familyIds) {
+                                $transactionQuery->whereIn('family_id', $familyIds);
+                            });
+                    });
+                },
+            ];
+
+            if ($combinationLogic) {
+                // OR logic: Wrap all conditions in a single where closure
+                $query->where(function ($q) use ($behaviours, $behaviorQueries) {
+                    foreach ($behaviours as $index => $behaviour) {
+                        if (!isset($behaviorQueries[$behaviour])) {
+                            continue;
+                        }
+
+                        if ($index === 0) {
+                            $behaviorQueries[$behaviour]($q);
+                        } else {
+                            // Use orWhere with a closure to maintain proper grouping
+                            $q->orWhere(function ($subQuery) use ($behaviour, $behaviorQueries) {
+                                $behaviorQueries[$behaviour]($subQuery);
+                            });
+                        }
+                    }
+                });
+            } else {
+                // AND logic: Apply single behavior (already validated above)
+                $behaviour = reset($behaviours);
+                if (isset($behaviorQueries[$behaviour])) {
+                    $behaviorQueries[$behaviour]($query);
                 }
-            }
-        } else {
-            // AND conditions - original behavior
-            if ($behaviours['purchased'] ?? false) {
-                $query->whereHas('orders', function ($q) use ($familyIds) {
-                    $q->where('state', '!=', OrderStateEnum::CREATING->value)
-                        ->whereHas('transactions', function ($tq) use ($familyIds) {
-                            $tq->whereIn('family_id', $familyIds);
-                        });
-                });
-            }
-
-            if ($behaviours['favourited'] ?? false) {
-                $query->whereHas('favourites', function ($q) use ($familyIds) {
-                    $q->whereIn('family_id', $familyIds);
-                });
-            }
-
-            if ($behaviours['basket_not_purchased'] ?? false) {
-                $query->whereHas('orders', function ($q) use ($familyIds) {
-                    $q->where('state', OrderStateEnum::CREATING->value)
-                        ->whereHas('transactions', function ($tq) use ($familyIds) {
-                            $tq->whereIn('family_id', $familyIds);
-                        });
-                });
             }
         }
 
