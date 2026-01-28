@@ -262,6 +262,7 @@ class ShowMailshotRecipients extends OrgAction
                 ],
                 'recipients_recipe' => $mailshot->recipients_recipe,
                 'shop_id' => $mailshot->shop_id,
+                'shop_slug' => $this->shop->slug,
                 'estimatedRecipients' => $estimatedRecipients
             ]
         );

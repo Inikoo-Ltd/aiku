@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -61,6 +62,11 @@ class ShowMailshot extends OrgAction
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
         $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]);
+
+        $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]))
+            ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
+            : 0;
+
 
         return Inertia::render(
             'Comms/Mailshot',
@@ -153,7 +159,10 @@ class ShowMailshot extends OrgAction
                         )
                     )),
                 'sendMailshotRoute' => [
-                    'name' => 'grp.models.shop.outboxes.newsletter.send',
+                    'name' => match($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.send',
+                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.maildhot.send',
+                    },
                     'parameters' => [
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
@@ -161,7 +170,10 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'scheduleMailshotRoute' => [
-                    'name' => 'grp.models.shop.outboxes.newsletter.schedule',
+                    'name' => match($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.schedule',
+                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.schedule',
+                    },
                     'parameters' => [
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
@@ -176,14 +188,20 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'indexRoute' => [
-                    'name' => 'grp.org.shops.show.marketing.newsletters.index',
+                    'name' => match($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
+                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshot.index',
+                    },
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
                         'shop' => $this->shop->slug
                     ],
                 ],
                 'cancelScheduleMailshotRoute' => [
-                    'name' => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
+                    'name' => match($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
+                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.cancel-schedule',
+                    },
                     'parameters' => [
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
@@ -191,6 +209,8 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'status' => $mailshot->state->value,
+                'estimatedRecipients' => $estimatedRecipients,
+                'mailshotType' => $mailshot->type->value,
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(

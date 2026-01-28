@@ -74,7 +74,7 @@ use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
-use App\Actions\Comms\Mailshot\SendNewsLetterNow;
+use App\Actions\Comms\Mailshot\SendMailShotNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
@@ -771,9 +771,14 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
-        Route::post('newsletter/{mailshot:id}/send', SendNewsLetterNow::class)->name('newsletter.send')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/send', SendMailShotNow::class)->name('newsletter.send')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('newsletter.cancel-schedule')->withoutScopedBindings();
+
+        Route::post('mailshot/{mailshot:id}/send', SendMailShotNow::class)->name('mailshot.send')->withoutScopedBindings();
+        Route::post('mailshot/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('mailshot.schedule')->withoutScopedBindings();
+        Route::post('mailshot/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('mailshot.cancel-schedule')->withoutScopedBindings();
+
     });
 
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
@@ -875,7 +880,6 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
     Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
-
 });
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {

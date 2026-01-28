@@ -45,7 +45,8 @@ class ProcessSendNewsletter
 
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
-        foreach ($queryBuilder->get() as $recipient) {
+        // TODO: update this section using cursor() instead of get()
+        foreach ($queryBuilder->cursor() as $recipient) {
             if ($counter >= 250) {
                 UpdateEmailDeliveryChannel::run(
                     $emailDeliveryChannel,

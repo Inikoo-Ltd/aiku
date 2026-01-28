@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 27-01-2026-17h-01m
- * github: https://github.com/KirinZero0
- * copyright 2026
-*/
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Wednesday, 28 Jan 2026 09:39:09 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
+ */
 
 namespace App\Actions\Catalogue\ProductCategory\Json;
 
