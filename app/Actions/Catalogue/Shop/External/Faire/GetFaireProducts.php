@@ -24,12 +24,22 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop): void
     {
-        $faireProducts = $shop->getFaireProducts([
-            'limit' => 250
-        ]);
-        // foreach to support of faire has more than 250 products
+        $faireProducts = [];
+        $limit = 50;
+        $page = 1;
 
-        foreach (Arr::get($faireProducts, 'products', []) as $faireProduct) {
+        do {
+            $response = $shop->getFaireProducts([
+                'limit' => $limit,
+                'page' => $page
+            ]);
+            $fetchedProducts = Arr::get($response, 'products');
+            $faireProducts = array_merge($faireProducts, $fetchedProducts);
+
+            $page++;
+        } while (count($fetchedProducts) === $limit);
+
+        foreach ($faireProducts as $faireProduct) {
             foreach ($faireProduct['variants'] as $variant) {
                 if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
                     $product = Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->first();
