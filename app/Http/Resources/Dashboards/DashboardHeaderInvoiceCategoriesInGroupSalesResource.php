@@ -16,12 +16,10 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     public function toArray($request): array
     {
         /** @var Group $group */
         $group = $this;
-
 
         $deltaTooltip = __('Change versus 1 Year ago');
 
@@ -156,7 +154,6 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                 ],
             ],
         );
-
 
         return [
             'slug'    => $group->slug,

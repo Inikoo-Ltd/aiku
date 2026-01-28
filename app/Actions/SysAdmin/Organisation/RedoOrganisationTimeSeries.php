@@ -26,9 +26,9 @@ class RedoOrganisationTimeSeries
         $this->model = Organisation::class;
     }
 
-    public function handle(Organisation $organisation, array $frequencies, ?Command $command = null, bool $async = true): void
+    public function handle(Organisation $organisation, array $frequencies, bool $async = true): void
     {
-        $firstInvoicedDate = DB::table('invoices')->where('organisation_id', $organisation->id)->min('date');
+        $firstInvoicedDate = DB::table('invoices')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $organisation->created_at)) {
             $organisation->update(['created_at' => $firstInvoicedDate]);
@@ -36,10 +36,12 @@ class RedoOrganisationTimeSeries
 
         $from = $organisation->created_at->toDateString();
 
-        $to = DB::table('invoices')->where('organisation_id', $organisation->id)->max('date');
+        $to = DB::table('invoices')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->max('date');
+
         if (!$to) {
             $to = now();
         }
+
         $to = Carbon::parse($to)->toDateString();
 
         if ($from != null && $to != null) {
@@ -95,7 +97,7 @@ class RedoOrganisationTimeSeries
                     }
 
                     try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
+                        $this->handle($instance, $frequencies, $command->option('async'));
                     } catch (Throwable $e) {
                         $command->error($e->getMessage());
                     }

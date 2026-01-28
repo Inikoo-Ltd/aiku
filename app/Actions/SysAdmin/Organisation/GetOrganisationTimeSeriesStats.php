@@ -78,8 +78,8 @@ class GetOrganisationTimeSeriesStats
             }
 
             $organisationData = array_merge($organisation->toArray(), $stats, $registrationsData, [
-                'slug' => $organisation->slug ?? 'Unknown',
-                'group_slug' => $organisation->group->slug ?? 'Unknown',
+                'slug' => $organisation->slug ?? 'unknown',
+                'group_slug' => $organisation->group->slug ?? 'unknown',
                 'organisation_currency_code' => $organisation->currency->code ?? 'GBP',
                 'group_currency_code' => $organisation->group->currency->code ?? 'GBP',
             ]);

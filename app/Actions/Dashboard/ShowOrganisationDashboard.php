@@ -145,7 +145,6 @@ class ShowOrganisationDashboard extends OrgAction
                     ]
                 ]
             ],
-
         ];
     }
 }

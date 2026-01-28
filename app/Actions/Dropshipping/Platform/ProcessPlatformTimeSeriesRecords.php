@@ -53,54 +53,56 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
         $results = DB::table('invoices')
-            ->where('in_process', false)
-            ->where('shop_id', $shop->id)
-            ->where('platform_id', $timeSeries->platform_id)
-            ->whereBetween('date', [$from, $to]);
+            ->where('invoices.platform_id', $timeSeries->platform_id)
+            ->where('invoices.shop_id', $shop->id)
+            ->where('invoices.in_process', false)
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
+            ->whereNull('invoices.deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
                 DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
-                DB::raw('EXTRACT(QUARTER FROM date) as quarter'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
+                DB::raw('EXTRACT(QUARTER FROM invoices.date) as quarter'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
                 DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'), DB::raw('EXTRACT(QUARTER FROM date)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(QUARTER FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
-                DB::raw('EXTRACT(MONTH FROM date) as month'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
+                DB::raw('EXTRACT(MONTH FROM invoices.date) as month'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
                 DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'), DB::raw('EXTRACT(MONTH FROM date)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(MONTH FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
             $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
-                DB::raw('EXTRACT(WEEK FROM date) as week'),
+                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
+                DB::raw('EXTRACT(WEEK FROM invoices.date) as week'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
                 DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'), DB::raw('EXTRACT(WEEK FROM date)'));
+            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(WEEK FROM invoices.date)'));
         } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
             $results->select(
-                DB::raw('CAST(date AS DATE) as date'),
+                DB::raw('CAST(invoices.date AS DATE) as date'),
                 DB::raw('SUM(net_amount) as sales'),
                 DB::raw('SUM(org_net_amount) as sales_org_currency'),
                 DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
                 DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('CAST(date AS DATE)'));
+            )->groupBy(DB::raw('CAST(invoices.date AS DATE)'));
         }
 
         $results = $results->get();
@@ -132,14 +134,18 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                 ->where('platform_id', $timeSeries->platform_id)
                 ->where('shop_id', $shop->id)
                 ->where('status', CustomerSalesChannelStatusEnum::OPEN)
-                ->whereBetween('created_at', [$periodFrom, $periodTo])
+                ->where('created_at', '>=', $periodFrom)
+                ->where('created_at', '<=', $periodTo)
+                ->whereNull('deleted_at')
                 ->count();
 
             $customers = DB::table('customer_sales_channels')
                 ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
                 ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
                 ->where('customer_sales_channels.shop_id', $shop->id)
-                ->whereBetween('customer_sales_channels.created_at', [$periodFrom, $periodTo])
+                ->where('customer_sales_channels.created_at', '>=', $periodFrom)
+                ->where('customer_sales_channels.created_at', '<=', $periodTo)
+                ->whereNull('customer_sales_channels.deleted_at')
                 ->distinct('customer_sales_channels.customer_id')
                 ->count('customer_sales_channels.customer_id');
 
@@ -148,14 +154,18 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                 ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
                 ->where('portfolios.platform_id', $timeSeries->platform_id)
                 ->where('portfolios.shop_id', $shop->id)
-                ->whereBetween('portfolios.created_at', [$periodFrom, $periodTo])
+                ->where('portfolios.created_at', '>=', $periodFrom)
+                ->where('portfolios.created_at', '<=', $periodTo)
+                ->whereNull('portfolios.last_removed_at')
                 ->distinct('portfolios.item_id')
                 ->count('portfolios.item_id');
 
             $customerClients = DB::table('customer_clients')
                 ->where('platform_id', $timeSeries->platform_id)
                 ->where('shop_id', $shop->id)
-                ->whereBetween('created_at', [$periodFrom, $periodTo])
+                ->where('created_at', '>=', $periodFrom)
+                ->where('created_at', '<=', $periodTo)
+                ->whereNull('deleted_at')
                 ->count();
 
             $timeSeries->records()->updateOrCreate(

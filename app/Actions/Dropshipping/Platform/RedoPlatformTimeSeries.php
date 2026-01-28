@@ -26,19 +26,16 @@ class RedoPlatformTimeSeries
         $this->model = Platform::class;
     }
 
-    public function handle(Platform $platform, array $frequencies, Command $command = null, bool $async = true): void
+    public function handle(Platform $platform, array $frequencies, bool $async = true): void
     {
-        $shopIds = DB::table('invoices')
-            ->where('platform_id', $platform->id)
-            ->whereNotNull('shop_id')
-            ->distinct()
-            ->pluck('shop_id');
+        $shopIds = DB::table('invoices')->where('platform_id', $platform->id)->whereNull('deleted_at')->whereNotNull('shop_id')->distinct()->pluck('shop_id');
 
         foreach ($shopIds as $shopId) {
             $dates = collect([
                 DB::table('invoices')
                     ->where('platform_id', $platform->id)
                     ->where('shop_id', $shopId)
+                    ->whereNull('deleted_at')
                     ->selectRaw('MIN(date) as min_date, MAX(date) as max_date')
                     ->first(),
 
@@ -64,7 +61,7 @@ class RedoPlatformTimeSeries
             $from = $dates->pluck('min_date')->filter()->min();
             $to   = $dates->pluck('max_date')->filter()->max();
 
-            if (! $from || ! $to) {
+            if (!$from || !$to) {
                 continue;
             }
 
@@ -125,7 +122,7 @@ class RedoPlatformTimeSeries
                     }
 
                     try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
+                        $this->handle($instance, $frequencies, $command->option('async'));
                     } catch (Throwable $e) {
                         $command->error($e->getMessage());
                     }

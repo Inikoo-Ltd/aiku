@@ -29,18 +29,17 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
         $firstModel = is_array($models) ? ($models[0] ?? []) : [];
 
         $fields = [
-            'baskets_created_org_currency',
             'baskets_created_grp_currency',
             'invoices',
             'registrations',
-            'sales_org_currency',
+            'registrations_with_orders',
+            'registrations_without_orders',
             'sales_grp_currency',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
 
         $summedData = array_merge([
-            'organisation_currency_code' => $firstModel['organisation_currency_code'] ?? 'EUR',
             'group_currency_code' => $firstModel['group_currency_code'] ?? 'GBP',
         ], $summedData);
 
@@ -68,6 +67,26 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             ],
         ];
 
+        $columnsConfig = [
+            'baskets_created_grp_currency' => $routeTargets['inBasket'],
+            'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
+
+            'registrations_with_orders',
+            'registrations_without_orders',
+
+            'registrations' => $routeTargets['registrations'],
+            'registrations_minified' => $routeTargets['registrations'],
+            'registrations_delta',
+
+            'invoices' => $routeTargets['invoices'],
+            'invoices_minified' => $routeTargets['invoices'],
+            'invoices_delta',
+
+            'sales_grp_currency',
+            'sales_grp_currency_minified',
+            'sales_grp_currency_delta',
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
@@ -80,30 +99,14 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
                     'align'           => 'left',
                 ],
             ],
-            $this->getDashboardColumnsFromArray($summedData, [
-                'baskets_created_org_currency' => $routeTargets['inBasket'],
-                'baskets_created_org_currency_minified' => $routeTargets['inBasket'],
-
-                'baskets_created_grp_currency' => $routeTargets['inBasket'],
-                'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
-
-                'registrations' => $routeTargets['registrations'],
-                'registrations_minified' => $routeTargets['registrations'],
-                'registrations_delta',
-
-                'invoices' => $routeTargets['invoices'],
-                'invoices_minified' => $routeTargets['invoices'],
-                'invoices_delta',
-
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
-
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
-            ])
+            $this->getDashboardColumnsFromArray($summedData, $columnsConfig)
         );
+
+        $columns['baskets_created_org_currency'] = $columns['baskets_created_grp_currency'];
+        $columns['baskets_created_org_currency_minified'] = $columns['baskets_created_grp_currency_minified'];
+        $columns['sales_org_currency'] = $columns['sales_grp_currency'];
+        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
 
         return [
             'slug'    => 'totals',

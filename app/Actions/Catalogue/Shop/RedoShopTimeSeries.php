@@ -26,9 +26,9 @@ class RedoShopTimeSeries
         $this->model = Shop::class;
     }
 
-    public function handle(Shop $shop, array $frequencies, ?Command $command = null, bool $async = true): void
+    public function handle(Shop $shop, array $frequencies, bool $async = true): void
     {
-        $firstInvoicedDate = DB::table('invoices')->where('shop_id', $shop->id)->min('date');
+        $firstInvoicedDate = DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $shop->created_at)) {
             $shop->update(['created_at' => $firstInvoicedDate]);
@@ -36,10 +36,12 @@ class RedoShopTimeSeries
 
         $from = $shop->created_at->toDateString();
 
-        $to = DB::table('invoices')->where('shop_id', $shop->id)->max('date');
+        $to = DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->max('date');
+
         if (!$to) {
             $to = now();
         }
+
         $to = Carbon::parse($to)->toDateString();
 
         if ($from != null && $to != null) {
@@ -95,7 +97,7 @@ class RedoShopTimeSeries
                     }
 
                     try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
+                        $this->handle($instance, $frequencies, $command->option('async'));
                     } catch (Throwable $e) {
                         $command->error($e->getMessage());
                     }
