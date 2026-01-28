@@ -57,7 +57,7 @@ const emits = defineEmits<{
     (e: 'onVariantClick', value: any[]): void
 }>()
 
-
+const _button_variant = ref(null)
 const currency = layout?.iris?.currency
 
 
@@ -78,8 +78,9 @@ const onUnselectBackInStock = (product: ProductResource) => {
 }
 
 
-const onClickVariant = (product: ProductResource) => {
-    emits('onVariantClick', product.variant)
+const onClickVariant = (product: ProductResource, event : Event) => {
+    emits('onVariantClick', product.variant, event)
+   
 }
 
 
@@ -87,7 +88,9 @@ const onClickVariant = (product: ProductResource) => {
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
-
+defineExpose({
+ _button_variant
+})
 
 </script>
 
@@ -158,7 +161,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
                         <Button :label="trans('Choose variants')" size="xs"
-                            @click.prevent.stop="onClickVariant(product)" />
+                             @click.prevent.stop="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant=e" />
                     </div>
                 </div>
 

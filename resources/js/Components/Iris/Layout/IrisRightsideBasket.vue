@@ -285,14 +285,14 @@ const idxProductLoading = ref<number | null>(null)
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
                 
-                <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3">
+                <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3 gap-x-3">
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center whitespace-nowrap"
+                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
                     >
-                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
-                            {{ offer.label}}
+                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-ellipsis truncate text-base">
+                            {{ offer.label }}
                         </div>
-                        <div v-else class="text-base text-green-600">
+                        <div v-else class="text-ellipsis truncate text-base text-green-600">
                             {{ offer.label_got ?? offer.label}}
                         </div>
 

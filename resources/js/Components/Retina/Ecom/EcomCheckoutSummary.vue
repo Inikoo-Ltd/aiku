@@ -177,14 +177,14 @@ const updateCollection = (value: boolean) => {
 
             <!-- Section: Offer meters -->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
-                <div v-for="offer in layout?.offer_meters" class="grid grid-cols-2 mb-3">
+                <div v-for="offer in layout?.offer_meters" class="grid grid-cols-2 mb-3 gap-x-4">
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center whitespace-nowrap"
+                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
                     >
-                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
+                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-base text-ellipsis truncate">
                             {{ offer.label}}
                         </div>
-                        <div v-else class="text-base text-green-600">
+                        <div v-else v-tooltip="offer.label_got ?? offer.label" class="text-base text-green-600 text-ellipsis truncate">
                             {{ offer.label_got ?? offer.label}}
                         </div>
 

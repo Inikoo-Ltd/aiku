@@ -14,6 +14,6 @@ defineProps<{
 
 <style scoped>
 .offer-trigger-label {
-    @apply bg-gray-50 border border-orange-500 border-b-4 rounded-md px-2 py-1 leading-3 text-xxs;
+    @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
 }
 </style>

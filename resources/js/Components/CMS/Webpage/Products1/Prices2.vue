@@ -7,11 +7,12 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import { Popover } from "primevue"
 import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
 import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+
 library.add(faPlusCircle, faQuestionCircle)
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -129,7 +130,6 @@ const _popoverProfit = ref(null)
 
             <!-- Section: Profit, label Gold Reward Member -->
             <div class="mt-0 flex justify-between gap-x-2">
-
                 <template v-if="product.product_offers_data?.number_offers > 0">
                     <div v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
                         class="flex flex-col w-fit"
@@ -142,12 +142,13 @@ const _popoverProfit = ref(null)
                             :product
                         />
         
-                        <AvailableVolOfferLabel class="w-48"
+                      <!--   <AvailableVolOfferLabel class="w-48"
                             v-if="
                                 (product.stock && basketButton && !product.is_coming_soon)  // same as button add to basket conditions
                                 && !layout?.user?.gr_data?.customer_is_gr"
                             :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
-                        />
+                        /> -->
+                        <DiscountByType v-if="(product.stock && basketButton && !product.is_coming_soon)"  :offers_data="product?.product_offers_data" />
                     </div>
                     <div v-else />
                 </template>

@@ -11,6 +11,8 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
+
+console.log('layout',layout)
 const locale = inject('locale', aikuLocaleStructure)
 </script>
 
@@ -78,7 +80,7 @@ const locale = inject('locale', aikuLocaleStructure)
         </div>
 
         <!-- Profit -->
-        <div class="flex items-center justify-between pl-4 mt-2">
+        <div class="flex items-center justify-between pl-4 mt-2" v-if="layout.iris.website.slug != 'acar'">
             <div class="">
                 {{ trans("Profit") }} <span class="text-orange-500 font-semibold">({{ product.discounted_margin }})</span>:
             </div>

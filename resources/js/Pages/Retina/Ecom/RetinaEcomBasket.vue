@@ -599,7 +599,7 @@ const onChangeInsurance = async (val: boolean) => {
             <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.premium_dispatch?.description" />
-                    {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
+                    {{ charges.premium_dispatch?.label ? trans(charges.premium_dispatch.label) : trans(charges.premium_dispatch?.name ?? '') }}
                     <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
@@ -623,7 +623,7 @@ const onChangeInsurance = async (val: boolean) => {
             <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.extra_packing?.description" />
-                    {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
+                    {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
                     <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
@@ -646,7 +646,7 @@ const onChangeInsurance = async (val: boolean) => {
             <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative">
                     <InformationIcon :information="charges.insurance?.description" />
-                    {{ charges.insurance?.label ?? charges.insurance?.name }}
+                    {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
                     <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
