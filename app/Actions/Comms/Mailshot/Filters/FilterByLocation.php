@@ -5,15 +5,11 @@ namespace App\Actions\Comms\Mailshot\Filters;
 use App\Services\GeocoderService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 
 class FilterByLocation
 {
     /**
-     * Apply the "By Location" filter to the query.
-     *
-     * Supports two modes:
-     * 1. Radius Mode: Using Geocoding + Haversine (Latitude/Longitude)
-     * 2. Direct Mode: Using Country IDs and Postal Codes
      *
      * @param Builder $query
      * @param array $value
@@ -47,13 +43,14 @@ class FilterByLocation
         // --- MODE 2: RADIUS / AREA (Geocoding) ---
         if (!empty($location)) {
             $coordinates = $this->geocodeLocation($location);
-
-            if (! $coordinates) {
-                return $query;
+            if (!$coordinates) {
+                throw ValidationException::withMessages([
+                    'location' => __('Location not found. Please check the address and try again.'),
+                ]);
             }
 
-
-            if ($radius === 'area' && !empty($coordinates['bounds'])) {
+            // OPSI A: Whole Area (Bounding Box Search)
+            if (($radius === 'area' || empty($radius)) && !empty($coordinates['bounds'])) {
                 $bounds = $coordinates['bounds'];
                 return $query->whereHas('address', function (Builder $q) use ($bounds) {
                     $q->whereBetween('latitude', [$bounds['south'], $bounds['north']])
@@ -61,7 +58,7 @@ class FilterByLocation
                 });
             }
 
-
+            // OPSI B: Radius Search (Haversine)
             $lat = $coordinates['latitude'];
             $lng = $coordinates['longitude'];
             $radiusKm = $this->parseRadius($radius);
@@ -71,8 +68,10 @@ class FilterByLocation
                     ->whereNotNull('longitude')
                     ->whereRaw("
                       (6371 * acos(
-                          cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) +
-                          sin(radians(?)) * sin(radians(latitude))
+                          LEAST(1.0, GREATEST(-1.0,
+                              cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) +
+                              sin(radians(?)) * sin(radians(latitude))
+                          ))
                       )) <= ?
                   ", [$lat, $lng, $lat, $radiusKm]);
             });
@@ -99,7 +98,6 @@ class FilterByLocation
     private function geocodeLocation($location): ?array
     {
         $geocoder = new GeocoderService();
-
         return $geocoder->geocode($location);
     }
 }

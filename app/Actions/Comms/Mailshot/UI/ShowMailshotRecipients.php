@@ -200,7 +200,7 @@ class ShowMailshotRecipients extends OrgAction
                             'location' => [
                                 'type'        => 'input',
                                 'label'       => 'Center Location (Address/City)',
-                                'placeholder' => 'e.g. London, UK',
+                                'placeholder' => 'e.g. London, United Kingdom',
                                 'dependency'  => ['mode' => 'radius']
                             ],
 

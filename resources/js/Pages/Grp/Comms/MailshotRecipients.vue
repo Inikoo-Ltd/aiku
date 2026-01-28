@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Notification from '@/Components/Utils/Notification.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
 import { debounce } from 'lodash'
@@ -24,9 +25,33 @@ const props = defineProps<{
     filtersStructure: Record<string, any>
     filters: any
     customers: any
+    errors?: Record<string, string>
 }>()
 
 const activeFilters = ref<Record<string, any>>({ ...props.filters })
+const notificationData = computed(() => {
+    if (!props.errors?.location) return null
+
+    return {
+        class: 'bg-red-50 text-red-800 border border-red-200',
+        item: {
+            id: Date.now(),
+            title: 'Error!',
+            text: props.errors?.location ?? '',
+            html: '',
+            type: 'error',
+            state: 1,
+            speed: 300,
+            length: 1,
+            timer: 4000,
+        },
+        close: () => {
+            showNotification.value = false
+        }
+    }
+})
+
+const showNotification = ref(false)
 
 const availableFilters = computed(() => {
     const list = []
@@ -189,12 +214,19 @@ watch(activeFilters, () => {
     fetchFilteredRecipients()
 }, { deep: true })
 
+watch(notificationData, (data) => {
+    if (data) {
+        showNotification.value = true
+    }
+})
 </script>
 
 <template>
     <Head :title="title" />
 
     <PageHeading :data="pageHead" />
+
+    <Notification v-if="showNotification && notificationData" :notification="notificationData" />
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
 
@@ -385,8 +417,8 @@ watch(activeFilters, () => {
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Filter Mode</label>
                                 <select v-model="filter.value.mode" @change="onLocationModeChange(filter.value)"
                                     class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6">
-                                    <option value="direct">By Country & Postcode</option>
-                                    <option value="radius">By Radius (Geocoding)</option>
+                                    <option value="direct">By Direct</option>
+                                    <option value="radius">By Radius</option>
                                 </select>
                             </div>
 
@@ -438,7 +470,7 @@ watch(activeFilters, () => {
                                         <!-- Gunakan .lazy agar tidak update setiap keystroke, tapi update saat blur/enter -->
                                         <!-- Atau lebih baik: gunakan v-model biasa tapi fetch hanya dipanggil saat trigger tertentu -->
                                         <input type="text" v-model.lazy="filter.value.location"
-                                            placeholder="e.g. Bali, Indonesia"
+                                            :placeholder="filter.config.fields.location.placeholder"
                                             class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-xs sm:leading-6"
                                             @keydown.enter="fetchFilteredRecipients" />
                                         <button type="button" @click="fetchFilteredRecipients"
