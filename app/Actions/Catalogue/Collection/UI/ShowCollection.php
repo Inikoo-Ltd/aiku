@@ -195,14 +195,14 @@ class ShowCollection extends OrgAction
                                     'method'     => 'post'
                                 ]
                             ],
-                       /*  $this->canEdit ? [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false, */
+                        ] : false,
                     ],
             ],
                 'routes'      => [

@@ -42,7 +42,7 @@ class PrintShipmentLabel extends OrgAction
             return $res;
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'messages' => __('Error printing shipment label'),
+                'messages' => __('Error printing shipment label').' '.$e->getMessage(),
             ]);
         }
     }

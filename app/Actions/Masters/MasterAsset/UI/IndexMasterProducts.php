@@ -465,7 +465,7 @@ class IndexMasterProducts extends GrpAction
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
     }
 
-    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

@@ -8,6 +8,7 @@
 
 namespace App\Console;
 
+use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
@@ -93,7 +94,6 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
-
 
 
         $this->logSchedule(
@@ -396,16 +396,16 @@ class Kernel extends ConsoleKernel
 
         $urlsToHit = [
             [
-                'url' => 'https://www.aw-fulfilment.eu/',
+                'url'     => 'https://www.aw-fulfilment.eu/',
                 'inertia' => true,
                 'xmlhttp' => true,
-                'slug' => 'Hit https://www.aw-fulfilment.eu/ X-Inertia: true',
+                'slug'    => 'Hit https://www.aw-fulfilment.eu/ X-Inertia: true',
             ],
             [
-                'url' => 'https://www.aw-fulfilment.eu/',
+                'url'     => 'https://www.aw-fulfilment.eu/',
                 'inertia' => false,
                 'xmlhttp' => false,
-                'slug' => 'Hit https://www.aw-fulfilment.eu/',
+                'slug'    => 'Hit https://www.aw-fulfilment.eu/',
             ],
         ];
 
@@ -432,13 +432,61 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->command('process-websites-daily-time-series')->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ProcessDailyWebsiteTimeSeries',
+            $schedule->command('process:time-series', ['--frequency' => 'daily'])->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessDailyTimeSeries',
             ),
-            name: 'ProcessDailyWebsiteTimeSeries',
+            name: 'ProcessDailyTimeSeries',
             type: 'command',
             scheduledAt: now()->format('H:i')
         );
+
+        $this->logSchedule(
+            $schedule->command('process:time-series', ['--frequency' => 'weekly'])->weeklyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessWeeklyTimeSeries',
+            ),
+            name: 'ProcessWeeklyTimeSeries',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('process:time-series', ['--frequency' => 'monthly'])->monthlyOn(1, '03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessMonthlyTimeSeries',
+            ),
+            name: 'ProcessMonthlyTimeSeries',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('process:time-series', ['--frequency' => 'quarterly'])->quarterlyOn(1, '04:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessQuarterlyTimeSeries',
+            ),
+            name: 'ProcessQuarterlyTimeSeries',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('process:time-series', ['--frequency' => 'yearly'])->yearlyOn(1, 1, '05:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'ProcessYearlyTimeSeries',
+            ),
+            name: 'ProcessYearlyTimeSeries',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+
+        if (app()->environment('local')) {
+            $this->logSchedule(
+                $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunNewsletterScheduled',
+                ),
+                name: 'RunNewsletterScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+        }
     }
 
     protected function commands(): void

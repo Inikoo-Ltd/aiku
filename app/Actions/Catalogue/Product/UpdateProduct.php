@@ -83,7 +83,6 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-
         // todo: remove this after total aurora migration
         if (!$this->strict) {
             $orgStocks = null;
@@ -320,6 +319,8 @@ class UpdateProduct extends OrgAction
                     'master_asset_id' => $product->master_product_id
                 ]
             );
+            //todo create an action to add this product to a existing variant as minion or a leader (check master product to see id applicable)
+
         }
 
         if (Arr::has($changed, 'price')) {
@@ -439,6 +440,8 @@ class UpdateProduct extends OrgAction
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
+            'has_live_webpage'             => ['sometimes', 'boolean'],
+            'marketplace_id'               => ['sometimes'],
         ];
 
 

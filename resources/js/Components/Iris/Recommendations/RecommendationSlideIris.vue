@@ -29,8 +29,8 @@ const isLoadingVisit = ref(false)
 
         <!-- Image -->
         <component
-            :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
-            :href="product.attributes.web_url?.[0]"
+            :is="product.attributes.url?.[0] ? LinkIris : 'div'"
+            :href="product.attributes.url?.[0]"
             class="block rounded aspect-[5/4] w-full overflow-hidden"
             @success="() => SelectItemCollector(product)"
             @start="() => isLoadingVisit = true"
@@ -47,8 +47,8 @@ const isLoadingVisit = ref(false)
             <!-- Title -->
             <h3>
                 <component
-                    :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
-                    :href="product.attributes.web_url?.[0]"
+                    :is="product.attributes.url?.[0] ? LinkIris : 'div'"
+                    :href="product.attributes.url?.[0]"
                     class="!font-bold !text-sm !leading-tight hover:!underline !cursor-pointer !mb-2 inline-block text-justify"
                     @success="() => SelectItemCollector(product)"
                     @start="() => isLoadingVisit = true"

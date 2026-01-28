@@ -38,12 +38,13 @@ class SetIconAsShopLogo
     public function asCommand(Command $command): int
     {
         try {
-            $shop = Shop::where('slug', $command->argument('organisation'))->firstOrFail();
+            $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
         } catch (Exception) {
-            $command->error('Organisation not found');
+            $command->error('Shop not found');
 
             return 1;
         }
+        $this->handle($shop);
 
         $command->info('Logo set');
         return 0;

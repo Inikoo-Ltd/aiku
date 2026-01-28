@@ -76,17 +76,15 @@ const status = ref<null | 'loading' | 'success' | 'error'>(null)
 
 
 const currentQuantity = computed(() => {
-    const quantityNew = get(props.hasInBasket, ['quantity_ordered_new'])
-    const quantity = get(props.hasInBasket, ['quantity_ordered'])
+  const quantityNew = Number(get(props.hasInBasket, 'quantity_ordered_new') ?? 0)
+  const quantity = Number(get(props.hasInBasket, 'quantity_ordered') ?? 0)
 
-    const safeQuantity = Number(quantity ?? 0)
-    const safeQuantityNew = Number(quantityNew ?? 0)
+  // Jika quantity lama ada dan quantity baru 0/undefined, pakai quantity lama
+  if (quantity !== 0 && quantityNew === 0) {
+    return quantity
+  }
 
-    if (safeQuantity !== 0 && (quantityNew === 0 || quantityNew === undefined)) {
-        return safeQuantity
-    }
-
-    return safeQuantityNew
+  return quantityNew
 })
 
 
@@ -114,7 +112,7 @@ const fetchProduct = async (transId?: string|number|null) => {
 
     try {
         const response = await axios.get(
-            route('iris.models.transaction.fetch_product.product_list', {transaction: transId})
+            route('iris.json.basket_transaction_product_data', {transaction: transId})
         )
 
         const newProduct = response.data
@@ -285,9 +283,7 @@ const debAddAndUpdateProduct = debounce(() => {
 // Handle quantity change
 const updateQuantity = (newQuantity: number) => {
 
-    const clampedQuantity = props.product.is_on_demand
-        ? Math.max(0, newQuantity)
-        : Math.max(0, Math.min(newQuantity, props.product.stock))
+    const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
 
     // set quantity_ordered_new
     set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
@@ -330,8 +326,7 @@ const showChartButton = computed(() => {
 })
 
 const canOrder = computed(() => {
-    if (props.product.is_on_demand) return true
-    else if (props.product.stock > 0) return true
+    if (props.product.stock > 0) return true
     return false
 })
 
@@ -382,7 +377,7 @@ const hoveredButton = ref<string | null>(null)
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"  type="button"
-                :disabled="isLoadingSubmitQuantityProduct || (!props.product.is_on_demand && currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
+                :disabled="isLoadingSubmitQuantityProduct || (currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
                 class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
                     color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color

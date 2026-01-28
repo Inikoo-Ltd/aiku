@@ -52,7 +52,7 @@ class PortfoliosResource extends JsonResource
 
             'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
             'exist_in_platform'             => $this->exist_in_platform,
-            'platform_status'               => $this->platform_status,
+            'platform_status'               => $this->platform_type === 'manual' ? $this->status : $this->platform_status,
             'platform_possible_matches'     => $this->platform_possible_matches,
             'platform_product_id'           => $this->platform_product_id,
             'platform_product_data' => match ($this->platform_type) {

@@ -568,7 +568,6 @@ class IndexInvoices extends OrgAction
             ];
         };
 
-
         return match ($routeName) {
             'grp.org.accounting.invoices.index' =>
             array_merge(

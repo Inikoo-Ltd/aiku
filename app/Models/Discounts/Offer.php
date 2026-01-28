@@ -50,7 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_locked
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $start_at
+ * @property \Illuminate\Support\Carbon|null $start_at
  * @property \Illuminate\Support\Carbon|null $end_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
@@ -71,6 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read Model|\Eloquent|null $trigger
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
@@ -97,7 +98,7 @@ class Offer extends Model implements Auditable
         'settings'          => 'array',
         'trigger_data'      => 'array',
         'source_data'       => 'array',
-        'begin_at'          => 'datetime',
+        'start_at'          => 'datetime',
         'end_at'            => 'datetime',
         'last_suspended_at' => 'datetime',
         'fetched_at'        => 'datetime',
@@ -148,6 +149,11 @@ class Offer extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(OfferStats::class);
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(OfferTimeSeries::class);
     }
 
     public function offerCampaign(): BelongsTo

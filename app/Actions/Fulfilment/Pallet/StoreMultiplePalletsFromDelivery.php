@@ -79,7 +79,7 @@ class StoreMultiplePalletsFromDelivery extends OrgAction
         $this->fulfilment   = $fulfilmentCustomer->fulfilment;
         $this->parent       = $palletDelivery;
 
-        $this->initialisation($request->get('website')->organisation, $request);
+        $this->initialisation($request->input('website')->organisation, $request);
         $this->handle($palletDelivery, $this->validatedData);
     }
 

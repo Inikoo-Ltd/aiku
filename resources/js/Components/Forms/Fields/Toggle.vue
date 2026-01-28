@@ -19,6 +19,7 @@ const props = defineProps<{
         maxLength?: number
         noIcon?: boolean
         suffixImage?: string
+        warningText?: string
     }
 }>()
 
@@ -60,19 +61,25 @@ const value = ref(setFormValue(props.form, props.fieldName))
 
 watch(value, (newValue) => {
     // Update the form field value when the value ref changes
+    console.log(value.value, props);
     updateFormValue(newValue)
     props.form.errors[props.fieldName] = ''
 })
 
+const clearAndWarn = () => {
+    props.form.errors[props.fieldName] = null;
+    if(!props.fieldData?.warningText) return;
+    if(!confirm(props.fieldData?.warningText)){
+        value.value = !value.value;
+    }
+}
 
-
-// console.log(props.form, props.fieldName)
 </script>
 <template>
     <div>
         <Switch
             v-model="value"
-            @update:modelValue="() => form.errors[fieldName] = null"
+            @update:modelValue="clearAndWarn"
             class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
             :class="[
                 value ? 'bg-indigo-500' : 'bg-indigo-100',

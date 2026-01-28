@@ -520,7 +520,7 @@ class IndexFamilies extends OrgAction
             ->table(IndexFamiliesNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
     }
 
-    public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

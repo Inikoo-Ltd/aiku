@@ -70,6 +70,8 @@ import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
 import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
+import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
+import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -92,6 +94,7 @@ export const componentsList: { [key: string]: Component } = {
     'textarea': Textarea,
     'textEditor': TextEditor,
     'toggle': Toggle,
+    'toggle2fa': ToggleState2FA,
     'jobPosition': JobPosition,
     'senderEmail': SenderEmail,
     'employeePosition': EmployeePosition,
@@ -142,6 +145,7 @@ export const componentsList: { [key: string]: Component } = {
     'file_upload': FileUpload,
     'input-variant' : VariantsField,
     'editOffer' : EditOffer,
+    'offer_fields'  : OfferFields
 }
 
 export const getComponent = (componentName: string) => {

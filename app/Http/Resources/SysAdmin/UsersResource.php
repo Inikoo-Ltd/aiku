@@ -37,9 +37,9 @@ class UsersResource extends JsonResource
     {
         /** @var User $user */
         $user = $this;
-
         return [
             'id'                        => $this->id,
+            'slug'                      => $this->slug,
             'username'                  => $this->username,
             'image'                     => $user->imageSources(48, 48),
             'email'                     => $this->email,
@@ -60,8 +60,8 @@ class UsersResource extends JsonResource
             'number_expired_api_tokens' => $this->number_expired_api_tokens,
             'parent_type'               => $this->parent_type,
             'contact_name'              => $this->contact_name,
-
-
+            'has_2fa'                   => $this->has_2fa,
+            'is_two_factor_required'    => $this->is_two_factor_required,
         ];
     }
 }

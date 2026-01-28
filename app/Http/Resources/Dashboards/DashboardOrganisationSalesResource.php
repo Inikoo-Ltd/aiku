@@ -8,39 +8,23 @@
 
 namespace App\Http\Resources\Dashboards;
 
-use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Models\Helpers\Currency;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Cache;
 
-/**
- * @property mixed $name
- * @property mixed $code
- * @property mixed $organisation_currency_id
- */
 class DashboardOrganisationSalesResource extends JsonResource
 {
-    use WithDashboardIntervalValues;
-    protected string $organisationCurrencyCode;
-
+    use WithDashboardIntervalValuesFromArray;
 
     public function toArray($request): array
     {
-
-        $currencyOrganisationId = $this->organisation_currency_id;
-
-
-        $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
-            return Currency::find($currencyOrganisationId)->code;
-        });
-        $this->organisationCurrencyCode = $organisationCurrencyCode;
+        $data = is_array($this->resource) ? $this->resource : $this->resource->toArray();
 
         $routeTargets = [
             'invoices' => [
                 'route_target' => [
                     'name' => 'grp.org.accounting.invoices.index',
                     'parameters' => [
-                        'organisation' => $this->slug,
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
@@ -49,7 +33,7 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.overview.orders_in_basket.index',
                     'parameters' => [
-                        'organisation' => $this->slug,
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
@@ -58,7 +42,7 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.overview.customers.index',
                     'parameters' => [
-                        'organisation' => $this->slug,
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                     'key_date_filter' => 'between[registered_at]',
                 ],
@@ -67,55 +51,53 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.dashboard.show',
                     'parameters' => [
-                        'organisation' => $this->slug,
+                        'organisation' => $data['slug'] ?? 'unknown',
                     ],
                 ],
             ],
         ];
 
-
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $this->name,
+                    'formatted_value' => $data['name'] ?? 'Unknown',
                     'align'           => 'left',
                     ...$routeTargets['organisations']
-
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => $this->code,
-                    'tooltip'         => $this->name,
+                    'formatted_value' => $data['code'] ?? 'Unknown',
+                    'tooltip'         => $data['name'] ?? 'Unknown',
                     'align'           => 'left',
                     ...$routeTargets['organisations']
                 ]
             ],
-            $this->getDashboardTableColumn($this, 'baskets_created_org_currency', $routeTargets['inBasket']),
-            $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified', $routeTargets['inBasket']),
-            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency', $routeTargets['inBasket']),
-            $this->getDashboardTableColumn($this, 'baskets_created_grp_currency_minified', $routeTargets['inBasket']),
-            $this->getDashboardTableColumn($this, 'registrations', $routeTargets['registrations']),
-            $this->getDashboardTableColumn($this, 'registrations_minified', $routeTargets['registrations']),
-            $this->getDashboardTableColumn($this, 'registrations_delta'),
-            $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
-            $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
-            $this->getDashboardTableColumn($this, 'invoices_delta'),
-            $this->getDashboardTableColumn($this, 'sales_org_currency'),
-            $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),
-            $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
-            $this->getDashboardTableColumn($this, 'sales_grp_currency'),
-            $this->getDashboardTableColumn($this, 'sales_grp_currency_minified'),
-            $this->getDashboardTableColumn($this, 'sales_grp_currency_delta'),
+            $this->getDashboardColumnsFromArray($data, [
+                'baskets_created_org_currency' => $routeTargets['inBasket'],
+                'baskets_created_org_currency_minified' => $routeTargets['inBasket'],
+                'baskets_created_grp_currency' => $routeTargets['inBasket'],
+                'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
+                'registrations' => $routeTargets['registrations'],
+                'registrations_minified' => $routeTargets['registrations'],
+                'registrations_delta',
+                'invoices' => $routeTargets['invoices'],
+                'invoices_minified' => $routeTargets['invoices'],
+                'invoices_delta',
+                'sales_org_currency',
+                'sales_org_currency_minified',
+                'sales_org_currency_delta',
+                'sales_grp_currency',
+                'sales_grp_currency_minified',
+                'sales_grp_currency_delta',
+            ])
         );
 
         return [
-            'slug'    => $this->slug,
+            'slug'    => $data['slug'] ?? 'unknown',
             'state'   => 'active',
             'columns' => $columns,
-            'colour'  => $this?->colour,
-
-
+            'colour'  => $data['colour'] ?? null,
         ];
     }
 }

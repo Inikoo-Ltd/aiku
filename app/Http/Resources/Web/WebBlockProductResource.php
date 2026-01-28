@@ -18,6 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $units
@@ -51,15 +52,21 @@ class WebBlockProductResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
-        $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered ?? null)) : null;
 
-        $offers = isset($this->quantity_ordered) ? [
-            'offers_data'                       => $product->offers_data,
-            'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
-            'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
-        ] : [];
+        if (is_array($product->offers_data)) {
+            $productOffersData = $product->offers_data;
+        } else {
+            $productOffersData = json_decode($product->offers_data, true);
+        }
 
-        $back_in_stock    = false;
+
+        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
+        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
+
+        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
+
+
+        $back_in_stock = false;
 
         if ($request->user()) {
             /** @var Customer $customer */
@@ -70,47 +77,57 @@ class WebBlockProductResource extends JsonResource
                     ->first();
 
                 if ($set_data_back_in_stock) {
-                    $back_in_stock    = true;
+                    $back_in_stock = true;
                 }
             }
         }
 
+
         return [
-            'luigi_identity'                    => $product->getLuigiIdentity(),
-            'slug'                              => $product->slug,
-            'code'                              => $product->code,
-            'name'                              => $product->name,
-            'description'                       => $product->description,
-            'description_title'                 => $product->description_title,
-            'description_extra'                 => $product->description_extra,
-            'stock'                             => $product->available_quantity,
-            'specifications'                    => $product->is_single_trade_unit ? $specifications : null,
-            'contents'                          => ModelHasContentsResource::collection($product->contents)->toArray($request),
-            'id'                                => $product->id,
-            'image_id'                          => $product->image_id,
-            'currency_code'                     => $product->currency->code,
-            'rrp'                               => $product->rrp,
-            'rrp_per_unit'                      => $rrpPerUnit,
-            'margin'                            => $margin,
-            'profit'                            => $profit,
-            'profit_per_unit'                   => $profitPerUnit,
-            'price'                             => $product->price,
-            'price_per_unit'                    => $pricePerUnit,
-            'status'                            => $product->status,
-            'status_label'                      => $product->status->labels()[$product->status->value],
-            'state'                             => $product->state,
-            'units'                             => $units,
-            'unit'                              => $product->unit,
-            'web_images'                        => $product->web_images,
-            'created_at'                        => $product->created_at,
-            'updated_at'                        => $product->updated_at,
-            'images'                            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
-            'tags'                              => TagResource::collection($product->tags)->toArray($request),
-            'is_coming_soon'                    => $product->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'                      => $isOnDemand,
-            'is_back_in_stock'                  => $product->backInStockReminders,
-            'back_in_stock'                     => $back_in_stock,
-            ...$offers
+            'luigi_identity'    => $product->getLuigiIdentity(),
+            'slug'              => $product->slug,
+            'code'              => $product->code,
+            'name'              => $product->name,
+            'description'       => $product->description,
+            'description_title' => $product->description_title,
+            'description_extra' => $product->description_extra,
+            'stock'             => $product->available_quantity,
+            'specifications'    => $product->is_single_trade_unit ? $specifications : null,
+            'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
+            'id'                => $product->id,
+            'image_id'          => $product->image_id,
+            'currency_code'     => $product->currency->code,
+            'rrp'               => $product->rrp,
+            'rrp_per_unit'      => $rrpPerUnit,
+            'margin'            => $margin,
+            'profit'            => $profit,
+            'profit_per_unit'   => $profitPerUnit,
+            'price'             => $product->price,
+            'price_per_unit'    => $pricePerUnit,
+            'status'            => $product->status,
+            'status_label'      => $product->status->labels()[$product->status->value],
+            'state'             => $product->state,
+            'units'             => $units,
+            'unit'              => $product->unit,
+            'web_images'        => $product->web_images,
+            'created_at'        => $product->created_at,
+            'updated_at'        => $product->updated_at,
+            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'tags'              => TagResource::collection($product->tags)->toArray($request),
+            'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
+            'is_on_demand'      => $isOnDemand,
+            'is_back_in_stock'  => $product->backInStockReminders,
+            'back_in_stock'     => $back_in_stock,
+
+
+            'discounted_price'           => round($product->price * $bestPercentageOffOfferFactor, 2),
+            'discounted_price_per_unit'  => $pricePerUnitDiscounted,
+            'discounted_profit'          => $profitDiscounted,
+            'discounted_profit_per_unit' => $profitPerUnitDiscounted,
+            'discounted_margin'          => $marginDiscounted,
+            'discounted_percentage'      => percentage($bestPercentageOff, 1),
+
+
         ];
     }
 }

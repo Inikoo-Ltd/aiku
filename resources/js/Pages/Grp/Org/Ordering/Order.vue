@@ -10,12 +10,12 @@ import { Head, Link, router, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -63,7 +63,7 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy,faParachuteBox, faSortNumericDown
+    faCopy, faParachuteBox, faSortNumericDown,faMoneyCheckEditAlt
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -75,17 +75,20 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import { useConfirm } from "primevue/useconfirm";
 import ConfirmDialog from 'primevue/confirmdialog';
-
 import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
-import { get, set } from "lodash"
+import { debounce, get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import error from "@/Components/Utils/Error.vue"
+import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
 interface UploadSection {
     title: {
@@ -240,8 +243,9 @@ const props = defineProps<{
         route_download_pdf: routeType
     }
     dispatched_emails?: {}
-    payments_accounts: Array<{id: number, name: string}>
-    payments_data: Array<{id: number, name: string}>
+    payments_accounts: Array<{ id: number, name: string }>
+    payments_data: Array<{ id: number, name: string }>
+    state: string
 }>()
 
 
@@ -253,6 +257,8 @@ const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 console.log("dispatched_emails", props.dispatched_emails)
+
+console.log("props", props)
 
 const component = computed(() => {
     const components: Component = {
@@ -351,7 +357,6 @@ const noteToSubmit = ref({
     selectedNote: "",
     value: ""
 })
-const ellipsis = ref()
 const onSubmitNote = async (closePopup: Function) => {
 
     try {
@@ -364,7 +369,6 @@ const onSubmitNote = async (closePopup: Function) => {
                 onError: (error) => errorNote.value = error,
                 onFinish: () => {
                     isLoadingButton.value = false
-                    ellipsis.value.hide()
                 },
                 onSuccess: () => {
                     closePopup()
@@ -470,7 +474,7 @@ const confirm2 = (action) => {
 const isCollection = ref<boolean>(props.delivery_address_management.addresses.collection_address_id ? true : false)
 const collectionBy = ref<string>(props.box_stats?.shipping_notes ? 'thirdParty' : 'myself')
 const textValue = ref<string | null>(props.box_stats?.shipping_notes)
-
+const labelPercentage = ref("")
 const updateCollection = async (e: Event) => {
     const target = e.target as HTMLInputElement
     const payload = {
@@ -602,39 +606,20 @@ const onCreateReturn = (action: any) => {
 }
 
 
+// Section: Proforma Invoice
 const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
 const compSelectedDeck = computed(() => {
-    const xxx =  selectedCheck.value?.reduce((acc, curr) => {
+    const xxx = selectedCheck.value?.reduce((acc, curr) => {
         acc[curr] = true;
         return acc;
     }, {})
 
-    return route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...xxx})
+    return route(props.proforma_invoice.route_download_pdf.name, { ...props.proforma_invoice.route_download_pdf.parameters, ...xxx })
 })
-
-
 const isShowProforma = computed(() => {
-    return props.proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)
+    return props.proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))
 })
-
-// Function: Copy to clipboard
-const copyToClipboard = async (text: string, label: string) => {
-    try {
-        await navigator.clipboard.writeText(text)
-        notify({
-            title: trans("Copied!"),
-            text: trans(`:label copied to clipboard`, { label: label }),
-            type: "success"
-        })
-    } catch (error) {
-        notify({
-            title: trans("Failed"),
-            text: trans("Failed to copy to clipboard"),
-            type: "error"
-        })
-    }
-}
 
 
 const labelToBePaid = (toBePaidValue: string) => {
@@ -651,7 +636,7 @@ const labelToBePaid = (toBePaidValue: string) => {
 
 // Section: change shipping price (in Summary)
 const isLoadingUpdateShippingTbcAmount = ref(false)
-const updateShippingTbcAmount = (value: number, oldValue: number|null) => {
+const updateShippingTbcAmount = (value: number, oldValue: number | null) => {
     if (Number(value) === Number(oldValue)) {
         return
     }
@@ -731,7 +716,7 @@ const setShippingToAuto = () => {
         route('grp.models.order.set_shipping_engine_auto', {
             order: props.data?.data?.id
         }),
-        { },
+        {},
         {
             preserveScroll: true,
             preserveState: true,
@@ -758,6 +743,289 @@ const setShippingToAuto = () => {
         }
     )
 }
+
+const isOpenEditAllPercentageModal = ref(false)
+const editedAllPercentage = ref<number | null>(null)
+const isLoadingSubmitNetAmount = ref(false)
+
+const openEditAllPercentageModal = () => {
+    // editedAllPercentage.value = box_stats?.products?.estimated_weight ?? 0
+    isOpenEditAllPercentageModal.value = true
+}
+
+const closeEditAllPercentageModal = () => {
+    isOpenEditAllPercentageModal.value = false
+    editedAllPercentage.value = null
+}
+const isValidPercentage = (val: number | null) => {
+    return val !== null && val >= 0 && val <= 100
+}
+const onSubmitEditAllPercentage = async () => {
+    if (!isValidPercentage(editedAllPercentage.value)) {
+        notify({
+            title: trans('Invalid value'),
+            text: trans('Percentage must be between 0 and 100'),
+            type: 'warning',
+        })
+        return
+    }
+
+    const routeConfig = props.routes?.update_discount
+
+    if (!routeConfig) {
+        notify({
+            title: trans('Route not configured'),
+            type: 'error',
+        })
+        return
+    }
+
+    router.patch(
+        route(routeConfig.name, routeConfig.parameters),
+        {
+            discretionary_offer: editedAllPercentage.value,
+            discretionary_offer_label: labelPercentage.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitNetAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans('Success'),
+                    text: trans('Successfully applied discount to all products'),
+                    type: 'success',
+                })
+                closeEditAllPercentageModal()
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans('Something went wrong'),
+                    text:
+                        errors?.discretionary_discount_percentage ||
+                        trans('Failed to apply discount'),
+                    type: 'error',
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitNetAmount.value = false
+            },
+        }
+    )
+}
+
+
+
+// Section: Edit Discretionary Charge
+const isOpenModalDiscretionaryCharge = ref(false)
+const chargesList = ref([])
+const updateCharge = (charge: {}) => {
+    // Section: Submit
+    router.patch(
+        route(
+                'grp.models.transaction.update_charge_amount',
+                {
+                    transaction: charge.transaction_id
+                }
+            ),
+            {
+                amount: charge.net_amount
+            },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                charge.isLoading = true
+            },
+            onSuccess: () => {
+                charge.isRecentlySuccess = true
+                setTimeout(() => {
+                    charge.isRecentlySuccess = false
+                }, 2000)
+                notify({
+                    title: trans("Success!"),
+                    text: "Successfully edit net amount of the charge",
+                    type: "success",
+                })
+                // fetchChargesList(true)
+            },
+            onError: errors => {
+                notify({
+                title: trans("Something went wrong"),
+                text: error.message || trans("Please try again or contact administrator"),
+                type: 'error'
+            })
+            },
+            onFinish: () => {
+                charge.isLoading = false
+            },
+        }
+    )
+
+
+    // try {
+    //     charge.isLoading = true
+    //     const response = await axios.patch(
+    //         route(
+    //             'grp.models.transaction.update_charge_amount',
+    //             {
+    //                 transaction: charge.transaction_id
+    //             }
+    //         ), {
+    //             amount: charge.net_amount
+    //         }
+    //     )
+
+    //     charge.isRecentlySuccess = true
+    //     setTimeout(() => {
+    //         charge.isRecentlySuccess = false
+    //     }, 2000)
+    //     notify({
+    //         title: trans("Success!"),
+    //         text: "Successfully edit net amount of the charge",
+    //         type: "success",
+    //     })
+
+    //     console.log('Response axios:', response.data)
+    // } catch (error: any) {
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: error.message || trans("Please try again or contact administrator"),
+    //         type: 'error'
+    //     })
+    // } finally {
+    //     charge.isLoading = false
+    // }
+}
+// const updateDebCharge = debounce((charge) => updateCharge(charge), 400)
+// const addCharge = async (charge: {}) => {
+
+//     notify({
+//         title: trans("Something went wrong"),
+//         text: "Route to add new charge is not available yet.",
+//         type: "error",
+//     })
+// }
+const isLoadingFetchCharges = ref(false)
+const fetchChargesList = async (noLoading?: boolean) => {
+    try {
+        if (!noLoading) {
+            isLoadingFetchCharges.value = true
+        }
+
+        const response = await axios.get(
+            route(
+                'grp.json.charges_in_order.index',
+                {
+                    order: props.data?.data?.id
+                }
+            ),
+        )
+
+        chargesList.value = response.data.data
+        console.log('Response axios:', response.data)
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        if (!noLoading) {
+            isLoadingFetchCharges.value = false
+        }
+    }
+}
+watch(isOpenModalDiscretionaryCharge, async (val) => {
+    if (val) {
+        fetchChargesList()
+    }
+})
+const isLoadingRemoveCharge = ref<number[]>([])
+const onRemoveCharge = (charge) => {
+    // Section: Submit
+    router.delete(
+        route('grp.models.transaction.delete', {
+            transaction: charge.transaction_id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingRemoveCharge.value.push(charge.transaction_id)
+            },
+            onSuccess: () => {
+                // notifySuccess(trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label }))
+                notify({
+                    title: trans("Success"),
+                    text: trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label ?? '' }),
+                    type: "success"
+                })
+                chargesList.value = chargesList.value.filter((item) => item.transaction_id !== charge.transaction_id)
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove charge :chargeLabel", { chargeLabel: charge.label ?? '' }),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                const idx = isLoadingRemoveCharge.value.indexOf(charge.transaction_id)
+                if (idx !== -1) {
+                    isLoadingRemoveCharge.value.splice(idx, 1)
+                }
+            },
+        }
+    )
+}
+
+
+// Section: add new charge
+const isOpenModalAddCharges = ref(false)
+const dataNewChargeToAdd = ref({
+    label: '',
+    amount: 0
+})
+const isLoadingAddNewCharge = ref(false)
+const submitNewCharge = async () => {
+
+    try {
+        isLoadingAddNewCharge.value = true
+        const response = await axios.post(
+            route('grp.models.order.discretionary_charge_transaction', {
+                order: props.data?.data?.id
+            }),
+            {
+                amount: dataNewChargeToAdd.value.amount,
+                label: dataNewChargeToAdd.value.label,
+            }
+        )
+        console.log('Response axios:', response.data)
+
+        fetchChargesList()
+        dataNewChargeToAdd.value.label = ''
+        dataNewChargeToAdd.value.amount = 0
+        isOpenModalAddCharges.value = false
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully add new charge"),
+            type: "success"
+        })
+        router.reload()
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to add new charge"),
+            type: "error"
+        })
+    } finally {
+        isLoadingAddNewCharge.value = false
+    }
+}
+
 </script>
 
 <template>
@@ -797,14 +1065,10 @@ const setShippingToAuto = () => {
 
 
         <template #other>
-
-
             <div v-if="!props.readonly || isShowProforma" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
-
-
         </template>
 
         <template #button-replacement="{ action }">
@@ -823,24 +1087,23 @@ const setShippingToAuto = () => {
             <!-- Button: Add Notes -->
             <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
                 <template #button="{ open }">
-                    <Button icon="fal fa-sticky-note" type="tertiary" full
-                            :label="trans('Add notes')" />
+                    <Button icon="fal fa-sticky-note" type="tertiary" full :label="trans('Add notes')" />
                 </template>
                 <template #content="{ close: closed }">
                     <div class="w-[350px]">
                         <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
                         <div class="">
                             <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                             @update:modelValue="() => errorNote = ''"
-                                             :placeholder="trans('Select type note')" required
-                                             :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                             valueProp="value" />
+                                @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
+                                required
+                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                valueProp="value" />
                         </div>
 
                         <div class="mt-3">
                             <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
                             <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                          @keydown.enter="() => onSubmitNote(closed)" />
+                                @keydown.enter="() => onSubmitNote(closed)" />
                         </div>
 
                         <p v-if="errorNote" class="mt-2 text-sm text-red-600">
@@ -849,41 +1112,39 @@ const setShippingToAuto = () => {
 
                         <div class="flex justify-end mt-3">
                             <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                    :loading="isLoadingButton === 'submitNote'"
-                                    :disabled="!noteToSubmit.value" label="Save" full />
+                                :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
+                                full />
                         </div>
 
                         <div v-if="isLoadingButton === 'submitNote'"
-                             class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
-                                             fixed-width aria-hidden="true" />
+                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
+                                aria-hidden="true" />
                         </div>
                     </div>
                 </template>
             </Popover>
 
-            <!-- Popover: on click ellipsis -->
-            <PopoverPrimevue ref="ellipsis">
-                <div class="flex flex-col gap-2">
-                    <!-- Button: Undispatched -->
-                    <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
-                                             :routeDelete="routes.rollback_dispatch"
-                                             :title="trans('Are you sure you want to rollback the Order??')"
-                                             :description="trans('The state of the Order will go back to finalised state.')"
-                                             isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                        <template #default="{ changeModel }">
-                            <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
-                                    icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
-                        </template>
-                    </ModalConfirmationDelete>
+            <div class="flex flex-col gap-2">
+                <!-- Button: Undispatched -->
+                <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
+                    :routeDelete="routes.rollback_dispatch"
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
+                    :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
+                    <template #default="{ changeModel }">
+                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
+                            :tooltip="trans('Rollback the dispatch')" />
+                    </template>
+                </ModalConfirmationDelete>
 
-                    <Button
-                        v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
-                        @click="() => isOpenModalProforma = true" type="tertiary"
-                        :label="trans('Proforma Invoice')" icon="fal fa-download" />
+                <!-- Button: Proforma Invoice -->
+                <Button
+                    v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
+                    @click="() => isOpenModalProforma = true" type="tertiary" :label="trans('Proforma Invoice')"
+                    icon="fal fa-download" />
 
-                </div>
-            </PopoverPrimevue>
+            </div>
         </template>
 
         <template #afterTitle2>
@@ -931,26 +1192,18 @@ const setShippingToAuto = () => {
                 <div class="space-y-0.5 pl-1">
 
                     <!-- Field: Client -->
-                    <div v-if="box_stats?.customer_client"
-                         class="pl-1 pb-2 flex items-center w-full gap-x-2">
+                    <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width
+                                aria-hidden="true" />
                         </div>
                         <Link as="a" v-tooltip="trans('Customer client')"
-                              :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
-                              class="text-sm text-gray-500 cursor-pointer secondaryLink">
+                            :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                            class="text-sm text-gray-500 cursor-pointer secondaryLink">
                             {{ box_stats?.customer_client.contact_name }}
                         </Link>
-                        <button @click="copyToClipboard(box_stats?.customer_client.contact_name, 'Customer client')"
-                                class="text-gray-400 hover:text-gray-600 transition-colors"
-                                v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer_client.contact_name" />
                     </div>
-
-
-
-
 
 
                     <!-- Field: Reference Number -->
@@ -964,40 +1217,28 @@ const setShippingToAuto = () => {
                             class="text-sm text-gray-500 cursor-pointer primaryLink">
                             {{ box_stats?.customer.name }} ({{ box_stats?.customer.reference }})
                         </Link>
-
                     </div>
 
 
-
-
                     <!-- Field: Contact name -->
-                    <dl v-else-if="box_stats?.customer.contact_name"
-                        class="pl-1 flex items-center w-full gap-x-2">
+                    <dl v-else-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Contact name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
-                        <button @click="copyToClipboard(box_stats?.customer.contact_name, 'Contact name')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.contact_name" />
                     </dl>
 
                     <!-- Field: Company name -->
-                    <dl v-if="box_stats?.customer.company_name && box_stats?.customer.company_name!=box_stats?.customer.name"
+                    <dl v-if="box_stats?.customer.company_name && box_stats?.customer.company_name != box_stats?.customer.name"
                         class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Company name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
-                        <button @click="copyToClipboard(box_stats?.customer.company_name, 'Company name')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.company_name" />
                     </dl>
 
                     <!-- Field: Email -->
@@ -1008,28 +1249,19 @@ const setShippingToAuto = () => {
                         </dt>
                         <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
                             class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
-                            box_stats?.customer.email
+                                box_stats?.customer.email
                             }}</a>
-                        <button @click="copyToClipboard(box_stats?.customer.email, 'Email')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.email" />
                     </dl>
 
                     <!-- Field: Phone -->
                     <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Cuatomer phone')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width
-                                aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
                             class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
-                        <button @click="copyToClipboard(box_stats?.customer.phone, 'Phone')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
+                        <CopyButton :text="box_stats?.customer.phone" />
                     </dl>
 
                     <!-- Field: Billing Address -->
@@ -1106,19 +1338,15 @@ const setShippingToAuto = () => {
                             </dt>
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
+                                <div v-html="box_stats?.customer?.addresses?.delivery?.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
                             </dd>
-                            <button
-                                @click="copyToClipboard(box_stats?.customer.addresses.delivery.formatted_address.replace(/<[^>]*>/g, ''), 'Address')"
-                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 pt-2"
-                                v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton
+                                :text="box_stats?.customer?.addresses?.delivery?.formatted_address?.replace(/<[^>]*>/g, '')" />
                         </dl>
                     </div>
 
@@ -1141,29 +1369,24 @@ const setShippingToAuto = () => {
 
                         <div v-if="data.data?.state === 'cancelled'" class="">
                             <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
-                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width
+                                    aria-hidden="true" />
                                 {{ trans("Order cancelled, payments returned to balance") }}
                             </div>
                         </div>
 
-                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && Number(box_stats.products.payment.total_amount) > 0" class="w-full">
+                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && Number(box_stats.products.payment.total_amount) > 0"
+                            class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            <div class="w-full rounded-md shadow pxb-2 isolate border"
-                                :class="[
-                                    Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
-                                ]"
-                            >
-                                <NeedToPayV2
-                                    :totalAmount="box_stats.products.payment.total_amount"
+                            <div class="w-full rounded-md shadow pxb-2 isolate border" :class="[
+                                Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
+                            ]">
+                                <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
-                                    :balance="box_stats?.customer?.balance"
-                                    :payments="payments_data"
-                                    :currencyCode="currency.code"
-                                    :toBePaidBy="data?.data?.to_be_paid_by"
-                                    :order="data?.data"
-                                    :handleTabUpdate="handleTabUpdate"
-                                >
+                                    :balance="box_stats?.customer?.balance" :payments="payments_data"
+                                    :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
+                                    :order="data?.data" :handleTabUpdate="handleTabUpdate">
                                     <template #default>
 
 
@@ -1199,33 +1422,22 @@ const setShippingToAuto = () => {
                                         type="secondary" size="xxs" />
                                 </div>
 
-                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0" class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
-                                    <div v-if="data?.data?.to_be_paid_by?.value" class="mx-auto w-fit flex items-center">
-                                        <Button
-                                            @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
+                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
+                                    class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
+                                    <div v-if="data?.data?.to_be_paid_by?.value"
+                                        class="mx-auto w-fit flex items-center">
+                                        <Button @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
                                             xtype="secondary"
                                             :label="trans('Mark :toBePaidBy as received', { toBePaidBy: labelToBePaid(data?.data?.to_be_paid_by?.value) })"
-                                            size="sm"
-                                            class="rounded-r-none !border-r-0"
-                                        />
-                                        <Button
-                                            @click.prevent="() => onClickPayInvoice()"
-                                            xtype="secondary"
-                                            icon="far fa-ellipsis-v"
-                                            xlabel="trans('Pay with other')"
-                                            size="sm"
-                                            class="rounded-l-none !border-l-0"
-                                        />
+                                            size="sm" class="rounded-r-none !border-r-0" />
+                                        <Button @click.prevent="() => onClickPayInvoice()" xtype="secondary"
+                                            icon="far fa-ellipsis-v" xlabel="trans('Pay with other')" size="sm"
+                                            class="rounded-l-none !border-l-0" />
                                     </div>
                                     <div v-else class="mx-auto w-fit flex items-center">
-                                        <Button
-                                            @click.prevent="() => onClickPayInvoice()"
-                                            xtype="secondary"
-                                            xicon="far fa-ellipsis-v"
-                                            :label="trans('Pay')"
-                                            size="sm"
-                                            xclass="rounded-l-none !border-l-0"
-                                        />
+                                        <Button @click.prevent="() => onClickPayInvoice()" xtype="secondary"
+                                            xicon="far fa-ellipsis-v" :label="trans('Pay')" size="sm"
+                                            xclass="rounded-l-none !border-l-0" />
                                     </div>
                                 </div>
 
@@ -1233,12 +1445,15 @@ const setShippingToAuto = () => {
                                 <div v-if="box_stats.products.excesses_payment?.amount > 0"
                                     class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs">
                                     <p class="text-yellow-600 mb-1 flex justify-between">
-                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70"
+                                            fixed-width aria-hidden="true" />
                                         <span class="">
                                             {{ trans("The order is overpaid") }}:
-                                            <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}</strong>
+                                            <strong>{{ locale.currencyFormat(currency.code,
+                                                Number(box_stats.products.excesses_payment?.amount)) }}</strong>
                                         </span>
-                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="opacity-70"
+                                            fixed-width aria-hidden="true" />
                                     </p>
 
                                     <ButtonWithLink
@@ -1246,10 +1461,7 @@ const setShippingToAuto = () => {
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
                                         xicon="far fa-plus"
                                         :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
-                                        size="xs"
-                                        type="primary"
-                                        full
-                                    />
+                                        size="xs" type="primary" full />
                                 </div>
                             </div>
                         </div>
@@ -1277,7 +1489,7 @@ const setShippingToAuto = () => {
                                     :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'"
                                     fixed-width />
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
-                                note?.reference
+                                    note?.reference
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
@@ -1344,9 +1556,12 @@ const setShippingToAuto = () => {
                                 class="flex justify-between">
                                 <div class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
                                     <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
-                                        class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
-                                    {{ invoice?.reference }}
+                                        class="text-gray-500 secondaryLink" v-tooltip="invoice?.type_label">
+                                        {{ invoice?.reference }}
                                     </Link>
+                                    <FontAwesomeIcon v-if="invoice?.in_process" icon="fal fa-seedling" fixed-width
+                                        aria-hidden="true" class="text-green-500" v-tooltip="trans('In Process')" />
+
                                 </div>
 
                                 <a v-if="invoice?.routes?.download?.name"
@@ -1378,39 +1593,117 @@ const setShippingToAuto = () => {
                 <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-4 lg:mt-0">
                     <div class="border-b border-gray-300 mb-2 pb-2">
                         <!-- Field: weight -->
-                        <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                            <dt v-tooltip="trans('Weight')" class="flex-none">
-                                <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true"
-                                    class="text-gray-500" />
-                            </dt>
-                            <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
-                                {{ box_stats?.products.estimated_weight || 0 }} {{ trans("kilogram") }}
-                            </dd>
+                        <dl class="flex w-full items-center">
+                            <div class="flex items-center gap-x-1.5 w-">
+                                <dt v-tooltip="trans('Weight')" class="flex-none">
+                                    <FontAwesomeIcon icon="fal fa-weight" fixed-width class="text-gray-500" />
+                                </dt>
+
+                                <dd class="text-gray-500 whitespace-nowrap">
+                                    {{ box_stats?.products.estimated_weight || 0 }} {{ trans("kilogram") }}
+                                </dd>
+                            </div>
+                            <!-- button edit all percentage -->
+                            <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
+
+                            <button
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'x'))"
+                                class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
+                                v-tooltip="trans('Apply discount to all products')">
+                                <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
+                                    class="h-4 text-purple-400 hover:text-gray-600" />
+                            </button>
                         </dl>
+
+                        <Modal :isOpen="isOpenEditAllPercentageModal" @onClose="closeEditAllPercentageModal"
+                            width="w-full max-w-md">
+                            <div class="text-center mb-4">
+                                <div class="font-semibold text-xl">
+                                    {{ trans('Update all discretionary discount percentage') }}
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">
+                                        {{ trans('Discretionary discount percentage: (%)') }}
+                                    </label>
+                                    <InputNumber v-model="editedAllPercentage" :min="0" suffix="%" class="w-full" />
+                                </div>
+
+
+                                <!-- Input: Label -->
+                                <div class="w-full "
+                                    v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data.data.state))">
+                                    <label class="block text-sm font-medium mb-2">
+                                        {{ trans("Discretionary discount Label") }}:
+                                    </label>
+                                    <InputText v-model="labelPercentage" :disabled="isLoadingSubmitNetAmount"
+                                        class="w-full" />
+                                </div>
+
+                                <div class="flex gap-3 mt-4">
+                                    <Button type="negative" icon="far fa-arrow-left"
+                                        @click="closeEditAllPercentageModal" :label="trans('Cancel')" />
+
+                                    <Button type="primary" icon="fad fa-save" :loading="isLoadingSubmitNetAmount"
+                                        @click="onSubmitEditAllPercentage" full :label="trans('Save')" />
+                                </div>
+                            </div>
+                        </Modal>
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
+                        <template #cell_charges_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>
+                                        {{ fieldSummary.label }}
+                                    </span>
+                                    <span @click="isOpenModalDiscretionaryCharge = true"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-tooltip="trans('Edit charges')"
+                                        class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
+                                        <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
+                                    </span>
+                                </div>
+                                <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
+                                    class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+
+                            </dt>
+                        </template>
                         <template #cell_shipping_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                                     <span v-if="fieldSummary.data.engine === 'manual'">
                                         <span>{{ fieldSummary.label }}</span>
-                                        <span class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
+                                        <span
+                                            class="px-1 py-0.5 w-fit font-medium border rounded-sm bg-blue-100 text-blue-600 text-xxs align-middle">
                                             {{ trans('Manual') }}
                                         </span>
                                     </span>
                                     <span v-else>
                                         <span>{{ fieldSummary.label }}</span>
-                                        <span v-if="fieldSummary.data.shipping_zone?.code" v-tooltip="trans('Shipping zone code')">
+                                        <span v-if="fieldSummary.data.shipping_zone?.code"
+                                            v-tooltip="trans('Shipping zone code')">
                                             ({{ fieldSummary.data.shipping_zone?.code }})
                                         </span>
                                     </span>
-                                    <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
-                                    <span @click="_shipping_price_method?.toggle" class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
+                                    <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle'
+                                        v-tooltip="fieldSummary.information_icon"
+                                        class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
+                                        aria-hidden='true' />
+
+                                    <span
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        @click="_shipping_price_method?.toggle"
+                                        v-tooltip="trans('Edit shipping method')"
+                                        class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
                                 </div>
-                                <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+                                <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
+                                    class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
 
 
                                 <!-- Popover: Select shipping price method -->
@@ -1421,59 +1714,52 @@ const setShippingToAuto = () => {
                                         </div>
                                         <div class="grid grid-cols-1 gap-2">
                                             <div class="flex items-center gap-2">
-                                                <input
-                                                    type="radio"
+                                                <input type="radio"
                                                     :checked="get(fieldSummary, ['data', 'engine'], null) === 'auto'"
                                                     @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(); }"
-                                                    id="ingredient1"
-                                                    name="pizza"
-                                                    value="auto"
-                                                    class="focus:ring-0 focus:border-none"
-                                                />
+                                                    id="ingredient1" name="pizza" value="auto"
+                                                    class="focus:ring-0 focus:border-none" />
                                                 <label for="ingredient1">{{ trans("Auto") }}</label>
                                             </div>
                                             <div>
                                                 <div class="flex items-start gap-2">
-                                                    <input
-                                                        type="radio"
+                                                    <input type="radio"
                                                         :checked="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
                                                         @change="() => { set(fieldSummary, ['data', 'engine'], 'manual') }"
-                                                        id="ingredient2"
-                                                        name="pizza"
-                                                        value="manual"
-                                                        class="mt-1 focus:ring-0 focus:border-none"
-                                                    />
+                                                        id="ingredient2" name="pizza" value="manual"
+                                                        class="mt-1 focus:ring-0 focus:border-none" />
                                                     <div>
-                                                        <label for="ingredient2" class="block">{{ trans("Manual") }}</label>
+                                                        <label for="ingredient2" class="block">{{ trans("Manual")
+                                                        }}</label>
                                                         <InputNumber
                                                             :modelValue="get(fieldSummary, ['data', 'new_shipping_amount'], get(fieldSummary, ['data', 'shipping_amount'], null))"
                                                             @update:modelValue="(v) => set(fieldSummary, ['data', 'new_shipping_amount'], v)"
                                                             @input="(v) => set(fieldSummary, ['data', 'new_shipping_amount'], v.value)"
-                                                            inputId="currency-input"
-                                                            mode="currency"
+                                                            inputId="currency-input" mode="currency"
                                                             :disabled="get(fieldSummary, ['data', 'engine'], null) !== 'manual'"
-                                                            :currency="currency.code"
-                                                            locale="en-GB"
+                                                            :currency="currency.code" locale="en-GB"
                                                             inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
-                                                            :min="0"
-                                                        />
-                                                        <span v-if="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
+                                                            :min="0" />
+                                                        <span
+                                                            v-if="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
                                                             @click="() =>
                                                                 get(fieldSummary, ['data', 'new_shipping_amount'], null) == get(fieldSummary, ['data', 'shipping_amount'], null)
                                                                     ? false
                                                                     : setShippingManualAmount(get(fieldSummary, ['data', 'new_shipping_amount'], get(fieldSummary, ['data', 'shipping_amount'], 0)))
-                                                            "
-                                                            class="cursor-pointer ml-1">
+                                                            " class="cursor-pointer ml-1">
                                                             <LoadingIcon v-if="isLoadingShippingManual" />
-                                                            <FontAwesomeIcon v-else icon="fad fa-save" class="text-lg align-middle" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true"
-                                                                :class="get(fieldSummary, ['data', 'new_shipping_amount'], null) == get(fieldSummary, ['data', 'shipping_amount'], null) ? 'grayscale opacity-50' : ''"
-                                                            />
+                                                            <FontAwesomeIcon v-else icon="fad fa-save"
+                                                                class="text-lg align-middle"
+                                                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
+                                                                fixed-width aria-hidden="true"
+                                                                :class="get(fieldSummary, ['data', 'new_shipping_amount'], null) == get(fieldSummary, ['data', 'shipping_amount'], null) ? 'grayscale opacity-50' : ''" />
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div v-if="isLoadingShippingManual" class="absolute inset-0 bg-black/50 text-white text-2xl flex items-center justify-center rounded">
+                                            <div v-if="isLoadingShippingManual"
+                                                class="absolute inset-0 bg-black/50 text-white text-2xl flex items-center justify-center rounded">
                                                 <LoadingIcon />
                                             </div>
                                         </div>
@@ -1487,28 +1773,23 @@ const setShippingToAuto = () => {
                                 <Transition name="spin-to-right">
                                     <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc"
                                         class="-mr-2"
-                                        :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''"
-
-                                    >
-                                        <span v-if="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null" v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null">
-                                            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1 text-red-500" fixed-width aria-hidden="true" />
+                                        :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''">
+                                        <span v-if="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
+                                            v-tooltip="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? trans('Shipping amount need to be filled') : null">
+                                            <FontAwesomeIcon icon="fal fa-exclamation-triangle"
+                                                class="mr-1 text-red-500" fixed-width aria-hidden="true" />
                                         </span>
                                         <InputNumber
                                             :modelValue="get(fieldSummary, ['data', 'shipping_tbc_amount'], null)"
                                             @update:modelValue="(v) => updateShippingTbcAmount(v, get(fieldSummary, ['data', 'shipping_tbc_amount'], null))"
-                                            inputId="currency-input"
-                                            mode="currency"
-                                            :currency="currency.code"
-                                            locale="en-GB"
-                                            inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
-                                            :invalid="
-                                                get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null
-                                            "
-                                            :min="0"
-                                        />
+                                            inputId="currency-input" mode="currency" :currency="currency.code"
+                                            locale="en-GB" inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                            :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null
+                                                " :min="0" />
                                     </div>
 
-                                    <dd v-else :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
+                                    <dd v-else :key="fieldSummary.price_total" class=""
+                                        :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
                                         {{ locale.currencyFormat(currency.code, fieldSummary.price_total || 0) }}
                                     </dd>
                                 </Transition>
@@ -1527,7 +1808,7 @@ const setShippingToAuto = () => {
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
-            @update:tab="handleTabUpdate" :ref="(e)=> _refComponents = e"
+            @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
             :routesProductsListModification="routes.products_list_modification" />
     </div>
 
@@ -1577,14 +1858,8 @@ const setShippingToAuto = () => {
                         <span class="text-red-500">*</span> {{ trans("Select payment method") }}
                     </label>
                     <div class="mt-1">
-                        <Select
-                            v-model="paymentData.payment_method"
-                            :options="payments_accounts"
-                            optionLabel="name"
-                            optionValue="id"
-                            fluid
-                            :placeholder="trans('Select payment method')"
-                        />
+                        <Select v-model="paymentData.payment_method" :options="payments_accounts" optionLabel="name"
+                            optionValue="id" fluid :placeholder="trans('Select payment method')" />
                     </div>
                 </div>
 
@@ -1599,8 +1874,8 @@ const setShippingToAuto = () => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
                             }}: {{
-                            locale.currencyFormat(currency.code,
-                            box_stats.products.payment.pay_amount)
+                                locale.currencyFormat(currency.code,
+                                    box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
@@ -1660,8 +1935,8 @@ const setShippingToAuto = () => {
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
                             }}: {{
-                            locale.currencyFormat(currency.code,
-                            box_stats.products.payment.pay_amount)
+                                locale.currencyFormat(currency.code,
+                                    box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
@@ -1714,6 +1989,165 @@ const setShippingToAuto = () => {
         </div>
     </Modal>
 
+    <!-- Modal: Charges list -->
+    <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
+        width="w-full max-w-4xl " :isClosableInBackground="false" closeButton>
+        <div class="isolate bg-white px-6 lg:px-8 relative">
+            <div class="mx-auto max-w-2xl text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Charges") }}
+                </h2>
+            </div>
+
+            <div v-if="isLoadingFetchCharges" class="grid grid-cols-3 h-36 gap-x-4 gap-y-2">
+                <div v-for="xxx in 9" class="skeleton rounded">
+
+                </div>
+            </div>
+
+            <div v-else class="h-full max-h-[600px] overflow-y-scroll pr-2">
+                <DataTable :value="chargesList" tableStyle="xmin-width: 50rem">
+                    <Column field="name" header="Name">
+                        <template #body="{ data }">
+                            <div>
+                                {{ data.name }} {{ data.transaction_label }}
+                            </div>
+                        </template>
+                    </Column>
+                    <Column field="net_amount" header="Net Amount">
+                        <template #body="{ data }">
+                            <div v-if="!data.is_editing_net_amount">
+                                {{ locale.currencyFormat(currency.code, data.net_amount) }}
+                                <span @click="data.is_editing_net_amount = true" class="opacity-60 hover:opacity-100 cursor-pointer">
+                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                                </span>
+                            </div>
+
+                            <div v-else class="flex gap-x-2">
+                                <div class="grid">
+                                    <InputNumber
+                                        :modelValue="data.net_amount"
+                                        @input="(val) => (data.net_amount = val.value)"
+                                        :min="0"
+                                        mode="currency"
+                                        :currency="currency.code"
+                                        size="small"
+                                        :inputClass="data.isRecentlySuccess ? '!border-green-500' : ''"
+                                    />
+                                    <span
+                                        v-if="data.gross_amount != data.net_amount && !data.is_discretionary"
+                                        @click="data.net_amount = data.gross_amount, updateCharge(data)"
+                                        class="underline text-sm cursor-pointer opacity-70 hover:opacity-100 italic">
+                                        {{ trans("reset to original") }} ({{ locale.currencyFormat(currency.code, data.gross_amount) }})
+                                    </span>
+                                </div>
+
+                                <span v-if="data.isLoading">
+                                    <LoadingIcon class="text-4xl leading-none" />
+                                </span>
+                                <span v-else @click="() => updateCharge(data)" class="cursor-pointer">
+                                    <FontAwesomeIcon icon="fad fa-save" class="text-4xl leading-none" fixed-width aria-hidden="true" />
+                                </span>
+
+                                <span @click="data.is_editing_net_amount = false" class="mt-1 text-red-500 cursor-pointer underline inline-block ml-2">
+                                    {{ trans("cancel") }}
+                                </span>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <!-- <Column field="discounts" header="">
+                        <template #body="{ data }">
+                            <div v-if="data.percentage_discount">
+                                -{{ data.percentage_discount }}
+                            </div>
+                        </template>
+                    </Column> -->
+
+                    <Column field="actions" header="">
+                        <template #body="{ data }">
+                            <div>
+                                <Button
+                                    v-if="data.is_discretionary"
+                                    @click="() => onRemoveCharge(data)"
+                                    v-tooltip="trans('Remove Charge')"
+                                    type="negative"
+                                    icon="fal fa-trash-alt"
+                                    key="l"
+                                    :loading="isLoadingRemoveCharge.includes(data.transaction_id)"
+                                    size="sm"
+                                />
+                            </div>
+                        </template>
+                    </Column>
+                </DataTable>
+            </div>
+
+            <div class="absolute top-2 right-4">
+                <Button @click="() => isOpenModalAddCharges = true" type="dashed" size="xs" label="Add discretionary charges" icon="fal fa-plus" full />
+            </div>
+
+            <div class="absolute top-2 left-4">
+                <Button @click="() => isOpenModalDiscretionaryCharge = false" type="negative" size="xs" label="Close" icon="far fa-arrow-left" full />
+            </div>
+
+        </div>
+    </Modal>
+
+    <Dialog v-model:visible="isOpenModalAddCharges" modal :header="trans('Add Discretionary Charges')" class="w-full max-w-lg" xstyle="{ width: '25rem' }">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <!-- <div class="mx-auto max-w-2xl text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Add Discretionary Charges") }}
+                </h2>
+            </div> -->
+
+            <div class="mt-6 mb-6 xflex gap-x-6">
+                <div class=" w-full col-span-2">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans("Label") }}
+                        <InformationIcon :information="trans('Label to show to customer')" />
+                        :
+                    </label>
+                    <InputText
+                        v-model="dataNewChargeToAdd.label"
+                        :disabled="isLoadingSubmitNetAmount"
+                        size="small"
+                        class="w-full"
+                    />
+                </div>
+
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans('Amount') }}
+                        <InformationIcon :information="trans('Enter 0 to remove the charge')" />
+                        :
+                    </label>
+                    <InputNumber
+                        :modelValue="dataNewChargeToAdd.amount"
+                        @input="(val) => (dataNewChargeToAdd.amount = val.value)"
+                        :min="0"
+                        mode="currency"
+                        :currency="currency.code" class="w-full" size="small" />
+                </div>
+            </div>
+
+            <div>
+                <Button @click="submitNewCharge" label="Add Charge" full :loading="isLoadingAddNewCharge"
+                    v-tooltip="dataNewChargeToAdd.amount <= 0 ? 'Amount can not be 0 or less' : ''"
+                    :disabled="dataNewChargeToAdd.amount <= 0"
+                />
+            </div>
+        </div>
+    </Dialog>
+
+    <!-- Modal: Add new discretionary Charges -->
+    <!-- <Modal :isOpen="isOpenModalAddCharges" @onClose="isOpenModalAddCharges = false"
+        width="w-full max-w-lg" :isClosableInBackground="false" closeButton>
+
+    </Modal> -->
+
     <UploadExcel v-if="props.upload_excel" v-model="isModalUploadExcel" :title="upload_excel.title"
         :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"
         :preview_template="upload_excel.preview_template" :propsRefreshAfterFinish="['transactions', 'box_stats']"
@@ -1722,7 +2156,12 @@ const setShippingToAuto = () => {
     <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
+    }" :attachmentRoutes="attachmentRoutes" :options="[
+        {
+            name: 'Other',
+            code: 'other'
+        }
+    ]" />
 </template>
 
 <style scoped>

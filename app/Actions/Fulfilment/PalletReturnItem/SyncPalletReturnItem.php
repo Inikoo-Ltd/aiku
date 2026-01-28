@@ -117,7 +117,7 @@ class SyncPalletReturnItem extends OrgAction
         $this->fulfilment   = $fulfilmentCustomer->fulfilment;
         $this->pallet       = $pallet;
 
-        $this->initialisation($request->get('website')->organisation, $request);
+        $this->initialisation($request->input('website')->organisation, $request);
         return $this->handle($pallet, $this->validatedData);
     }
 

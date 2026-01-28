@@ -18,7 +18,7 @@ class RetinaPreparingAccount
     public function handle(Request $request, Closure $next)
     {
         if (
-            $request->get('website')->type === WebsiteTypeEnum::FULFILMENT->value
+            $request->input('website')->type === WebsiteTypeEnum::FULFILMENT->value
             && $request->user()
             && $request->user()?->customer?->fulfilmentCustomer?->rentalAgreement == null
         ) {

@@ -79,6 +79,26 @@ class UpdateShop extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'collection_follow_master')) {
+            data_set($modelData, 'settings.catalog.collection_follow_master', Arr::pull($modelData, 'collection_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'department_follow_master')) {
+            data_set($modelData, 'settings.catalog.department_follow_master', Arr::pull($modelData, 'department_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'sub_department_follow_master')) {
+            data_set($modelData, 'settings.catalog.sub_department_follow_master', Arr::pull($modelData, 'sub_department_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'family_follow_master')) {
+            data_set($modelData, 'settings.catalog.family_follow_master', Arr::pull($modelData, 'family_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'product_follow_master')) {
+            data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
+        }
+
         foreach ($modelData as $key => $value) {
             data_set(
                 $modelData,
@@ -316,7 +336,12 @@ class UpdateShop extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                       => ['sometimes', 'string'],
+            'colour'                        => ['sometimes', 'string'],
+            'collection_follow_master'      => ['sometimes', 'boolean'],
+            'department_follow_master'      => ['sometimes', 'boolean'],
+            'sub_department_follow_master'  => ['sometimes', 'boolean'],
+            'family_follow_master'          => ['sometimes', 'boolean'],
+            'product_follow_master'         => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

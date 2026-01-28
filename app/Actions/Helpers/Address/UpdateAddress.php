@@ -21,7 +21,7 @@ class UpdateAddress
     use WithActionUpdate;
     use WithAddressAuditing;
 
-    public function handle(Address $address, array $modelData, Customer $parent = null, $addressLabel = ''): Address
+    public function handle(Address $address, array $modelData, ?Customer $parent = null, $addressLabel = ''): Address
     {
         $oldAddressFields = [];
         if ($parent) {

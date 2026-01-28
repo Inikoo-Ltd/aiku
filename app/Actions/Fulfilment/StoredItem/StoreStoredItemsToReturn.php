@@ -128,7 +128,7 @@ class StoreStoredItemsToReturn extends OrgAction
         $fulfilmentCustomer = $request->user()->customer->fulfilmentCustomer;
         $this->fulfilment   = $fulfilmentCustomer->fulfilment;
 
-        $this->initialisation($request->get('website')->organisation, $request->except(['domain', 'website']));
+        $this->initialisation($request->input('website')->organisation, $request->except(['domain', 'website']));
 
         return $this->handle($palletReturn, $this->validatedData);
     }

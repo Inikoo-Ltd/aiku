@@ -272,7 +272,7 @@ const changeSelectedProduct = (product: ProductResource) => {
   window.history.replaceState({}, '', url.toString())
 }
 
-
+// Method: to get product data without cache
 const fetchData = async () => {
   try {
     const response = await axios.get(

@@ -208,7 +208,7 @@ class IndexOrgPostRooms extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [

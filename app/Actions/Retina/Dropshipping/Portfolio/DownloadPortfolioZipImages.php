@@ -50,8 +50,8 @@ class DownloadPortfolioZipImages extends RetinaAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (! blank($request->get('ids'))) {
-            $this->set('ids', explode(',', $request->get('ids')));
+        if (! blank($request->input('ids'))) {
+            $this->set('ids', explode(',', $request->input('ids')));
         }
     }
 

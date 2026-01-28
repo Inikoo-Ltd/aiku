@@ -22,6 +22,7 @@ class GetCollectionShowcase
     {
         return [
 
+            'web_images'            => $collection->web_images,
             'image'                 => $collection->imageSources(720, 480),
             'description'           => $collection->description,
             'name'                  => $collection->name,

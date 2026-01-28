@@ -158,6 +158,10 @@ class CancelDeliveryNote extends OrgAction
             $deliveryNote = DeliveryNote::query()->where('slug', $identifier)->first();
         }
 
+        if (!$deliveryNote) {
+            $deliveryNote = DeliveryNote::query()->where('reference', $identifier)->first();
+        }
+
 
         if (!$deliveryNote) {
             $command->error("Delivery note '$identifier' not found (searched by id, slug, reference).");

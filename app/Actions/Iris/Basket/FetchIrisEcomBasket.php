@@ -227,6 +227,28 @@ class FetchIrisEcomBasket extends IrisAction
             ] : null,
         ];
 
+        $orderArr['eligible_gifts'] = [  // TODO: Raul INI-887
+            'is_customer_eligible' => true,
+            'selected_gift' => [
+                'label' => 'Rainbow bath bomb',
+                'value' => 'rainbow_bath_bomb'
+            ],
+            'available_gifts' => [
+                [
+                    'label' => 'Rainbow bath bomb',
+                    'value' => 'rainbow_bath_bomb'
+                ],
+                [
+                    'label' => 'Lavender bath bomb',
+                    'value' => 'lavender_bath_bomb'
+                ],
+                [
+                    'label' => 'Rose bath bomb',
+                    'value' => 'rose_bath_bomb'
+                ],
+            ],
+        ];
+
         return $orderArr;
     }
 }

@@ -37,29 +37,29 @@ class OrganisationHydrateOrderStateSubmitted implements ShouldBeUnique
         $stats = [
 
 
-            'number_orders_state_submitted'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)->count(),
-            'orders_state_submitted_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('org_net_amount'),
-            'orders_state_submitted_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
+            'number_orders_state_submitted'              => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)->count(),
+            'orders_state_submitted_amount_org_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)->sum('org_net_amount'),
+            'orders_state_submitted_amount_grp_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
 
 
-            'number_orders_state_submitted_paid'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'number_orders_state_submitted_paid'              => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
                 ->count(),
-            'orders_state_submitted_paid_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'orders_state_submitted_paid_amount_org_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
                 ->sum('org_net_amount'),
 
-            'orders_state_submitted_paid_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'orders_state_submitted_paid_amount_grp_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
                 ->sum('grp_net_amount'),
 
-            'number_orders_state_submitted_not_paid'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'number_orders_state_submitted_not_paid'              => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
                 ->count(),
-            'orders_state_submitted_not_paid_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'orders_state_submitted_not_paid_amount_org_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
                 ->sum('org_net_amount'),
-            'orders_state_submitted_not_paid_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
+            'orders_state_submitted_not_paid_amount_grp_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
                 ->sum('grp_net_amount'),
 

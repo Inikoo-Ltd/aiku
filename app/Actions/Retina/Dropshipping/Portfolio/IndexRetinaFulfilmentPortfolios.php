@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\Dropshipping\FulfilmentPortfolioResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
@@ -61,8 +61,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisation($request);
-        return $this->handle($customerSalesChannel);
+        $this->initialisation($request)->withTab(CustomerSalesChannelPortfolioTabsEnum::values());
+        return $this->handle($customerSalesChannel, 'products');
     }
 
 
@@ -92,7 +92,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs(request()->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
                     'title'   => $title,
@@ -146,7 +146,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => ProductTabsEnum::navigation()
+                    'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
                 ],
 
                 'products' => FulfilmentPortfolioResource::collection($portfolios),
@@ -180,7 +180,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
         };
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
         return
             array_merge(
@@ -190,7 +190,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.dropshipping.portfolios.index'
+                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.portfolios.index',
+                                'parameters' => $routeParameters
                             ],
                             'label' => __('My Products'),
                         ]

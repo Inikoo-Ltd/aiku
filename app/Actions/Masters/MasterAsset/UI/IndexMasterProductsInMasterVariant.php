@@ -43,8 +43,6 @@ class IndexMasterProductsInMasterVariant extends OrgAction
             'master_asset_stats.master_asset_id'
         );
 
-
-
         $queryBuilder
             ->defaultSort('master_assets.code')
             ->select([

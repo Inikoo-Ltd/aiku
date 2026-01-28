@@ -37,7 +37,7 @@ class StartAnnouncement extends OrgAction
             return true;
         }
 
-        return $request->get('customerUser')->hasPermissionTo("portfolio.banners.edit");
+        return $request->input('customerUser')->hasPermissionTo("portfolio.banners.edit");
     }
 
     public function asController(Website $website, Announcement $announcement, ActionRequest $request): void

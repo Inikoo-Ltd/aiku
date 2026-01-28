@@ -10,6 +10,7 @@ namespace App\Models\SysAdmin;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
@@ -71,6 +72,8 @@ use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\PickedBay;
+use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Masters\MasterAsset;
@@ -136,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $extra_languages
  * @property string|null $ping
  * @property-read \App\Models\SysAdmin\GroupAccountingStats|null $accountingStats
+ * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, Agent> $agents
  * @property-read LaravelCollection<int, AikuSection> $aikuScopedSections
@@ -213,6 +217,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentGatewayLog> $paymentGatewayLogs
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
+ * @property-read LaravelCollection<int, PickedBay> $pickedBays
+ * @property-read LaravelCollection<int, PickingTrolley> $pickingTrolleys
  * @property-read LaravelCollection<int, Picking> $pickings
  * @property-read LaravelCollection<int, Platform> $platforms
  * @property-read LaravelCollection<int, Portfolio> $portfolios
@@ -612,6 +618,16 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(Shop::class);
     }
 
+    public function activeShops(): HasMany
+    {
+        return $this->hasMany(Shop::class)->where('state', ShopStateEnum::OPEN);
+    }
+
+    public function orderFromActiveShops(): Builder
+    {
+        return Order::whereIn('shop_id', $this->activeShops()->get()->pluck('id'));
+    }
+
     public function warehouses(): HasMany
     {
         return $this->hasMany(Warehouse::class);
@@ -972,5 +988,15 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function holidays(): HasMany
     {
         return $this->hasMany(Holiday::class);
+    }
+
+    public function pickingTrolleys(): HasMany
+    {
+        return $this->hasMany(PickingTrolley::class);
+    }
+
+    public function pickedBays(): HasMany
+    {
+        return $this->hasMany(PickedBay::class);
     }
 }

@@ -290,7 +290,12 @@ class ShowProduct extends OrgAction
         }
 
         if ($product->webpage) {
-            $actions[] =
+            $actions = array_merge($actions, [
+                [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'key'   => 'reindex',
+                ],
                 [
                     'type'  => 'button',
                     'style' => 'edit',
@@ -305,7 +310,8 @@ class ShowProduct extends OrgAction
                             'webpage'      => $product->webpage->slug
                         ]
                     ]
-                ];
+                ],
+            ]);
         } elseif (!$product->is_minion_variant) {
             $actions[] =
                 [
@@ -321,7 +327,9 @@ class ShowProduct extends OrgAction
                 ];
         }
 
-        if ($product->webpage?->canonical_url) {
+        $productWeb = $product->webpage;
+
+        if ($productWeb?->canonical_url) {
             $actions[] =
                 [
                     'type'  => 'button',
@@ -382,7 +390,13 @@ class ShowProduct extends OrgAction
                 'webpage_canonical_url' => $product->webpage?->canonical_url,
                 'is_single_trade_unit'  => $product->is_single_trade_unit,
                 'trade_unit_slug'       => $product->tradeUnits?->first->slug,
-
+                'luigi_data'            =>  $productWeb ? [
+                    'webpage_id'            => $productWeb->id,
+                    'last_reindexed'        => Arr::get($productWeb->website->settings, "luigisbox.last_reindex_at"),
+                    'luigisbox_tracker_id'  => Arr::get($productWeb->website->settings, "luigisbox.tracker_id"),
+                    'luigisbox_private_key' => Arr::get($productWeb->website->settings, "luigisbox.private_key"),
+                    'luigisbox_lbx_code'    => Arr::get($productWeb->website->settings, "luigisbox.lbx_code"),
+                ] : [],
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),

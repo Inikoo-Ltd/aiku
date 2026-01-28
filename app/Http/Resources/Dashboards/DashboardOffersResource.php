@@ -8,54 +8,54 @@
 
 namespace App\Http\Resources\Dashboards;
 
-use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Number;
 
 class DashboardOffersResource extends JsonResource
 {
-    use WithDashboardIntervalValues;
+    use WithDashboardIntervalValuesFromArray;
 
     public function toArray($request): array
     {
+        $data = (array) $this->resource;
+
+        // Method 1: One by one
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => 'Dummy',
+                    'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
                     'align'           => 'left'
                 ]
             ],
-            //            $this->getDashboardTableColumn($this, 'customers'),
-            //            $this->getDashboardTableColumn($this, 'orders')
-            $this->getDashboardTableColumnFromArray('customers'),
-            $this->getDashboardTableColumnFromArray('orders')
+            $this->getDashboardTableColumnFromArray($data, 'customers'),
+            $this->getDashboardTableColumnFromArray($data, 'customers_minified'),
+            $this->getDashboardTableColumnFromArray($data, 'orders'),
+            $this->getDashboardTableColumnFromArray($data, 'orders_minified'),
+            $this->getDashboardTableColumnFromArray($data, 'orders_delta')
         );
 
+        // Method 2: Batch (alternative, cleaner)
+        // $columns = array_merge(
+        //     [
+        //         'label' => [
+        //             'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
+        //             'align'           => 'left'
+        //         ]
+        //     ],
+        //     $this->getDashboardColumnsFromArray($data, [
+        //         'customers',
+        //         'customers_minified',
+        //         'orders',
+        //         'orders_minified',
+        //         'orders_delta'
+        //     ])
+        // );
+
         return [
-            'slug'      => 'dummy',
-            'state'     => 'active',
-            'columns'   => $columns,
-            'colour'    => ''
+            'slug'    => $data['slug'] ?? 'unknown',
+            'state'   => $data['state'] ?? 'active',
+            'columns' => $columns,
+            'colour'  => ''
         ];
-    }
-
-    private function getDashboardTableColumnFromArray(string $scope): array
-    {
-        $intervals = DateIntervalEnum::cases();
-        $columns = [];
-
-        foreach ($intervals as $interval) {
-            $key = "{$scope}_{$interval->value}";
-            $rawValue = $this->resource[$key] ?? 0;
-
-            $columns[$interval->value] = [
-                'raw_value' => $rawValue,
-                'tooltip' => '',
-                'formatted_value' => Number::format($rawValue)
-            ];
-        }
-
-        return [$scope => $columns];
     }
 }

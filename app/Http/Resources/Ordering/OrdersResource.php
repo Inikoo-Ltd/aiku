@@ -52,6 +52,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $combined_label_url
  * @property mixed $shipping_data
  * @property bool $with_replacement
+ * @property mixed $submitted_at
+ * @property mixed $dispatched_at
  *
  */
 class OrdersResource extends JsonResource
@@ -78,6 +80,8 @@ class OrdersResource extends JsonResource
             'slug'                        => $this->slug,
             'reference'                   => $this->reference,
             'date'                        => $this->date,
+            'submitted_at'                => $this->submitted_at,
+            'dispatched_at'               => $this->dispatched_at,
             'name'                        => $this->name,
             'state'                       => $this->state,
             'state_icon'                  => $this->state->stateIcon()[$this->state->value],

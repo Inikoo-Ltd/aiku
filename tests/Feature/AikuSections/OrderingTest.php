@@ -18,6 +18,18 @@ use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsCharges;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsCollections;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsGroups;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsInvoiceCategories;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsMasterShops;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsOrganisations;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsPlatforms;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsProductCategories;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsProducts;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsStockFamilies;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsStocks;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
@@ -99,6 +111,8 @@ use App\Models\Ordering\Transaction;
 use App\Models\Helpers\Country;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Date;
 use Inertia\Testing\AssertableInertia;
 
@@ -1194,7 +1208,7 @@ it('hydrates order tracking numbers from multiple delivery notes and shipments',
         'warehouse_id'     => $this->warehouse->id
     ]);
 
-    // Create a shipper
+    /** @var Shipper $shipper */
     $shipper = Shipper::factory()->create([
         'organisation_id' => $this->organisation->id,
         'group_id' => $this->organisation->group_id,
@@ -1289,6 +1303,20 @@ test('get iris basket transactions in collection action', function () {
 });
 
 test('reset daily intervals action dispatches expected jobs', function () {
+    Queue::fake();
 
     ResetDailyIntervals::make()->handle();
+
+    ProcessResetIntervalsGroups::assertPushed(1);
+    ProcessResetIntervalsOrganisations::assertPushed(1);
+    ProcessResetIntervalsMasterShops::assertPushed(1);
+    ProcessResetIntervalsShops::assertPushed(1);
+    ProcessResetIntervalsProducts::assertPushed(1);
+    ProcessResetIntervalsCharges::assertPushed(1);
+    ProcessResetIntervalsPlatforms::assertPushed(1);
+    ProcessResetIntervalsInvoiceCategories::assertPushed(1);
+    ProcessResetIntervalsProductCategories::assertPushed(1);
+    ProcessResetIntervalsCollections::assertPushed(1);
+    ProcessResetIntervalsStocks::assertPushed(1);
+    ProcessResetIntervalsStockFamilies::assertPushed(1);
 });

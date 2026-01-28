@@ -9,13 +9,16 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
+use App\Http\Resources\Comms\MailshotRecipient\MailshotRecipientsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -57,6 +60,11 @@ class ShowMailshot extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
+        $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]);
+
+        // NOTE: In this step, enable the process only for newsletters
+        // next step remove this condition
+        $isShowProcessButton = in_array($mailshot->type, [MailshotTypeEnum::NEWSLETTER]);
 
         return Inertia::render(
             'Comms/Mailshot',
@@ -69,7 +77,7 @@ class ShowMailshot extends OrgAction
                 ),
                 'pageHead'                        => [
                     'icon'    => 'fal fa-coins',
-                    'title'   => 'Mailshot '.$mailshot->id,
+                    'title'   => $mailshot->type->value . ' ' . $mailshot->id,
                     'edit'    => $this->canEdit ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -77,13 +85,13 @@ class ShowMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        $this->canEdit ? [
+                        $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
                             'route' => [
-                                'name'       => "grp.org.shops.show.marketing.mailshots.workshop",
+                                'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.workshop" : "grp.org.shops.show.marketing.newsletters.workshop",
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
@@ -91,13 +99,13 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $this->canEdit ? [
+                        $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
-                                'name'       => "grp.org.shops.show.marketing.mailshots.edit",
+                                'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.edit" : "grp.org.shops.show.marketing.newsletters.edit",
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
@@ -109,11 +117,16 @@ class ShowMailshot extends OrgAction
                 ],
                 'tabs'                            => [
                     'current'    => $this->tab,
-                    'navigation' => MailshotTabsEnum::navigation()
+                    'navigation' => MailshotTabsEnum::navigation($mailshot)
                 ],
                 MailshotTabsEnum::SHOWCASE->value => $this->tab == MailshotTabsEnum::SHOWCASE->value ?
                     fn () => GetMailshotShowcase::run($mailshot)
                     : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot)),
+
+                MailshotTabsEnum::RECIPIENTS->value => $this->tab == MailshotTabsEnum::RECIPIENTS->value ?
+                    fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
+                    : Inertia::lazy(fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
+
 
                 MailshotTabsEnum::DISPATCHED_EMAILS->value => $this->tab == MailshotTabsEnum::DISPATCHED_EMAILS->value
                     ?
@@ -129,12 +142,57 @@ class ShowMailshot extends OrgAction
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
                         )
                     )),
+                'sendMailshotRoute' => [
+                    'name' => 'grp.models.shop.outboxes.newsletter.send',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'outbox' => $mailshot->outbox->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'scheduleMailshotRoute' => [
+                    'name' => 'grp.models.shop.outboxes.newsletter.schedule',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'outbox' => $mailshot->outbox->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'deleteMailshotRoute' => [
+                    'name' => 'grp.models.shop.mailshot.delete',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'indexRoute' => [
+                    'name' => 'grp.org.shops.show.marketing.newsletters.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug
+                    ],
+                ],
+                'cancelScheduleMailshotRoute' => [
+                    'name' => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'outbox' => $mailshot->outbox->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'status' => $mailshot->state->value,
+                'isShowProcessButton' => $isShowProcessButton,
 
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(
                 parent: $mailshot,
                 prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
+            )
+        )->table(
+            IndexMailshotRecipients::make()->tableStructure(
+                parent: $mailshot,
+                prefix: MailshotTabsEnum::RECIPIENTS->value
             )
         );
     }
@@ -209,6 +267,4 @@ class ShowMailshot extends OrgAction
             default => []
         };
     }
-
-
 }

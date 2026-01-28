@@ -1,0 +1,131 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 30 May 2025 16:12:46 Central Indonesia Time, Sanur, change, China
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Http\Resources\Web;
+
+use App\Actions\Traits\HasBucketImages;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Helpers\NaturalLanguage;
+use App\Http\Resources\Catalogue\TagResource;
+use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Traits\HasPriceMetrics;
+use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Helpers\ImageResource;
+use Illuminate\Support\Arr;
+
+/**
+ * @property mixed $units
+ * @property mixed $rrp
+ * @property mixed $id
+ */
+class ProductOfVariantResource extends JsonResource
+{
+    use HasSelfCall;
+    use HasBucketImages;
+    use HasPriceMetrics;
+
+
+    public function toArray($request): array
+    {
+        /** @var Product $product */
+        $product = $this->resource;
+
+        $specifications = [
+            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
+            'ingredients'       => $product->marketing_ingredients,
+            'gross_weight'      => $product->gross_weight,
+            'barcode'           => $product->barcode,
+            'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
+            'cpnp'              => $product->cpnp_number,
+            'marketing_weight'  => $product->marketing_weight,
+            'unit'              => $product->unit,
+        ];
+
+        $isOnDemand = $product->orgStocks()->where('is_on_demand', true)->exists();
+
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
+
+        if (is_string($product->offers_data)) {
+            $productOffersData = json_decode($product->offers_data, true);
+        } else {
+            $productOffersData = $product->offers_data;
+        }
+
+        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
+        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
+
+        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
+
+
+        $back_in_stock = false;
+
+        if ($request->user()) {
+            /** @var Customer $customer */
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $set_data_back_in_stock = $customer->backInStockReminder()
+                    ?->where('product_id', $this->id)
+                    ->first();
+
+                if ($set_data_back_in_stock) {
+                    $back_in_stock = true;
+                }
+            }
+        }
+
+
+        return [
+            'luigi_identity'    => $product->getLuigiIdentity(),
+            'slug'              => $product->slug,
+            'code'              => $product->code,
+            'name'              => $product->name,
+            'description'       => $product->description,
+            'description_title' => $product->description_title,
+            'description_extra' => $product->description_extra,
+            'stock'             => $product->available_quantity,
+            'specifications'    => $product->is_single_trade_unit ? $specifications : null,
+            'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
+            'id'                => $product->id,
+            'image_id'          => $product->image_id,
+            'currency_code'     => $product->currency->code,
+            'rrp'               => $product->rrp,
+            'rrp_per_unit'      => $rrpPerUnit,
+            'margin'            => $margin,
+            'profit'            => $profit,
+            'profit_per_unit'   => $profitPerUnit,
+            'price'             => $product->price,
+            'price_per_unit'    => $pricePerUnit,
+            'status'            => $product->status,
+            'status_label'      => $product->status->labels()[$product->status->value],
+            'state'             => $product->state,
+            'units'             => $units,
+            'unit'              => $product->unit,
+            'web_images'        => $product->web_images,
+            'created_at'        => $product->created_at,
+            'updated_at'        => $product->updated_at,
+            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'tags'              => TagResource::collection($product->tags)->toArray($request),
+            'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
+            'is_on_demand'      => $isOnDemand,
+            'is_back_in_stock'  => $product->backInStockReminders,
+            'back_in_stock'     => $back_in_stock,
+
+
+            'discounted_price'           => round($product->price * $bestPercentageOffOfferFactor, 2),
+            'discounted_price_per_unit'  => $pricePerUnitDiscounted,
+            'discounted_profit'          => $profitDiscounted,
+            'discounted_profit_per_unit' => $profitPerUnitDiscounted,
+            'discounted_margin'          => $marginDiscounted,
+            'discounted_percentage'      => percentage($bestPercentageOff, 1),
+
+
+        ];
+    }
+}

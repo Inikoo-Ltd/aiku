@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { inject, ref, difine } from 'vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope, faHeart as farHeart } from '@far'
-import { faHeart as fasHeart, faStarHalfAlt, faCircle } from '@fas'
+import { faHeart as fasHeart, faStarHalfAlt } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faQuestionCircle } from "@fal"
 
@@ -22,6 +22,8 @@ import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
+import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
+ import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -57,9 +59,11 @@ const emit = defineEmits([
     'setFavorite',
     'unsetFavorite',
     'setBackInStock',
-    'unsetBackInStock'
+    'unsetBackInStock',
+    'onVariantClick'
 ])
 
+const _button_variant = ref(null)
 const currency = layout?.iris?.currency
 const idxSlideLoading = ref(false)
 
@@ -80,6 +84,21 @@ const toggleBackInStock = () =>
         : emit('setBackInStock', props.product)
 
 
+const onClickVariant = (product: ProductResource, event : Event) => {
+    emit('onVariantClick', product.variant, event)
+}
+
+const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
+}
+
+defineExpose({
+ _button_variant
+})
 
 </script>
 
@@ -103,9 +122,10 @@ const toggleBackInStock = () =>
                                 opacity: product.stock > 0 ? 1 : 0.4
                             }" />
 
-                        <FontAwesomeIcon v-else icon="fal fa-image"
+                         <FontAwesomeIcon v-else icon="fal fa-image"
                             class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
                             fixed-width />
+
 
                        <div
                             v-if="!product.stock > 0"
@@ -130,12 +150,12 @@ const toggleBackInStock = () =>
                     </slot>
 
                     <!-- Section: Discounts -->
-                    <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
-                        <Discount :template="'agnes_and_cat'" :offers_data="product.offers_data"  />
+                    <div  class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer">
+                         <DiscountByType :offers_data="product?.product_offers_data" />
                     </div>
 
                     <!-- FAVOURITE -->
-                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
+                    <template v-if="layout?.iris?.is_logged_in && !product.variant">
                         <div v-if="isLoadingFavourite" class="absolute top-1 right-2 text-gray-500 text-xl z-10">
                             <LoadingIcon />
                         </div>
@@ -208,16 +228,17 @@ const toggleBackInStock = () =>
                 <div class="">
                     <div class="font-extrabold text-black text-sm">
                         {{ trans("Price") }}:
-                        <template v-if="Object.keys(product.offers_data || {})?.length">
+                        <template v-if="product?.product_offers_data?.number_offers">
                             <span class="mr-1.5 line-through text-gray-500 text-xs font-normal opacity-60">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
-                            <span class="text-red-600">{{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}</span>
+                            <span class="text-red-600">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span>
                         </template>
                         <span v-else class="text-black">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
                     </div>
 
+                    
                     <div class="mt-1 mr-9">
-                        <span v-if="Object.keys(product.offers_data || {})?.length" v-tooltip="trans('Discounted from :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.price_per_unit) })" class="text-red-600">
-                            ({{ locale.currencyFormat(currency?.code, product.offer_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
+                        <span v-if="product?.product_offers_data?.number_offers"  v-tooltip="trans('Discounted to :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.discounted_price_per_unit) })" class="text-red-600">
+                            ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
                         </span>
                         <span v-else class="">
                             ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}<span class="">/{{ product.unit }}</span>)
@@ -227,7 +248,7 @@ const toggleBackInStock = () =>
 
                 <!-- BUTTON -->
                 <div class="absolute right-2 bottom-1 flex items-center justify-end">
-                    <template v-if="layout?.iris?.is_logged_in && !product.is_variant">
+                    <template v-if="layout?.iris?.is_logged_in && !product.variant">
                         <!-- In stock -->
                         <NewAddToCartButton
                             v-if="product.stock > 0 && basketButton && !product.is_coming_soon"
@@ -242,7 +263,7 @@ const toggleBackInStock = () =>
 
                         <!-- Back in stock notify -->
                          
-                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.is_variant" @click.prevent="toggleBackInStock"
+                        <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant" @click.prevent="toggleBackInStock"
                             class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all shadow-lg"
                             v-tooltip="product.is_back_in_stock
                                 ? trans('You will be notified')
@@ -253,9 +274,22 @@ const toggleBackInStock = () =>
                                 :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
                         </button>
                     </template>
-                </div>
-            </div>
 
+
+                    <div v-if="layout?.iris?.is_logged_in && product.variant">
+                         <div class="hidden md:block mr-2">
+                            <Button :label="trans('Choose variants')" size="xs"
+                                @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="layout?.iris?.is_logged_in && product.variant">
+                         <div class="md:hidden block mr-2">
+                            <Button :label="trans('Choose variants')" size="xs"
+                                @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
+                        </div>
+                    </div>
+            </div>          
         </div>
 
         <!-- LOGIN  -->
@@ -272,4 +306,8 @@ const toggleBackInStock = () =>
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.offer :deep(.offer-trigger-label) {
+    @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
+}
+</style>

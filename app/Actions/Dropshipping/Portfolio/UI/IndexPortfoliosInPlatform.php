@@ -65,7 +65,7 @@ class IndexPortfoliosInPlatform extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {

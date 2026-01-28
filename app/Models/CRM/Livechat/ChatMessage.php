@@ -4,12 +4,14 @@ namespace App\Models\CRM\Livechat;
 
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasImage;
+use App\Models\Helpers\Language;
 use Spatie\MediaLibrary\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,13 +30,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property int|null $original_language_id
+ * @property string|null $original_text
  * @property-read Media|null $attachment
  * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
+ * @property-read Language|null $originalLanguage
  * @property-read Model|\Eloquent|null $sender
  * @property-read Media|null $seoImage
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatMessageTranslation> $translations
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage fromSenderType(\App\Enums\CRM\Livechat\ChatSenderTypeEnum $senderType)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newQuery()
@@ -86,6 +92,15 @@ class ChatMessage extends Model implements HasMedia
         return $this->morphTo(__FUNCTION__, 'sender_type', 'sender_id');
     }
 
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ChatMessageTranslation::class);
+    }
+    public function originalLanguage(): BelongsTo
+    {
+        return $this->belongsTo(Language::class, 'original_language_id');
+    }
+
 
     public function markAsDelivered(): void
     {
@@ -109,6 +124,14 @@ class ChatMessage extends Model implements HasMedia
     public function isFromUser(): bool
     {
         return $this->sender_type === ChatSenderTypeEnum::USER;
+    }
+
+    /**
+     *
+     */
+    public function isFromGuest(): bool
+    {
+        return $this->sender_type === ChatSenderTypeEnum::GUEST;
     }
 
 

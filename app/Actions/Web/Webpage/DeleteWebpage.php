@@ -52,6 +52,7 @@ class DeleteWebpage extends OrgAction
                 if ($webpage->model_type == 'Collection') {
                     DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
                 }
+                $webpage->images()->detach();
                 $webpage->forceDelete();
 
                 return $webpage;

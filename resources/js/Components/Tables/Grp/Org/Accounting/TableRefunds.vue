@@ -29,7 +29,18 @@ const locale = useLocaleStore();
 
 function refundRoute(refund: Invoice) {
 
+    console.log((route().current()))
+
     switch (route().current()) {
+
+      case 'grp.org.accounting.invoice-categories.show.refunds.index':
+        return route(
+          'grp.org.shops.show.dashboard.invoices.refunds.show',
+          [
+            (route().params as RouteParams).organisation,
+            refund.shop_slug,
+            refund.slug
+          ])
       case 'grp.org.accounting.invoices.show':
       case 'grp.overview.accounting.refunds.index':
       case 'grp.org.accounting.refunds.index':
@@ -41,6 +52,7 @@ function refundRoute(refund: Invoice) {
           ])
       case 'grp.org.shops.show.dashboard.invoices.show':
       case 'grp.org.shops.show.dashboard.invoices.refunds.index':
+      case 'grp.org.shops.show.crm.customers.show.invoices.index':
         return route(
           'grp.org.shops.show.dashboard.invoices.refunds.show',
           [
@@ -56,7 +68,16 @@ function refundRoute(refund: Invoice) {
             (route().params as RouteParams).fulfilment,
             refund.slug
           ])
-
+        case 'grp.org.shops.show.ordering.orders.show.invoices.show':
+            return route(
+            'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show',
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).order,
+                    (route().params as RouteParams).invoice,
+                    refund.slug
+                ])
       case 'grp.org.fulfilments.show.operations.invoices.show':
       case 'grp.org.fulfilments.show.operations.invoices.show.refunds.index':
       case 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.index':

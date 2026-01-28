@@ -111,7 +111,7 @@ class StoreProduct extends OrgAction
 
             if ($tradeUnits) {
                 $product = SyncProductTradeUnits::run($product, $tradeUnits);
-            } else {
+            } elseif ($orgStocks) {
                 //todo: remove this when total migration from aurora
                 $product = $this->syncOrgStocksToBeDeleted($product, $orgStocks);
             }
@@ -149,6 +149,9 @@ class StoreProduct extends OrgAction
         }
 
         $this->productHydrators($product);
+
+
+        //todo create an action to add this product to a existing variant as minion or a leader (check master product to see id applicable)
 
 
         return $product;
@@ -260,6 +263,9 @@ class StoreProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
             'master_product_id'         => ['sometimes'],
+            'marketplace_id'            => ['sometimes', Rule::unique('products', 'marketplace_id')->where(function ($query) {
+                $query->where('group_id', $this->shop->group_id);
+            })],
             'marketing_weight'          => ['sometimes', 'numeric', 'min:0'],
             'gross_weight'              => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'      => ['sometimes'],

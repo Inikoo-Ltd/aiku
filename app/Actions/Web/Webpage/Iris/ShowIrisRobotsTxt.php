@@ -21,7 +21,7 @@ class ShowIrisRobotsTxt
     public function asController(ActionRequest $request): Response
     {
         /** @var Website $website */
-        $website = $request->get('website');
+        $website = $request->input('website');
 
         $filePath = "robots/robots_{$website->id}.txt";
 

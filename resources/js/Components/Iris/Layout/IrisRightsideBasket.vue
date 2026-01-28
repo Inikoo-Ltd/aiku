@@ -24,12 +24,17 @@ import Discount from '@/Components/Utils/Label/Discount.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
+import EligibleGift from '@/Components/Order/EligibleGift.vue'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
 
 interface DataSideBasket {
     order_summary: any
     order_data: {
+        id: number
         reference: string
+        is_premium_dispatch: boolean
+        has_extra_packing: boolean
+        has_insurance: boolean
     }
 }
 
@@ -280,14 +285,14 @@ const idxProductLoading = ref<number | null>(null)
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
                 
-                <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3">
+                <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3 gap-x-3">
                     <div :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center whitespace-nowrap"
+                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
                     >
-                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" class="text-base">
-                            {{ offer.label}}
+                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-ellipsis truncate text-base">
+                            {{ offer.label }}
                         </div>
-                        <div v-else class="text-base text-green-600">
+                        <div v-else class="text-ellipsis truncate text-base text-green-600">
                             {{ offer.label_got ?? offer.label}}
                         </div>
 
@@ -432,8 +437,22 @@ const idxProductLoading = ref<number | null>(null)
                     size="sm"
                 />
 
-                <!-- Section: Charge Premium Dispatch -->
+                
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
+                    <!-- Section: Eligible Gift -->
+                    <div v-if="layout.app.environment === 'local' && dataSideBasket?.eligible_gifts?.is_customer_eligible" class="text-xs flex justify-end pr-2 xmt-4">
+                        <EligibleGift
+                            :routeUpdate="{
+                                name: 'iris.models.order.update_eligible_gift',
+                                parameters: dataSideBasket?.order_data?.id
+                            }"
+                            :selectedGift="dataSideBasket?.eligible_gifts?.selected_gift"
+                            :giftOptions="dataSideBasket?.eligible_gifts?.available_gifts"
+                            class="justify-between w-full"
+                        />
+                    </div>
+
+                    <!-- Section: Charges (Premium Dispatch, Insurance) -->
                     <template v-for="charge in dataSideBasket?.charges">
                         <div v-if="charge?.id" class="flex gap-4 justify-between">
                             <div class="text-xs flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">

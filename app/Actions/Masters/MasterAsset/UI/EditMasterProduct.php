@@ -76,6 +76,12 @@ class EditMasterProduct extends GrpAction
             'EditModel',
             [
                 'title'       => __('Editing master product').': '.$masterAsset->code,
+                'warning'     => $masterAsset->products ? [
+                    'type'  => 'warning',
+                    'title' => __('Important'),
+                    'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterAsset,
                     $request->route()->getName(),

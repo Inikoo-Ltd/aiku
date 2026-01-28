@@ -35,7 +35,7 @@ class GetPalletReturnActions
                 PalletReturnStateEnum::SUBMITTED => $this->getPalletReturnSubmittedActions($palletReturn),
                 PalletReturnStateEnum::CONFIRMED => $this->getPalletReturnConfirmedActions($palletReturn),
                 PalletReturnStateEnum::PICKING => $this->getPalletReturnPickingActions($palletReturn),
-                PalletReturnStateEnum::PICKED => $this->getPalletReturnPickedActions($palletReturn),
+                PalletReturnStateEnum::PICKED =>  $this->getPalletReturnPickedActions($palletReturn),
                 PalletReturnStateEnum::DISPATCHED => $this->getPalletReturnDispatchedActions($palletReturn),
                 default => []
             };
@@ -214,7 +214,6 @@ class GetPalletReturnActions
                 [
                     'type'    => 'button',
                     'style'   => '',
-                    'label'   => '',
                     'tooltip' => __('PDF'),
                     'label'   => __('PDF'),
                     'key'     => 'pdf',
@@ -227,13 +226,11 @@ class GetPalletReturnActions
                         ]
                     ]
                 ];
-
         } elseif ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $actions[] =
                 [
                     'type'    => 'button',
                     'style'   => '',
-                    'label'   => '',
                     'tooltip' => __('PDF'),
                     'label'   => __('PDF'),
                     'key'     => 'pdf',
@@ -254,7 +251,45 @@ class GetPalletReturnActions
 
     public function getPalletReturnPickedActions(PalletReturn $palletReturn): array
     {
-        return [
+        $actions = [];
+        if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
+
+            $actions[] =
+                [
+                    'type'    => 'button',
+                    'style'   => '',
+                    'tooltip' =>  __('Picking sheet'),
+                    'label'   => __('Picking sheet'),
+                    'key'     => 'pdf',
+                    'icon'    => 'fal fa-file-pdf',
+                    'route'   => [
+                        'method'     => 'get',
+                        'name'       => 'grp.models.pallet-return.pallet_picking.pdf',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ]
+                ];
+        } elseif ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
+            $actions[] =
+                [
+                    'type'    => 'button',
+                    'style'   => '',
+                    'tooltip' =>  __('Picking sheet'),
+                    'label'   => __('Picking sheet'),
+                    'key'     => 'pdf',
+                    'icon'    => 'fal fa-file-pdf',
+                    'route'   => [
+                        'method'     => 'get',
+                        'name'       => 'grp.models.pallet-return.stored_item_picking.pdf',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ]
+                ];
+        }
+
+        $actions[] =
             [
                 'type'    => 'button',
                 'style'   => 'save',
@@ -268,8 +303,13 @@ class GetPalletReturnActions
                         'palletReturn' => $palletReturn->id
                     ]
                 ]
-            ]
+
         ];
+
+        return $actions;
+
+
+
     }
 
     public function addServicesActions(PalletReturn $palletReturn, array $actions): array
@@ -344,12 +384,10 @@ class GetPalletReturnActions
 
     public function addPdf(PalletReturn $palletReturn, array $actions): array
     {
-
         if (!in_array($palletReturn->state, [
             PalletReturnStateEnum::IN_PROCESS,
             PalletReturnStateEnum::SUBMITTED
         ])) {
-
             $actions[] = [
                 'type'   => 'button',
                 'style'  => 'tertiary',
@@ -364,7 +402,6 @@ class GetPalletReturnActions
                     ]
                 ]
             ];
-
         }
 
         return $actions;
@@ -381,7 +418,7 @@ class GetPalletReturnActions
     {
         if (!$this->isSupervisor) {
             return [
-                'supervisor' => false,
+                'supervisor'        => false,
                 'supervisors_route' => [
                     'method'     => 'get',
                     'name'       => 'grp.json.fulfilment.supervisors.index',
@@ -389,13 +426,13 @@ class GetPalletReturnActions
                         'fulfilment' => $palletReturn->fulfilment->slug
                     ]
                 ],
-                'type'    => 'button',
-                'style'   => 'red_outline',
-                'tooltip' => __('Delete'),
-                'icon'    => $this->deleteIcon,
-                'key'     => 'delete_dispatched',
-                'ask_why' => true,
-                'route'   => [
+                'type'              => 'button',
+                'style'             => 'red_outline',
+                'tooltip'           => __('Delete'),
+                'icon'              => $this->deleteIcon,
+                'key'               => 'delete_dispatched',
+                'ask_why'           => true,
+                'route'             => [
                     'method'     => 'delete',
                     'name'       => 'grp.models.pallet-return.dispatched-delete',
                     'parameters' => [
@@ -408,13 +445,13 @@ class GetPalletReturnActions
 
         return [
             'supervisor' => true,
-            'type'    => 'button',
-            'style'   => 'red_outline',
-            'tooltip' => __('Delete'),
-            'icon'    => $this->deleteIcon,
-            'key'     => 'delete_dispatched',
-            'ask_why' => true,
-            'route'   => [
+            'type'       => 'button',
+            'style'      => 'red_outline',
+            'tooltip'    => __('Delete'),
+            'icon'       => $this->deleteIcon,
+            'key'        => 'delete_dispatched',
+            'ask_why'    => true,
+            'route'      => [
                 'method'     => 'delete',
                 'name'       => 'grp.models.pallet-return.dispatched-delete',
                 'parameters' => [

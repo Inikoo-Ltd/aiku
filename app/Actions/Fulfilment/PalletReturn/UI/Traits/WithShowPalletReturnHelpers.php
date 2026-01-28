@@ -41,7 +41,7 @@ trait WithShowPalletReturnHelpers
         } else {
             unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
             if (property_exists($this, 'tab')) {
-                $this->tab = $request->get('tab', array_key_first($navigation));
+                $this->tab = $request->input('tab', array_key_first($navigation));
             }
         }
 

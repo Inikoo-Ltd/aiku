@@ -59,7 +59,7 @@ class ShowTopUp extends OrgAction
 
     public function getBreadcrumbs(TopUp $topUp, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (TopUp $topUp, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (TopUp $topUp, array $routeParameters, ?string $suffix = null) {
             return [
                 [
 

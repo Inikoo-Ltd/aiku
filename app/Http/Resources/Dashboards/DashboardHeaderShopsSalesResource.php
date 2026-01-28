@@ -17,63 +17,49 @@ class DashboardHeaderShopsSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-
     public function toArray($request): array
     {
         /** @var Organisation|Group $model */
         $model = $this->resource;
 
         $deltaLabel = __('Change versus 1 Year ago');
-
-
         $inBasketLabel = __('In basket');
 
-
         $shopColumns = [
-
             'label' => [
                 'formatted_value'   => __('Shop'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'align'             => 'left'
             ],
-
-
             'label_minified' => [
                 'formatted_value'   => __('Shop'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'align'             => 'left'
             ]
-
         ];
 
         $basketShopCurrency = [
-
-            'baskets_created_shop_currency' => [
+            'baskets_created' => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'shop',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'baskets_created_shop_currency',
+                'scope'             => 'baskets_created',
             ],
-
-
-            'baskets_created_shop_currency_minified' => [
+            'baskets_created_minified' => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'baskets_created_shop_currency',
+                'scope'             => 'baskets_created',
             ],
-
-
         ];
 
         $basketOrgCurrency = [
-
             'baskets_created_org_currency' => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'org',
@@ -82,7 +68,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'align'             => 'right',
                 'scope'             => 'baskets_created_org_currency',
             ],
-
             'baskets_created_org_currency_minified' => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'org',
@@ -95,7 +80,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         ];
 
         $basketGrpCurrency = [
-
             'baskets_created_grp_currency'          => [
                 'formatted_value'   => $inBasketLabel,
                 'currency_type'     => 'grp',
@@ -115,7 +99,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         ];
 
         $registrationColumns = [
-
             'registrations' => [
                 'formatted_value'   => __('Registrations'),
                 'currency_type'     => 'always',
@@ -145,7 +128,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         ];
 
         $invoicesColumns = [
-
             'invoices'          => [
                 'formatted_value'   => __('Invoices'),
                 'currency_type'     => 'always',
@@ -175,37 +157,35 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         ];
 
         $salesShopCurrency = [
-
-            'sales_shop_currency'          => [
+            'sales'          => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'full',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_shop_currency',
+                'scope'             => 'sales',
             ],
-            'sales_shop_currency_minified' => [
+            'sales_minified' => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_shop_currency',
+                'scope'             => 'sales',
             ],
-            'sales_shop_currency_delta'    => [
+            'sales_delta'    => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'always',
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_shop_currency',
+                'scope'             => 'sales',
             ],
 
         ];
 
         $salesOrgCurrency = [
-
             'sales_org_currency'          => [
                 'formatted_value'   => __('Sales'),
                 'currency_type'     => 'org',
@@ -234,7 +214,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         ];
 
         $salesGrpCurrency = [
-
             'sales_grp_currency'          => [
                 'formatted_value'   => __('Sales'),
                 'currency_type'     => 'grp',
@@ -262,9 +241,7 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             ],
         ];
 
-
         $columns = $shopColumns;
-
 
         if ($model instanceof Organisation) {
             $columns = array_merge($columns, $basketShopCurrency);
@@ -288,7 +265,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         if ($model instanceof Group) {
             $columns = array_merge($columns, $salesGrpCurrency);
         }
-
 
         return [
             'slug'    => $model->slug,

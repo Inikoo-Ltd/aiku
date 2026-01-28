@@ -73,7 +73,7 @@ class IndexOffers extends OrgAction
                 'organisations.slug as organisation_slug',
             );
 
-        return $query->allowedSorts(['id','code', 'name'])
+        return $query->allowedSorts(['id','code', 'name', 'state'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -103,8 +103,7 @@ class IndexOffers extends OrgAction
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-
-            $table->column(key: 'state', label: '', type: 'icon');
+            $table->column(key: 'state', label: '', type: 'icon', sortable: true);
             $table->column(key: 'name', label: __('Name'), sortable: true, );
             $table->column(key: 'type', label: __('Type'), sortable: true, );
             if ($parent instanceof Group) {
