@@ -42,7 +42,6 @@ class UpdateProductCategory extends OrgAction
     {
         $originalImageId = $productCategory->image_id;
 
-
         if (Arr::has($modelData, 'department_id')) {
             $departmentId = Arr::pull($modelData, 'department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {

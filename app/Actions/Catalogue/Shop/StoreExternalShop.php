@@ -64,6 +64,8 @@ class StoreExternalShop extends OrgAction
                 ]));
                 data_set($modelData, 'settings.shopify.shop_url', $shopifyUser->name);
             }
+            data_set($modelData, 'open_at', now());
+            data_set($modelData, 'is_aiku', true);
 
             $shop = StoreShop::make()->action($organisation, $modelData);
 

@@ -39,7 +39,12 @@ class EditMasterDepartment extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-
+                'warning'     => $masterProductCategory->productCategories ? [
+                    'type'  => 'warning',
+                    'title' => __('Important'),
+                    'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                  'breadcrumbs' => $this->getBreadcrumbs(
                      $this->parent,
                      $masterProductCategory,

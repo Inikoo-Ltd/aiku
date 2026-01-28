@@ -94,11 +94,22 @@ class EditProduct extends OrgAction
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
         $warning = null;
+        $warningText = [];
         if ($product->is_single_trade_unit) {
+            $warningText[] = __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.');
+        }
+
+        $forceFollowMasterProduct = data_get($product->shop->settings, 'catalog.product_follow_master');
+
+        if ($product->masterProduct && $forceFollowMasterProduct) {
+            $warningText[] = __('This shop has enabled the Product force follow master setting. Updates made on master will overwrite local changes');
+        }
+
+        if (count($warningText) > 0) {
             $warning = [
                 'type'  => 'warning',
                 'title' => __('Important'),
-                'text'  => __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.'),
+                'text'  => implode('<br>', $warningText),
                 'icon'  => ['fas', 'fa-exclamation-triangle']
             ];
         }
@@ -179,8 +190,6 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-
-
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 

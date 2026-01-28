@@ -67,6 +67,12 @@ class UpdateMasterCollectionImages extends GrpAction
 
         $this->update($masterCollection, $modelData);
 
+        $changes = Arr::except($masterCollection->getChanges(), ['updated_at']);
+
+        if (Arr::has($changes, 'image_id')) {
+            UpdateMasterCollectionWebImages::run($masterCollection);
+        }
+
         if ($updateDependants) {
             $this->updateDependants($masterCollection, $modelData);
         }

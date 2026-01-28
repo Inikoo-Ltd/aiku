@@ -9,21 +9,26 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
+use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
 use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
+use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
+use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
@@ -93,11 +98,75 @@ class DeleteInvoice extends OrgAction
         OrganisationHydrateDeletedInvoices::dispatch($customer->organisation);
         GroupHydrateInvoices::dispatch($customer->group);
         GroupHydrateDeletedInvoices::dispatch($customer->group);
+
+        $invoiceDate = \Carbon\Carbon::parse($invoice->date);
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            ProcessShopTimeSeriesRecords::dispatch(
+                $invoice->shop_id,
+                $frequency,
+                match ($frequency) {
+                    TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
+                    TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
+                    TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
+                    TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
+                    TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
+                },
+                $invoiceDate->toDateString(),
+            )->delay($this->hydratorsDelay);
+
+            ProcessOrganisationTimeSeriesRecords::dispatch(
+                $invoice->organisation_id,
+                $frequency,
+                match ($frequency) {
+                    TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
+                    TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
+                    TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
+                    TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
+                    TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
+                },
+                $invoiceDate->toDateString(),
+            )->delay($this->hydratorsDelay);
+        }
+
         $invoiceCategory = $invoice->invoiceCategory;
         if ($invoiceCategory) {
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
+
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessInvoiceCategoryTimeSeriesRecords::dispatch(
+                    $invoice->invoice_category_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
+                    },
+                    $invoiceDate->toDateString(),
+                )->delay($this->hydratorsDelay);
+            }
         }
+
+        if ($invoice->platform_id) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessPlatformTimeSeriesRecords::dispatch(
+                    $invoice->platform_id,
+                    $invoice->shop_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
+                    },
+                    $invoiceDate->toDateString(),
+                )->delay($this->hydratorsDelay);
+            }
+        }
+
         if ($invoice->shipping_zone_id) {
             ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
         }

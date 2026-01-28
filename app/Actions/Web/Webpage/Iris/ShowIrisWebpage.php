@@ -12,6 +12,7 @@ use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -282,8 +283,9 @@ class ShowIrisWebpage
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => $this->getBreadcrumbLabel($parentWebpage),
-                            'url'   => $this->getEnvironmentUrl($parentWebpage->canonical_url)
+                            'short_label' => $this->getBreadcrumbShortLabel($parentWebpage),
+                            'label'       => $this->getBreadcrumbLabel($parentWebpage),
+                            'url'         => $this->getEnvironmentUrl($parentWebpage->canonical_url)
                         ]
 
                     ];
@@ -294,8 +296,9 @@ class ShowIrisWebpage
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'label' => $this->getBreadcrumbLabel($webpage),
-                    'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
+                    'short_label' => $this->getBreadcrumbShortLabel($webpage),
+                    'label'       => $this->getBreadcrumbLabel($webpage),
+                    'url'         => $this->getEnvironmentUrl($webpage->canonical_url)
                 ]
 
             ];
@@ -306,6 +309,27 @@ class ShowIrisWebpage
         }
 
         return $breadcrumbs;
+    }
+
+    public function getBreadcrumbShortLabel(Webpage $webpage): string
+    {
+        if ($webpage->model_type == 'Product') {
+            /** @var Product $product */
+            $product = $webpage->model;
+            if ($product) {
+                return $product->code;
+            }
+        } elseif ($webpage->model_type == 'ProductCategory') {
+            /** @var ProductCategory $productCategory */
+            $productCategory = $webpage->model;
+            if ($productCategory) {
+                return $productCategory->code;
+            }
+        }
+
+        $label = $webpage->code;
+
+        return $label ?? '';
     }
 
     public function getBreadcrumbLabel(Webpage $webpage): string

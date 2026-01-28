@@ -127,7 +127,7 @@ if (!function_exists('cleanUtf8')) {
 
 
 if (!function_exists('percentage')) {
-    function percentage($quantity, $total, int $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string
+    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string
     {
         $locale_info = localeconv();
 

@@ -23,6 +23,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -39,7 +40,6 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
 
     public function handle(Order $order, array $modelData): Order
     {
-
         $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
         if ($shippingTransaction) {
             $this->updateShippingTransaction($shippingTransaction, Arr::get($modelData, 'shipping_amount'));
@@ -55,17 +55,13 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
         );
 
 
-
-
         CalculateOrderTotalAmounts::run($order);
 
         return $order;
-
     }
 
     private function storeShippingTransaction(Order $order, $shippingAmount): Transaction
     {
-
         $modelData = [];
         data_set($modelData, 'tax_category_id', $order->tax_category_id);
         data_set($modelData, 'model_type', 'ShippingZone');
@@ -73,8 +69,6 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
 
         $net   = $shippingAmount;
         $gross = $shippingAmount;
-
-
 
 
         data_set($modelData, 'shop_id', $order->shop_id);
@@ -115,16 +109,14 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
         }
 
 
-
         $modelData = $this->processExchanges($modelData, $order->shop);
 
 
         /** @var Transaction $transaction */
         $transaction = $order->transactions()->create($modelData);
         OrderHydrateTransactions::dispatch($order);
+
         return $transaction;
-
-
     }
 
 
@@ -146,12 +138,20 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
     public function rules(): array
     {
         return [
-                'shipping_amount' => ['required', 'numeric', 'min:0'],
+            'shipping_amount' => ['required', 'numeric', 'min:0'],
         ];
-
-
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        if (in_array($this->order->state, [
+            OrderStateEnum::DISPATCHED,
+            OrderStateEnum::FINALISED,
+            OrderStateEnum::CANCELLED
+        ])) {
+            $validator->errors()->add('message', __('Shipping can not be changed once order is dispatched or finalised.'));
+        }
+    }
 
     public function asController(Order $order, ActionRequest $request): Order
     {

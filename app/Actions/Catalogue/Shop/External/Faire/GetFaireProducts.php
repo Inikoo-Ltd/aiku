@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -23,36 +24,50 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop): void
     {
-        $products = $shop->getFaireProducts([
+        $faireProducts = $shop->getFaireProducts([
             'limit' => 250
         ]);
+        // foreach to support of faire has more than 250 products
 
-        foreach (Arr::get($products, 'products', []) as $product) {
-            foreach ($product['variants'] as $variant) {
+        foreach (Arr::get($faireProducts, 'products', []) as $faireProduct) {
+            foreach ($faireProduct['variants'] as $variant) {
                 if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
+                    echo "Updated: ".$variant['sku']."\n";
+                    $product = Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->first();
+                    //                    $product = UpdateProduct::make()->action($product, [
+                    //                        'code'         => $variant['sku'],
+                    //                        'name'         => $faireProduct['name'].' - '.$variant['name'],
+                    //                        'description'  => $faireProduct['description'],
+                    //                        'rrp'          => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
+                    //                        'price'        => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                    //                        'units'        => $faireProduct['unit_multiplier'],
+                    //                        'data'         => [
+                    //                            'faire' => $variant
+                    //                        ]
+                    //                    ], strict: false);
+
                     continue;
                 }
 
                 $product = StoreProduct::make()->action($shop, [
-                    'code' => $variant['sku'],
-                    'name' => $product['name'] . ' - ' . $variant['name'],
-                    'description' => $product['description'],
-                    'rrp' => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                    'price' => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
-                    'unit' => 'Piece',
-                    'units' => $product['unit_multiplier'],
-                    'is_main' => true,
+                    'code'         => $variant['sku'],
+                    'name'         => $faireProduct['name'].' - '.$variant['name'],
+                    'description'  => $faireProduct['description'],
+                    'rrp'          => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
+                    'price'        => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                    'unit'         => 'Piece',
+                    'units'        => $faireProduct['unit_multiplier'],
+                    'is_main'      => true,
                     'trade_config' => ProductTradeConfigEnum::AUTO,
-                    'status' => ProductStatusEnum::FOR_SALE,
-                    'state' => ProductStateEnum::ACTIVE,
-                    'data' => [
+                    'status'       => ProductStatusEnum::FOR_SALE,
+                    'state'        => ProductStateEnum::IN_PROCESS,
+                    'data'         => [
                         'faire' => $variant
                     ]
                 ], strict: false);
 
-                StoreHistoricAsset::run($product, []);
 
-                echo $product->code . "\n";
+                echo "Created: ".$product->code."\n";
             }
         }
     }

@@ -83,7 +83,6 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-
         // todo: remove this after total aurora migration
         if (!$this->strict) {
             $orgStocks = null;

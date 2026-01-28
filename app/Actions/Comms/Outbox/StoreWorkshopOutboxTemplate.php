@@ -27,20 +27,21 @@ class StoreWorkshopOutboxTemplate extends OrgAction
     {
 
         $data = [
-              'outboxes' => [$outbox->code->value]
-           ];
+            'outboxes' => [$outbox->code->value]
+        ];
         $emailTemplate =   StoreEmailTemplate::make()->action(
             $this->group,
             [
-                          'name'        => Arr::get($modelData, 'name'),
-                          'layout'      => Arr::get($modelData, 'layout'),
-                          'is_seeded'   => false,
-                          'builder'     => EmailTemplateBuilderEnum::BEEFREE,
-                          'state'       => EmailTemplateStateEnum::ACTIVE,
-                          'active_at'   => now(),
-                          'language_id' => $this->organisation->language_id,
-                          'data'        => $data
-                      ],
+                'name'        => Arr::get($modelData, 'name'),
+                'layout'      => Arr::get($modelData, 'layout'),
+                'is_seeded'   => false,
+                'builder'     => EmailTemplateBuilderEnum::BEEFREE,
+                'state'       => EmailTemplateStateEnum::ACTIVE,
+                'active_at'   => now(),
+                'language_id' => $this->organisation->language_id,
+                'data'        => $data,
+                'shop_id'     => $outbox->shop_id ?? null,
+            ],
             strict: false
         );
 

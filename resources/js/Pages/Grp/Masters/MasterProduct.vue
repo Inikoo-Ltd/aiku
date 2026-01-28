@@ -95,59 +95,53 @@ const submitForm = async () => {
     loading.value = true
     form.clearErrors()
 
-    try {
-        const finalDataTable: Record<number, any> = {}
+    const finalDataTable: Record<number, any> = {}
 
-        for (const item of tableData.value.data) {
-            const create = item.product.create_in_shop
+    for (const item of tableData.value.data) {
+        const create = item.product.create_in_shop
 
-            finalDataTable[item.id] = {
-                price: create ? item.product.price : 1,
-                rrp: create ? item.product.rrp : 1,
-                create_in_shop: create ? 'Yes' : 'No'
-            }
+        finalDataTable[item.id] = {
+            price: create ? item.product.price : 1,
+            rrp: create ? item.product.rrp : 1,
+            create_in_shop: create ? 'Yes' : 'No'
         }
+    }
 
-        const params = {
-            ...route().params,
-            masterFamily: String(props.masterAsset.master_family.id)
-        }
+    const params = {
+        ...route().params,
+        masterFamily: String(props.masterAsset.master_family.id)
+    }
 
-       const response = await axios.post(
-            route('grp.models.master_family.clone_to_other_store', params),
-            {
-                ...form.data(),
-                shop_products: finalDataTable
-            },
-            { headers: { "Content-Type": "multipart/form-data" } }
-        )
-
+    const response = await axios.post(
+        route('grp.models.master_family.clone_to_other_store', params),
+        {
+            ...form.data(),
+            shop_products: finalDataTable
+        },
+        { headers: { "Content-Type": "multipart/form-data" } }
+    ).then(() => {
         notify({
             title: trans('Created Successfully'),
             text: trans('Added products to Selected Stores'),
             type: 'success'
         })
-
         router.reload({ only : 'products'})
         showDialog.value = false
         key.value = crypto.randomUUID()
         refreshModalData()
         router.reload({ only: ['products'] })
-
-    } catch (error: any) {
-        if (error.response?.data?.errors) {
-            notify({
-                title: trans('Something went wrong'),
-                data: {
-                    html: Object.values(error.response.data.errors).flat().join('<br>')
-                },
-                type: 'error',
-                duration: 5000,
-            })
-        }
-    } finally {
+    }).catch((error: any) => {
+        notify({
+            title: trans('Something went wrong'),
+            data: {
+                html: Object.values(error.response.data.errors).flat().join('<br>')
+            },
+            type: 'error',
+            duration: 5000,
+        })
+    }).finally(() => {
         loading.value = false
-    }
+    })
 }
 
 

@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -29,6 +30,7 @@ class UpdateProductCategoryOffersData
         if ($offer->status) {
             $offerData = $this->getBasicOfferData($offer);
         }
+
         $model = $this->getTriggerModel($offer);
         if (!$model) {
             return;
@@ -36,7 +38,9 @@ class UpdateProductCategoryOffersData
 
         $modelOfferData = $model->offers_data ?? [];
         if (!$offerData) {
-            unset($modelOfferData['offers'][$offer->id]);
+            if (isset($modelOfferData['offers'])) {
+                unset($modelOfferData['offers'][$offer->id]);
+            }
         } else {
             $modelOfferData['offers'][$offer->id] = $offerData;
         }
@@ -48,14 +52,18 @@ class UpdateProductCategoryOffersData
         if ($model instanceof ProductCategory) {
             foreach ($model->getProducts() as $product) {
                 $productOfferData = $product->offers_data ?? [];
-                if (!$productOfferData) {
-                    unset($productOfferData['offers'][$offer->id]);
+                if (!$offerData) {
+                    if (isset($productOfferData['offers'])) {
+                        unset($productOfferData['offers'][$offer->id]);
+                    }
                 } else {
                     $productOfferData['offers'][$offer->id] = $offerData;
                 }
-                $modelOfferData      = $this->getBestOffers($modelOfferData);
-                $modelOfferData['v'] = 1;
-                $product->update(['offers_data' => $modelOfferData]);
+                $productOfferData['number_offers'] = count(Arr::get($productOfferData, 'offers', []));
+                $productOfferData                  = $this->getBestOffers($productOfferData);
+                $productOfferData['v']             = 1;
+
+                $product->update(['offers_data' => $productOfferData]);
             }
         }
     }
@@ -97,13 +105,50 @@ class UpdateProductCategoryOffersData
 
         $triggerLabels           = [];
         $categoryQuantityTrigger = null;
+        $productsTriggerLabel    = null;
+
+        $currentLocale = app()->getLocale();
+        $locale        = $offer->shop->language->code;
+        app()->setLocale($locale);
+
+        $categoryLink = '';
+        /** @var ProductCategory $category */
+        $category = $offer->trigger;
+        if ($category) {
+            $categoryLink = $category->code;
+            if ($category->webpage && $category->webpage->state == WebpageStateEnum::LIVE) {
+                $categoryLink = '<a href="'.e($category->webpage->canonical_url).'" class="underline">'.e($category->code).'</a>';
+            }
+        }
+
+        $percentage = $maxPercentageDiscount;
+        if ($percentage == '') {
+            $percentage = 'X';
+        } else {
+            $percentage = percentage($maxPercentageDiscount, 1, null);
+        }
 
         if ($offer->type == 'Category Quantity Ordered Order Interval') {
             $triggerLabels[] = __('Order :n or more', ['n' => $offer->trigger_data['item_quantity']]);
             $triggerLabels[] = __('Order with in :n days', ['n' => $offer->trigger_data['interval']]);
 
             $categoryQuantityTrigger = $offer->trigger_data['item_quantity'];
+
+
+            $productsTriggerLabel = __('Order :n+ from :category range to get :percentage off', [
+                'n'          => (int)$offer->trigger_data['item_quantity'],
+                'category'   => $categoryLink,
+                'percentage' => $percentage
+            ]);
+        } elseif ($offer->type == 'Category Ordered') {
+            $triggerLabels[] = __('Order any product in this range');
+
+            $productsTriggerLabel = __('Order any product from :category range to get :percentage off', [
+                'category'   => $categoryLink,
+                'percentage' => $percentage
+            ]);
         }
+        app()->setLocale($currentLocale);
 
 
         $offerData = [
@@ -114,8 +159,10 @@ class UpdateProductCategoryOffersData
             'label'                   => $offer->label ?? $offer->name,
             'allowances'              => $allowances,
             'triggers_labels'         => $triggerLabels,
+            'products_triggers_label' => $productsTriggerLabel,
             'note'                    => '',
-            'max_percentage_discount' => $maxPercentageDiscount
+            'max_percentage_discount' => $maxPercentageDiscount,
+
         ];
 
         if ($categoryQuantityTrigger) {
@@ -142,8 +189,9 @@ class UpdateProductCategoryOffersData
         $bestPercentageOffOfferId = null;
 
         foreach (Arr::get($offersData, 'offers', []) as $offerId => $offerData) {
-            if ($offerData['max_percentage_discount'] && $offerData['max_percentage_discount'] > $bestPercentageOff) {
-                $bestPercentageOff        = $offerData['max_percentage_discount'];
+            $maxPercentageDiscount = $offerData['max_percentage_discount'] ?? 0;
+            if ($maxPercentageDiscount && $maxPercentageDiscount > $bestPercentageOff) {
+                $bestPercentageOff        = $maxPercentageDiscount;
                 $bestPercentageOffOfferId = $offerId;
             }
         }

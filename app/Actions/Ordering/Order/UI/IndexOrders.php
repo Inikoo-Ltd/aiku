@@ -177,6 +177,8 @@ class IndexOrders extends OrgAction
                 'orders.slug',
                 'orders.reference',
                 'orders.date',
+                'orders.submitted_at',
+                'orders.dispatched_at',
                 'orders.state',
                 'orders.created_at',
                 'orders.updated_at',
@@ -273,7 +275,23 @@ class IndexOrders extends OrgAction
 
             $table->column(key: 'state', label: '', type: 'icon');
             $table->column(key: 'reference', label: __('Reference'), sortable: true);
-            $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+
+            if ($bucket == 'dispatched' || $bucket == 'dispatched_today') {
+                $table->column(key: 'dispatched_at', label: __('Dispatched'), sortable: true, type: 'date_hm');
+            } elseif (!in_array(
+                $bucket,
+                [
+                    'in_basket',
+                    'creating',
+                    'all'
+                ]
+            )) {
+                $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date_hm');
+            } else {
+                $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+            }
+
+
             if ($parent instanceof Shop || $parent instanceof Organisation || $parent instanceof Group) {
                 $table->column(key: 'customer_name', label: __('Customer'), sortable: true);
             }

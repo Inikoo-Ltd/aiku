@@ -74,6 +74,7 @@ class IndexTransactions extends OrgAction
                 'transactions.quantity_fail',
                 'transactions.quantity_cancelled',
                 'transactions.gross_amount',
+                'transactions.label as transaction_label',
                 'transactions.net_amount',
                 'transactions.model_type as model_type',
                 'transactions.created_at',

@@ -72,6 +72,8 @@ use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\PickedBay;
+use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Masters\MasterAsset;
@@ -215,6 +217,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentGatewayLog> $paymentGatewayLogs
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
+ * @property-read LaravelCollection<int, PickedBay> $pickedBays
+ * @property-read LaravelCollection<int, PickingTrolley> $pickingTrolleys
  * @property-read LaravelCollection<int, Picking> $pickings
  * @property-read LaravelCollection<int, Platform> $platforms
  * @property-read LaravelCollection<int, Portfolio> $portfolios
@@ -984,5 +988,15 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function holidays(): HasMany
     {
         return $this->hasMany(Holiday::class);
+    }
+
+    public function pickingTrolleys(): HasMany
+    {
+        return $this->hasMany(PickingTrolley::class);
+    }
+
+    public function pickedBays(): HasMany
+    {
+        return $this->hasMany(PickedBay::class);
     }
 }

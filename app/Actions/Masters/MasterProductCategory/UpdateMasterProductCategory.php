@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
@@ -17,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -103,31 +105,42 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'rrp'])) {
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
+
+            $english      = Language::where('code', 'en')->first();
+
             foreach ($masterProductCategory->productCategories as $productCategory) {
+                $shop = $productCategory->shop;
+                if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
+                    continue;
+                }
+
+                $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
-                // If name/description/description_title/description_extra is already reviewed / modified, ignore the changes, but change the status back to false
-                // Moved everything to singular check. Just because the name is changed,
-                // doesn't mean everything else should be updated at the same time if it doesn't present
-                // Should Family RRP / Offers Data blindly follow master? Even if it has been modified?
-                // And RRP is not included in UpdateProductCategory rules, so it will be ignored. Please delete it if not used
+
+                // Updates affected field name using translate if follow_master_{field} is true
                 if (Arr::has($changed, 'name')) {
+                    $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
+
                 if (Arr::has($changed, 'description_title')) {
+                    $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
+
                 if (Arr::has($changed, 'description')) {
+                    $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
+
                 if (Arr::has($changed, 'description_extra')) {
+                    $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
+
                 if (Arr::has($changed, 'code')) {
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
-                }
-                if (Arr::has($changed, 'rrp')) {
-                    $dataToBeUpdated['rrp'] = $masterProductCategory->rrp;
                 }
 
                 if ($dataToBeUpdated) {

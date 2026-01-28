@@ -113,6 +113,7 @@ createInertiaApp(
               }
             })
             .use(i18nVue, {
+              fallbackMissingTranslations: true,
               resolve: async (lang) => {
                 const languages = import.meta.glob(
                     '../../lang/*.json');

@@ -166,6 +166,27 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'total_to_pay'       => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
                 'total_products'     => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
                 'transactions'       => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
+                'eligible_gifts'      => [  // TODO: Raul INI-887
+                    'is_customer_eligible' => true,
+                    'selected_gift' => [
+                        'label' => 'Rainbow bath bomb',
+                        'value' => 'rainbow_bath_bomb'
+                    ],
+                    'available_gifts' => [
+                        [
+                            'label' => 'Rainbow bath bomb',
+                            'value' => 'rainbow_bath_bomb'
+                        ],
+                        [
+                            'label' => 'Lavender bath bomb',
+                            'value' => 'lavender_bath_bomb'
+                        ],
+                        [
+                            'label' => 'Rose bath bomb',
+                            'value' => 'rose_bath_bomb'
+                        ],
+                    ],
+                ],
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()

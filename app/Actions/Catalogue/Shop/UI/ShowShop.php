@@ -60,11 +60,11 @@ class ShowShop extends OrgAction
                 $dates = explode('-', $rangeInterval);
                 if (count($dates) === 2) {
                     $performanceDates = [$dates[0], $dates[1]];
-                    $timeSeriesStats = GetShopTimeSeriesStats::run($shop, $dates[0], $dates[1]);
+                    $timeSeriesStats = GetFormatedShopTimeSeriesStats::run($shop, $dates[0], $dates[1]);
                 }
             }
         } else {
-            $timeSeriesStats = GetShopTimeSeriesStats::run($shop);
+            $timeSeriesStats = GetFormatedShopTimeSeriesStats::run($shop);
         }
 
         $topPerformanceStats = GetTopPerformanceStats::run($shop, $performanceDates[0], $performanceDates[1]);

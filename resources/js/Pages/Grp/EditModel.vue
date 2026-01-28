@@ -309,8 +309,8 @@ const getSeverity = (type?: string) => {
                             getSeverity(warning.type) === 'success' ? 'text-green-500' :
                                 getSeverity(warning.type) === 'error' ? 'text-red-500' :
                                     'text-blue-500'
-                    ]" class="text-xs ">
-                        {{ warning?.text }}
+                    ]" class="text-xs">
+                        <div v-html="warning?.text"/>
                     </div>
                 </div>
             </div>

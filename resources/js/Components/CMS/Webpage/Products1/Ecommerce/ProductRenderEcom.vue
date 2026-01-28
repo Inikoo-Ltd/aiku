@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
-import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed } from 'vue'
+import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -19,16 +18,13 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
-import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import AvailableGROfferLabel from '@/Components/Utils/Iris/AvailableGROfferLabel.vue'
 import Prices2 from '../Prices2.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
-const locale = useLocaleStore()
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
@@ -58,9 +54,10 @@ const emits = defineEmits<{
     (e: 'unsetFavorite', value: any[]): void
     (e: 'setBackInStock', value: any[]): void
     (e: 'unsetBackInStock', value: any[]): void
+    (e: 'onVariantClick', value: any[]): void
 }>()
 
-
+const _button_variant = ref(null)
 const currency = layout?.iris?.currency
 
 
@@ -81,12 +78,19 @@ const onUnselectBackInStock = (product: ProductResource) => {
 }
 
 
+const onClickVariant = (product: ProductResource, event : Event) => {
+    emits('onVariantClick', product.variant, event)
+   
+}
+
 
 
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 
-
+defineExpose({
+ _button_variant
+})
 
 </script>
 
@@ -99,7 +103,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
-                :type="typeOfLink" class="block w-full mb-1 rounded xsm:h-[305px] xh-[180px] aspect-square relative"
+                :type="typeOfLink"   class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false"
             >
                 <slot name="image" :product="product">
@@ -132,7 +136,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     </div>
                 </template>
 
-                <div v-if="layout?.iris?.is_logged_in && !product.is_variant" class="absolute right-2 bottom-2">
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton 
                         v-if="product.stock && basketButton && !product.is_coming_soon" 
                         :hasInBasket 
@@ -143,7 +147,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" 
                         :buttonStyle="buttonStyle" 
                     />
-                    <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.is_variant"
+                    <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
@@ -152,6 +156,15 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                             fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
+
+                <div v-if="layout?.iris?.is_logged_in && product.variant"
+                    class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
+                    <div class="flex justify-center">
+                        <Button :label="trans('Choose variants')" size="xs"
+                             @click.prevent.stop="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant=e" />
+                    </div>
+                </div>
+
             </component>
 
             <div class="xpx-3 mt-2">

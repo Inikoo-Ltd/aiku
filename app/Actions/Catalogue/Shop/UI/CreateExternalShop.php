@@ -33,7 +33,7 @@ class CreateExternalShop extends OrgAction
         $externalShopBlueprint = match ($engine) {
             ShopEngineEnum::FAIRE->value => [
                 [
-                    'title'  => __('detail'),
+                    'title'  => __('Detail'),
                     'fields' => [
                         'code' => [
                             'type'     => 'input',
@@ -132,7 +132,7 @@ class CreateExternalShop extends OrgAction
                 [
                     'type'          => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("creating shop"),
+                        'label' => __("Creating shop"),
                     ]
                 ]
             ]

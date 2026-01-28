@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
+use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -62,16 +63,16 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'is_for_sale')) {
+            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
+        }
+
         if (Arr::has($modelData, 'name_i8n')) {
             UpdateMasterProductTranslationsFromUpdate::make()->action($masterAsset, [
                 'translations' => [
                     'name' => Arr::pull($modelData, 'name_i8n')
                 ]
             ]);
-        }
-
-        if (Arr::has($modelData, 'is_for_sale')) {
-            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
         }
 
         if (Arr::has($modelData, 'description_title_i8n')) {
@@ -188,6 +189,43 @@ class UpdateMasterAsset extends OrgAction
                 UpdateAsset::run($asset, [
                     'tax_category' => $masterAsset->tax_category
                 ]);
+            }
+        }
+
+        if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code'])) {
+
+            $english      = Language::where('code', 'en')->first();
+
+            foreach ($masterAsset->products as $product) {
+                $shop = $product->shop;
+                if (!data_get($shop->settings, 'catalog.product_follow_master')) {
+                    continue;
+                }
+
+                $shopLanguage = $shop->language;
+                $dataToBeUpdated = [];
+
+                // Updates affected field name using translate if follow_master_{field} is true
+                if ($masterAsset->wasChanged('name')) {
+                    $dataToBeUpdated['name'] = Translate::run($masterAsset->name, $english, $shopLanguage);
+                    $dataToBeUpdated['is_name_reviewed'] = false;
+                }
+                if ($masterAsset->wasChanged('description_title')) {
+                    $dataToBeUpdated['description_title'] = Translate::run($masterAsset->description_title, $english, $shopLanguage);
+                    $dataToBeUpdated['is_description_title_reviewed'] = false;
+                }
+                if ($masterAsset->wasChanged('description')) {
+                    $dataToBeUpdated['description'] = Translate::run($masterAsset->description, $english, $shopLanguage);
+                    $dataToBeUpdated['is_description_reviewed'] = false;
+                }
+                if ($masterAsset->wasChanged('description_extra')) {
+                    $dataToBeUpdated['description_extra'] = Translate::run($masterAsset->description_extra, $english, $shopLanguage);
+                    $dataToBeUpdated['is_description_extra_reviewed'] = false;
+                }
+
+                if ($dataToBeUpdated) {
+                    UpdateProduct::make()->action($product, $dataToBeUpdated);
+                }
             }
         }
 

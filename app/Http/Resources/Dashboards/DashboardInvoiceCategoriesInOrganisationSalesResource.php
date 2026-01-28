@@ -8,51 +8,26 @@
 
 namespace App\Http\Resources\Dashboards;
 
-use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
-use App\Models\Helpers\Currency;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Cache;
 
-/**
- * @property mixed $slug
- * @property mixed $state
- * @property mixed $category_currency_id
- * @property mixed $name
- * @property mixed $organisation_currency_id
- */
 class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
 {
-    use WithDashboardIntervalValues;
-
-
-    protected string $categoryCurrencyCode;
-    protected string $organisationCurrencyCode;
+    use WithDashboardIntervalValuesFromArray;
 
     public function toArray($request): array
     {
-
-
-        $currencyCategoryId = $this->category_currency_id;
-        $categoryCurrencyCode = Cache::remember('currency_code_'.$currencyCategoryId, 3600 * 24 * 30, function () use ($currencyCategoryId) {
-            return Currency::find($currencyCategoryId)->code;
-        });
-        $this->categoryCurrencyCode = $categoryCurrencyCode;
-
-        $currencyOrganisationId = $this->organisation_currency_id;
-        $organisationCurrencyCode = Cache::remember('currency_code_'.$currencyOrganisationId, 3600 * 24 * 30, function () use ($currencyOrganisationId) {
-            return Currency::find($currencyOrganisationId)->code;
-        });
-        $this->organisationCurrencyCode = $organisationCurrencyCode;
+        $data = (array) $this->resource;
 
         $routeTargets = [
             'refunds' => [
                 'route_target' => [
                     'name' => 'grp.org.accounting.invoice-categories.show.refunds.index',
                     'parameters' => [
-                        'organisation' => $this->organisation_slug,
-                        'invoiceCategory' => $this->slug,
+                        'organisation' => $data['organisation_slug'],
+                        'invoiceCategory' => $data['slug'],
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
@@ -61,8 +36,8 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.accounting.invoice-categories.show.invoices.index',
                     'parameters' => [
-                        'organisation' => $this->organisation_slug,
-                        'invoiceCategory' => $this->slug,
+                        'organisation' => $data['organisation_slug'],
+                        'invoiceCategory' => $data['slug'],
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
@@ -71,49 +46,50 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
                 'route_target' => [
                     'name' => 'grp.org.accounting.invoice-categories.show',
                     'parameters' => [
-                        'organisation' => $this->organisation_slug,
-                        'invoiceCategory' => $this->slug,
+                        'organisation' => $data['organisation_slug'],
+                        'invoiceCategory' => $data['slug'],
                     ],
                 ],
             ],
         ];
 
+        $columns = [
+            'label' => [
+                'formatted_value' => $data['name'] ?? 'Unknown',
+                'align'           => 'left',
+                ...$routeTargets['invoiceCategories']
+            ],
+            'label_minified' => [
+                'formatted_value' => Abbreviate::run($data['name'] ?? 'Unknown'),
+                'tooltip'         => $data['name'] ?? 'Unknown',
+                'align'           => 'left',
+                ...$routeTargets['invoiceCategories']
+            ]
+        ];
+
         $columns = array_merge(
-            [
-                'label' => [
-                    'formatted_value' => $this->name,
-                    ...$routeTargets['invoiceCategories']
-                ]
-            ],
-            [
-                'label_minified' => [
-                    'formatted_value' => Abbreviate::run($this->name),
-                    'tooltip'         => $this->name,
-                    ...$routeTargets['invoiceCategories']
-                ]
-            ],
-            $this->getDashboardTableColumn($this, 'refunds', $routeTargets['refunds']),
-            $this->getDashboardTableColumn($this, 'refunds_minified', $routeTargets['refunds']),
-            $this->getDashboardTableColumn($this, 'refunds_inverse_delta'),
-            $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
-            $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
-            $this->getDashboardTableColumn($this, 'invoices_delta'),
-            $this->getDashboardTableColumn($this, 'sales_invoice_category_currency'),
-            $this->getDashboardTableColumn($this, 'sales_invoice_category_currency_minified'),
-            $this->getDashboardTableColumn($this, 'sales_invoice_category_currency_delta'),
-            $this->getDashboardTableColumn($this, 'sales_org_currency'),
-            $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),
-            $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
+            $columns,
+            $this->getDashboardColumnsFromArray($data, [
+                'refunds' => $routeTargets['refunds'],
+                'refunds_minified' => $routeTargets['refunds'],
+                'refunds_inverse_delta',
+                'invoices' => $routeTargets['invoices'],
+                'invoices_minified' => $routeTargets['invoices'],
+                'invoices_delta',
+                'sales',
+                'sales_minified',
+                'sales_delta',
+                'sales_org_currency',
+                'sales_org_currency_minified',
+                'sales_org_currency_delta',
+            ])
         );
 
-
         return [
-            'slug'    => $this->slug,
-            'state'   => $this->state == InvoiceCategoryStateEnum::ACTIVE ? 'active' : 'inactive',
+            'slug'    => $data['slug'] ?? 'unknown',
+            'state'   => ($data['state'] ?? InvoiceCategoryStateEnum::ACTIVE->value) == InvoiceCategoryStateEnum::ACTIVE->value ? 'active' : 'inactive',
             'columns' => $columns,
-            'colour'  => $this?->colour,
-
-
+            'colour'  => $data['colour'] ?? '',
         ];
     }
 }

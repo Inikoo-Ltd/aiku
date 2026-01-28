@@ -128,6 +128,10 @@ function departmentRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug])
+        case 'grp.masters.master_shops.show.master_families.show':
+            return route(
+                "grp.org.shops.show.catalogue.departments.show",
+                [family.organisation_slug, family.shop_slug, family.department_slug])
 
     }
 }

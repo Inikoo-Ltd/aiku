@@ -178,7 +178,8 @@ trait IsOrder
             [
                 'label'       => __('Charges'),
                 'information' => '',
-                'price_total' => $order->charges_amount
+                'price_total' => $order->charges_amount,
+                'slot_name'   => 'charges',
             ],
             [
                 'label'       => __('Shipping'),

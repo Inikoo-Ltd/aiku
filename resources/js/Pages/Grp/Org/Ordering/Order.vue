@@ -10,12 +10,12 @@ import { Head, Link, router, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText } from 'primevue';
+import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -81,9 +81,12 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import NeedToPayV2 from "@/Components/Utils/NeedToPayV2.vue"
-import { get, set } from "lodash"
+import { debounce, get, set } from "lodash"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import error from "@/Components/Utils/Error.vue"
+import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -242,6 +245,7 @@ const props = defineProps<{
     dispatched_emails?: {}
     payments_accounts: Array<{ id: number, name: string }>
     payments_data: Array<{ id: number, name: string }>
+    state: string
 }>()
 
 
@@ -811,6 +815,217 @@ const onSubmitEditAllPercentage = async () => {
         }
     )
 }
+
+
+
+// Section: Edit Discretionary Charge
+const isOpenModalDiscretionaryCharge = ref(false)
+const chargesList = ref([])
+const updateCharge = (charge: {}) => {
+    // Section: Submit
+    router.patch(
+        route(
+                'grp.models.transaction.update_charge_amount',
+                {
+                    transaction: charge.transaction_id
+                }
+            ),
+            {
+                amount: charge.net_amount
+            },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                charge.isLoading = true
+            },
+            onSuccess: () => {
+                charge.isRecentlySuccess = true
+                setTimeout(() => {
+                    charge.isRecentlySuccess = false
+                }, 2000)
+                notify({
+                    title: trans("Success!"),
+                    text: "Successfully edit net amount of the charge",
+                    type: "success",
+                })
+                // fetchChargesList(true)
+            },
+            onError: errors => {
+                notify({
+                title: trans("Something went wrong"),
+                text: error.message || trans("Please try again or contact administrator"),
+                type: 'error'
+            })
+            },
+            onFinish: () => {
+                charge.isLoading = false
+            },
+        }
+    )
+
+
+    // try {
+    //     charge.isLoading = true
+    //     const response = await axios.patch(
+    //         route(
+    //             'grp.models.transaction.update_charge_amount',
+    //             {
+    //                 transaction: charge.transaction_id
+    //             }
+    //         ), {
+    //             amount: charge.net_amount
+    //         }
+    //     )
+
+    //     charge.isRecentlySuccess = true
+    //     setTimeout(() => {
+    //         charge.isRecentlySuccess = false
+    //     }, 2000)
+    //     notify({
+    //         title: trans("Success!"),
+    //         text: "Successfully edit net amount of the charge",
+    //         type: "success",
+    //     })
+
+    //     console.log('Response axios:', response.data)
+    // } catch (error: any) {
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: error.message || trans("Please try again or contact administrator"),
+    //         type: 'error'
+    //     })
+    // } finally {
+    //     charge.isLoading = false
+    // }
+}
+// const updateDebCharge = debounce((charge) => updateCharge(charge), 400)
+// const addCharge = async (charge: {}) => {
+
+//     notify({
+//         title: trans("Something went wrong"),
+//         text: "Route to add new charge is not available yet.",
+//         type: "error",
+//     })
+// }
+const isLoadingFetchCharges = ref(false)
+const fetchChargesList = async (noLoading?: boolean) => {
+    try {
+        if (!noLoading) {
+            isLoadingFetchCharges.value = true
+        }
+
+        const response = await axios.get(
+            route(
+                'grp.json.charges_in_order.index',
+                {
+                    order: props.data?.data?.id
+                }
+            ),
+        )
+
+        chargesList.value = response.data.data
+        console.log('Response axios:', response.data)
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        if (!noLoading) {
+            isLoadingFetchCharges.value = false
+        }
+    }
+}
+watch(isOpenModalDiscretionaryCharge, async (val) => {
+    if (val) {
+        fetchChargesList()
+    }
+})
+const isLoadingRemoveCharge = ref<number[]>([])
+const onRemoveCharge = (charge) => {
+    // Section: Submit
+    router.delete(
+        route('grp.models.transaction.delete', {
+            transaction: charge.transaction_id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingRemoveCharge.value.push(charge.transaction_id)
+            },
+            onSuccess: () => {
+                // notifySuccess(trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label }))
+                notify({
+                    title: trans("Success"),
+                    text: trans("Charge :chargeLabel successfully removed", { chargeLabel: charge.label ?? '' }),
+                    type: "success"
+                })
+                chargesList.value = chargesList.value.filter((item) => item.transaction_id !== charge.transaction_id)
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove charge :chargeLabel", { chargeLabel: charge.label ?? '' }),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                const idx = isLoadingRemoveCharge.value.indexOf(charge.transaction_id)
+                if (idx !== -1) {
+                    isLoadingRemoveCharge.value.splice(idx, 1)
+                }
+            },
+        }
+    )
+}
+
+
+// Section: add new charge
+const isOpenModalAddCharges = ref(false)
+const dataNewChargeToAdd = ref({
+    label: '',
+    amount: 0
+})
+const isLoadingAddNewCharge = ref(false)
+const submitNewCharge = async () => {
+
+    try {
+        isLoadingAddNewCharge.value = true
+        const response = await axios.post(
+            route('grp.models.order.discretionary_charge_transaction', {
+                order: props.data?.data?.id
+            }),
+            {
+                amount: dataNewChargeToAdd.value.amount,
+                label: dataNewChargeToAdd.value.label,
+            }
+        )
+        console.log('Response axios:', response.data)
+
+        fetchChargesList()
+        dataNewChargeToAdd.value.label = ''
+        dataNewChargeToAdd.value.amount = 0
+        isOpenModalAddCharges.value = false
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully add new charge"),
+            type: "success"
+        })
+        router.reload()
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to add new charge"),
+            type: "error"
+        })
+    } finally {
+        isLoadingAddNewCharge.value = false
+    }
+}
+
 </script>
 
 <template>
@@ -1439,6 +1654,24 @@ const onSubmitEditAllPercentage = async () => {
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
+                        <template #cell_charges_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>
+                                        {{ fieldSummary.label }}
+                                    </span>
+                                    <span @click="isOpenModalDiscretionaryCharge = true"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-tooltip="trans('Edit charges')"
+                                        class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
+                                        <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
+                                    </span>
+                                </div>
+                                <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
+                                    class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+
+                            </dt>
+                        </template>
                         <template #cell_shipping_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
@@ -1460,7 +1693,11 @@ const onSubmitEditAllPercentage = async () => {
                                         v-tooltip="fieldSummary.information_icon"
                                         class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
                                         aria-hidden='true' />
-                                    <span @click="_shipping_price_method?.toggle"
+
+                                    <span
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        @click="_shipping_price_method?.toggle"
+                                        v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
                                     </span>
@@ -1751,6 +1988,165 @@ const onSubmitEditAllPercentage = async () => {
             </a>
         </div>
     </Modal>
+
+    <!-- Modal: Charges list -->
+    <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
+        width="w-full max-w-4xl " :isClosableInBackground="false" closeButton>
+        <div class="isolate bg-white px-6 lg:px-8 relative">
+            <div class="mx-auto max-w-2xl text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Charges") }}
+                </h2>
+            </div>
+
+            <div v-if="isLoadingFetchCharges" class="grid grid-cols-3 h-36 gap-x-4 gap-y-2">
+                <div v-for="xxx in 9" class="skeleton rounded">
+
+                </div>
+            </div>
+
+            <div v-else class="h-full max-h-[600px] overflow-y-scroll pr-2">
+                <DataTable :value="chargesList" tableStyle="xmin-width: 50rem">
+                    <Column field="name" header="Name">
+                        <template #body="{ data }">
+                            <div>
+                                {{ data.name }} {{ data.transaction_label }}
+                            </div>
+                        </template>
+                    </Column>
+                    <Column field="net_amount" header="Net Amount">
+                        <template #body="{ data }">
+                            <div v-if="!data.is_editing_net_amount">
+                                {{ locale.currencyFormat(currency.code, data.net_amount) }}
+                                <span @click="data.is_editing_net_amount = true" class="opacity-60 hover:opacity-100 cursor-pointer">
+                                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                                </span>
+                            </div>
+
+                            <div v-else class="flex gap-x-2">
+                                <div class="grid">
+                                    <InputNumber
+                                        :modelValue="data.net_amount"
+                                        @input="(val) => (data.net_amount = val.value)"
+                                        :min="0"
+                                        mode="currency"
+                                        :currency="currency.code"
+                                        size="small"
+                                        :inputClass="data.isRecentlySuccess ? '!border-green-500' : ''"
+                                    />
+                                    <span
+                                        v-if="data.gross_amount != data.net_amount && !data.is_discretionary"
+                                        @click="data.net_amount = data.gross_amount, updateCharge(data)"
+                                        class="underline text-sm cursor-pointer opacity-70 hover:opacity-100 italic">
+                                        {{ trans("reset to original") }} ({{ locale.currencyFormat(currency.code, data.gross_amount) }})
+                                    </span>
+                                </div>
+
+                                <span v-if="data.isLoading">
+                                    <LoadingIcon class="text-4xl leading-none" />
+                                </span>
+                                <span v-else @click="() => updateCharge(data)" class="cursor-pointer">
+                                    <FontAwesomeIcon icon="fad fa-save" class="text-4xl leading-none" fixed-width aria-hidden="true" />
+                                </span>
+
+                                <span @click="data.is_editing_net_amount = false" class="mt-1 text-red-500 cursor-pointer underline inline-block ml-2">
+                                    {{ trans("cancel") }}
+                                </span>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <!-- <Column field="discounts" header="">
+                        <template #body="{ data }">
+                            <div v-if="data.percentage_discount">
+                                -{{ data.percentage_discount }}
+                            </div>
+                        </template>
+                    </Column> -->
+
+                    <Column field="actions" header="">
+                        <template #body="{ data }">
+                            <div>
+                                <Button
+                                    v-if="data.is_discretionary"
+                                    @click="() => onRemoveCharge(data)"
+                                    v-tooltip="trans('Remove Charge')"
+                                    type="negative"
+                                    icon="fal fa-trash-alt"
+                                    key="l"
+                                    :loading="isLoadingRemoveCharge.includes(data.transaction_id)"
+                                    size="sm"
+                                />
+                            </div>
+                        </template>
+                    </Column>
+                </DataTable>
+            </div>
+
+            <div class="absolute top-2 right-4">
+                <Button @click="() => isOpenModalAddCharges = true" type="dashed" size="xs" label="Add discretionary charges" icon="fal fa-plus" full />
+            </div>
+
+            <div class="absolute top-2 left-4">
+                <Button @click="() => isOpenModalDiscretionaryCharge = false" type="negative" size="xs" label="Close" icon="far fa-arrow-left" full />
+            </div>
+
+        </div>
+    </Modal>
+
+    <Dialog v-model:visible="isOpenModalAddCharges" modal :header="trans('Add Discretionary Charges')" class="w-full max-w-lg" xstyle="{ width: '25rem' }">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <!-- <div class="mx-auto max-w-2xl text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Add Discretionary Charges") }}
+                </h2>
+            </div> -->
+
+            <div class="mt-6 mb-6 xflex gap-x-6">
+                <div class=" w-full col-span-2">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans("Label") }}
+                        <InformationIcon :information="trans('Label to show to customer')" />
+                        :
+                    </label>
+                    <InputText
+                        v-model="dataNewChargeToAdd.label"
+                        :disabled="isLoadingSubmitNetAmount"
+                        size="small"
+                        class="w-full"
+                    />
+                </div>
+
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium mb-2">
+                        {{ trans('Amount') }}
+                        <InformationIcon :information="trans('Enter 0 to remove the charge')" />
+                        :
+                    </label>
+                    <InputNumber
+                        :modelValue="dataNewChargeToAdd.amount"
+                        @input="(val) => (dataNewChargeToAdd.amount = val.value)"
+                        :min="0"
+                        mode="currency"
+                        :currency="currency.code" class="w-full" size="small" />
+                </div>
+            </div>
+
+            <div>
+                <Button @click="submitNewCharge" label="Add Charge" full :loading="isLoadingAddNewCharge"
+                    v-tooltip="dataNewChargeToAdd.amount <= 0 ? 'Amount can not be 0 or less' : ''"
+                    :disabled="dataNewChargeToAdd.amount <= 0"
+                />
+            </div>
+        </div>
+    </Dialog>
+
+    <!-- Modal: Add new discretionary Charges -->
+    <!-- <Modal :isOpen="isOpenModalAddCharges" @onClose="isOpenModalAddCharges = false"
+        width="w-full max-w-lg" :isClosableInBackground="false" closeButton>
+
+    </Modal> -->
 
     <UploadExcel v-if="props.upload_excel" v-model="isModalUploadExcel" :title="upload_excel.title"
         :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"

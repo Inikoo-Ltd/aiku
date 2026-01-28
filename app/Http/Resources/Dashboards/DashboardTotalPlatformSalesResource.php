@@ -36,8 +36,9 @@ class DashboardTotalPlatformSalesResource extends JsonResource
         // Sum all intervals (current + _ly)
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
 
-        // Merge metadata
-        $summedData = array_merge($firstModel, $summedData);
+        $summedData = array_merge([
+            'group_currency_code' => $firstModel['group_currency_code'] ?? 'GBP',
+        ], $summedData);
 
         $columns = array_merge(
             [

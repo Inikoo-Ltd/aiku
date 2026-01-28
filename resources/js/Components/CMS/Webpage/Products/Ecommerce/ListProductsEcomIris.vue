@@ -290,6 +290,14 @@ onMounted(() => {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
         fetchHasInBasket();
+    } else {
+        setTimeout(() => {   // Needed, to handle, after login phase
+            if (layout?.iris?.is_logged_in) {
+                firstLoad.value = 1
+                fetchProducts()
+                fetchHasInBasket()
+            }
+        }, 400)
     }
 })
 
@@ -523,7 +531,7 @@ watch(
                                 :key="index" 
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" 
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :hasInBasket="productInBasket.list[product.id]" 
+                                :hasInBasketList="productInBasket.list" 
                                 :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"

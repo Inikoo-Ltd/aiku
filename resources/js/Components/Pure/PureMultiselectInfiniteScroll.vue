@@ -28,6 +28,7 @@ const props = defineProps<{
     isLoading?: boolean
     placeholder?: string
     labelProp?: string
+    labelAdditionalProp?: string
     noOptionsText?: string
     initOptions?: {}[]
     valueProp?: string
@@ -180,8 +181,8 @@ defineExpose({
             <!-- {{ $attrs }} -->
             <slot name="singlelabel" :value>
                 <div class="w-full text-left pl-4 leading-4 truncate mr-2">{{ value[labelProp || 'name'] }} <span
-                        v-if="value.code"
-                        class="text-sm text-gray-400">({{ value.code }})</span></div>
+                        v-if="labelAdditionalProp || value.code"
+                        class="text-sm text-gray-400">({{ value[labelAdditionalProp || 'code'] }})</span></div>
             </slot>
         </template>
 
@@ -195,8 +196,8 @@ defineExpose({
 
         <template #option="{ option, isSelected, isPointed }">
             <slot name="option" :option :isSelected :isPointed>
-                <div class="">{{ option[labelProp || 'name'] }} <span v-if="option.code" class="text-sm"
-                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span>
+                <div class="">{{ option[labelProp || 'name'] }} <span v-if="labelAdditionalProp ?? option.code" class="text-sm"
+                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option[labelAdditionalProp || 'code'] }})</span>
                 </div>
             </slot>
         </template>

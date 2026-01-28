@@ -2,6 +2,7 @@
 
 namespace App\Actions\Web;
 
+use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeries;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeries;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -52,6 +53,7 @@ class ProcessTimeSeries
 
         ProcessWebsiteTimeSeries::dispatch($frequency, $dateFrom, $dateTo);
         ProcessWebpageTimeSeries::dispatch($frequency, $dateFrom, $dateTo);
+        ProcessOfferTimeSeriesRecords::dispatch($frequency, $dateFrom, $dateTo);
     }
 
     public function getCommandSignature(): string

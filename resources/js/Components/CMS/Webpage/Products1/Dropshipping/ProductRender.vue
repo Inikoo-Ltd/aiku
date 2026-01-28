@@ -118,9 +118,9 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                     :style="{ objectFit: 'contain' }"  
                 />
 
-                 <div v-if="layout?.iris?.is_logged_in && !product.is_variant" class="absolute right-2 bottom-2">
+                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <button 
-                        v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.is_variant"
+                        v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
@@ -177,7 +177,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
         </div>
 
         <div v-if="!hideButtonPortofolio">
-            <ButtonAddPortfolio v-if="!product.is_variant" :product="product" :productHasPortfolio="productHasPortfolio"
+            <ButtonAddPortfolio v-if="!product.variant" :product="product" :productHasPortfolio="productHasPortfolio"
                 :buttonStyle="buttonStyle" :buttonStyleLogin />
             <div v-else class="w-full">
                 <LinkIris v-if="product.url" :href="product.url" type="internal"

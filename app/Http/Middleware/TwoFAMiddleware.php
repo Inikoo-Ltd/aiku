@@ -22,22 +22,8 @@ class TwoFAMiddleware
         }
 
         $authenticator = new Authenticator($request);
-
-        // Importantly, all of this check is needed, otherwise it will break and causes infinity loop. Please do not remove any of them
-        $isAccessing2FA = $request->routeIs('grp.login.show2fa', 'grp.login.auth2fa');
-
-        // Block user from accessing 2FA page if already validated
-        if ($authenticator->isAuthenticated() && $isAccessing2FA) {
-            return redirect()->route('grp.dashboard.show');
-        }
-
         // Allow user to go to where they want to if authenticated
         if ($authenticator->isAuthenticated()) {
-            return $next($request);
-        }
-
-        // Prompt user to access 2FA if not authenticated
-        if ($isAccessing2FA) {
             return $next($request);
         }
 
