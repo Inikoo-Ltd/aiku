@@ -369,7 +369,7 @@ const fetchCustomers = debounce(() => {
             preserveState: true,
             preserveScroll: true,
             replace: true,
-            only: ['customers', 'filters']
+            only: ['customers', 'filters', 'estimatedRecipients']
         }
     )
 }, 400)
