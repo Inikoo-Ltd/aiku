@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { inject, ref, difine } from 'vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope, faHeart as farHeart } from '@far'
-import { faHeart as fasHeart, faStarHalfAlt, faCircle } from '@fas'
+import { faHeart as fasHeart, faStarHalfAlt } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faQuestionCircle } from "@fal"
 
@@ -23,7 +23,7 @@ import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
-import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+ import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -63,6 +63,7 @@ const emit = defineEmits([
     'onVariantClick'
 ])
 
+const _button_variant = ref(null)
 const currency = layout?.iris?.currency
 const idxSlideLoading = ref(false)
 
@@ -83,8 +84,8 @@ const toggleBackInStock = () =>
         : emit('setBackInStock', props.product)
 
 
-const onClickVariant = (product: ProductResource) => {
-    emit('onVariantClick', product.variant)
+const onClickVariant = (product: ProductResource, event : Event) => {
+    emit('onVariantClick', product.variant, event)
 }
 
 const getBestOffer = (offerId: string) => {
@@ -95,6 +96,9 @@ const getBestOffer = (offerId: string) => {
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
+defineExpose({
+ _button_variant
+})
 
 </script>
 
@@ -123,14 +127,6 @@ const getBestOffer = (offerId: string) => {
                             fixed-width />
 
 
-                        <div v-if="layout?.iris?.is_logged_in && product.variant"
-                            class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
-                            <div class="flex justify-center">
-                                <Button :label="trans('Choose variants')" size="xs"
-                                    @click.prevent.stop="onClickVariant(product)" />
-                            </div>
-                        </div>
-
                        <div
                             v-if="!product.stock > 0"
                             class="absolute inset-0 z-10 flex items-center justify-center rounded-xl pointer-events-none"
@@ -154,9 +150,9 @@ const getBestOffer = (offerId: string) => {
                     </slot>
 
                     <!-- Section: Discounts -->
-                   <!--  <div v-if="Object.keys(product.offers_data || {})?.length" class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10">
+                    <div  class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer">
                          <DiscountByType :offers_data="product?.product_offers_data" />
-                    </div> -->
+                    </div>
 
                     <!-- FAVOURITE -->
                     <template v-if="layout?.iris?.is_logged_in && !product.variant">
@@ -277,9 +273,22 @@ const getBestOffer = (offerId: string) => {
                                 :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
                         </button>
                     </template>
-                </div>
-            </div>
 
+
+                    <div v-if="layout?.iris?.is_logged_in && product.variant">
+                         <div class="hidden md:block mr-2">
+                            <Button :label="trans('Choose variants')" size="xs"
+                                @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="layout?.iris?.is_logged_in && product.variant">
+                         <div class="md:hidden block mr-2">
+                            <Button :label="trans('Choose variants')" size="xs"
+                                @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
+                        </div>
+                    </div>
+            </div>          
         </div>
 
         <!-- LOGIN  -->
@@ -296,4 +305,8 @@ const getBestOffer = (offerId: string) => {
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.offer :deep(.offer-trigger-label) {
+    @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
+}
+</style>

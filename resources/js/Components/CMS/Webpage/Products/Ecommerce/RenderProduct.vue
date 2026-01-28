@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { inject, ref, computed, onMounted, onBeforeUnmount  } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import Popover from 'primevue/popover'
 
 import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
@@ -15,6 +15,7 @@ import { routeType } from '@/types/route'
 import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents"
 import axios from "axios"
 import VariantDialogContent from "./VariantDialogContent.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -71,13 +72,11 @@ const emits = defineEmits<{
 
 
 const isLoadingRemindBackInStock = ref(false)
-const showVariantPopover = ref(false)
 const variant = ref<any>(null)
-const popoverRef = ref<HTMLElement | null>(null)
-
-
-// Section: Add to Favourites
+const _render_components = ref(null)
+const popoverRef = ref<any>(null)
 const isLoadingFavourite = ref(false)
+const loadingGetVariants = ref(false)
 
 const onAddFavourite = (product: ProductResource) => {
 
@@ -115,6 +114,7 @@ const onAddFavourite = (product: ProductResource) => {
         }
     )
 }
+
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
         route(props.dettachToFavouriteRoute.name, {
@@ -150,7 +150,6 @@ const onUnselectFavourite = (product: ProductResource) => {
         }
     )
 }
-
 
 const onAddBackInStock = async (product: ProductResource) => {
 	isLoadingRemindBackInStock.value = true
@@ -206,26 +205,34 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 }
 
 
+const getAllProductFromVariant = async (
+  variant_id: string,
+  event: MouseEvent
+) => {
+  if (!variant_id || !event) return
 
-const onClickOutside = (e: MouseEvent) => {
-  if (!popoverRef.value) return
-  if (!popoverRef.value.contains(e.target as Node)) {
-    showVariantPopover.value = false
-  }
-}
+  // 🔒 HARD FREEZE the anchor element
+  const target = event.currentTarget as HTMLElement
+  if (!target) return
 
-const getAllProductFromVariant = async (variant_id: string) => {
-  if (!variant_id) return
+  loadingGetVariants.value = true
+
+  // ✅ Fake a stable event object
+  popoverRef.value?.show({
+    currentTarget: target
+  } as any)
 
   try {
     const response = await axios.get(
-      route("iris.json.variant", { variant: variant_id })
+      route('iris.json.variant', { variant: variant_id })
     )
 
     variant.value = response.data
-    showVariantPopover.value = true
   } catch (e) {
-    console.error("getAllProductFromVariant error", e)
+    console.error(e)
+    popoverRef.value?.hide()
+  } finally {
+    loadingGetVariants.value = false
   }
 }
 
@@ -258,11 +265,9 @@ const listProducts = computed(() => {
     })
     .filter(Boolean)
     .sort((a: any, b: any) => {
-      /* 1️⃣ leader selalu di paling atas */
       if (a.is_leader && !b.is_leader) return -1
       if (!a.is_leader && b.is_leader) return 1
 
-      /* 2️⃣ sorting label normal */
       if (!a.variant_label) return 1
       if (!b.variant_label) return -1
 
@@ -273,27 +278,27 @@ const listProducts = computed(() => {
     })
 })
 
+const onClickOutside = (e: MouseEvent) => {
+  const popoverEl = popoverRef.value?.container
+  if (!popoverEl) return
 
-const closePopover = () => {
-  showVariantPopover.value = false
+  if (!popoverEl.contains(e.target as Node)) {
+    popoverRef.value.hide()
+  }
 }
 
-
 onMounted(() => {
-  document.addEventListener("click", onClickOutside)
+  document.addEventListener("click", onClickOutside, true) // 👈 capture
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener("click", onClickOutside)
+  document.removeEventListener("click", onClickOutside, true)
 })
-
-
-
 
 </script>
 
 <template>
-    <div class="relative" ref="popoverRef">
+    <div class="relative" >
     <component 
         :is="getProductsRenderB2bComponent(code)" 
         :product="product"
@@ -312,36 +317,19 @@ onBeforeUnmount(() => {
         :button
         :bestSeller="bestSeller"
         :screenType
+        :ref="(e)=> _render_components = e"
     />
-
-    <div
-        v-if="showVariantPopover"
-        class="fixed inset-0 z-40"
-        @click="closePopover"
-    />
-
-    <!-- POPOVER -->
-    <transition
-        enter-active-class="transition ease-out duration-200"
-        enter-from-class="opacity-0 translate-y-1"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition ease-in duration-150"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 translate-y-1"
-    >
-            <div v-if="showVariantPopover" class="absolute z-50 inline-block w-max max-w-[180px] md:max-w-[200px] lg:max-w-[260px] rounded-lg border bg-white shadow- top-[10rem] md:mt-[-15rem] md:top-[14rem]  lg:top-[13rem] " @keydown.esc="closePopover" tabindex="0">
-                <div class="p-4 text-sm break-words">
-                    <variant-dialog-content 
-                        :variants="listProducts" 
-                        :hasInBasketList="hasInBasketList" 
-                        @setBackInStock="onAddBackInStock"
-                        @unsetBackInStock="onUnselectBackInStock"
-                        :isLoadingRemindBackInStock="isLoadingRemindBackInStock"
-                    />
-                </div>
+        <Popover ref="popoverRef" appendTo="body" dismissable 
+            class="w-max max-w-[180px] md:max-w-[200px] lg:max-w-[260px]">
+            <div class="p-4 text-sm break-words">
+                <loading-icon v-if="loadingGetVariants" />
+                <variant-dialog-content v-else :variants="listProducts" :hasInBasketList="hasInBasketList"
+                    @setBackInStock="onAddBackInStock" @unsetBackInStock="onUnselectBackInStock"
+                    :isLoadingRemindBackInStock="isLoadingRemindBackInStock" />
             </div>
-        </transition>
+        </Popover>
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
