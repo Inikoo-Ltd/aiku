@@ -27,8 +27,11 @@ class ImportStoredItems extends OrgAction
     use WithFulfilmentShopAuthorisation;
 
     private Fulfilment $parent;
-    public function handle(FulfilmentCustomer $fulfilmentCustomer, $file, array $modelData): Upload
+    public function handle(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): Upload
     {
+        $file = $request->file('file');
+        Storage::disk('local')->put($this->tmpPath, $file);
+
         $upload = StoreUpload::make()->fromFile(
             $fulfilmentCustomer->fulfilment->shop,
             $file,

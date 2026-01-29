@@ -48,7 +48,7 @@ provide('selectedEchopersonal', selectedEchopersonal())
         <ModalUpload
             v-model="model"
             :scope
-            :title        
+            :title
             :upload_spreadsheet
             :additionalDataToSend
             :propsRefreshAfterFinish
