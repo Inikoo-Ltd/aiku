@@ -901,15 +901,18 @@ console.log("props table", props)
 
                         <!-- DIRECT MODE -->
                         <template v-if="filter.value.mode === 'direct'">
-                            <InputText v-model="getPostalCodeModel(filter).value"
-                                :placeholder="filter.config.fields.postal_codes.placeholder" class="w-full" />
                             <MultiselectTagsInfiniteScroll :form="filter.value" v-model="filter.value.country_ids"
                                 fieldName="country_ids" :fieldData="{
                                     options: filter.config.fields.country_ids.options,
                                     labelProp: 'label',
-                                    valueProp: 'label',
+                                    valueProp: 'value',
                                     placeholder: filter.config.fields.country_ids.placeholder
                                 }" class="w-full !p-0" />
+                            <InputText v-model="getPostalCodeModel(filter).value"
+                                :placeholder="filter.config.fields.postal_codes.placeholder" class="w-full" />
+                            <small class="text-gray-500">
+                                You can enter multiple postal codes separated by commas.
+                            </small>
                         </template>
 
                         <!-- RADIUS MODE -->

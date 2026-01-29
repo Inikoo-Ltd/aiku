@@ -201,7 +201,7 @@ class ShowMailshotRecipients extends OrgAction
                             'postal_codes' => [
                                 'type'        => 'tags',
                                 'label'       => 'Postal Codes',
-                                'placeholder' => 'Type postcode and hit enter',
+                                'placeholder' => 'Type postcode',
                                 'dependency'  => ['mode' => 'direct']
                             ],
 
