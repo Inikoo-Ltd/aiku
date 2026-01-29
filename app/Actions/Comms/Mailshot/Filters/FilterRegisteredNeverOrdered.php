@@ -5,6 +5,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\QueryBuilder\QueryBuilder;
 use Illuminate\Support\Arr;
+use Carbon\Carbon;
 
 class FilterRegisteredNeverOrdered
 {
@@ -46,11 +47,11 @@ class FilterRegisteredNeverOrdered
                 $endDate   = Arr::get($dateRange, 'end');
 
                 if ($startDate) {
-                    $query->whereDate('created_at', '>=', $startDate);
+                    $query->whereDate('created_at', '>=', Carbon::parse($startDate)->startOfDay());
                 }
 
                 if ($endDate) {
-                    $query->whereDate('created_at', '<=', $endDate);
+                    $query->whereDate('created_at', '<=', Carbon::parse($endDate)->endOfDay());
                 }
             }
         }
