@@ -25,6 +25,7 @@ import Breadcrumb from "primevue/breadcrumb"
 import ProductCategoryContent from "@/Components/Showcases/Grp/ProductCategoryContent.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
+import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 
 library.add(
     faFolder,
@@ -66,6 +67,7 @@ const props = defineProps<{
     content?: {}
     salesData?: object
     variants?: {}
+    offers?: {}
 }>()
 console.log("family", props)
 const currentTab = ref(props.tabs.current)
@@ -85,6 +87,7 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         content: ProductCategoryContent,
         variants: TableVariants,
+        offers: TableOffers
     }
     return components[currentTab.value] ?? ModelDetails
 })
