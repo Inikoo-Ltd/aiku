@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from "vue"
+import { ref, computed, inject, onMounted, nextTick } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
@@ -19,6 +19,7 @@ import RecommendationSlideIris from "@/Components/Iris/Recommendations/Recommend
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { trans } from "laravel-vue-i18n"
+import RecommendationSlideIrisWithRealData from "@/Components/Iris/Recommendations/RecommendationSlideIrisWithRealData.vue"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -98,7 +99,7 @@ const isFetched = ref(false)
 
 const fetchRecommenders = async () => {
     try {
-        // isLoadingFetch.value = true
+        isLoadingFetch.value = true
         const response = await axios.post(
             `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
             [
@@ -130,13 +131,13 @@ const fetchRecommenders = async () => {
 
         console.log('LTrends1:', response.data)
         listProductsFromLuigi.value = response.data[0].hits
-        fetchRecommendersToGetProducts()
+        fetchProductData()
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
         isFetched.value = true
+        isLoadingFetch.value = false
     }
-    isLoadingFetch.value = false
 }
 
 // const fetchRecommenders = async () => {
@@ -169,11 +170,12 @@ const fetchRecommenders = async () => {
 // }
 
 
-const fetchRecommendersToGetProducts = async () => {
+const isLoadingProductRealData = ref(false)
+const fetchProductData = async () => {
     const productListid = listProductsFromLuigi.value?.map((item) => item.attributes.product_id[0])
     if (productListid?.length) {
         try {
-            isLoadingFetch.value = true
+            isLoadingProductRealData.value = true
 
             const response = await axios.get(
                 route('iris.json.luigi.product_details'),
@@ -183,12 +185,26 @@ const fetchRecommendersToGetProducts = async () => {
                     }
                 }
             )
-            listProducts.value = response.data.data
+
+            listProductsFromLuigi.value.forEach(item => {
+                // Find the matching product_code[0] in listProductsFromLuigi.value
+                const relatedProduct = response.data.data.find(product => item.attributes.product_code[0] === product.code)
+
+                // If a match is found, set the iris_attributes
+                if (relatedProduct) {
+                    item.iris_attributes = relatedProduct
+                }
+            })
+            nextTick()
+
+
+            console.log('wwwwwwwww', listProductsFromLuigi.value)
+            // listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {
             isFetched.value = true
-            isLoadingFetch.value = false
+            isLoadingProductRealData.value = false
         }
     }
 }
@@ -207,8 +223,8 @@ onMounted(() => {
     }">
         <template v-if="!isFetched || listProductsFromLuigi?.length">
             <!-- Title -->
-            <div class="px-3 py-6 pb-6">
-                <div class="text-3xl font-semibold">
+            <div class="px-3 pt-6 md:pb-6">
+                <div class="text-2xl md:text-3xl font-semibold">
                     <div>
                         <p style="text-align: center">{{ trans("Trending") }}</p>
                     </div>
@@ -223,7 +239,7 @@ onMounted(() => {
                     :modules="[Autoplay]"
                     class="w-full"
                     xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
-                    spaceBetween="12"
+                    spaceBetween="20"
                     autoHeight
                 >
                     <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
@@ -233,13 +249,19 @@ onMounted(() => {
 
                     <template v-else>
                         <SwiperSlide
-                            v-for="(product, index) in listProducts"
+                            v-for="(product, index) in listProductsFromLuigi"
                             :key="index"
                             class="w-full cursor-grab relative !grid h-full min-h-full py-0.5"
                         >
-                            <RecommendationSlideLastSeen
+                            <!-- <RecommendationSlideLastSeen
                                 :product
                                 :isProductLoading
+                            /> -->
+
+                            <RecommendationSlideIrisWithRealData
+                                :product
+                                :isProductLoading
+                                :isLoadingProductRealData
                             />
 
                            <!--  <RecommendationSlideIris
