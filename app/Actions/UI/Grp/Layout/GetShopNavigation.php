@@ -85,7 +85,7 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        [
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Departments"),
                             "tooltip" => __("Departments"),
                             "icon" => ["fal", "fa-folder-tree"],
@@ -94,8 +94,8 @@ class GetShopNavigation
                                 "name" => "grp.org.shops.show.catalogue.departments.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                        ],
-                        [
+                        ] : null,
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Families"),
                             "tooltip" => __("Families"),
                             "icon" => ["fal", "fa-folder"],
@@ -104,7 +104,7 @@ class GetShopNavigation
                                 "name" => "grp.org.shops.show.catalogue.families.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                        ],
+                        ] : null,
                         [
                             "label" => __("Products"),
                             "tooltip" => __("Products"),
@@ -115,7 +115,7 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        [
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Collections"),
                             "tooltip" => __("Collections"),
                             "icon" => ["fal", "fa-album-collection"],
@@ -124,7 +124,7 @@ class GetShopNavigation
                                 "name" => "grp.org.shops.show.catalogue.collections.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                        ],
+                        ] : null,
                     ],
                 ],
             ];

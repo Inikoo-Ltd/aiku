@@ -46,7 +46,7 @@ class ProductInExternalShopResource extends JsonResource
             'slug'                          => $product->slug,
             'code'                          => $product->code,
             'name'                          => $product->name,
-            'state'                         => $product->state,
+            'state'                         => $product->state->stateIcon()[$this->state->value],
             'units'                         => trimDecimalZeros($product->units),
             'unit'                          => $product->unit,
             'price'                         => $product->price,
