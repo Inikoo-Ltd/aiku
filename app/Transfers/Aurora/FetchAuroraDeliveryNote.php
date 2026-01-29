@@ -25,9 +25,9 @@ class FetchAuroraDeliveryNote extends FetchAurora
         }
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Delivery Note Store Key'});
-        if ($shop->is_aiku) {
-            return;
-        }
+//        if ($shop->is_aiku) {
+//            return;
+//        }
 
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
             print "Ignore fulfilment delivery without order ".$this->auroraModelData->{'Delivery Note Key'}."  \n";
