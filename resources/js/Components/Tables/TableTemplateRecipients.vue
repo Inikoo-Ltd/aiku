@@ -609,6 +609,35 @@ const saveFilters = async () => {
         .finally(() => {
             console.log('finally')
         });
+
+
+    axios
+        .get(
+            route('grp.json.get_geocode'),
+            {
+                params: {
+                    location: 'jakarta'
+                }
+            },
+        )
+        .then((response) => {
+            console.log(response.data)
+
+            notify({
+                title: trans('Success!'),
+                text: trans('Success to save filter'),
+                type: 'success',
+            })
+        })
+        .catch((error) => {
+            notify({
+                title: "Failed to save filter",
+                type: "error",
+            })
+        })
+        .finally(() => {
+            console.log('finally')
+        });
 }
 
 onMounted(async () => {

@@ -94,6 +94,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
+use App\Actions\Helpers\Address\GetGeocode;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
@@ -250,3 +251,5 @@ Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name(
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
 
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
+
+Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
