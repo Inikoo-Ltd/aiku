@@ -580,8 +580,14 @@ const filtersPayload = computed(() => {
 
         // MULTISELECT (simple)
         if (config.type === 'multiselect') {
+            const ids = Array.isArray(val.ids)
+                ? val.ids
+                : val.ids != null
+                    ? [val.ids]
+                    : []
+
             payload[key] = {
-                value: val.ids ?? []
+                value: ids
             }
             return
         }
@@ -816,7 +822,7 @@ console.log("props table", props)
                 <template v-else-if="filter.config.type === 'multiselect'">
                     <template v-if="filter.config.label === 'By Family Never Ordered'">
                         <div class="min-w-0 w-full mb-3">
-                            <PureMultiselectInfiniteScroll :object="false" :key="key" mode="multiple"
+                            <PureMultiselectInfiniteScroll :object="false" :key="key" mode="single"
                                 v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
                                 :fetchRoute="getEntityFetchRoute(key)" valueProp="id" labelProp="name"
                                 placeholder="Select items..." />

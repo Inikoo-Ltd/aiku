@@ -44,6 +44,7 @@ const props = defineProps<{
     cancelScheduleMailshotRoute?: routeType
     status?: string
     estimatedRecipients?: number
+    mailshotType?: string
 }>();
 
 console.log("estimatedRecipients test : ", props.estimatedRecipients)
@@ -228,6 +229,10 @@ const cancelSchedule = () => {
     scheduleDateTime.value = new Date();
 };
 
+const formatNumber = (num: number | null | undefined) => {
+    return new Intl.NumberFormat('en-GB').format(num ?? 0)
+}
+
 const component = computed(() => {
     const components: Component = {
         showcase: MailshotShowcase,
@@ -361,6 +366,9 @@ watch(
 
     <Head :title="capitalize(pageHead.title)" />
     <PageHeading :data="pageHead">
+        <template #afterTitle v-if="props.mailshotType === 'marketing'">
+            <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
+        </template>
         <template #otherBefore>
             <div class="flex" v-if="shouldShowButtons">
                 <ModalConfirmation :title="trans('Are you sure you want to send this mailshot?')"

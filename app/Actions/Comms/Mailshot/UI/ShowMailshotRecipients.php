@@ -41,20 +41,20 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $interestTags = Tag::query()
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $countries = Country::query()
             ->orderBy('name')
             ->get()
-            ->map(fn ($country) => [
+            ->map(fn($country) => [
                 'value' => $country->id,
                 'label' => $country->name,
             ])
@@ -87,7 +87,7 @@ class ShowMailshotRecipients extends OrgAction
                                 'label'       => 'By Family',
                                 'placeholder' => 'Select',
                                 'multiple'    => false,
-                                'options'     => $productFamilies,
+                                'options'     => [],
                             ],
                             'behaviours'   => [
                                 'type'    => 'select',
@@ -105,7 +105,7 @@ class ShowMailshotRecipients extends OrgAction
                         'type'        => 'multiselect',
                         'description' => 'Targets customers who have never placed an order containing products from the selected family.',
                         'multiple'    => false,
-                        'options'     => $productFamilies,
+                        'options'     => [],
                     ],
                     'orders_in_basket' => [
                         'label'       => 'Orders In Basket',
