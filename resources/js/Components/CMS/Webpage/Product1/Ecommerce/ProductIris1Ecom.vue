@@ -34,8 +34,9 @@ import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vu
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 
 import { Navigation, Thumbs } from 'swiper/modules'
-import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
+// import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+import { getBestOffer } from "@/Composables/useOffers"
 
 
 
@@ -146,14 +147,17 @@ watch(
 const _popoverProfit = ref(null)
 
 // console.log('fdsfds', props.fieldValue.product)
-const getBestOffer = (offerId: string) => {
+/* const getBestOffer = (offerId: string) => {
     if (!offerId) {
         return
     }
 
     return product.value?.offers_data?.offers?.[offerId] 
-}
+} */
 
+const bestOffer = computed(() => {
+  return getBestOffer(props.product?.offers_data)
+})
 
 
 const variantPrevEl = ref<HTMLElement | null>(null)
@@ -288,9 +292,9 @@ onMounted(async () => {
                 <!-- Section: Member/Non Member label, Profit -->
                 <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
                     <template v-if="product.offers_data?.number_offers > 0">
-                        <div class="flex flex-col w-fit offer">
-                            <template v-if="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'">
-                                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)" />
+                        <div class="flex flex-col w-fit offers">
+                            <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
+                                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
                                 <NonMemberPriceLabel v-else :product />
                             </template>
             
@@ -298,9 +302,14 @@ onMounted(async () => {
                                 v-if="
                                     (product.stock && !product.is_coming_soon)  // same as button add to basket conditions
                                     && !layout?.user?.gr_data?.customer_is_gr"
-                                :offer="getBestOffer(product.offers_data?.best_percentage_off?.offer_id)"
+                                :offer="bestOffer(product.offers_data?.best_percentage_off?.offer_id)"
                             /> -->
-                             <DiscountByType v-if="(product.stock  && !product.is_coming_soon)" :offers_data="product?.offers_data" />
+                            
+                             <DiscountByType 
+                                v-if="(product.stock  && !product.is_coming_soon)" 
+                                :template="bestOffer?.type === 'Category Quantity Ordered Order Interval' ? 'products_triggers_label' : 'max_discount'"
+                                :offers_data="product?.offers_data" 
+                            />
                         </div>
                         <div />
                     </template>
@@ -586,4 +595,12 @@ onMounted(async () => {
   color: var(--theme-color-4) !important;
   border: 2px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
 }
+
+.offers :deep(.offer-max-discount) {
+  @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center
+    rounded-sm px-1 py-0.5 text-sm
+    sm:px-1.5 sm:py-1 sm:text-sm
+    md:px-2 md:py-1;
+}
+
 </style>
