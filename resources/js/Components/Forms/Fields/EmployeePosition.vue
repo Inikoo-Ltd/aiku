@@ -635,6 +635,29 @@ watch(() => newForm, () => {
 }, { deep: true, immediate: true })
 
 
+const isGradeAllCheckedInCurrentAndInShopAdmin = (subDepartmentSlug: string) => {
+    
+    const selectedGradeInShop = get(newForm, [props.fieldName, subDepartmentSlug, 'shops'], [])  // ["uk"]
+
+    if (selectedGradeInShop.length) {
+        // [...["awd"], ...["uk"]]
+        const combineSelectionInCurrentAndShopAdminSlug = [...get(newForm, [props.fieldName, 'shop-admin', 'shops'], []), ...selectedGradeInShop]
+        
+        return optionsList.shops.every((shop) => combineSelectionInCurrentAndShopAdminSlug.includes(shop.slug))
+    } else {
+        return false
+    }
+}
+
+const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
+    const selectedShopInThisGrade = get(newForm, [props.fieldName, subDepartmentSlug, 'shops'], [])  // ["uk"]
+    if (selectedShopInThisGrade.length) {
+        return optionsList.shops.some((shop) => selectedShopInThisGrade.includes(shop.slug))
+    } else {
+        return false
+    }
+
+}
 </script>
 
 <template>
@@ -670,15 +693,17 @@ watch(() => newForm, () => {
                                                         || (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level))
                                                         || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin')
                                                         || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin')
-                                                        ? true
-                                                        : false"
+                                                            ? true
+                                                            : false
+                                                    "
                                                 >
 
                                                     <div class="relative text-left">
                                                         <div class="absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2">
                                                             <template
                                                                 v-if="isGroupAdminSelected || (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level)) || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin')">
-                                                                <FontAwesomeIcon v-if="idxSubDepartment === 0" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
+                                                                <FontAwesomeIcon v-if="(idxSubDepartment === 0 && optionsList.shops.every((shop) => newForm[props.fieldName]['shop-admin']['shops'].includes(shop.slug))) || isGradeAllCheckedInCurrentAndInShopAdmin(subDepartment.slug)" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
+                                                                <FontAwesomeIcon v-else-if="idxSubDepartment === 0 || isSomeShopCheckedInSameGrade(subDepartment.slug)" icon="fal fa-check-circle" class="xtext-green-500" fixed-width aria-hidden="true" />
                                                                 <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                                                             </template>
                                                             <template v-else-if="Object.keys(newForm[fieldName] || {}).includes(subDepartment.slug)">
@@ -742,12 +767,12 @@ watch(() => newForm, () => {
                                                                                 v-if="subDep.optionsType?.includes(optionKey)"
                                                                                 @click.prevent="onClickJobFineTune(departmentName, shop.slug, subDep.slug, optionKey)"
                                                                                 class="group h-full cursor-pointer flex items-center justify-center rounded-md px-3 font-medium disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
-                                                                                :disabled="isGroupAdminSelected || isRadioChecked('org-admin') || isRadioChecked('group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDep.slug !== 'shop-admin')"
+                                                                                :disabled="isGroupAdminSelected || isRadioChecked('org-admin') || isRadioChecked('group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDep.slug !== 'shop-admin' && get(newForm, [props.fieldName, 'shop-admin', optionKey], []).includes(shop.slug))"
                                                                                 v-tooltip="subDep.label"
                                                                             >
                                                                                 <div class="relative text-left">
                                                                                     <template
-                                                                                        v-if="isRadioChecked('org-admin') || isRadioChecked('group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDep.slug !== 'shop-admin')">
+                                                                                        v-if="isRadioChecked('org-admin') || isRadioChecked('group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDep.slug !== 'shop-admin' && get(newForm, [props.fieldName, 'shop-admin', optionKey], []).includes(shop.slug))">
                                                                                         <FontAwesomeIcon v-if="idxGrade === 0" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
                                                                                         <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                                                                                     </template>
