@@ -22,6 +22,7 @@ function offerRoute(offer: Order) {
     switch (route().current()) {
         case "grp.org.shops.show.discounts.offers.index":
         case "grp.org.shops.show.discounts.campaigns.show":
+        case "grp.org.shops.show.catalogue.families.show":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
                 [

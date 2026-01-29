@@ -142,6 +142,7 @@ const showDialog = ref(false)
             </template>
         </Breadcrumb>
     </div>
+    
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" />
 
 
