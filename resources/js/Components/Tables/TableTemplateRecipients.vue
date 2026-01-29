@@ -71,7 +71,6 @@ library.add(
 );
 
 const props = defineProps<{
-    customers: any,
     recipientFilterRoute: routeType
     filters: Record<string, any>,
     filtersStructure: Record<string, any>
@@ -89,13 +88,6 @@ const activeFilters = ref<Record<string, any>>(
 const activeFilterCount = computed(() =>
     Object.keys(activeFilters.value ?? {}).length
 )
-
-const tableState = reactive({
-    page: props.customers.current_page ?? 1,
-    rows: props.customers.per_page ?? 10,
-    sortField: null,
-    sortOrder: null
-})
 
 const availableFilters = computed(() => {
     const list: any[] = []
@@ -647,6 +639,14 @@ const getPostalCodeModel = (filter: any) => {
     })
 }
 
+const readyFilters = computed(() => {
+    return Object.fromEntries(
+        Object.entries(activeFilters.value).filter(
+            ([_, f]: any) => f?.config?.type
+        )
+    )
+})
+
 const saveFilters = async () => {
     console.log('[SAVE FILTER PAYLOAD]', filtersPayload.value)
     let payload = filtersPayload.value
@@ -708,25 +708,20 @@ watch(
     () => activeFilters.value,
     (filters) => {
         Object.values(filters).forEach((filter: any) => {
-            if (filter.config.type === 'entity_behaviour') {
-                watch(
-                    () => filter.value.combine_logic,
-                    (isMulti) => {
-                        if (!isMulti) {
-                            filter.value.behaviors = filter.value.behaviors?.length
-                                ? [filter.value.behaviors[0]]
-                                : []
-                        }
-                    },
-                    { immediate: true }
-                )
+            if (!filter?.config || filter.config.type !== 'entity_behaviour') return
+            if (!filter?.value) return
+
+            const val = filter.value
+
+            if (val.combine_logic === false && Array.isArray(val.behaviors)) {
+                val.behaviors = val.behaviors.length ? [val.behaviors[0]] : []
             }
         })
     },
     { deep: true, immediate: true }
 )
+
 watch(activeFilters, fetchCustomers, { deep: true })
-watch(tableState, fetchCustomers, { deep: true })
 console.log("props table", props)
 </script>
 
@@ -753,11 +748,11 @@ console.log("props table", props)
 
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            <div v-for="(filter, key) in activeFilters" :key="key"
+            <div v-for="(filter, key) in readyFilters" :key="key"
                 class="border rounded p-4 bg-gray-50 relative min-w-0">
 
-                <div class=" flex justify-between mb-2">
-                    <span class="font-medium">{{ filter.config.label }}</span>
+                <div v-if="filter.config" class="flex justify-between mb-2">
+                    <span class="font-medium">{{ filter.config.label ?? '-' }}</span>
                     <Button :icon="faTimes" type="negative" @click="removeFilter(key)" />
                 </div>
                 <span

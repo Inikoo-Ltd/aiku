@@ -18,7 +18,6 @@ const props = defineProps<{
     mailshot: any
     filtersStructure: Record<string, any>
     filters: any
-    customers: any
     recipientFilterRoute: routeType
     recipients_recipe: any
     shop_slug: string
@@ -35,7 +34,7 @@ const props = defineProps<{
 
     <Notification v-if="showNotification && notificationData" :notification="notificationData" />
 
-    <TableTemplateRecipients :customers="customers" :filters="filters" :filters-structure="filtersStructure"
+    <TableTemplateRecipients :filters="filters" :filters-structure="filtersStructure"
         :recipient-filter-route="recipientFilterRoute" :recipients-recipe="recipients_recipe" :shop-id="shop_id"
         :shop-slug="shop_slug" :estimated-recipients="estimatedRecipients" />
 </template>
