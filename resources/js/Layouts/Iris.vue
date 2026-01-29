@@ -313,4 +313,13 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
 iframe#launcher {
     bottom: 30px !important;
 }
+
+.background-primary {
+    background-color: var(--theme-color-4);
+}
+
+.text-primary {
+    color: var(--theme-color-4);
+}
+
 </style>

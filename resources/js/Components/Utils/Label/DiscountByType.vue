@@ -8,6 +8,7 @@ type Offer = {
 }
 
 const props = defineProps<{
+    template : string
     offers_data: {
         number_offers: number
         offers: Offer[]
@@ -19,7 +20,7 @@ const props = defineProps<{
 }>()
 
 const componentsMap = {
-    'Category Quantity Ordered Order Interval': defineAsyncComponent(() => import("@/Components/Utils/Iris/AvailableVolOfferLabel.vue")),
+    'Category Quantity Ordered Order Interval': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/OfferPivotGr.vue")),
     'Category Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/DiscountCategoryOrdered.vue")),
    /*  'Amount AND Order Number': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue")),
     'Category Quantity Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/ACDiscount.vue")), */
@@ -51,7 +52,6 @@ const resolvedComponent = computed(() => {
         ] ?? fallbackComponent
     )
 })
-console.log('offers',props.offers_data)
 </script>
 
 
@@ -60,6 +60,6 @@ console.log('offers',props.offers_data)
         v-if="bestOffer && offers_data.number_offers > 0"
         :is="resolvedComponent"
         :offer="bestOffer"
-        :type="bestOffer.type"
+        :template
     />
 </template>

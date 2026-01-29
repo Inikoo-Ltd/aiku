@@ -118,7 +118,7 @@ const _popoverProfit = ref(null)
             </div>
 
             <!-- Price: Gold Member -->
-            <div v-if="product.discounted_price" class="text-orange-500 font-bold text-sm">
+            <div v-if="product.discounted_price" class="text-primary font-bold text-sm">
                 <span v-if="product.units == 1">
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>
@@ -150,7 +150,12 @@ const _popoverProfit = ref(null)
                                 && !layout?.user?.gr_data?.customer_is_gr"
                             :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
                         /> -->
-                        <DiscountByType v-if="(product.stock && basketButton && !product.is_coming_soon)"  :offers_data="product?.product_offers_data" />
+                        
+                        <DiscountByType 
+                            v-if="(product.stock && basketButton && !product.is_coming_soon)"  
+                            :offers_data="product?.product_offers_data" 
+                            :template="'products_triggers_label'"
+                        />
                     </div>
                     <div v-else />
                 </template>
@@ -188,3 +193,12 @@ const _popoverProfit = ref(null)
 
     </div>
 </template>
+
+
+<style scoped>
+
+.text-primary {
+  color: var(--theme-color-4) !important;
+}
+
+</style>

@@ -6,9 +6,9 @@ import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
-import StickerLabel from '@/Components/Utils/Iris/StickerLabel.vue'
-import FamilyOfferLabelDiscount from '@/Components/Utils/Iris/Family/FamilyOfferLabelDiscount.vue'
-import FamilyOfferLabelGR from '@/Components/Utils/Iris/Family/FamilyOfferLabelGR.vue'
+import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
+import FamilyOfferLabelGR from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelGR.vue'
+import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 
 library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faChevronCircleLeft, faChevronCircleRight)
 
@@ -75,8 +75,6 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 <template>
   <div id="family-1-iris">
 
-  
-
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
       
@@ -90,13 +88,28 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
         <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3"
         >
-            <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
-                <FamilyOfferLabelGR v-if="offer.type == 'Category Quantity Ordered Order Interval'" />
+
+            <!-- <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
+                <FamilyOfferLabelGR 
+                  v-if="offer.type == 'Category Quantity Ordered Order Interval'" 
+                />
 
                 <FamilyOfferLabelDiscount
                     :offer="offer"
                 />
-            </template>
+            </template> -->
+
+                <DiscountByType 
+                   :offers_data="fieldValue?.family?.offers_data"
+                   :template="'active-inactive-gr'"
+                />
+
+                <DiscountByType
+                   v-if="!layout?.user?.gr_data?.customer_is_gr"
+                   :offers_data="fieldValue?.family?.offers_data"
+                   :template="'triggers_labels'"
+                />
+            
         </div>
 
         <!-- Description Title (SEO: Heading) -->
