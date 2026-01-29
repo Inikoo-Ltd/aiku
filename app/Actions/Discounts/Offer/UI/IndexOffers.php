@@ -101,6 +101,7 @@ class IndexOffers extends OrgAction
         $query->defaultSort('offers.id')
             ->select(
                 'offers.id',
+                'offers.created_at',
                 'offers.slug',
                 'offers.state',
                 'offers.type',
@@ -152,6 +153,7 @@ class IndexOffers extends OrgAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: '', type: 'icon', sortable: false);
+            $table->column(key: 'created_at', label: __('Created'), sortable: true, type: 'date');
             $table->column(key: 'name', label: __('Name'), sortable: true, );
             $table->column(key: 'type', label: __('Type'), sortable: true, );
             if ($parent instanceof Group) {

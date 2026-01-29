@@ -12,6 +12,7 @@ import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vu
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
 import { faExternalLink } from '@far';
+import FamilyOfferLabelDiscount from '@/Components/Utils/Iris/Family/FamilyOfferLabelDiscount.vue'
 
 library.add(faAlbumCollection);
 
@@ -124,9 +125,11 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.family.data"  />
             </div>
+
             <div class="col-span-1 md:col-span-2 lg:col-span-4">
-                <!-- Spacing / Content area -->
+                <FamilyOfferLabelDiscount v-if="data.gr_offer_data" :offer="data.gr_offer_data" />
             </div>
+
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
                 <!-- Sales Analytics Compact -->
                 <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
