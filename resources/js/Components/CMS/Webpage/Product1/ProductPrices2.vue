@@ -52,10 +52,10 @@ const locale = useLocaleStore()
             </div>
 
             <!-- Section: Discounted Price -->
-            <div v-if="product?.units < 2" class="text-orange-500">
+            <div v-if="product?.units < 2" class="text-primary">
                 <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.discounted_price) }}</span>/{{ product?.unit }}
             </div>
-            <div v-else class="text-orange-500">
+            <div v-else class="text-primary">
                 <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.discounted_price) }}</span> ({{ locale.currencyFormat(currency?.code, product?.discounted_price_per_unit) }}/{{ product?.unit }})
             </div>
         </div>
@@ -71,3 +71,10 @@ const locale = useLocaleStore()
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.text-primary {
+  color: var(--theme-color-4) !important;
+}
+</style>
+

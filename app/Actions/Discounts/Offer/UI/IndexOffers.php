@@ -14,6 +14,7 @@ use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -30,9 +31,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOffers extends OrgAction
 {
-    protected Group|Shop|OfferCampaign $parent;
+    protected Group|Shop|OfferCampaign|ProductCategory $parent;
 
-    protected function getElementGroups(Group|Shop|OfferCampaign $parent): array
+    protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory $parent): array
     {
         return [
             'state' => [
@@ -48,7 +49,7 @@ class IndexOffers extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|OfferCampaign $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -69,6 +70,9 @@ class IndexOffers extends OrgAction
             $query->where('offers.offer_campaign_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $query->where('offers.group_id', $parent->id);
+        } elseif ($parent instanceof ProductCategory) {
+            $query->where('offers.trigger_id', $parent->id)
+                ->where('offers.trigger_type', class_basename(ProductCategory::class));
         } else {
             $query->where('offers.shop_id', $parent->id);
         }
@@ -97,6 +101,7 @@ class IndexOffers extends OrgAction
         $query->defaultSort('offers.id')
             ->select(
                 'offers.id',
+                'offers.created_at',
                 'offers.slug',
                 'offers.state',
                 'offers.type',
@@ -115,7 +120,7 @@ class IndexOffers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|OfferCampaign $parent, $prefix = null, $modelOperations = []): Closure
+    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $modelOperations = []): Closure
     {
         return function (InertiaTable $table) use ($prefix, $modelOperations, $parent) {
             if ($prefix) {
@@ -148,6 +153,7 @@ class IndexOffers extends OrgAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: '', type: 'icon', sortable: false);
+            $table->column(key: 'created_at', label: __('Created'), sortable: true, type: 'date');
             $table->column(key: 'name', label: __('Name'), sortable: true, );
             $table->column(key: 'type', label: __('Type'), sortable: true, );
             if ($parent instanceof Group) {
@@ -176,12 +182,45 @@ class IndexOffers extends OrgAction
         return $this->handle(parent: group());
     }
 
+    public function inProductCategory(ProductCategory $parent, $prefix = null): LengthAwarePaginator
+    {
+        $this->parent = $parent;
+
+        return $this->handle($parent, $prefix);
+    }
+
+    public function getFirstInProductCategory(ProductCategory $parent, $type = null): ?Offer
+    {
+        $this->parent = $parent;
+
+        if ($type) {
+            $this->type = $type;
+        }
+
+        $query = QueryBuilder::for(Offer::class)->leftJoin('organisations', 'offers.organisation_id', '=', 'organisations.id');
+        $query->where('offers.trigger_id', $parent->id)->where('offers.trigger_type', class_basename(ProductCategory::class));
+        $query->leftjoin('shops', 'offers.shop_id', '=', 'shops.id');
+        $query->leftjoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
+
+        if ($this->type) {
+            $query->where('offers.type', $this->type);
+        }
+
+        $query->select(
+            'offers.*',
+            'shops.slug as shop_slug',
+            'shops.name as shop_name',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+        );
+
+        return $query->first();
+    }
+
     public function jsonResponse(LengthAwarePaginator $offers): AnonymousResourceCollection
     {
         return OffersResource::collection($offers);
     }
-
-
 
     public function htmlResponse(LengthAwarePaginator $offers, ActionRequest $request): Response
     {

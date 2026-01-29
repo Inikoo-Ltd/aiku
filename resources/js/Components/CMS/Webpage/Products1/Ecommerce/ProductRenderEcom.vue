@@ -208,14 +208,6 @@ defineExpose({
                             </span>
                         </div>
                     </div>
-
-                    <!-- <div v-if="!product.is_coming_soon" class="w-full text-right">
-                        <FontAwesomeIcon icon="fas fa-star" class="" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon icon="fas fa-star" class="" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon icon="fas fa-star" class="" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon icon="fas fa-star" class="" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon icon="fas fa-star" class="" fixed-width aria-hidden="true" />
-                    </div> -->
                 </div>
             </div>
         </div>
@@ -246,4 +238,5 @@ defineExpose({
 </template>
 
 
-<style scoped></style>
+<style scoped>
+</style>

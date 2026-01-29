@@ -23,6 +23,7 @@ const props = defineProps<{
             fraction_denominator: number
         } | null
     }[]
+    hideUnit?: boolean
     routeFunction?: Function
     keyPicking?: string
 }>()
@@ -36,8 +37,9 @@ const isOpenModal = ref(false)
 <template>
     <div
         v-tooltip="trade_units.length > 1 ? trans('Click to view all trade units detail') : ''"
-        class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer me-2 flex border-green-600"
-        @click="isOpenModal = true"
+        class="border border-solid py-1 px-3 rounded-md me-2 flex"
+        :class="trade_units.length >= 1 ? 'border-green-600 hover:cursor-pointer hover:opacity-80' : 'border-red-600'"
+        @click="() => {if(trade_units.length >= 1) isOpenModal = true}"
     >
         <div v-if="trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
             <span class=""> &#8623; SKU </span>
@@ -45,11 +47,18 @@ const isOpenModal = ref(false)
                 <FractionDisplay v-if="trade_units[0][key]" :fractionData="trade_units[0][key]" />
             </span>
         </div>
-        <div v-else class="text-teal-600 whitespace-nowrap w-full">
-            <span class="">Multi Trade Units</span>
+        <div v-else-if="trade_units.length > 1" class="text-teal-600 whitespace-nowrap w-full">
+            <span class="">{{ trans('Multi Trade Units') }}</span>
+        </div>
+        <div v-else class="text-red-500 whitespace-nowrap w-full">
+            <span class="">{{ trans('No Trade Units') }}</span>
         </div>
 
-        <div class="border-s border-green-600 text-gray-700 whitespace-nowrap font-bold ms-2 ps-2">
+        <div 
+            v-if="!hideUnit"
+            class="border-s text-gray-700 whitespace-nowrap font-bold ms-2 ps-2"
+            :class="trade_units.length >= 1 ? 'border-green-600' : 'border-red-600'"
+        >
             {{ product.units + " " + product.unit }}
         </div>
 

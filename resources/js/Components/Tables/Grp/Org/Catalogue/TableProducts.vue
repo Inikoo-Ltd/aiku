@@ -28,6 +28,7 @@ import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
 import { faTriangle, faEquals, faMinus, faShapes, faStar} from "@fas"
+import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 
 
 
@@ -314,11 +315,9 @@ function shopRoute(invoice: Invoice) {
         ])
 }
 
-
 const onEditProduct = ref(false)
 
 const isLoadingDetach = ref<string[]>([])
-
 
 function getMargin(item: ProductItem) {
     const p = Number(item.product?.price)
@@ -425,6 +424,25 @@ function variantRoute(product: MasterProduct): string {
         <template #cell(unit)="{ item: product }">
                 <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput>
                 <span v-else>{{ product.unit }}</span>
+        </template>
+
+        <template #cell(product_org_stocks)="{ item: product }">
+            <LabelSKU
+				v-if="product.product_org_stocks"
+				:product="product"
+				:trade_units="product.product_org_stocks"
+                :hideUnit="true"
+				xrouteFunction="tradeUnitRoute"
+				keyPicking="picking_factor"
+			>
+				<!-- <template #col_code="{ data }">
+					{{ data.org_stock_code }}
+				</template>
+
+				<template #col_name="{ data }">
+					{{ data.org_stock_name }}
+				</template> -->
+			</LabelSKU>
         </template>
 
         <template #cell(price)="{ item: product }">

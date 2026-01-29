@@ -14,11 +14,13 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Catalogue\Variant\IndexVariant;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -183,6 +185,10 @@ class ShowFamily extends OrgAction
             FamilyTabsEnum::CONTENT->value => $this->tab == FamilyTabsEnum::CONTENT->value ?
                 fn () => GetProductCategoryContent::run($family)
                 : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
+
+            FamilyTabsEnum::OFFERS->value => $this->tab == FamilyTabsEnum::OFFERS->value ?
+                fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
+                : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
         ];
 
         $tabs[FamilyTabsEnum::VARIANTS->value] =
@@ -277,7 +283,8 @@ class ShowFamily extends OrgAction
             ->table(IndexMailshots::make()->tableStructure(parent: $family))
             ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
             ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
-            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value));
+            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
+            ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value));
     }
 
 

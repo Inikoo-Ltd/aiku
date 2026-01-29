@@ -36,7 +36,7 @@ class RedoCollectionTimeSeries
 
         if ($collection->source_id) {
             $assetsIDs = $collection->products->pluck('asset_id')->unique()->toArray();
-            $firstInvoicedDate = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->min('date');
+            $firstInvoicedDate = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->min('date');
 
             if ($firstInvoicedDate && ($firstInvoicedDate < $collection->created_at)) {
                 $collection->update(['created_at' => $firstInvoicedDate]);
@@ -52,7 +52,9 @@ class RedoCollectionTimeSeries
                 if ($assetsIDs == null) {
                     $assetsIDs = $collection->products->pluck('asset_id')->unique()->toArray();
                 }
-                $lastDate = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->max('date');
+
+                $lastDate = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->max('date');
+
                 if (!$lastDate) {
                     $lastDate = now();
                 }
@@ -61,6 +63,7 @@ class RedoCollectionTimeSeries
                     'inactivated_at' => $lastDate
                 ]);
             }
+
             $to = $collection->inactivated_at->toDateString();
         }
 

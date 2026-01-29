@@ -13,9 +13,9 @@ const props = defineProps<{
     <section class="bg-gray-50 py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-14">
-                <h2 class="text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight">
+                <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight">
                     {{ trans('Our Blog') }}
-                </h2>
+                </h1>
             </div>
 
             <!-- Kalau tidak ada blog -->

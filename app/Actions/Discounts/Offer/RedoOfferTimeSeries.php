@@ -40,6 +40,7 @@ class RedoOfferTimeSeries
             FROM transaction_has_offer_allowances thoa
             JOIN transactions t ON thoa.transaction_id = t.id
             WHERE thoa.offer_id = ?
+            AND t.deleted_at IS NULL
         ";
 
         $results = DB::select($sql, [$offerId]);
@@ -57,7 +58,6 @@ class RedoOfferTimeSeries
         if (!$from) {
             $from = $offer->created_at;
         }
-
 
         if ($offer->state == OfferStateEnum::ACTIVE) {
             $to = now();
