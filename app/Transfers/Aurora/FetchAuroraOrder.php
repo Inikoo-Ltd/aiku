@@ -32,9 +32,9 @@ class FetchAuroraOrder extends FetchAurora
             return;
         }
 
-//        if ($shop->is_aiku) {
-//            return;
-//        }
+        if ($shop->is_aiku) {
+            return;
+        }
 
         $platform               = null;
         $customerSalesChannelID = null;
