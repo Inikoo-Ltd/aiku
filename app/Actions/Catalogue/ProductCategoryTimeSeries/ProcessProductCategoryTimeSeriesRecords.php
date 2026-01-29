@@ -20,6 +20,8 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $productCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$productCategoryId:$frequency->value:$from:$to";

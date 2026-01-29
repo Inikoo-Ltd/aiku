@@ -22,6 +22,8 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use WithTimeSeriesRecordsGeneration;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$masterAssetId:$frequency->value:$from:$to";
