@@ -23,9 +23,7 @@ import {
     faBan, faUsers
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import Icon from "../Icon.vue";
 import { inject, reactive, computed, watch, ref, onMounted } from "vue";
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
@@ -117,16 +115,6 @@ const availableFilters = computed(() => {
     return list
 })
 
-function normalizeCurrency(currency: string) {
-    const map: Record<string, string> = {
-        '£': 'GBP',
-        '$': 'USD',
-        '€': 'EUR'
-    }
-
-    return map[currency] ?? currency
-}
-
 // validasi filter
 const FILTER_CONFLICTS: Record<string, string[]> = {
     registered_never_ordered: [
@@ -139,9 +127,15 @@ const FILTER_CONFLICTS: Record<string, string[]> = {
         'by_showroom_orders',
         'by_department'
     ],
+
     orders_in_basket: ['registered_never_ordered'],
     by_order_value: ['registered_never_ordered'],
-    orders_collection: ['registered_never_ordered']
+    orders_collection: ['registered_never_ordered'],
+    by_family: ['registered_never_ordered'],
+    by_subdepartment: ['registered_never_ordered'],
+    by_family_never_ordered: ['registered_never_ordered'],
+    by_showroom_orders: ['registered_never_ordered'],
+    by_department: ['registered_never_ordered']
 }
 
 function hasConflict(newKey: string) {
@@ -275,7 +269,6 @@ const getLocationToLatLng = async (filter: any) => {
         const countryLabel = v.country_ids?.[0] || ''
 
         query = `${postcode} ${countryLabel}`
-        console.log("query", query)
     }
 
     if (!query) return
@@ -294,20 +287,10 @@ const getLocationToLatLng = async (filter: any) => {
 
         if (!lat || !lng) throw new Error('Invalid coordinate')
 
-        // 📍 set marker
         v.lat = lat
         v.lng = lng
         v.zoom = 12
         v.resolved = true
-
-        // 🗺 OPTIONAL: auto fit bounds kalau ada
-        if (data.bounds) {
-            v.bounds = [
-                [data.bounds.south, data.bounds.west],
-                [data.bounds.north, data.bounds.east]
-            ]
-        }
-
     } catch (err) {
         console.error('GEOCODE FAILED', err)
         v.resolved = false
@@ -315,19 +298,17 @@ const getLocationToLatLng = async (filter: any) => {
         v.loadingMap = false
     }
 }
-
-
 function findConfigByKey(structure: any, key: string) {
     for (const group of Object.values(structure)) {
         if (group.filters?.[key]) return group.filters[key]
     }
     return null
 }
-
 function normalizeDate(d: string | null) {
     if (!d) return null
     return d.split('T')[0]
 }
+
 const presetMeters = ['5000', '10000', '25000', '50000', '100000']
 function hydrateSavedFilters(saved: any, structure: any) {
     const hydrated: any = {}
@@ -435,17 +416,14 @@ function hydrateSavedFilters(saved: any, structure: any) {
 
             uiValue = {
                 mode: v.mode ?? 'direct',
-
                 country_ids: v.country_ids ?? [],
                 postal_codes: v.postal_codes ?? [],
-
                 location: v.location ?? '',
-
                 radius: radiusPreset,
                 radius_custom: radiusCustom,
 
-                lat: v.lat ?? -6.2,
-                lng: v.lng ?? 106.8,
+                lat: v.lat ?? 0,
+                lng: v.lng ?? 0,
                 zoom: 10
             }
         }
@@ -509,7 +487,6 @@ const preloadEntityOptions = async (key: string, ids: number[]) => {
 
     preloadedEntities[key] = res.data.data
 }
-
 function getEntityFetchRoute(key: string) {
     if (key === 'by_family') {
         return {
@@ -534,7 +511,6 @@ function getEntityFetchRoute(key: string) {
 
     return null
 }
-
 function onBasketModeChange(filter: { value: { mode: any; date_range: null; }; }, event: { value: any; }) {
     const val = event.value
 
@@ -661,7 +637,6 @@ const getPostalCodeModel = (filter: any) => {
         }
     })
 }
-
 function unwrapBoolean(val: any) {
     let v = val
     while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
