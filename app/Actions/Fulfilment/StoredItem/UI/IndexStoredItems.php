@@ -234,19 +234,9 @@ class IndexStoredItems extends OrgAction
                 'bulk_edit_upload' => [
                     'title' => [
                         'label' => __("Bulk Edit Customer's SKU"),
-                        'information' => __('The list of column file: customer_reference, notes, stored_items')
+                        'information' => __('The list of column file: stored_items')
                     ],
-                    'progressDescription'   => __('Adding stored item'),
-                    'preview_template'    => [
-                        'header' => ['code', 'max weight', 'max volume'],
-                        'rows'   => [
-                            [
-                                'code'       => 'CD',
-                                'max_weight' => 10,
-                                'max_volume' => 20,
-                            ],
-                        ]
-                    ],
+                    'progressDescription'   => __('Editing stored item'),
                     'upload_spreadsheet' => $this->buildUploadSpreadsheetConfig($this->parent)
                 ],
 
@@ -354,29 +344,20 @@ class IndexStoredItems extends OrgAction
             return [];
         }
 
-        $downloadRoute = 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.stored-items.export';
+        $downloadRoute = 'grp.org.fulfilments.show.crm.customers.show.stored-items.export';
 
         return [
             'event'           => 'action-progress',
             'channel'         => 'grp.personal.'.$this->organisation->id,
-            'required_fields' => ['reference'],
+            'required_fields' => ['reference_do_not_modify', 'name'],
             'template'        => [
                 'label' => 'Download template (.xlsx)',
             ],
             'route'           => [
                 'upload'   => [
-                    'name'       => 'grp.models.pallet-return.pallet-return-item.upload.upload',
+                    'name'       => 'grp.models.fulfilment-customer.stored-items.bulk_edit.import',
                     'parameters' => [
-                        'palletReturn' => $customer->id
-                    ]
-                ],
-                'history'  => [
-                    'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.uploads.history',
-                    'parameters' => [
-                        'organisation'       => $customer->organisation->slug,
-                        'fulfilment'         => $customer->fulfilment->slug,
-                        'fulfilmentCustomer' => $customer->slug,
-                        'palletReturn'       => $customer->slug
+                        'fulfilmentCustomer' => $customer->id
                     ]
                 ],
                 'download' => [

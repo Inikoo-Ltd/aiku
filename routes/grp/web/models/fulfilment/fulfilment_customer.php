@@ -20,6 +20,7 @@ use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\RentalAgreement\StoreRentalAgreement;
 use App\Actions\Fulfilment\StoredItem\DeleteStoredItemFromReturn;
+use App\Actions\Fulfilment\StoredItem\ImportStoredItems;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,7 @@ Route::name('fulfilment-customer.')->prefix('fulfilment-customer/{fulfilmentCust
     Route::patch('', UpdateFulfilmentCustomer::class)->name('update')->withoutScopedBindings();
 
     Route::post('stored-items', StoreStoredItem::class)->name('stored-items.store');
+    Route::post('stored-items/bulk-edit-import', ImportStoredItems::class)->name('stored-items.bulk_edit.import');
     Route::patch('', UpdateFulfilmentCustomer::class)->name('update');
     Route::post('pallet-delivery', StorePalletDelivery::class)->name('pallet-delivery.store');
     Route::delete('pallet-delivery/{palletDelivery:id}/pallet/{pallet:id}', DeletePalletInDelivery::class)->name('pallet-delivery.pallet.delete');

@@ -21,6 +21,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Catalogue\OfferResource;
+use App\Models\Catalogue\ProductCategory;
 
 class ShowOffer extends OrgAction
 {
@@ -72,6 +73,10 @@ class ShowOffer extends OrgAction
                 ],
             ];
         }
+
+        preg_match('/^all_products_in_product_category(?::(\d+))?:/', $offer->allowance_signature, $m);
+        $productCategory = isset($m[1]) ? ProductCategory::find($m[1]) : null;
+
         return Inertia::render(
             'Org/Discounts/Offer',
             [
@@ -92,6 +97,14 @@ class ShowOffer extends OrgAction
                     'icon'       => $icon,
                     'actions'    => app()->environment('local') ? $actions : [],
                 ],
+                'url_master'    =>  $productCategory && $offer->type === 'Category Quantity Ordered Order Interval' ? [
+                    'name'  => 'grp.masters.master_shops.show.master_families.edit',
+                    'parameters' => [
+                        'masterShop'        => $offer->shop->masterShop->slug,
+                        'masterFamily'     => $productCategory->masterProductCategory->slug,
+                        'section'           => '5'
+                    ]
+                ] : [],
                 'data'        => OfferResource::make($offer),
                 'currency_code' => $offer->shop->currency->code,
             ]

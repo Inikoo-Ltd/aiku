@@ -16,8 +16,10 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\ExternalShop\ProductInExternalShopResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -26,6 +28,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -109,7 +112,6 @@ class IndexProductsInCatalogue extends OrgAction
             }
         }
 
-
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -130,6 +132,33 @@ class IndexProductsInCatalogue extends OrgAction
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+
+        if($shop->type == ShopTypeEnum::EXTERNAL){
+            //  Add select, we need this to display SKU on Index Product. Add shop type check so it won't bother internal shop.
+            $queryBuilder
+                ->leftJoin('product_has_org_stocks as phor', function ($join) {
+                    $join->on('products.id', '=', 'phor.product_id');
+                })        
+                ->leftJoin('org_stocks', 'org_stocks.id', '=', 'phor.org_stock_id')
+                ->addSelect(
+                    DB::raw("
+                        COALESCE(
+                            jsonb_agg(
+                                jsonb_build_object(
+                                    'id', org_stocks.id,
+                                    'code', org_stocks.code,
+                                    'name', org_stocks.name,
+                                    'note', phor.notes,
+                                    'is_on_demand', org_stocks.is_on_demand,
+                                    'quantity', phor.quantity
+                                )
+                            ) FILTER (WHERE org_stocks.id IS NOT NULL),
+                            '[]'::jsonb
+                        ) as product_org_stocks
+                    ")
+                )
+                ->groupBy('products.id');
+        }
 
         return $queryBuilder->allowedSorts([
             'code',
@@ -187,9 +216,18 @@ class IndexProductsInCatalogue extends OrgAction
 
                     ]
                 );
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+            
+            $table
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            
+            if($shop->type == ShopTypeEnum::EXTERNAL){
+                $table
+                    ->column(key: 'product_org_stocks', label: __('SKU'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
+            }
+
+            $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -330,8 +368,8 @@ class IndexProductsInCatalogue extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
-                    fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    fn () => $this->displayProductsShopTypeDependant($products, $shop)
+                    : Inertia::lazy(fn () => $this->displayProductsShopTypeDependant($products, $shop)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))
@@ -341,6 +379,15 @@ class IndexProductsInCatalogue extends OrgAction
             ]
         )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket))
             ->table(IndexProducts::make()->tableStructure(shop: $shop, prefix: ProductsTabsEnum::SALES->value));
+    }
+
+    public function displayProductsShopTypeDependant(LengthAwarePaginator $products, Shop $shop): AnonymousResourceCollection
+    {
+        if($shop->type == ShopTypeEnum::EXTERNAL){
+            return ProductInExternalShopResource::collection($products);
+        }
+
+        return ProductsResource::collection($products);
     }
 
 

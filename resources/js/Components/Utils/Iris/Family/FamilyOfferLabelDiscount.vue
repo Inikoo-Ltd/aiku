@@ -5,12 +5,11 @@ import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { OfferResource } from '@/types/Catalogue/Offers'
 library.add(faInfoCircle)
 
 const props = defineProps<{
-    offer: {
-
-    }
+    offer: OfferResource
 }>()
 
 const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)

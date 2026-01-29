@@ -14,7 +14,6 @@ use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
-use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -31,7 +30,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShop extends OrgAction
 {
-    use WithCustomRangeDashboard;
     use WithDashboard;
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardIntervalOption;
@@ -48,7 +46,6 @@ class ShowShop extends OrgAction
             $currentTab = Arr::first(ShopDashboardSalesTableTabsEnum::values());
         }
 
-        $customRangeData = $this->setupCustomRange($userSettings, $shop);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
         $performanceDates = [null, null];
