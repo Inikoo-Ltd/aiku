@@ -82,9 +82,33 @@ class ShowMailshotRecipients extends OrgAction
                             ]
                         ]
                     ],
+                    'by_family'              => [
+                        'label'       => 'By Family',
+                        'type'        => 'entity_behaviour',
+                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+
+                        'fields'      => [
+                            'content' => [
+                                'type'        => 'multiselect',
+                                'label'       => 'By Family',
+                                'placeholder' => 'Select',
+                                'multiple'    => false,
+                                'options'     => $productFamilies,
+                            ],
+                            'behaviours'   => [
+                                'type'    => 'select',
+                                'label'   => 'Radius',
+                                'options' => [
+                                    ['value' => 'purchased', 'label' => 'Purchased'],
+                                    ['value' => 'favourited', 'label' => 'Favourited'],
+                                    ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
+                                ]
+                            ]
+                        ]
+                    ],
                     'by_family_never_ordered' => [
                         'label'       => 'By Family Never Ordered',
-                        'type'        => 'select',
+                        'type'        => 'multiselect',
                         'description' => 'Targets customers who have never placed an order containing products from the selected family.',
                         'multiple'    => false,
                         'options'     => $productFamilies,
@@ -216,41 +240,18 @@ class ShowMailshotRecipients extends OrgAction
                                 'type'    => 'select',
                                 'label'   => 'Radius Distance',
                                 'options' => [
-                                    '5000'    => '5000',
-                                    '10000'   => '10000',
-                                    '25000'   => '25000',
-                                    '50000'   => '50000',
-                                    '100000'  => '100000',
-                                    'custom' => 'custom',
+                                    '5000'    => '5 KM',
+                                    '10000'   => '10 KM',
+                                    '25000'   => '25 KM',
+                                    '50000'   => '50 KM',
+                                    '100000'  => '100 KM',
+                                    'custom' => 'Custom',
                                 ],
                                 'dependency' => ['mode' => 'radius']
                             ]
                         ]
                     ],
-                    'by_family'              => [
-                        'label'       => 'By Family',
-                        'type'        => 'entity_behaviour',
-                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
 
-                        'fields'      => [
-                            'content' => [
-                                'type'        => 'multiselect',
-                                'label'       => 'By Family',
-                                'placeholder' => 'Select',
-                                'multiple'    => false,
-                                'options'     => $productFamilies,
-                            ],
-                            'behaviours'   => [
-                                'type'    => 'select',
-                                'label'   => 'Radius',
-                                'options' => [
-                                    ['value' => 'purchased', 'label' => 'Purchased'],
-                                    ['value' => 'favourited', 'label' => 'Favourited'],
-                                    ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
-                                ]
-                            ]
-                        ]
-                    ],
                     'by_departments'              => [
                         'label'       => 'By Departments',
                         'type'        => 'entity_behaviour',

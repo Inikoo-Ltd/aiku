@@ -127,7 +127,6 @@ const FILTER_CONFLICTS: Record<string, string[]> = {
         'by_showroom_orders',
         'by_department'
     ],
-
     orders_in_basket: ['registered_never_ordered'],
     by_order_value: ['registered_never_ordered'],
     orders_collection: ['registered_never_ordered'],
@@ -137,7 +136,6 @@ const FILTER_CONFLICTS: Record<string, string[]> = {
     by_showroom_orders: ['registered_never_ordered'],
     by_department: ['registered_never_ordered']
 }
-
 function hasConflict(newKey: string) {
     const activeKeys = Object.keys(activeFilters.value)
 
@@ -205,9 +203,7 @@ const addFilter = (key: string, config: any) => {
             radius_custom: null,
             lat: null,
             lng: null,
-
             resolved: false
-            // zoom: 10
         }
     }
 
@@ -310,6 +306,13 @@ function normalizeDate(d: string | null) {
 }
 
 const presetMeters = ['5000', '10000', '25000', '50000', '100000']
+function unwrapBoolean(val: any) {
+    let v = val
+    while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
+        v = v.value
+    }
+    return v
+}
 function hydrateSavedFilters(saved: any, structure: any) {
     const hydrated: any = {}
 
@@ -421,13 +424,11 @@ function hydrateSavedFilters(saved: any, structure: any) {
                 location: v.location ?? '',
                 radius: radiusPreset,
                 radius_custom: radiusCustom,
-
                 lat: v.lat ?? 0,
                 lng: v.lng ?? 0,
                 zoom: 10
             }
         }
-
         hydrated[key] = { config, value: uiValue }
     })
 
@@ -467,6 +468,11 @@ const preloadEntityOptions = async (key: string, ids: number[]) => {
             name: 'grp.json.shop.families',
             param: props.shopId
         },
+
+        by_family_never_ordered: {
+            name: 'grp.json.shop.families',
+            param: props.shopId
+        },
         by_subdepartment: {
             name: 'grp.json.shop.sub_departments',
             param: props.shopId
@@ -488,7 +494,7 @@ const preloadEntityOptions = async (key: string, ids: number[]) => {
     preloadedEntities[key] = res.data.data
 }
 function getEntityFetchRoute(key: string) {
-    if (key === 'by_family') {
+    if (key === 'by_family' || key === 'by_family_never_ordered') {
         return {
             name: 'grp.json.shop.families',
             parameters: { shop: props.shopId }
@@ -593,10 +599,8 @@ const filtersPayload = computed(() => {
             payload[key] = {
                 value: {
                     mode: val.mode,
-
                     country_ids: val.country_ids,
                     postal_codes: val.postal_codes,
-
                     location: val.location,
                     radius: val.radius === 'custom'
                         ? Number(val.radius_custom)
@@ -607,7 +611,6 @@ const filtersPayload = computed(() => {
             }
             return
         }
-
         payload[key] = { value: val }
     })
 
@@ -620,7 +623,7 @@ const shouldShowMap = (val: any) => {
     return false
 }
 
-const radiusInMeters = (val) => {
+const radiusInMeters = (val: any) => {
     if (val.radius === 'custom') return Number(val.radius_custom) || 0
     console.log("radius", val.radius)
     return Number(val.radius)
@@ -636,13 +639,6 @@ const getPostalCodeModel = (filter: any) => {
                 .filter(Boolean)
         }
     })
-}
-function unwrapBoolean(val: any) {
-    let v = val
-    while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
-        v = v.value
-    }
-    return v
 }
 
 const saveFilters = async () => {
@@ -701,6 +697,7 @@ onMounted(async () => {
         console.log("activeFilters.value onmounted", activeFilters.value)
     }
 })
+
 watch(
     () => activeFilters.value,
     (filters) => {
@@ -722,7 +719,6 @@ watch(
     },
     { deep: true, immediate: true }
 )
-
 watch(activeFilters, fetchCustomers, { deep: true })
 watch(tableState, fetchCustomers, { deep: true })
 console.log("props table", props)
@@ -818,7 +814,16 @@ console.log("props table", props)
 
                 <!-- MULTISELECT -->
                 <template v-else-if="filter.config.type === 'multiselect'">
-                    <div class="min-w-0 w-full">
+                    <template v-if="filter.config.label === 'By Family Never Ordered'">
+                        <div class="min-w-0 w-full mb-3">
+                            <PureMultiselectInfiniteScroll :object="false" :key="key" mode="multiple"
+                                v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
+                                :fetchRoute="getEntityFetchRoute(key)" valueProp="id" labelProp="name"
+                                placeholder="Select items..." />
+                        </div>
+                    </template>
+
+                    <div class="min-w-0 w-full" v-else>
                         <MultiselectTagsInfiniteScroll :form="filter.value" fieldName="ids" :fieldData="{
                             options: filter.config.options || filter.config.fields.content.options,
                             labelProp: 'label',
@@ -827,9 +832,10 @@ console.log("props table", props)
                         }" />
                     </div>
                 </template>
+
                 <template v-else-if="filter.config.type === 'entity_behaviour'">
                     <div class="min-w-0 w-full mb-3">
-                        <PureMultiselectInfiniteScroll mode="multiple" v-model="filter.value.ids"
+                        <PureMultiselectInfiniteScroll :key="key" mode="multiple" v-model="filter.value.ids"
                             :initOptions="preloadedEntities[key] || []" :fetchRoute="getEntityFetchRoute(key)"
                             valueProp="id" labelProp="name" placeholder="Select items..." />
                     </div>
