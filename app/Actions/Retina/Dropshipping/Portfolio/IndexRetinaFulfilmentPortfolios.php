@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\Dropshipping\FulfilmentPortfolioResource;
@@ -27,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaFulfilmentPortfolios extends RetinaAction
 {
+    use WithPlatformStatusCheck;
+
     /**
      * @var CustomerSalesChannel
      */
@@ -100,21 +103,6 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'afterTitle' => [
                         'label' => ' @'.$this->customerSalesChannel->reference
                     ],
-                'actions' => [
-                        $portfolios->isNotEmpty() ? [
-                            'type'  => 'button',
-                            'style' => 'tertiary',
-                            'icon'  => 'fas fa-sync-alt',
-                            'label' => 'Sync All Items',
-                            'route' => [
-                                'name'       => $routeName,
-                                'parameters' => [
-                                    'customerSalesChannel' => $this->customerSalesChannel->id
-                                ],
-                                'method'     => 'post'
-                            ]
-                        ] : null,
-                    ]
                 ],
                 'routes'    => [
                     'itemRoute' => [
@@ -149,6 +137,8 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
                 ],
 
+                'is_platform_connected' => $this->customerSalesChannel->platform_status,
+
                 'products' => FulfilmentPortfolioResource::collection($portfolios),
                 'platform_user_id' => $this->customerSalesChannel->user?->id,
                 'platform_data'    => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
@@ -173,7 +163,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                     'count' => 0
                 ]);
 
-            $table->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'actions', label: __('actions'), canBeHidden: false);

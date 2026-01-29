@@ -9,10 +9,7 @@
 
 namespace App\Http\Resources\Catalogue\ExternalShop;
 
-use App\Helpers\NaturalLanguage;
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
-use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,7 +22,7 @@ class ProductInExternalShopResource extends JsonResource
         /** @var Product $product */
         $product = $this;
 
-        
+
         $pickingFactor = [];
         foreach ((is_string($product->product_org_stocks) ? json_decode($product->product_org_stocks) : []) as $orgStock) {
             $pickingFactor[] = [

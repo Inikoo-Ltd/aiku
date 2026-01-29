@@ -7,7 +7,6 @@
  * copyright 2026
 */
 
-
 namespace App\Enums\UI\Catalogue\ExternalShop;
 
 use App\Enums\EnumHelperTrait;
