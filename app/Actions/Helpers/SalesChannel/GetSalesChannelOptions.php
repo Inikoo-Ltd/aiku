@@ -2,7 +2,6 @@
 
 namespace App\Actions\Helpers\SalesChannel;
 
-use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Ordering\SalesChannel;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Models\Catalogue\Shop;
@@ -56,9 +55,15 @@ class GetSalesChannelOptions
             $query = SalesChannel::where('is_seeded', true);
         }
 
-        return $query->orderBy('id', 'asc')
-            ->get(['id', 'name', 'code', 'type'])
-            ->map(fn($channel) => [
+        return $query
+            ->orderBy('sales_channels.id', 'asc')
+            ->get([
+                'sales_channels.id',
+                'sales_channels.name',
+                'sales_channels.code',
+                'sales_channels.type',
+            ])
+            ->map(fn ($channel) => [
                 'id'   => $channel->id,
                 'name' => $channel->name,
                 'code' => $channel->code,
