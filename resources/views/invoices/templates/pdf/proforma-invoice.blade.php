@@ -225,8 +225,8 @@
         <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
 
         @if($pro_mode)
-            <td style="text-align:left;width:20% ">{{ __('Unit Price') }}</td>
-            <td style="text-align:left;width:20% ">{{ __('Units') }}</td>
+            <td style="text-align:right;width:20% ">{{ __('Unit Price') }}</td>
+            <td style="text-align:right;width:20% ">{{ __('Units') }}</td>
         @else
             <td></td>
             <td style="text-align:left">{{ __('Qty')  }}.</td>
@@ -272,14 +272,14 @@
             @endif
 
             @if($pro_mode)
-                <td style="text-align:right">{{  (int) $transaction->historicAsset?->units }}</td>
-                <td style="text-align:left">
+                <td style="text-align:right">
                     @if($transaction->quantity==0 || $transaction->quantity==null)
                         {{ $order->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
                     @elseif($transaction->historicAsset)
                         {{ $order->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
                     @endif
                 </td>
+                <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
             @else
                 <td></td>
                 <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
