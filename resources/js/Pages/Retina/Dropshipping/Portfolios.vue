@@ -774,8 +774,14 @@ const layout = inject("layout", layoutStructure)
 				@click="() => (isOpenModalPortfolios = true)"
 				:label="trans('Add products')"
 				:icon="'fas fa-plus'"
-				v-if="!customer_sales_channel?.ban_stock_update_until" />
-
+				v-if="!customer_sales_channel?.ban_stock_update_until && !routes?.syncAllRoute" />
+			<ButtonWithLink
+				v-if="routes?.syncAllRoute && !customer_sales_channel?.ban_stock_update_until"
+				:routeTarget="routes?.syncAllRoute"
+				isWithError
+				:label="'Fetch Products'"
+				icon="fas fa-sync-alt"
+				type="tertiary" />
 			<div class="rounded-md" v-if="channels?.data?.length">
 				<!-- Section: Download button -->
 				<Button

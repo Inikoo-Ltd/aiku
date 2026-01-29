@@ -20,6 +20,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -55,17 +56,25 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
 
         } while ($nextPage);
 
-        foreach ($products as $product) {
-            DB::transaction(function () use ($product, $shopifyUser, $shopType) {
+
+        DB::transaction(function () use ($products, $shopifyUser, $shopType) {
+            foreach ($products as $product) {
                 $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
                     ->where('reference', $product['handle'])->first();
                 $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'variants.0.product_id'))->first();
 
+                $qty = Arr::get($product, 'variants.0.inventory_quantity');
+
                 if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
                     if (!$storedItem) {
+
+                        if ($qty == 0 || $qty < 0) {
+                            continue;
+                        }
+
                         $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
                             'reference' => $product['handle'],
-                            'total_quantity' => Arr::get($product, 'variants.0.inventory_quantity')
+                            'total_quantity' => $qty
                         ]);
                     }
 
@@ -85,9 +94,9 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                         'state' => StoredItemStateEnum::ACTIVE
                     ]);
                 }
-            });
 
-        }
+            }
+        });
     }
 
     /**
