@@ -150,7 +150,8 @@ class IndexProductsInCatalogue extends OrgAction
                                     'name', org_stocks.name,
                                     'note', phor.notes,
                                     'is_on_demand', org_stocks.is_on_demand,
-                                    'quantity', phor.quantity
+                                    'quantity', phor.quantity,
+                                    'packed_in', phor.trade_units_per_org_stock
                                 )
                             ) FILTER (WHERE org_stocks.id IS NOT NULL),
                             '[]'::jsonb
@@ -313,7 +314,6 @@ class IndexProductsInCatalogue extends OrgAction
 
         $navigation    = ProductsTabsEnum::navigation();
         $subNavigation = $this->getShopProductsSubNavigation($shop);
-
 
         $title = __('Products');
         if ($this->bucket == 'discontinued') {

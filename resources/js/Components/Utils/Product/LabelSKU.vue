@@ -3,7 +3,7 @@ import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue';
 import { Link } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n'
 import Modal from "@/Components/Utils/Modal.vue"
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps<{
     product: {
@@ -24,6 +24,7 @@ const props = defineProps<{
         } | null
     }[]
     hideUnit?: boolean
+    disableClick?: boolean
     routeFunction?: Function
     keyPicking?: string
 }>()
@@ -32,14 +33,41 @@ const key = props.keyPicking ?? 'pick_fractional'
 
 
 const isOpenModal = ref(false)
+
+const textTooltip = computed(() => {
+    if(props.disableClick) {
+        return ''
+    }
+    return props.trade_units.length > 1  ? trans('Click to view all trade units detail') : ''
+})
+
+const openModal = () => {
+    if(props.disableClick) {
+        return;
+    }
+    if(props.trade_units.length >= 1) {
+        isOpenModal.value = true
+    };
+}
+
+const getAdditionalClass = () => {
+    let multiTradeUnit = props.trade_units.length >= 1
+    let className = multiTradeUnit ? 'border-green-600' : 'border-red-600';
+
+    if(!props.disableClick && multiTradeUnit) {
+        className += ' hover:cursor-pointer hover:opacity-80';
+    }
+
+    return className;
+}
 </script>
 
 <template>
     <div
-        v-tooltip="trade_units.length > 1 ? trans('Click to view all trade units detail') : ''"
+        v-tooltip="textTooltip"
         class="border border-solid py-1 px-3 rounded-md me-2 flex"
-        :class="trade_units.length >= 1 ? 'border-green-600 hover:cursor-pointer hover:opacity-80' : 'border-red-600'"
-        @click="() => {if(trade_units.length >= 1) isOpenModal = true}"
+        :class="getAdditionalClass()"
+        @click="openModal"
     >
         <div v-if="trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
             <span class=""> &#8623; SKU </span>

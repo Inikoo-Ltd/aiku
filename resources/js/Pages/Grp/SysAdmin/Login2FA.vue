@@ -4,11 +4,16 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import Layout from '@/Layouts/Grp2FA.vue'
 import { useLayoutStore } from '@/Stores/layout'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { useLogoutAuth } from '@/Composables/useAppMethod'
+import { faSignOutAlt } from '@fal'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 defineOptions({ layout: Layout })
 
 const form = useForm({
@@ -38,6 +43,17 @@ const _inputOneTimePassword = ref(null)
 onMounted(async () => {
     _inputOneTimePassword.value?.focus()
 })
+
+const layout = inject("layout", layoutStructure)
+
+const isLoadingLogout = ref(false);
+
+const onLogoutAuth = () => {
+	useLogoutAuth(layout.user, {
+		onStart: () => (isLoadingLogout.value = true),
+		onError: () => (isLoadingLogout.value = false),
+	})
+}
 </script>
 
 <template>
@@ -53,8 +69,12 @@ onMounted(async () => {
                     class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
             </div>
         </div>
-        <div class="space-y-2">
+        <div class="space-y-2 flex">
             <Button full @click.prevent="submit"  label="Enter" type="indigo"/>
+            <Button :type="'red-r-outline'" :injectStyle="['margin-top:unset', 'margin-left:8px']" @click="onLogoutAuth()">
+                <FontAwesomeIcon :icon="faSignOutAlt" />
+                <LoadingIcon v-if="isLoadingLogout"/>
+            </Button>
         </div>
     </form>
 
