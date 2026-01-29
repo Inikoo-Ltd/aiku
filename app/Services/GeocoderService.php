@@ -52,24 +52,15 @@ class GeocoderService
                 'query' => $layer['query'],
             ]);
 
-            $cacheKey = 'geocode:layered:' . md5($layer['query']);
+            // $cacheKey = 'geocode:layered:' . md5($layer['query']);
 
-            $result = Cache::remember($cacheKey, $this->cacheTime, function () use ($layer) {
-                return $this->performLayeredGeocode($layer);
-            });
+            $result = $this->performLayeredGeocode($layer);
 
             if ($result) {
-                Log::info('✅ Geocoding SUCCESS', [
-                    'layer' => $layer['name'],
-                    'query' => $layer['query'],
-                    'confidence' => $result['confidence_score'],
-                    'coordinates' => $result['latitude'] . ', ' . $result['longitude'],
-                ]);
-
                 return $result;
             }
 
-            usleep(100000);
+            usleep(150000);
         }
 
         Log::warning('⏭ Geocoding FAILED for all layers', [
