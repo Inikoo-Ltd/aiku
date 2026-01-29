@@ -52,6 +52,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                 'customer_sales_channels.number_portfolios as number_portfolios',
                 'customer_sales_channels.number_orders as number_orders',
                 'customer_sales_channels.platform_id',
+                'customer_sales_channels.platform_status',
 
 
             ])
@@ -125,7 +126,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                 ->column(key: 'number_portfolios', label: __('Number Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_clients', label: __('Number Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Number Orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'connection', label: __('Connection'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'platform_status', label: __('Connection'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'action', label: __('Action'), canBeHidden: false)
                 ->defaultSort('reference');
         };
