@@ -89,7 +89,9 @@ class GetMailshotRecipientsQueryBuilder
 
         $query = QueryBuilder::for($modelClass);
 
-        // TODO: add filter from comms setting
+        // Check if customer is subscribed to marketing
+        $query->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
+            ->where('customer_comms.is_subscribed_to_marketing', true);
 
         if ($mailshot->shop_id) {
             $query->where('shop_id', $mailshot->shop_id);
@@ -97,6 +99,7 @@ class GetMailshotRecipientsQueryBuilder
             $query->whereRaw('1 = 0');
         }
         $query->whereNotNull('email');
+
         $filters = $mailshot->recipients_recipe;
 
         // Filter Registered Never Ordered

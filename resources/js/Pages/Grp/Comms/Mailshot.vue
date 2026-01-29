@@ -43,9 +43,10 @@ const props = defineProps<{
     indexRoute?: routeType
     cancelScheduleMailshotRoute?: routeType
     status?: string
+    estimatedRecipients?: number
 }>();
 
-
+console.log("estimatedRecipients test : ", props.estimatedRecipients)
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
