@@ -649,6 +649,19 @@ const radiusInMeters = (val) => {
     console.log("radius", val.radius)
     return Number(val.radius)
 }
+
+const getPostalCodeModel = (filter: any) => {
+    return computed({
+        get: () => filter.value.postal_codes?.join(', ') || '',
+        set: (val: string) => {
+            filter.value.postal_codes = val
+                .split(',')
+                .map(v => v.trim())
+                .filter(Boolean)
+        }
+    })
+}
+
 function unwrapBoolean(val: any) {
     let v = val
     while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
@@ -888,7 +901,7 @@ console.log("props table", props)
 
                         <!-- DIRECT MODE -->
                         <template v-if="filter.value.mode === 'direct'">
-                            <InputText v-model="filter.value.postal_codes"
+                            <InputText v-model="getPostalCodeModel(filter).value"
                                 :placeholder="filter.config.fields.postal_codes.placeholder" class="w-full" />
                             <MultiselectTagsInfiniteScroll :form="filter.value" v-model="filter.value.country_ids"
                                 fieldName="country_ids" :fieldData="{
@@ -912,39 +925,39 @@ console.log("props table", props)
                             <InputNumber v-if="filter.value.radius === 'custom'" v-model="filter.value.radius_custom"
                                 placeholder="Radius in km" class="w-full" />
 
-                        </template>
-                        <Button label="Find On Map" :type="'save'" @click="() => getLocationToLatLng(filter)" />
-                        <!-- MAP PLACEHOLDER -->
-                        <div v-if="shouldShowMap(filter.value)" class="h-72 w-full rounded">
-                            <div v-if="filter.value.loadingMap"
-                                class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded">
-                                <div class="flex flex-col items-center gap-2 text-gray-600">
-                                    <i class="pi pi-spin pi-spinner text-2xl"></i>
-                                    <span class="text-sm">Finding location...</span>
+                            <Button label="Find On Map" :type="'save'" @click="() => getLocationToLatLng(filter)" />
+                            <!-- MAP PLACEHOLDER -->
+                            <div v-if="shouldShowMap(filter.value)" class="h-72 w-full rounded">
+                                <div v-if="filter.value.loadingMap"
+                                    class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded">
+                                    <div class="flex flex-col items-center gap-2 text-gray-600">
+                                        <i class="pi pi-spin pi-spinner text-2xl"></i>
+                                        <span class="text-sm">Finding location...</span>
+                                    </div>
                                 </div>
+
+                                <template v-else>
+                                    <l-map
+                                        v-if="filter.value.lat !== null && filter.value.lng !== null && filter.value.zoom"
+                                        v-model:zoom="filter.value.zoom" :center="[filter.value.lat, filter.value.lng]"
+                                        class="h-full w-full" @click="(e: any) => onMapClick(e, filter)">
+                                        <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                        <l-marker :lat-lng="[Number(filter.value.lat), Number(filter.value.lng)]"
+                                            :draggable="true" @dragend="(e: any) => onMarkerDrag(e, filter)">
+                                            <l-tooltip :permanent="true" direction="top" :offset="[0, -10]">
+                                                📍 This is your point<br>
+                                                Lat: {{ Number(filter.value.lat).toFixed(5) }}<br>
+                                                Lng: {{ Number(filter.value.lng).toFixed(5) }}
+                                            </l-tooltip>
+                                        </l-marker>
+                                        <l-circle v-if="filter.value.mode === 'radius'"
+                                            :lat-lng="[filter.value.lat, filter.value.lng]"
+                                            :radius="radiusInMeters(filter.value || filter.value.range_custom)" />
+
+                                    </l-map>
+                                </template>
                             </div>
-
-                            <template v-else>
-                                <l-map
-                                    v-if="filter.value.lat !== null && filter.value.lng !== null && filter.value.zoom"
-                                    v-model:zoom="filter.value.zoom" :center="[filter.value.lat, filter.value.lng]"
-                                    class="h-full w-full" @click="(e: any) => onMapClick(e, filter)">
-                                    <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                    <l-marker :lat-lng="[Number(filter.value.lat), Number(filter.value.lng)]"
-                                        :draggable="true" @dragend="(e: any) => onMarkerDrag(e, filter)">
-                                        <l-tooltip :permanent="true" direction="top" :offset="[0, -10]">
-                                            📍 This is your point<br>
-                                            Lat: {{ Number(filter.value.lat).toFixed(5) }}<br>
-                                            Lng: {{ Number(filter.value.lng).toFixed(5) }}
-                                        </l-tooltip>
-                                    </l-marker>
-                                    <l-circle v-if="filter.value.mode === 'radius'"
-                                        :lat-lng="[filter.value.lat, filter.value.lng]"
-                                        :radius="radiusInMeters(filter.value || filter.value.range_custom)" />
-
-                                </l-map>
-                            </template>
-                        </div>
+                        </template>
                     </div>
                 </template>
             </div>
