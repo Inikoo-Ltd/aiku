@@ -10,6 +10,8 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -20,6 +22,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Helpers\LanguageResource;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 class EditProduct extends OrgAction
 {
@@ -95,13 +100,16 @@ class EditProduct extends OrgAction
     {
         $warning = null;
         $warningText = [];
+        $hasMaster = (bool) $product->masterProduct;
+        $isExternalShop = $product->shop->type == ShopTypeEnum::EXTERNAL;
+
         if ($product->is_single_trade_unit) {
             $warningText[] = __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.');
         }
 
         $forceFollowMasterProduct = data_get($product->shop->settings, 'catalog.product_follow_master');
 
-        if ($product->masterProduct && $forceFollowMasterProduct) {
+        if ($hasMaster && $forceFollowMasterProduct) {
             $warningText[] = __('This shop has enabled the Product force follow master setting. Updates made on master will overwrite local changes');
         }
 
@@ -114,11 +122,9 @@ class EditProduct extends OrgAction
             ];
         }
 
-        $iconLinks = [
+        $iconLinks = [];
 
-        ];
-
-        if ($product->masterProduct) {
+        if ($hasMaster) {
             $iconLinks[] = [
                 'icon'    => 'fab fa-octopus-deploy',
                 'tooltip' => __('Go to Edit Master Product'),
@@ -169,7 +175,7 @@ class EditProduct extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => $this->getBlueprint($product),
+                    'blueprint' => !$isExternalShop ? $this->getBlueprint($product) : $this->getBlueprintExternal($product),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.product.update',
@@ -184,6 +190,76 @@ class EditProduct extends OrgAction
         );
     }
 
+    public function getBlueprintExternal(Product $product) 
+    {
+        $packedIn = DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
+
+        $tradeUnits = $product->tradeUnits->map(function ($t) use ($packedIn) {
+            return array_merge(
+                ['quantity' => (int)$t->pivot->quantity],
+                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
+                ['packed_in' => $packedIn[$t->id]],
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
+                $t->toArray()
+            );
+        });
+
+        return array_filter([
+            [
+                'label'  => __('Trade units'),
+                'icon'   => 'fa-light fa-atom',
+                'fields' => [
+                    'trade_units' => [
+                        'label'        => __('Trade units'),
+                        'type'         => 'list-selector-trade-unit',
+                        'key_quantity' => 'quantity',
+                        'withQuantity' => true,
+                        'full'         => true,
+                        'tabs'         => [
+                            [
+                                'label'      => __('Recommended'),
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.trade-units.recommended.under-product',
+                                    'parameters' => [
+                                        'product' => $product->id,
+                                    ],
+                                ],
+                            ],
+                            [
+                                'label'      => __('All'),
+                                'search'     => true,
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.trade-units.all.under-product',
+                                    'parameters' => [
+                                        'product' => $product->id,
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'value'        => $tradeUnits,
+                    ],
+                ],
+            ],
+            ($product->shop->engine == ShopEngineEnum::FAIRE && $product->state == ProductStateEnum::IN_PROCESS) ? [
+                'label'  => __('Product State'),
+                'icon'   => 'fa-light fa-fingerprint',
+                'fields' => [
+                    'state'        => [
+                        'type'      => 'select',
+                        'label'     => __('Set Product State'),
+                        'value'     => $product->state->value,
+                        'options'   => Arr::except(ProductStateEnum::asOption(), [ProductStateEnum::DISCONTINUED->value, ProductStateEnum::DISCONTINUING->value]),
+                        'mode'      => 'single',
+                        'required'  => true,
+                    ],
+                ]
+            ] : null,
+        ]);
+    }
 
     /**
      * @throws \Exception

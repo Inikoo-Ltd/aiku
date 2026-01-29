@@ -116,3 +116,4 @@ rgb.icc
 /.output.txt
 laradumps.yaml
 /.ai/mcp/mcp.json
+/restart_varnish.sh

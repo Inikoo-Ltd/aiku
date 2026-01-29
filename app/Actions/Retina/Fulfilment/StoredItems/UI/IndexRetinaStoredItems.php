@@ -15,6 +15,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\StoredItem;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -107,6 +108,20 @@ class IndexRetinaStoredItems extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $storedItems, ActionRequest $request): Response
     {
+        $actions = [];
+
+        $actions[] = [
+            'type' => 'button',
+            'style' => 'edit',
+            'tooltip' => __("Bulk Edit SKU"),
+            'label' => __("Bulk Edit SKU"),
+            'key' => 'edit_sku',
+            'route' => [
+                'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
+                'parameters' => $request->route()->originalParameters()
+            ]
+        ];
+
         return Inertia::render(
             'Storage/RetinaStoredItems',
             [
@@ -114,7 +129,17 @@ class IndexRetinaStoredItems extends RetinaAction
                 'title'       => __("SKUs"),
                 'pageHead'    => [
                     'title'   => __("SKUs"),
+                    'actions' => $actions
 
+                ],
+
+                'bulk_edit_upload' => [
+                    'title' => [
+                        'label' => __("Bulk Edit Customer's SKU"),
+                        'information' => __('The list of column file: stored_items')
+                    ],
+                    'progressDescription'   => __('Editing stored item'),
+                    'upload_spreadsheet' => $this->buildUploadSpreadsheetConfig($this->fulfilmentCustomer)
                 ],
                 'data' => StoredItemResource::collection($storedItems),
             ]
@@ -146,5 +171,38 @@ class IndexRetinaStoredItems extends RetinaAction
                 ]
             ]
         );
+    }
+
+    protected function buildUploadSpreadsheetConfig(FulfilmentCustomer|Group $customer): array
+    {
+        if ($customer instanceof Group) {
+            return [];
+        }
+
+        $downloadRoute = 'retina.fulfilment.itemised_storage.stored_items.export';
+
+        return [
+            'event'           => 'action-progress',
+            'channel'         => 'retina.personal.'.$this->organisation->id,
+            'required_fields' => ['reference_do_not_modify', 'name'],
+            'template'        => [
+                'label' => 'Download template (.xlsx)',
+            ],
+            'route'           => [
+                'upload'   => [
+                    'name'       => 'retina.models.stored-items.bulk_edit.import',
+                    'parameters' => []
+                ],
+                'download' => [
+                    'name'       => $downloadRoute,
+                    'parameters' => [
+                        'organisation'       => $customer->organisation->slug,
+                        'fulfilment'         => $customer->fulfilment->slug,
+                        'fulfilmentCustomer' => $customer->slug,
+                        'type'               => 'xlsx'
+                    ]
+                ],
+            ],
+        ];
     }
 }
