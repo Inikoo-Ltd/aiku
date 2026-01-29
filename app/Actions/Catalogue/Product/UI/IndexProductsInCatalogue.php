@@ -361,7 +361,7 @@ class IndexProductsInCatalogue extends OrgAction
                     ]
                 ],
                 'data'                         => ProductsResource::collection($products),
-                'editable_table'               => true,
+                'editable_table'               => $shop->type != ShopTypeEnum::EXTERNAL,
                 'shop_id'                      => $shop->id,
                 'tabs'                         => [
                     'current'    => $this->tab,

@@ -223,7 +223,7 @@ const getTooltips = () => {
 
 	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
-		<div class="space-y-4 lg:space-y-6" v-if="data?.product?.data?.picking_factor?.length">
+		<div class="space-y-4 lg:space-y-6" v-if="!(data?.product?.data?.state == 'in_process')">
 			<!-- Product Tags -->
 			<!-- <dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
 				<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
@@ -287,7 +287,7 @@ const getTooltips = () => {
 			</div> -->
 
 			<!-- Sales Analytics Compact -->
-			<div v-if="salesData && data?.product?.data?.picking_factor?.length">
+			<div v-if="salesData && !(data?.product?.data?.state == 'in_process')">
 				<SalesAnalyticsCompact :salesData="salesData" />
 			</div>
 		</div>

@@ -97,6 +97,8 @@ const props = defineProps<{
     master : boolean
     mini_breadcrumbs? : any[]
     masterRoute?: routeType
+    is_external_shop?: boolean
+    product_state?: boolean
     taxonomy: {
         department?: {
             name: string
@@ -151,6 +153,9 @@ const component = computed(() => {
 
 // Warning flag
 const showMissingTaxonomyMessage = computed(() => {
+    if(props.is_external_shop) {
+        return false
+    }
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
 
