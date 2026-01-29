@@ -104,7 +104,7 @@ class EditShop extends OrgAction
             __('Shopify Keys'),
             __('Wix Keys'),
         ];
-        $salesChannels = SalesChannel::orderBy('id','asc')->get();
+        $salesChannels = SalesChannel::orderBy('id', 'asc')->get();
         $salesChannelFields = [];
         foreach ($salesChannels as $channel) {
             $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
