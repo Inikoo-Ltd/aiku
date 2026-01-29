@@ -15,7 +15,7 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $commandSignature = 'hydrate:customers-address-coordinates {--shop_code= : Filter by Shop Code}';
+    public string $commandSignature = 'hydrate:customers-address-coordinates {--shop_code= : Filter by Shop Code} {--a|async : Run asynchronously in background queue}';
     public string $commandDescription = 'Hydrate latitude and longitude for customer addresses';
 
     public function getJobUniqueId(int|null $customerId): string
@@ -92,22 +92,41 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
             $command->info("Filtering by Shop: {$shop->name} ({$shopCode})");
         }
 
+        $async = $command->option('async');
+
+        if ($async) {
+            $command->info("Running in ASYNC mode. Jobs will be pushed to 'low-priority' queue.");
+        }
+
         $totalCustomers = $query->count();
 
         $bar = $command->getOutput()->createProgressBar($totalCustomers);
         $bar->setFormat('%current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
-        $query->chunkById(100, function ($customers) use ($bar) {
+        $delayCounter = 0;
+        $query->chunkById(100, function ($customers) use ($bar, $async, &$delayCounter) {
             foreach ($customers as $customer) {
-                $this->handle($customer->id);
-                usleep(50000);
+                if ($async) {
+                    static::dispatch($customer->id)
+                        ->onQueue('low-priority')
+                        ->delay(now()->addSeconds($delayCounter));
+                    $delayCounter++;
+                } else {
+                    $this->handle($customer->id);
+                    usleep(1100000);
+                }
                 $bar->advance();
             }
         });
 
         $bar->finish();
         $command->newLine();
-        $command->info('All customer addresses hydrated successfully!');
+
+        if ($async) {
+            $command->info("Success! All jobs dispatched to queue 'low-priority'.");
+        } else {
+            $command->info('All customer addresses hydrated successfully!');
+        }
     }
 }
