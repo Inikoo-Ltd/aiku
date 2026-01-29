@@ -429,19 +429,13 @@ function variantRoute(product: MasterProduct): string {
         <template #cell(product_org_stocks)="{ item: product }">
             <LabelSKU
 				v-if="product.product_org_stocks"
+                :disableClick="true"
 				:product="product"
 				:trade_units="product.product_org_stocks"
                 :hideUnit="true"
 				xrouteFunction="tradeUnitRoute"
 				keyPicking="picking_factor"
 			>
-				<!-- <template #col_code="{ data }">
-					{{ data.org_stock_code }}
-				</template>
-
-				<template #col_name="{ data }">
-					{{ data.org_stock_name }}
-				</template> -->
 			</LabelSKU>
         </template>
 
