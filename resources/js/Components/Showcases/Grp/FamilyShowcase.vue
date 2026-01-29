@@ -82,6 +82,20 @@ const navigateTo = () => {
     }
     router.visit(targetRoute);
 }
+
+function offerRoute(offer: {}) {
+    switch (route().current()) {
+        case "grp.org.shops.show.catalogue.families.show":
+            return route(
+                "grp.org.shops.show.discounts.offers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    offer.slug])
+        default:
+            return ""
+    }
+}
 </script>
 
 <template>
@@ -127,7 +141,15 @@ const navigateTo = () => {
             </div>
 
             <div class="col-span-1 md:col-span-2 lg:col-span-4">
-                <FamilyOfferLabelDiscount v-if="data.gr_offer_data" :offer="data.gr_offer_data" />
+                <template v-if="data.gr_offer_data">
+                    <div class="mb-1">
+                        {{ trans("Active Gold Reward offer") }}:
+                        <Link :href="offerRoute(data.gr_offer_data)" class="secondaryLink">
+                            {{ data.gr_offer_data?.label }}
+                        </Link>
+                    </div>
+                    <FamilyOfferLabelDiscount :offer="data.gr_offer_data" />
+                </template>
             </div>
 
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
