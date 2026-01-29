@@ -39,7 +39,7 @@ class CloneProductCategoryParentsFromMaster
     {
         $masterCategory = $productCategory->masterProductCategory;
         $masterDepartment = $masterCategory->masterDepartment;
-        if(!$masterDepartment){
+        if (!$masterDepartment) {
             return $productCategory;
         }
 
@@ -63,7 +63,7 @@ class CloneProductCategoryParentsFromMaster
     {
         $masterCategory = $productCategory->masterProductCategory;
         $masterParent   = $masterCategory->parent;
-        if(!$masterParent){
+        if (!$masterParent) {
             return $productCategory;
         }
 

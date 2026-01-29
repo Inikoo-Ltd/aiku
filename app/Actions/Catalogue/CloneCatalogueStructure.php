@@ -58,7 +58,7 @@ class CloneCatalogueStructure
         if (!$skipFamilies) {
             $this->cloneFamilies($fromShop, $shop);
 
-            if($shop instanceof Shop){
+            if ($shop instanceof Shop) {
                 foreach ($shop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get() as $family) {
                     CloneProductCategoryParentsFromMaster::run($family);
                 }
@@ -730,7 +730,7 @@ class CloneCatalogueStructure
             }
         }
 
-        if($shop instanceof Shop){
+        if ($shop instanceof Shop) {
             foreach ($shop->productCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get() as $subDepartment) {
                 CloneProductCategoryParentsFromMaster::run($subDepartment);
             }

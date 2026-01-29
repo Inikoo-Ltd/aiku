@@ -20,7 +20,6 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -62,7 +61,7 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                 foreach ($product['variants'] as $variant) {
 
                     $sku = $variant['sku'];
-                    if(!$variant['sku']) {
+                    if (!$variant['sku']) {
                         $sku = Str::slug($variant['title']);
                     }
 

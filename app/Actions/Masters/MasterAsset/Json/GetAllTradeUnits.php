@@ -29,7 +29,7 @@ class GetAllTradeUnits extends GrpAction
 
         return $this->handle(parent: $masterProductCategory);
     }
-    
+
     public function inExternal(Product $product, ActionRequest $request): LengthAwarePaginator
     {
         $parent = $product;

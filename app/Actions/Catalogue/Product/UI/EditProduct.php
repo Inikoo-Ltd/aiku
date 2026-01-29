@@ -113,7 +113,7 @@ class EditProduct extends OrgAction
             $warningText[] = __('This shop has enabled the Product force follow master setting. Updates made on master will overwrite local changes');
         }
 
-        if (count($warningText) > 0) {
+        if (!empty($warningText)) {
             $warning = [
                 'type'  => 'warning',
                 'title' => __('Important'),
@@ -190,7 +190,7 @@ class EditProduct extends OrgAction
         );
     }
 
-    public function getBlueprintExternal(Product $product) 
+    public function getBlueprintExternal(Product $product)
     {
         $packedIn = DB::table('model_has_trade_units')
             ->where('model_type', 'Stock')

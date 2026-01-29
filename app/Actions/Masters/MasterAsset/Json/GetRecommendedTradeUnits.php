@@ -11,7 +11,6 @@ namespace App\Actions\Masters\MasterAsset\Json;
 use App\Actions\GrpAction;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -31,7 +30,7 @@ class GetRecommendedTradeUnits extends GrpAction
 
         return $this->handle(parent: $masterProductCategory);
     }
-    
+
     public function inExternal(Product $product, ActionRequest $request): LengthAwarePaginator
     {
         $parent = $product;
@@ -50,16 +49,16 @@ class GetRecommendedTradeUnits extends GrpAction
         });
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        
+
         $existingIds = [];
         $modelType = MasterAsset::class;
         $wildCardCode = $parent->code;
-        
-        if($parent instanceof MasterProductCategory) {
+
+        if ($parent instanceof MasterProductCategory) {
             $existingIds = $parent->masterAssets()->pluck('id')->filter()->toArray();
         }
-        
-        if($parent instanceof Product) {
+
+        if ($parent instanceof Product) {
             $modelType = Product::class;
             $wildCardCode = Str::before($parent->code, '-');
         }
@@ -70,7 +69,7 @@ class GetRecommendedTradeUnits extends GrpAction
                 $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
                     ->where('model_has_trade_units.model_type', '=', $modelType);
             });
-        
+
         if (!empty($existingIds)) {
             $queryBuilder->whereNotExists(function ($q) use ($existingIds, $modelType) {
                 $q->select(DB::raw(1))
@@ -86,7 +85,7 @@ class GetRecommendedTradeUnits extends GrpAction
             //         ->whereIn('model_id', $existingIds);
             // });
         }
-            
+
         return $queryBuilder
             ->groupBy('trade_units.id')
             ->defaultSort('trade_units.code')

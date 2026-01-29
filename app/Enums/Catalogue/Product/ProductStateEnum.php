@@ -28,7 +28,7 @@ enum ProductStateEnum: string
     case DISCONTINUING = 'discontinuing'; // Product has been discontinued, but stock still exists on warehouse
     case DISCONTINUED  = 'discontinued'; // Product has been discontinued completely (Will not be used anymore)
 
-    public static function asOption(): array 
+    public static function asOption(): array
     {
         return collect(self::cases())
             ->mapWithKeys(fn (self $case) => [

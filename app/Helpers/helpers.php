@@ -16,10 +16,11 @@ if (!function_exists('group')) {
     }
 }
 
-if(!function_exists('escapeSQLSearch')) {
-    function escapeSQLSearch(string $value): string {
+if (!function_exists('escapeSQLSearch')) {
+    function escapeSQLSearch(string $value): string
+    {
         return preg_quote($value, '/');
-    };
+    }
 }
 
 if (!function_exists('getFieldWebpageData')) {
