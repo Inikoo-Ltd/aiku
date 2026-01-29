@@ -25,6 +25,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Ordering\SalesChannel;
 
 class EditShop extends OrgAction
 {
@@ -103,6 +104,18 @@ class EditShop extends OrgAction
             __('Shopify Keys'),
             __('Wix Keys'),
         ];
+        $salesChannels = SalesChannel::orderBy('id', 'asc')->get();
+        $salesChannelFields = [];
+        foreach ($salesChannels as $channel) {
+            $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
+            $salesChannelFields['sales_channel_' . $channel->id] = [
+                'label'       => $channel->name . ' (' . $typeLabel . ')',
+                'type'        => 'toggle',
+                'value'       => $shop->salesChannels->contains($channel->id),
+                'information' => __('Enable the :name sales channel. Active means it is available for this shop; inactive means it is not available for this shop.', ['name' => $channel->name]),
+                'warningText' => __('Are you sure you want to change this sales channel ?'),
+            ];
+        }
 
         $formData = [
             'blueprint' => [
@@ -486,6 +499,11 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-life-ring',
                     'fields' => $helpPortalFields,
                 ],
+                [
+                    'label'  => __('Sales Channels'),
+                    'icon'   => 'fal fa-shopping-cart',
+                    'fields' => $salesChannelFields,
+                ]
             ],
             'args' => [
                 'updateRoute' => [
