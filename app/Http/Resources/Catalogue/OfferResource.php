@@ -63,6 +63,6 @@ class OfferResource extends JsonResource
             ],
         ];
 
-        return array_merge($customOfferData, $basicOfferData);
+        return array_merge($customOfferData, $basicOfferData ?? []);
     }
 }
