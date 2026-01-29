@@ -306,8 +306,15 @@ onMounted(async () => {
                             /> -->
                             
                              <DiscountByType 
-                                v-if="(product.stock  && !product.is_coming_soon)" 
-                                :template="bestOffer?.type === 'Category Quantity Ordered Order Interval' ? 'products_triggers_label' : 'max_discount'"
+                                v-if="(product.stock  && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr &&  bestOffer?.type === 'Category Quantity Ordered Order Interval')" 
+                                :template="'products_triggers_label'"
+                                :offers_data="product?.offers_data" 
+                            />
+
+
+                            <DiscountByType 
+                                v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type != 'Category Quantity Ordered Order Interval')" 
+                                :template="'max_discount'"
                                 :offers_data="product?.offers_data" 
                             />
                         </div>
