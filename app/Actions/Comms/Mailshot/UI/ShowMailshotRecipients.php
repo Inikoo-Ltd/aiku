@@ -38,7 +38,7 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $subdepartments = ProductCategory::query()
@@ -47,20 +47,20 @@ class ShowMailshotRecipients extends OrgAction
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $interestTags = Tag::query()
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $countries = Country::query()
             ->orderBy('name')
             ->get()
-            ->map(fn ($country) => [
+            ->map(fn($country) => [
                 'value' => $country->id,
                 'label' => $country->name,
             ])
@@ -216,11 +216,12 @@ class ShowMailshotRecipients extends OrgAction
                                 'type'    => 'select',
                                 'label'   => 'Radius Distance',
                                 'options' => [
-                                    '5km'    => '5 km',
-                                    '10km'   => '10 km',
-                                    '25km'   => '25 km',
-                                    '50km'   => '50 km',
-                                    '100km'  => '100 km',
+                                    '5000'    => '5000',
+                                    '10000'   => '10000',
+                                    '25000'   => '25000',
+                                    '50000'   => '50000',
+                                    '100000'  => '100000',
+                                    'custom' => 'custom',
                                 ],
                                 'dependency' => ['mode' => 'radius']
                             ]

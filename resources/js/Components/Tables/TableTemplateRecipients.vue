@@ -46,7 +46,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
+import { LMap, LTileLayer, LMarker, LTooltip, LCircle } from "@vue-leaflet/vue-leaflet"
 
 
 library.add(
@@ -134,11 +134,14 @@ const FILTER_CONFLICTS: Record<string, string[]> = {
         'by_order_value',
         'orders_collection',
         'by_family',
-        'by_subdepartment'
+        'by_subdepartment',
+        'by_family_never_ordered',
+        'by_showroom_orders',
+        'by_department'
     ],
-    // orders_in_basket: ['registered_never_ordered'],
-    // by_order_value: ['registered_never_ordered'],
-    // orders_collection: ['registered_never_ordered']
+    orders_in_basket: ['registered_never_ordered'],
+    by_order_value: ['registered_never_ordered'],
+    orders_collection: ['registered_never_ordered']
 }
 
 function hasConflict(newKey: string) {
@@ -204,11 +207,13 @@ const addFilter = (key: string, config: any) => {
             country_ids: [],
             postal_codes: [],
             location: '',
-            radius: '5km',
-            lat: -6.2,
-            lng: 106.8,
+            radius: null,
+            radius_custom: null,
+            lat: null,
+            lng: null,
 
-            zoom: 10
+            resolved: false
+            // zoom: 10
         }
     }
 
@@ -255,6 +260,62 @@ const onMarkerDrag = (e, filter) => {
     filter.value.lng = Number(pos.lng)
 }
 
+const getLocationToLatLng = async (filter: any) => {
+    const v = filter.value
+    let query = ''
+
+    if (v.mode === 'radius') {
+        if (!v.location) return
+        query = v.location
+    } else {
+        if (!v.postal_codes?.length) return
+
+        const postcode = v.postal_codes[0]
+
+        const countryLabel = v.country_ids?.[0] || ''
+
+        query = `${postcode} ${countryLabel}`
+        console.log("query", query)
+    }
+
+    if (!query) return
+
+    v.loadingMap = true
+
+    try {
+        const res = await axios.get(route('grp.json.get_geocode'), {
+            params: { location: query }
+        })
+
+        const data = res.data
+
+        const lat = Number(data.latitude)
+        const lng = Number(data.longitude)
+
+        if (!lat || !lng) throw new Error('Invalid coordinate')
+
+        // 📍 set marker
+        v.lat = lat
+        v.lng = lng
+        v.zoom = 12
+        v.resolved = true
+
+        // 🗺 OPTIONAL: auto fit bounds kalau ada
+        if (data.bounds) {
+            v.bounds = [
+                [data.bounds.south, data.bounds.west],
+                [data.bounds.north, data.bounds.east]
+            ]
+        }
+
+    } catch (err) {
+        console.error('GEOCODE FAILED', err)
+        v.resolved = false
+    } finally {
+        v.loadingMap = false
+    }
+}
+
 
 function findConfigByKey(structure: any, key: string) {
     for (const group of Object.values(structure)) {
@@ -267,7 +328,7 @@ function normalizeDate(d: string | null) {
     if (!d) return null
     return d.split('T')[0]
 }
-
+const presetMeters = ['5000', '10000', '25000', '50000', '100000']
 function hydrateSavedFilters(saved: any, structure: any) {
     const hydrated: any = {}
 
@@ -358,6 +419,20 @@ function hydrateSavedFilters(saved: any, structure: any) {
         else if (config.type === 'location') {
             const v = val?.value ?? {}
 
+            let radiusPreset = '5000'
+            let radiusCustom = null
+
+            if (v.radius) {
+                const asString = String(v.radius)
+
+                if (presetMeters.includes(asString)) {
+                    radiusPreset = asString
+                } else {
+                    radiusPreset = 'custom'
+                    radiusCustom = Number(v.radius)
+                }
+            }
+
             uiValue = {
                 mode: v.mode ?? 'direct',
 
@@ -365,10 +440,13 @@ function hydrateSavedFilters(saved: any, structure: any) {
                 postal_codes: v.postal_codes ?? [],
 
                 location: v.location ?? '',
-                radius: v.radius ?? '5km',
 
-                lat: raw.lat ?? -6.2,   // default Jakarta biar keliatan 😄
-                lng: raw.lng ?? 106.8,
+                radius: radiusPreset,
+                radius_custom: radiusCustom,
+
+                lat: v.lat ?? -6.2,
+                lng: v.lng ?? 106.8,
+                zoom: 10
             }
         }
 
@@ -544,9 +622,11 @@ const filtersPayload = computed(() => {
                     postal_codes: val.postal_codes,
 
                     location: val.location,
-                    radius: val.radius ?? 10,
-                    lat: val.lat ?? -6.2,
-                    lng: val.lng ?? 106.8,
+                    radius: val.radius === 'custom'
+                        ? Number(val.radius_custom)
+                        : Number(val.radius),
+                    lat: val.lat ?? 0,
+                    lng: val.lng ?? 0,
                 }
             }
             return
@@ -564,7 +644,11 @@ const shouldShowMap = (val: any) => {
     return false
 }
 
-
+const radiusInMeters = (val) => {
+    if (val.radius === 'custom') return Number(val.radius_custom) || 0
+    console.log("radius", val.radius)
+    return Number(val.radius)
+}
 function unwrapBoolean(val: any) {
     let v = val
     while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
@@ -593,35 +677,6 @@ const saveFilters = async () => {
             },
         )
         .then((response) => {
-
-            notify({
-                title: trans('Success!'),
-                text: trans('Success to save filter'),
-                type: 'success',
-            })
-        })
-        .catch((error) => {
-            notify({
-                title: "Failed to save filter",
-                type: "error",
-            })
-        })
-        .finally(() => {
-            console.log('finally')
-        });
-
-
-    axios
-        .get(
-            route('grp.json.get_geocode'),
-            {
-                params: {
-                    location: 'jakarta'
-                }
-            },
-        )
-        .then((response) => {
-            console.log(response.data)
 
             notify({
                 title: trans('Success!'),
@@ -833,18 +888,15 @@ console.log("props table", props)
 
                         <!-- DIRECT MODE -->
                         <template v-if="filter.value.mode === 'direct'">
-
+                            <InputText v-model="filter.value.postal_codes"
+                                :placeholder="filter.config.fields.postal_codes.placeholder" class="w-full" />
                             <MultiselectTagsInfiniteScroll :form="filter.value" v-model="filter.value.country_ids"
                                 fieldName="country_ids" :fieldData="{
                                     options: filter.config.fields.country_ids.options,
                                     labelProp: 'label',
-                                    valueProp: 'value',
+                                    valueProp: 'label',
                                     placeholder: filter.config.fields.country_ids.placeholder
-                                }" />
-
-                            <TagsInput v-model="filter.value.postal_codes"
-                                :placeholder="filter.config.fields.postal_codes.placeholder" />
-
+                                }" class="w-full !p-0" />
                         </template>
 
                         <!-- RADIUS MODE -->
@@ -852,34 +904,49 @@ console.log("props table", props)
 
                             <InputText v-model="filter.value.location"
                                 :placeholder="filter.config.fields.location.placeholder" class="w-full" />
-                            <!-- <Button label="Find on Map" @click="geocodeLocation(filter)" /> -->
+
                             <Dropdown v-model="filter.value.radius"
                                 :options="Object.entries(filter.config.fields.radius.options).map(([value, label]) => ({ value, label }))"
-                                optionLabel="label" optionValue="value" class="w-full" />
+                                optionLabel="label" optionValue="value" class="w-full" placeholder="Radius in km" />
+
+                            <InputNumber v-if="filter.value.radius === 'custom'" v-model="filter.value.radius_custom"
+                                placeholder="Radius in km" class="w-full" />
 
                         </template>
-
+                        <Button label="Find On Map" :type="'save'" @click="() => getLocationToLatLng(filter)" />
                         <!-- MAP PLACEHOLDER -->
                         <div v-if="shouldShowMap(filter.value)" class="h-72 w-full rounded">
-                            <l-map v-if="filter.value.lat !== null && filter.value.lng !== null && filter.value.zoom"
-                                v-model:zoom="filter.value.zoom" :center="[filter.value.lat, filter.value.lng]"
-                                class="h-full w-full" @click="(e: any) => onMapClick(e, filter)">
-                                <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                <l-marker :lat-lng="[Number(filter.value.lat), Number(filter.value.lng)]"
-                                    :draggable="true" @dragend="(e) => onMarkerDrag(e, filter)">
-                                    <l-tooltip :permanent="true" direction="top" :offset="[0, -10]">
-                                        📍 This is your point<br>
-                                        Lat: {{ Number(filter.value.lat).toFixed(5) }}<br>
-                                        Lng: {{ Number(filter.value.lng).toFixed(5) }}
-                                    </l-tooltip>
-                                </l-marker>
+                            <div v-if="filter.value.loadingMap"
+                                class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded">
+                                <div class="flex flex-col items-center gap-2 text-gray-600">
+                                    <i class="pi pi-spin pi-spinner text-2xl"></i>
+                                    <span class="text-sm">Finding location...</span>
+                                </div>
+                            </div>
 
-                            </l-map>
+                            <template v-else>
+                                <l-map
+                                    v-if="filter.value.lat !== null && filter.value.lng !== null && filter.value.zoom"
+                                    v-model:zoom="filter.value.zoom" :center="[filter.value.lat, filter.value.lng]"
+                                    class="h-full w-full" @click="(e: any) => onMapClick(e, filter)">
+                                    <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                    <l-marker :lat-lng="[Number(filter.value.lat), Number(filter.value.lng)]"
+                                        :draggable="true" @dragend="(e: any) => onMarkerDrag(e, filter)">
+                                        <l-tooltip :permanent="true" direction="top" :offset="[0, -10]">
+                                            📍 This is your point<br>
+                                            Lat: {{ Number(filter.value.lat).toFixed(5) }}<br>
+                                            Lng: {{ Number(filter.value.lng).toFixed(5) }}
+                                        </l-tooltip>
+                                    </l-marker>
+                                    <l-circle v-if="filter.value.mode === 'radius'"
+                                        :lat-lng="[filter.value.lat, filter.value.lng]"
+                                        :radius="radiusInMeters(filter.value || filter.value.range_custom)" />
+
+                                </l-map>
+                            </template>
                         </div>
-
                     </div>
                 </template>
-
             </div>
         </div>
 
