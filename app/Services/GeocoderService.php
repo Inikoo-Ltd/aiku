@@ -57,6 +57,12 @@ class GeocoderService
             $result = $this->performLayeredGeocode($layer);
 
             if ($result) {
+                Log::info('✅ Geocoding SUCCESS', [
+                    'layer' => $layer['name'],
+                    'query' => $layer['query'],
+                    'confidence' => $result['confidence_score'],
+                    'coordinates' => $result['latitude'] . ', ' . $result['longitude'],
+                ]);
                 return $result;
             }
 
