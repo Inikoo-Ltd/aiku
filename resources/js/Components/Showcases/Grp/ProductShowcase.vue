@@ -223,7 +223,7 @@ const getTooltips = () => {
 
 	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
-		<div class="space-y-4 lg:space-y-6" v-if="!(data?.product?.data?.state == 'in_process')">
+		<div class="space-y-4 lg:space-y-6" v-if="data?.product?.data?.picking_factor?.length">
 			<!-- Product Tags -->
 			<!-- <dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
 				<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
@@ -256,7 +256,7 @@ const getTooltips = () => {
 		</div>
 
 		<!-- Product Summary - spans 2 columns -->
-		<div class="lg:col-span-2" :class="data?.product?.data?.picking_factor?.length ? '' : 'lg:col-span-3'">
+		<div :class="data?.product?.data?.picking_factor?.length ? 'lg:col-span-2' : 'lg:col-span-3'">
 			<ProductSummary
 				:noTradeUnit="!data?.product?.data?.picking_factor?.length"
 				:data="{...data.product.data, tags: data.tags, brands: data.brands}"
