@@ -46,7 +46,8 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { LMap, LTileLayer, LMarker } from "@vue-leaflet/vue-leaflet"
+import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
+
 
 library.add(
     faSpellCheck,
@@ -204,8 +205,10 @@ const addFilter = (key: string, config: any) => {
             postal_codes: [],
             location: '',
             radius: '5km',
-            lat: null,
-            lng: null
+            lat: -6.2,
+            lng: 106.8,
+
+            zoom: 10
         }
     }
 
@@ -241,18 +244,17 @@ const clearAllFilters = () => {
     activeFilters.value = {}
 }
 
-const onMapClick = (e: any) => {
-    filter.value.lat = e.latlng.lat
-    filter.value.lng = e.latlng.lng
+const onMapClick = (e, filter) => {
+    filter.value.lat = Number(e.latlng.lat)
+    filter.value.lng = Number(e.latlng.lng)
 }
 
-const onMarkerDrag = (e: any) => {
-    const marker = e.target
-    const pos = marker.getLatLng()
-
-    filter.value.lat = pos.lat
-    filter.value.lng = pos.lng
+const onMarkerDrag = (e, filter) => {
+    const pos = e.target.getLatLng()
+    filter.value.lat = Number(pos.lat)
+    filter.value.lng = Number(pos.lng)
 }
+
 
 function findConfigByKey(structure: any, key: string) {
     for (const group of Object.values(structure)) {
@@ -365,8 +367,8 @@ function hydrateSavedFilters(saved: any, structure: any) {
                 location: v.location ?? '',
                 radius: v.radius ?? '5km',
 
-                lat: v.lat ?? null,
-                lng: v.lng ?? null
+                lat: raw.lat ?? -6.2,   // default Jakarta biar keliatan 😄
+                lng: raw.lng ?? 106.8,
             }
         }
 
@@ -471,23 +473,6 @@ const isAllCustomers = computed(() => {
     return Object.keys(activeFilters.value).length === 0
 })
 
-const geocodeLocation = async (filter: any) => {
-    const text = filter.value.location
-    if (!text) return
-
-    const res = await fetch(
-        `/api/geocode?query=${encodeURIComponent(text)}`
-    )
-
-    const data = await res.json()
-
-    if (data.lat) {
-        filter.value.lat = data.lat
-        filter.value.lng = data.lng
-        filter.value.zoom = 12
-    }
-}
-
 const filtersPayload = computed(() => {
     const payload: any = {}
 
@@ -559,9 +544,9 @@ const filtersPayload = computed(() => {
                     postal_codes: val.postal_codes,
 
                     location: val.location,
-                    radius: val.radius,
-                    lat: val.lat,
-                    lng: val.lng
+                    radius: val.radius ?? 10,
+                    lat: val.lat ?? -6.2,
+                    lng: val.lng ?? 106.8,
                 }
             }
             return
@@ -573,12 +558,12 @@ const filtersPayload = computed(() => {
     return payload
 })
 
-function shouldShowMap(val: { mode: string; country_ids: string | any[]; postal_codes: string | any[]; location: any; lat: any; lng: any; }) {
-    if (val.mode === 'direct') {
-        return val.country_ids.length > 0 || val.postal_codes.length > 0
-    }
-    return !!val.location || (val.lat && val.lng)
+const shouldShowMap = (val: any) => {
+    if (val.mode === 'radius') return true
+    if (val.mode === 'direct' && (val.country_ids?.length || val.postal_codes?.length)) return true
+    return false
 }
+
 
 function unwrapBoolean(val: any) {
     let v = val
@@ -837,8 +822,7 @@ console.log("props table", props)
                         <template v-else>
 
                             <InputText v-model="filter.value.location"
-                                :placeholder="filter.config.fields.location.placeholder" class="w-full"
-                                @blur="geocodeLocation(filter)" />
+                                :placeholder="filter.config.fields.location.placeholder" class="w-full" />
                             <!-- <Button label="Find on Map" @click="geocodeLocation(filter)" /> -->
                             <Dropdown v-model="filter.value.radius"
                                 :options="Object.entries(filter.config.fields.radius.options).map(([value, label]) => ({ value, label }))"
@@ -847,17 +831,21 @@ console.log("props table", props)
                         </template>
 
                         <!-- MAP PLACEHOLDER -->
-                        <div v-if="shouldShowMap(filter.value)"
-                            class="h-64 bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                            <div v-if="filter.value.lat && filter.value.lng" class="h-72 rounded">
-                                <l-map v-model:zoom="filter.value.zoom" :center="[filter.value.lat, filter.value.lng]"
-                                    @click="onMapClick">
-                                    <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <div v-if="shouldShowMap(filter.value)" class="h-72 w-full rounded">
+                            <l-map v-if="filter.value.lat !== null && filter.value.lng !== null && filter.value.zoom"
+                                v-model:zoom="filter.value.zoom" :center="[filter.value.lat, filter.value.lng]"
+                                class="h-full w-full" @click="(e: any) => onMapClick(e, filter)">
+                                <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                <l-marker :lat-lng="[Number(filter.value.lat), Number(filter.value.lng)]"
+                                    :draggable="true" @dragend="(e) => onMarkerDrag(e, filter)">
+                                    <l-tooltip :permanent="true" direction="top" :offset="[0, -10]">
+                                        📍 This is your point<br>
+                                        Lat: {{ Number(filter.value.lat).toFixed(5) }}<br>
+                                        Lng: {{ Number(filter.value.lng).toFixed(5) }}
+                                    </l-tooltip>
+                                </l-marker>
 
-                                    <l-marker :lat-lng="[filter.value.lat, filter.value.lng]" :draggable="true"
-                                        @dragend="onMarkerDrag" />
-                                </l-map>
-                            </div>
+                            </l-map>
                         </div>
 
                     </div>
@@ -888,6 +876,25 @@ console.log("props table", props)
     </div>
 </template>
 <style scoped>
+.leaflet-container {
+    height: 100%;
+    width: 100%;
+}
+
+.leaflet-tooltip {
+    background: white;
+    border-radius: 6px;
+    padding: 6px 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    font-size: 12px;
+    color: #333;
+}
+
+.leaflet-tooltip-top:before {
+    border-top-color: white !important;
+}
+
+
 :deep(.p-multiselect),
 :deep(.p-calendar) {
     width: 100% !important;
