@@ -47,11 +47,11 @@ class FilterRegisteredNeverOrdered
                 $endDate   = Arr::get($dateRange, 'end');
 
                 if ($startDate) {
-                    $query->whereDate('created_at', '>=', Carbon::parse($startDate)->startOfDay());
+                    $query->whereDate('customers.created_at', '>=', Carbon::parse($startDate)->startOfDay());
                 }
 
                 if ($endDate) {
-                    $query->whereDate('created_at', '<=', Carbon::parse($endDate)->endOfDay());
+                    $query->whereDate('customers.created_at', '<=', Carbon::parse($endDate)->endOfDay());
                 }
             }
         }

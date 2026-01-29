@@ -116,7 +116,8 @@ class UpdateMailshotRecipientFilter extends OrgAction
 
             // by_family_never_ordered filter
             'recipients_recipe.by_family_never_ordered' => ['sometimes', 'array'],
-            'recipients_recipe.by_family_never_ordered.value' => ['sometimes', 'integer'],
+            'recipients_recipe.by_family_never_ordered.value' => ['sometimes', 'array'],
+            'recipients_recipe.by_family_never_ordered.value.*' => ['sometimes', 'integer'],
 
         ];
     }

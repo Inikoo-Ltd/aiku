@@ -9,8 +9,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Catalogue\ProductCategory;
-use Illuminate\Pagination\LengthAwarePaginator;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Helpers\Tag;
@@ -23,7 +21,7 @@ class ShowMailshotRecipients extends OrgAction
         $requestFilters = $request->input('filters', []);
 
         // $currentFilters = empty($requestFilters) ? $mailshot->recipients_recipe : $requestFilters;
-        $currentFilters = empty($requestFilters) ? [] : $requestFilters;
+        $currentFilters = empty($requestFilters) ? $mailshot->recipients_recipe : $requestFilters;
         $previewMailshot = $mailshot->replicate();
         $previewMailshot->id = $mailshot->id;
         $previewMailshot->recipients_recipe = $currentFilters;
@@ -31,30 +29,18 @@ class ShowMailshotRecipients extends OrgAction
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
         $estimatedRecipients = $queryBuilder?->count() ?? 0;
 
-        // Remove this
-        $customers = new LengthAwarePaginator([], 0, 15);
-
-        // Remove this
-        $productFamilies = ProductCategory::query()
-            ->where('type', 'family')
-            ->where('shop_id', $mailshot->shop_id)
-            ->whereIn('state', ['active', 'discontinuing'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
-            ->toArray();
 
         $interestTags = Tag::query()
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $countries = Country::query()
             ->orderBy('name')
             ->get()
-            ->map(fn($country) => [
+            ->map(fn ($country) => [
                 'value' => $country->id,
                 'label' => $country->name,
             ])
@@ -287,7 +273,6 @@ class ShowMailshotRecipients extends OrgAction
                 ],
                 'filtersStructure' => $filtersStructure,
                 'filters'          => $currentFilters,
-                'customers'        => $customers,
                 'recipientFilterRoute' => [
                     'name'       => 'grp.models.shop.mailshot.recipient-filter.update',
                     'parameters' => [
