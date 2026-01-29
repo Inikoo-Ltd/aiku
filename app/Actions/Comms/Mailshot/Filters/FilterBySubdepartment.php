@@ -19,81 +19,46 @@ class FilterBySubdepartment
     public function apply($query, array $filters)
     {
         $subDeptFilter = Arr::get($filters, 'by_subdepartment');
-        if ($subDeptFilter && !empty($subDeptFilter['value'])) {
-            $rawValue = $subDeptFilter['value'];
-            $valueToSend = [
-                'ids' => [],
-                'behaviors' => ['purchased']
-            ];
 
-            if (is_array($rawValue)) {
+        if (is_array($subDeptFilter) && isset($subDeptFilter['value'])) {
+            $val = $subDeptFilter['value'];
+            $subdepartmentIds = $val['ids'] ?? [];
+            $behaviors = $val['behaviors'] ?? [];
+            $combinationLogic = $val['combine_logic'] ?? true;
 
-                if (array_key_exists('ids', $rawValue)) {
-                    $valueToSend['ids'] = $rawValue['ids'] ?? [];
-
-                    if (isset($rawValue['behaviors']) && is_array($rawValue['behaviors'])) {
-                        $valueToSend['behaviors'] = $rawValue['behaviors'];
-                    }
-                } elseif (array_key_exists(0, $rawValue)) {
-                    $valueToSend['ids'] = $rawValue;
-                } elseif (isset($rawValue['behaviors'])) {
-                    $valueToSend['behaviors'] = $rawValue['behaviors'];
-                }
-            } else {
-
-                $valueToSend['ids'] = [$rawValue];
+            // Early return if required data is missing
+            if (empty($subdepartmentIds) || empty($behaviors)) {
+                return $query;
             }
 
-            if (!empty($valueToSend['ids'])) {
-
-                $subdepartmentIds = [];
-                $behaviors = ['purchased'];
-
-                if (is_array($valueToSend)) {
-
-                    if (isset($valueToSend['ids'])) {
-                        $subdepartmentIds = $valueToSend['ids'];
-
-                        if (isset($valueToSend['behaviors']) && is_array($valueToSend['behaviors'])) {
-                            $behaviors = $valueToSend['behaviors'];
-                        }
-                    } else {
-                        $subdepartmentIds = array_filter($valueToSend, function ($item) {
-                            return is_numeric($item);
-                        });
-                    }
-                }
-
-
-                if (!is_array($subdepartmentIds)) {
-                    $subdepartmentIds = [$subdepartmentIds];
-                }
-
-
-                if (empty($subdepartmentIds)) {
-                    return $query;
-                }
-
-                $query->where(function ($q) use ($subdepartmentIds, $behaviors) {
-                    if (in_array('purchased', $behaviors)) {
-                        $q->orWhereHas('orders', function ($oq) use ($subdepartmentIds) {
-                            $oq->where('state', '!=', OrderStateEnum::CREATING)
-                                ->whereHas('transactions', function ($tq) use ($subdepartmentIds) {
-                                    $tq->whereIn('sub_department_id', $subdepartmentIds);
-                                });
-                        });
-                    }
-
-                    if (in_array('in_basket', $behaviors)) {
-                        $q->orWhereHas('orders', function ($oq) use ($subdepartmentIds) {
-                            $oq->where('state', OrderStateEnum::CREATING)
-                                ->whereHas('transactions', function ($tq) use ($subdepartmentIds) {
-                                    $tq->whereIn('sub_department_id', $subdepartmentIds);
-                                });
-                        });
-                    }
-                });
+            // Validate: AND logic should only have one behavior
+            if (!$combinationLogic && count($behaviors) > 1) {
+                \Log::warning('AND logic (combine_logic=false) requires exactly one behavior. Using first behavior only.');
+                $behaviors = [reset($behaviors)];
             }
+
+            // Normalize subdepartment IDs to array
+            $subdepartmentIds = (array) $subdepartmentIds;
+
+            $query->where(function ($q) use ($subdepartmentIds, $behaviors) {
+                if (in_array('purchased', $behaviors)) {
+                    $q->orWhereHas('orders', function ($oq) use ($subdepartmentIds) {
+                        $oq->where('state', '!=', OrderStateEnum::CREATING)
+                            ->whereHas('transactions', function ($tq) use ($subdepartmentIds) {
+                                $tq->whereIn('sub_department_id', $subdepartmentIds);
+                            });
+                    });
+                }
+
+                if (in_array('in_basket', $behaviors)) {
+                    $q->orWhereHas('orders', function ($oq) use ($subdepartmentIds) {
+                        $oq->where('state', OrderStateEnum::CREATING)
+                            ->whereHas('transactions', function ($tq) use ($subdepartmentIds) {
+                                $tq->whereIn('sub_department_id', $subdepartmentIds);
+                            });
+                    });
+                }
+            });
         }
 
         return $query;

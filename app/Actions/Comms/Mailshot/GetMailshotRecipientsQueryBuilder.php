@@ -132,6 +132,9 @@ class GetMailshotRecipientsQueryBuilder
         // FILTER: By Location (Radius & Country/Postcode)
         (new FilterByLocation())->apply($query, $filters);
 
+        // NOTE: for debug log the SQL query
+        // \Log::info($query->toRawSql());
+
         return $query;
     }
 }
