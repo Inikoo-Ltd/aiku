@@ -39,6 +39,9 @@ class CloneProductCategoryParentsFromMaster
     {
         $masterCategory = $productCategory->masterProductCategory;
         $masterDepartment = $masterCategory->masterDepartment;
+        if(!$masterDepartment){
+            return $productCategory;
+        }
 
         $department = ProductCategory::where('master_product_category_id', $masterDepartment->id)
             ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
@@ -60,6 +63,9 @@ class CloneProductCategoryParentsFromMaster
     {
         $masterCategory = $productCategory->masterProductCategory;
         $masterParent   = $masterCategory->parent;
+        if(!$masterParent){
+            return $productCategory;
+        }
 
         if ($masterParent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             $department = ProductCategory::where('master_product_category_id', $masterParent->id)

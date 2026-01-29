@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
+use App\Actions\Catalogue\ProductCategory\CloneProductCategoryParentsFromMaster;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
@@ -56,6 +57,14 @@ class CloneCatalogueStructure
 
         if (!$skipFamilies) {
             $this->cloneFamilies($fromShop, $shop);
+
+            if($shop instanceof Shop){
+                foreach ($shop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get() as $family) {
+                    CloneProductCategoryParentsFromMaster::run($family);
+                }
+            }
+
+
         }
 
         if (!$skipProducts) {
@@ -720,6 +729,14 @@ class CloneCatalogueStructure
                 $this->upsertMasterSubDepartment($department, $fromSubDepartment);
             }
         }
+
+        if($shop instanceof Shop){
+            foreach ($shop->productCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get() as $subDepartment) {
+                CloneProductCategoryParentsFromMaster::run($subDepartment);
+            }
+        }
+
+
     }
 
     public function attachFamily(MasterProductCategory|ProductCategory $parent, MasterProductCategory|ProductCategory $family): void
