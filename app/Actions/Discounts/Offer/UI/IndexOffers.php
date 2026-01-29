@@ -187,6 +187,34 @@ class IndexOffers extends OrgAction
         return $this->handle($parent, $prefix);
     }
 
+    public function getFirstInProductCategory(ProductCategory $parent, $type = null): ?Offer
+    {
+        $this->parent = $parent;
+
+        if ($type) {
+            $this->type = $type;
+        }
+
+        $query = QueryBuilder::for(Offer::class)->leftJoin('organisations', 'offers.organisation_id', '=', 'organisations.id');
+        $query->where('offers.trigger_id', $parent->id)->where('offers.trigger_type', class_basename(ProductCategory::class));
+        $query->leftjoin('shops', 'offers.shop_id', '=', 'shops.id');
+        $query->leftjoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
+
+        if ($this->type) {
+            $query->where('offers.type', $this->type);
+        }
+
+        $query->select(
+            'offers.*',
+            'shops.slug as shop_slug',
+            'shops.name as shop_name',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+        );
+
+        return $query->first();
+    }
+
     public function jsonResponse(LengthAwarePaginator $offers): AnonymousResourceCollection
     {
         return OffersResource::collection($offers);
