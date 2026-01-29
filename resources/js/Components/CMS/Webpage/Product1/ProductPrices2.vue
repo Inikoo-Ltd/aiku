@@ -2,12 +2,10 @@
 import { faCube, faLink,  } from "@fal"
 import { faHeart as  faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, inject, computed } from "vue"
+import { inject, computed } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
-import Discount from "@/Components/Utils/Label/Discount.vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { getBestOffer } from "@/Composables/useOffers"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -20,10 +18,14 @@ const props = defineProps<{
 const layout = inject("layout", {})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
+const bestOffer = computed(() => {
+  return getBestOffer(props.product?.offers_data)
+})
 
 </script>
 
 <template>
+
     <div class="grid grid-cols-5">
         <div class="col-span-3 space-y-1.5 flex items-end w-full">
             <div class="border-b border-gray-300 pb-1 w-full">{{ trans("Price") }} ({{ trans("Excl. Tax") }})</div>
@@ -52,10 +54,10 @@ const locale = useLocaleStore()
             </div>
 
             <!-- Section: Discounted Price -->
-            <div v-if="product?.units < 2" class="text-primary">
+            <div v-if="product?.units < 2" :class="bestOffer?.type == 'Category Ordered' ?  'text-by-offer' : 'text-primary'">
                 <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.discounted_price) }}</span>/{{ product?.unit }}
             </div>
-            <div v-else class="text-primary">
+            <div v-else :class="bestOffer?.type == 'Category Ordered' ?  'text-by-offer' : 'text-primary'">
                 <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.discounted_price) }}</span> ({{ locale.currencyFormat(currency?.code, product?.discounted_price_per_unit) }}/{{ product?.unit }})
             </div>
         </div>
@@ -75,6 +77,10 @@ const locale = useLocaleStore()
 <style lang="scss" scoped>
 .text-primary {
   color: var(--theme-color-4) !important;
+}
+
+.text-by-offer {
+  @apply text-red-600
 }
 </style>
 

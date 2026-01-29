@@ -9,6 +9,7 @@ import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import FamilyOfferLabelGR from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelGR.vue'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import { getBestOffer } from '@/Composables/useOffers'
 
 library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faChevronCircleLeft, faChevronCircleRight)
 
@@ -54,27 +55,18 @@ const toggleShowExtra = () => {
 }
 
 const layout: any = inject("layout", {})
-console.log('ssss',props)
 
-// const promoData = computed(() => {
-//   const vol = props.fieldValue?.family?.offers_data.offers?.vol_gr
-//   if (!vol?.volume || !vol?.discount) return null
-
-//   return {
-//     title: trans("Special Volume Deal"),
-//     headline: trans(`Buy ${vol.volume} items, get ${vol.discount}% OFF`),
-//     description: trans(`Perfect for bulk buyers. Save more when you purchase ${vol.volume} or more items.`),
-//     cta: trans("Start Saving Now")
-//   }
-// })
+const bestOffer = computed(() => {
+  return getBestOffer(props.fieldValue?.family?.offers_data)
+})
 
 const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
 const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
+
 </script>
 
 <template>
   <div id="family-1-iris">
-
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
       
@@ -86,7 +78,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
          
         <!-- Offer: list offers -->
         <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3"
+            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
         >
 
             <!-- <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
@@ -101,11 +93,11 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
                 <DiscountByType 
                    :offers_data="fieldValue?.family?.offers_data"
-                   :template="'active-inactive-gr'"
+                   :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr'  : 'max_discount'"
                 />
 
                 <DiscountByType
-                   v-if="!layout?.user?.gr_data?.customer_is_gr"
+                    v-if="!layout?.user?.gr_data?.customer_is_gr && bestOffer.type == 'Category Quantity Ordered Order Interval'"
                    :offers_data="fieldValue?.family?.offers_data"
                    :template="'triggers_labels'"
                 />
@@ -143,7 +135,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
 </template>
 
-<style>
+<style scoped>
   html {
     scroll-behavior: smooth;
   }
@@ -160,4 +152,12 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
         margin-top: 0.5rem;
         margin-bottom: 0.5rem;
     }
+
+.offers :deep(.offer-max-discount) {
+  @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center
+    rounded-sm px-1 py-0.5 text-xl
+    sm:px-1.5 sm:py-1 sm:text-xl
+    md:px-2 md:py-1;
+}
+
 </style>
