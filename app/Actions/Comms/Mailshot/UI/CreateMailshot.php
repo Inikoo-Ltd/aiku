@@ -28,7 +28,6 @@ class CreateMailshot extends OrgAction
 
         if ($parent instanceof Shop) {
             $outbox = $parent->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
-
         } else {
             $outbox = $parent;
         }
@@ -42,6 +41,19 @@ class CreateMailshot extends OrgAction
                     'placeholder' => __('Email subject'),
                     'required'    => true,
                     'value'       => '',
+                ],
+                // add default value all customers
+                'recipients_recipe' => [
+                    'type'        => 'input',
+                    'label'       => __('recipients recipe'),
+                    'placeholder' => __('Email recipients recipe'),
+                    'required'    => true,
+                    'hidden'      => true,
+                    'value'       => [
+                        'all_customers' => [
+                            'value' => true
+                        ]
+                    ],
                 ],
             ]
         ];
@@ -114,5 +126,4 @@ class CreateMailshot extends OrgAction
             ]
         );
     }
-
 }

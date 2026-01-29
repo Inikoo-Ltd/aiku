@@ -22,6 +22,7 @@ class ShowMailshotRecipients extends OrgAction
     {
         $requestFilters = $request->input('filters', []);
 
+        // $currentFilters = empty($requestFilters) ? $mailshot->recipients_recipe : $requestFilters;
         $currentFilters = empty($requestFilters) ? [] : $requestFilters;
         $previewMailshot = $mailshot->replicate();
         $previewMailshot->id = $mailshot->id;
@@ -30,37 +31,30 @@ class ShowMailshotRecipients extends OrgAction
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
         $estimatedRecipients = $queryBuilder?->count() ?? 0;
 
-        $customers = $queryBuilder ? $queryBuilder->paginate(15)->withQueryString() : new LengthAwarePaginator([], 0, 15);
+        // Remove this
+        $customers = new LengthAwarePaginator([], 0, 15);
 
+        // Remove this
         $productFamilies = ProductCategory::query()
             ->where('type', 'family')
             ->where('shop_id', $mailshot->shop_id)
             ->whereIn('state', ['active', 'discontinuing'])
             ->orderBy('name')
             ->get()
-            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
-            ->toArray();
-
-        $subdepartments = ProductCategory::query()
-            ->where('type', 'sub_department')
-            ->where('shop_id', $mailshot->shop_id)
-            ->whereIn('state', ['active', 'discontinuing'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn($pc) => ['value' => $pc->id, 'label' => $pc->name])
+            ->map(fn ($pc) => ['value' => $pc->id, 'label' => $pc->name])
             ->toArray();
 
         $interestTags = Tag::query()
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $countries = Country::query()
             ->orderBy('name')
             ->get()
-            ->map(fn($country) => [
+            ->map(fn ($country) => [
                 'value' => $country->id,
                 'label' => $country->name,
             ])
@@ -163,7 +157,7 @@ class ShowMailshotRecipients extends OrgAction
                                 'label'       => 'By Subdepartment',
                                 'placeholder' => 'Select',
                                 'multiple'    => true,
-                                'options'     => $subdepartments,
+                                'options'     => [],
                             ],
                             'behaviours'   => [
                                 'type'    => 'select',
@@ -262,7 +256,7 @@ class ShowMailshotRecipients extends OrgAction
                                 'label'       => 'By Family',
                                 'placeholder' => 'Select',
                                 'multiple'    => true,
-                                'options'     => $subdepartments,
+                                'options'     => [],
                             ],
                             'behaviours'   => [
                                 'type'    => 'select',
