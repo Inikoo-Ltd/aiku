@@ -26,17 +26,18 @@ import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart } from "@fal"
+import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle } from "@fal"
 import { routeType } from "@/types/route"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import Select from '@/Components/Forms/Fields/Select.vue'
+import Icon from "@/Components/Icon.vue"
+import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 
-library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart)
+library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle)
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 
@@ -56,7 +57,7 @@ const props = defineProps<{
         }
     }
     orders?: {}
-    sales_channels: Array<{ id: number, name: string, code: string }>
+    sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: string }>
     can_add_order: boolean
     products?: {}
     dispatched_emails?: {}
@@ -149,21 +150,12 @@ const component = computed(() => {
     <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
-            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.') }}</p>
-
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">{{ capitalize('Sales Channel') }}</label>
-
-                <Select :form="orderForm" field-name="sales_channel_id"
-                    :options="sales_channels.map(sc => ({ value: sc.id, label: sc.name }))" :field-data="{
-                        placeholder: capitalize('Select Channel...'),
-                        required: true,
-                        searchable: true
-                    }" class="w-full" />
-            </div>
-
+            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')}}</p>
+                <div class="mt-6">
+                    <SelectableCardGrid :options="sales_channels" v-model="orderForm.sales_channel_id" />
+                </div>
             <div class="mt-6 flex justify-end gap-3">
-                <Button label="Cancel" style="secondary" @click="isOrderModalOpen = false" />
+                <Button label="Cancel" type="secondary" @click="isOrderModalOpen = false" />
                 <Button label="Create Order" style="primary" @click="submitOrder"
                     :disabled="orderForm.processing || !orderForm.sales_channel_id" />
             </div>

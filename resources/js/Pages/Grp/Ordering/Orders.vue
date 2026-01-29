@@ -16,7 +16,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom } from "@fal"
+import { faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle } from "@fal"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import TableLastOrders from "@/Components/Tables/Grp/Org/Ordering/TableLastOrders.vue"
@@ -25,14 +25,16 @@ import Select from '@/Components/Forms/Fields/Select.vue'
 import { useForm } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Icon from "@/Components/Icon.vue"
+import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 
 
-library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom)
+library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    sales_channels: Array<{ id: number, name: string, code: string }>
+    sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: icon }>
     can_add_order: boolean
     tabs: {
         current: string
@@ -102,27 +104,17 @@ const component = computed(() => {
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
     <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
-        <div class="p-6">
-            <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
-            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')
-                }}</p>
-
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">{{ capitalize('Sales Channel') }}</label>
-
-                <Select :form="orderForm" field-name="sales_channel_id"
-                    :options="sales_channels.map(sc => ({ value: sc.id, label: sc.name }))" :field-data="{
-                        placeholder: capitalize('Select Channel...'),
-                        required: true,
-                        searchable: true
-                    }" class="w-full" />
+            <div class="p-6">
+                <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
+                <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')}}</p>
+                <div class="mt-6">
+                    <SelectableCardGrid :options="sales_channels" v-model="orderForm.sales_channel_id" />
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <Button label="Cancel" type="secondary" @click="isOrderModalOpen = false" />
+                    <Button label="Create Order" type="primary" @click="submitOrder"
+                        :disabled="orderForm.processing || !orderForm.sales_channel_id" />
+                </div>
             </div>
-
-            <div class="mt-6 flex justify-end gap-3">
-                <Button label="Cancel" style="secondary" @click="isOrderModalOpen = false" />
-                <Button label="Create Order" style="primary" @click="submitOrder"
-                    :disabled="orderForm.processing || !orderForm.sales_channel_id" />
-            </div>
-        </div>
-    </Modal>
+        </Modal>
 </template>

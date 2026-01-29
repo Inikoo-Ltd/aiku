@@ -263,12 +263,13 @@ class EditMasterFamily extends OrgAction
                             ],
 
                         ],
-                        [
+                        app()->environment('local') ? [
                             'label'  => __('Discounts'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
                                 'vol_gr' => [
                                     'label'  => 'Vol / GR',
+                                    'information' => __('Any changes will affect the offer in all shops.'),
                                     'type'   => 'input_twin',
                                     'value'  => [
                                         [
@@ -296,7 +297,7 @@ class EditMasterFamily extends OrgAction
                                     ]
                                 ],
                             ],
-                        ],
+                        ] : [],
                     ],
                     'args'      => [
                         'updateRoute' => [

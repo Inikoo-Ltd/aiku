@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\SysAdmin\User\Traits\WithRolesCommand;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\Role;
@@ -34,7 +35,7 @@ class UserAddRoles
         if ($setUserAuthorisedModels) {
             SetUserAuthorisedModels::run($user);
         }
-
+        CleanUserCaches::make()->clearPermissionsCache($user);
         return $user;
     }
 

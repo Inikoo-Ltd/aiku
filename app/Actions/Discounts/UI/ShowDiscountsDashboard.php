@@ -135,7 +135,7 @@ class ShowDiscountsDashboard extends OrgAction
                 'stats'         => [
                     [
                         'name'      => __('Campaigns'),
-                        'value'     => $this->shop->discountsStats->number_current_offer_campaigns,
+                        'value'     => $this->shop->discountsStats->number_offer_campaigns_state_active,
                         'icon'      => 'fal fa-comment-dollar',
                         'route'     => [
                             'name'       => 'grp.org.shops.show.discounts.campaigns.index',
@@ -144,7 +144,7 @@ class ShowDiscountsDashboard extends OrgAction
                     ],
                     [
                         'name'      => __('Offers'),
-                        'value'     => $this->shop->discountsStats->number_offers,
+                        'value'     => $this->shop->discountsStats->number_offers_state_active,
                         'icon'      => 'fal fa-badge-percent',
                         'route'     => [
                             'name'       => 'grp.org.shops.show.discounts.offers.index',

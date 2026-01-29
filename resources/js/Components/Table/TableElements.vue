@@ -168,7 +168,7 @@ onMounted(() => {
                     ]">
                         <span class="hidden lg:inline font-normal">{{ value[0] }}</span>
                         <span class="lg:hidden font-normal">{{ value[2] || value[0] }}</span>
-                        <span :class="[value[1] ? 'font-semibold' : 'text-gray-400']" class="">({{ useLocaleStore().number(value[1] || 0) }})</span>
+                        <span v-if="value[1] !== null" :class="[value[1] ? 'font-semibold' : 'text-gray-400']" class="">({{ useLocaleStore().number(value[1] || 0) }})</span>
                         <Icon v-if="value?.[3]?.icon" :data="value[3]" />
                     </div>
                 </div>

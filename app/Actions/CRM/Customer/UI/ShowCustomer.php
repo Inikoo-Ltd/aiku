@@ -40,8 +40,7 @@ use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Ordering\SalesChannel;
-use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 
 class ShowCustomer extends OrgAction
 {
@@ -105,14 +104,6 @@ class ShowCustomer extends OrgAction
             ];
         }
 
-        $salesChannels = SalesChannel::whereIn('type', [
-            SalesChannelTypeEnum::WEBSITE,
-            SalesChannelTypeEnum::PHONE,
-            SalesChannelTypeEnum::SHOWROOM,
-            SalesChannelTypeEnum::EMAIL,
-            SalesChannelTypeEnum::OTHER,
-        ])->get(['id', 'name', 'code']);
-
         return Inertia::render(
             'Org/Shop/CRM/Customer',
             [
@@ -125,7 +116,7 @@ class ShowCustomer extends OrgAction
                     'previous' => $this->getPrevious($customer, $request),
                     'next'     => $this->getNext($customer, $request),
                 ],
-                'sales_channels' => $salesChannels,
+                'sales_channels' => GetSalesChannelOptions::make()->getOptions(),
                 'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
                 'pageHead'         => [
                     'title'         => $customer->name,

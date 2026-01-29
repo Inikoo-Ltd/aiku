@@ -26,9 +26,9 @@ class RedoInvoiceCategoryTimeSeries
         $this->model = InvoiceCategory::class;
     }
 
-    public function handle(InvoiceCategory $invoiceCategory, array $frequencies, ?Command $command = null, bool $async = true): void
+    public function handle(InvoiceCategory $invoiceCategory, array $frequencies, bool $async = true): void
     {
-        $firstInvoicedDate = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->min('date');
+        $firstInvoicedDate = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $invoiceCategory->created_at)) {
             $invoiceCategory->update(['created_at' => $firstInvoicedDate]);
@@ -36,10 +36,12 @@ class RedoInvoiceCategoryTimeSeries
 
         $from = $invoiceCategory->created_at->toDateString();
 
-        $to = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->max('date');
+        $to = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->max('date');
+
         if (!$to) {
             $to = now();
         }
+
         $to = Carbon::parse($to)->toDateString();
 
         if ($from != null && $to != null) {
@@ -95,7 +97,7 @@ class RedoInvoiceCategoryTimeSeries
                     }
 
                     try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
+                        $this->handle($instance, $frequencies, $command->option('async'));
                     } catch (Throwable $e) {
                         $command->error($e->getMessage());
                     }

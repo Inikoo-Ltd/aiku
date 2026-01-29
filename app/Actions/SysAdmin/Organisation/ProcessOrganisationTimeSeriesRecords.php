@@ -32,16 +32,15 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $organisation = Organisation::find($organisationId);
+
         if (!$organisation) {
             return;
         }
 
-        $timeSeries = OrganisationTimeSeries::where('organisation_id', $organisation->id)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = OrganisationTimeSeries::where('organisation_id', $organisation->id)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
-            $timeSeries = $organisation->timeSeries()->create([
-                'frequency' => $frequency,
-            ]);
+            $timeSeries = $organisation->timeSeries()->create(['frequency' => $frequency]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to);
@@ -52,9 +51,11 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(OrganisationTimeSeries $timeSeries, string $from, string $to): void
     {
         $results = DB::table('invoices')
+            ->where('invoices.organisation_id', $timeSeries->organisation_id)
+            ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)
             ->where('invoices.date', '<=', $to)
-            ->where('invoices.organisation_id', $timeSeries->organisation_id);
+            ->whereNull('invoices.deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
@@ -149,8 +150,9 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
             $basketsCreated = DB::table('orders')
                 ->where('organisation_id', $timeSeries->organisation_id)
                 ->where('state', OrderStateEnum::CREATING)
-                ->where('date', '>=', $periodFrom)
-                ->where('date', '<=', $periodTo)
+                ->where('created_at', '>=', $periodFrom)
+                ->where('created_at', '<=', $periodTo)
+                ->whereNull('deleted_at')
                 ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
                 ->first();
 
@@ -159,6 +161,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
                 ->where('state', OrderStateEnum::CREATING)
                 ->where('updated_at', '>=', $periodFrom)
                 ->where('updated_at', '<=', $periodTo)
+                ->whereNull('deleted_at')
                 ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
                 ->first();
 

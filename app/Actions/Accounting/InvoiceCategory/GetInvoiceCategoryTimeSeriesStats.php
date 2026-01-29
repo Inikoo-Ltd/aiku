@@ -75,8 +75,12 @@ class GetInvoiceCategoryTimeSeriesStats
             }
 
             $invoiceCategoryData = array_merge($invoiceCategory->toArray(), $stats, [
-                'organisation_slug' => $invoiceCategory->organisation->slug,
-                'organisation_code' => $invoiceCategory->organisation->code,
+                'organisation_slug'          => $invoiceCategory->organisation->slug,
+                'organisation_code'          => $invoiceCategory->organisation->code,
+                'shop_currency_code'         => $invoiceCategory->currency->code,
+                'organisation_currency_code' => $invoiceCategory->organisation->currency->code,
+                'group_currency_code'        => $invoiceCategory->group->currency->code,
+                'parent_type'                => $parent instanceof Organisation ? 'Organisation' : 'Group',
             ]);
 
             $results[] = $invoiceCategoryData;

@@ -118,7 +118,7 @@ class EditProduct extends OrgAction
 
         ];
 
-        if ($product->shop->masterShop) {
+        if ($product->masterProduct) {
             $iconLinks[] = [
                 'icon'    => 'fab fa-octopus-deploy',
                 'tooltip' => __('Go to Edit Master Product'),

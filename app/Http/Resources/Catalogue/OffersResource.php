@@ -33,6 +33,7 @@ class OffersResource extends JsonResource
             'state'                => OfferStateEnum::stateIcon()[$this->state->value],
             'code'                => $this->code,
             'name'                => $this->name,
+            'type'                => $this->type,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
