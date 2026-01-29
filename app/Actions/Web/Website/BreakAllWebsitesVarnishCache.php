@@ -20,24 +20,17 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 
     public function handle(?Command $command = null): array
     {
+        $result = Process::timeout(1800)->run('./restart_varnish.sh');
 
-        $result=Process::run('./restart_varnish.sh');
-
-        if($command) {
+        if ($command) {
             if ($result->successful()) {
                 $command->info("All websites cache cleared");
             } else {
                 $command->error("Failed to restart varnish");
             }
         }
-        return [];
 
-        //        return $this->sendVarnishBanHttp(
-//            [
-//                'x-ban-all' => 'all'
-//            ],
-//            $command
-//        );
+        return [];
     }
 
     public function asController(ActionRequest $request): array
@@ -50,7 +43,7 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'vanish:restart';
+        return 'varnish:restart';
     }
 
     public function asCommand(Command $command): int
