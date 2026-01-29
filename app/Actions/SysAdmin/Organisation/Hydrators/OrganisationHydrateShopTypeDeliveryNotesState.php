@@ -92,21 +92,26 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUnique
         }
 
         // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
-        $count = DeliveryNote::leftJoin('shops', 'shops.id', '=', 'delivery_notes.shop_id')
+        $baseQuery = DeliveryNote::leftJoin('shops', 'shops.id', '=', 'delivery_notes.shop_id')
             ->where('delivery_notes.organisation_id', $organisation->id)
             ->where('shops.type', $shopTypeEnum->value) // Use shops.type instead of delivery_notes.shop_type
             ->where('shops.is_aiku', true) // Todo: this hacks has to be deleted after we migrate from aurora
-            ->whereNull('delivery_notes.deleted_at')
-            ->where('delivery_notes.state', $state)->count();
+            ->whereNull('delivery_notes.deleted_at');
 
-        $organisation->orderingStats()->update(
-            [
-                "number_".$shopTypeEnum->snake()."_shop_delivery_notes_state_".$state->snake() => $count
+        // Count for specific state
+        $countByState = (clone $baseQuery)->where('delivery_notes.state', $state)->count();
 
-            ]
-        );
+        $updateData = [
+            "number_".$shopTypeEnum->snake()."_shop_delivery_notes_state_".$state->snake() => $countByState
+        ];
 
+        // Only update total count on first state (unassigned) to avoid redundant updates
+        if ($state === DeliveryNoteStateEnum::UNASSIGNED) {
+            $countTotal = (clone $baseQuery)->count();
+            $updateData["number_".$shopTypeEnum->snake()."_shop_delivery_notes"] = $countTotal;
+        }
 
+        $organisation->orderingStats()->update($updateData);
     }
 
 
