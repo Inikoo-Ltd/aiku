@@ -133,12 +133,12 @@ class IndexProductsInCatalogue extends OrgAction
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
-        if($shop->type == ShopTypeEnum::EXTERNAL){
+        if ($shop->type == ShopTypeEnum::EXTERNAL) {
             //  Add select, we need this to display SKU on Index Product. Add shop type check so it won't bother internal shop.
             $queryBuilder
                 ->leftJoin('product_has_org_stocks as phor', function ($join) {
                     $join->on('products.id', '=', 'phor.product_id');
-                })        
+                })
                 ->leftJoin('org_stocks', 'org_stocks.id', '=', 'phor.org_stock_id')
                 ->addSelect(
                     DB::raw("
@@ -216,13 +216,13 @@ class IndexProductsInCatalogue extends OrgAction
 
                     ]
                 );
-            
+
             $table
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            
-            if($shop->type == ShopTypeEnum::EXTERNAL){
+
+            if ($shop->type == ShopTypeEnum::EXTERNAL) {
                 $table
                     ->column(key: 'product_org_stocks', label: __('SKU'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
             }
@@ -383,7 +383,7 @@ class IndexProductsInCatalogue extends OrgAction
 
     public function displayProductsShopTypeDependant(LengthAwarePaginator $products, Shop $shop): AnonymousResourceCollection
     {
-        if($shop->type == ShopTypeEnum::EXTERNAL){
+        if ($shop->type == ShopTypeEnum::EXTERNAL) {
             return ProductInExternalShopResource::collection($products);
         }
 

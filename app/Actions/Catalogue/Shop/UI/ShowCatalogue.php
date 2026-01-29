@@ -142,10 +142,11 @@ class ShowCatalogue extends OrgAction
                 ]
             ],
         ];
-        
 
-        if($shop->engine == ShopEngineEnum::AIKU){
-            $stats = array_merge([
+
+        if ($shop->engine == ShopEngineEnum::AIKU) {
+            $stats = array_merge(
+                [
                 [
                     'label' => __('Departments'),
                     'route' => [
@@ -325,9 +326,9 @@ class ShowCatalogue extends OrgAction
                         ],
                     ]
                 ],
-            ], 
-            $stats, 
-            [
+            ],
+                $stats,
+                [
                 [
                     'label' => __('Collections'),
                     'route' => [
@@ -405,7 +406,8 @@ class ShowCatalogue extends OrgAction
                     "backgroundColor" => "#ff000011",
                     'value'           => $shop->stats->number_products_no_family,
                 ],
-            ]);
+            ]
+            );
         }
 
         return Inertia::render(

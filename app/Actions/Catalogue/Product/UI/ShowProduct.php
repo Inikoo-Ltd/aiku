@@ -363,7 +363,7 @@ class ShowProduct extends OrgAction
                     : Inertia::lazy(fn () => $product->asset
                         ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
                         : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))),
-                
+
                 ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
                     : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
@@ -375,18 +375,18 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($product))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
-                    
+
                 ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
                     fn () => CustomersResource::collection(IndexCustomers::run($product))
                     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
         ];
-        
-        if(!$isExternalShop) {
+
+        if (!$isExternalShop) {
             $componentData = array_merge($componentData, [
                 ProductTabsEnum::CONTENT->value => $this->tab == ProductTabsEnum::CONTENT->value ?
                     fn () => GetProductContent::run($product)
                     : Inertia::lazy(fn () => GetProductContent::run($product)),
-                    
+
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
                     fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
                     : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
@@ -468,8 +468,8 @@ class ShowProduct extends OrgAction
         ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
         ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
         ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value));
-        
-        if(!$isExternalShop){
+
+        if (!$isExternalShop) {
             $productPage = $productPage
                 ->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
                 ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))

@@ -81,7 +81,7 @@ class UpdateOffer extends OrgAction
                 $modelData['allowance_signature'] = $newSignature;
             }
         }
-        
+
         // Section: edit Trigger
         if (isset($modelData['edit_offer_trigger'])) {
             $editOffer = $modelData['edit_offer_trigger'];
@@ -138,7 +138,7 @@ class UpdateOffer extends OrgAction
             $modelData['trigger_data'] = $newTriggerData;
             unset($modelData['edit_offer_trigger']);
         }
-// dd($modelData);
+        // dd($modelData);
 
         $offer = $this->update($offer, $modelData);
 
