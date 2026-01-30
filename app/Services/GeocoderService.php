@@ -304,16 +304,26 @@ class GeocoderService
                 }
 
                 $location = $results->first();
+                $coordinates = $location->getCoordinates();
+                $bounds = $location->getBounds();
 
                 return [
+                    'latitude'          => $coordinates->getLatitude(),
+                    'longitude'         => $coordinates->getLongitude(),
                     'formatted_address' => $this->buildFormattedAddress($location),
-                    'street' => $location->getStreetName(),
-                    'street_number' => $location->getStreetNumber(),
-                    'city' => $location->getLocality(),
-                    'postal_code' => $location->getPostalCode(),
-                    'country' => $location->getCountry()?->getName(),
-                    'country_code' => $location->getCountry()?->getCode(),
-                    'administrative_area' => $location->getAdminLevels()->first()?->getName(),
+                    'matched_layer'     => 'reverse_geocoding',
+                    'confidence_score'  => 100,
+                    'street'            => $location->getStreetName(),
+                    'city'              => $location->getLocality() ?? $location->getSubLocality(),
+                    'postal_code'       => $location->getPostalCode(),
+                    'country'           => $location->getCountry()?->getName(),
+                    'country_code'      => $location->getCountry()?->getCode(),
+                    'bounds'            => $bounds ? [
+                        'south' => $bounds->getSouth(),
+                        'west'  => $bounds->getWest(),
+                        'north' => $bounds->getNorth(),
+                        'east'  => $bounds->getEast(),
+                    ] : null,
                 ];
             } catch (\Exception $e) {
                 return null;
