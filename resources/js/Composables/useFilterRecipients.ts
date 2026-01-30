@@ -80,11 +80,109 @@ export function useFilterRecipients(props: any, notify: any) {
     }
 
     /* ---------------- PAYLOAD ---------------- */
+    // const filtersPayload = computed(() => {
+    //     const payload: any = {}
+
+    //     Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
+    //         payload[key] = { value: filter.value }
+    //     })
+
+    //     return payload
+    // })
     const filtersPayload = computed(() => {
         const payload: any = {}
 
         Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
-            payload[key] = { value: filter.value }
+            const val = filter.value
+            const config = filter.config
+
+            // BOOLEAN
+            if (config.type === 'boolean') {
+                if (key === 'orders_in_basket') {
+                    payload[key] = {
+                        value: {
+                            date_range: val.mode === 'custom'
+                                ? val.date_range
+                                : val.mode,
+                            amount_range: val.amount_range
+                        }
+                    }
+                    return
+                }
+
+                payload[key] = {
+                    value: {
+                        value: val.value ?? true,
+                        date_range: val.date_range ?? null,
+                        amount_range: val.amount_range ?? null
+                    }
+                }
+                return
+            }
+
+            // ENTITY BEHAVIOUR
+            if (config.type === 'entity_behaviour') {
+                payload[key] = {
+                    value: {
+                        ids: val.ids ?? [],
+                        behaviors: val.combine_logic
+                            ? (val.behaviors ?? [])
+                            : (val.behaviors?.length ? [val.behaviors[0]] : []),
+                        combine_logic: val.combine_logic ?? true
+                    }
+                }
+                return
+            }
+
+            // MULTISELECT (simple)
+            if (config.type === 'multiselect') {
+                // const ids = Array.isArray(val.ids)
+                //     ? val.ids
+                //     : val.ids != null
+                //         ? [val.ids]
+                //         : []
+
+                // payload[key] = {
+                //     value: ids
+                // }
+                if (config.label === 'By Family Never Ordered') {
+                    payload[key] = {
+                        value: val.ids != null ? [val.ids] : []
+                    }
+                } else {
+                    payload[key] = {
+                        value: val.ids ?? []
+                    }
+                }
+                return
+            }
+
+            // SELECT
+            if (config.type === 'select') {
+                payload[key] = {
+                    value: val
+                }
+                return
+            }
+
+            // LOCATION
+            if (config.type === 'location') {
+                payload[key] = {
+                    value: {
+                        mode: val.mode,
+                        country_ids: val.country_ids,
+                        postal_codes: val.postal_codes,
+                        location: val.location,
+                        radius: val.radius === 'custom'
+                            ? Number(val.radius_custom)
+                            : Number(val.radius),
+                        lat: val.lat ?? 0,
+                        lng: val.lng ?? 0,
+                    }
+                }
+                return
+            }
+            payload[key] = { value: val }
         })
 
         return payload
@@ -103,6 +201,46 @@ export function useFilterRecipients(props: any, notify: any) {
             }
         )
     }, 400)
+
+    
+
+    const saveFilters = async () => {
+
+        let payload = filtersPayload.value
+
+        if (!payload || Object.keys(payload).length === 0) {
+            payload = {
+                all_customers: {
+                    value: true
+                }
+            }
+        }
+        console.log('[SAVE FILTER PAYLOAD]', payload)
+        axios
+            .patch(
+                route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters),
+                {
+                    recipients_recipe: payload
+                },
+            )
+            .then((response) => {
+
+                notify({
+                    title: trans('Success!'),
+                    text: trans('Success to save filter'),
+                    type: 'success',
+                })
+            })
+            .catch((error) => {
+                notify({
+                    title: "Failed to save filter",
+                    type: "error",
+                })
+            })
+            .finally(() => {
+                console.log('finally')
+            });
+    }
 
     /* ---------------- LOCATION GEOCODE ---------------- */
     const getLatLngToLocation = async (filter: any, forceMode?: 'forward' | 'reverse') => {
@@ -205,6 +343,7 @@ export function useFilterRecipients(props: any, notify: any) {
         filtersPayload,
         onMapClick,
         onMarkerDrag,
+        saveFilters,
         fetchCustomers,
         preloadedEntities,
         getLatLngToLocation,

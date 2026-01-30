@@ -94,6 +94,7 @@ const {
     onMarkerDrag,
     radiusInMeters,
     shouldShowMap,
+    saveFilters,
     getPostalCodeModel,
 } = useFilterRecipients(props, notify)
 
@@ -191,7 +192,7 @@ function hydrateSavedFilters(saved: any, structure: any) {
                     mode: isCustom ? 'custom' : clean.date_range,
                     date_range: isCustom
                         ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
-                        : null,
+                        : clean.date_range ?? null,
                     amount_range: clean.amount_range ?? { min: null, max: null }
                 }
 
@@ -352,156 +353,22 @@ function getEntityFetchRoute(key: string) {
 function onBasketModeChange(filter: { value: { mode: any; date_range: null; }; }, event: { value: any; }) {
     const val = event.value
 
-    filter.value.mode = val
+    const newVal = { ...filter.value }
 
     if (val === 'custom') {
-        filter.value.date_range = null
+        newVal.date_range = Array.isArray(newVal.date_range)
+            ? newVal.date_range
+            : null
     } else {
-        filter.value.date_range = val
+        newVal.date_range = val
     }
-}
 
-const filtersPayload = computed(() => {
-    const payload: any = {}
-
-    Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
-        const val = filter.value
-        const config = filter.config
-
-        // BOOLEAN
-        if (config.type === 'boolean') {
-            if (key === 'orders_in_basket') {
-                payload[key] = {
-                    value: {
-                        date_range: val.mode === 'custom'
-                            ? val.date_range
-                            : val.mode,
-                        amount_range: val.amount_range
-                    }
-                }
-                return
-            }
-
-            payload[key] = {
-                value: {
-                    value: val.value ?? true,
-                    date_range: val.date_range ?? null,
-                    amount_range: val.amount_range ?? null
-                }
-            }
-            return
-        }
-
-        // ENTITY BEHAVIOUR
-        if (config.type === 'entity_behaviour') {
-            payload[key] = {
-                value: {
-                    ids: val.ids ?? [],
-                    behaviors: val.combine_logic
-                        ? (val.behaviors ?? [])
-                        : (val.behaviors?.length ? [val.behaviors[0]] : []),
-                    combine_logic: val.combine_logic ?? true
-                }
-            }
-            return
-        }
-
-        // MULTISELECT (simple)
-        if (config.type === 'multiselect') {
-            // const ids = Array.isArray(val.ids)
-            //     ? val.ids
-            //     : val.ids != null
-            //         ? [val.ids]
-            //         : []
-
-            // payload[key] = {
-            //     value: ids
-            // }
-            if (config.label === 'By Family Never Ordered') {
-                payload[key] = {
-                    value: val.ids != null ? [val.ids] : []
-                }
-            } else {
-                payload[key] = {
-                    value: val.ids ?? []
-                }
-            }
-            return
-        }
-
-        // SELECT
-        if (config.type === 'select') {
-            payload[key] = {
-                value: val
-            }
-            return
-        }
-
-        // LOCATION
-        if (config.type === 'location') {
-            payload[key] = {
-                value: {
-                    mode: val.mode,
-                    country_ids: val.country_ids,
-                    postal_codes: val.postal_codes,
-                    location: val.location,
-                    radius: val.radius === 'custom'
-                        ? Number(val.radius_custom)
-                        : Number(val.radius),
-                    lat: val.lat ?? 0,
-                    lng: val.lng ?? 0,
-                }
-            }
-            return
-        }
-        payload[key] = { value: val }
-    })
-
-    return payload
-})
-
-const saveFilters = async () => {
-
-    let payload = filtersPayload.value
-
-    if (!payload || Object.keys(payload).length === 0) {
-        payload = {
-            all_customers: {
-                value: true
-            }
-        }
-    }
-    console.log('[SAVE FILTER PAYLOAD]', payload)
-    axios
-        .patch(
-            route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters),
-            {
-                recipients_recipe: payload
-            },
-        )
-        .then((response) => {
-
-            notify({
-                title: trans('Success!'),
-                text: trans('Success to save filter'),
-                type: 'success',
-            })
-        })
-        .catch((error) => {
-            notify({
-                title: "Failed to save filter",
-                type: "error",
-            })
-        })
-        .finally(() => {
-            console.log('finally')
-        });
+    filter.value = newVal
 }
 
 onMounted(async () => {
     if (props.recipientsRecipe) {
         console.log('EDIT MODE', props.recipientsRecipe)
-
 
         activeFilters.value = hydrateSavedFilters(
             props.recipientsRecipe,
@@ -584,7 +451,8 @@ console.log("props table", props)
                 <!-- BOOLEAN -->
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
                     <template v-if="key === 'orders_collection' || key === 'by_showroom_orders'">
-                        <ToggleButton v-model="filter.value" onLabel="Active" offLabel="Inactive" class="mb-3 w-full" />
+                        <ToggleButton v-model="filter.value" onLabel="Active" offLabel="Inactive" class="mb-3 w-full"
+                            disabled />
                     </template>
                     <template v-if="key === 'orders_in_basket'">
                         <!-- TIME FRAME -->
