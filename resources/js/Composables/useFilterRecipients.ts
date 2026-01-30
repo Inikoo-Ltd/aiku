@@ -65,7 +65,7 @@ export function useFilterRecipients(props: any) {
         const conflictWith = hasConflict(key)
         if (conflictWith) {
             notify({
-                title: "Filter conflict",
+                title: trans("Filter conflict"),
                 text: `"${config.label}" cannot be combined with "${activeFilters.value[conflictWith].config.label}"`,
                 type: "error"
             })
@@ -407,7 +407,7 @@ export function useFilterRecipients(props: any) {
             })
             .catch((error) => {
                 notify({
-                    title: "Failed to save filter",
+                    title: trans("Failed to save filter"),
                     type: "error",
                 })
             })
@@ -526,8 +526,5 @@ export function useFilterRecipients(props: any) {
         preloadedEntities,
         getLatLngToLocation,
     }
-}
-function dayDiff(arg0: any, arg1: any) {
-    throw new Error('Function not implemented.')
 }
 

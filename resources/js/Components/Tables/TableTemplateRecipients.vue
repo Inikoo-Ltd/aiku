@@ -42,7 +42,7 @@ import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfi
 import '@vuepic/vue-datepicker/dist/main.css'
 import { LMap, LTileLayer, LMarker, LTooltip, LCircle } from "@vue-leaflet/vue-leaflet"
 import { useFilterRecipients } from "@/Composables/useFilterRecipients";
-import { filter } from "lodash";
+import { trans } from "laravel-vue-i18n"
 
 library.add(
     faSpellCheck,
@@ -252,20 +252,42 @@ watch(
     () => activeFilters.value,
     (filters) => {
         Object.values(filters).forEach((filter: any) => {
-            if (!filter?.config || filter.config.type !== 'entity_behaviour') return
-            if (!filter?.value) return
+            if (!filter?.config || !filter?.value) return
 
             const val = filter.value
 
-            if (val.combine_logic === false && Array.isArray(val.behaviors)) {
-                if (val.behaviors.length > 1) {
+            if (filter.config.type === 'entity_behaviour') {
+                if (val.combine_logic === false && Array.isArray(val.behaviors) && val.behaviors.length > 1) {
                     val.behaviors = [val.behaviors[0]]
+                }
+            }
+
+            if (filter.config.type === 'location') {
+
+                if (val.mode === 'direct') {
+                    if (val.lat || val.lng || val.radius || val.location) {
+                        val.location = ''
+                        val.radius = null
+                        val.radius_custom = null
+                        val.lat = null
+                        val.lng = null
+                        val.zoom = null
+                        val.resolved = false
+                    }
+                }
+
+                if (val.mode === 'radius') {
+                    if ((val.country_ids && val.country_ids.length) || (val.postal_codes && val.postal_codes.length)) {
+                        val.country_ids = []
+                        val.postal_codes = []
+                    }
                 }
             }
         })
     },
     { deep: true }
 )
+
 
 </script>
 
@@ -277,20 +299,20 @@ watch(
 
             <Button @click="filterMenu.toggle($event)" class="h-10 px-4">
                 <FontAwesomeIcon :icon="faPlus" />
-                <span>Filter</span>
+                <span>{{ trans("Filter") }}</span>
 
                 <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
             </Button>
 
-            <Button label="Apply Filters" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
+            <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
 
             <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="tertiary" class="h-10 px-4"
                 @click="clearAllFilters" />
 
             <span v-if="isAllCustomers" class="text-blue-600 font-medium ml-auto">
-                Audience: All Customers
+                {{ trans("Audience: All Customers") }}
             </span>
-            <Button label="Save" type="save" @click="saveFilters" class="h-10 px-4 ml-auto"
+            <Button :label="trans('Save')" type="save" @click="saveFilters" class="h-10 px-4 ml-auto"
                 :disabled="isByOrderValueInvalid" />
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -303,7 +325,7 @@ watch(
                 </div>
                 <span
                     class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mb-2">
-                    Active
+                    {{ trans("Active") }}
                 </span>
                 <!-- BOOLEAN -->
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
@@ -329,7 +351,7 @@ watch(
                     </template>
                     <template v-else-if="filter.config.options?.date_range">
                         <label class="block text-xs font-medium text-gray-500 mb-1">
-                            {{ filter.config.options.date_range.label }}
+                            {{ trans('filter.config.options.date_range.label') }}
                         </label>
 
                         <!-- PRESET SELECT (if exists) -->
@@ -356,7 +378,7 @@ watch(
                             :min="filter.value.amount_range.min ?? undefined" />
 
                         <p v-if="isAmountRangeInvalid(filter)" class="text-xs text-red-500 mt-1 col-span-2">
-                            Minimum amount is required.
+                            {{ trans("Minimum amount is required.") }}
                         </p>
                     </div>
                 </template>
@@ -373,7 +395,7 @@ watch(
                             <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute(key)" :key="key" mode="single"
                                 v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
                                 :fetchRoute="getEntityFetchRoute(key)!" valueProp="id" labelProp="name"
-                                placeholder="Select items..." />
+                                :placeholder="trans('Select items...')" />
                         </div>
                     </template>
 
@@ -392,18 +414,18 @@ watch(
                         <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute(key)" :key="key" mode="multiple"
                             v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
                             :fetchRoute="getEntityFetchRoute(key)!" valueProp="id" labelProp="name"
-                            placeholder="Select items..." />
+                            :placeholder="trans('Select items...')" />
                     </div>
                     <div class="mb-3">
                         <div class="flex items-center gap-6">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="filter.value.combine_logic" :value="true" inputId="multi" />
-                                <label for="multi" class="text-sm">Allow multiple behaviours</label>
+                                <label for="multi" class="text-sm">{{ trans("Allow multiple behaviours") }}</label>
                             </div>
 
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="filter.value.combine_logic" :value="false" inputId="single" />
-                                <label for="single" class="text-sm">Single behaviour only</label>
+                                <label for="single" class="text-sm">{{ trans("Single behaviour only") }}</label>
                             </div>
                         </div>
                     </div>
@@ -447,7 +469,7 @@ watch(
                             <InputText v-model="getPostalCodeModel(filter).value"
                                 :placeholder="filter.config.fields.postal_codes.placeholder" class="w-full" />
                             <small class="text-gray-500">
-                                You can enter multiple postal codes separated by commas.
+                                {{ trans("You can enter multiple postal codes separated by commas.") }}
                             </small>
                         </template>
 
@@ -474,7 +496,7 @@ watch(
                                     class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded">
                                     <div class="flex flex-col items-center gap-2 text-gray-600">
                                         <i class="pi pi-spin pi-spinner text-2xl"></i>
-                                        <span class="text-sm">Finding location...</span>
+                                        <span class="text-sm">{{ trans("Finding location...") }}</span>
                                     </div>
                                 </div>
 
@@ -509,12 +531,12 @@ watch(
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">Estimated Recipients</p>
+                    <p class="text-sm text-gray-500 mb-1">{{ trans("Estimated Recipients") }}</p>
                     <h2 class="text-4xl font-semibold tracking-tight text-gray-900">
-                        {{ formatNumber(estimatedRecipients) }}
+                        {{ trans(formatNumber(estimatedRecipients)) }}
                     </h2>
                     <p class="text-xs text-gray-400 mt-2">
-                        Based on current filters
+                        {{ trans("Based on current filters") }}
                     </p>
                 </div>
 
