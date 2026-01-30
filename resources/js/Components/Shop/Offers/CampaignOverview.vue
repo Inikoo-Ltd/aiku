@@ -55,10 +55,6 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
         </div>
 
-        <!-- <div>
-            <div class="p-8 flex flex-wrap gap-2">
-                <Coupon v-for="offer in data?.offers" :offer="offer" :currency_code="data.currency_code" />
-            </div>
-        </div> -->
+
     </div>
 </template>
