@@ -38,13 +38,13 @@ class ShowMailshotRecipients extends OrgAction
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $countries = Country::query()
             ->orderBy('name')
             ->get()
-            ->map(fn ($country) => [
+            ->map(fn($country) => [
                 'value' => $country->id,
                 'label' => $country->name,
             ])
@@ -253,7 +253,6 @@ class ShowMailshotRecipients extends OrgAction
                                 'label'   => 'Customer Behaviour',
                                 'options' => [
                                     ['value' => 'purchased', 'label' => 'Purchased'],
-                                    ['value' => 'favourited', 'label' => 'Favourited'],
                                     ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
                                 ]
                             ]
