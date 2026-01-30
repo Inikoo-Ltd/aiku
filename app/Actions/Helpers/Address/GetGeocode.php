@@ -21,13 +21,30 @@ class GetGeocode extends OrgAction
     public function handle(array $validatedData): ?array
     {
         $geocoder = new GeocoderService();
+
+        if (isset($validatedData['latitude'], $validatedData['longitude'])) {
+            $lat = (float) $validatedData['latitude'];
+            $lng = (float) $validatedData['longitude'];
+
+            $result = $geocoder->reverseGeocode($lat, $lng);
+
+            if ($result) {
+                $result['latitude'] = $lat;
+                $result['longitude'] = $lng;
+            }
+
+            return $result;
+        }
+
         return $geocoder->geocode($validatedData['location']);
     }
 
     public function rules(): array
     {
         return [
-            'location' => 'required|string',
+            'location'  => 'required_without_all:latitude,longitude|nullable|string',
+            'latitude'  => 'required_without:location|nullable|numeric',
+            'longitude' => 'required_without:location|nullable|numeric',
         ];
     }
 
