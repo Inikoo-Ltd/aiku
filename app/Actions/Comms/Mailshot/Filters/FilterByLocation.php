@@ -32,7 +32,16 @@ class FilterByLocation
         $countryIds = Arr::get($locationValue, 'country_ids', []);
         $postalCodes = Arr::get($locationValue, 'postal_codes', []);
         $location = Arr::get($locationValue, 'location');
+        $lat = Arr::get($locationValue, 'lat');
+        $lng = Arr::get($locationValue, 'lng');
         $radius = Arr::get($locationValue, 'radius');
+        $radius_custom = Arr::get($locationValue, 'radius_custom');
+        if ($radius === 'custom') {
+            $radiusKm = $radius_custom ?? null;
+        } else {
+            $radiusKm = $radius ?? null;
+        }
+
 
 
         if ($mode === 'direct' || (!empty($countryIds) || !empty($postalCodes))) {
@@ -52,8 +61,8 @@ class FilterByLocation
         }
 
         // --- MODE 2: RADIUS / AREA (Geocoding) ---
-        if (!empty($location)) {
-            $coordinates = $this->geocodeLocation($location);
+        if (!empty($lat) && !empty($lng)) {
+            $coordinates = $this->reverseGeocodeLocation($lat, $lng) ?? $this->geocodeLocation($location);
             if (!$coordinates) {
                 throw ValidationException::withMessages([
                     'location' => __('Location not found. Please check the address and try again.'),
@@ -72,8 +81,8 @@ class FilterByLocation
             // OPSI B: Radius Search (Haversine)
             $lat = $coordinates['latitude'];
             $lng = $coordinates['longitude'];
-            $radiusKm = $this->parseRadius($radius);
 
+            dd($radiusKm);
             return $query->whereHas('address', function (Builder $q) use ($lat, $lng, $radiusKm) {
                 $q->whereNotNull('latitude')
                     ->whereNotNull('longitude')
@@ -110,5 +119,11 @@ class FilterByLocation
     {
         $geocoder = new GeocoderService();
         return $geocoder->geocode($location);
+    }
+
+    private function reverseGeocodeLocation($lat, $lng): ?array
+    {
+        $geocoder = new GeocoderService();
+        return $geocoder->reverseGeocode($lat, $lng);
     }
 }
