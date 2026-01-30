@@ -168,9 +168,13 @@ const addFilter = (key: string, config: any) => {
     }
 
     if (config.type === 'multiselect') {
-        value = config.behavior_options
-            ? { ids: [], behaviors: ['purchased'], combine_logic: 'or' }
-            : { ids: [] }
+        if (config.label === 'By Family Never Ordered') {
+            value = { ids: null }
+        } else {
+            value = config.behavior_options
+                ? { ids: [], behaviors: ['purchased'], combine_logic: 'or' }
+                : { ids: [] }
+        }
     }
 
     if (config.type === 'daterange') {
@@ -223,6 +227,10 @@ const onPresetChange = (filter: any, event: any) => {
     }
 }
 
+const formatNumber = (num: number | null | undefined) => {
+    return new Intl.NumberFormat('en-GB').format(num ?? 0)
+}
+
 const removeFilter = (key: string) => {
     delete activeFilters.value[key]
 }
@@ -231,17 +239,20 @@ const clearAllFilters = () => {
     activeFilters.value = {}
 }
 
-const getLatLngToLocation = async (filter: any) => {
+const getLatLngToLocation = async (filter: any, forceMode?: 'forward' | 'reverse') => {
     const v = filter.value
-
     let params: any = {}
 
-    if (v.lat && v.lng) {
+    // 🧠 Tentukan mode
+    const mode =
+        forceMode ||
+        (v.lastSource === 'map' ? 'reverse' : 'forward')
+
+    if (mode === 'reverse') {
+        if (!v.lat || !v.lng) return
         params.latitude = v.lat
         params.longitude = v.lng
-    }
-
-    else {
+    } else {
         let query = ''
 
         if (v.mode === 'radius') {
@@ -249,9 +260,7 @@ const getLatLngToLocation = async (filter: any) => {
             query = v.location
         } else {
             if (!v.postal_codes?.length) return
-            const postcode = v.postal_codes[0]
-            const countryLabel = v.country_ids?.[0] || ''
-            query = `${postcode} ${countryLabel}`
+            query = `${v.postal_codes[0]} ${v.country_ids?.[0] || ''}`
         }
 
         if (!query) return
@@ -283,19 +292,29 @@ const getLatLngToLocation = async (filter: any) => {
     }
 }
 
-const onMapClick = async (e: { latlng: { lat: any; lng: any; }; }, filter: { value: { lat: number; lng: number; }; }) => {
+
+const onMapClick = async (e: { latlng: { lat: any; lng: any; }; }, filter: {
+    value: {
+        lastSource: string; lat: number; lng: number;
+    };
+}) => {
     filter.value.lat = Number(e.latlng.lat)
     filter.value.lng = Number(e.latlng.lng)
-
+    filter.value.lastSource = 'map'
     debouncedReverseGeocode(filter)
 }
 
 const debouncedReverseGeocode = debounce(getLatLngToLocation, 500)
 
-const onMarkerDrag = (e: { target: { getLatLng: () => any; }; }, filter: { value: { lat: number; lng: number; }; }) => {
+const onMarkerDrag = (e: { target: { getLatLng: () => any; }; }, filter: {
+    value: {
+        lastSource: string; lat: number; lng: number;
+    };
+}) => {
     const pos = e.target.getLatLng()
     filter.value.lat = Number(pos.lat)
     filter.value.lng = Number(pos.lng)
+    filter.value.lastSource = 'map'
 
     debouncedReverseGeocode(filter)
 }
@@ -383,12 +402,19 @@ function hydrateSavedFilters(saved: any, structure: any) {
 
             else {
                 const src = wrapper?.value ?? wrapper
-                uiValue = {
-                    ids: Array.isArray(src)
-                        ? src
-                        : Array.isArray(src?.ids)
-                            ? src.ids
-                            : []
+
+                if (config.label === 'By Family Never Ordered') {
+                    uiValue = {
+                        ids: Array.isArray(src) ? src[0] ?? null : src ?? null
+                    }
+                } else {
+                    uiValue = {
+                        ids: Array.isArray(src)
+                            ? src
+                            : Array.isArray(src?.ids)
+                                ? src.ids
+                                : []
+                    }
                 }
             }
         }
@@ -589,14 +615,23 @@ const filtersPayload = computed(() => {
 
         // MULTISELECT (simple)
         if (config.type === 'multiselect') {
-            const ids = Array.isArray(val.ids)
-                ? val.ids
-                : val.ids != null
-                    ? [val.ids]
-                    : []
+            // const ids = Array.isArray(val.ids)
+            //     ? val.ids
+            //     : val.ids != null
+            //         ? [val.ids]
+            //         : []
 
-            payload[key] = {
-                value: ids
+            // payload[key] = {
+            //     value: ids
+            // }
+            if (config.label === 'By Family Never Ordered') {
+                payload[key] = {
+                    value: val.ids != null ? [val.ids] : []
+                }
+            } else {
+                payload[key] = {
+                    value: val.ids ?? []
+                }
             }
             return
         }
@@ -716,6 +751,10 @@ onMounted(async () => {
         for (const [key, filter] of Object.entries(activeFilters.value)) {
             if (filter.config.type === 'entity_behaviour') {
                 await preloadEntityOptions(key, filter.value.ids)
+            }
+
+            if (filter.config.label === 'By Family Never Ordered' && filter.value.ids) {
+                await preloadEntityOptions(key, [filter.value.ids])
             }
         }
 
@@ -838,10 +877,9 @@ console.log("props table", props)
                 <template v-else-if="filter.config.type === 'multiselect'">
                     <template v-if="filter.config.label === 'By Family Never Ordered'">
                         <div class="min-w-0 w-full mb-3">
-                            <PureMultiselectInfiniteScroll :object="false" :key="key" mode="single"
-                                v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
-                                :fetchRoute="getEntityFetchRoute(key)" valueProp="id" labelProp="name"
-                                placeholder="Select items..." />
+                            <PureMultiselectInfiniteScroll :key="key" mode="single" v-model="filter.value.ids"
+                                :initOptions="preloadedEntities[key] || []" :fetchRoute="getEntityFetchRoute(key)"
+                                valueProp="id" labelProp="name" placeholder="Select items..." />
                         </div>
                     </template>
 
@@ -931,7 +969,10 @@ console.log("props table", props)
                             <InputNumber v-if="filter.value.radius === 'custom'" v-model="filter.value.radius_custom"
                                 placeholder="Radius in km" class="w-full" />
 
-                            <Button label="Find On Map" :type="'save'" @click="() => getLatLngToLocation(filter)" />
+                            <Button label="Find On Map" @click="() => {
+                                filter.value.lastSource = 'input'
+                                getLatLngToLocation(filter, 'forward')
+                            }" />
                             <!-- MAP PLACEHOLDER -->
                             <div v-if="shouldShowMap(filter.value)" class="h-72 w-full rounded">
                                 <div v-if="filter.value.loadingMap"
@@ -975,7 +1016,7 @@ console.log("props table", props)
                 <div>
                     <p class="text-sm text-gray-500 mb-1">Estimated Recipients</p>
                     <h2 class="text-4xl font-semibold tracking-tight text-gray-900">
-                        {{ estimatedRecipients }}
+                        {{ formatNumber(estimatedRecipients) }}
                     </h2>
                     <p class="text-xs text-gray-400 mt-2">
                         Based on current filters
