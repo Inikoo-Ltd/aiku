@@ -1,9 +1,8 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 28 May 2024 12:06:23 British Summer Time, Plane Manchester-Malaga
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Author: stewicca <stewicalf@gmail.com>
+ * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
 namespace App\Actions\Discounts\OfferCampaign\UI;
@@ -18,12 +17,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-trait OfferCampaignVolumeDiscountTrait
+trait OfferCampaignDiscretionaryTrait
 {
-    public function getVolumeDiscountHtmlResponse(OfferCampaign $offerCampaign, ActionRequest $request): Response
+    public function getDiscretionaryHtmlResponse(OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Discounts/VolumeDiscountCampaign',
+            'Org/Discounts/DiscretionaryCampaign',
             [
                 'title'                                              => __('Offer Campaign'),
                 'breadcrumbs'                                        => $this->getBreadcrumbs($offerCampaign, $request->route()->getName(), $request->route()->originalParameters()),

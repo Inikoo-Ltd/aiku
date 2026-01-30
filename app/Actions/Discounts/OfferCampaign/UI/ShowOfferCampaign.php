@@ -22,6 +22,12 @@ class ShowOfferCampaign extends OrgAction
 {
     use WithOfferCampaignNavigation;
     use OfferCampaignVolumeDiscountTrait;
+    use OfferCampaignFirstOrderTrait;
+    use OfferCampaignCustomerOffersTrait;
+    use OfferCampaignShopOffersTrait;
+    use OfferCampaignCategoryOffersTrait;
+    use OfferCampaignProductOffersTrait;
+    use OfferCampaignDiscretionaryTrait;
 
     public function handle(OfferCampaign $offerCampaign): OfferCampaign
     {
@@ -46,6 +52,12 @@ class ShowOfferCampaign extends OrgAction
     {
         return match ($offerCampaign->type) {
             OfferCampaignTypeEnum::VOLUME_DISCOUNT => $this->getVolumeDiscountHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::FIRST_ORDER     => $this->getFirstOrderHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::CUSTOMER_OFFERS => $this->getCustomerOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::SHOP_OFFERS     => $this->getShopOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::CATEGORY_OFFERS => $this->getCategoryOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::PRODUCT_OFFERS  => $this->getProductOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::DISCRETIONARY   => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
         };
     }
 
@@ -66,7 +78,6 @@ class ShowOfferCampaign extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
             ];
         };
@@ -93,6 +104,4 @@ class ShowOfferCampaign extends OrgAction
             default => []
         };
     }
-
-
 }
