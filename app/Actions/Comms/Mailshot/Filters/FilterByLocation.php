@@ -34,14 +34,25 @@ class FilterByLocation
         $location = Arr::get($locationValue, 'location');
         $lat = Arr::get($locationValue, 'lat');
         $lng = Arr::get($locationValue, 'lng');
-        $radius = Arr::get($locationValue, 'radius');
-        $radius_custom = Arr::get($locationValue, 'radius_custom');
-        if ($radius === 'custom') {
-            $radiusKm = $radius_custom ?? null;
-        } else {
-            $radiusKm = $radius ?? null;
-        }
 
+        $rawRadius = Arr::get($locationValue, 'radius');
+        $rawRadiusCustom = Arr::get($locationValue, 'radius_custom');
+
+        $isWholeAreaMode = false;
+
+        if ($rawRadius === 'custom') {
+            if (empty($rawRadiusCustom)) {
+                $isWholeAreaMode = true;
+                $radiusKm = null;
+            } else {
+                $radiusKm = (int) $rawRadiusCustom;
+            }
+        } elseif (empty($rawRadius)) {
+            $isWholeAreaMode = true;
+            $radiusKm = null;
+        } else {
+            $radiusKm = (int) $rawRadius;
+        }
 
 
         if ($mode === 'direct' || (!empty($countryIds) || !empty($postalCodes))) {
@@ -61,28 +72,48 @@ class FilterByLocation
         }
 
         // --- MODE 2: RADIUS / AREA (Geocoding) ---
-        if (!empty($lat) && !empty($lng)) {
-            $coordinates = $this->reverseGeocodeLocation($lat, $lng) ?? $this->geocodeLocation($location);
+        if ($lat !== null && $lng !== null) {
+
+            $coordinates =  $this->geocodeLocation($location);
+
             if (!$coordinates) {
                 throw ValidationException::withMessages([
                     'location' => __('Location not found. Please check the address and try again.'),
                 ]);
             }
 
-            // OPSI A: Whole Area (Bounding Box Search)
-            if (($radius === 'area' || empty($radius)) && !empty($coordinates['bounds'])) {
-                $bounds = $coordinates['bounds'];
-                return $query->whereHas('address', function (Builder $q) use ($bounds) {
-                    $q->whereBetween('latitude', [$bounds['south'], $bounds['north']])
-                        ->whereBetween('longitude', [$bounds['west'], $bounds['east']]);
-                });
+            if ($isWholeAreaMode) {
+                if (!empty($coordinates['bounds'])) {
+                    $bounds = $coordinates['bounds'];
+                    $south = (float) min($bounds['south'], $bounds['north']);
+                    $north = (float) max($bounds['south'], $bounds['north']);
+                    $west  = (float) min($bounds['west'],  $bounds['east']);
+                    $east  = (float) max($bounds['west'],  $bounds['east']);
+
+                    return $query->whereHas('address', function (Builder $q) use ($south, $north, $west, $east) {
+                        $q->whereNotNull('latitude')
+                            ->whereNotNull('longitude')
+                            ->where('latitude', '>=', $south)
+                            ->where('latitude', '<=', $north)
+                            ->where('longitude', '>=', $west)
+                            ->where('longitude', '<=', $east);
+                    });
+                }
+
+                if (!empty($coordinates['city'])) {
+                    $city = $coordinates['city'];
+                    return $query->whereHas('address', function (Builder $q) use ($city) {
+                        $q->whereNotNull('latitude')
+                            ->where('geocoding_metadata->city', $city);
+                    });
+                }
+                $radiusKm = 20;
             }
 
-            // OPSI B: Radius Search (Haversine)
+
             $lat = $coordinates['latitude'];
             $lng = $coordinates['longitude'];
 
-            dd($radiusKm);
             return $query->whereHas('address', function (Builder $q) use ($lat, $lng, $radiusKm) {
                 $q->whereNotNull('latitude')
                     ->whereNotNull('longitude')
