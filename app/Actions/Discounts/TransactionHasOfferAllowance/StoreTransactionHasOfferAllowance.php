@@ -9,11 +9,14 @@
 namespace App\Actions\Discounts\TransactionHasOfferAllowance;
 
 use App\Actions\Discounts\Offer\Hydrators\OfferHydrateOrders;
+use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOrders;
 use App\Actions\Discounts\OfferAllowance\Hydrators\OfferAllowanceHydrateOrders;
+use App\Actions\Discounts\OfferCampaign\ProcessOfferCampaignTimeSeriesRecords;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOffers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Discounts\TransactionHasOfferAllowance;
 use App\Models\Ordering\Transaction;
@@ -34,8 +37,6 @@ class StoreTransactionHasOfferAllowance extends OrgAction
         data_set($modelData, 'order_id', $transaction->order_id);
         data_set($modelData, 'transaction_id', $transaction->id);
 
-
-
         $transactionHasOfferAllowance = TransactionHasOfferAllowance::create($modelData);
 
         OfferAllowanceHydrateOrders::dispatch($transactionHasOfferAllowance->offerAllowance);
@@ -43,6 +44,33 @@ class StoreTransactionHasOfferAllowance extends OrgAction
         OfferCampaignHydrateOrders::dispatch($transactionHasOfferAllowance->offerCampaign);
         OrderHydrateOffers::dispatch($transaction->order);
 
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            ProcessOfferTimeSeriesRecords::dispatch(
+                $transactionHasOfferAllowance->offer_id,
+                $frequency,
+                match ($frequency) {
+                    TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                    TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                    TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                    TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                    TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                },
+                now()->toDateString()
+            )->delay(1800);
+
+            ProcessOfferCampaignTimeSeriesRecords::dispatch(
+                $transactionHasOfferAllowance->offer_campaign_id,
+                $frequency,
+                match ($frequency) {
+                    TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                    TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                    TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                    TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                    TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                },
+                now()->toDateString()
+            )->delay(1800);
+        }
 
         return $transactionHasOfferAllowance;
     }

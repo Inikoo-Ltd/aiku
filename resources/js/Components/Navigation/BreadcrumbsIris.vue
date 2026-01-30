@@ -104,24 +104,29 @@ watch(() => props.breadcrumbs?.length, async () => {
     scrollToRight()
 })
 
-const isMobileRef = ref(window.matchMedia("(max-width: 768px)").matches)
-let mediaQuery: MediaQueryList
-let handler: (e: MediaQueryListEvent) => void
+const isMobileRef = ref(false)
+
+let mediaQuery: MediaQueryList | null = null
+let handler: ((e: MediaQueryListEvent) => void) | null = null
 
 onMounted(() => {
   mediaQuery = window.matchMedia("(max-width: 768px)")
-  handler = (e: MediaQueryListEvent) => {
+  isMobileRef.value = mediaQuery.matches
+
+  handler = (e) => {
     isMobileRef.value = e.matches
   }
+
   mediaQuery.addEventListener("change", handler)
 })
 
 onUnmounted(() => {
-  if (mediaQuery && handler) mediaQuery.removeEventListener("change", handler)
+  if (mediaQuery && handler) {
+    mediaQuery.removeEventListener("change", handler)
+  }
 })
 
 const isMobile = computed(() => isMobileRef.value)
-
 </script>
 
 <template>
