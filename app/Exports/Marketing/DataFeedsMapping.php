@@ -38,8 +38,7 @@ trait DataFeedsMapping
         $statusString = (string)$status;
         $status       = Str::studly($statusString);
 
-
-        $availableQuantity = $row->available_quantity;
+        $availableQuantity = (bool)$row->is_for_sale ? $row->available_quantity : 0;
         if ($availableQuantity < 0) {
             $availableQuantity = 0;
         }
