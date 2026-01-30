@@ -27,7 +27,7 @@ class Show2FARequired
         if (!request()->user()?->is_two_factor_required || $authenticator->isActivated()) {
             return redirect()->route('grp.dashboard.show');
         }
-        return Inertia::render('SysAdmin/Requires2FA',[]);
+        return Inertia::render('SysAdmin/Requires2FA', []);
     }
 
 }

@@ -176,7 +176,7 @@ const _popoverProfit = ref(null)
                         ({{ product?.margin }})
                     </div>
                     <div class="italic text-xxs">
-                        <span class="xtext-green-600">{{ locale.currencyFormat(currency?.code, product?.discounted_profit_per_unit || 0) }}</span>/{{ product.unit }}
+                        <span class="">{{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}</span>/{{ product.unit }}
                     </div>
 
 

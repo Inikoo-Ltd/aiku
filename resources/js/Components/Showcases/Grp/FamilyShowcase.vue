@@ -12,7 +12,7 @@ import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vu
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
 import { faExternalLink } from '@far';
-import FamilyOfferLabelDiscount from '@/Components/Utils/Iris/Family/FamilyOfferLabelDiscount.vue'
+import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 
 library.add(faAlbumCollection);
 
@@ -140,7 +140,7 @@ function offerRoute(offer: {}) {
                 <ProductCategoryCard :data="data.family.data"  />
             </div>
 
-            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
                 <template v-if="data.gr_offer_data">
                     <div class="mb-1">
                         {{ trans("Active Gold Reward offer") }}:
@@ -165,3 +165,13 @@ function offerRoute(offer: {}) {
         </div>
     </div>
 </template>
+
+<style scoped>
+.offer :deep(.background-primary) {
+    background-color: #ff862f;
+}
+
+.offer :deep(.text-primary) {
+    color:#ff862f;
+}
+</style>

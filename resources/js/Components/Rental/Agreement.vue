@@ -11,9 +11,7 @@ import { cloneDeep } from 'lodash-es'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { routeType } from '@/types/route.js'
-import Popover from '@/Components/Popover.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
 
 
 const layout = inject('layout', layoutStructure)

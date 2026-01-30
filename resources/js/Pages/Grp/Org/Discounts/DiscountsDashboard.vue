@@ -67,7 +67,7 @@ console.log("Discounts Dashboard Props: ", props);
 <!--    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />-->
 <!--    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />-->
     <SimpleBox v-if="stats" :box_stats="stats" />
-    <!-- <DashboardSettings
+     <DashboardSettings
         :intervals="intervals"
         :settings="settings"
         :currentTab="blocks.current_tab"
@@ -80,8 +80,8 @@ console.log("Discounts Dashboard Props: ", props);
         :intervals="intervals"
         :settings="settings"
         :currentTab="blocks.current_tab"
-    /> -->
-    
+    />
+
     <Coupon v-if="first_order_bonus" :offer="first_order_bonus" :currency_code="data.currency.code" />
 
     <!-- <pre>{{ first_order_bonus }}</pre> -->

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue';
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
@@ -60,10 +61,10 @@ const locale = inject('locale', aikuLocaleStructure)
                     {{ trans("Profit") }} <span class="text-emerald-600 font-semibold">({{ product.margin }})</span>:
                 </div>
                 <div class="flex font-semibold text-emerald-600">
-                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp - product.price) }}
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit) }}
                     <span class="font-normal text-slate-500 ml-1">{{ trans("Outer") }}</span>
                     <template v-if="product.units > 1">
-                        <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp_per_unit - product.price_per_unit) }}</span>
+                        <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit_per_unit) }}</span>
                         <span class="font-normal text-slate-500">/{{ product.unit }}</span>
                     </template>
 
@@ -86,7 +87,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
             <div class="flex items-center gap-2x">
                 <div class="font-semibold text-primary mr-4">
-                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_price) }}
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp - product.discounted_price) }}
                     <span class="font-normal text-slate-500">{{ trans("Outer") }}</span>
                     <template v-if="product.units > 1">
                         <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_price_per_unit) }}</span>

@@ -586,4 +586,13 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 		width: 500px !important;
 	}
 }
+
+
+.background-primary {
+    background-color: var(--theme-color-4);
+}
+
+.text-primary {
+    color: var(--theme-color-4);
+}
 </style>

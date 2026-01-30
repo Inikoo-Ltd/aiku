@@ -10,10 +10,8 @@ namespace App\Actions\Retina\Fulfilment\StoredItems;
 
 use App\Actions\Fulfilment\StoredItem\ImportStoredItems;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\WithExportData;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Helpers\Upload;
-use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 
 class ImportRetinaStoredItem extends RetinaAction
