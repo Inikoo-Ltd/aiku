@@ -69,7 +69,7 @@ class StorePickedBay extends OrgAction
 
     public function htmlResponse(PickedBay $pickedBay): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.inventory.picked_bays.show', [
+        return Redirect::route('grp.org.warehouses.show.dispatching.picked_bays.show', [
             $pickedBay->organisation->slug,
             $pickedBay->warehouse->slug,
             $pickedBay->slug,

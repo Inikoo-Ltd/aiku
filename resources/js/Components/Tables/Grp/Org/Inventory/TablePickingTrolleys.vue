@@ -19,13 +19,13 @@ const locale = useLocaleStore()
 
 function trolleyRoute(trolley: trolley) {
     switch (route().current()) {
-        case 'grp.org.warehouses.show.inventory.picking_trolleys.index':
+        case 'grp.org.warehouses.show.dispatching.picking_trolleys.index':
             return route(
-                'grp.org.warehouses.show.inventory.picking_trolleys.show',
+                'grp.org.warehouses.show.dispatching.picking_trolleys.show',
                 [route().params['organisation'], route().params['warehouse'], trolley.slug])
         default:
             return route(
-                'grp.org.trolleys.show.infrastructure.dashboard',
+                'grp.org.warehouses.show.dispatching.picking_trolleys.index',
                 [trolley.organisation_slug, trolley.slug])
     }
 }

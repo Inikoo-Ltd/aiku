@@ -19,13 +19,13 @@ const locale = useLocaleStore()
 
 function bayRoute(bay: bay) {
 	switch (route().current()) {
-		case 'grp.org.warehouses.show.inventory.picked_bays.index':
+		case 'grp.org.warehouses.show.dispatching.picked_bays.index':
 			return route(
-				'grp.org.warehouses.show.inventory.picked_bays.show',
+				'grp.org.warehouses.show.dispatching.picked_bays.show',
 				[route().params['organisation'], route().params['warehouse'], bay.slug])
 		default:
 			return route(
-				'grp.org.bays.show.infrastructure.dashboard',
+				'grp.org.warehouses.show.dispatching.picked_bays.index',
 				[bay.organisation_slug, bay.slug])
 	}
 }

@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\Shipper\UI;
 
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
+use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Http\Resources\Dispatching\ShippersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\Shipper;
@@ -151,7 +152,7 @@ class IndexShippers extends OrgAction
 
         return match ($routeName) {
             'grp.org.warehouses.show.dispatching.shippers.current.index' => array_merge(
-                ShowWarehouse::make()->getBreadcrumbs(
+                ShowDispatchHub::make()->getBreadcrumbs(
                     $routeParameters
                 ),
                 $headCrumb(
@@ -162,7 +163,7 @@ class IndexShippers extends OrgAction
                 )
             ),
             'grp.org.warehouses.show.dispatching.shippers.inactive.index' => array_merge(
-                ShowWarehouse::make()->getBreadcrumbs(
+                ShowDispatchHub::make()->getBreadcrumbs(
                     $routeParameters
                 ),
                 $headCrumb(

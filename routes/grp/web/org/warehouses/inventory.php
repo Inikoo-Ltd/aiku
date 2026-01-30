@@ -195,16 +195,4 @@ Route::prefix('stored-items')->as('stored_items.')->group(function () {
     });
 });
 
-Route::prefix('picking-trolleys')->as('picking_trolleys.')->group(function () {
-    Route::get('', IndexPickingTrolleys::class)->name('index');
-    Route::get('create', CreatePickingTrolley::class)->name('create');
-    Route::get('{pickingTrolley}', ShowPickingTrolley::class)->name('show');
-    Route::get('{pickingTrolley}/edit', EditPickingTrolley::class)->name('edit');
-});
 
-Route::prefix('picked-bays')->as('picked_bays.')->group(function () {
-    Route::get('', IndexPickedBays::class)->name('index');
-    Route::get('create', CreatePickedBay::class)->name('create');
-    Route::get('{pickedBay}', ShowPickedBay::class)->name('show');
-    Route::get('{pickedBay}/edit', EditPickedBay::class)->name('edit');
-});

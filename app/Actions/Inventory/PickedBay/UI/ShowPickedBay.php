@@ -75,7 +75,7 @@ class ShowPickedBay extends OrgAction
                             'style' => 'edit',
                             'label' => __('Edit'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.inventory.picked_bays.edit',
+                                'name'       => 'grp.org.warehouses.show.dispatching.picked_bays.edit',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
@@ -143,7 +143,7 @@ class ShowPickedBay extends OrgAction
         }
 
         return match ($routeName) {
-            'grp.org.warehouses.show.inventory.picked_bays.show' => [
+            'grp.org.warehouses.show.dispatching.picked_bays.show' => [
                 'label' => $pickedBay->name,
                 'route' => [
                     'name'       => $routeName,
