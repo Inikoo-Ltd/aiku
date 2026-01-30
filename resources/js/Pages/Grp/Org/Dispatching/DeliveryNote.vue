@@ -430,7 +430,10 @@ onMounted(() => {
 
 		<!-- Button: Select trolley (only for Ecom) -->
 		<template v-if="props.shop.type === 'b2b'"  #button-start-picking="{ action }">
-			<ButtonSelectTrolleys :warehouse="warehouse">
+			<ButtonSelectTrolleys
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			>
 				
 			</ButtonSelectTrolleys>
 		</template>

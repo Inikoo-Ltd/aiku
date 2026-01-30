@@ -6,10 +6,16 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '../Elements/Buttons/Button.vue'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps<{
     warehouse: {
         slug: string
+    }
+    deliveryNote: {
+        id: number
+        slug: string
+        refrence: string
     }
 }>()
 const layout = inject('layout', layoutStructure)
@@ -51,40 +57,44 @@ watch(isOpenModal, (newVal) => {
 })
 
 const selectedTrolley = ref<number | null>(null)
-
+const isLoadingSubmitTrolley = ref(false)
 const submitSelectTrolley = () => {
-    console.log('qqqqqqq', selectedTrolley.value)
     // Section: Submit
-    // router.post(
-    //     'xxxx',
-    //     {
-    //         data: 'qqq'
-    //     },
-    //     {
-    //         preserveScroll: true,
-    //         preserveState: true,
-    //         onStart: () => { 
-    //             isLoading.value = true
-    //         },
-    //         onSuccess: () => {
-    //             notify({
-    //                 title: trans("Success"),
-    //                 text: trans("Successfully submit the data"),
-    //                 type: "success"
-    //             })
-    //         },
-    //         onError: errors => {
-    //             notify({
-    //                 title: trans("Something went wrong"),
-    //                 text: trans("Failed to set location"),
-    //                 type: "error"
-    //             })
-    //         },
-    //         onFinish: () => {
-    //             isLoading.value = false
-    //         },
-    //     }
-    // )
+    router.patch(
+        route(
+            'grp.models.delivery_note.state.handling-with-trolley',
+            {
+                deliveryNote: props.deliveryNote.id
+            }
+        ),
+        {
+            trolley: selectedTrolley.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmitTrolley.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to submit bay"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitTrolley.value = false
+            },
+        }
+    )
 }
 </script>
 
@@ -130,8 +140,10 @@ const submitSelectTrolley = () => {
                 @click="() => submitSelectTrolley()"
                 label="Select trolley and start picking"
                 full
+                iconRight="fas fa-arrow-right"
                 class="mt-4"
                 :disabled="!selectedTrolley"
+                :loading="isLoadingSubmitTrolley"
             />
         </Modal>
     </div>

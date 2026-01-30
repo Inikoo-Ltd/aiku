@@ -148,6 +148,7 @@ const submitSelectBay = () => {
                 iconRight="fas fa-arrow-right"
                 class="mt-4"
                 :disabled="!selectedBay"
+                :loading="isLoadingSubmitBay"
             />
         </Modal>
     </div>
