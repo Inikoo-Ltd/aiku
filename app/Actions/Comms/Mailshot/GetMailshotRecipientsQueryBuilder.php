@@ -102,7 +102,6 @@ class GetMailshotRecipientsQueryBuilder
         $query->whereNotNull('email');
 
         $filters = $mailshot->recipients_recipe;
-        \Log::info('GetMailshotRecipientsQueryBuilder: ' . json_encode($filters));
 
         // Filter Registered Never Ordered
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);

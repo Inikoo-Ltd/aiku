@@ -161,7 +161,7 @@ class ShowMailshot extends OrgAction
                 'sendMailshotRoute' => [
                     'name' => match($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.send',
-                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.maildhot.send',
+                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.send',
                     },
                     'parameters' => [
                         'shop' => $this->shop->id,
