@@ -20,7 +20,12 @@ class ShowMailshotRecipients extends OrgAction
     {
         $requestFilters = $request->input('filters', []);
 
-        $currentFilters = empty($requestFilters) ? $mailshot->recipients_recipe : $requestFilters;
+        $defaultFilters = [
+            'all_customers' => [
+                'value' => true,
+            ],
+        ];
+        $currentFilters = empty($requestFilters) ? $defaultFilters : $requestFilters;
         $previewMailshot = $mailshot->replicate();
         $previewMailshot->id = $mailshot->id;
         $previewMailshot->recipients_recipe = $currentFilters;
@@ -268,7 +273,22 @@ class ShowMailshotRecipients extends OrgAction
                 'mailshot' => $mailshot,
                 'title'    => __('Setup Recipients'),
                 'pageHead' => [
-                    'title' => __('Setup Recipients')
+                    'title' => __('Setup Recipients'),
+                    'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exit',
+                            'label' => __('Exit'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.mailshots.show',
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug,
+                                    $mailshot->slug
+                                ]
+                            ]
+                        ],
+                    ]
                 ],
                 'filtersStructure' => $filtersStructure,
                 'filters'          => $currentFilters,

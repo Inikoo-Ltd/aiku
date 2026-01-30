@@ -101,7 +101,9 @@ class UpdateMailshotRecipientFilter extends OrgAction
             // orders_in_basket filter
             'recipients_recipe.orders_in_basket' => ['sometimes', 'array'],
             'recipients_recipe.orders_in_basket.value' => ['sometimes', 'array'],
-            'recipients_recipe.orders_in_basket.value.date_range' => ['sometimes', 'integer'],
+            'recipients_recipe.orders_in_basket.value.date_range' => ['sometimes', 'array'],
+            'recipients_recipe.orders_in_basket.value.date_range.*' => ['sometimes', 'nullable', 'date'],
+
             'recipients_recipe.orders_in_basket.value.amount_range' => ['sometimes', 'array'],
             'recipients_recipe.orders_in_basket.value.amount_range.max' => ['sometimes', 'nullable', 'numeric'],
             'recipients_recipe.orders_in_basket.value.amount_range.min' => ['sometimes', 'nullable', 'numeric'],
