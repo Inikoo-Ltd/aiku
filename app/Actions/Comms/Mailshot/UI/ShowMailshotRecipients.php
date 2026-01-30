@@ -34,13 +34,13 @@ class ShowMailshotRecipients extends OrgAction
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $countries = Country::query()
             ->orderBy('name')
             ->get()
-            ->map(fn ($country) => [
+            ->map(fn($country) => [
                 'value' => $country->id,
                 'label' => $country->name,
             ])
@@ -220,11 +220,11 @@ class ShowMailshotRecipients extends OrgAction
                                 'type'    => 'select',
                                 'label'   => 'Radius Distance',
                                 'options' => [
-                                    '5000'    => '5 KM',
-                                    '10000'   => '10 KM',
-                                    '25000'   => '25 KM',
-                                    '50000'   => '50 KM',
-                                    '100000'  => '100 KM',
+                                    '5'    => '5 KM',
+                                    '10'   => '10 KM',
+                                    '25'   => '25 KM',
+                                    '50'   => '50 KM',
+                                    '100'  => '100 KM',
                                     'custom' => 'Custom',
                                 ],
                                 'dependency' => ['mode' => 'radius']

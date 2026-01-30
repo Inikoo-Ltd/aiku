@@ -231,53 +231,49 @@ const clearAllFilters = () => {
     activeFilters.value = {}
 }
 
-const onMapClick = (e, filter) => {
-    filter.value.lat = Number(e.latlng.lat)
-    filter.value.lng = Number(e.latlng.lng)
-}
-
-const onMarkerDrag = (e, filter) => {
-    const pos = e.target.getLatLng()
-    filter.value.lat = Number(pos.lat)
-    filter.value.lng = Number(pos.lng)
-}
-
-const getLocationToLatLng = async (filter: any) => {
+const getLatLngToLocation = async (filter: any) => {
     const v = filter.value
-    let query = ''
 
-    if (v.mode === 'radius') {
-        if (!v.location) return
-        query = v.location
-    } else {
-        if (!v.postal_codes?.length) return
+    let params: any = {}
 
-        const postcode = v.postal_codes[0]
-
-        const countryLabel = v.country_ids?.[0] || ''
-
-        query = `${postcode} ${countryLabel}`
+    if (v.lat && v.lng) {
+        params.latitude = v.lat
+        params.longitude = v.lng
     }
 
-    if (!query) return
+    else {
+        let query = ''
+
+        if (v.mode === 'radius') {
+            if (!v.location) return
+            query = v.location
+        } else {
+            if (!v.postal_codes?.length) return
+            const postcode = v.postal_codes[0]
+            const countryLabel = v.country_ids?.[0] || ''
+            query = `${postcode} ${countryLabel}`
+        }
+
+        if (!query) return
+        params.location = query
+    }
 
     v.loadingMap = true
 
     try {
-        const res = await axios.get(route('grp.json.get_geocode'), {
-            params: { location: query }
-        })
-
+        const res = await axios.get(route('grp.json.get_geocode'), { params })
         const data = res.data
 
-        const lat = Number(data.latitude)
-        const lng = Number(data.longitude)
+        if (data.latitude && data.longitude) {
+            v.lat = Number(data.latitude)
+            v.lng = Number(data.longitude)
+            v.zoom = v.zoom || 12
+        }
 
-        if (!lat || !lng) throw new Error('Invalid coordinate')
+        if (data.city || data.formatted_address) {
+            v.location = data.city || data.formatted_address
+        }
 
-        v.lat = lat
-        v.lng = lng
-        v.zoom = 12
         v.resolved = true
     } catch (err) {
         console.error('GEOCODE FAILED', err)
@@ -286,12 +282,31 @@ const getLocationToLatLng = async (filter: any) => {
         v.loadingMap = false
     }
 }
+
+const onMapClick = async (e: { latlng: { lat: any; lng: any; }; }, filter: { value: { lat: number; lng: number; }; }) => {
+    filter.value.lat = Number(e.latlng.lat)
+    filter.value.lng = Number(e.latlng.lng)
+
+    debouncedReverseGeocode(filter)
+}
+
+const debouncedReverseGeocode = debounce(getLatLngToLocation, 500)
+
+const onMarkerDrag = (e: { target: { getLatLng: () => any; }; }, filter: { value: { lat: number; lng: number; }; }) => {
+    const pos = e.target.getLatLng()
+    filter.value.lat = Number(pos.lat)
+    filter.value.lng = Number(pos.lng)
+
+    debouncedReverseGeocode(filter)
+}
+
 function findConfigByKey(structure: any, key: string) {
     for (const group of Object.values(structure)) {
         if (group.filters?.[key]) return group.filters[key]
     }
     return null
 }
+
 function normalizeDate(d: string | null) {
     if (!d) return null
     return d.split('T')[0]
@@ -485,6 +500,7 @@ const preloadEntityOptions = async (key: string, ids: number[]) => {
 
     preloadedEntities[key] = res.data.data
 }
+
 function getEntityFetchRoute(key: string) {
     if (key === 'by_family' || key === 'by_family_never_ordered') {
         return {
@@ -509,6 +525,7 @@ function getEntityFetchRoute(key: string) {
 
     return null
 }
+
 function onBasketModeChange(filter: { value: { mode: any; date_range: null; }; }, event: { value: any; }) {
     const val = event.value
 
@@ -622,9 +639,11 @@ const shouldShowMap = (val: any) => {
 }
 
 const radiusInMeters = (val: any) => {
-    if (val.radius === 'custom') return Number(val.radius_custom) || 0
-    console.log("radius", val.radius)
-    return Number(val.radius)
+    const km = val.radius === 'custom'
+        ? Number(val.radius_custom) || 0
+        : Number(val.radius) || 0
+
+    return km * 1000
 }
 
 const getPostalCodeModel = (filter: any) => {
@@ -648,7 +667,7 @@ const readyFilters = computed(() => {
 })
 
 const saveFilters = async () => {
-    console.log('[SAVE FILTER PAYLOAD]', filtersPayload.value)
+
     let payload = filtersPayload.value
 
     if (!payload || Object.keys(payload).length === 0) {
@@ -658,7 +677,7 @@ const saveFilters = async () => {
             }
         }
     }
-
+    console.log('[SAVE FILTER PAYLOAD]', payload)
     axios
         .patch(
             route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters),
@@ -714,14 +733,15 @@ watch(
             const val = filter.value
 
             if (val.combine_logic === false && Array.isArray(val.behaviors)) {
-                val.behaviors = val.behaviors.length ? [val.behaviors[0]] : []
+                if (val.behaviors.length > 1) {
+                    val.behaviors = [val.behaviors[0]]
+                }
             }
         })
     },
-    { deep: true, immediate: true }
+    { deep: true }
 )
 
-watch(activeFilters, fetchCustomers, { deep: true })
 console.log("props table", props)
 </script>
 
@@ -738,6 +758,8 @@ console.log("props table", props)
                 <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
             </Button>
 
+            <Button label="Apply Filters" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
+
             <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="tertiary" class="h-10 px-4"
                 @click="clearAllFilters" />
 
@@ -745,7 +767,6 @@ console.log("props table", props)
                 Audience: All Customers
             </span>
             <Button label="Save" type="save" @click="saveFilters" class="h-10 px-4 ml-auto" />
-
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div v-for="(filter, key) in readyFilters" :key="key"
@@ -910,7 +931,7 @@ console.log("props table", props)
                             <InputNumber v-if="filter.value.radius === 'custom'" v-model="filter.value.radius_custom"
                                 placeholder="Radius in km" class="w-full" />
 
-                            <Button label="Find On Map" :type="'save'" @click="() => getLocationToLatLng(filter)" />
+                            <Button label="Find On Map" :type="'save'" @click="() => getLatLngToLocation(filter)" />
                             <!-- MAP PLACEHOLDER -->
                             <div v-if="shouldShowMap(filter.value)" class="h-72 w-full rounded">
                                 <div v-if="filter.value.loadingMap"
