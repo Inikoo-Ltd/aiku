@@ -30,6 +30,22 @@ export function useFilterRecipients(props: any) {
         )
     )
 
+    const isByOrderValueInvalid = computed(() => {
+        const f = activeFilters.value['by_order_value']
+        if (!f) return false
+
+        const min = f.value.amount_range?.min
+        const max = f.value.amount_range?.max
+
+        return (min != null && max == null) || (min == null && max != null)
+    })
+
+    const isAmountRangeInvalid = (filter: any) => {
+        const min = filter.value.amount_range.min
+        const max = filter.value.amount_range.max
+        return (min != null && max == null) || (min == null && max != null)
+    }
+
      const FILTER_CONFLICTS: Record<string, string[]> = {
         registered_never_ordered: ['orders_in_basket','by_order_value','orders_collection','by_family','by_subdepartment','by_family_never_ordered','by_showroom_orders','by_department'],
         orders_in_basket: ['registered_never_ordered'],
@@ -62,7 +78,25 @@ export function useFilterRecipients(props: any) {
 
         let value: any = true
 
-        if (config.type === 'boolean') value = { date_range: null, amount_range: { min: null, max: null }, date_range_preset: null }
+       if (config.type === 'boolean') {
+            value = { value: true }
+
+            if (config.options?.date_range) {
+                value.date_range = null
+            }
+
+            if (config.options?.amount_range) {
+                value.amount_range = {
+                    min: null,
+                    max: null,
+                }
+            }
+
+            if (config.options?.date_range?.presets) {
+                value.date_range_preset = null
+            }
+        }
+
         if (config.type === 'select') value = config.options?.[0]?.value ?? null
         if (config.type === 'multiselect') value = config.label === 'By Family Never Ordered' ? { ids: null } : config.behavior_options ? { ids: [], behaviors: ['purchased'], combine_logic: 'or' } : { ids: [] }
         if (config.type === 'daterange') value = { date_range: null }
@@ -91,23 +125,19 @@ export function useFilterRecipients(props: any) {
 
             // BOOLEAN
             if (config.type === 'boolean') {
-                if (key === 'orders_in_basket') {
-                    payload[key] = {
-                        value: {
-                            date_range: val.date_range ?? null,
-                            amount_range: val.amount_range
-                        }
-                    }
-                    return
+                const payloadValue: any = {
+                    value: val.value ?? true
                 }
 
-                payload[key] = {
-                    value: {
-                        value: val.value ?? true,
-                        date_range: val.date_range ?? null,
-                        amount_range: val.amount_range ?? null
-                    }
+                if (config.options?.date_range) {
+                    payloadValue.date_range = val.date_range ?? null
                 }
+
+                if (config.options?.amount_range) {
+                    payloadValue.amount_range = val.amount_range ?? null
+                }
+
+                payload[key] = { value: payloadValue }
                 return
             }
 
@@ -209,9 +239,9 @@ export function useFilterRecipients(props: any) {
         return v
     }
 
-    function dayDiff(start, end) {
-        const s = new Date(start)
-        const e = new Date(end)
+    function dayDiff(start: string | number | Date, end: string | number | Date): number {
+        const s = new Date(start).getTime()
+        const e = new Date(end).getTime()
         return Math.round((e - s) / (1000*60*60*24))
     }
 
@@ -237,37 +267,32 @@ export function useFilterRecipients(props: any) {
             if (config.type === 'boolean') {
                 const clean = unwrapBoolean(val)
 
-                if (key === 'orders_in_basket') {
+                uiValue = {
+                    value: clean.value ?? true
+                }
+
+                // DATE RANGE
+                if (config.options?.date_range) {
                     const dr = clean.date_range
 
-                    uiValue = {
-                        value: true,
-                        mode: 'custom', // default
+                    uiValue.date_range = Array.isArray(dr)
+                        ? [normalizeDate(dr[0]), normalizeDate(dr[1])]
+                        : null
 
-                        date_range: Array.isArray(dr)
-                            ? [normalizeDate(dr[0]), normalizeDate(dr[1])]
-                            : null,
-
-                        amount_range: clean.amount_range ?? { min: null, max: null }
-                    }
-
-                    // coba cocokkan dengan preset
-                    if (Array.isArray(dr)) {
+                    // preset detection
+                    if (key === 'orders_in_basket' && Array.isArray(dr)) {
                         const diff = dayDiff(dr[0], dr[1])
-
-                        if ([3,7,14].includes(diff)) {
-                            uiValue.mode = diff
-                        }
+                        if ([3,7,14].includes(diff)) uiValue.mode = diff
+                        else uiValue.mode = 'custom'
                     }
+                }
 
-                } else {
-                    uiValue = {
-                        value: clean.value ?? true,
-                        date_range: Array.isArray(clean.date_range)
-                            ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
-                            : null,
-                        amount_range: clean.amount_range ?? { min: null, max: null },
-                        date_range_preset: null
+                // AMOUNT RANGE
+                if (config.options?.amount_range) {
+                    uiValue.amount_range = clean.amount_range ?? {
+                        min: null,
+                        max: null,
+                        currency: config.options.amount_range.currency || 'GBP'
                     }
                 }
             }
@@ -482,7 +507,9 @@ export function useFilterRecipients(props: any) {
         })
     }
     return {
+        isByOrderValueInvalid,
         hydrateSavedFilters,
+        isAmountRangeInvalid,
         activeFilters,
         activeFilterCount,
         isAllCustomers,
