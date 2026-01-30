@@ -27,19 +27,19 @@ class EditOffer extends OrgAction
      */
     public function handle(Offer $offer, ActionRequest $request): Response
     {
-        
+
         $getCategoryId = $this->getCategoryId($offer->allowance_signature);
-        
+
         $productCategory = null;
         if ($getCategoryId) {
             $productCategory = ProductCategory::find($getCategoryId);
         }
-        
+
         $offerResource = OfferResource::make($offer)->resolve();
         $percentage_off = $offerResource['data_allowance_signature']['percentage_off'] * 100;
 
         // dd($offer);
-        
+
         $warning = null;
         if ($productCategory) {
             $warning = [

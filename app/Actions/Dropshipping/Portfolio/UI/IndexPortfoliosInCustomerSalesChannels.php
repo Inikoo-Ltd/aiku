@@ -54,6 +54,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
         $query->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id);
 
         $query->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'portfolios.customer_sales_channel_id');
+        $query->leftJoin('products as p', 'p.id', 'portfolios.item_id');
 
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
@@ -82,6 +83,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.has_valid_platform_product_id',
                 'portfolios.number_platform_possible_matches as matches',
                 'portfolios.data',
+                'p.is_for_sale',
                 'platforms.type as platform_type',
                 'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])

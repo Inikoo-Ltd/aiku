@@ -33,7 +33,7 @@ class ProcessSendMailshot
 
     public function handle(Mailshot $mailshot): void
     {
-        $counter      = 0;
+        $counter = 0;
 
         // Update this section using GetMailshotRecipientsQueryBuilder
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);

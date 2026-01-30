@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue';
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
@@ -11,9 +12,8 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-
-console.log('layout',layout)
 const locale = inject('locale', aikuLocaleStructure)
+
 </script>
 
 <template>
@@ -61,10 +61,10 @@ const locale = inject('locale', aikuLocaleStructure)
                     {{ trans("Profit") }} <span class="text-emerald-600 font-semibold">({{ product.margin }})</span>:
                 </div>
                 <div class="flex font-semibold text-emerald-600">
-                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp - product.price) }}
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit) }}
                     <span class="font-normal text-slate-500 ml-1">{{ trans("Outer") }}</span>
                     <template v-if="product.units > 1">
-                        <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp_per_unit - product.price_per_unit) }}</span>
+                        <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit_per_unit) }}</span>
                         <span class="font-normal text-slate-500">/{{ product.unit }}</span>
                     </template>
 
@@ -82,12 +82,12 @@ const locale = inject('locale', aikuLocaleStructure)
         <!-- Profit -->
         <div class="flex items-center justify-between pl-4 mt-2" v-if="layout.iris.website.slug != 'acar'">
             <div class="">
-                {{ trans("Profit") }} <span class="text-orange-500 font-semibold">({{ product.discounted_margin }})</span>:
+                {{ trans("Profit") }} <span class="text-primary font-semibold">({{ product.discounted_margin }})</span>:
             </div>
 
             <div class="flex items-center gap-2x">
-                <div class="font-semibold text-orange-500 mr-4">
-                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_price) }}
+                <div class="font-semibold text-primary mr-4">
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp - product.discounted_price) }}
                     <span class="font-normal text-slate-500">{{ trans("Outer") }}</span>
                     <template v-if="product.units > 1">
                         <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_price_per_unit) }}</span>
@@ -96,8 +96,8 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div>
 
                 <div class="w-24 flex items-center gap-x-2 justify-end pr-2">
-                    <img src="/assets/promo/gr.png" alt="Gold Reward Logo" class="h-[2em]" />
-                    <span class="text-[0.9em] leading-[1.2em] text-orange-500 flex items-center gap-1">
+                    <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo" class="h-[2em]" />
+                    <span class="text-[0.9em] leading-[1.2em] text-primary flex items-center gap-1">
                         {{ trans("Members") }} <br />& {{ trans("Volume") }}
                     </span>
                 </div>

@@ -9,19 +9,15 @@
 
 namespace App\Actions\Fulfilment\StoredItem;
 
-use App\Actions\Fulfilment\PalletDelivery\StorePalletDelivery;
 use App\Actions\Helpers\Upload\ImportUpload;
 use App\Actions\Helpers\Upload\StoreUpload;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Actions\Traits\WithImportModel;
-use App\Imports\Fulfilment\PalletImportWithStoredItems;
 use App\Imports\Fulfilment\StoredItemsImport;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Helpers\Upload;
-use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,8 +27,11 @@ class ImportStoredItems extends OrgAction
     use WithFulfilmentShopAuthorisation;
 
     private Fulfilment $parent;
-    public function handle(FulfilmentCustomer $fulfilmentCustomer, $file, array $modelData): Upload
+    public function handle(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): Upload
     {
+        $file = $request->file('file');
+        Storage::disk('local')->put($this->tmpPath, $file);
+
         $upload = StoreUpload::make()->fromFile(
             $fulfilmentCustomer->fulfilment->shop,
             $file,

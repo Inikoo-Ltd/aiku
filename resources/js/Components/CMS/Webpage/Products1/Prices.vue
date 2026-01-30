@@ -51,7 +51,8 @@ defineProps<{
 <template>
     <div v-if="layout?.iris?.is_logged_in" class="border-t border-b border-gray-200 p-1 px-0 mb-1
     flex flex-col gap-1 text-gray-800 tabular-nums text-xs">
-    <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" />
+    <!-- <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" /> -->
+    
     <div class="flex flex-col md:flex-row md:items-center md:justify-between">
       <span class="font-medium">
         {{ trans("Retail") }} :

@@ -10,12 +10,15 @@ namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
+use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -28,7 +31,15 @@ class GetRecommendedTradeUnits extends GrpAction
         return $this->handle(parent: $masterProductCategory);
     }
 
-    public function handle(MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function inExternal(Product $product, ActionRequest $request): LengthAwarePaginator
+    {
+        $parent = $product;
+        $this->initialisation($parent->group, $request);
+
+        return $this->handle(parent: $parent);
+    }
+
+    public function handle(MasterProductCategory|Product $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -37,28 +48,46 @@ class GetRecommendedTradeUnits extends GrpAction
             });
         });
 
-        $masterAssetIds = $parent->masterAssets()->pluck('id')->filter()->toArray();
-
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        $queryBuilder->where('trade_units.group_id', $parent->group_id)
-            ->whereRaw("trade_units.code COLLATE \"C\" ILIKE ?", $parent->code.'-%')
-            ->leftJoin('model_has_trade_units', function ($join) {
-                $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
-                    ->where('model_has_trade_units.model_type', '=', 'MasterAsset');
-            });
 
+        $existingIds = [];
+        $modelType = MasterAsset::class;
+        $wildCardCode = $parent->code;
 
-        if (!empty($masterAssetIds)) {
-            $queryBuilder->whereNotIn('trade_units.id', function ($subquery) use ($masterAssetIds) {
-                $subquery->select('trade_unit_id')
-                    ->from('model_has_trade_units')
-                    ->where('model_type', 'MasterAsset')
-                    ->whereIn('model_id', $masterAssetIds);
-            });
+        if ($parent instanceof MasterProductCategory) {
+            $existingIds = $parent->masterAssets()->pluck('id')->filter()->toArray();
         }
 
-        $queryBuilder->groupBy('trade_units.id');
+        if ($parent instanceof Product) {
+            $modelType = Product::class;
+            $wildCardCode = Str::before($parent->code, '-');
+        }
+
+        $queryBuilder->where('trade_units.group_id', $parent->group_id)
+            ->whereRaw("trade_units.code COLLATE \"C\" ILIKE ?", $wildCardCode.'-%')
+            ->leftJoin('model_has_trade_units', function ($join) use ($modelType) {
+                $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
+                    ->where('model_has_trade_units.model_type', '=', $modelType);
+            });
+
+        if (!empty($existingIds)) {
+            $queryBuilder->whereNotExists(function ($q) use ($existingIds, $modelType) {
+                $q->select(DB::raw(1))
+                    ->from('model_has_trade_units')
+                    ->whereColumn('model_has_trade_units.trade_unit_id', 'trade_units.id')
+                    ->where('model_has_trade_units.model_type', $modelType)
+                    ->whereIn('model_has_trade_units.model_id', $existingIds);
+            });
+            // $queryBuilder->whereNotIn('trade_units.id', function ($subquery) use ($existingIds, $modelType) {
+            //     $subquery->select('trade_unit_id')
+            //         ->from('model_has_trade_units')
+            //         ->where('model_type', $modelType)
+            //         ->whereIn('model_id', $existingIds);
+            // });
+        }
+
         return $queryBuilder
+            ->groupBy('trade_units.id')
             ->defaultSort('trade_units.code')
             ->select([
                 'trade_units.code',

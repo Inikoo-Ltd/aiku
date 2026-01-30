@@ -98,7 +98,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 </script>
 
 <template>
-    <div class="relative flex flex-col justify-between h-full ">
+    <div id="product-render" class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType/>

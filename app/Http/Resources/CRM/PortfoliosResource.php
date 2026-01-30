@@ -46,7 +46,7 @@ class PortfoliosResource extends JsonResource
             'item_id'    => $this->item_id,
             'type'       => $this->type,
             'created_at' => $this->created_at,
-
+            'is_for_sale'  => $this->is_for_sale,
 
             'customer_sales_channel_platform_status' => $this->customer_sales_channel_platform_status,
 

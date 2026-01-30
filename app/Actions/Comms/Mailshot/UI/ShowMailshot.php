@@ -63,7 +63,7 @@ class ShowMailshot extends OrgAction
     {
         $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]);
 
-        $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]))
+        $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
             : 0;
 
@@ -161,7 +161,7 @@ class ShowMailshot extends OrgAction
                 'sendMailshotRoute' => [
                     'name' => match($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.send',
-                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.maildhot.send',
+                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.send',
                     },
                     'parameters' => [
                         'shop' => $this->shop->id,

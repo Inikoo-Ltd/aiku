@@ -256,7 +256,7 @@ const getTooltips = () => {
 		</div>
 
 		<!-- Product Summary - spans 2 columns -->
-		<div class="lg:col-span-2" :class="data?.product?.data?.picking_factor?.length ? '' : 'lg:col-span-3'">
+		<div :class="data?.product?.data?.picking_factor?.length ? 'lg:col-span-2' : 'lg:col-span-3'">
 			<ProductSummary
 				:noTradeUnit="!data?.product?.data?.picking_factor?.length"
 				:data="{...data.product.data, tags: data.tags, brands: data.brands}"
@@ -287,7 +287,7 @@ const getTooltips = () => {
 			</div> -->
 
 			<!-- Sales Analytics Compact -->
-			<div v-if="salesData && data?.product?.data?.picking_factor?.length">
+			<div v-if="salesData && !(data?.product?.data?.state == 'in_process')">
 				<SalesAnalyticsCompact :salesData="salesData" />
 			</div>
 		</div>

@@ -18,6 +18,9 @@ export interface ProductHit {
         web_url: string[]
         product_id: string
     }
+    iris_attributes: {
+        
+    }
     type: string  // "item"
     url: string  // "1:2:42:41:232985"
 }

@@ -55,7 +55,7 @@ class StoredItemExport implements FromQuery, WithHeadings, ShouldAutoSize, WithM
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
                 $event->sheet->getDelegate()->getStyle('A1:B1')->getFont()->setBold(true);
             }
         ];

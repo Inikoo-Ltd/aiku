@@ -340,19 +340,25 @@ watch(
 onMounted(() => {
   if (props.fieldValue?.product?.luigi_identity) {
     window?.dataLayer?.push({
-      event: "view_item",
+      event: 'view_item',
       ecommerce: {
         items: [{ item_id: props.fieldValue.product.luigi_identity }],
       },
     })
   }
 
-  if (layout?.iris?.is_logged_in) {
-    fetchData()
-  }
-
   getAllProductFromVariant()
 })
+
+watch(
+  () => layout?.iris?.is_logged_in,
+  (isLoggedIn) => {
+    if (isLoggedIn) {
+      fetchData()
+    }
+  },
+  { immediate: true }
+)
 
 
 </script>
