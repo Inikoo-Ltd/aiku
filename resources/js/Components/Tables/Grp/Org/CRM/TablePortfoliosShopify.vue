@@ -36,6 +36,7 @@ interface ShopifyProduct {
     title: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
     handle: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
     vendor: string //
+    sku_list: [] //
     images: {
         src: string
     }[] // []
@@ -384,45 +385,53 @@ onMounted(() => {
         </template>
 
         <template #cell(matches)="{ item: portfolio }">
-            <!-- {{ portfolio.customer_sales_channel_platform_status }} {{   !portfolio.platform_status }} -->
-            <template v-if="(portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status)">
-                <div v-if="portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
-                    <div class="min-h-12 h-auto max-h-24 min-w-24 w-auto max-w-24 shadow bg-gray-100">
-                        <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+            <template v-if="(portfolio.customer_sales_channel_platform_status)">
+                <template v-if="portfolio.platform_status">
+                    <div v-if="portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
+                        <div class="min-h-12 h-auto max-h-24 min-w-24 w-auto max-w-24 shadow bg-gray-100">
+                            <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+                        </div>
+                        <div class="flex flex-col justify-start items-start gap-y-1">
+                            <div class="">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</div>
+                            <ButtonWithLink
+                                v-if="portfolio.platform_possible_matches?.number_matches"
+                                v-tooltip="trans('Match to existing Shopify product')"
+                                :routeTarget="{
+                                    method: 'post',
+                                    name: 'grp.models.portfolio.match_to_existing_shopify_product',
+                                    parameters: {
+                                        portfolio: portfolio.id,
+                                        shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
+                                    }
+                                }"
+                                :bindToLink="{
+                                    preserveScroll: true,
+                                }"
+                                type="secondary"
+                                :label="trans('Match with this product')"
+                                size="xxs"
+                                icon="fal fa-tools"
+                            />
+                            
+                            <Button
+                                xv-if="portfolio.platform_possible_matches?.number_matches"
+                                @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
+                                :label="trans('Select other product from Shopify')"
+                                size="xxs"
+                                type="tertiary"
+                            />
+                        </div>
                     </div>
-                    <div class="flex flex-col justify-start items-start gap-y-1">
-                        <div class="">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</div>
-                        <ButtonWithLink
-                            v-if="portfolio.platform_possible_matches?.number_matches"
-                            v-tooltip="trans('Match to existing Shopify product')"
-                            :routeTarget="{
-                                method: 'post',
-                                name: 'grp.models.portfolio.match_to_existing_shopify_product',
-                                parameters: {
-                                    portfolio: portfolio.id,
-                                    shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
-                                }
-                            }"
-                            :bindToLink="{
-                                preserveScroll: true,
-                            }"
-                            type="secondary"
-                            :label="trans('Match with this product')"
-                            size="xxs"
-                            icon="fal fa-tools"
-                        />
-                        
-                        <Button
-                            xv-if="portfolio.platform_possible_matches?.number_matches"
-                            @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
-                            :label="trans('Select other product from Shopify')"
-                            size="xxs"
-                            type="tertiary"
-                        />
-                    </div>
-                </div>
-                
-                
+                </template> 
+                <Button v-else
+                    @click="() => {if(portfolio.is_for_sale) fetchRoute(); isOpenModalVariant = true; selectedPortfolio = portfolio}"
+                    :label="trans('Match it with an existing product in your shop')" 
+                    :capitalize="false"
+                    size="xxs"
+                    type="tertiary"
+                    :style="'white-w-outline'"
+                    :disabled="!portfolio.is_for_sale"
+                />
             </template>
 
             <div v-else-if="portfolio.matched_product?.label">
@@ -448,7 +457,7 @@ onMounted(() => {
         <template #cell(actions)="{ item: portfolio }">
             <div v-if="portfolio.customer_sales_channel_platform_status  && !portfolio.platform_status "  class="flex gap-x-2 items-center">
                 <ButtonWithLink
-                    v-tooltip="trans('Will create new product in Shopify')"
+                    v-tooltip="portfolio.is_for_sale ? trans('Will create new product in Shopify') : trans('Unable to create new product in Shopify. Product is not for sale')"
                     :routeTarget="{
                     method: 'post',
                         name: 'grp.models.portfolio.store_new_shopify_product',
@@ -464,6 +473,7 @@ onMounted(() => {
                     :bindToLink="{
                         preserveScroll: true,
                     }"
+                    :disabled="!portfolio.is_for_sale"
                 />
             </div>
         </template>
@@ -559,6 +569,9 @@ onMounted(() => {
                                                 </div>
                                                 <div v-if="item.id" v-tooltip="trans('Id')"
                                                         class="w-fit text-xxs text-gray-400 italic">{{ item.id }}
+                                                </div>
+                                                <div v-if="item.sku_list" v-tooltip="trans('SKU')" class="w-fit text-xxs text-slate-600 italic">
+                                                        {{ item.sku_list.join('; ') }}
                                                 </div>
                                             </div>
                                             <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"

@@ -60,10 +60,10 @@ const locale = inject('locale', aikuLocaleStructure)
                     {{ trans("Profit") }} <span class="text-emerald-600 font-semibold">({{ product.margin }})</span>:
                 </div>
                 <div class="flex font-semibold text-emerald-600">
-                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp - product.price) }}
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit) }}
                     <span class="font-normal text-slate-500 ml-1">{{ trans("Outer") }}</span>
                     <template v-if="product.units > 1">
-                        <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp_per_unit - product.price_per_unit) }}</span>
+                        <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit_per_unit) }}</span>
                         <span class="font-normal text-slate-500">/{{ product.unit }}</span>
                     </template>
 
