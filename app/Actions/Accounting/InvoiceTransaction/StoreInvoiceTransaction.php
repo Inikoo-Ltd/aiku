@@ -17,6 +17,7 @@ use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Catalogue\CollectionTimeSeries\PreprocessCollectionTimeSeries;
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
+use App\Actions\Discounts\OfferCampaign\ProcessOfferCampaignTimeSeriesRecords;
 use App\Actions\Masters\MasterAssetTimeSeries\ProcessMasterAssetTimeSeriesRecords;
 use App\Actions\Masters\MasterCollectionTimeSeries\PreprocessMasterCollectionTimeSeries;
 use App\Actions\Masters\MasterProductCategoryTimeSeries\ProcessMasterProductCategoryTimeSeriesRecords;
@@ -260,29 +261,34 @@ class StoreInvoiceTransaction extends OrgAction
             }
         }
 
-        if ($invoiceTransaction->transaction) {
+        foreach ($invoiceTransaction->offerAllowances as $offerAllowance) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessOfferTimeSeriesRecords::dispatch(
+                    $offerAllowance->offer_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                    },
+                    now()->toDateString()
+                )->delay($this->hydratorsDelay);
 
-            /** @var Transaction $transaction */
-            $transaction = $invoiceTransaction->transaction;
-            foreach ($transaction->offers as $offer) {
-                foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                    ProcessOfferTimeSeriesRecords::dispatch(
-                        $offer->id,
-                        $frequency,
-                        match ($frequency) {
-                            TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
-                            TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
-                            TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
-                            TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
-                            TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
-                        },
-                        now()->toDateString()
-                    )->delay(1800);
-                }
+                ProcessOfferCampaignTimeSeriesRecords::dispatch(
+                    $offerAllowance->offer_campaign_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                    },
+                    now()->toDateString()
+                )->delay($this->hydratorsDelay);
             }
-
-
-
         }
 
         return $invoiceTransaction;
