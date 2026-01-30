@@ -80,7 +80,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<div class="overflow-x-auto flex flex-col md:flex-row md:justify-between md:items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
+					<div class="overflow-x-auto flex flex-row justify-between items-center md:items-end absolute bottom-full w-full border-b-0 xmx-auto transition-all mb-1">
 						<!-- <Breadcrumbs
 							class=""
 							:breadcrumbs="usePage().props.breadcrumbs ?? []"
@@ -90,7 +90,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 						/> -->
 
 						<div v-if="layout.iris?.is_logged_in"
-							class="xbg-slate-300 xborder border-slate-500 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
+							class="xbg-slate-300 xborder border-slate-500 px-0 md:px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
 						>
 							{{ trans("Reference") }}:
 							<span class="font-semibold tabular-nums">
@@ -102,7 +102,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 						<Link
 								v-if="layout.iris?.is_logged_in"
 								:href="route('retina.top_up.dashboard')"
-								class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2"
+								class="md:place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2"
 							>
 								{{ trans("My balance") }}:
 								<span class="font-semibold tabular-nums">
