@@ -218,7 +218,6 @@ class IndexCustomers extends OrgAction
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch, $tagFilter])
-            ->ddRawSql()
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
