@@ -96,6 +96,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Ordering\SalesChannel;
 
 /**
  * App\Models\Catalogue\Shop
@@ -469,6 +470,11 @@ class Shop extends Model implements HasMedia, Auditable
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
         return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
+    }
+
+    public function salesChannels(): BelongsToMany
+    {
+        return $this->belongsToMany(SalesChannel::class, 'shop_has_sales_channels')->withTimestamps();
     }
 
     public function outboxes(): HasMany
