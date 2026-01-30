@@ -65,7 +65,7 @@ class StoreWooCommerceProduct extends RetinaAction
                     $customAttributes[] = [
                         'id' => (string)$attachment->id,
                         'name' => '<strong>' . Arr::get($tradeUnitAttachment, 'label') . '</strong>',
-                        'option' => '<a href="https://' . $website->domain . '/attachment/'.$attachment->ulid.'/download' . '">' .
+                        'option' => '<a href="https://' . $website?->domain . '/attachment/'.$attachment->ulid.'/download' . '">' .
                             Arr::get($tradeUnitAttachment, 'label') . '</a>'
                     ];
                 }

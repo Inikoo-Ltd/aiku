@@ -9,7 +9,7 @@
 namespace App\Actions\Discounts\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Discounts\Offer\UI\GetShopOffersTimeSeriesStats;
+use App\Actions\Discounts\OfferCampaign\UI\GetOfferCampaignsTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
@@ -77,11 +77,11 @@ class ShowDiscountsDashboard extends OrgAction
             if ($rangeInterval) {
                 $dates = explode('-', $rangeInterval);
                 if (count($dates) === 2) {
-                    $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop, $dates[0], $dates[1]);
+                    $timeSeriesStats = GetOfferCampaignsTimeSeriesStats::run($this->shop, $dates[0], $dates[1]);
                 }
             }
         } else {
-            $timeSeriesStats = GetShopOffersTimeSeriesStats::run($this->shop);
+            $timeSeriesStats = GetOfferCampaignsTimeSeriesStats::run($this->shop);
         }
 
         return Inertia::render(
@@ -118,14 +118,14 @@ class ShowDiscountsDashboard extends OrgAction
                 'blocks'        => [
                     'id'          => 'sales_table',
                     'type'        => 'table',
-                    'current_tab' => 'offers',
+                    'current_tab' => 'offer_campaigns',
                     'tabs'        => [
-                        'offers' => [
-                            'title' => 'Offers',
+                        'offer_campaigns' => [
+                            'title' => 'Offer Campaigns',
                         ],
                     ],
                     'tables'      => [
-                        'offers' => [
+                        'offer_campaigns' => [
                             'header' => json_decode(DashboardHeaderOffersResource::make($this->shop)->toJson(), true),
                             'body'   => json_decode(DashboardOffersResource::collection($timeSeriesStats)->toJson(), true),
                             'totals' => json_decode(DashboardTotalOffersResource::make($timeSeriesStats)->toJson(), true),

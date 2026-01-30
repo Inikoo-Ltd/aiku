@@ -1,39 +1,39 @@
 <?php
 
-namespace App\Actions\Discounts\Offer\UI;
+namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
-use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferCampaign;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetShopOffersTimeSeriesStats
+class GetOfferCampaignsTimeSeriesStats
 {
     use AsObject;
 
     public function handle(Shop $shop, $from_date = null, $to_date = null): array
     {
-        // Get all active offers for the shop
-        $offers = Offer::where('shop_id', $shop->id)
-            ->where('state', OfferStateEnum::ACTIVE)
+        // Get all active offer campaigns for the shop
+        $offerCampaigns = OfferCampaign::where('shop_id', $shop->id)
+            ->where('state', OfferCampaignStateEnum::ACTIVE)
             ->get();
 
         // Load only the timeSeries relationship (we don't need records hydrated anymore)
-        $offers->load(['timeSeries' => function ($query) {
+        $offerCampaigns->load(['timeSeries' => function ($query) {
             $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
         }]);
 
         // Collect all time series IDs
         $timeSeriesIds = [];
-        $offerToTimeSeriesMap = [];
+        $offerCampaignToTimeSeriesMap = [];
 
-        foreach ($offers as $offer) {
-            $dailyTimeSeries = $offer->timeSeries->first();
+        foreach ($offerCampaigns as $offerCampaign) {
+            $dailyTimeSeries = $offerCampaign->timeSeries->first();
             if ($dailyTimeSeries) {
                 $timeSeriesIds[] = $dailyTimeSeries->id;
-                $offerToTimeSeriesMap[$offer->id] = $dailyTimeSeries->id;
+                $offerCampaignToTimeSeriesMap[$offerCampaign->id] = $dailyTimeSeries->id;
             }
         }
 
@@ -46,8 +46,8 @@ class GetShopOffersTimeSeriesStats
                     'customers' => 'customers_invoiced',
                     'orders' => 'orders'
                 ],
-                'offer_time_series_records',
-                'offer_time_series_id',
+                'offer_campaign_time_series_records',
+                'offer_campaign_time_series_id',
                 $from_date,
                 $to_date
             );
@@ -55,8 +55,8 @@ class GetShopOffersTimeSeriesStats
 
         $results = [];
 
-        foreach ($offers as $offer) {
-            $timeSeriesId = $offerToTimeSeriesMap[$offer->id] ?? null;
+        foreach ($offerCampaigns as $offerCampaign) {
+            $timeSeriesId = $offerCampaignToTimeSeriesMap[$offerCampaign->id] ?? null;
             $stats = $allStats[$timeSeriesId] ?? [];
 
             // Skip if no stats generated or all stats are zero
@@ -64,8 +64,8 @@ class GetShopOffersTimeSeriesStats
                 continue;
             }
 
-            // Merge offer attributes with stats
-            $results[] = array_merge($offer->toArray(), $stats);
+            // Merge offer campaign attributes with stats
+            $results[] = array_merge($offerCampaign->toArray(), $stats);
         }
 
         return $results;

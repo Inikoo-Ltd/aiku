@@ -22,7 +22,7 @@ class DashboardHeaderOffersResource extends JsonResource
             'slug'    => $model->slug,
             'columns' => [
                 'label'     => [
-                    'formatted_value'   => __('Bracket'),
+                    'formatted_value'   => __('Name'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
                     'align'             => 'left'
