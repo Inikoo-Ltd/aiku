@@ -100,11 +100,12 @@ class FilterByLocation
                     });
                 }
 
-                if (!empty($coordinates['city'])) {
-                    $city = $coordinates['city'];
+                if (!empty($location)) {
+                    $city = $location;
                     return $query->whereHas('address', function (Builder $q) use ($city) {
                         $q->whereNotNull('latitude')
-                            ->where('geocoding_metadata->city', $city);
+                            ->whereNotNull('longitude')
+                            ->whereRaw("geocoding_metadata->>'city' = ?", [$city]);
                     });
                 }
                 $radiusKm = 20;
