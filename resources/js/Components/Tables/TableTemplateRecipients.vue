@@ -23,7 +23,7 @@ import {
     faBan, faUsers
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { inject, reactive, computed, watch, ref, onMounted } from "vue";
+import { inject, reactive, computed, watch, ref, onMounted, nextTick } from "vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
@@ -45,7 +45,7 @@ import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { LMap, LTileLayer, LMarker, LTooltip, LCircle } from "@vue-leaflet/vue-leaflet"
-
+import { useFilterRecipients } from "@/Composables/useFilterRecipients";
 
 library.add(
     faSpellCheck,
@@ -80,14 +80,24 @@ const props = defineProps<{
     shopSlug: string
 }>();
 
-const filterMenu = ref()
-const activeFilters = ref<Record<string, any>>(
-    props.filters ? { ...props.filters } : {}
-)
+const {
+    activeFilters,
+    activeFilterCount,
+    isAllCustomers,
+    readyFilters,
+    addFilter,
+    removeFilter,
+    clearAllFilters,
+    fetchCustomers,
+    getLatLngToLocation,
+    onMapClick,
+    onMarkerDrag,
+    radiusInMeters,
+    shouldShowMap,
+    getPostalCodeModel,
+} = useFilterRecipients(props, notify)
 
-const activeFilterCount = computed(() =>
-    Object.keys(activeFilters.value ?? {}).length
-)
+const filterMenu = ref()
 
 const availableFilters = computed(() => {
     const list: any[] = []
@@ -106,107 +116,6 @@ const availableFilters = computed(() => {
 
     return list
 })
-
-// validasi filter
-const FILTER_CONFLICTS: Record<string, string[]> = {
-    registered_never_ordered: [
-        'orders_in_basket',
-        'by_order_value',
-        'orders_collection',
-        'by_family',
-        'by_subdepartment',
-        'by_family_never_ordered',
-        'by_showroom_orders',
-        'by_department'
-    ],
-    orders_in_basket: ['registered_never_ordered'],
-    by_order_value: ['registered_never_ordered'],
-    orders_collection: ['registered_never_ordered'],
-    by_family: ['registered_never_ordered'],
-    by_subdepartment: ['registered_never_ordered'],
-    by_family_never_ordered: ['registered_never_ordered'],
-    by_showroom_orders: ['registered_never_ordered'],
-    by_department: ['registered_never_ordered']
-}
-function hasConflict(newKey: string) {
-    const activeKeys = Object.keys(activeFilters.value)
-
-    const conflicts = FILTER_CONFLICTS[newKey] || []
-
-    const found = activeKeys.find(k => conflicts.includes(k))
-
-    return found || null
-}
-
-const addFilter = (key: string, config: any) => {
-    const conflictWith = hasConflict(key)
-    if (conflictWith) {
-        notify({
-            title: "Filter conflict",
-            text: `"${config.label}" cannot be combined with "${activeFilters.value[conflictWith].config.label}"`,
-            type: "error"
-        })
-        return
-    }
-
-    let value: any = true
-    if (!key) {
-        console.warn('[addFilter] invalid key', key, config)
-        return
-    }
-
-    if (config.type === 'boolean') {
-        value = {
-            date_range: null,
-            amount_range: { min: null, max: null },
-            date_range_preset: null
-        }
-    }
-
-    if (config.type === 'select') {
-        value = config.options?.[0]?.value ?? null
-    }
-
-    if (config.type === 'multiselect') {
-        if (config.label === 'By Family Never Ordered') {
-            value = { ids: null }
-        } else {
-            value = config.behavior_options
-                ? { ids: [], behaviors: ['purchased'], combine_logic: 'or' }
-                : { ids: [] }
-        }
-    }
-
-    if (config.type === 'daterange') {
-        value = { date_range: null }
-    }
-
-    if (config.type === 'entity_behaviour') {
-        value = {
-            ids: [],
-            behaviors: [],
-            combine_logic: true
-        }
-    }
-
-    if (config.type === 'location') {
-        value = {
-            mode: 'direct',
-            country_ids: [],
-            postal_codes: [],
-            location: '',
-            radius: null,
-            radius_custom: null,
-            lat: null,
-            lng: null,
-            resolved: false
-        }
-    }
-
-    activeFilters.value[key] = { value, config }
-
-    console.log('addFilter', key, activeFilters.value)
-}
 
 const onPresetChange = (filter: any, event: any) => {
     const preset = event.value
@@ -231,95 +140,6 @@ const formatNumber = (num: number | null | undefined) => {
     return new Intl.NumberFormat('en-GB').format(num ?? 0)
 }
 
-const removeFilter = (key: string) => {
-    delete activeFilters.value[key]
-}
-
-const clearAllFilters = () => {
-    activeFilters.value = {}
-    fetchCustomers()
-}
-
-const getLatLngToLocation = async (filter: any, forceMode?: 'forward' | 'reverse') => {
-    const v = filter.value
-    let params: any = {}
-
-    // 🧠 Tentukan mode
-    const mode =
-        forceMode ||
-        (v.lastSource === 'map' ? 'reverse' : 'forward')
-
-    if (mode === 'reverse') {
-        if (!v.lat || !v.lng) return
-        params.latitude = v.lat
-        params.longitude = v.lng
-    } else {
-        let query = ''
-
-        if (v.mode === 'radius') {
-            if (!v.location) return
-            query = v.location
-        } else {
-            if (!v.postal_codes?.length) return
-            query = `${v.postal_codes[0]} ${v.country_ids?.[0] || ''}`
-        }
-
-        if (!query) return
-        params.location = query
-    }
-
-    v.loadingMap = true
-
-    try {
-        const res = await axios.get(route('grp.json.get_geocode'), { params })
-        const data = res.data
-
-        if (data.latitude && data.longitude) {
-            v.lat = Number(data.latitude)
-            v.lng = Number(data.longitude)
-            v.zoom = v.zoom || 12
-        }
-
-        if (data.city || data.formatted_address) {
-            v.location = data.city || data.formatted_address
-        }
-
-        v.resolved = true
-    } catch (err) {
-        console.error('GEOCODE FAILED', err)
-        v.resolved = false
-    } finally {
-        v.loadingMap = false
-    }
-}
-
-
-const onMapClick = async (e: { latlng: { lat: any; lng: any; }; }, filter: {
-    value: {
-        lastSource: string; lat: number; lng: number;
-    };
-}) => {
-    filter.value.lat = Number(e.latlng.lat)
-    filter.value.lng = Number(e.latlng.lng)
-    filter.value.lastSource = 'map'
-    debouncedReverseGeocode(filter)
-}
-
-const debouncedReverseGeocode = debounce(getLatLngToLocation, 500)
-
-const onMarkerDrag = (e: { target: { getLatLng: () => any; }; }, filter: {
-    value: {
-        lastSource: string; lat: number; lng: number;
-    };
-}) => {
-    const pos = e.target.getLatLng()
-    filter.value.lat = Number(pos.lat)
-    filter.value.lng = Number(pos.lng)
-    filter.value.lastSource = 'map'
-
-    debouncedReverseGeocode(filter)
-}
-
 function findConfigByKey(structure: any, key: string) {
     for (const group of Object.values(structure)) {
         if (group.filters?.[key]) return group.filters[key]
@@ -340,6 +160,7 @@ function unwrapBoolean(val: any) {
     }
     return v
 }
+
 function hydrateSavedFilters(saved: any, structure: any) {
     const hydrated: any = {}
 
@@ -469,31 +290,6 @@ function hydrateSavedFilters(saved: any, structure: any) {
     return hydrated
 }
 
-const fetchCustomers = debounce(() => {
-    const filtersPayload: any = {}
-    console.log("activeFilters di fetchCustomers", activeFilters.value)
-    Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
-        filtersPayload[key] = {
-            value: filter.value
-        }
-    })
-
-    console.log('filtersPayload di fetchCustomers', filtersPayload)
-
-    router.get(
-        route(route().current(), route().params),
-        {
-            filters: filtersPayload,
-        },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ['customers', 'filters', 'estimatedRecipients']
-        }
-    )
-}, 400)
-
 const preloadedEntities = reactive<Record<string, any[]>>({})
 const preloadEntityOptions = async (key: string, ids: number[]) => {
     if (!ids?.length) return
@@ -564,10 +360,6 @@ function onBasketModeChange(filter: { value: { mode: any; date_range: null; }; }
         filter.value.date_range = val
     }
 }
-
-const isAllCustomers = computed(() => {
-    return Object.keys(activeFilters.value).length === 0
-})
 
 const filtersPayload = computed(() => {
     const payload: any = {}
@@ -668,40 +460,6 @@ const filtersPayload = computed(() => {
     return payload
 })
 
-const shouldShowMap = (val: any) => {
-    if (val.mode === 'radius') return true
-    if (val.mode === 'direct' && (val.country_ids?.length || val.postal_codes?.length)) return true
-    return false
-}
-
-const radiusInMeters = (val: any) => {
-    const km = val.radius === 'custom'
-        ? Number(val.radius_custom) || 0
-        : Number(val.radius) || 0
-
-    return km * 1000
-}
-
-const getPostalCodeModel = (filter: any) => {
-    return computed({
-        get: () => filter.value.postal_codes?.join(', ') || '',
-        set: (val: string) => {
-            filter.value.postal_codes = val
-                .split(',')
-                .map(v => v.trim())
-                .filter(Boolean)
-        }
-    })
-}
-
-const readyFilters = computed(() => {
-    return Object.fromEntries(
-        Object.entries(activeFilters.value).filter(
-            ([_, f]: any) => f?.config?.type
-        )
-    )
-})
-
 const saveFilters = async () => {
 
     let payload = filtersPayload.value
@@ -744,10 +502,12 @@ onMounted(async () => {
     if (props.recipientsRecipe) {
         console.log('EDIT MODE', props.recipientsRecipe)
 
+
         activeFilters.value = hydrateSavedFilters(
             props.recipientsRecipe,
             props.filtersStructure
         )
+
 
         for (const [key, filter] of Object.entries(activeFilters.value)) {
             if (filter.config.type === 'entity_behaviour') {
@@ -758,7 +518,8 @@ onMounted(async () => {
                 await preloadEntityOptions(key, [filter.value.ids])
             }
         }
-
+        await nextTick()
+        fetchCustomers()
         console.log("activeFilters.value onmounted", activeFilters.value)
     }
 })
