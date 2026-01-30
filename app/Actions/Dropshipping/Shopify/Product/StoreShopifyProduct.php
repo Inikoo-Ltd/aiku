@@ -11,10 +11,12 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Helpers\Media;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -24,11 +26,13 @@ use Sentry;
 class StoreShopifyProduct extends RetinaAction
 {
     use WithActionUpdate;
+    use HasBucketAttachment;
 
     public function handle(Portfolio $portfolio, array $productData = []): array
     {
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
+        $website = $portfolio->customerSalesChannel?->shop?->website;
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
@@ -95,12 +99,36 @@ class StoreShopifyProduct extends RetinaAction
             }
             MUTATION;
 
+
+            $customAttributes = [];
+            $tradeUnitAttachments = Arr::get($this->getAttachmentData($product), 'public', []);
+            foreach ($tradeUnitAttachments as $key => $tradeUnitAttachment) {
+                /** @var Media|null $attachment */
+                $attachment = Arr::get($tradeUnitAttachment, 'attachment');
+
+                if ($attachment) {
+                    $customAttributes[] = [
+                        'id' => (string)$attachment->id,
+                        'name' => '<strong>' . Arr::get($tradeUnitAttachment, 'label') . '</strong>',
+                        'option' => '<a href="https://' . $website?->domain . '/attachment/'.$attachment->ulid.'/download' . '">' .
+                            Arr::get($tradeUnitAttachment, 'label') . '</a>'
+                    ];
+                }
+            }
+
+            $attachmentLinks = '';
+            foreach ($customAttributes as $attr) {
+                $attachmentLinks .= $attr['name'] . ': ' . $attr['option'] . '<br>';
+            }
+
+            $description = '<br><br>' . $attachmentLinks;
+
             // Prepare variables for the mutation
             $variables = [
                 'product' => [
                     'title'           => $product->name,
                     'handle'          => Str::slug($product->name) . substr(now()->timestamp, -3),
-                    'descriptionHtml' => $product->description.' '.$product->description_extra,
+                    'descriptionHtml' => $product->description.' '.$product->description_extra . ' ' .$description,
                     'productType'     => $product->family?->name,
                     'vendor'          => $product->shop->name,
                     'tags'            => $product->tags()->pluck('name')->toArray()
