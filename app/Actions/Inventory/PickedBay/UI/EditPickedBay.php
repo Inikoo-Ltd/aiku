@@ -30,6 +30,7 @@ class EditPickedBay extends OrgAction
             [
                 'title'       => __('Picked bays'),
                 'breadcrumbs' => ShowPickedBay::make()->getBreadcrumbs(
+                    routeName: $request->route()->getName(),
                     routeParameters: $request->route()->originalParameters(),
                     suffix: '('.__('Editing').')'
                 ),
@@ -52,7 +53,7 @@ class EditPickedBay extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => [
-                        'properties' => [
+                        [
                             'label'  => __('Properties'),
                             'fields' => [
                                 'code' => [

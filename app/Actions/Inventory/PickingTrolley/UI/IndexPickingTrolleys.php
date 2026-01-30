@@ -5,6 +5,7 @@ namespace App\Actions\Inventory\PickingTrolley\UI;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\UI\Inventory\PickingTrolleysTabsEnum;
 use App\Http\Resources\Inventory\PickingTrolleyResource;
 use App\InertiaTable\InertiaTable;
@@ -71,7 +72,7 @@ class IndexPickingTrolleys extends OrgAction
                         'tooltip' => __('New picking trolley'),
                         'label'   => __('picking trolley'),
                         'route'   => [
-                            'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.create',
+                            'name'       => 'grp.org.warehouses.show.dispatching.picking_trolleys.create',
                             'parameters' => [
                                 request()->route('organisation'),
                                 request()->route('warehouse'),
@@ -103,7 +104,7 @@ class IndexPickingTrolleys extends OrgAction
                             'style' => 'create',
                             'label' => __('Create'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.create',
+                                'name'       => 'grp.org.warehouses.show.dispatching.picking_trolleys.create',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
@@ -147,11 +148,11 @@ class IndexPickingTrolleys extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.inventory.picking_trolleys.index' =>
+            'grp.org.warehouses.show.dispatching.picking_trolleys.index' =>
             array_merge(
-                ShowWarehouse::make()->getBreadcrumbs($routeParameters),
+                ShowDispatchHub::make()->getBreadcrumbs($routeParameters),
                 $headCrumb([
-                    'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.index',
+                    'name'       => 'grp.org.warehouses.show.dispatching.picking_trolleys.index',
                     'parameters' => $routeParameters,
                 ])
             ),

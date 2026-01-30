@@ -73,7 +73,7 @@ class ShowPickingTrolley extends OrgAction
                             'style' => 'edit',
                             'label' => __('Edit'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.inventory.picking_trolleys.edit',
+                                'name'       => 'grp.org.warehouses.show.dispatching.picking_trolleys.edit',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
@@ -140,7 +140,7 @@ class ShowPickingTrolley extends OrgAction
         }
 
         return match ($routeName) {
-            'grp.org.warehouses.show.inventory.picking_trolleys.show' => [
+            'grp.org.warehouses.show.dispatching.picking_trolleys.show' => [
                 'label' => $pickingTrolley->name,
                 'route' => [
                     'name'       => $routeName,

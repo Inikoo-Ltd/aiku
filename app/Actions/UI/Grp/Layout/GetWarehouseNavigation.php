@@ -246,9 +246,9 @@ class GetWarehouseNavigation
                             'label' => __('Trolleys'),
                             'tooltip' => __('Picking Trolleys'),
                             'icon'  => ['fal', 'fa-dolly-flatbed-alt'],
-                            'root'  => 'grp.org.warehouses.show.dispatching.shippers.',
+                            'root'  => 'grp.org.warehouses.show.dispatching.picking_trolleys.',
                             'route' => [
-                                "name"       => "grp.org.warehouses.show.dispatching.shippers.current.index",
+                                "name"       => "grp.org.warehouses.show.dispatching.picking_trolleys.index",
                                 "parameters" => [
                                     $warehouse->organisation->slug,
                                     $warehouse->slug
@@ -259,9 +259,9 @@ class GetWarehouseNavigation
                             'label' => __('P. Bays'),
                             'tooltip' => __('Picked bays'),
                             'icon'  => ['fal', 'fa-monument'],
-                            'root'  => 'grp.org.warehouses.show.dispatching.shippers.',
+                            'root'  => 'grp.org.warehouses.show.dispatching.picked_bays.',
                             'route' => [
-                                "name"       => "grp.org.warehouses.show.dispatching.shippers.current.index",
+                                "name"       => "grp.org.warehouses.show.dispatching.picked_bays.index",
                                 "parameters" => [
                                     $warehouse->organisation->slug,
                                     $warehouse->slug

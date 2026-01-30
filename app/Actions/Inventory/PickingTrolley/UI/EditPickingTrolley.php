@@ -34,6 +34,7 @@ class EditPickingTrolley extends OrgAction
             [
                 'title'       => __('Picking trolleys'),
                 'breadcrumbs' => ShowPickingTrolley::make()->getBreadcrumbs(
+                    routeName: $request->route()->getName(),
                     routeParameters: $request->route()->originalParameters(),
                     suffix: '('.__('Editing').')'
                 ),
@@ -56,7 +57,7 @@ class EditPickingTrolley extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => [
-                        'properties' => [
+                        [
                             'label'  => __('Properties'),
                             'fields' => [
                                 'code' => [

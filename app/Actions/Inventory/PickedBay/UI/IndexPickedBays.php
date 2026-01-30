@@ -5,6 +5,7 @@ namespace App\Actions\Inventory\PickedBay\UI;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\UI\Inventory\PickedBaysTabsEnum;
 use App\Http\Resources\Inventory\PickedBayResource;
 use App\InertiaTable\InertiaTable;
@@ -103,7 +104,7 @@ class IndexPickedBays extends OrgAction
                             'style' => 'create',
                             'label' => __('Create'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.inventory.picked_bays.create',
+                                'name'       => 'grp.org.warehouses.show.dispatching.picked_bays.create',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
@@ -148,11 +149,11 @@ class IndexPickedBays extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.inventory.picked_bays.index' =>
+            'grp.org.warehouses.show.dispatching.picked_bays.index' =>
             array_merge(
-                ShowWarehouse::make()->getBreadcrumbs($routeParameters),
+                ShowDispatchHub::make()->getBreadcrumbs($routeParameters),
                 $headCrumb([
-                    'name'       => 'grp.org.warehouses.show.inventory.picked_bays.index',
+                    'name'       => 'grp.org.warehouses.show.dispatching.picked_bays.index',
                     'parameters' => $routeParameters,
                 ])
             ),
