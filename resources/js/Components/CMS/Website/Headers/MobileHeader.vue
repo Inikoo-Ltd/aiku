@@ -164,23 +164,47 @@ watch(computedSelectedSidebarData,
 
 const screenType = inject('screenType', 'desktop')
 
+// Method: to remove fontSize from properties
+const getStylesRemoveFontSize = (properties, screenType) => {
+    const xxx = { ...getStyles(properties, screenType) }
+    delete xxx?.fontSize
+
+    return xxx
+}
 </script>
 
 <template>
-    <div class="block md:hidden p-3">
+    <div id="mobile-header" class="block md:hidden p-3">
         <div class="grid grid-cols-3 items-center justify-between">
             <!-- Section: Hamburger & Search -->
-            <div class="flex items-center gap-x-2 w-fit">
+            <div class="flex items-center gap-x-1 w-fit">
                 <!-- Hamburger Sidebar -->
                 <IrisSidebar :header="headerData" :menu="menuData" :productCategories="productCategories"
                     :custom-menus-bottom="customMenusBottom" :custom-menus-top="customMenusTop" :screenType="screenType"
                     :sidebarLogo="computedSelectedSidebarData?.data?.fieldValue?.sidebar_logo"
-                    :sidebar="computedSelectedSidebarData" />
+                    :sidebar="computedSelectedSidebarData"
+                    
+                >
+                    <template #icon>
+                        <FontAwesomeIcon
+                            :icon="headerData?.mobile?.menu?.icon || 'fal fa-bars'"
+                            :style="getStylesRemoveFontSize(headerData?.mobile?.menu?.container?.properties, screenType)"
+                            fixed-width
+                            aria-hidden="true"
+                            class="text-3xl"
+                        />
+                    </template>
+                </IrisSidebar>
+                <!-- <pre>{{ getStylesRemoveFontSize(headerData?.mobile?.menu?.container?.properties, screenType) }}</pre> -->
 
                 <!-- Search Bar -->
-                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id" id="luigi_mobile" :style="{
-                    ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
-                }" />
+                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id"
+                    id="luigi_mobile"
+                    :style="{
+                        ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                    }"
+                    class="text-3xl"
+                />
             </div>
 
             <!-- Section: Logo -->
@@ -196,21 +220,31 @@ const screenType = inject('screenType', 'desktop')
                 <!-- Not Logged In -->
                 <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1">
                     <FontAwesomeIcon icon="fal fa-sign-in" fixed-width aria-hidden="true"
-                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
+                        class="text-3xl"
+                    />
                 </LinkIris>
 
                 <!-- Logged In -->
                 <template v-else>
-                    <OverlayBadge v-if="layout.retina?.type == 'b2b'"  :value="layout?.iris_variables?.cart_count">
+                    <OverlayBadge v-if="layout.retina?.type == 'b2b'"  :value="layout?.iris_variables?.cart_count" size="small">
                         <LinkIris href="/app/basket" class="px-1">
-                            <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width aria-hidden="true"
-                                :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                            <FontAwesomeIcon
+                                icon="fal fa-shopping-cart"
+                                fixed-width
+                                aria-hidden="true"
+                                :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
+                                class="text-3xl"
+                            />
                         </LinkIris>
                     </OverlayBadge>
 
                     <LinkIris href="/app/dashboard" class="px-1">
-                        <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon || 'fal fa-user-circle'" fixed-width
+                        <FontAwesomeIcon
+                            :icon="headerData?.mobile?.profile?.icon || 'fal fa-user-circle'"
+                            fixed-width
                             aria-hidden="true"
+                            class="text-3xl"
                             :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                     </LinkIris>
                 </template>
