@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue';
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
@@ -86,7 +87,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
             <div class="flex items-center gap-2x">
                 <div class="font-semibold text-primary mr-4">
-                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_price) }}
+                    {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp - product.discounted_price) }}
                     <span class="font-normal text-slate-500">{{ trans("Outer") }}</span>
                     <template v-if="product.units > 1">
                         <span class="ml-3">{{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_price_per_unit) }}</span>
