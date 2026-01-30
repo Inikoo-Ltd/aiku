@@ -237,6 +237,7 @@ const removeFilter = (key: string) => {
 
 const clearAllFilters = () => {
     activeFilters.value = {}
+    fetchCustomers()
 }
 
 const getLatLngToLocation = async (filter: any, forceMode?: 'forward' | 'reverse') => {
