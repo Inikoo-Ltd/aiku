@@ -47,7 +47,6 @@ const props = defineProps<{
     mailshotType?: string
 }>();
 
-console.log("estimatedRecipients test : ", props.estimatedRecipients)
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
@@ -366,7 +365,10 @@ watch(
 
     <Head :title="capitalize(pageHead.title)" />
     <PageHeading :data="pageHead">
-        <template #afterTitle v-if="props.mailshotType === 'marketing'">
+        <template #afterTitle v-if="
+            props.mailshotType === 'marketing' &&
+            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '')
+        ">
             <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
         </template>
         <template #otherBefore>
