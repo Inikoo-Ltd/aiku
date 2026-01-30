@@ -56,6 +56,7 @@ import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
+import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
@@ -432,6 +433,16 @@ onMounted(() => {
 			<ButtonSelectTrolleys :warehouse="warehouse">
 				
 			</ButtonSelectTrolleys>
+		</template>
+
+		<!-- Button: Select trolley (only for Ecom) -->
+		<template v-if="props.shop.type === 'b2b'"  #button-set-as-packed="{ action }">
+			<ButtonSelectBays
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			>
+				
+			</ButtonSelectBays>
 		</template>
 	</PageHeading>
 

@@ -93,7 +93,7 @@ const submitSelectTrolley = () => {
         <Button
             :label="trans('Select Trolley')"
             @click="() => isOpenModal = true" 
-            icon="fal fa-shopping-cart"
+            icon="fal fa-dolly-flatbed-alt"
         />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">

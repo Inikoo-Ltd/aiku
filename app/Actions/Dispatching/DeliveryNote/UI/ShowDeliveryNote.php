@@ -146,7 +146,7 @@ class ShowDeliveryNote extends OrgAction
                 'style'   => 'save',
                 'tooltip' => __('Set as packed'),
                 'label'   => __('Set as packed'),
-                'key'     => 'action',
+                'key'     => 'set-as-packed',
                 'route'   => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.delivery_note.state.packed',
