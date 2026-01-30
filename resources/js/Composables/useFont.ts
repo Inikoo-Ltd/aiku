@@ -63,5 +63,9 @@ export const useFontFamilyList = [
         label: "Times New Roman",
         value: "'Times New Roman', serif",
     },
+     {
+        label: "Conneqt",
+        value: "'Conneqt', serif",
+    },
 
 ]
