@@ -55,11 +55,6 @@ class FilterByDepartment
                             });
                     });
                 }
-                if (in_array('favourited', $behaviors)) {
-                    $q->orWhereHas('favourites', function ($favouriteQuery) use ($departmentIds) {
-                        $favouriteQuery->whereIn('department_id', $departmentIds);
-                    });
-                }
 
                 if (in_array('basket_not_purchased', $behaviors)) {
                     $q->orWhereHas('orders', function ($oq) use ($departmentIds) {
