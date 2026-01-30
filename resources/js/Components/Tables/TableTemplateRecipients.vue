@@ -42,6 +42,7 @@ import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfi
 import '@vuepic/vue-datepicker/dist/main.css'
 import { LMap, LTileLayer, LMarker, LTooltip, LCircle } from "@vue-leaflet/vue-leaflet"
 import { useFilterRecipients } from "@/Composables/useFilterRecipients";
+import { filter } from "lodash";
 
 library.add(
     faSpellCheck,
@@ -77,6 +78,7 @@ const props = defineProps<{
 }>();
 
 const {
+    isByOrderValueInvalid,
     activeFilters,
     activeFilterCount,
     isAllCustomers,
@@ -84,6 +86,7 @@ const {
     addFilter,
     removeFilter,
     clearAllFilters,
+    isAmountRangeInvalid,
     fetchCustomers,
     getLatLngToLocation,
     onMapClick,
@@ -95,6 +98,7 @@ const {
     hydrateSavedFilters,
 } = useFilterRecipients(props)
 
+console.log("propp[s]", props)
 const filterMenu = ref()
 
 const availableFilters = computed(() => {
@@ -197,7 +201,7 @@ function getEntityFetchRoute(key: string) {
     return null
 }
 
-function onBasketModeChange(filter, event) {
+function onBasketModeChange(filter: { value: { mode: any; date_range: any[] | null; }; }, event: { value: any; }) {
     const val = event.value
 
     filter.value.mode = val
@@ -220,9 +224,10 @@ function onBasketModeChange(filter, event) {
     }
 }
 
-function formatDate(d) {
+function formatDate(d: Date) {
     return d.toISOString().split('T')[0]
 }
+
 
 
 onMounted(async () => {
@@ -264,6 +269,7 @@ watch(
     },
     { deep: true }
 )
+
 </script>
 
 <template>
@@ -287,7 +293,8 @@ watch(
             <span v-if="isAllCustomers" class="text-blue-600 font-medium ml-auto">
                 Audience: All Customers
             </span>
-            <Button label="Save" type="save" @click="saveFilters" class="h-10 px-4 ml-auto" />
+            <Button label="Save" type="save" @click="saveFilters" class="h-10 px-4 ml-auto"
+                :disabled="isByOrderValueInvalid" />
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div v-for="(filter, key) in readyFilters" :key="key"
@@ -317,7 +324,6 @@ watch(
                         ]" optionLabel="label" optionValue="value" placeholder="Select time frame" class="w-full mb-2"
                             appendTo="body" @change="onBasketModeChange(filter, $event)" />
 
-
                         <!-- DATE RANGE (only custom) -->
                         <Calendar v-if="filter.value.mode === 'custom'" v-model="filter.value.date_range"
                             placeholder="Select a date range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
@@ -345,9 +351,17 @@ watch(
                     <!-- AMOUNT RANGE -->
                     <div v-if="filter.config.options?.amount_range" class="grid grid-cols-2 gap-2 mt-2">
                         <InputNumber :min="0" v-model="filter.value.amount_range.min" placeholder="Minimum amount"
-                            class="w-full" inputClass="w-full" :max="filter.value.amount_range.max ?? undefined" />
-                        <InputNumber v-model="filter.value.amount_range.max" placeholder="Maximum amount" class="w-full"
-                            inputClass="w-full" :min="filter.value.amount_range.min ?? undefined" />
+                            mode="currency" currency="GBP" locale="en-GB" class="w-full" inputClass="w-full"
+                            :class="{ 'p-invalid': isAmountRangeInvalid(filter) }"
+                            :max="filter.value.amount_range.max ?? undefined" />
+                        <InputNumber v-model="filter.value.amount_range.max" placeholder="Maximum amount"
+                            mode="currency" currency="GBP" locale="en-GB" class="w-full" inputClass="w-full"
+                            :class="{ 'p-invalid': isAmountRangeInvalid(filter) }"
+                            :min="filter.value.amount_range.min ?? undefined" />
+
+                        <p v-if="isAmountRangeInvalid(filter)" class="text-xs text-red-500 mt-1 col-span-2">
+                            Please fill both minimum and maximum amount.
+                        </p>
                     </div>
                 </template>
 
