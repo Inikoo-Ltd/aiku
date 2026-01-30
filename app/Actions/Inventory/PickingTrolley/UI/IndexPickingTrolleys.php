@@ -14,6 +14,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -115,6 +116,11 @@ class IndexPickingTrolleys extends OrgAction
                 PickingTrolleysTabsEnum::TROLLEYS->value => PickingTrolleyResource::collection($pickingTrolleys),
             ]
         )->table($this->tableStructure(prefix: PickingTrolleysTabsEnum::TROLLEYS->value));
+    }
+    
+    public function jsonResponse(LengthAwarePaginator $pickingTrolleys): AnonymousResourceCollection
+    {
+        return PickingTrolleyResource::collection($pickingTrolleys);
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator

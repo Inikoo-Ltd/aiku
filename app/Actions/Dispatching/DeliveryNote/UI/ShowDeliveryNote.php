@@ -720,6 +720,9 @@ class ShowDeliveryNote extends OrgAction
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,
             ],
+            'shop'  => [
+                'type'  => $deliveryNote->shop?->type?->value,
+            ]
 
 
         ];
