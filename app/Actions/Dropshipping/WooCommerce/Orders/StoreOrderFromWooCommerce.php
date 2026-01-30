@@ -124,7 +124,7 @@ class StoreOrderFromWooCommerce extends OrgAction
                 'email'        => Arr::get($wooOrderData, 'billing.email'),
                 'contact_name' => trim(Arr::get($wooOrderData, 'billing.first_name').' '.Arr::get($wooOrderData, 'billing.last_name')),
                 'company_name' => Arr::get($wooOrderData, 'billing.company'),
-                'phone'        => Arr::get($wooOrderData, 'billing.phone'),
+                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'billing.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
             ]);
         } else {
@@ -133,7 +133,7 @@ class StoreOrderFromWooCommerce extends OrgAction
                 'email'        => Arr::get($wooOrderData, 'billing.email'),
                 'contact_name' => trim(Arr::get($wooOrderData, 'billing.first_name').' '.Arr::get($wooOrderData, 'billing.last_name')),
                 'company_name' => Arr::get($wooOrderData, 'billing.company'),
-                'phone'        => Arr::get($wooOrderData, 'billing.phone'),
+                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'billing.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
 
             ]);
@@ -141,6 +141,15 @@ class StoreOrderFromWooCommerce extends OrgAction
 
 
         return $customerClient;
+    }
+
+    private function sanitizePhone($phone): array|string|null
+    {
+        // Extract only digits
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+
+        // Ensure minimum 10 digits
+        return strlen($digits) >= 10 ? $digits : str_pad($digits, 10, '0', STR_PAD_RIGHT);
     }
 
     public function digestWooAddress($wooOrderData): Address

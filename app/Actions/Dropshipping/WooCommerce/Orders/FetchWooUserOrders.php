@@ -61,6 +61,10 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
         }
 
         foreach ($wooOrders as $wooOrder) {
+            $wooCommerceUser->debugWebhooks()->create([
+                'data' => $wooOrder
+            ]);
+
             if (!Arr::get($wooOrder, 'date_paid')) {
                 continue;
             }
