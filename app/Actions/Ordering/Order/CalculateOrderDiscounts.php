@@ -36,7 +36,7 @@ class CalculateOrderDiscounts
 
         $this->setEnabledOffers($order);
 
-        if (count($this->enabledOffers) > 0) {
+        if (!empty($this->enabledOffers) || !empty($order->discretionary_offers_data)) {
             $this->transactions = DB::table('transactions')
                 ->select([
                     'id',
@@ -356,7 +356,7 @@ class CalculateOrderDiscounts
 
             if ($hasOffer) {
                 $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
-                if ((float)$current < $percentageOff) {
+                if ((float)$current <= $percentageOff) {
                     $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
                 }
             } else {

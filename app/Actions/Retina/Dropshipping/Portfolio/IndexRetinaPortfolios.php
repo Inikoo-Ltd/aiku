@@ -109,7 +109,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 ->orWhere('products.state', $value);
         });
     }
-    
+
     public function getForSaleFilter(): AllowedFilter
     {
         return AllowedFilter::callback('is_for_sale', function ($query, $value) {

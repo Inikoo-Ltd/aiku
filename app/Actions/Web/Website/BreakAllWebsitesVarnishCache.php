@@ -43,11 +43,15 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'varnish:restart';
+        return 'varnish:restart {delay?}';
     }
 
     public function asCommand(Command $command): int
     {
+        if ($delay = $command->argument('delay')) {
+            sleep((int) $delay);
+        }
+
         $this->handle($command);
 
         return 0;
