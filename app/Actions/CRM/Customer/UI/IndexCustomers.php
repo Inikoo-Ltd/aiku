@@ -97,16 +97,15 @@ class IndexCustomers extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
             $query->where(function ($query) use ($value, $parent) {
                 $value = escapeSQLSearch($value);
-                $query->whereAnyWordStartWith('customers.name', $value)
-                    ->orWhereStartWith('customers.email', $value)
-                    ->orWhere('customers.reference', '=', $value)
-                    ->orWhereHas('tags', function ($tagQuery) use ($value) {
-                        $tagQuery->where('tags.name', 'LIKE', "%{$value}%");
-                    });
+                
+                // Ignore if search token is less than 2 words
+                $searchTokens = array_values(array_filter(
+                    explode(' ', trim($value)),
+                    fn ($t) => strlen($t) >= 2
+                ));
 
-                if (class_basename($parent) == 'Group') {
-                    $query->orWhereStartWith('organisations.name', $value);
-                    $query->orWhereStartWith('shops.name', $value);
+                foreach ($searchTokens as $searchToken) {
+                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
                 }
             });
         });
@@ -219,6 +218,7 @@ class IndexCustomers extends OrgAction
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch, $tagFilter])
+            ->ddRawSql()
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
