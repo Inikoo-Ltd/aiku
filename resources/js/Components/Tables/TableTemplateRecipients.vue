@@ -98,7 +98,6 @@ const {
     hydrateSavedFilters,
 } = useFilterRecipients(props)
 
-console.log("propp[s]", props)
 const filterMenu = ref()
 
 const availableFilters = computed(() => {
@@ -228,8 +227,6 @@ function formatDate(d: Date) {
     return d.toISOString().split('T')[0]
 }
 
-
-
 onMounted(async () => {
     if (props.recipientsRecipe) {
         activeFilters.value = hydrateSavedFilters(
@@ -356,11 +353,10 @@ watch(
                             :max="filter.value.amount_range.max ?? undefined" />
                         <InputNumber v-model="filter.value.amount_range.max" placeholder="Maximum amount"
                             mode="currency" currency="GBP" locale="en-GB" class="w-full" inputClass="w-full"
-                            :class="{ 'p-invalid': isAmountRangeInvalid(filter) }"
                             :min="filter.value.amount_range.min ?? undefined" />
 
                         <p v-if="isAmountRangeInvalid(filter)" class="text-xs text-red-500 mt-1 col-span-2">
-                            Please fill both minimum and maximum amount.
+                            Minimum amount is required.
                         </p>
                     </div>
                 </template>

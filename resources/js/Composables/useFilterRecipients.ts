@@ -34,16 +34,12 @@ export function useFilterRecipients(props: any) {
         const f = activeFilters.value['by_order_value']
         if (!f) return false
 
-        const min = f.value.amount_range?.min
-        const max = f.value.amount_range?.max
-
-        return (min != null && max == null) || (min == null && max != null)
+        return f.value.amount_range?.min == null
     })
 
     const isAmountRangeInvalid = (filter: any) => {
-        const min = filter.value.amount_range.min
-        const max = filter.value.amount_range.max
-        return (min != null && max == null) || (min == null && max != null)
+        const min = filter.value.amount_range?.min
+        return min == null
     }
 
      const FILTER_CONFLICTS: Record<string, string[]> = {
@@ -125,8 +121,10 @@ export function useFilterRecipients(props: any) {
 
             // BOOLEAN
             if (config.type === 'boolean') {
-                const payloadValue: any = {
-                    value: val.value ?? true
+                const payloadValue: any = {}
+
+                if (!config.options?.date_range && !config.options?.amount_range) {
+                    payloadValue.value = val.value ?? true
                 }
 
                 if (config.options?.date_range) {
@@ -391,7 +389,7 @@ export function useFilterRecipients(props: any) {
                 }
             }
         }
-
+        
         axios
             .patch(
                 route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters) as unknown as string,
