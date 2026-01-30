@@ -9,7 +9,6 @@
 namespace App\Actions\Masters\MasterCollectionTimeSeries;
 
 use App\Actions\Masters\MasterCollectionTimeSeries\Hydrators\MasterCollectionTimeSeriesHydrateNumberRecords;
-use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionTimeSeries;
@@ -21,7 +20,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessMasterCollectionTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    use WithTimeSeriesRecordsGeneration;
 
     public function getJobUniqueId(int $masterCollectionId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -34,16 +32,15 @@ class ProcessMasterCollectionTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $masterCollection = MasterCollection::find($masterCollectionId);
+
         if (!$masterCollection) {
             return;
         }
 
-        $timeSeries = MasterCollectionTimeSeries::where('master_collection_id', $masterCollection->id)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = MasterCollectionTimeSeries::where('master_collection_id', $masterCollection->id)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
-            $timeSeries = $masterCollection->timeSeries()->create([
-                'frequency' => $frequency,
-            ]);
+            $timeSeries = $masterCollection->timeSeries()->create(['frequency' => $frequency]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to);
@@ -56,9 +53,10 @@ class ProcessMasterCollectionTimeSeriesRecords implements ShouldBeUnique
         $masterAssetsIDs = $timeSeries->masterCollection->masterProducts->pluck('id')->unique()->toArray();
 
         $results = DB::table('invoice_transactions')
+            ->whereIn('master_asset_id', $masterAssetsIDs)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
-            ->whereIn('master_asset_id', $masterAssetsIDs);
+            ->whereNull('deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
@@ -120,7 +118,6 @@ class ProcessMasterCollectionTimeSeriesRecords implements ShouldBeUnique
             )->groupBy(DB::raw('CAST(date AS DATE)'));
         }
 
-
         $results = $results->get();
 
         foreach ($results as $result) {
@@ -146,7 +143,6 @@ class ProcessMasterCollectionTimeSeriesRecords implements ShouldBeUnique
                 $period     = $result->year;
             }
 
-
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_collection_time_series_id' => $timeSeries->id,
@@ -163,11 +159,8 @@ class ProcessMasterCollectionTimeSeriesRecords implements ShouldBeUnique
                     'invoices'           => $result->invoices,
                     'refunds'            => $result->refunds,
                     'orders'             => $result->orders,
-
                 ]
             );
         }
     }
-
-
 }

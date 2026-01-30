@@ -30,7 +30,6 @@ class RedoMasterCollectionTimeSeries
     {
         $assetsIDs = null;
 
-
         $from = $masterCollection->created_at->toDateString();
 
         if ($masterCollection->status) {
@@ -40,7 +39,9 @@ class RedoMasterCollectionTimeSeries
                 if ($assetsIDs == null) {
                     $assetsIDs = $masterCollection->masterProducts()->pluck('master_asset_id')->unique()->toArray();
                 }
-                $lastDate = DB::table('invoice_transactions')->whereIn('master_asset_id', $assetsIDs)->max('date');
+
+                $lastDate = DB::table('invoice_transactions')->whereIn('master_asset_id', $assetsIDs)->whereNull('deleted_at')->max('date');
+
                 if (!$lastDate) {
                     $lastDate = now();
                 }
@@ -49,9 +50,9 @@ class RedoMasterCollectionTimeSeries
                     'inactivated_at' => $lastDate
                 ]);
             }
+
             $to = $masterCollection->inactivated_at->toDateString();
         }
-
 
         if ($from != null && $to != null) {
             foreach ($frequencies as $frequency) {

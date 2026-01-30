@@ -348,9 +348,9 @@ const hoveredButton = ref<string | null>(null)
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->
         <div v-else @click.stop :style="buttonStyleHover"
-            class="rounded-full button-cart bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
+            class="rounded-full button-cart bg-gray-200 h-10 transition-all flex items-center justify-between md:justify-center group-hover:justify-between group-hover:bg-gray-300 overflow-hidden relative shadow md:shadow-lg"
             :class="[
-                'group-hover:w-24 w-10',
+                'group-hover:w-24 w-24 md:w-10',
                 { 'opacity-50': isLoadingSubmitQuantityProduct }
             ]">
 
@@ -362,11 +362,10 @@ const hoveredButton = ref<string | null>(null)
 
             <!-- Minus button (visible on hover) -->
             <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0" @mouseenter="hoveredButton = 'minus'" @mouseleave="hoveredButton = null"  type="button"
-                class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
+                class="md:hidden group-hover:flex w-9 h-9 md:w-6 md:h-6 text-gray-100 hover:bg-gray-100 text-xs items-center justify-center  rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
                 <FontAwesomeIcon :icon="faMinus" :style="{
                     color: hoveredButton === 'minus' ? 'black' : buttonStyleHover?.color
                 }"  />
-
             </button>
 
             <!-- Quantity display (always visible) -->
@@ -378,7 +377,7 @@ const hoveredButton = ref<string | null>(null)
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"  type="button"
                 :disabled="isLoadingSubmitQuantityProduct || (currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
-                class="hidden group-hover:flex w-6 h-6 text-gray-600 text-xs items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
+                class="md:hidden group-hover:flex w-9 h-9 md:w-6 md:h-6 text-gray-100 hover:bg-gray-100 text-xs items-center justify-center  rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
                     color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color
                 }" />

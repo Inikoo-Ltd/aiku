@@ -4,15 +4,18 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import Layout from '@/Layouts/Grp2FA.vue'
 import { useLayoutStore } from '@/Stores/layout'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { faCopy } from '@fal'
+import { faCopy, faDoorClosed, faSignOutAlt } from '@fal'
 import axios from 'axios'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { useLogoutAuth } from '@/Composables/useAppMethod'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 defineOptions({ layout: Layout })
 
 const form = useForm({
@@ -95,6 +98,17 @@ const fetch2Fa = async () => {
 const initialOtp = '';
 const isVerified = ref(false);
 
+const layout = inject("layout", layoutStructure)
+
+const isLoadingLogout = ref(false);
+
+const onLogoutAuth = () => {
+	useLogoutAuth(layout.user, {
+		onStart: () => (isLoadingLogout.value = true),
+		onError: () => (isLoadingLogout.value = false),
+	})
+}
+
 </script>
 
 <template>
@@ -103,10 +117,19 @@ const isVerified = ref(false);
     <div class="space-y-6">
         <div>
             <span for="login" class="block text-sm font-medium text-gray-700">{{ trans("To be able to access the page, you are required to have 2-Factor Authentication") }}</span>
-            <div class="mt-3">
-                <Button :style="'blue-bk-outline'" @click="openModal = !openModal; fetch2Fa()">
-                    {{ trans("Click to enable") }} <LoadingIcon v-if="openModal"/>
-                </Button>
+            <div class="mt-3 grid grid-cols-2">
+                <div>
+                    <Button :style="'blue-bk-outline'" @click="openModal = !openModal; fetch2Fa()">
+                        {{ trans("Click to enable") }} <LoadingIcon v-if="openModal"/>
+                    </Button>
+                </div>
+                <div class="grid justify-items-end">
+                    <Button :style="'red-r-outline'" @click="onLogoutAuth()">
+                        <FontAwesomeIcon :icon="faSignOutAlt" />
+                        {{ trans("Logout") }}
+                        <LoadingIcon v-if="isLoadingLogout"/>
+                    </Button>
+                </div>
             </div>
         </div>
     </div>

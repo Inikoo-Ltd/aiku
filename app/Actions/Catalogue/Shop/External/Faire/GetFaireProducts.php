@@ -35,7 +35,7 @@ class GetFaireProducts extends OrgAction
                 'page' => $page
             ]);
             $fetchedProducts = Arr::get($response, 'products');
-            $faireProducts = array_merge($faireProducts, $fetchedProducts);
+            $faireProducts = array_merge($faireProducts, $fetchedProducts ?? []);
 
             $page++;
         } while (count($fetchedProducts) === $limit);

@@ -18,7 +18,7 @@ use Inertia\Inertia;
 
 require __DIR__."/auth.php";
 
-Route::middleware(["auth"])->group(function () {
+Route::middleware(["auth", "two_fa"])->group(function () {
     Route::get('/', function () {
         return redirect('/dashboard');
     });

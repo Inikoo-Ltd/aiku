@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterAsset\Json;
 use App\Actions\GrpAction;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
@@ -29,7 +30,15 @@ class GetAllTradeUnits extends GrpAction
         return $this->handle(parent: $masterProductCategory);
     }
 
-    public function handle(MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function inExternal(Product $product, ActionRequest $request): LengthAwarePaginator
+    {
+        $parent = $product;
+        $this->initialisation($parent->group, $request);
+
+        return $this->handle(parent: $parent);
+    }
+
+    public function handle(MasterProductCategory|Product $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {

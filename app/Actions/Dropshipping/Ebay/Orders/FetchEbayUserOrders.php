@@ -32,6 +32,10 @@ class FetchEbayUserOrders extends OrgAction
 
         $ebayOrders = Arr::get($response, 'orders', []);
         foreach ($ebayOrders as $ebayOrder) {
+            $ebayUser->debugWebhooks()->create([
+                'data' => $ebayOrder
+            ]);
+
             if (Arr::get($ebayOrder, 'cancelStatus.cancelState') == 'CANCELED') {
                 continue;
             }

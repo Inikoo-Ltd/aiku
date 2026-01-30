@@ -8,7 +8,6 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Discounts\Offer\Hydrators\OfferTimeSeriesHydrateNumberRecords;
-use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferTimeSeries;
@@ -20,7 +19,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    use WithTimeSeriesRecordsGeneration;
 
     public function getJobUniqueId(int $offerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -37,12 +35,10 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
             return;
         }
 
-        $timeSeries = OfferTimeSeries::where('offer_id', $offer->id)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = OfferTimeSeries::where('offer_id', $offer->id)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
-            $timeSeries = $offer->timeSeries()->create([
-                'frequency' => $frequency,
-            ]);
+            $timeSeries = $offer->timeSeries()->create(['frequency' => $frequency]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to, $offer->id);
@@ -54,9 +50,10 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
     {
         $results = DB::table('invoice_transactions')
             ->join('transaction_has_offer_allowances', 'invoice_transactions.transaction_id', '=', 'transaction_has_offer_allowances.transaction_id')
+            ->where('transaction_has_offer_allowances.offer_id', $offerId)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
-            ->where('transaction_has_offer_allowances.offer_id', $offerId);
+            ->whereNull('invoice_transactions.deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
@@ -143,7 +140,6 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
                 $period     = $result->year;
             }
 
-
             $timeSeries->records()->updateOrCreate(
                 [
                     'offer_time_series_id' => $timeSeries->id,
@@ -160,7 +156,6 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
                     'invoices'           => $result->invoices,
                     'refunds'            => $result->refunds,
                     'orders'             => $result->orders,
-
                 ]
             );
         }

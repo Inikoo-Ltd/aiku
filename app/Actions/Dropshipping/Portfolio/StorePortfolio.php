@@ -176,6 +176,8 @@ class StorePortfolio extends OrgAction
                 ),
             ],
             'status'          => 'sometimes|boolean',
+            'platform_product_id'          => 'sometimes|string',
+            'platform_product_variant_id'          => 'sometimes|string',
             'platform_handle' => 'sometimes|string',
             'last_added_at'   => 'sometimes|date'
         ];

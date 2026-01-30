@@ -20,7 +20,6 @@ class RedoMasterAssetTimeSeries
 {
     use WithHydrateCommand;
 
-
     public string $commandSignature = 'master_assets:redo_time_series {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
 
     public function __construct()
@@ -31,17 +30,15 @@ class RedoMasterAssetTimeSeries
     public function handle(MasterAsset $masterAsset, array $frequencies, bool $async = true): void
     {
         $from = null;
-        $firstInvoicedDate = DB::table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->min('date');
+        $firstInvoicedDate = DB::table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $masterAsset->created_at)) {
             $masterAsset->update(['created_at' => $firstInvoicedDate]);
         }
 
-
         if ($masterAsset->created_at) {
             $from = $masterAsset->created_at->toDateString();
         }
-
 
         if ($masterAsset->status) {
             $to = now()->toDateString();
@@ -50,6 +47,7 @@ class RedoMasterAssetTimeSeries
 
             $lastInvoicedDate = DB::table('invoice_transactions')
                 ->where('master_asset_id', $masterAsset->id)
+                ->whereNull('deleted_at')
                 ->max('date');
 
             if (!$to && !$lastInvoicedDate) {
@@ -139,6 +137,4 @@ class RedoMasterAssetTimeSeries
 
         return 0;
     }
-
-
 }

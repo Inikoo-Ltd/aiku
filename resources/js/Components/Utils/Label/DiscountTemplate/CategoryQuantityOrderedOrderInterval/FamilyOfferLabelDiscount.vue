@@ -5,11 +5,12 @@ import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { OfferResource } from '@/types/Catalogue/Offers'
 library.add(faInfoCircle)
 
 const props = defineProps<{
-    offer: OfferResource
+    offer: {
+
+    }
 }>()
 
 const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
@@ -17,28 +18,28 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 
 <template>
     <section
-        class="relative flex justify-between w-full md:w-fit overflow-hidden rounded-lg px-px py-px shadow-md mb-2 bg-[#ff862f]"
+        class="relative flex justify-between w-full md:w-fit overflow-hidden rounded-lg px-px py-px shadow-md mb-2 background-primary"
         aria-label="Volume Discount Offer Label">
 
         <!-- Content -->
-        <div class="w-full relative flex items-center text-white font-bold px-7 text-4xl">
-            <span v-if="offer?.max_percentage_discount">
-                {{ Number(offer?.max_percentage_discount) * 100 }}%
+        <div class="w-fit md:w-full relative flex items-center text-white font-bold px-2 md:px-7 text-lg md:text-4xl min-w-24 text-center">
+            <span v-if="offer?.max_percentage_discount" class="mx-auto">
+                {{ Number(offer?.max_percentage_discount) * 100 }}% OFF
             </span>
             <span v-else>{{ offer.allowances?.[0]?.label }}</span>
         </div>
         
-        <div class="bg-white rounded-md px-2 py-1 flex items-center gap-x-4">
+        <div class="bg-white w-full rounded-md px-2 py-1 flex items-center gap-x-4 border-primary ">
             <div>
                 <!-- <div class="whitespace-nowrap capitalize">{{ offer.allowances?.[0].class }}</div> -->
                 <div class="whitespace-nowrap capitalize">
                     {{ trans("Volume Discount") }}
                 </div>
-                <div class="text-xs whitespace-nowrap opacity-70">
+                <div class="text-xs md:whitespace-nowrap opacity-70">
                     {{ offer.triggers_labels?.join('/') }}
                 </div>
             </div>
-            <span @click="() => (_popoverInfoCircle?.toggle())"
+            <span @click="(e) => (_popoverInfoCircle?.toggle(e))"
                 @mouseenter="_popoverInfoCircle?.show" @mouseleave="_popoverInfoCircle?.hide"
                 class="opacity-60 hover:opacity-100 cursor-pointer">
                 <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
@@ -60,3 +61,16 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
         </Popover>
     </section>
 </template>
+
+
+<style>
+/* .background-primary {
+    background-color: var(--theme-color-4);
+}
+
+.border-primary {
+    border-color: var(--theme-color-4);
+    @apply border
+} */
+
+</style>

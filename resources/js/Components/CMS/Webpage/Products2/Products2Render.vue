@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, difine } from 'vue'
+import { inject, ref } from 'vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope, faHeart as farHeart } from '@far'
 import { faHeart as fasHeart, faStarHalfAlt } from '@fas'
@@ -151,7 +151,7 @@ defineExpose({
 
                     <!-- Section: Discounts -->
                     <div class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer hidden md:block">
-                         <DiscountByType :offers_data="product?.product_offers_data" />
+                         <DiscountByType :offers_data="product?.product_offers_data" template="max_discount" />
                     </div>
 
                     <!-- FAVOURITE -->

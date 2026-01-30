@@ -67,15 +67,15 @@ Broadcast::channel('grp.live.users', function (User $user) {
 });
 
 Broadcast::channel('retina.{websiteId}.website', function (Webuser $webUser, int|string $websiteId) {
-    return $websiteId === $webUser->website_id;
+    return (int) $websiteId === $webUser->website_id;
 });
 
 Broadcast::channel('retina.{customerID}.customer', function (Webuser $webUser, int|string $customerID) {
-    return $customerID === $webUser->customer_id;
+    return (int) $customerID === $webUser->customer_id;
 });
 
 Broadcast::channel('retina.personal.{webUserID}', function (Webuser $webUser, int|string $webUserID) {
-    return $webUserID === $webUser->id;
+    return (int) $webUserID === $webUser->id;
 });
 
 

@@ -318,7 +318,7 @@ const updateCollection = async (e: Event) => {
 
                 <template v-if="!boxStats?.is_collection">
                     <div class="font-semibold xmb-2 text-base">
-                        {{  }}
+                        {{ trans("Shipping") }}
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
@@ -326,14 +326,14 @@ const updateCollection = async (e: Event) => {
                             <div v-if="boxStats.customer_client" class="mb-3">
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
-                                        <strong>Name:</strong>
+                                        <strong>{{ trans("Name") }}:</strong>
                                         {{ boxStats.customer_client.contact_name || boxStats.customer_client.name }}
                                     </div>
                                     <div v-if="boxStats.customer_client.email">
-                                        <strong>Email:</strong> {{ boxStats.customer_client.email }}
+                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.customer_client.email }}
                                     </div>
                                     <div v-if="boxStats.customer_client.phone">
-                                        <strong>Phone:</strong> {{ boxStats.customer_client.phone }}
+                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.customer_client.phone }}
                                     </div>
                                 </div>
                             </div>
@@ -377,8 +377,8 @@ const updateCollection = async (e: Event) => {
                                 {{ boxStats?.picker?.contact_name }}
                             </dd>
                         </dl>
-                        <div class="mt-2 border-t border-gray-300 w-full" />
                     </div>
+                    <div class="mt-2 border-t border-gray-300 w-full" />
 
                     <!-- Current State -->
                     <dl xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -427,7 +427,7 @@ const updateCollection = async (e: Event) => {
                                 <div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
                                 <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-                                <template v-if="!(boxStats?.shipments?.length > 1) && deliveryNote?.state === 'packed'">
+                                <template v-if="!(boxStats?.shipments?.length >= 1) && deliveryNote?.state === 'packed'">
                                     <div v-if="boxStats?.parcels?.length"
                                         @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
                                         class="cursor-pointer text-gray-400 hover:text-gray-600">
@@ -446,6 +446,10 @@ const updateCollection = async (e: Event) => {
                                         <LoadingIcon />
                                     </div>
                                 </template>
+
+                                <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="trans('Remove shipment to edit parcels')">
+                                    {{ trans("Not editable") }}
+                                </div>
                             </div>
 
                             <ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">

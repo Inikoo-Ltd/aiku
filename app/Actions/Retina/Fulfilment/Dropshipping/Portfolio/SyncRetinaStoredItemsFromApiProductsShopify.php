@@ -20,6 +20,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -55,39 +56,55 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
 
         } while ($nextPage);
 
-        foreach ($products as $product) {
-            DB::transaction(function () use ($product, $shopifyUser, $shopType) {
-                $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
-                    ->where('reference', $product['handle'])->first();
-                $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'variants.0.product_id'))->first();
+        DB::transaction(function () use ($products, $shopifyUser, $shopType) {
+            foreach ($products as $product) {
+                foreach ($product['variants'] as $variant) {
 
-                if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
-                    if (!$storedItem) {
-                        $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
-                            'reference' => $product['handle'],
-                            'total_quantity' => Arr::get($product, 'variants.0.inventory_quantity')
+                    $sku = $variant['sku'];
+                    if (!$variant['sku']) {
+                        $sku = Str::slug($variant['title']);
+                    }
+
+                    $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
+                        ->where('reference', $sku)->first();
+                    $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'variants.0.product_id'))->first();
+
+                    $qty = Arr::get($variant, 'inventory_quantity');
+
+                    if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
+                        if (!$storedItem) {
+
+                            if ($qty == 0 || $qty < 0) {
+                                continue;
+                            }
+
+                            $storedItem = StoreStoredItem::make()->action($shopifyUser->customer->fulfilmentCustomer, [
+                                'reference' => $sku,
+                                'total_quantity' => $qty
+                            ]);
+                        }
+
+                        $portfolio = $storedItem->portfolio;
+                        if (!$portfolio) {
+
+                            StorePortfolio::make()->action(
+                                $shopifyUser->customerSalesChannel,
+                                $storedItem,
+                                [
+                                    'platform_product_id' => Arr::get($product, 'admin_graphql_api_id'),
+                                    'platform_product_variant_id' => Arr::get($variant, 'admin_graphql_api_id'),
+                                ]
+                            );
+                        }
+
+                        UpdateStoredItem::run($storedItem, [
+                            'state' => StoredItemStateEnum::ACTIVE
                         ]);
                     }
 
-                    $portfolio = $storedItem->portfolio;
-                    if (!$portfolio) {
-
-                        StorePortfolio::make()->action(
-                            $shopifyUser->customerSalesChannel,
-                            $storedItem,
-                            [
-                                'platform_product_id' => Arr::get($product, 'variants.0.product_id'),
-                            ]
-                        );
-                    }
-
-                    UpdateStoredItem::run($storedItem, [
-                        'state' => StoredItemStateEnum::ACTIVE
-                    ]);
                 }
-            });
-
-        }
+            }
+        });
     }
 
     /**
@@ -98,6 +115,6 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
 
-        $this->handle($shopifyUser);
+        SyncRetinaStoredItemsFromApiProductsShopify::dispatch($shopifyUser);
     }
 }

@@ -117,9 +117,8 @@ class ShowIrisWebpage
             // Use current URL without query parameters for canonical comparison
             $currentUrl = rtrim($request->url(), '/');
 
-            // Normalize canonical URL to current environment and strip any query parameters
-            $canonNoQuery    = explode('?', $canonicalUrl, 2)[0];
-            $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonNoQuery, '/'));
+
+            $normalizedCanon = $this->getEnvironmentUrl($canonicalUrl);
 
             if ($normalizedCanon !== $currentUrl) {
                 return $this->getEnvironmentUrl($canonicalUrl);
@@ -146,9 +145,11 @@ class ShowIrisWebpage
     public function getEnvironmentUrl($url)
     {
         $environment = app()->environment();
-        $website     = request()->website ?? null;
-
+        if ($environment == 'production') {
+            return $url;
+        }
         if ($environment === 'local') {
+            $website  = request()->website ?? null;
             $shopType = $website?->shop?->type ?? null;
 
             $localDomain = match ($shopType) {
@@ -158,7 +159,8 @@ class ShowIrisWebpage
             };
 
             return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
-        } elseif ($environment == 'staging') {
+        }
+        if ($environment == 'staging') {
             return replaceUrlSubdomain($url, 'canary');
         }
 

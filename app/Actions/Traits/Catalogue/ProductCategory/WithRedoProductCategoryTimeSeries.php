@@ -31,16 +31,13 @@ trait WithRedoProductCategoryTimeSeries
             return;
         }
 
-
         $from = null;
 
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction}_id", $productCategory->id)->min('date');
-
+        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $productCategory->created_at)) {
             $productCategory->update(['created_at' => $firstInvoicedDate]);
         }
-
 
         if ($productCategory->created_at) {
             $from = $productCategory->created_at->toDateString();
@@ -57,6 +54,7 @@ trait WithRedoProductCategoryTimeSeries
 
             $lastInvoicedDate = DB::table('invoice_transactions')
                 ->where("{$this->restriction}_id", $productCategory->id)
+                ->whereNull('deleted_at')
                 ->max('date');
 
             if (!$to && !$lastInvoicedDate) {
@@ -80,14 +78,16 @@ trait WithRedoProductCategoryTimeSeries
         } else {
             $to = DB::table('invoice_transactions')
                 ->where("{$this->restriction}_id", $productCategory->id)
+                ->whereNull('deleted_at')
                 ->max('date');
+
             if (!$to) {
                 return;
             }
+
             $to = Carbon::parse($to);
             $to = $to->toDateString();
         }
-
 
         if ($from != null && $to != null) {
             foreach ($frequencies as $frequency) {
