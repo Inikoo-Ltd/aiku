@@ -2,8 +2,10 @@ import { ref, computed, reactive, watch } from 'vue'
 import { debounce } from 'lodash-es'
 import axios from 'axios'
 import { router } from '@inertiajs/vue3'
+import { trans } from 'laravel-vue-i18n'
+import { notify } from '@kyvg/vue3-notification'
 
-export function useFilterRecipients(props: any, notify: any) {
+export function useFilterRecipients(props: any) {
     /* ---------------- STATE ---------------- */
     const activeFilters = ref<Record<string, any>>(
         props.filters ? { ...props.filters } : {}
@@ -80,15 +82,6 @@ export function useFilterRecipients(props: any, notify: any) {
     }
 
     /* ---------------- PAYLOAD ---------------- */
-    // const filtersPayload = computed(() => {
-    //     const payload: any = {}
-
-    //     Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
-    //         payload[key] = { value: filter.value }
-    //     })
-
-    //     return payload
-    // })
     const filtersPayload = computed(() => {
         const payload: any = {}
 
@@ -101,9 +94,7 @@ export function useFilterRecipients(props: any, notify: any) {
                 if (key === 'orders_in_basket') {
                     payload[key] = {
                         value: {
-                            date_range: val.mode === 'custom'
-                                ? val.date_range
-                                : val.mode,
+                            date_range: val.date_range ?? null,
                             amount_range: val.amount_range
                         }
                     }
@@ -136,15 +127,6 @@ export function useFilterRecipients(props: any, notify: any) {
 
             // MULTISELECT (simple)
             if (config.type === 'multiselect') {
-                // const ids = Array.isArray(val.ids)
-                //     ? val.ids
-                //     : val.ids != null
-                //         ? [val.ids]
-                //         : []
-
-                // payload[key] = {
-                //     value: ids
-                // }
                 if (config.label === 'By Family Never Ordered') {
                     payload[key] = {
                         value: val.ids != null ? [val.ids] : []
@@ -190,8 +172,11 @@ export function useFilterRecipients(props: any, notify: any) {
 
     /* ---------------- FETCH CUSTOMERS ---------------- */
     const fetchCustomers = debounce(() => {
+        const currentRoute = route().current()
+        if (!currentRoute) return
+
         router.get(
-            route(route().current(), route().params),
+            route(currentRoute, route().params),
             { filters: filtersPayload.value },
             {
                 preserveState: true,
@@ -202,7 +187,173 @@ export function useFilterRecipients(props: any, notify: any) {
         )
     }, 400)
 
-    
+    function findConfigByKey(structure: any, key: string) {
+        for (const group of Object.values(structure)) {
+            if (group.filters?.[key]) return group.filters[key]
+        }
+        return null
+    }
+
+    function normalizeDate(d: string | null) {
+        if (!d) return null
+        return d.split('T')[0]
+    }
+
+    const presetMeters = ['5000', '10000', '25000', '50000', '100000']
+
+    function unwrapBoolean(val: any) {
+        let v = val
+        while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
+            v = v.value
+        }
+        return v
+    }
+
+    function dayDiff(start, end) {
+        const s = new Date(start)
+        const e = new Date(end)
+        return Math.round((e - s) / (1000*60*60*24))
+    }
+
+    function hydrateSavedFilters(saved: any, structure: any) {
+        const hydrated: any = {}
+
+        Object.entries(saved || {}).forEach(([key, wrapper]: any) => {
+            const config = findConfigByKey(structure, key)
+            if (!config) return
+            let val
+
+            if (key === 'orders_in_basket') {
+                val = wrapper
+            } else {
+                val = typeof wrapper === 'object' && 'value' in wrapper
+                    ? wrapper
+                    : { value: wrapper }
+            }
+
+            const raw = val?.value ?? val
+            let uiValue: any = {}
+
+            if (config.type === 'boolean') {
+                const clean = unwrapBoolean(val)
+
+                if (key === 'orders_in_basket') {
+                    const dr = clean.date_range
+
+                    uiValue = {
+                        value: true,
+                        mode: 'custom', // default
+
+                        date_range: Array.isArray(dr)
+                            ? [normalizeDate(dr[0]), normalizeDate(dr[1])]
+                            : null,
+
+                        amount_range: clean.amount_range ?? { min: null, max: null }
+                    }
+
+                    // coba cocokkan dengan preset
+                    if (Array.isArray(dr)) {
+                        const diff = dayDiff(dr[0], dr[1])
+
+                        if ([3,7,14].includes(diff)) {
+                            uiValue.mode = diff
+                        }
+                    }
+
+                } else {
+                    uiValue = {
+                        value: clean.value ?? true,
+                        date_range: Array.isArray(clean.date_range)
+                            ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
+                            : null,
+                        amount_range: clean.amount_range ?? { min: null, max: null },
+                        date_range_preset: null
+                    }
+                }
+            }
+
+            else if (config.type === 'select') {
+                uiValue = typeof val === 'object' && 'value' in val
+                    ? val.value
+                    : val
+            }
+
+            else if (config.type === 'multiselect') {
+                if (config.behavior_options) {
+                    uiValue = {
+                        ids: val?.ids ?? [],
+                        behaviors: val?.behaviors ?? ['purchased'],
+                        combine_logic: val?.combine_logic ?? 'or'
+                    }
+                }
+
+                else {
+                    const src = wrapper?.value ?? wrapper
+
+                    if (config.label === 'By Family Never Ordered') {
+                        uiValue = {
+                            ids: Array.isArray(src) ? src[0] ?? null : src ?? null
+                        }
+                    } else {
+                        uiValue = {
+                            ids: Array.isArray(src)
+                                ? src
+                                : Array.isArray(src?.ids)
+                                    ? src.ids
+                                    : []
+                        }
+                    }
+                }
+            }
+
+            else if (config.type === 'entity_behaviour') {
+                uiValue = {
+                    ids: raw.ids ?? [],
+                    behaviors: Array.isArray(raw.behaviors)
+                        ? raw.behaviors
+                        : raw.behaviors
+                            ? [raw.behaviors]
+                            : [],
+                    combine_logic: typeof raw.combine_logic === 'boolean'
+                        ? raw.combine_logic
+                        : true
+                }
+            }
+
+            else if (config.type === 'location') {
+                const v = val?.value ?? {}
+
+                let radiusPreset = '5000'
+                let radiusCustom = null
+
+                if (v.radius) {
+                    const asString = String(v.radius)
+
+                    if (presetMeters.includes(asString)) {
+                        radiusPreset = asString
+                    } else {
+                        radiusPreset = 'custom'
+                        radiusCustom = Number(v.radius)
+                    }
+                }
+
+                uiValue = {
+                    mode: v.mode ?? 'direct',
+                    country_ids: v.country_ids ?? [],
+                    postal_codes: v.postal_codes ?? [],
+                    location: v.location ?? '',
+                    radius: radiusPreset,
+                    radius_custom: radiusCustom,
+                    lat: v.lat ?? 0,
+                    lng: v.lng ?? 0,
+                    zoom: 10
+                }
+            }
+            hydrated[key] = { config, value: uiValue }
+        })
+
+        return hydrated
+    }
 
     const saveFilters = async () => {
 
@@ -215,10 +366,10 @@ export function useFilterRecipients(props: any, notify: any) {
                 }
             }
         }
-        console.log('[SAVE FILTER PAYLOAD]', payload)
+
         axios
             .patch(
-                route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters),
+                route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters) as unknown as string,
                 {
                     recipients_recipe: payload
                 },
@@ -238,7 +389,7 @@ export function useFilterRecipients(props: any, notify: any) {
                 })
             })
             .finally(() => {
-                console.log('finally')
+                // console.log('finally')
             });
     }
 
@@ -310,6 +461,7 @@ export function useFilterRecipients(props: any, notify: any) {
         if (val.mode === 'direct' && (val.country_ids?.length || val.postal_codes?.length)) return true
         return false
     }
+
     const radiusInMeters = (val: any) => {
         const km = val.radius === 'custom'
             ? Number(val.radius_custom) || 0
@@ -330,6 +482,7 @@ export function useFilterRecipients(props: any, notify: any) {
         })
     }
     return {
+        hydrateSavedFilters,
         activeFilters,
         activeFilterCount,
         isAllCustomers,
@@ -349,3 +502,7 @@ export function useFilterRecipients(props: any, notify: any) {
         getLatLngToLocation,
     }
 }
+function dayDiff(arg0: any, arg1: any) {
+    throw new Error('Function not implemented.')
+}
+

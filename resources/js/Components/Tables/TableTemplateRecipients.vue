@@ -23,12 +23,10 @@ import {
     faBan, faUsers
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { inject, reactive, computed, watch, ref, onMounted, nextTick } from "vue";
+import { reactive, computed, watch, ref, onMounted, nextTick } from "vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
-import { debounce } from 'lodash'
-import { router } from '@inertiajs/vue3'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { Button as ButtonPrime, InputNumber, InputText, RadioButton } from 'primevue'
@@ -40,8 +38,6 @@ import Checkbox from 'primevue/checkbox'
 import ToggleButton from 'primevue/togglebutton'
 import { routeType } from '@/types/route'
 import axios from 'axios'
-import { notify } from '@kyvg/vue3-notification'
-import { trans } from "laravel-vue-i18n"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { LMap, LTileLayer, LMarker, LTooltip, LCircle } from "@vue-leaflet/vue-leaflet"
@@ -96,7 +92,8 @@ const {
     shouldShowMap,
     saveFilters,
     getPostalCodeModel,
-} = useFilterRecipients(props, notify)
+    hydrateSavedFilters,
+} = useFilterRecipients(props)
 
 const filterMenu = ref()
 
@@ -139,156 +136,6 @@ const onPresetChange = (filter: any, event: any) => {
 
 const formatNumber = (num: number | null | undefined) => {
     return new Intl.NumberFormat('en-GB').format(num ?? 0)
-}
-
-function findConfigByKey(structure: any, key: string) {
-    for (const group of Object.values(structure)) {
-        if (group.filters?.[key]) return group.filters[key]
-    }
-    return null
-}
-
-function normalizeDate(d: string | null) {
-    if (!d) return null
-    return d.split('T')[0]
-}
-
-const presetMeters = ['5000', '10000', '25000', '50000', '100000']
-function unwrapBoolean(val: any) {
-    let v = val
-    while (v && typeof v === 'object' && 'value' in v && typeof v.value === 'object') {
-        v = v.value
-    }
-    return v
-}
-
-function hydrateSavedFilters(saved: any, structure: any) {
-    const hydrated: any = {}
-
-    Object.entries(saved || {}).forEach(([key, wrapper]: any) => {
-        const config = findConfigByKey(structure, key)
-        if (!config) return
-        let val
-
-        if (key === 'orders_in_basket') {
-            val = wrapper
-        } else {
-            val = typeof wrapper === 'object' && 'value' in wrapper
-                ? wrapper
-                : { value: wrapper }
-        }
-
-        const raw = val?.value ?? val
-        let uiValue: any = {}
-
-        if (config.type === 'boolean') {
-            const clean = unwrapBoolean(val)
-
-            if (key === 'orders_in_basket') {
-                const isCustom = Array.isArray(clean.date_range)
-
-                uiValue = {
-                    value: true,
-                    mode: isCustom ? 'custom' : clean.date_range,
-                    date_range: isCustom
-                        ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
-                        : clean.date_range ?? null,
-                    amount_range: clean.amount_range ?? { min: null, max: null }
-                }
-
-            } else {
-                uiValue = {
-                    value: clean.value ?? true,
-                    date_range: Array.isArray(clean.date_range)
-                        ? [normalizeDate(clean.date_range[0]), normalizeDate(clean.date_range[1])]
-                        : null,
-                    amount_range: clean.amount_range ?? { min: null, max: null },
-                    date_range_preset: null
-                }
-            }
-        }
-
-        else if (config.type === 'select') {
-            uiValue = typeof val === 'object' && 'value' in val
-                ? val.value
-                : val
-        }
-
-        else if (config.type === 'multiselect') {
-            if (config.behavior_options) {
-                uiValue = {
-                    ids: val?.ids ?? [],
-                    behaviors: val?.behaviors ?? ['purchased'],
-                    combine_logic: val?.combine_logic ?? 'or'
-                }
-            }
-
-            else {
-                const src = wrapper?.value ?? wrapper
-
-                if (config.label === 'By Family Never Ordered') {
-                    uiValue = {
-                        ids: Array.isArray(src) ? src[0] ?? null : src ?? null
-                    }
-                } else {
-                    uiValue = {
-                        ids: Array.isArray(src)
-                            ? src
-                            : Array.isArray(src?.ids)
-                                ? src.ids
-                                : []
-                    }
-                }
-            }
-        }
-
-        else if (config.type === 'entity_behaviour') {
-            uiValue = {
-                ids: raw.ids ?? [],
-                behaviors: Array.isArray(raw.behaviors)
-                    ? raw.behaviors
-                    : raw.behaviors
-                        ? [raw.behaviors]
-                        : [],
-                combine_logic: typeof raw.combine_logic === 'boolean'
-                    ? raw.combine_logic
-                    : true
-            }
-        }
-
-        else if (config.type === 'location') {
-            const v = val?.value ?? {}
-
-            let radiusPreset = '5000'
-            let radiusCustom = null
-
-            if (v.radius) {
-                const asString = String(v.radius)
-
-                if (presetMeters.includes(asString)) {
-                    radiusPreset = asString
-                } else {
-                    radiusPreset = 'custom'
-                    radiusCustom = Number(v.radius)
-                }
-            }
-
-            uiValue = {
-                mode: v.mode ?? 'direct',
-                country_ids: v.country_ids ?? [],
-                postal_codes: v.postal_codes ?? [],
-                location: v.location ?? '',
-                radius: radiusPreset,
-                radius_custom: radiusCustom,
-                lat: v.lat ?? 0,
-                lng: v.lng ?? 0,
-                zoom: 10
-            }
-        }
-        hydrated[key] = { config, value: uiValue }
-    })
-
-    return hydrated
 }
 
 const preloadedEntities = reactive<Record<string, any[]>>({})
@@ -350,31 +197,40 @@ function getEntityFetchRoute(key: string) {
     return null
 }
 
-function onBasketModeChange(filter: { value: { mode: any; date_range: null; }; }, event: { value: any; }) {
+function onBasketModeChange(filter, event) {
     const val = event.value
 
-    const newVal = { ...filter.value }
+    filter.value.mode = val
 
     if (val === 'custom') {
-        newVal.date_range = Array.isArray(newVal.date_range)
-            ? newVal.date_range
-            : null
-    } else {
-        newVal.date_range = val
+        filter.value.date_range = null
+        return
     }
 
-    filter.value = newVal
+    const days = Number(val)
+    if (!isNaN(days)) {
+        const end = new Date()
+        const start = new Date()
+        start.setDate(end.getDate() - days)
+
+        filter.value.date_range = [
+            formatDate(start),
+            formatDate(end)
+        ]
+    }
 }
+
+function formatDate(d) {
+    return d.toISOString().split('T')[0]
+}
+
 
 onMounted(async () => {
     if (props.recipientsRecipe) {
-        console.log('EDIT MODE', props.recipientsRecipe)
-
         activeFilters.value = hydrateSavedFilters(
             props.recipientsRecipe,
             props.filtersStructure
         )
-
 
         for (const [key, filter] of Object.entries(activeFilters.value)) {
             if (filter.config.type === 'entity_behaviour') {
@@ -387,7 +243,6 @@ onMounted(async () => {
         }
         await nextTick()
         fetchCustomers()
-        console.log("activeFilters.value onmounted", activeFilters.value)
     }
 })
 
@@ -409,8 +264,6 @@ watch(
     },
     { deep: true }
 )
-
-console.log("props table", props)
 </script>
 
 <template>
@@ -507,9 +360,10 @@ console.log("props table", props)
                 <template v-else-if="filter.config.type === 'multiselect'">
                     <template v-if="filter.config.label === 'By Family Never Ordered'">
                         <div class="min-w-0 w-full mb-3">
-                            <PureMultiselectInfiniteScroll :key="key" mode="single" v-model="filter.value.ids"
-                                :initOptions="preloadedEntities[key] || []" :fetchRoute="getEntityFetchRoute(key)"
-                                valueProp="id" labelProp="name" placeholder="Select items..." />
+                            <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute(key)" :key="key" mode="single"
+                                v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
+                                :fetchRoute="getEntityFetchRoute(key)!" valueProp="id" labelProp="name"
+                                placeholder="Select items..." />
                         </div>
                     </template>
 
@@ -525,9 +379,10 @@ console.log("props table", props)
 
                 <template v-else-if="filter.config.type === 'entity_behaviour'">
                     <div class="min-w-0 w-full mb-3">
-                        <PureMultiselectInfiniteScroll :key="key" mode="multiple" v-model="filter.value.ids"
-                            :initOptions="preloadedEntities[key] || []" :fetchRoute="getEntityFetchRoute(key)"
-                            valueProp="id" labelProp="name" placeholder="Select items..." />
+                        <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute(key)" :key="key" mode="multiple"
+                            v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
+                            :fetchRoute="getEntityFetchRoute(key)!" valueProp="id" labelProp="name"
+                            placeholder="Select items..." />
                     </div>
                     <div class="mb-3">
                         <div class="flex items-center gap-6">
