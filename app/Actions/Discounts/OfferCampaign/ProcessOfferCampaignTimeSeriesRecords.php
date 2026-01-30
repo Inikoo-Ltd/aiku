@@ -5,52 +5,52 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Discounts\Offer;
+namespace App\Actions\Discounts\OfferCampaign;
 
-use App\Actions\Discounts\Offer\Hydrators\OfferTimeSeriesHydrateNumberRecords;
+use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignTimeSeriesHydrateNumberRecords;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferTimeSeries;
+use App\Models\Discounts\OfferCampaign;
+use App\Models\Discounts\OfferCampaignTimeSeries;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
+class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(int $offerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
+    public function getJobUniqueId(int $offerCampaignId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
-        return "$offerId:$frequency->value:$from:$to";
+        return "$offerCampaignId:$frequency->value:$from:$to";
     }
 
-    public function handle(int $offerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
+    public function handle(int $offerCampaignId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 
-        $offer = Offer::find($offerId);
-        if (!$offer) {
+        $offerCampaign = OfferCampaign::find($offerCampaignId);
+        if (!$offerCampaign) {
             return;
         }
 
-        $timeSeries = OfferTimeSeries::where('offer_id', $offer->id)->where('frequency', $frequency->value)->first();
+        $timeSeries = OfferCampaignTimeSeries::where('offer_campaign_id', $offerCampaign->id)->where('frequency', $frequency->value)->first();
 
         if (!$timeSeries) {
-            $timeSeries = $offer->timeSeries()->create(['frequency' => $frequency]);
+            $timeSeries = $offerCampaign->timeSeries()->create(['frequency' => $frequency]);
         }
 
-        $this->processTimeSeries($timeSeries, $from, $to, $offer->id);
+        $this->processTimeSeries($timeSeries, $from, $to, $offerCampaign->id);
 
-        OfferTimeSeriesHydrateNumberRecords::run($timeSeries->id);
+        OfferCampaignTimeSeriesHydrateNumberRecords::run($timeSeries->id);
     }
 
-    protected function processTimeSeries(OfferTimeSeries $timeSeries, string $from, string $to, int $offerId): void
+    protected function processTimeSeries(OfferCampaignTimeSeries $timeSeries, string $from, string $to, int $offerCampaignId): void
     {
         $results = DB::table('invoice_transactions')
             ->join('transaction_has_offer_allowances', 'invoice_transactions.transaction_id', '=', 'transaction_has_offer_allowances.transaction_id')
-            ->where('transaction_has_offer_allowances.offer_id', $offerId)
+            ->where('transaction_has_offer_allowances.offer_campaign_id', $offerCampaignId)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
@@ -142,9 +142,9 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
 
             $timeSeries->records()->updateOrCreate(
                 [
-                    'offer_time_series_id' => $timeSeries->id,
-                    'period'               => $period,
-                    'frequency'            => $timeSeries->frequency->singleLetter()
+                    'offer_campaign_time_series_id' => $timeSeries->id,
+                    'period'                        => $period,
+                    'frequency'                     => $timeSeries->frequency->singleLetter()
                 ],
                 [
                     'from'               => $periodFrom,
