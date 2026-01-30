@@ -27,8 +27,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Discounts\OfferCampaign;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 
 class ShowDiscountsDashboard extends OrgAction
 {
@@ -55,21 +53,6 @@ class ShowDiscountsDashboard extends OrgAction
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
-        $hasFirstOrderCampaign = OfferCampaign::where('shop_id', $this->shop->id)
-            ->where('type', OfferCampaignTypeEnum::FIRST_ORDER)
-            ->exists();
-
-        $firstOrderBonus = null;
-        if ($hasFirstOrderCampaign) {
-            $campaign = OfferCampaign::where('shop_id', $this->shop->id)
-                ->where('type', OfferCampaignTypeEnum::FIRST_ORDER)
-                ->first();
-
-            $firstOrderBonus = $campaign->offers()->first();
-        }
-
-        $routeParameters = $request->route()->originalParameters();
-
 
         $timeSeriesStats = [];
         if ($saved_interval === DateIntervalEnum::CUSTOM) {
@@ -87,9 +70,9 @@ class ShowDiscountsDashboard extends OrgAction
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
             [
-                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'        => __('Offers Dashboard'),
-                'pageHead'     => [
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'       => __('Offers Dashboard'),
+                'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-badge-percent'],
                         'title' => __('Offers Dashboard')
@@ -99,23 +82,22 @@ class ShowDiscountsDashboard extends OrgAction
                         'title' => __('Offer')
                     ],
                     'title'     => __('Offers Dashboard'),
-                    'actions'   => $this->getHeaderActions($firstOrderBonus, $routeParameters),
                 ],
-                'intervals' => [
+                'intervals'   => [
                     'options'        => $this->dashboardIntervalOption(),
                     'value'          => $saved_interval,
                     'range_interval' => DashboardIntervalFilters::run($saved_interval, $userSettings),
                 ],
-                'settings'  => [
+                'settings'    => [
                     'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                     'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                 ],
-                'tabs'          => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => DiscountsDashboardTabsEnum::navigation()
                 ],
-                'blocks'        => [
+                'blocks'      => [
                     'id'          => 'sales_table',
                     'type'        => 'table',
                     'current_tab' => 'offer_campaigns',
@@ -132,30 +114,9 @@ class ShowDiscountsDashboard extends OrgAction
                         ],
                     ],
                 ],
-                'stats'         => [
-                    [
-                        'name'      => __('Campaigns'),
-                        'value'     => $this->shop->discountsStats->number_offer_campaigns_state_active,
-                        'icon'      => 'fal fa-comment-dollar',
-                        'route'     => [
-                            'name'       => 'grp.org.shops.show.discounts.campaigns.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ],
-                    [
-                        'name'      => __('Offers'),
-                        'value'     => $this->shop->discountsStats->number_offers_state_active,
-                        'icon'      => 'fal fa-badge-percent',
-                        'route'     => [
-                            'name'       => 'grp.org.shops.show.discounts.offers.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ],
-                ],
-                'data'  => [
-                    'currency'  => $this->shop->currency
-                ],
-                'first_order_bonus' => $firstOrderBonus
+                'data'        => [
+                    'currency' => $this->shop->currency
+                ]
             ]
         );
     }
@@ -166,23 +127,23 @@ class ShowDiscountsDashboard extends OrgAction
 
         if (!$offer) {
             $actions[] = [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('Create First Order Bonus'),
-                'disabled'  => true,
-                'route' => [
+                'type'     => 'button',
+                'style'    => 'create',
+                'label'    => __('Create First Order Bonus'),
+                'disabled' => true,
+                'route'    => [
                     'name'       => 'grp.org.shops.show.discounts.offers.create',
                     'parameters' => $routeParameters
                 ],
                 // 'tooltip' => __('Create First Order Bonus')
-                'tooltip' => __('Create First Order Bonus (not available yet)')
+                'tooltip'  => __('Create First Order Bonus (not available yet)')
             ];
         } else {
             $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'label' => __('Edit First Order Bonus'),
-                'route' => [
+                'type'    => 'button',
+                'style'   => 'edit',
+                'label'   => __('Edit First Order Bonus'),
+                'route'   => [
                     'name'       => 'grp.org.shops.show.discounts.offers.edit',
                     'parameters' => array_merge($routeParameters, [
                         'offer' => $offer->slug

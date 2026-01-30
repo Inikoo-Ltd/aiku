@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
+use App\Actions\Discounts\OfferCampaign\ProcessOfferCampaignTimeSeriesRecords;
 use App\Actions\Masters\MasterAssetTimeSeries\ProcessMasterAssetTimeSeriesRecords;
 use App\Actions\Masters\MasterProductCategoryTimeSeries\ProcessMasterProductCategoryTimeSeriesRecords;
 use App\Actions\OrgAction;
@@ -175,16 +176,29 @@ class DeleteInvoiceTransaction extends OrgAction
         }
 
         if ($invoiceTransaction->transaction) {
-            foreach ($invoiceTransaction->transaction->offers as $offer) {
+            foreach ($invoiceTransaction->transaction->offerAllowances as $offerAllowance) {
                 foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                     ProcessOfferTimeSeriesRecords::dispatch(
-                        $offer->id,
+                        $offerAllowance->offer_id,
                         $frequency,
                         match ($frequency) {
-                            TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                            TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                            TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                            TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
+                            TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->startOfYear()->toDateString(),
+                            TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->startOfQuarter()->toDateString(),
+                            TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->startOfMonth()->toDateString(),
+                            TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->startOfWeek()->toDateString(),
+                            TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
+                        },
+                        $invoiceDate->toDateString()
+                    )->delay($this->hydratorsDelay);
+
+                    ProcessOfferCampaignTimeSeriesRecords::dispatch(
+                        $offerAllowance->offer_campaign_id,
+                        $frequency,
+                        match ($frequency) {
+                            TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->startOfYear()->toDateString(),
+                            TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->startOfQuarter()->toDateString(),
+                            TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->startOfMonth()->toDateString(),
+                            TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->startOfWeek()->toDateString(),
                             TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
                         },
                         $invoiceDate->toDateString()

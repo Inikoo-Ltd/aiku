@@ -77,6 +77,7 @@ import PricingIris from "@/Components/CMS/Webpage/Pricing/PricingIris.vue"
 import ButtonIris from "@/Components/CMS/Webpage/Button/ButtonIris.vue"
 import ColumnIris from "@/Components/CMS/Webpage/Column/ColumnIris.vue"
 import Column3Iris from "@/Components/CMS/Webpage/Column3/Column3Iris.vue"
+import Column4Iris from "@/Components/CMS/Webpage/Column4/Column4Iris.vue"
 import DisclosureIris from "@/Components/CMS/Webpage/Disclosure/DisclosureIris.vue"
 import TimelineIris from "@/Components/CMS/Webpage/Timeline/TimelineIris.vue"
 
@@ -177,6 +178,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		button: ButtonIris,
 		"column-layout-2": ColumnIris,
 		"column-layout-3": Column3Iris,
+		"column-layout-4": Column4Iris,
 		disclosure: DisclosureIris,
 		timeline: TimelineIris,
 

@@ -8,8 +8,6 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
@@ -30,7 +28,7 @@ class RepairShopifyPortfoliosUpdateDescription
     {
         list($status, $response) = UpdateShopifyProduct::run($portfolio);
 
-        if($status === true) {
+        if ($status === true) {
             $command->info("Successfully updated shopify product $portfolio->item_code description.\n");
         }
     }
