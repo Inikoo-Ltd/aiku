@@ -20,7 +20,6 @@ class ShowMailshotRecipients extends OrgAction
     {
         $requestFilters = $request->input('filters', []);
 
-        // $currentFilters = empty($requestFilters) ? $mailshot->recipients_recipe : $requestFilters;
         $currentFilters = empty($requestFilters) ? $mailshot->recipients_recipe : $requestFilters;
         $previewMailshot = $mailshot->replicate();
         $previewMailshot->id = $mailshot->id;
@@ -34,13 +33,13 @@ class ShowMailshotRecipients extends OrgAction
             ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
             ->orderBy('name')
             ->get()
-            ->map(fn($tag) => ['value' => $tag->id, 'label' => $tag->name])
+            ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
             ->toArray();
 
         $countries = Country::query()
             ->orderBy('name')
             ->get()
-            ->map(fn($country) => [
+            ->map(fn ($country) => [
                 'value' => $country->id,
                 'label' => $country->name,
             ])
