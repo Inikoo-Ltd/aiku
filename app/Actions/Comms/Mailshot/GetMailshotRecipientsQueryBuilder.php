@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Comms\Mailshot\Filters\FilterByDepartment;
 use App\Actions\Comms\Mailshot\Filters\FilterByFamily;
 use Illuminate\Support\Arr;
 use App\Models\CRM\Customer;
@@ -101,6 +102,7 @@ class GetMailshotRecipientsQueryBuilder
         $query->whereNotNull('email');
 
         $filters = $mailshot->recipients_recipe;
+        \Log::info('GetMailshotRecipientsQueryBuilder: ' . json_encode($filters));
 
         // Filter Registered Never Ordered
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);
@@ -119,6 +121,9 @@ class GetMailshotRecipientsQueryBuilder
 
         // FILTER: By Subdepartment
         (new FilterBySubdepartment())->apply($query, $filters);
+
+        // FILTER: By Department
+        (new FilterByDepartment())->apply($query, $filters);
 
         // FILTER: By Showroom Orders
         (new FilterByShowroomOrders())->apply($query, $filters);
