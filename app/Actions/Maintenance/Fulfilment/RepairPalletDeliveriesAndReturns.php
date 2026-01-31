@@ -101,7 +101,6 @@ class RepairPalletDeliveriesAndReturns
             if (!$currentRecurringBill) {
                 print "Ohh shit space no even a recurring bill $space->id  (TODO)\n";
             } elseif ($currentRecurringBill->status != RecurringBillStatusEnum::CURRENT) {
-
                 if ($this->checkIfSpaceInRecurringBillTransaction($space)) {
                     print "Ohh shit space $space->id mmm  it is in the RCT  \n";
                     $currentRecurringBill = $space->fulfilmentCustomer->currentRecurringBill;
@@ -136,8 +135,8 @@ class RepairPalletDeliveriesAndReturns
                         $currentRecurringBill,
                         $space,
                         [
-                            'start_date'                => $startDate,
-                            'quantity'                  => 1
+                            'start_date' => $startDate,
+                            'quantity'   => 1
                         ]
                     );
                     $space->update(
@@ -145,11 +144,7 @@ class RepairPalletDeliveriesAndReturns
                             'current_recurring_bill_id' => $currentRecurringBill->id
                         ]
                     );
-
-
                 }
-
-
             } else {
                 // print "Ohh yes space $space->id\n";
             }
@@ -197,16 +192,13 @@ class RepairPalletDeliveriesAndReturns
 
                 if ($palletDate == 'no date' and $palledReturnDate != 'no date') {
                     print '===+++==== Pallet: Dispatch mismatch '.$pallet->id.' '.$palletDate.' -> '.$palledReturnDate."\n";
-
-
                     //$pallet->update(['dispatched_at' => $palletReturn->dispatched_at]);
                 }
                 if ($palletDate != 'no date' and $palledReturnDate == 'no date') {
                     print 'Pallet: Big error Dispatch mismatch '.$pallet->id.' '.$palletDate.' -> '.$palledReturnDate."\n";
                 } elseif ($palletReturn->dispatched_at->toDateString() != $pallet->dispatched_at->toDateString()) {
                     print 'Pallet: * Dispatch mismatch  '.$pallet->id.'  P  '.$pallet->dispatched_at.' -> '.$palletReturn->dispatched_at."\n";
-                    // $palletReturn->update(['dispatched_at' => $pallet->dispatched_at]);
-
+                    $palletReturn->update(['dispatched_at' => $pallet->dispatched_at]);
                 }
             }
         }
@@ -325,8 +317,6 @@ class RepairPalletDeliveriesAndReturns
             ) {
                 if ($palletDelivery->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
                     print "Fix Pallet Delivery Transaction that should  not be here CRB: $transaction->id\n";
-
-
                 }
             });
         }
@@ -347,16 +337,16 @@ class RepairPalletDeliveriesAndReturns
                 if (!$palletDelivery->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
                     print "+++ +++ ++ Fix Pallet Delivery Transaction CRB: $transaction->id\n";
 
-                    //                    StoreRecurringBillTransaction::make()->action(
-                    //                        $palletDelivery->recurringBill,
-                    //                        $transaction,
-                    //                        [
-                    //                            'start_date'                => now(),
-                    //                            'quantity'                  => $transaction->quantity,
-                    //                            'pallet_delivery_id'        => $palletDelivery->id,
-                    //                            'fulfilment_transaction_id' => $transaction->id
-                    //                        ]
-                    //                    );
+                    StoreRecurringBillTransaction::make()->action(
+                        $palletDelivery->recurringBill,
+                        $transaction,
+                        [
+                            'start_date'                => now(),
+                            'quantity'                  => $transaction->quantity,
+                            'pallet_delivery_id'        => $palletDelivery->id,
+                            'fulfilment_transaction_id' => $transaction->id
+                        ]
+                    );
                 }
             });
         }
@@ -383,7 +373,6 @@ class RepairPalletDeliveriesAndReturns
                 if ($palletReturn->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
                     print "Fix Pallet return Transaction CRB that should not be there! (".$palletReturn->id.")   >> a >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
                     RecurringBillTransaction::where('fulfilment_transaction_id', $transaction->id)->delete();
-
                 }
             });
         }
