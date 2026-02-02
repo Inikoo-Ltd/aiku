@@ -440,7 +440,7 @@ const idxProductLoading = ref<number | null>(null)
                 
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
-                    <div v-if="layout.app.environment === 'local' && dataSideBasket?.eligible_gifts?.is_customer_eligible" class="text-xs flex justify-end pr-2 xmt-4">
+                    <div v-if="layout.app.environment === 'local' && dataSideBasket?.eligible_gifts?.is_customer_eligible_for_gift" class="text-xs flex justify-end pr-2 xmt-4">
                         <EligibleGift
                             :routeUpdate="{
                                 name: 'iris.models.order.update_eligible_gift',

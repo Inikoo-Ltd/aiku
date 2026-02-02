@@ -584,7 +584,7 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
 
-            <div v-if="layout.app.environment === 'local' && eligible_gifts?.is_customer_eligible" class="flex justify-end pr-2 md:pr-6 mt-4">
+            <div v-if="layout.app.environment === 'local' && eligible_gifts?.is_customer_eligible_for_gift" class="flex justify-end pr-2 md:pr-6 mt-4">
                 <EligibleGift
                     :routeUpdate="{
                         name: 'retina.models.order.update_eligible_gift',
