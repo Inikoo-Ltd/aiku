@@ -27,6 +27,12 @@ class SendMailShotNow extends OrgAction
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
+
+        // NOTE: Remove when ready run in the production
+        if (app()->environment() !== 'local') {
+            throw new \Exception('Action only available in local environment');
+        }
+
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
         }
