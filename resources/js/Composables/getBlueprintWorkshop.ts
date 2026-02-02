@@ -26,6 +26,7 @@ import Topbar3Fulfilment from "@/Components/CMS/Website/TopBars/Template/Topbar3
 import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
 import ColumnLayout3Blueprint from "@/Components/CMS/Webpage/Column3/Blueprint"
+import ColumnLayout4Blueprint from "@/Components/CMS/Webpage/Column4/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
 import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
 import DepartmentBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
@@ -133,6 +134,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"button": Button.blueprint,
 		"column-layout-2": ColumnLayout2Blueprint.blueprint,
 		"column-layout-3": ColumnLayout3Blueprint.blueprint,
+		"column-layout-4": ColumnLayout4Blueprint.blueprint,
 		"disclosure": DisclosureBlueprint.blueprint,
 		"timeline": TimelineBlueprint.blueprint,
 		"step-1": Timeline2Bluprint.blueprint,

@@ -65,7 +65,7 @@ class StoreWooCommerceProduct extends RetinaAction
                     $customAttributes[] = [
                         'id' => (string)$attachment->id,
                         'name' => '<strong>' . Arr::get($tradeUnitAttachment, 'label') . '</strong>',
-                        'option' => '<a href="https://' . $website->domain . '/attachment/'.$attachment->ulid.'/download' . '">' .
+                        'option' => '<a href="https://' . $website?->domain . '/attachment/'.$attachment->ulid.'/download' . '">' .
                             Arr::get($tradeUnitAttachment, 'label') . '</a>'
                     ];
                 }
@@ -97,7 +97,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 'manage_stock'      => !is_null($availableQuantity),
                 'stock_status'      => Arr::get($product, 'stock_status', 'instock'),
                 'sku'               => $portfolio->sku,
-                'weight'            => (string)($product->gross_weight / 100),
+                'weight'            => (string)($product->gross_weight / 1000),
                 'status'            => $this->mapProductStateToWooCommerce($product->status->value),
                 'default_attributes'         => $customAttributes
             ];

@@ -1,7 +1,7 @@
 {
-	"slug": "column-layout-3",
-	"code": "column-layout-3",
-	"name": "Column Layout 3",
+	"slug": "column-layout-4",
+	"code": "column-layout-4",
+	"name": "Column Layout 4",
 	"scope": "webpage",
 	"category": "column",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
@@ -13,6 +13,7 @@
                 "column_1" : null,
                 "column_2" : null,
 				"column_3" : null,
+				"column_4" : null,
 				"properties": {
 					"background": {
 						"type": "color",

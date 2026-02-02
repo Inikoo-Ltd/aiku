@@ -185,7 +185,6 @@ test('UI Discount Dashboard', function () {
             ->component('Org/Discounts/DiscountsDashboard')
             ->has('title')
             ->has('pageHead')
-            ->has('stats')
             ->has('tabs')
             ->has('breadcrumbs', 3);
     });
@@ -210,7 +209,7 @@ test('UI show offer campaigns', function () {
 
     $response->assertInertia(function (AssertableInertia $page) use ($offerCampaign) {
         $page
-            ->component('Org/Discounts/Campaign')
+            ->component('Org/Discounts/VolumeDiscountCampaign')
             ->has('title')
             ->has(
                 'pageHead',

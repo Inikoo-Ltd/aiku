@@ -46,7 +46,6 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const listProductsFromLuigi = ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
-const listProducts= ref<ProductHit[] | null>()
 
 const listLoadingProducts = ref<Record<string, string>>({})
 const isProductLoading = (productId: string) => {
@@ -54,48 +53,6 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
-
-// const luigiFetchRecommenders = async () => {
-//     try {
-//         // isLoadingFetch.value = true
-//         const response = await axios.post(
-//             `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-//             [
-//                 {
-//                     "blacklisted_item_ids": [],
-//                     "item_ids": [],
-//                     "recommendation_type": "trends",
-//                     "recommender_client_identifier": "trends",
-//                     "size": 25,
-//                     "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,
-//                     "category": undefined,
-//                     "brand": undefined,
-//                     "product_id": undefined,
-//                     "recommendation_context": {},
-//                     // "hit_fields": ["url", "title"]
-//                 }
-//             ],
-//             {
-//                 headers: {
-//                     'Content-Type': 'application/json;charset=utf-8'
-//                 }
-//             }
-//         )
-//         if (response.status !== 200) {
-//             console.error('Error fetching recommenders:', response.statusText)
-//         }
-
-//         // RecommendationCollector(response.data[0])
-
-//         console.log('LTrends1:', response.data)
-//         // listProductsFromLuigi.value = response.data[0].hits
-//     } catch (error: any) {
-//         console.error('Error on fetching recommendations:', error)
-//     } finally {
-//         // isFetched.value = true
-//     }
-//     // isLoadingFetch.value = false
-// }
 
 const fetchRecommenders = async () => {
     try {
@@ -127,11 +84,14 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        RecommendationCollector(response.data[0])
+        // Send Analytics
+        if (layout.app.environment === 'production') {
+            RecommendationCollector(response.data[0])
+        }
 
         console.log('LTrends1:', response.data)
         listProductsFromLuigi.value = response.data[0].hits
-        fetchProductData()
+        fetchProductData()  // Fetch real data from DB
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
@@ -139,36 +99,6 @@ const fetchRecommenders = async () => {
         isLoadingFetch.value = false
     }
 }
-
-// const fetchRecommenders = async () => {
-//     try {
-//         isLoadingFetch.value = true
-
-//         /* const luigiIdentity = props.fieldValue?.product?.luigi_identity
-
-//         if (!luigiIdentity) {
-//             listProductsFromLuigi.value = []
-//             return
-//         } */
-
-//         const response = await axios.post(
-//             route('iris.json.luigi.product_recommendation'),
-//             {
-//                 luigi_identity: '',
-//                 recommendation_type : 'trends',
-//                 recommender_client_identifier : 'trends',
-//                 cookies_lb: Cookies.get('_lb') ?? null,
-//             }
-//         )
-//         listProductsFromLuigi.value = response.data
-//     } catch (error: any) {
-//         console.error('Error on fetching recommendations:', error)
-//     } finally {
-//         isFetched.value = true
-//         isLoadingFetch.value = false
-//     }
-// }
-
 
 const isLoadingProductRealData = ref(false)
 const fetchProductData = async () => {
@@ -186,15 +116,24 @@ const fetchProductData = async () => {
                 }
             )
 
-            listProductsFromLuigi.value.forEach(item => {
-                // Find the matching product_code[0] in listProductsFromLuigi.value
-                const relatedProduct = response.data.data.find(product => item.attributes.product_code[0] === product.code)
+            listProductsFromLuigi.value.forEach((item, index) => {
+                // Find the matching product_code[0] in response data
+                const relatedProduct = response.data.data.find(product => item.attributes.product_code[0] === product.code);
 
-                // If a match is found, set the iris_attributes
+                console.log('fdsfds', relatedProduct.code, relatedProduct.stock)
+
+                // If a match is found and the stock is greater than 0, set the iris_attributes
                 if (relatedProduct) {
-                    item.iris_attributes = relatedProduct
+                    item.iris_attributes = relatedProduct;
                 }
+                
+                // if (relatedProduct.stock < 1) {
+                //     listProductsFromLuigi.value?.splice(index, 1);
+                // }
             })
+
+            // Filter only available stock
+            listProductsFromLuigi.value = listProductsFromLuigi.value?.filter(prod => prod.iris_attributes.stock > 0)
             nextTick()
 
 
@@ -250,7 +189,7 @@ onMounted(() => {
                     <template v-else>
                         <SwiperSlide
                             v-for="(product, index) in listProductsFromLuigi"
-                            :key="index"
+                            :key="product.attributes.product_code[0]"
                             class="w-full cursor-grab relative !grid h-full min-h-full py-0.5"
                         >
                             <!-- <RecommendationSlideLastSeen

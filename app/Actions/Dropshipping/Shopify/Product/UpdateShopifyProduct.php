@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
-use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\WithActionUpdate;
@@ -20,15 +19,14 @@ use App\Models\Helpers\Media;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Sentry;
 
-class StoreShopifyProduct extends RetinaAction
+class UpdateShopifyProduct extends RetinaAction
 {
     use WithActionUpdate;
     use HasBucketAttachment;
 
-    public function handle(Portfolio $portfolio, array $productData = []): array
+    public function handle(Portfolio $portfolio): array
     {
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
@@ -42,25 +40,24 @@ class StoreShopifyProduct extends RetinaAction
             return [false, 'Failed to initialize Shopify GraphQL client'];
         }
 
+        // Check if product already exists in Shopify
+        if (!$portfolio->platform_product_id) {
+            $errorMessage = 'Product not found in Shopify. Please create the product first.';
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => [$errorMessage]
+            ]);
+
+            return [false, $errorMessage];
+        }
+
         /** @var Product $product */
         $product = $portfolio->item;
 
-
-        $media = [];
-
-        foreach ($product->images as $image) {
-            $media[] = [
-                'originalSource'   => GetImgProxyUrl::run($image->getImage()->extension('jpg')),
-                'mediaContentType' => 'IMAGE'
-            ];
-        }
-
-
         try {
-            // GraphQL mutation to create a product
+            // GraphQL mutation to update only the product description
             $mutation = <<<'MUTATION'
-            mutation productCreate($product: ProductInput!, $media: [CreateMediaInput!]) {
-              productCreate(input: $product, media: $media) {
+            mutation productUpdate($input: ProductInput!) {
+              productUpdate(input: $input) {
                 product {
                   id
                   title
@@ -69,27 +66,6 @@ class StoreShopifyProduct extends RetinaAction
                   productType
                   vendor
                   tags
-                  options {
-                        id
-                        name
-                        position
-                        optionValues {
-                            id
-                            name
-                            hasVariants
-                        }
-                    }
-                  variants(first: 10) {
-                    edges {
-                      node {
-                        id
-                        price
-                        sku
-                        barcode
-                        inventoryQuantity
-                      }
-                    }
-                  }
                 }
                 userErrors {
                   field
@@ -99,7 +75,7 @@ class StoreShopifyProduct extends RetinaAction
             }
             MUTATION;
 
-
+            // Build custom attributes from attachments
             $customAttributes = [];
             $tradeUnitAttachments = Arr::get($this->getAttachmentData($product), 'public', []);
             foreach ($tradeUnitAttachments as $key => $tradeUnitAttachment) {
@@ -116,6 +92,7 @@ class StoreShopifyProduct extends RetinaAction
                 }
             }
 
+            // Build attachment links HTML
             $attachmentLinks = '';
             foreach ($customAttributes as $attr) {
                 $attachmentLinks .= $attr['name'] . ': ' . $attr['option'] . '<br>';
@@ -123,35 +100,23 @@ class StoreShopifyProduct extends RetinaAction
 
             $description = '<br><br>' . $attachmentLinks;
 
-            // Prepare variables for the mutation
+            // Prepare variables for the mutation - only updating descriptionHtml
             $variables = [
-                'product' => [
-                    'title'           => $product->name,
-                    'handle'          => Str::slug($product->name) . substr(now()->timestamp, -3),
+                'input' => [
+                    'id'              => $portfolio->platform_product_id,
                     'descriptionHtml' => $product->description.' '.$product->description_extra . ' ' .$description,
-                    'productType'     => $product->family?->name,
-                    'vendor'          => $product->shop->name,
-                    'tags'            => $product->tags()->pluck('name')->toArray()
-                ],
-                'media'   => $media,
+                ]
             ];
-
-            // Merge any additional product data
-            if (!empty($productData)) {
-                $variables['product'] = array_merge($variables['product'], $productData);
-            }
-
 
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
-
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors']);
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product creation failed: ".$errorMessage);
+                Sentry::captureMessage("Product update failed: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
@@ -159,51 +124,36 @@ class StoreShopifyProduct extends RetinaAction
             $body = $response['body']->toArray();
 
             // Check for user errors in the response
-            if (!empty($body['data']['productCreate']['userErrors'])) {
-                $errors       = $body['data']['productCreate']['userErrors'];
+            if (!empty($body['data']['productUpdate']['userErrors'])) {
+                $errors       = $body['data']['productUpdate']['userErrors'];
                 $errorMessage = 'User errors: '.json_encode($errors);
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product creation failed: ".$errorMessage);
+                Sentry::captureMessage("Product update failed: ".$errorMessage);
 
                 return [false, $errorMessage];
             }
 
-            // Get the created product
-            $createdProduct = $body['data']['productCreate']['product'] ?? null;
+            // Get the updated product
+            $updatedProduct = $body['data']['productUpdate']['product'] ?? null;
 
-            if (!$createdProduct) {
+            if (!$updatedProduct) {
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => ['No product data in response']
                 ]);
-                Sentry::captureMessage("Product creation failed: No product data in response");
+                Sentry::captureMessage("Product update failed: No product data in response");
 
                 return [false, 'No product data in response'];
             }
 
-
+            // Clear any previous errors
             UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($createdProduct, 'id'),
+                'errors_response' => null
             ]);
 
-            StoreShopifyProductVariant::run($portfolio);
-
-
-            // Extract variant ID if available
-            $variantId = null;
-            if (isset($createdProduct['variants']['edges'][0]['node']['id'])) {
-                $variantId = $createdProduct['variants']['edges'][0]['node']['id'];
-            }
-
-            UpdatePortfolio::run($portfolio, [
-                'platform_product_variant_id' => $variantId,
-            ]);
-
-            SaveShopifyProductData::run($portfolio);
-
-            // Format the response to match the expected structure
-            return [true, $this->formatProductResponse($createdProduct)];
+            // Format the response
+            return [true, $this->formatProductResponse($updatedProduct)];
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
@@ -214,38 +164,21 @@ class StoreShopifyProduct extends RetinaAction
         }
     }
 
-
     private function formatProductResponse(array $product): array
     {
-        $variants = [];
-        if (isset($product['variants']['edges'])) {
-            foreach ($product['variants']['edges'] as $edge) {
-                $variants[] = $edge['node'];
-            }
-        }
-
-        $images = [];
-        if (isset($product['images']['edges'])) {
-            foreach ($product['images']['edges'] as $edge) {
-                $images[] = $edge['node'];
-            }
-        }
-
         return [
             'id'           => $product['id'],
             'title'        => $product['title'],
             'handle'       => $product['handle'],
             'body_html'    => $product['descriptionHtml'],
-            'vendor'       => $product['vendor'],
-            'product_type' => $product['productType'],
-            'variants'     => $variants,
-            'images'       => $images
+            'vendor'       => $product['vendor'] ?? null,
+            'product_type' => $product['productType'] ?? null,
         ];
     }
 
     public function getCommandSignature(): string
     {
-        return 'shopify:product:create {portfolio_id}';
+        return 'shopify:product:update {portfolio_id}';
     }
 
     public function asCommand(Command $command): void
@@ -275,12 +208,18 @@ class StoreShopifyProduct extends RetinaAction
             return;
         }
 
-        $command->info("Creating product in Shopify for portfolio #$portfolio->id...");
+        if (!$portfolio->platform_product_id) {
+            $command->error("Product not found in Shopify. Please create the product first.");
+
+            return;
+        }
+
+        $command->info("Updating product description in Shopify for portfolio #$portfolio->id...");
 
         [$status, $result] = $this->handle($portfolio);
 
         if (!$status) {
-            $command->error("Failed to create product in Shopify");
+            $command->error("Failed to update product description in Shopify");
             $command->error("Errors:");
             $command->error(implode("\n", $portfolio->errors_response ?? []));
 
@@ -288,32 +227,13 @@ class StoreShopifyProduct extends RetinaAction
         }
 
         // Display the product data in a table format
-        $command->info("Product created successfully!");
+        $command->info("Product description updated successfully!");
         $command->table(['Field', 'Value'], [
             ['ID', $result['id']],
             ['Title', $result['title']],
             ['Handle', $result['handle']],
             ['Vendor', $result['vendor'] ?? 'N/A'],
             ['Product Type', $result['product_type'] ?? 'N/A'],
-            ['Variants Count', count($result['variants'] ?? [])],
-            ['Images Count', count($result['images'] ?? [])]
         ]);
-
-        // Display variants information if available
-        if (!empty($result['variants'])) {
-            $command->info("\nVariants Information:");
-            $variantData = [];
-            foreach ($result['variants'] as $index => $variant) {
-                $variantData[] = [
-                    'Index'     => $index + 1,
-                    'ID'        => $variant['id'] ?? 'N/A',
-                    'Price'     => $variant['price'] ?? 'N/A',
-                    'SKU'       => $variant['sku'] ?? 'N/A',
-                    'Barcode'   => $variant['barcode'] ?? 'N/A',
-                    'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
-                ];
-            }
-            $command->table(['Index', 'ID', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
-        }
     }
 }

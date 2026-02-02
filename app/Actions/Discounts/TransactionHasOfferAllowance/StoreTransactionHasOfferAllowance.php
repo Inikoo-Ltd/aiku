@@ -34,15 +34,12 @@ class StoreTransactionHasOfferAllowance extends OrgAction
         data_set($modelData, 'order_id', $transaction->order_id);
         data_set($modelData, 'transaction_id', $transaction->id);
 
-
-
         $transactionHasOfferAllowance = TransactionHasOfferAllowance::create($modelData);
 
         OfferAllowanceHydrateOrders::dispatch($transactionHasOfferAllowance->offerAllowance);
         OfferHydrateOrders::dispatch($transactionHasOfferAllowance->offer);
         OfferCampaignHydrateOrders::dispatch($transactionHasOfferAllowance->offerCampaign);
         OrderHydrateOffers::dispatch($transaction->order);
-
 
         return $transactionHasOfferAllowance;
     }
