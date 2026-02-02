@@ -27,6 +27,7 @@ import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
+import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 
 
 library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle)
@@ -104,17 +105,14 @@ const component = computed(() => {
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
     <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
-            <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
-                <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')}}</p>
-                <div class="mt-6">
-                    <SelectableCardGrid :options="sales_channels" v-model="orderForm.sales_channel_id" />
-                </div>
-                <div class="mt-6 flex justify-end gap-3">
-                    <Button label="Cancel" type="secondary" @click="isOrderModalOpen = false" />
-                    <Button label="Create Order" type="primary" @click="submitOrder"
-                        :disabled="orderForm.processing || !orderForm.sales_channel_id" />
-                </div>
+            <div class="p-6 relative">
+            <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
+            <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
+            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')}}</p>
+            <div class="mt-6">
+                <SelectableCardGrid :options="sales_channels" :model-value="orderForm.sales_channel_id"
+                    @update:model-value="(val) => { orderForm.sales_channel_id = val; submitOrder() }" />
             </div>
+        </div>
         </Modal>
 </template>

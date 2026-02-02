@@ -6,7 +6,7 @@ import ScreenView from '@/Components/ScreenView.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle } from '@fal'
 import type { Ref } from 'vue'
-import { routeType } from '@/types/route'
+import type { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
@@ -26,28 +26,33 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: any): void
-  (e: 'update:currentView', value: 'desktop' | 'tablet' | 'mobile'): void
 }>()
 
 const model = defineModel<any>()
-const currentView = inject<Ref<'desktop' | 'tablet' | 'mobile'>>('currentView', ref('desktop'))
+
+const currentView = inject<Ref<'desktop' | 'tablet' | 'mobile'>>(
+  'currentView',
+  ref('desktop')
+)
+
 const sideKey = inject('sideKey', ref(1))
 
-const key = ref(0)
 const editorRef = ref<any>(null)
+const renderKey = ref(0)
 
 const normalized = ref({
   use_responsive: false,
   desktop: '',
-  tablet: null,
-  mobile: null,
+  tablet: null as string | null,
+  mobile: null as string | null,
 })
 
 let syncingFromParent = false
-let syncingToParent = false
 
+/* -----------------------------
+   Sync FROM parent (NO emit)
+-------------------------------- */
 function syncFromModel() {
-  if (syncingToParent) return
   syncingFromParent = true
 
   const value = model.value
@@ -61,12 +66,12 @@ function syncFromModel() {
       mobile: null,
     }
   } else {
-    const cloned = cloneDeep(value || {})
+    const v = cloneDeep(value || {})
     next = {
-      use_responsive: !!cloned.use_responsive,
-      desktop: cloned.desktop ?? '',
-      tablet: cloned.tablet ?? null,
-      mobile: cloned.mobile ?? null,
+      use_responsive: !!v.use_responsive,
+      desktop: v.desktop ?? '',
+      tablet: v.tablet ?? null,
+      mobile: v.mobile ?? null,
     }
   }
 
@@ -74,26 +79,34 @@ function syncFromModel() {
     normalized.value = next
   }
 
-  syncingFromParent = false
+  queueMicrotask(() => {
+    syncingFromParent = false
+  })
 }
 
-function syncToModel() {
-  if (syncingFromParent) return
-  syncingToParent = true
+/* -----------------------------
+   Sync TO parent (USER ONLY)
+-------------------------------- */
+watch(
+  normalized,
+  (val) => {
+    if (syncingFromParent) return
+    if (isEqual(val, model.value)) return
 
-  const cloned = cloneDeep(normalized.value)
-  if (!isEqual(cloned, model.value)) {
-    model.value = cloned
-    emit('update:modelValue', cloned)
-  }
+    emit('update:modelValue', cloneDeep(val))
+  },
+  { deep: true }
+)
 
-  syncingToParent = false
-}
-
+/* -----------------------------
+   Lifecycle
+-------------------------------- */
 onMounted(syncFromModel)
 watch(model, syncFromModel, { deep: true })
-watch(normalized, syncToModel, { deep: true })
 
+/* -----------------------------
+   Reactive behavior
+-------------------------------- */
 watch(
   () => normalized.value.use_responsive,
   (enabled) => {
@@ -101,45 +114,53 @@ watch(
       normalized.value.tablet = null
       normalized.value.mobile = null
     }
-    key.value++
+    renderKey.value++
   }
 )
 
 watch(
   () => currentView.value,
   () => {
-    key.value++
+    renderKey.value++
   }
 )
 
-const activeText = computed({
+/* -----------------------------
+   Active text binding
+-------------------------------- */
+const activeText = computed<string>({
   get() {
     const n = normalized.value
     if (!n.use_responsive) return n.desktop
+
     const val = n[currentView.value]
     return val == null ? n.desktop : val
   },
   set(val) {
     const n = cloneDeep(normalized.value)
+
     if (!n.use_responsive) {
       n.desktop = val
     } else {
       n[currentView.value] = val
     }
+
     normalized.value = n
   },
 })
 
-// force sync editor content when external changes occur
+/* -----------------------------
+   Force editor sync (NO save)
+-------------------------------- */
 watch(
   activeText,
   (val) => {
     const editor = editorRef.value?.editor
-    if (editor) {
-      const current = editor.getHTML()
-      if (current !== val) {
-        editor.commands.setContent(val || '')
-      }
+    if (!editor) return
+
+    const current = editor.getHTML()
+    if (current !== val) {
+      editor.commands.setContent(val || '')
     }
   },
   { immediate: true }

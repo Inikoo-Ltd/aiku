@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Shop\Seeders;
 
 use App\Actions\GrpAction;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\SalesChannel;
 use Illuminate\Console\Command;
@@ -14,11 +15,15 @@ class SeedAddDefaultSalesChannelsToShop extends GrpAction
 
     public function handle(Shop $shop): void
     {
-        $defaultSalesChannels = SalesChannel::where('is_seeded', true)->pluck('id');
+        $defaultSalesChannels = [];
+        foreach (SalesChannel::where('is_seeded', true)->get() as $salesChannel) {
+            if ($salesChannel->type == SalesChannelTypeEnum::WEBSITE || $salesChannel->type == SalesChannelTypeEnum::NA) {
+                continue;
+            }
 
-        if ($defaultSalesChannels->isEmpty()) {
-            return;
+            $defaultSalesChannels[] = $salesChannel->id;
         }
+
 
         $shop->salesChannels()->syncWithoutDetaching($defaultSalesChannels);
     }
@@ -31,7 +36,7 @@ class SeedAddDefaultSalesChannelsToShop extends GrpAction
         $command->info("Adding default sales channels to all shops...");
 
         $shops = Shop::all();
-        $bar = $command->getOutput()->createProgressBar($shops->count());
+        $bar   = $command->getOutput()->createProgressBar($shops->count());
         $bar->start();
 
         foreach ($shops as $shop) {

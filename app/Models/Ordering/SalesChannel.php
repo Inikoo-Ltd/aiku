@@ -40,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property array<array-key, mixed>|null $sources
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read \App\Models\Ordering\SalesChannelStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newQuery()
