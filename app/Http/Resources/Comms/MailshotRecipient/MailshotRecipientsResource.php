@@ -8,7 +8,7 @@
 
 namespace App\Http\Resources\Comms\MailshotRecipient;
 
-use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -24,7 +24,7 @@ class MailshotRecipientsResource extends JsonResource
         return [
             'id'                           => $this->id,
             'recipient_type'               => $this->recipient_type,
-            'state'                        => MailshotStateEnum::stateIcon()[$this->state],
+            'state'                        => DispatchedEmailStateEnum::stateIcon()[$this->state],
             'email_address'                => $this->email_address,
             'sent_at'                      => $this->sent_at,
             'customer_name'                => $this->customer_name,

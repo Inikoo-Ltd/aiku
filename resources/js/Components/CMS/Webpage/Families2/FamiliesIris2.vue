@@ -40,7 +40,6 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
   indexBlock?: number
 }>()
-console.log('coll',props.fieldValue)
 const layout: any = inject('layout', {})
 
 const prevEl = ref<HTMLElement | null>(null)
@@ -65,7 +64,7 @@ const refreshCarousel = async (delay = 100) => {
 
 const allItems = computed(() => [
   ...(props.fieldValue?.families || []),
- /*  ...(props.fieldValue?.collections || []) */
+  /*  ...(props.fieldValue?.collections || []) */
 ])
 
 const spaceBetween = computed(() => (props.screenType === 'mobile' ? 8 : 24))
@@ -149,9 +148,9 @@ async function computeMaxHeight() {
 let resizeHandler = () => {
   // small debounce
   clearTimeout((resizeHandler as any)._t)
-  ;(resizeHandler as any)._t = setTimeout(() => {
-    computeMaxHeight()
-  }, 120)
+    ; (resizeHandler as any)._t = setTimeout(() => {
+      computeMaxHeight()
+    }, 120)
 }
 
 onMounted(async () => {
@@ -190,46 +189,46 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.fieldValue.container?.properties, props.screenType)
-    }" @click="activateBlock" >
+    }" @click="activateBlock">
       <div class="flex items-center gap-4 w-full">
 
-        <button  v-if="swiperInstance?.allowSlidePrev" ref="prevEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollLeft"
-          @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
-        </button>
+        <div class="relative flex-1 overflow-hidden">
 
-        <Swiper
-          @swiper="(s) => (swiperInstance = s)"
-          :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
-          :loop="true"
-          slides-per-view="auto"
-          :space-between="spaceBetween"
-          :freeMode="true"
-          navigation
-          class="flex-1"
-        >
-          <SwiperSlide
-            v-for="(item, index) in allItems"
-            :key="'item-' + index"
-            class="!w-auto flex"
-          >
-            <LinkIris :href="item.url" :style="{ textDecoration: 'none' }"  @start="() => idxSlideLoading = `family${index}`" @finish="() => idxSlideLoading = null" class="h-full flex">
-              <Family2Render
-                class="family-item h-full flex items-center"
-                :data="item"
-                :style="{
-                  ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType)
-                }"
-                :screenType="props.screenType"
-              />
-            </LinkIris>
-          </SwiperSlide>
-        </Swiper>
+          <!-- PREV -->
+          <button v-if="swiperInstance?.allowSlidePrev" ref="prevEl"
+            class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+            @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
+            <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
+          </button>
 
-        <button v-if="swiperInstance?.allowSlideNext" ref="nextEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollRight"
-          @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']"  />
-        </button>
+          <!-- MASK WRAPPER -->
+          <div class="swiper-mask w-full">
+            <Swiper @swiper="(s) => (swiperInstance = s)" :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
+              :loop="true" slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" navigation
+              class="w-full swiper-inner">
+              <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto flex">
+                <LinkIris :href="item.url" :style="{ textDecoration: 'none' }" class="h-full flex">
+                  <Family2Render class="family-item h-full flex items-center" :data="item" :style="{
+                    ...getStyles(
+                      props.fieldValue?.chip?.container?.properties,
+                      props.screenType
+                    )
+                  }" :screenType="props.screenType" />
+                </LinkIris>
+              </SwiperSlide>
+            </Swiper>
+          </div>
+
+          <!-- NEXT -->
+          <button v-if="swiperInstance?.allowSlideNext" ref="nextEl"
+            class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+            @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
+            <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" />
+          </button>
+
+        </div>
+
+
 
       </div>
     </div>
@@ -249,5 +248,30 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 :deep(.swiper-button-prev),
 :deep(.swiper-button-next) {
   display: none !important;
+}
+
+/* Mask hanya ke konten slide */
+.swiper-mask {
+  --mask-size: 48px;
+  overflow: hidden;
+
+  -webkit-mask-image: linear-gradient(to right,
+      transparent 0,
+      black var(--mask-size),
+      black calc(100% - var(--mask-size)),
+      transparent 100%);
+
+  mask-image: linear-gradient(to right,
+      transparent 0,
+      black var(--mask-size),
+      black calc(100% - var(--mask-size)),
+      transparent 100%);
+}
+
+/* Kompensasi lebar tombol */
+.swiper-inner {
+  padding-left: 48px;
+  padding-right: 48px;
+  box-sizing: border-box;
 }
 </style>

@@ -70,6 +70,7 @@ class IndexTransactions extends OrgAction
                 'transactions.status',
                 'transactions.quantity_ordered',
                 'transactions.quantity_bonus',
+                'transactions.quantity_picked',
                 'transactions.quantity_dispatched',
                 'transactions.quantity_fail',
                 'transactions.quantity_cancelled',

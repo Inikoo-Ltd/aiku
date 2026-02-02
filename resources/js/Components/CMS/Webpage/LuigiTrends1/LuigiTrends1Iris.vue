@@ -120,16 +120,11 @@ const fetchProductData = async () => {
                 // Find the matching product_code[0] in response data
                 const relatedProduct = response.data.data.find(product => item.attributes.product_code[0] === product.code);
 
-                console.log('fdsfds', relatedProduct.code, relatedProduct.stock)
 
                 // If a match is found and the stock is greater than 0, set the iris_attributes
                 if (relatedProduct) {
                     item.iris_attributes = relatedProduct;
                 }
-                
-                // if (relatedProduct.stock < 1) {
-                //     listProductsFromLuigi.value?.splice(index, 1);
-                // }
             })
 
             // Filter only available stock

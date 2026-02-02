@@ -20,7 +20,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
-class SetDeliveryNoteStateAsPacked extends OrgAction
+class FinishPackDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
