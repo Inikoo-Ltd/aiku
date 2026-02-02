@@ -9,7 +9,6 @@
 namespace App\Actions\Goods\UI;
 
 use App\Models\Masters\MasterShop;
-use Illuminate\Support\Facades\DB;
 
 trait WithMasterCatalogueSubNavigation
 {
@@ -116,67 +115,20 @@ trait WithMasterCatalogueSubNavigation
                 ]
             ],
 
-
-        ];
-    }
-
-    protected function getMasterGRNavigation(MasterShop $masterShop): array
-    {
-        $withGRCount = DB::table('master_product_categories')
-            ->where('master_shop_id', $masterShop->id)
-            ->where('type', 'family')
-            ->where('has_gr_vol_discount', true)
-            ->count();
-
-        $withoutGRCount = DB::table('master_product_categories')
-            ->where('master_shop_id', $masterShop->id)
-            ->where('type', 'family')
-            ->where('has_gr_vol_discount', false)
-            ->count();
-
-        return [
             [
-                'isAnchor' => true,
-                'label'    => __($masterShop->name),
+                'label'    => __('Gold Reward'),
                 'route'    => [
-                    'name'       => 'grp.masters.master_shops.show',
+                    'name'       => 'grp.masters.master_shops.show.master_gr.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-store-alt'],
-                    'tooltip' => __('Master Shop')
+                    'icon'    => ['fal', 'fa-tags'],
+                    'tooltip' => __('Gold Reward')
                 ]
             ],
-            [
-                'number'   => $withGRCount,
-                'label'    => __('With GR'),
-                'route'    => [
-                    'name'       => 'grp.masters.master_shops.show.master_gr.with',
-                    'parameters' => [
-                        'masterShop' => $masterShop->slug
-                    ]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-check-circle'],
-                    'tooltip' => __('Master Families With GR')
-                ]
-            ],
-            [
-                'number'   => $withoutGRCount,
-                'label'    => __('Without GR'),
-                'route'    => [
-                    'name'       => 'grp.masters.master_shops.show.master_gr.without',
-                    'parameters' => [
-                        'masterShop' => $masterShop->slug
-                    ]
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-times-circle'],
-                    'tooltip' => __('Master Families Without GR')
-                ]
-            ],
+
         ];
     }
 
