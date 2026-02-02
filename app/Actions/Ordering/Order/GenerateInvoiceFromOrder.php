@@ -116,11 +116,11 @@ class GenerateInvoiceFromOrder extends OrgAction
                 } elseif ($transaction->model_type == 'ShippingZone') {
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
                 } else {
-                    $updatedData = $this->recalculateTransactionTotals($transaction);
-                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $updatedData);
+                    $invoiceTransactionData = $this->recalculateTransactionTotals($transaction);
+                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $invoiceTransactionData);
                     $transaction->update(
                         [
-                            'quantity_picked' => $updatedData['quantity'],
+                            'quantity_picked' => $invoiceTransactionData['quantity'],
                         ]
                     );
                 }
