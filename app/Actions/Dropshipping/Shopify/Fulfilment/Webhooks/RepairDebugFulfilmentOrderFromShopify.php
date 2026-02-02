@@ -39,7 +39,7 @@ class RepairDebugFulfilmentOrderFromShopify extends OrgAction
     public function handle(ShopifyUser $shopifyUser, $webhookId = null): void
     {
         $debugWebhooks = $shopifyUser->debugWebhooks;
-        if($webhookId) {
+        if ($webhookId) {
             $debugWebhooks = $shopifyUser->debugWebhooks()->where('id', $webhookId)->get();
         }
 
