@@ -87,7 +87,7 @@ class GetEcomOrderActions
                             ]
                         ]
                     ],
-                    [
+                    $order->transactions()->count() > 0 ? [
                         'type'    => 'button',
                         'style'   => 'save',
                         'tooltip' => __('Send order to Warehouse'),
@@ -100,7 +100,7 @@ class GetEcomOrderActions
                                 'order' => $order->id
                             ]
                         ]
-                    ]
+                    ]:[]
                 ],
 
 
