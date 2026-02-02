@@ -531,18 +531,20 @@ onMounted(() => {
             <Button
                 @click="onClickFilterForSale('true')"
                 v-tooltip="trans('Only show products that are for sale')"
-                label="Only Show For Sale"
+                :label="trans('Only For Sale')"
                 size="xs"
+				class="whitespace-nowrap"
                 :key="compTableFilterForSale"
                 :type="compTableFilterForSale ? 'secondary' : 'tertiary'"
                 :icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
                 iconRight="fal fa-times"
-                :loading="isLoadingTable == 'discontinued'"
+                :loading="isLoadingTable == 'is-for-sale'"
             />
             <Button
                 @click="onClickFilterOutOfStock('discontinued')"
                 v-tooltip="trans('Filter the product that discontinued')"
                 label="Discontinued"
+				class="whitespace-nowrap"
                 size="xs"
                 :key="compTableFilterStatus"
                 :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
@@ -551,11 +553,12 @@ onMounted(() => {
                 :loading="isLoadingTable == 'discontinued'"
             />
             <Button @click="onClickFilterPlatformStatus('true')"
-                    v-tooltip="trans('Filter the product that not connected yet to :platform', { platform: props.platform_data.name })"
-                    label="Not connected" size="xs" :key="compTableFilterPlatformStatus"
-                    :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
-                    :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
-                    iconRight="fal fa-handshake-slash" :loading="isLoadingTable == 'not-connected'"/>
+                v-tooltip="trans('Filter the product that not connected yet to :platform', { platform: props.platform_data.name })"
+				class="whitespace-nowrap"
+                label="Not connected" size="xs" :key="compTableFilterPlatformStatus"
+                :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-handshake-slash" :loading="isLoadingTable == 'not-connected'"/>
 
         </template>
 
