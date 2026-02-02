@@ -149,10 +149,10 @@ class StoreMailshot extends OrgAction
     {
 
         $routeName = match ($mailshot->type) {
-            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
+            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.show',
             MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.recipients',
-            MailshotTypeEnum::INVITE => 'grp.org.shops.show.marketing.mailshots.index',
-            MailshotTypeEnum::ABANDONED_CART => 'grp.org.shops.show.marketing.mailshots.index',
+            MailshotTypeEnum::INVITE => 'grp.org.shops.show.marketing.mailshots.show',
+            MailshotTypeEnum::ABANDONED_CART => 'grp.org.shops.show.marketing.mailshots.show',
             default => null
         };
 
