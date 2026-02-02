@@ -167,6 +167,17 @@ class ShowInvoice extends OrgAction
                     'label'       => __('Insurance'),
                     'price_total' => $invoice->insurance_amount
                 ],
+            ],
+            [
+                [
+                    'label'       => __('Net'),
+                    'information' => '',
+                    'styleField'    => [
+                        'background' => '#000000CC',
+                        'color' => '#fff',
+                    ],
+                    'price_total' => $invoice->net_amount
+                ],
                 [
                     'label'       => __('Tax'),
                     'price_total' => $invoice->tax_amount
@@ -175,6 +186,10 @@ class ShowInvoice extends OrgAction
             [
                 [
                     'label'       => __('Total'),
+                    'styleField'    => [
+                        'background' => '#000',
+                        'color' => '#fff',
+                    ],
                     'price_total' => $invoice->total_amount
                 ],
             ],
