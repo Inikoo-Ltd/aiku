@@ -36,6 +36,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Icon from "@/Components/Icon.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
+import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle)
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
@@ -148,16 +149,13 @@ const component = computed(() => {
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
 
     <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
-        <div class="p-6">
+        <div class="p-6 relative">
+            <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
             <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
             <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')}}</p>
-                <div class="mt-6">
-                    <SelectableCardGrid :options="sales_channels" v-model="orderForm.sales_channel_id" />
-                </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <Button label="Cancel" type="secondary" @click="isOrderModalOpen = false" />
-                <Button label="Create Order" style="primary" @click="submitOrder"
-                    :disabled="orderForm.processing || !orderForm.sales_channel_id" />
+            <div class="mt-6">
+                <SelectableCardGrid :options="sales_channels" :model-value="orderForm.sales_channel_id"
+                    @update:model-value="(val) => { orderForm.sales_channel_id = val; submitOrder() }" />
             </div>
         </div>
     </Modal>
