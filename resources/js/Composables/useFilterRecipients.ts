@@ -43,7 +43,7 @@ export function useFilterRecipients(props: any) {
     }
 
      const FILTER_CONFLICTS: Record<string, string[]> = {
-        registered_never_ordered: ['orders_in_basket','by_order_value','orders_collection','by_family','by_subdepartment','by_family_never_ordered','by_showroom_orders','by_department'],
+        registered_never_ordered: ['orders_in_basket','by_order_value','orders_collection','by_family','by_subdepartment','by_family_never_ordered','by_showroom_orders','by_departments'],
         orders_in_basket: ['registered_never_ordered'],
         by_order_value: ['registered_never_ordered'],
         orders_collection: ['registered_never_ordered'],
@@ -51,7 +51,10 @@ export function useFilterRecipients(props: any) {
         by_subdepartment: ['registered_never_ordered'],
         by_family_never_ordered: ['registered_never_ordered'],
         by_showroom_orders: ['registered_never_ordered'],
-        by_department: ['registered_never_ordered']
+        by_departments: ['registered_never_ordered'],
+        by_interest: [],
+        by_location: [],
+        gold_reward_status: [],
     }
 
     function hasConflict(newKey: string) {

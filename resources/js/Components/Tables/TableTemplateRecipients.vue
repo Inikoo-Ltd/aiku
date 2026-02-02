@@ -293,27 +293,36 @@ watch(
 
 <template>
     <div class="px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex items-center gap-3 mb-6">
-            <Menu :model="availableFilters" popup ref="filterMenu">
-            </Menu>
+        <div class="flex justify-between items-center mb-6">
+            <!-- left side -->
+            <div class="flex items-center gap-3">
+                <Menu :model="availableFilters" popup ref="filterMenu">
+                </Menu>
 
-            <Button @click="filterMenu.toggle($event)" class="h-10 px-4">
-                <FontAwesomeIcon :icon="faPlus" />
-                <span>{{ trans("Filter") }}</span>
+                <Button @click="filterMenu.toggle($event)" class="h-10 px-4" :type="'secondary'">
+                    <FontAwesomeIcon :icon="faPlus" />
+                    <span>{{ trans("Filter") }}</span>
 
-                <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
-            </Button>
+                    <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
+                </Button>
 
-            <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
+                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
 
-            <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="tertiary" class="h-10 px-4"
-                @click="clearAllFilters" />
+                <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4"
+                    @click="clearAllFilters" />
+            </div>
+            <!-- center side -->
+            <div class="flex items-center">
+                <span v-if="isAllCustomers" class="text-blue-600 font-medium">
+                    {{ trans("Audience: All Customers") }}
+                </span>
+            </div>
+            <!-- right side -->
+            <div class="flex items-center gap-3">
 
-            <span v-if="isAllCustomers" class="text-blue-600 font-medium ml-auto">
-                {{ trans("Audience: All Customers") }}
-            </span>
-            <Button :label="trans('Save')" type="save" @click="saveFilters" class="h-10 px-4 ml-auto"
-                :disabled="isByOrderValueInvalid" />
+                <Button :label="trans('Save')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4"
+                    :disabled="isByOrderValueInvalid" />
+            </div>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div v-for="(filter, key) in readyFilters" :key="key"
@@ -509,7 +518,7 @@ watch(
                                         <l-marker :lat-lng="[Number(filter.value.lat), Number(filter.value.lng)]"
                                             :draggable="true" @dragend="(e: any) => onMarkerDrag(e, filter)">
                                             <l-tooltip :permanent="true" direction="top" :offset="[0, -10]">
-                                                📍 This is your point<br>
+                                                📍 {{ trans("This is your point") }}<br>
                                                 Lat: {{ Number(filter.value.lat).toFixed(5) }}<br>
                                                 Lng: {{ Number(filter.value.lng).toFixed(5) }}
                                             </l-tooltip>
