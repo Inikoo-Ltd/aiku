@@ -99,7 +99,7 @@ class EditOrder extends OrgAction
                                     'type'  => 'select',
                                     'label' => __('Sales Channel'),
                                     'placeholder' => __('Select sales channel'),
-                                    'options'  => GetSalesChannelOptions::make()->getStandardOptions(),
+                                    'options'  => GetSalesChannelOptions::make()->getStandardOptions($order->shop ?? null),
                                     'value' => $order->sales_channel_id,
                                 ],
                             ],

@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Catalogue\Shop;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -97,5 +99,9 @@ class SalesChannel extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(SalesChannelStats::class);
+    }
+    public function shops(): BelongsToMany
+    {
+        return $this->belongsToMany(Shop::class, 'shop_has_sales_channels')->withTimestamps();
     }
 }
