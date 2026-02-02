@@ -199,7 +199,7 @@ class RepairPalletDeliveriesAndReturns
                     print 'Pallet: Big error Dispatch mismatch '.$pallet->id.' '.$palletDate.' -> '.$palledReturnDate."\n";
                 } elseif ($palletReturn->dispatched_at->toDateString() != $pallet->dispatched_at->toDateString()) {
                     print 'Pallet: * Dispatch mismatch  '.$pallet->id.'  P  '.$pallet->dispatched_at.' -> '.$palletReturn->dispatched_at."\n";
-                    if($pallet->status == PalletStatusEnum::RETURNED){
+                    if ($pallet->status == PalletStatusEnum::RETURNED) {
                         $pallet->update(['dispatched_at' => $palletReturn->dispatched_at]);
                     }
                 }
