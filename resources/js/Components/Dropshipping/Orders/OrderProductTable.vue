@@ -370,8 +370,10 @@ const onSubmitEditNetAmount = () => {
 
                     <!-- Read-only display -->
                     <div v-else-if="!editingIds.has(item.id)">
-                        <span >{{ formatQuantity(item.quantity_ordered) }}</span>
-                        <span class="pl-3">{{ formatQuantity(item.quantity_picked) }}</span>
+                        <span :class="(state === 'dispatched' &&  item.quantity_dispatched!=item.quantity_ordered)||(state === 'packed' &&  item.quantity_picked!=item.quantity_ordered)?'line-through':''">{{ formatQuantity(item.quantity_ordered) }}</span>
+                        <span class="pl-3" v-if="state === 'packed' &&  item.quantity_picked!=item.quantity_ordered">{{ formatQuantity(item.quantity_picked) }}</span>
+                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">{{ formatQuantity(item.quantity_dispacthed) }}</span>
+
                     </div>
 
                     <!-- Inline edit mode with original quantity displayed -->
