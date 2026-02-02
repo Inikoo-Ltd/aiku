@@ -106,6 +106,12 @@ sub vcl_recv {
         return (synth(200, "Purged"));
     }
 
+     # If it's an Inertia request, don't look it up in the cache
+        if (req.http.X-Inertia) {
+            return (pass);
+        }
+
+
     # If X-Original-Referer is missing but Referer is present, copy it
     if (!req.http.X-Original-Referer && req.http.Referer) {
         set req.http.X-Original-Referer = req.http.Referer;
@@ -219,6 +225,13 @@ sub vcl_backend_response {
     # Store original TTL as header for later use in vcl_deliver
     set beresp.http.X-Varnish-TTL = beresp.ttl;
 
+        # If it's an Inertia request, don't cache it
+        if (beresp.http.X-Inertia) {
+            set beresp.uncacheable = true;
+            return (deliver);
+        }
+
+
 
 
     # Inertia.js responses: cache JSON and vary on Inertia headers
@@ -246,7 +259,9 @@ sub vcl_backend_response {
 
     # Do not cache redirects (301, 302, 303, 307, 308)
     if (beresp.status == 301 || beresp.status == 302 || beresp.status == 303 || beresp.status == 307 || beresp.status == 308) {
-        set beresp.ttl = 2d;
+       # set beresp.ttl = 2d;
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
     }
 
     # Enable gzip on text-like content
