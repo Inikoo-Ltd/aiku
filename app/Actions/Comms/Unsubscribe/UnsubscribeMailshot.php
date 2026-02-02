@@ -14,7 +14,9 @@ use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
 
@@ -29,17 +31,29 @@ class UnsubscribeMailshot
         }
 
         $recipient = $dispatchedEmail->recipient;
+        $parent = $dispatchedEmail->parent;
 
         if (class_basename($recipient) == 'Prospect') {
             UpdateProspectEmailUnsubscribed::run($recipient, now());
         }
 
         if (class_basename($recipient) == class_basename(Customer::class)) {
-            $modelData = [
-                'is_subscribed_to_newsletter' => false,
-            ];
-            $customerComms = $recipient->comms;
-            UpdateCustomerComms::run($customerComms, $modelData, false);
+
+            if (class_basename($parent) == class_basename(Mailshot::class)) {
+
+                $modelData = match ($parent->type) {
+                    MailshotTypeEnum::NEWSLETTER => [
+                        'is_subscribed_to_newsletter' => false,
+                    ],
+                    MailshotTypeEnum::MARKETING => [
+                        'is_subscribed_to_marketing' => false,
+                    ],
+                    default => []
+                };
+
+                $customerComms = $recipient->comms;
+                UpdateCustomerComms::run($customerComms, $modelData, false);
+            }
         }
 
         UpdateDispatchedEmail::run(

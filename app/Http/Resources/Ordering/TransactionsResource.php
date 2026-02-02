@@ -49,6 +49,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $discretionary_offer_label
  * @property mixed $transaction_label
  * @property mixed $product_units
+ * @property mixed $quantity_picked
  */
 class TransactionsResource extends JsonResource
 {

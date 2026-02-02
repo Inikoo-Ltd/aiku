@@ -69,6 +69,7 @@ const checkScreenType = () => {
 }
 
 const updateData = (val: any) => {
+  console.log('aaaa',val)
   sendMessageToParent("autosave", JSON.parse(JSON.stringify(val)))
 }
 
