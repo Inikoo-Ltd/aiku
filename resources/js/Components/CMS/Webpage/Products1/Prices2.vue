@@ -152,7 +152,7 @@ const _popoverProfit = ref(null)
                         /> -->
                         
                         <DiscountByType 
-                            v-if="(product.stock && basketButton && !product.is_coming_soon)"  
+                            v-if="(product.stock && basketButton && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr)"  
                             :offers_data="product?.product_offers_data" 
                             :template="'products_triggers_label'"
                         />
@@ -173,10 +173,10 @@ const _popoverProfit = ref(null)
                         {{ trans("Profit") }}:
                     </div>
                     <div class="font-bold text-green-700 text-xxs">
-                        ({{ product?.margin }})
+                        ({{ layout?.user?.gr_data?.customer_is_gr ?  product?.discounted_margin : product?.margin }})
                     </div>
                     <div class="italic text-xxs">
-                        <span class="">{{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}</span>/{{ product.unit }}
+                        <span class="">{{ locale.currencyFormat(currency?.code, (layout?.user?.gr_data?.customer_is_gr  ? product?.discounted_profit_per_unit: product?.profit_per_unit) || 0) }}</span>/{{ product.unit }}
                     </div>
 
 

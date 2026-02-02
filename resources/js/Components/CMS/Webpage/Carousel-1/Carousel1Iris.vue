@@ -121,7 +121,7 @@ watch(
 )
 
 const idxSlideLoading = ref<number | null>(null)
-
+console.log(props)
 </script>
 
 <template>
@@ -206,7 +206,7 @@ const idxSlideLoading = ref<number | null>(null)
 .card {
   display: flex;
   flex-direction: column;
-  height: v-bind('cardStyle?.height || "100%"') !important;
+  height:  "100%" !important;
   width: v-bind('cardStyle?.width || "95%"') !important;
   background: v-bind('cardStyle?.background || "transparent"') !important;
 
