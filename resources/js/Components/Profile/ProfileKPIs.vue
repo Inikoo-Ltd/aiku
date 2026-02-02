@@ -1,4 +1,6 @@
 <script setup lang='ts'>
+import UnderConstruction from '@/Pages/Iris/Disclosure/UnderConstruction.vue'
+
 const props = defineProps<{
     data: {}
 }>()
@@ -6,7 +8,6 @@ const props = defineProps<{
 
 <template>
     <div>
-        Profile KPIs
-        <pre>{{ data }}</pre>
+        <UnderConstruction />
     </div>
 </template>
