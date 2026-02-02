@@ -1343,6 +1343,8 @@ trait WithEbayApiRequest
         $defaults   = Arr::get($this->settings, 'shipping');
         $attributes = Arr::get($attributes, 'settings.shipping');
 
+        $price = Arr::get($attributes, 'price', Arr::get($defaults, 'price'));
+
         $data = [
             "categoryTypes"   => [
                 [
@@ -1363,10 +1365,10 @@ trait WithEbayApiRequest
                     "shippingServices" => [
                         [
                             "buyerResponsibleForShipping" => "false",
-                            "freeShipping"                => "false",
+                            "freeShipping"                => $price === 0 ? "true" : "false",
                             "shippingCost"                => [
                                 'currency' => $currency,
-                                'value'    => Arr::get($attributes, 'price', Arr::get($defaults, 'price'))
+                                'value'    => $price
                             ],
                             "shippingCarrierCode"         => Arr::get($attributes, 'carrier_code', Arr::get($defaults, 'carrier_code')),
                             "shippingServiceCode"         => Arr::get($attributes, 'service_code', Arr::get($defaults, 'service_code'))

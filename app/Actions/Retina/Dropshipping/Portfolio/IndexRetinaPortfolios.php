@@ -98,7 +98,7 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getStateFilter(): AllowedFilter
     {
         return AllowedFilter::callback('status', function ($query, $value) {
-            $query->whereNotIn('products.state', (array)$value);
+            $query->where('products.status', $value);
         });
     }
 
