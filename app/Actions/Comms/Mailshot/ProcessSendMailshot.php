@@ -33,61 +33,48 @@ class ProcessSendMailshot
 
     public function handle(Mailshot $mailshot): void
     {
-        $counter = 0;
-
-        // Update this section using GetMailshotRecipientsQueryBuilder
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
-        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
+        // Process recipients in chunks of 250
+        $queryBuilder->chunk(250, function ($recipients) use ($mailshot) {
 
-        foreach ($queryBuilder->cursor() as $recipient) {
-            if ($counter >= 250) {
-                UpdateEmailDeliveryChannel::run(
-                    $emailDeliveryChannel,
-                    [
-                        'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
-                    ]
-                );
-                SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+            $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
-                // Note: create new delivery channel for next batch
-                $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
-                $counter             = 0;
+            foreach ($recipients as $recipient) {
+
+                $recipientExists = $mailshot->recipients()
+                    ->where('recipient_id', $recipient->id)
+                    ->where('recipient_type', class_basename($recipient))
+                    ->exists();
+
+                if (!$recipientExists && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
+
+                    $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
+
+                    $dispatchedEmail = StoreDispatchedEmail::run(
+                        $mailshot,
+                        $recipient,
+                        [
+                            'is_test'       => false,
+                            'outbox_id'     => $outbox->id,
+                            'email_address' => $recipient->email,
+                            'provider'      => DispatchedEmailProviderEnum::SES
+                        ]
+                    );
+
+                    StoreMailshotRecipient::run(
+                        $mailshot,
+                        [
+                            'dispatched_email_id' => $dispatchedEmail->id,
+                            'recipient_type'      => class_basename($recipient),
+                            'recipient_id'        => $recipient->id,
+                            'channel'             => $emailDeliveryChannel->id,
+                        ]
+                    );
+                }
             }
 
-            //  make sure this section
-            $recipientExists = $mailshot->recipients()->where('recipient_id', $recipient->id)->where('recipient_type', class_basename($recipient))->exists();
-            if (!$recipientExists && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
-
-                $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
-                $dispatchedEmail = StoreDispatchedEmail::run(
-                    $mailshot,
-                    $recipient,
-                    [
-                        'is_test'       => false,
-                        'outbox_id'     => $outbox->id,
-                        'email_address' => $recipient->email,
-                        'provider'      => DispatchedEmailProviderEnum::SES
-                    ]
-                );
-
-                $modelData = [
-                    'dispatched_email_id' => $dispatchedEmail->id,
-                    'recipient_type' => class_basename($recipient),
-                    'recipient_id' => $recipient->id,
-                    'channel' => $emailDeliveryChannel->id,
-                ];
-                StoreMailshotRecipient::run(
-                    $mailshot,
-                    $modelData
-                );
-            }
-
-            $counter++;
-        }
-
-        // Handle the final batch (if any recipients were processed)
-        if ($counter > 0) {
+            // After processing the chunk, update and dispatch the delivery channel
             UpdateEmailDeliveryChannel::run(
                 $emailDeliveryChannel,
                 [
@@ -95,7 +82,7 @@ class ProcessSendMailshot
                 ]
             );
             SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
-        }
+        });
 
         UpdateMailshot::run(
             $mailshot,
