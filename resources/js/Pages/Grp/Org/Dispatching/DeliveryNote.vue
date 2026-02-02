@@ -34,7 +34,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch, onMounted } from "vue";
+import { computed, provide, ref, watch, onMounted, inject } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -57,6 +57,7 @@ import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
@@ -133,7 +134,8 @@ const props = defineProps<{
 	}
 }>()
 
-console.log('delivery_note', props)
+
+const layout = inject('layout', layoutStructure)
 
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -429,7 +431,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
-		<template v-if="props.shop.type === 'b2b'"  #button-start-picking="{ action }">
+		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-start-picking="{ action }">
 			<ButtonSelectTrolleys
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
@@ -439,7 +441,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
-		<template v-if="props.shop.type === 'b2b'"  #button-set-as-packed="{ action }">
+		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-as-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
