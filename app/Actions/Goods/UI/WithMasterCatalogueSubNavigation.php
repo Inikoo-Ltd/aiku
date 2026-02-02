@@ -116,7 +116,6 @@ trait WithMasterCatalogueSubNavigation
             ],
 
             [
-                'label'    => __('Gold Reward'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_gr.index',
                     'parameters' => [
@@ -124,9 +123,10 @@ trait WithMasterCatalogueSubNavigation
                     ]
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-tags'],
+                    'icon'    => ['fal', 'fa-medal'],
                     'tooltip' => __('Gold Reward')
-                ]
+                ],
+                'align'    => 'right',
             ],
 
         ];
