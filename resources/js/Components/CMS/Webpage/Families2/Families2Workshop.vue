@@ -42,7 +42,7 @@ const props = defineProps<{
   indexBlock?: number
 }>()
 
-console.log('ssssddd',props)
+console.log('ssssddd', props)
 
 const layout: any = inject('layout', {})
 
@@ -68,7 +68,7 @@ const refreshCarousel = async (delay = 100) => {
 
 const allItems = computed(() => [
   ...(props.modelValue?.families || []),
-/*   ...(props.modelValue?.collections || []) */
+  /*   ...(props.modelValue?.collections || []) */
 ])
 
 const spaceBetween = computed(() => (props.screenType === 'mobile' ? 8 : 24))
@@ -152,9 +152,9 @@ async function computeMaxHeight() {
 let resizeHandler = () => {
   // small debounce
   clearTimeout((resizeHandler as any)._t)
-  ;(resizeHandler as any)._t = setTimeout(() => {
-    computeMaxHeight()
-  }, 120)
+    ; (resizeHandler as any)._t = setTimeout(() => {
+      computeMaxHeight()
+    }, 120)
 }
 
 onMounted(async () => {
@@ -193,47 +193,46 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.modelValue.container?.properties, props.screenType)
-    }" @click="activateBlock" >
+    }" @click="activateBlock">
       <div class="flex items-center gap-4 w-full">
 
-        <button  v-if="swiperInstance?.allowSlidePrev" ref="prevEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollLeft"
-          @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
-        </button>
+        <div class="relative flex-1 ">
+          <!-- PREV -->
+          <button v-if="swiperInstance?.allowSlidePrev" ref="prevEl"
+            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
+            @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
+            <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
+          </button>
 
-        <Swiper
-          @swiper="(s) => (swiperInstance = s)"
-          :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
-          :loop="true"
-          slides-per-view="auto"
-          :space-between="spaceBetween"
-          :freeMode="true"
-          navigation
-          class="flex-1"
-        >
-          <SwiperSlide
-            v-for="(item, index) in allItems"
-            :key="'item-' + index"
-            class="!w-auto flex"
+          <Swiper 
+            @swiper="(s) => (swiperInstance = s)" 
+            :modules="[Autoplay, Thumbs, FreeMode, Navigation]" 
+            :loop="true"
+            slides-per-view="auto" 
+            :space-between="spaceBetween" 
+            :freeMode="true" 
+            class="w-full swiper-mask"
           >
-            <div class="h-full flex">
-              <Family2Render
-                class="family-item h-full flex items-center"
-                :data="item"
-                :style="{
+            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto flex">
+              <div class="h-full flex">
+                <Family2Render class="family-item h-full flex items-center" :data="item" :style="{
+                  ...getStyles(
+                    props.modelValue?.chip?.container?.properties,
+                    props.screenType
+                  )
+                }" :screenType="props.screenType" />
+              </div>
+            </SwiperSlide>
+          </Swiper>
 
-                  ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType)
-                }"
-                :screenType="props.screenType"
-              />
-            </div>
-          </SwiperSlide>
-        </Swiper>
+          <!-- NEXT -->
+          <button v-if="swiperInstance?.allowSlideNext" ref="nextEl"
+            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
+            @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
+            <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" />
+          </button>
+        </div>
 
-        <button v-if="swiperInstance?.allowSlideNext" ref="nextEl" class="p-2 rounded-full cursor-pointer shrink-0" @click.stop="scrollRight"
-          @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']"  />
-        </button>
 
       </div>
     </div>
@@ -257,4 +256,25 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 :deep(.swiper-button-next) {
   display: none !important;
 }
+
+.swiper-mask {
+  --mask-size: 48px;
+
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--mask-size),
+    black calc(100% - var(--mask-size)),
+    transparent 100%
+  );
+
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--mask-size),
+    black calc(100% - var(--mask-size)),
+    transparent 100%
+  );
+}
+
 </style>
