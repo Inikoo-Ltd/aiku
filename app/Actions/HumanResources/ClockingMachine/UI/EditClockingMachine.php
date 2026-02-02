@@ -51,6 +51,49 @@ class EditClockingMachine extends OrgAction
      */
     public function htmlResponse(ClockingMachine $clockingMachine, ActionRequest $request): Response
     {
+        $blueprint = [
+            [
+                'title'  => __('Edit clocking machine'),
+                'label'  => __('Basic Setting'),
+                'fields' => [
+                    'name' => [
+                        'type'  => 'input',
+                        'label' => __('Name'),
+                        'value' => $clockingMachine->name,
+                    ],
+                    'type' => [
+                        'type'    => 'select',
+                        'options' => Options::forEnum(ClockingMachineTypeEnum::class),
+                        'label'   => __('Type'),
+                        'value'   => $clockingMachine->type,
+                    ],
+                ],
+            ],
+        ];
+        if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE->value) {
+            $blueprint[] = [
+                'title'  => __('QR Configuration'),
+                'label'  => __('QR Settings'),
+                'fields' => [
+                    'config.qr.refresh_interval' => [
+                        'type'  => 'input_number',
+                        'label' => __('Refresh Interval (seconds)'),
+                        'value' => data_get($clockingMachine->config, 'qr.refresh_interval', 60),
+                    ],
+                    'config.qr.expiry_duration' => [
+                        'type'  => 'input_number',
+                        'label' => __('Expiry Duration (seconds)'),
+                        'value' => data_get($clockingMachine->config, 'qr.expiry_duration', 60),
+                    ],
+                    'config.qr.allow_multiple_scans' => [
+                        'type'  => 'toggle',
+                        'label' => __('Allow Multiple Scans'),
+                        'value' => (bool) data_get($clockingMachine->config, 'qr.allow_multiple_scans', false),
+                    ],
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -73,25 +116,7 @@ class EditClockingMachine extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('Edit clocking machine'),
-                            'fields' => [
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Name'),
-                                    'value' => $clockingMachine->name
-                                ],
-                                'type' => [
-                                    'type'    => 'select',
-                                    'options' => Options::forEnum(ClockingMachineTypeEnum::class),
-                                    'label'   => __('Type'),
-                                    'value'   => $clockingMachine->type
-                                ],
-                            ]
-                        ]
-
-                    ],
+                    'blueprint' => $blueprint,
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.clocking_machine..update',
@@ -100,7 +125,6 @@ class EditClockingMachine extends OrgAction
                         ],
                     ]
                 ]
-
             ]
         );
     }
