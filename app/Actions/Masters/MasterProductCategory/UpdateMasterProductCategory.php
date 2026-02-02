@@ -99,7 +99,19 @@ class UpdateMasterProductCategory extends OrgAction
         }
 
         if (Arr::has($modelData, 'offers_data')) {
-            data_set($modelData, 'has_gr_vol_discount', true);
+            $offersData = $modelData['offers_data'];
+
+            if (isset($offersData['volume_discount'])) {
+                $volumeDiscount = $offersData['volume_discount'];
+                $itemQuantity = $volumeDiscount['item_quantity'] ?? null;
+                $percentageOff = $volumeDiscount['percentage_off'] ?? null;
+
+                if (($itemQuantity == null || $itemQuantity <= 0) && ($percentageOff == null || $percentageOff <= 0)) {
+                    data_set($modelData, 'has_gr_vol_discount', false);
+                } else {
+                    data_set($modelData, 'has_gr_vol_discount', false);
+                }
+            }
         }
 
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
