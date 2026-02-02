@@ -221,6 +221,7 @@ use App\Models\Ordering\SalesChannel;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, Role> $roles
+ * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
  * @property-read SenderEmail|null $senderEmail
  * @property-read \App\Models\Helpers\Media|null $seoImage

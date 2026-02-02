@@ -100,7 +100,7 @@ class GetEcomOrderActions
                                 'order' => $order->id
                             ]
                         ]
-                    ]:[]
+                    ] : []
                 ],
 
 

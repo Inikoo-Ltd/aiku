@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
@@ -107,6 +108,11 @@ class EditShop extends OrgAction
         $salesChannels = SalesChannel::orderBy('id', 'asc')->get();
         $salesChannelFields = [];
         foreach ($salesChannels as $channel) {
+
+            if ($channel->type == SalesChannelTypeEnum::WEBSITE || $channel->type == SalesChannelTypeEnum::NA) {
+                continue;
+            }
+
             $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
             $salesChannelFields['sales_channel_' . $channel->id] = [
                 'label'       => $channel->name . ' (' . $typeLabel . ')',
