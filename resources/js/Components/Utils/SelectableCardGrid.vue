@@ -40,8 +40,9 @@ defineEmits(['update:modelValue'])
                 />
             </div>
 
-            <div class="mt-auto" v-if="option.type">
-                 <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium uppercase tracking-wide"
+            <div class="mt-auto"
+                v-if="option.type && option.type.replace(/[\W_]+/g, '').toLowerCase() !== option.name.replace(/[\W_]+/g, '').toLowerCase()">
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium uppercase tracking-wide"
                     :class="modelValue === option.id ? 'bg-indigo-200 text-indigo-800' : 'bg-gray-200 text-gray-600'">
                     {{ option.type }}
                 </span>
