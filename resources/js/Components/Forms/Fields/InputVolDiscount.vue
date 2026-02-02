@@ -44,14 +44,6 @@ onMounted(() => {
 
 <template>
   <div v-if="ready" class="grid grid-cols-2 gap-6 mb-5">
-    <!-- ACTIVE (span 2 columns) -->
-    <div class="flex flex-col col-span-2">
-      <label class="mb-1 text-sm font-medium text-gray-700">
-        {{ trans('Active Offers') }}
-      </label>
-      <Toggle v-model="form[fieldName].volume_discount.active" />
-    </div>
-
     <!-- ITEM QUANTITY -->
     <div class="flex flex-col">
       <label class="mb-1 text-sm font-medium text-gray-700">
