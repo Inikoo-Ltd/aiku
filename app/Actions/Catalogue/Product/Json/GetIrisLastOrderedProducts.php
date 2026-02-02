@@ -13,7 +13,6 @@ use App\Actions\IrisAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Http\Resources\Catalogue\LastOrderedProductsResource;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -73,30 +72,6 @@ class GetIrisLastOrderedProducts extends IrisAction
             ])
             ->get();
 
-        // return DB::table('products')
-        //     ->select('products.*', 'transactions.submitted_at', 'transactions.id as transaction_id', 'customers.contact_name as customer_contact_name', 'customers.name as customer_name', 'addresses.country_code as customer_country_code')
-        //     ->where('products.family_id', $productCategory->id)
-        //     ->join('transactions', function ($join) {
-        //         $join->on('transactions.model_id', '=', 'products.id')
-        //             ->where('transactions.model_type', '=', 'Product')
-        //             ->whereRaw('transactions.shop_id = products.shop_id')
-        //             ->whereIn('transactions.state', [TransactionStateEnum::SUBMITTED, TransactionStateEnum::IN_WAREHOUSE, TransactionStateEnum::HANDLING, TransactionStateEnum::PACKED, TransactionStateEnum::FINALISED])
-        //             ->whereRaw(
-        //                 'transactions.submitted_at = (
-        //                     SELECT MAX(t2.submitted_at)
-        //                     FROM transactions t2
-        //                     WHERE t2.model_id = products.id
-        //                         AND t2.model_type = ?
-        //                         AND t2.state IN (?, ?, ?, ?, ?)
-        //                 )',
-        //                 ['Product', TransactionStateEnum::SUBMITTED, TransactionStateEnum::IN_WAREHOUSE, TransactionStateEnum::HANDLING, TransactionStateEnum::PACKED, TransactionStateEnum::FINALISED]
-        //             );
-        //     })
-        //     ->join('customers', 'transactions.customer_id', 'customers.id')
-        //     ->join('addresses', 'addresses.id', 'customers.address_id')
-        //     ->orderBy('transactions.submitted_at', 'desc')
-        //     ->limit(10)
-        //     ->get();
     }
 
     public function jsonResponse($products): AnonymousResourceCollection
