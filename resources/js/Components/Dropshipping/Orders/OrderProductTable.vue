@@ -358,13 +358,21 @@ const onSubmitEditNetAmount = () => {
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
                     <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
-                         class="w-fit">
-                        <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
-                                              :bindToTarget="{ min: 0, max: item.available_quantity }" isWithRefreshModel
-                                              keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
-                                              :readonly="readonly"
-                                              @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
-                                              noUndoButton noSaveButton />
+                        class="w-fit">
+                        <NumberWithButtonSave
+                            :modelValue="item.quantity_ordered"
+                            :routeSubmit="item.updateRoute"
+                            isWithRefreshModel
+                            keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
+                            :readonly="readonly"
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                            noUndoButton noSaveButton
+                            :bindToTarget="{
+                                min: 0,
+                                max: item.available_quantity,
+                            }"
+                            :denominator="item.is_cut_view && Number(item.product_units) > 1 ? Number(item.product_units) : undefined"
+                        />
                     </div>
 
                     <!-- Read-only display -->

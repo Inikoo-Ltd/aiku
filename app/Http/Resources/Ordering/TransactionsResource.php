@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
@@ -93,7 +94,7 @@ class TransactionsResource extends JsonResource
             'discretionary_offer_label' => $this->discretionary_offer_label,
             'transaction_label'         => $this->transaction_label,
             'product_units'             => $this->product_units,
-            'is_cut_view'               => false,
+            'is_cut_view'               => $this->order->shop->type === ShopTypeEnum::B2B ? false : false,  // TODO: Raul INI-915
 
 
             'deleteRoute' => $request->user() instanceof User
