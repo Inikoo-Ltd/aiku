@@ -70,12 +70,23 @@ class ShowMasterShop extends GrpAction
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'Edit',
+                            'label' => __('Edit'),
                             'route' => [
                                 'name'       => "grp.masters.master_shops.edit",
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
+                        app()->environment('local') ? [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'label' => __('Master GR'),
+                            'route' => [
+                                'name'       => "grp.masters.master_shops.show.master_gr.with",
+                                'parameters' => [
+                                    'masterShop' => $masterShop->slug
+                                ]
+                            ]
+                        ] : [],
                     ],
                 ],
                 'tabs'     => [

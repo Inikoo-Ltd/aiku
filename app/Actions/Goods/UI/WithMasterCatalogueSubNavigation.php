@@ -119,4 +119,60 @@ trait WithMasterCatalogueSubNavigation
         ];
     }
 
+    protected function getMasterGRNavigation(MasterShop $masterShop): array
+    {
+        $withGRCount = $masterShop->getMasterFamilies()
+            ->where('master_product_categories.has_gr_vol_discount', true)
+            ->count();
+
+        $withoutGRCount = $masterShop->getMasterFamilies()
+            ->where('master_product_categories.has_gr_vol_discount', false)
+            ->count();
+
+        return [
+            [
+                'isAnchor' => true,
+                'label'    => __($masterShop->name),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-store-alt'],
+                    'tooltip' => __('Master Shop')
+                ]
+            ],
+            [
+                'number'   => $withGRCount,
+                'label'    => __('With GR'),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_gr.with',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-check-circle'],
+                    'tooltip' => __('Master Families With GR')
+                ]
+            ],
+            [
+                'number'   => $withoutGRCount,
+                'label'    => __('Without GR'),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_gr.without',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-times-circle'],
+                    'tooltip' => __('Master Families Without GR')
+                ]
+            ],
+        ];
+    }
+
 }

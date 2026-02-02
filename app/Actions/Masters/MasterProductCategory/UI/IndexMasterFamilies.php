@@ -44,10 +44,12 @@ class IndexMasterFamilies extends OrgAction
 
     protected function getElementGroups(Group|MasterShop|MasterProductCategory $parent): array
     {
-        $activeMasterProducts       = 0;
-        $discontinuedMasterProducts = 0;
+        $activeMasterProducts       = null;
+        $discontinuedMasterProducts = null;
 
-        if ($parent instanceof MasterShop || $parent instanceof MasterProductCategory) {
+        $isMasterGR = str_contains(request()->route()->getName(), 'master_gr');
+
+        if (($parent instanceof MasterShop || $parent instanceof MasterProductCategory) && !$isMasterGR) {
             $activeMasterProducts       = $parent->stats->number_current_master_product_categories_type_family;
             $discontinuedMasterProducts = $parent->stats->number_master_product_categories_type_family - $parent->stats->number_current_master_product_categories_type_family;
         }
@@ -79,7 +81,6 @@ class IndexMasterFamilies extends OrgAction
 
         ];
     }
-
 
     public function asController(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
@@ -138,8 +139,25 @@ class IndexMasterFamilies extends OrgAction
         return $this->handle(parent: $parent, parentType: 'sub_department', prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
 
+    public function inMasterWithGR(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterShop;
+        $parent       = $this->parent;
+        $this->initialisationFromGroup($masterShop->group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
-    public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null): LengthAwarePaginator
+        return $this->handle(parent: $parent, prefix: MasterProductCategoryTabsEnum::INDEX->value, isGR: true);
+    }
+
+    public function inMasterWithoutGR(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterShop;
+        $parent       = $this->parent;
+        $this->initialisationFromGroup($masterShop->group, $request)->withTab(MasterProductCategoryTabsEnum::values());
+
+        return $this->handle(parent: $parent, prefix: MasterProductCategoryTabsEnum::INDEX->value, isGR: false);
+    }
+
+    public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null, $isGR = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -218,6 +236,14 @@ class IndexMasterFamilies extends OrgAction
             default =>
             $queryBuilder->where('master_product_categories.group_id', $parent->id),
         };
+
+        if ($isGR !== null) {
+            if ($isGR) {
+                $queryBuilder->where('master_product_categories.has_gr_vol_discount', true);
+            } else {
+                $queryBuilder->where('master_product_categories.has_gr_vol_discount', false);
+            }
+        }
 
         $selects = [
             // family
@@ -374,8 +400,19 @@ class IndexMasterFamilies extends OrgAction
         ];
         $parentType      = 'department';
 
+        $isMasterGR = str_contains($request->route()->getName(), 'master_gr');
+
         if ($this->parent instanceof MasterShop) {
-            $subNavigation = $this->getMasterShopNavigation($this->parent);
+            if ($isMasterGR) {
+                $subNavigation = $this->getMasterGRNavigation($this->parent);
+                $title = __('Master GR');
+                $icon = [
+                    'icon'  => ['fal', 'fa-tags'],
+                    'title' => __('Master GR')
+                ];
+            } else {
+                $subNavigation = $this->getMasterShopNavigation($this->parent);
+            }
             $masterShop    = $this->parent;
         } elseif ($this->parent instanceof Group) {
             $title      = __('Master families');
@@ -502,6 +539,27 @@ class IndexMasterFamilies extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.masters.master_shops.show.master_gr.with',
+            'grp.masters.master_shops.show.master_gr.without' =>
+            array_merge(
+                ShowMasterShop::make()->getBreadcrumbs($parent),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => $routeName,
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => $routeName === 'grp.masters.master_shops.show.master_gr.with'
+                                ? __('Master Families With GR')
+                                : __('Master Families Without GR'),
+                            'icon'  => 'fal fa-tags'
+                        ],
+                        'suffix' => $suffix
+                    ]
+                ]
+            ),
             'grp.masters.master_families.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
