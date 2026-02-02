@@ -135,6 +135,8 @@ const updateTab = (value: string) => {
 	debStoreTab(value)
 }
 
+
+console.log('compTableBody',compTableBody.value)
 </script>
 
 <template>
@@ -202,37 +204,29 @@ const updateTab = (value: string) => {
 					</Column>
 				</template>
 
-                <!-- Row: Total (footer) -->
-                <ColumnGroup
-                    v-if="compTableBody && compTableBody.length > 0"
-                    type="footer"
-                >
-                    <Row>
-                        <template
-                            v-for="(column, colSlug) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
-                            :key="colSlug"
-                        >
-                            <Column v-if="showDashboardColumn(column)">
-                                <template #footer>
-                                    <div
-                                        class="px-2 flex relative"
-                                        :class="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left'
-							? ''
-							: 'justify-end text-right'"
-                                    >
-                                        <DashboardCell
-                                            :interval="intervals"
-                                            :cell="
-								props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]?.[intervals.value]
-								?? props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]
-							"
-                                        />
-                                    </div>
-                                </template>
-                            </Column>
-                        </template>
-                    </Row>
-                </ColumnGroup>
+               <!-- Row: Total (footer) -->
+				<template v-if="compTableBody && compTableBody.length > 0" #footer>
+					<ColumnGroup type="footer">
+						<Row>
+							<template
+								v-for="(column, colSlug) in props.tableData.tables[props.tableData.current_tab].header.columns"
+								:key="colSlug">
+								<Column v-if="showDashboardColumn(column)">
+									<template #footer>
+										<div class="px-2 flex relative" :class="column.align === 'left'
+											? ''
+											: 'justify-end text-right'">
+											<DashboardCell :interval="intervals" :cell="props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]?.[intervals.value]
+												?? props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]
+												" />
+										</div>
+									</template>
+								</Column>
+							</template>
+						</Row>
+					</ColumnGroup>
+				</template>
+
 			</DataTable>
 
 			<div v-if="isLoadingOnTable" class="z-10 absolute inset-0 bg-white/50 flex justify-center items-center text-5xl">
@@ -270,5 +264,9 @@ const updateTab = (value: string) => {
 :deep(.p-datatable-scrollable .p-datatable-frozen-column) {
     position: sticky;
     background: var(--p-datatable-header-cell-background);
+}
+
+:deep(.p-datatable-footer){
+	display: none;
 }
 </style>
