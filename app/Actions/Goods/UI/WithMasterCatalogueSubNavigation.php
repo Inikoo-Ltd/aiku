@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\UI;
 
 use App\Models\Masters\MasterShop;
+use Illuminate\Support\Facades\DB;
 
 trait WithMasterCatalogueSubNavigation
 {
@@ -121,12 +122,16 @@ trait WithMasterCatalogueSubNavigation
 
     protected function getMasterGRNavigation(MasterShop $masterShop): array
     {
-        $withGRCount = $masterShop->getMasterFamilies()
-            ->where('master_product_categories.has_gr_vol_discount', true)
+        $withGRCount = DB::table('master_product_categories')
+            ->where('master_shop_id', $masterShop->id)
+            ->where('type', 'family')
+            ->where('has_gr_vol_discount', true)
             ->count();
 
-        $withoutGRCount = $masterShop->getMasterFamilies()
-            ->where('master_product_categories.has_gr_vol_discount', false)
+        $withoutGRCount = DB::table('master_product_categories')
+            ->where('master_shop_id', $masterShop->id)
+            ->where('type', 'family')
+            ->where('has_gr_vol_discount', false)
             ->count();
 
         return [
