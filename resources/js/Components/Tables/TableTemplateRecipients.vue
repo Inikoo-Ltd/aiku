@@ -20,7 +20,9 @@ import {
     faTimesCircle,
     faVirus,
     faEnvelope,
-    faBan, faUsers
+    faBan,
+    faUsers,
+    faSpinner
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { reactive, computed, watch, ref, onMounted, nextTick } from "vue";
@@ -64,7 +66,8 @@ library.add(
     faChevronDown,
     faFilter,
     faTimes,
-    faPlus
+    faPlus,
+    faSpinner
 );
 
 const props = defineProps<{
@@ -288,7 +291,6 @@ watch(
     { deep: true }
 )
 
-
 </script>
 
 <template>
@@ -329,7 +331,7 @@ watch(
                 class="border rounded p-4 bg-gray-50 relative min-w-0">
 
                 <div v-if="filter.config" class="flex justify-between mb-2">
-                    <span class="font-medium">{{ filter.config.label ?? '-' }}</span>
+                    <span class="font-medium flex items-center">{{ filter.config.label ?? '-' }}</span>
                     <Button :icon="faTimes" type="negative" @click="removeFilter(key)" />
                 </div>
                 <span
@@ -504,7 +506,7 @@ watch(
                                 <div v-if="filter.value.loadingMap"
                                     class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded">
                                     <div class="flex flex-col items-center gap-2 text-gray-600">
-                                        <i class="pi pi-spin pi-spinner text-2xl"></i>
+                                        <FontAwesomeIcon :icon="faSpinner" class="text-2xl animate-spin" />
                                         <span class="text-sm">{{ trans("Finding location...") }}</span>
                                     </div>
                                 </div>
