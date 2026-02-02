@@ -251,7 +251,7 @@ class EditMasterFamily extends OrgAction
                             'label'  => __('Discounts'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
-                                'vol_gr' => [
+                                'offers_data' => [
                                     'label'  => 'Vol / GR',
                                     'information' => __('Any changes will affect the offer in all shops.'),
                                     'type'   => 'vol_discount',
