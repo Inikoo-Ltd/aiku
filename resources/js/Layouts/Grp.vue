@@ -96,6 +96,7 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 
 library.add(
 	faRainbow,
@@ -174,7 +175,6 @@ provide("isMovePallet", true)
 
 initialiseApp()
 
-const StackedComponents = defineAsyncComponent(() => import("@/Layouts/Grp/StackedComponents.vue"))
 
 const layout = useLayoutStore()
 const sidebarOpen = ref(false)
