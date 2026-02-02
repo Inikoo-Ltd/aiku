@@ -8,14 +8,16 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\OrgAction;
 use App\Models\Comms\DispatchedEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class RedirectUnsubscribe extends OrgAction
+class RedirectUnsubscribe
 {
+    use AsAction;
+
     public function handle(DispatchedEmail $dispatchedEmail): RedirectResponse
     {
         $baseUrl = null;
@@ -32,8 +34,6 @@ class RedirectUnsubscribe extends OrgAction
 
     public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): RedirectResponse
     {
-        $this->initialisationFromShop($dispatchedEmail->shop, $request);
-
         return $this->handle($dispatchedEmail);
     }
 }

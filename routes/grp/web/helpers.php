@@ -26,7 +26,6 @@ use App\Actions\Helpers\Redirects\RedirectPickingSessionLink;
 use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
 use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
-use App\Actions\Helpers\Redirects\RedirectUnsubscribe;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
 use Illuminate\Support\Facades\Route;
@@ -68,5 +67,3 @@ Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {
 });
 
 Route::get('redirect-mailshot-workshop/{mailshot:id}', RedirectMailshotWorkshopLink::class)->name('redirect_mailshot_workshop');
-
-Route::get('redirect-unsubscribe/{dispatchedEmail:uuid}', RedirectUnsubscribe::class)->name('redirect_unsubscribe');
