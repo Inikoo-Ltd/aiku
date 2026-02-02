@@ -258,7 +258,6 @@ class EditMasterFamily extends OrgAction
                                     'value'  =>  $masterProductCategory->offers_data,
                                     'initial_value' => [
                                         'volume_discount'   => [
-                                            'active' => false,
                                             'item_quantity' => null,
                                             'percentage_off' => null,
                                         ],

@@ -99,9 +99,7 @@ class UpdateMasterProductCategory extends OrgAction
         }
 
         if (Arr::has($modelData, 'offers_data')) {
-            $isActive = Arr::get($modelData, 'offers_data.volume_discount.active', false);
-
-            data_set($modelData, 'has_gr_vol_discount', $isActive);
+            data_set($modelData, 'has_gr_vol_discount', true);
         }
 
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
