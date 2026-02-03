@@ -149,7 +149,7 @@ function buildFilters(): Record<string, any> {
         filters[`filter[new_arrivals]`] = 3
     }
 
-    console.log("Filters sent to URL:", filters)
+    // console.log("Filters sent to URL:", filters)
     return filters
 }
 
@@ -164,7 +164,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     }
 
     const filters = buildFilters();
-    console.log("Filters used in API call:", filters);
+    // console.log("Filters used in API call:", filters);
     const routes = getRoutes();
     const useOutOfStock = isFetchingOutOfStock.value;
 

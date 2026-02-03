@@ -50,7 +50,7 @@ class RedirectMailshotWorkshopLink extends OrgAction
             'name'       => 'grp.org.shops.show.marketing.mailshots.workshop',
             'parameters' => [
                 'organisation'      => $organisation->slug,
-                'shop'              => $shop->fulfilment->slug,
+                'shop'              => $shop->slug,
                 'mailshot'          => $mailshot->slug
             ]
         ];

@@ -29,7 +29,8 @@ const props = defineProps<{
     formData: {
         submitButton?: String
         fullLayout?: Boolean
-        submitPosition?: String
+        submitLabel?: String
+        submitPosition?:String
         blueprint: {
             title?: string
             subtitle?: string
@@ -135,8 +136,14 @@ console.log("formdata create", props.formData)
     <PageHeading :data="pageHead">
         <template v-if="formData?.submitPosition == 'top'" #other>
             <div class="flex flex-col items-end sm:flex-row sm:items-center gap-2 rounded-md">
-                <Button v-if="!formData.submitButton" :disabled="form.processing" type="save" @click="handleFormSubmit"
-                    :loading="isLoading" />
+                <Button
+                    v-if="!formData.submitButton"
+                    :disabled="form.processing"
+                    type="save"
+                    :label="formData.submitLabel"
+                    @click="handleFormSubmit"
+                    :loading="isLoading"
+                />
 
                 <div v-else-if="formData.submitButton == 'dropdown'" class="flex justify-center">
                     <Button :key="ButtonActive.key" type="save" :disabled="form.processing"
@@ -157,7 +164,8 @@ console.log("formdata create", props.formData)
                             leave-to-class="transform scale-95 opacity-0">
                             <MenuItems
                                 class="absolute z-50 right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/10 focus:outline-none"
-                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'">
+                                :class="formData.submitPosition === 'top' ? 'top-full' : 'top-[90px]'"
+                            >
                                 <div class="px-1 py-1">
                                     <div v-for="(item, index) in formData.route">
                                         <MenuItem>
@@ -268,11 +276,15 @@ console.log("formdata create", props.formData)
                 </template>
 
                 <!-- Button -->
-                <div v-if="!formData?.submitPosition || formData?.submitPosition != 'top'"
-                    class="pt-5 flex justify-end">
+                <div v-if="!formData?.submitPosition || formData?.submitPosition != 'top'" class="pt-5 flex justify-end">
+                    <Button
+                        v-if="!formData.submitButton"
+                        :loading="isLoading"
+                        type="save"
+                        :label="formData.submitLabel"
+                        @click="handleFormSubmit"
+                    />
 
-                    <Button v-if="!formData.submitButton" :loading="isLoading" label="Continue" style="primary"
-                        @click="handleFormSubmit" />
                     <div v-else-if="formData.submitButton == 'dropdown'" class="flex justify-center">
                         <Button :key="ButtonActive.key" type="submit" :disabled="form.processing"
                             class="rounded-r-none border-none" :style="'primary'" size="m" @click="handleFormSubmit">

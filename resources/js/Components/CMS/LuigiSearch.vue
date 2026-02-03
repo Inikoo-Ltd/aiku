@@ -141,7 +141,7 @@ const LBInitAutocompleteNew = async () => {
         `#${props.id || 'inputLuigi'}`
     )
 
-    console.log("Init autocomplete", props.id)
+    console.log(`Init autocomplete: ${props.id}`)
 }
 
 

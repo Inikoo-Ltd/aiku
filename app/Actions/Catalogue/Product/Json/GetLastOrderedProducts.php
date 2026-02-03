@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Http\Resources\Catalogue\LastOrderedProductsResource;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
