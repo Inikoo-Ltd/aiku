@@ -26,7 +26,6 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
         ->name("fulfilment.")
         ->group(__DIR__."/fulfilment/fulfilment_app.php");
 
-
     Route::prefix("dropshipping")
         ->name("dropshipping.")
         ->group(__DIR__."/dropshipping/dropshipping_app.php");
