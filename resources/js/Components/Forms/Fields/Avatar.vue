@@ -57,8 +57,6 @@ const avatarUploaded = (file) => {
         <!-- Avatar Button: Large view -->
         <div class="relative hidden overflow-hidden h-40 aspect-square rounded-full lg:inline-block ring-1 ring-gray-300">
             <Image class="h-full rounded-full" :src="temporaryAvatar" alt="" />
-        <!-- <div class="relative hidden h-40 w-40 overflow-hidden rounded-full lg:flex lg:items-center lg:justify-center">
-            <img class="relative min-h-full min-w-max" :src="temporaryAvatar" alt="" /> -->
             <label id="input-avatar-large-mask" for="input-avatar-large"
                 class="absolute inset-0 flex h-full w-full items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100">
                 <span>{{ trans("Change") }}</span>
