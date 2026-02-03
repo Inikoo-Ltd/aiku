@@ -10,6 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\WebUser;
 use Illuminate\Support\Str;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
 class BroadcastChatListEvent implements ShouldBroadcastNow
 {
@@ -63,17 +64,26 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
             $senderName = $webUser?->customer?->name;
         }
 
+        $activeAssignment = $this->message->chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE)
+            ->first();
+
+        $assignedAgentId = $activeAssignment ? $activeAssignment->chatAgent?->user?->id : null;
+
         if ($this->message->message_type->value === 'text') {
             $text = $this->message->original_text ?? $this->message->message_text;
         } else {
-            $text = "New " .$this->message->message_type->value . " message";
+            $text = "New " . $this->message->message_type->value . " message";
         }
         $text = Str::limit($text, 50, '…');
+
         return [
             'message' => [
-                'sender_type' => $this->message->sender_type,
-                'sender_name' => $senderName,
-                'text'        => $text,
+                'sender_type'       => $this->message->sender_type->value,
+                'sender_name'       => $senderName,
+                'text'              => $text,
+                'shop_id'           => $this->message->chatSession->shop_id,
+                'user_id'           => $assignedAgentId,
             ]
         ];
     }
