@@ -110,6 +110,7 @@ onMounted(() => {
 
             const msg = e.message
             if (!msg) return
+            if (msg.sender_type === "agent") return
 
             const senderDisplay =
                 msg.sender_name?.trim() ||
