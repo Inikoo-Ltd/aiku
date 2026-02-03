@@ -83,7 +83,7 @@ class SendChatMessage
 
         TranslateChatMessage::dispatch(messageId: $chatMessage->id);
         BroadcastRealtimeChat::dispatch($chatMessage);
-        BroadcastChatListEvent::dispatch();
+        BroadcastChatListEvent::dispatch($chatMessage);
 
         return $chatMessage;
     }
