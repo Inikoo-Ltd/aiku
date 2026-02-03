@@ -99,14 +99,38 @@ const waitEchoReady = (callback: Function) => {
     }, 300)
 }
 
+const notifiedMessages = new Set<string>()
+
+
 onMounted(() => {
+
     waitEchoReady(() => {
         window.Echo.join("chat-list").listen(".chatlist", (e: any) => {
             console.log("🔥 chat-list update:", e)
+
+            const msg = e.message
+            if (!msg) return
+            if (msg.sender_type === "agent") return
+
+            const senderDisplay =
+                msg.sender_name?.trim() ||
+                (msg.sender_type === "guest" ? "Guest" : "User")
+
+            const duplicate = `${msg.sender_name}-${msg.text}`
+
+            if (notifiedMessages.has(duplicate)) return
+
+            if (Notification.permission === "granted") {
+                new Notification(senderDisplay, {
+                    body: msg.text ?? "New message",
+                    tag: duplicate
+                })
+
+                notifiedMessages.add(duplicate)
+            }
             reloadContacts()
         })
     })
-    reloadContacts()
 })
 
 const formatTime = (timestamp: string) => {
