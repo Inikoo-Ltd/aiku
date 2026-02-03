@@ -382,9 +382,7 @@ const onCopyDataCustomer = (field: string) => {
 }
 
 const compOptionsCreateLabel = computed(() => {
-	return optionShippingList.value?.filter(
-									(shipment) => shipment.api_shipper
-								)
+	return optionShippingList.value?.filter((shipment) => shipment.api_shipper)
 })
 </script>
 
@@ -559,9 +557,9 @@ const compOptionsCreateLabel = computed(() => {
 			@onClose="!isModalErrorShipment ? (isModalShipment = false) : null"
 			width="w-full max-w-2xl">
 			<div>
-				<!-- <div class="text-center font-bold mb-4">
+				<div class="text-center font-bold mb-6 text-2xl">
                     {{ trans("Add shipment") }}
-                </div> -->
+                </div>
 
 				<!-- Section: Create label -->
 				<div v-if="compOptionsCreateLabel.length" class="w-full mt-3">
@@ -673,7 +671,8 @@ const compOptionsCreateLabel = computed(() => {
 							:disabled="isLoadingButton == 'addTrackingNumber'"
 							:placeholder="trans('Select shipping')"
 							object
-							@optionsList="(e) => (optionShippingList = e)">
+							@optionsList="(e) => (optionShippingList = e)"
+						>
 							<template #singlelabel="{ value }">
 								<div class="w-full text-left pl-4">
 									{{ value.name }}
