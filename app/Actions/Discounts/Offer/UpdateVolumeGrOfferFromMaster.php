@@ -34,7 +34,7 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
 
         DB::transaction(function () use ($masterProductCategory, $volumeDiscount) {
 
-            foreach(ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
+            foreach (ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
                 ->where('master_product_category_id', $masterProductCategory->id)
                 ->get() as $family) {
 

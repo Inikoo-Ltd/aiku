@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Lorisleiva\Actions\Facades\Actions;
+use App\Services\GeocoderService;
 
 /**
  * @method forPage(mixed $page, mixed $perPage)
@@ -28,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind('app.scope', function () {
             return 'aiku';
+        });
+
+        $this->app->singleton(GeocoderService::class, function ($app) {
+            return new GeocoderService();
         });
 
         if ($this->app->environment('local')) {

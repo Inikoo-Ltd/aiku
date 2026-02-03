@@ -21,6 +21,17 @@ import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import { ZiggyVue } from "ziggy-js";
+import "leaflet/dist/leaflet.css"
+
+import L from "leaflet"
+
+delete L.Icon.Default.prototype._getIconUrl
+
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: new URL("leaflet/dist/images/marker-icon-2x.png", import.meta.url).href,
+    iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
+    shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
+})
 
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_GRP_AGENT_ID) {
   const options = {
