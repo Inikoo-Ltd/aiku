@@ -206,7 +206,7 @@ console.log(props)
 .card {
   display: flex;
   flex-direction: column;
-  height:  "100%" !important;
+  height: v-bind('cardStyle?.height || "100%"') !important;
   width: v-bind('cardStyle?.width || "95%"') !important;
   background: v-bind('cardStyle?.background || "transparent"') !important;
 
