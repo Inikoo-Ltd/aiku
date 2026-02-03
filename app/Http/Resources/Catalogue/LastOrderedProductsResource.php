@@ -59,6 +59,7 @@ class LastOrderedProductsResource extends JsonResource
             'asset_id'                  => $this->asset_id,
             'historic_id'               => $this->current_historic_asset_id,
             'code'                      => $this->code,
+            'canonical_url'             => $this->canonical_url,
             'name'                      => $this->name,
             'image_thumbnail'           => $thumbnailImageSources,
             'image'                     => $imageSources,

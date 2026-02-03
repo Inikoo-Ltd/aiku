@@ -22,11 +22,18 @@ library.add(faChevronLeft, faChevronRight)
 
 
 const props = defineProps<{
-    fieldValue: {}
+    fieldValue: {
+        family: {   // GetWebBlockRecommendationsCRB
+            id: number
+            slug: string
+            name: string
+        }
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
+
 
 
 
@@ -60,7 +67,7 @@ const fetchRecommenders = async () => {
             isLoadingFetch.value = true
             
             const response = await axios.get(
-                route('iris.json.product_category.last-ordered-products.index', { productCategory: 31890 })
+                route('iris.json.product_category.last-ordered-products.index', { productCategory: props.fieldValue.family.id })
             )
             
             
@@ -84,7 +91,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6" :style="{
+    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
@@ -92,12 +99,12 @@ onMounted(() => {
         <template v-if="!isFetched || listProducts?.length">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
-                <div class="text-3xl font-semibold">
+                <div class="text-xl md:text-3xl font-semibold">
                     <div v-html="fieldValue.title"></div>
                 </div>
             </div>
             
-            <div class="py-4" id="LuigiTrends1">
+            <div class="py-4 px-4" id="recommendation-crb-1-iris">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"

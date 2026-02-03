@@ -60,7 +60,7 @@ class GetIrisLastOrderedProducts extends IrisAction
             ->where('products.family_id', $productCategory->id)
             ->where('products.is_for_sale', true)
             ->orderBy('latest_tx.submitted_at', 'desc')
-            ->limit(10)
+            ->limit(15)
             ->select([
                 'products.*',
                 'webpages.canonical_url',
