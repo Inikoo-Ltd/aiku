@@ -420,11 +420,11 @@ const updateCollection = async (e: Event) => {
                     <!-- Section: Parcels -->
                     <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
                         class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
-                        <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='mt-1 text-gray-400'
+                        <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
-                        <div class=" group w-full">
+                        <div class=" group w-full pl-px">
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
-                                <div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+                                <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
                                 <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
                                 <template v-if="!(boxStats?.shipments?.length >= 1) && deliveryNote?.state === 'packed'">

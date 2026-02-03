@@ -148,6 +148,7 @@ const isLoadingData = ref<string | boolean>(false)
 const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
 const isModalShipment = ref(false)
 const optionShippingList = ref([])
+const optionsCreateLabel = ref([])
 const onOpenModalTrackingNumber = async () => {
 	isLoadingData.value = "addTrackingNumber"
 	try {
@@ -158,6 +159,7 @@ const onOpenModalTrackingNumber = async () => {
 			)
 		)
 		optionShippingList.value = xxx?.data?.data || []
+		optionsCreateLabel.value = xxx?.data?.data?.filter((shipment) => shipment.api_shipper)
 
 		if (optionShippingList.value?.filter((shipment) => shipment.api_shipper ).length < 1) {
 			selectedShipment.value	= 'other_options'
@@ -381,9 +383,6 @@ const onCopyDataCustomer = (field: string) => {
 	}
 }
 
-const compOptionsCreateLabel = computed(() => {
-	return optionShippingList.value?.filter((shipment) => shipment.api_shipper)
-})
 </script>
 
 <template>
@@ -562,7 +561,7 @@ const compOptionsCreateLabel = computed(() => {
                 </div>
 
 				<!-- Section: Create label -->
-				<div v-if="compOptionsCreateLabel.length" class="w-full mt-3">
+				<div v-if="optionsCreateLabel.length" class="w-full mt-3">
 					<div class="text-xs px-1 my-2">
 						<RadioButton
 							v-model="selectedShipment"
@@ -583,7 +582,7 @@ const compOptionsCreateLabel = computed(() => {
 								class="skeleton w-full max-w-52 h-20 rounded"></div>
 							<div
 								v-else
-								v-for="(shipment, index) in compOptionsCreateLabel"
+								v-for="(shipment, index) in optionsCreateLabel"
 								@click="
 									() => (
 										set(formTrackingNumber, ['errors', 'address'], null),
@@ -672,6 +671,7 @@ const compOptionsCreateLabel = computed(() => {
 							:placeholder="trans('Select shipping')"
 							object
 							@optionsList="(e) => (optionShippingList = e)"
+							:optionFunc="(option) => !option.api_shipper"
 						>
 							<template #singlelabel="{ value }">
 								<div class="w-full text-left pl-4">
