@@ -107,8 +107,6 @@ onMounted(() => {
 
     waitEchoReady(() => {
         window.Echo.join("chat-list").listen(".chatlist", (e: any) => {
-            console.log("🔥 chat-list update:", e)
-
             const msg = e.message
             if (!msg) return
             if (msg.sender_type === "agent") return
@@ -257,7 +255,6 @@ const assignToSelf = async (ulid: string) => {
 }
 
 const handleClickContact = async (c: Contact) => {
-    console.log(c)
     errorPerContact.value[c.ulid] = ""
 
     if (activeTab.value === "waiting") {
