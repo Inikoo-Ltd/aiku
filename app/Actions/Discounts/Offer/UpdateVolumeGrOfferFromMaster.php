@@ -1,13 +1,13 @@
 <?php
 
 /*
- * Author: stewicca <stewicalf@gmail.com>
- * Copyright (c) 2026, Steven Wicca Alfredo
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 03 Feb 2026 14:01:37 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterProductCategory;
+namespace App\Actions\Discounts\Offer;
 
-use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -17,40 +17,41 @@ use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateMasterProductCategoryVolumeDiscount extends OrgAction
+class UpdateVolumeGrOfferFromMaster extends OrgAction
 {
     use AsAction;
 
     private int $updatedOffersCount = 0;
     private int $updatedAllowancesCount = 0;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterProductCategory $masterProductCategory, ?array $volumeDiscount): array
     {
         $this->updatedOffersCount = 0;
         $this->updatedAllowancesCount = 0;
 
         DB::transaction(function () use ($masterProductCategory, $volumeDiscount) {
-            // Get all ProductCategory IDs that are families and linked to this master
-            $productCategoryIds = ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
+
+            foreach(ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
                 ->where('master_product_category_id', $masterProductCategory->id)
-                ->pluck('id')
-                ->toArray();
+                ->get() as $family) {
 
-            if (empty($productCategoryIds)) {
-                return;
+                $offers = Offer::where('type', 'Category Quantity Ordered Order Interval')
+                    ->where('trigger_type', 'ProductCategory')
+                    ->where('trigger_id', $family->id)
+                    ->get();
+
+                foreach ($offers as $offer) {
+                    $this->updateOffer($offer, $volumeDiscount);
+                    $this->updateOfferAllowances($offer, $volumeDiscount);
+                    UpdateProductCategoryOffersData::run($offer);
+                }
             }
 
-            // Find all offers matching the criteria
-            $offers = Offer::where('type', 'Category Quantity Ordered Order Interval')
-                ->where('trigger_type', 'ProductCategory')
-                ->whereIn('trigger_id', $productCategoryIds)
-                ->get();
 
-            foreach ($offers as $offer) {
-                $this->updateOffer($offer, $volumeDiscount);
-                $this->updateOfferAllowances($offer, $volumeDiscount);
-                UpdateProductCategoryOffersData::run($offer);
-            }
+
         });
 
         return [
@@ -107,6 +108,9 @@ class UpdateMasterProductCategoryVolumeDiscount extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(MasterProductCategory $masterProductCategory, ?array $volumeDiscount): array
     {
         $this->asAction = true;
