@@ -61,7 +61,7 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
 
         if ($this->message->sender_type->value === 'user') {
             $webUser = WebUser::find($this->message->sender_id);
-            $senderName = $webUser?->customer?->name;
+            $senderName = $webUser?->customer?->contact_name;
         }
 
         $activeAssignment = $this->message->chatSession->assignments()
