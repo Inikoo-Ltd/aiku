@@ -228,14 +228,14 @@ class ShowDeliveryNote extends OrgAction
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
-                [
-                    'type'      => 'button',
-                    'style'     => 'save',
-                    'tooltip'   => __('Unassigned'),
-                    'label'     => __('Put in Queue'),
-                    'iconRight' => 'fas fa-arrow-right',
-                    'key'       => 'to-queue',
-                ],
+//                [
+//                    'type'      => 'button',
+//                    'style'     => 'save',
+//                    'tooltip'   => __('Unassigned'),
+//                    'label'     => __('Put in Queue'),
+//                    'iconRight' => 'fas fa-arrow-right',
+//                    'key'       => 'to-queue',
+//                ],
                 [
                     'type'    => 'button',
                     'style'   => 'save',
