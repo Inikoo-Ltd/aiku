@@ -37,7 +37,8 @@ class StoreIrisPortfolioToAllChannels extends IrisAction
         $existingPortfolios = Portfolio::whereIn('item_id', $itemIds)
             ->whereIn('customer_sales_channel_id', $custSalesChannelsIds)
             ->get()
-            ->keyBy(fn ($p) => "{$p->customer_sales_channel_id}-{$p->item_id}");;
+            ->keyBy(fn ($p) => "{$p->customer_sales_channel_id}-{$p->item_id}");
+
 
         $existingPortfolios = Portfolio::whereIn('customer_sales_channel_id', $custSalesChannelsIds)
                 ->whereIn('item_id', $items->pluck('id'))
@@ -49,12 +50,12 @@ class StoreIrisPortfolioToAllChannels extends IrisAction
             $custSalesChannels->each(function ($custSalesChannel) use ($items, $existingPortfolios) {
                 $items->each(function ($item) use ($custSalesChannel, $existingPortfolios) {
                     $compositeKey = $custSalesChannel->id . '-' . $item->id;
-                    if($existingPortfolios->has($compositeKey)) {
+                    if ($existingPortfolios->has($compositeKey)) {
                         $portfolio = $existingPortfolios->get($compositeKey);
-                        if(!$portfolio->status){
+                        if (!$portfolio->status) {
                             UpdatePortfolio::make()->action($portfolio, ['status' => true]);
                         }
-                    }else{
+                    } else {
                         StorePortfolio::make()->action($custSalesChannel, $item, []);
                     }
                 });

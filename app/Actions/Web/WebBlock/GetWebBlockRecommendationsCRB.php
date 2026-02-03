@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Vika Aqordi
  * Created on 02-02-2026-14h-54m
@@ -26,8 +27,8 @@ class GetWebBlockRecommendationsCRB
                 'name'  => $webpage->model->name,
                 'slug'  => $webpage->model->slug,
             ];
-        };
-        
+        }
+
         data_set($webBlock, 'web_block.layout.data.fieldValue.family', $family);
 
         return $webBlock;

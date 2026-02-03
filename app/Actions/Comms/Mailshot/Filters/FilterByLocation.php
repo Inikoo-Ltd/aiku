@@ -87,8 +87,8 @@ class FilterByLocation
                     $bounds = $coordinates['bounds'];
                     $south = (float) min($bounds['south'], $bounds['north']);
                     $north = (float) max($bounds['south'], $bounds['north']);
-                    $west  = (float) min($bounds['west'],  $bounds['east']);
-                    $east  = (float) max($bounds['west'],  $bounds['east']);
+                    $west  = (float) min($bounds['west'], $bounds['east']);
+                    $east  = (float) max($bounds['west'], $bounds['east']);
 
                     return $query->whereHas('address', function (Builder $q) use ($south, $north, $west, $east) {
                         $q->whereNotNull('latitude')
