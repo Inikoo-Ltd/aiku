@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faBox } from "@far"
+import { faBox, faPlusCircle } from "@far"
 import { faCircle, faDotCircle, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -16,6 +16,10 @@ import { getStyles } from "@/Composables/styles"
 import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
+import ProductPrices2 from "../ProductPrices2.vue"
+import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
+import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
+import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import "swiper/css"
 import { faImage } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -86,6 +90,7 @@ const isFavorite = ref(false)
 const contentRef = ref(null)
 const expanded = ref(false)
 const showButton = ref(false)
+const _popoverProfit = ref(null)
 
 
 const attrs = useAttrs()
@@ -219,7 +224,39 @@ defineOptions({
                 </div>
 
                 <!-- PRICE -->
-                <ProductPrices :field-value="modelValue" />
+                <!-- <ProductPrices :field-value="modelValue" />-->
+
+                <ProductPrices2 v-if="layout?.iris?.is_logged_in" :field-value="fieldValue" :product="product"
+                    :key="product.code" />
+
+                <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
+                    <template v-if="product.offers_data?.number_offers > 0">
+                        <div class="flex flex-col w-fit offers">
+                            <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
+                                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
+                                <NonMemberPriceLabel v-else :product />
+                            </template>
+                        </div>
+                        <div />
+                    </template>
+                    <div v-else />
+                </div>
+
+                <div class="flex justify-end items-end w-full">
+                    <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
+                    <span class="text-green-500 ml-1 font-bold">
+                        {{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }}
+                    </span>
+                    <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
+                        @mouseleave="_popoverProfit?.hide" class="ml-1 cursor-pointer opacity-60 hover:opacity-100">
+                        <FontAwesomeIcon :icon=faPlusCircle class="" fixed-width aria-hidden="true" />
+                    </span>
+
+                    <!-- Popover: Question circle GR member -->
+                    <!--  <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                            <ProfitCalculationList :product="product" />
+                        </Popover> -->
+                </div>
 
                 <!-- ADD TO CART -->
                 <div class="flex gap-2 mb-6">
@@ -322,17 +359,38 @@ defineOptions({
 
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
 
-        <div class="flex justify-between items-start gap-4 mt-4">
-            <ProductPrices v-if="layout?.iris?.is_logged_in" :field-value="modelValue" />
+        <div class="flex  justify-between items-start gap-4 mt-4">
+            <!-- <ProductPrices v-if="layout?.iris?.is_logged_in" :field-value="modelValue" />
 
-            <FontAwesomeIcon v-if="layout?.iris?.is_logged_in && layout?.retina?.type !== 'dropshipping'"
-                :icon="customerData?.is_favourite ? fasHeart : faHeart"
-                class="text-xl cursor-pointer transition-colors duration-300"
-                :class="customerData?.is_favourite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'" @click="
-                    customerData?.is_favourite
-                        ? onUnselectFavourite(product)
-                        : onAddFavourite(product)
-                    " />
+ -->
+            <div class="text-sm font-medium text-gray-600 mt-1 mb-1">
+                {{ trans("Product code") }}: {{ product.code }}
+            </div>
+            <div>
+                <FontAwesomeIcon v-if="layout?.iris?.is_logged_in && layout?.retina?.type !== 'dropshipping'"
+                    :icon="customerData?.is_favourite ? fasHeart : faHeart"
+                    class="text-xl cursor-pointer transition-colors duration-300"
+                    :class="customerData?.is_favourite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'" @click="
+                        customerData?.is_favourite
+                            ? onUnselectFavourite(product)
+                            : onAddFavourite(product)
+                        " />
+
+            </div>
+
+        </div>
+        <ProductPrices2 v-if="layout?.iris?.is_logged_in" :field-value="fieldValue" :product="product"
+            :key="product.code" />
+
+        <div class="flex justify-start items-end w-full">
+            <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
+            <span class="text-green-500 ml-1 font-bold">
+                {{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }}
+            </span>
+            <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
+                class="ml-1 cursor-pointer opacity-60 hover:opacity-100">
+                <FontAwesomeIcon :icon=faPlusCircle class="" fixed-width aria-hidden="true" />
+            </span>
         </div>
 
         <!-- TAGS -->
@@ -346,7 +404,7 @@ defineOptions({
         </div>
 
         <!-- ADD TO CART -->
-        <div class="mt-6 flex flex-col gap-2">
+        <div class="mt-0 flex flex-col gap-2">
             <EcomAddToBasketv2 v-if="layout?.iris?.is_logged_in && product.stock > 0" v-model:product="product"
                 :customerData="customerData" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
 
