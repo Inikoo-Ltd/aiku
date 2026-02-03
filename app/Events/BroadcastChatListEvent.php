@@ -7,6 +7,8 @@ use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use App\Models\CRM\Livechat\ChatMessage;
+use App\Http\Resources\CRM\Livechat\ChatMessageResource;
 
 class BroadcastChatListEvent implements ShouldBroadcastNow
 {
@@ -14,14 +16,16 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
+    public $message;
+
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(?ChatMessage $message = null)
     {
-        //
+        $this->message = $message;
     }
 
     /**
@@ -37,5 +41,12 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
     public function broadcastAs(): string
     {
         return 'chatlist';
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'message' => $this->message ? new ChatMessageResource($this->message) : null,
+        ];
     }
 }
