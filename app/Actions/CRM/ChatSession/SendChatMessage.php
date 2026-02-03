@@ -313,7 +313,7 @@ class SendChatMessage
             ];
         }
 
-        if (! empty($validated['sender_id'])) {
+        if (!empty($validated['sender_id']) && $senderType === ChatSenderTypeEnum::USER->value) {
 
             $webUser = WebUser::find($validated['sender_id']);
 
