@@ -6,10 +6,10 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faAtomAlt, faDotCircle, faUserFriends, faChessBoard,faStopwatch,faClipboardListCheck } from "@fal";
+import { faAtomAlt, faDotCircle, faUserFriends, faChessBoard,faStopwatch,faClipboardListCheck, faMedal } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-library.add(faAtomAlt, faDotCircle, faUserFriends, faChessBoard, faStopwatch, faClipboardListCheck);
+library.add(faAtomAlt, faDotCircle, faUserFriends, faChessBoard, faStopwatch, faClipboardListCheck, faMedal);
 
 const layout = inject("layout", layoutStructure)
 
@@ -36,7 +36,7 @@ const locale = inject("locale", aikuLocaleStructure)
 const isSubNavActive = (subNav: SubNav) => {
     const isRouteIncludeRoot = layout.currentRoute.includes(subNav.root || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx')
     const isRouteSameAsRoot = layout.currentRoute === subNav.route?.name
-    const isLayoutRootActiveExist = subNav.route?.name?.includes(layout.root_active || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx') 
+    const isLayoutRootActiveExist = subNav.route?.name?.includes(layout.root_active || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
     return  isRouteIncludeRoot || isRouteSameAsRoot || isLayoutRootActiveExist
 }

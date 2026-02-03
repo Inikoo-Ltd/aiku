@@ -6,7 +6,7 @@
 	"website_type" : ["b2b","b2c","dropshipping"],
 	"category": "block",
 	"is_in_test" : false,
-	"fixed": true,
+	"fixed": false,
 	"data": {
 		"fieldValue": {
 			"settings": null,

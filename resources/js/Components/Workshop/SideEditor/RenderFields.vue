@@ -52,7 +52,7 @@ const valueForField = computed(() => {
   }
 
   const view = currentView.value!
-  return rawVal?.[view] ?? rawVal?.desktop
+  return rawVal?.[view] ?? rawVal?.desktop ?? rawVal
 })
 
 /* const valueForField = computed(() => {

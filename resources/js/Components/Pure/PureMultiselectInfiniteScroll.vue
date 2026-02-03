@@ -33,9 +33,10 @@ const props = defineProps<{
     initOptions?: {}[]
     valueProp?: string
     object?: boolean
-    clearOnSelect?: boolean,
-    clearOnBlur?: boolean
-    clearOnFocus?: boolean
+    clearOnSelect? : boolean,
+    clearOnBlur? : boolean
+    clearOnFocus? :boolean
+    optionFunc?: () => boolean
 }>()
 const emits = defineEmits<{
     (e: 'optionsList', value: any[]): void
@@ -60,8 +61,7 @@ const getUrlFetch = (additionalParams: {}) => {
 const optionsList = ref<any[]>([])
 const optionsMeta = ref<Meta | null>(null)
 const optionsLinks = ref<Links | null>(null)
-const fetchProductList = async (url?: string, ccc) => {
-    // console.log('ewqewqewq', ccc)
+const fetchProductList = async (url) => {
     isComponentLoading.value = 'fetchProduct'
 
     const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
@@ -71,9 +71,16 @@ const fetchProductList = async (url?: string, ccc) => {
 
 
         if (xxx?.data?.data) {
-            optionsList.value = [...optionsList.value, ...xxx?.data?.data]
-            optionsMeta.value = xxx?.data.meta || null
-            optionsLinks.value = xxx?.data.links || null
+            const raw = xxx.data.data
+
+            // Apply filter function if provided
+            const filtered = typeof props.optionFunc === 'function'
+                ? raw.filter((item) => props.optionFunc(item))
+                : raw
+
+            optionsList.value = [...optionsList.value, ...filtered]
+            optionsMeta.value = xxx?.data?.meta || null
+            optionsLinks.value = xxx?.data?.links || null
         } else {
             optionsList.value = xxx?.data
         }
