@@ -8,7 +8,8 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use App\Models\CRM\Livechat\ChatMessage;
-use App\Http\Resources\CRM\Livechat\ChatMessageResource;
+use App\Models\CRM\WebUser;
+use Illuminate\Support\Str;
 
 class BroadcastChatListEvent implements ShouldBroadcastNow
 {
@@ -45,8 +46,35 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        if (!$this->message) {
+            return [
+                'message' => null
+            ];
+        }
+
+        $senderName = "Customer";
+
+        if ($this->message->sender_type->value === 'guest') {
+            $senderName = $this->message->chatSession?->guest_identifier;
+        }
+
+        if ($this->message->sender_type->value === 'user') {
+            $webUser = WebUser::find($this->message->sender_id);
+            $senderName = $webUser?->customer?->name;
+        }
+
+        if ($this->message->message_type->value === 'text') {
+            $text = $this->message->original_text ?? $this->message->message_text;
+        } else {
+            $text = "New " .$this->message->message_type->value . " message";
+        }
+        $text = Str::limit($text, 50, '…');
         return [
-            'message' => $this->message ? new ChatMessageResource($this->message) : null,
+            'message' => [
+                'sender_type' => $this->message->sender_type,
+                'sender_name' => $senderName,
+                'text'        => $text,
+            ]
         ];
     }
 }
