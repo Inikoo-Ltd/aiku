@@ -112,14 +112,20 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                     } catch (ValidationException $exception) {
                         $numberFails++;
                     }
-                }
 
-                FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
-                    'number_total' => $numberTotal,
-                    'number_success' => $numberSuccess,
-                    'number_fails' => $numberFails
-                ]);
+                    broadcast(new FetchProductFromShopifyProgressEvent($shopifyUser, [
+                        'number_total' => $numberTotal,
+                        'number_success' => $numberSuccess,
+                        'number_fails' => $numberFails
+                    ]));
+                }
             }
+
+            broadcast(new FetchProductFromShopifyProgressEvent($shopifyUser, [
+                'number_total' => $numberTotal,
+                'number_success' => $numberTotal,
+                'number_fails' => $numberFails
+            ]));
         });
     }
 

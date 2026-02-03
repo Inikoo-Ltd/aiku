@@ -136,6 +136,7 @@ const isOpenModalDownloadImages = ref(false)
 const isOpenModalSuspended = ref(false)
 const isTestConnectionSuccess = ref(false)
 const isOpenModalCloneProgress = ref(false)
+const isOpenModalFetchProgress = ref(false)
 const cloneProgressData = ref({
 	data: {
 		number_success: 0,
@@ -491,6 +492,7 @@ const codeString = ref<string | null>(null)
 const isSocketActive = ref(false)
 
 let channel: any = null
+let fetchChannel: any = null
 const isModalReadyDownloadImages = ref(false)
 const isModalDownloadImages = ref(false)
 const stateDownloadImagesReady = ref<string | null>(null)
@@ -507,6 +509,10 @@ const initSocketListener = () => {
 
 	if (channel) {
 		channel.stopListening(socketAction)
+	}
+
+	if (fetchChannel) {
+		fetchChannel.stopListening(socketAction)
 	}
 
 	channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
@@ -529,6 +535,19 @@ const initSocketListener = () => {
 	})
 }
 
+const initSocketFetchListener = () => {
+	fetchChannel = window.Echo.private(`shopify.${props.platform_user_id}.fetch-product`).listen(".shopify-fetch-progress", (eventData: any) => {
+		cloneProgressData.value = {
+			data: eventData,
+			done: eventData.number_success,
+			total: eventData.number_total
+		}
+		// stop listening after this event
+		fetchChannel.stopListening(".shopify-fetch-progress")
+		isSocketActive.value = false
+	})
+}
+
 watch(
 	() => props.download_portfolio_customer_sales_channel_url,
 	() => {
@@ -547,6 +566,8 @@ watch(
 
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
+	initSocketFetchListener()
+
 	const storedCode = sessionStorage.getItem("download_code")
 	if (storedCode) {
 		codeString.value = storedCode
@@ -936,12 +957,18 @@ const layout = inject("layout", layoutStructure)
 			<ButtonWithLink
 				v-if="routes?.syncAllRoute && !customer_sales_channel?.ban_stock_update_until"
 				:routeTarget="routes?.syncAllRoute"
-				@success="data =>
-					notify({
-						title: trans('Your product was successfully fetched and still processed in background.'),
-						text: trans('Please wait for a few minutes to the products added'),
-						type: 'success',
-					})"
+				@success="
+					() => {
+						isOpenModalFetchProgress = true
+						notify({
+							title: trans(
+								'Your product was successfully fetched and still processed in background.'
+							),
+							text: trans('Please wait for a few minutes to the products added'),
+							type: 'success',
+						})
+					}
+				"
 				isWithError
 				:label="'Fetch Products'"
 				icon="fas fa-sync-alt"
@@ -1544,6 +1571,248 @@ const layout = inject("layout", layoutStructure)
 										channel: cloneSourceChannelName,
 									})
 								}}
+							</template>
+						</div>
+
+						<!-- Percentage Display -->
+						<div v-if="cloneProgressData.total > 0" class="mt-4">
+							<div
+								class="text-4xl font-bold tabular-nums transition-all duration-300"
+								:class="
+									cloneProgressData.done >= cloneProgressData.total
+										? cloneProgressData.data.number_fails > 0
+											? 'text-yellow-500'
+											: 'text-green-500'
+										: 'text-gray-700'
+								">
+								{{
+									Math.round(
+										(cloneProgressData.done / cloneProgressData.total) * 100
+									)
+								}}%
+							</div>
+							<div class="text-sm text-gray-500 mt-1">
+								{{ cloneProgressData.done }} / {{ cloneProgressData.total }}
+								{{ trans("products") }}
+							</div>
+						</div>
+
+						<!-- Progress Bar -->
+						<div class="mt-4 px-4">
+							<PureProgressBar
+								v-if="cloneProgressData.total > 0"
+								:progressBars="cloneProgressData" />
+							<div
+								v-else
+								class="flex items-center justify-center gap-2 text-gray-500">
+								<FontAwesomeIcon
+									icon="fas fa-spinner"
+									class="animate-spin"
+									aria-hidden="true" />
+								<span>{{ trans("Preparing...") }}</span>
+							</div>
+						</div>
+
+						<div
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							class="mt-4 text-sm text-gray-600">
+							{{ trans("Page will reload automatically...") }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</Modal>
+
+	<!-- Modal: Clone Progress -->
+	<Modal
+		:isOpen="isOpenModalCloneProgress"
+		@onClose="
+			cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0
+				? (isOpenModalCloneProgress = false)
+				: null
+		"
+		width="w-full max-w-md">
+		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+			<div
+				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+				<div>
+					<div
+						class="mx-auto flex size-12 items-center justify-center rounded-full"
+						:class="
+							cloneProgressData.done >= cloneProgressData.total &&
+							cloneProgressData.total > 0
+								? cloneProgressData.data.number_fails > 0
+									? 'bg-yellow-100'
+									: 'bg-green-100'
+								: 'bg-gray-100'
+						">
+						<FontAwesomeIcon
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							:icon="
+								cloneProgressData.data.number_fails > 0
+									? 'fas fa-exclamation-triangle'
+									: 'fas fa-check'
+							"
+							:class="
+								cloneProgressData.data.number_fails > 0
+									? 'text-yellow-500'
+									: 'text-green-500'
+							"
+							class="text-2xl"
+							fixed-width
+							aria-hidden="true" />
+						<FontAwesomeIcon
+							v-else
+							icon="fas fa-spinner"
+							class="text-gray-500 text-2xl animate-spin"
+							fixed-width
+							aria-hidden="true" />
+					</div>
+
+					<div class="mt-3 text-center sm:mt-5">
+						<div as="h3" class="font-semibold text-xl">
+							<template
+								v-if="
+									cloneProgressData.done >= cloneProgressData.total &&
+									cloneProgressData.total > 0
+								">
+								{{ trans("Cloning Complete!") }}
+							</template>
+							<template v-else>
+								{{ trans("Cloning Portfolios...") }}
+							</template>
+						</div>
+
+						<div class="mt-2 text-sm text-gray-500">
+							<template v-if="cloneSourceChannelName">
+								{{
+									trans("From channel: :channel", {
+										channel: cloneSourceChannelName,
+									})
+								}}
+							</template>
+						</div>
+
+						<!-- Percentage Display -->
+						<div v-if="cloneProgressData.total > 0" class="mt-4">
+							<div
+								class="text-4xl font-bold tabular-nums transition-all duration-300"
+								:class="
+									cloneProgressData.done >= cloneProgressData.total
+										? cloneProgressData.data.number_fails > 0
+											? 'text-yellow-500'
+											: 'text-green-500'
+										: 'text-gray-700'
+								">
+								{{
+									Math.round(
+										(cloneProgressData.done / cloneProgressData.total) * 100
+									)
+								}}%
+							</div>
+							<div class="text-sm text-gray-500 mt-1">
+								{{ cloneProgressData.done }} / {{ cloneProgressData.total }}
+								{{ trans("products") }}
+							</div>
+						</div>
+
+						<!-- Progress Bar -->
+						<div class="mt-4 px-4">
+							<PureProgressBar
+								v-if="cloneProgressData.total > 0"
+								:progressBars="cloneProgressData" />
+							<div
+								v-else
+								class="flex items-center justify-center gap-2 text-gray-500">
+								<FontAwesomeIcon
+									icon="fas fa-spinner"
+									class="animate-spin"
+									aria-hidden="true" />
+								<span>{{ trans("Preparing...") }}</span>
+							</div>
+						</div>
+
+						<div
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							class="mt-4 text-sm text-gray-600">
+							{{ trans("Page will reload automatically...") }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</Modal>
+
+	<!-- Modal: Clone Progress -->
+	<Modal
+		:isOpen="isOpenModalFetchProgress"
+		@onClose="
+			cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0
+				? (isOpenModalFetchProgress = false)
+				: null
+		"
+		width="w-full max-w-md">
+		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+			<div
+				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+				<div>
+					<div
+						class="mx-auto flex size-12 items-center justify-center rounded-full"
+						:class="
+							cloneProgressData.done >= cloneProgressData.total &&
+							cloneProgressData.total > 0
+								? cloneProgressData.data.number_fails > 0
+									? 'bg-yellow-100'
+									: 'bg-green-100'
+								: 'bg-gray-100'
+						">
+						<FontAwesomeIcon
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							:icon="
+								cloneProgressData.data.number_fails > 0
+									? 'fas fa-exclamation-triangle'
+									: 'fas fa-check'
+							"
+							:class="
+								cloneProgressData.data.number_fails > 0
+									? 'text-yellow-500'
+									: 'text-green-500'
+							"
+							class="text-2xl"
+							fixed-width
+							aria-hidden="true" />
+						<FontAwesomeIcon
+							v-else
+							icon="fas fa-spinner"
+							class="text-gray-500 text-2xl animate-spin"
+							fixed-width
+							aria-hidden="true" />
+					</div>
+
+					<div class="mt-3 text-center sm:mt-5">
+						<div as="h3" class="font-semibold text-xl">
+							<template
+								v-if="
+									cloneProgressData.done >= cloneProgressData.total &&
+									cloneProgressData.total > 0
+								">
+								{{ trans("Fetching Complete!") }}
+							</template>
+							<template v-else>
+								{{ trans("Fetching Portfolios...") }}
 							</template>
 						</div>
 
