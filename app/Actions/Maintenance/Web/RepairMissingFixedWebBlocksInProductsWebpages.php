@@ -77,16 +77,11 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
 
 
-        $ok = true;
+        $ok                  = true;
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'product-1');
         if (count($countFamilyWebBlock) > 1) {
-
             foreach ($countFamilyWebBlock as $webBlockData) {
-
                 if (!$ok) {
-
-
-
                     DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
                     DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
 
@@ -94,12 +89,9 @@ class RepairMissingFixedWebBlocksInProductsWebpages
                     DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
 
                     DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
-
-
                 }
                 $ok = false;
             }
-
         }
 
 
@@ -131,6 +123,10 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
+        }
 
 
         $webpage->refresh();
@@ -170,8 +166,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         $trendsWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
         $lastSeenWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
 
-
-
+        $recentlyBoughtWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
 
 
         /** @var WebBlock $alternativesWebBlock */
@@ -181,15 +176,14 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
 
 
-
-
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
         $count = $webpage->webBlocks()->count();
 
         $alternativesWebBlockPosition = $count + 101;
-        $trendsWebBlockPosition = $count + 102;
-        $lastSeenWebBlockPosition       = $count + 103;
+        $trendsWebBlockPosition       = $count + 102;
+        $recentlyBoughtWebBlock       = $count + 103;
+        $lastSeenWebBlockPosition     = $count + 104;
 
 
         $runningPosition = 2;
@@ -202,6 +196,8 @@ class RepairMissingFixedWebBlocksInProductsWebpages
                 $webBlocks[$key] = $lastSeenWebBlockPosition;
             } elseif ($key == $alternativesWebBlock) {
                 $webBlocks[$key] = $alternativesWebBlockPosition;
+            } elseif ($key == $recentlyBoughtWebBlock) {
+                $webBlocks[$key] = $recentlyBoughtWebBlock;
             } else {
                 $webBlocks[$key] = $runningPosition;
                 $runningPosition++;
@@ -221,7 +217,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
     public function asCommand(Command $command): void
     {
-        $websiteId = $command->option('website_id');
+        $websiteId       = $command->option('website_id');
         $singleWebpageId = $command->option('webpage_id');
 
         $query = DB::table('webpages')
@@ -237,7 +233,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             $query->where('website_id', $websiteId);
         }
 
-        $total = $query->count();
+        $total   = $query->count();
         $current = 0;
 
         $query->chunk(100, function ($webpagesID) use ($command, &$current, $total) {

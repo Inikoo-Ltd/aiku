@@ -24,21 +24,24 @@ class RepairDebugFulfilmentOrderFromShopify extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public $commandSignature = 'Repair:DebugFulfilmentOrderFromShopify {customerSalesChannel}';
+    public $commandSignature = 'Repair:DebugFulfilmentOrderFromShopify {customerSalesChannel} {webhookId?}';
 
     public function asCommand(Command $command)
     {
-        $customerSalesChannel = CustomerSalesChannel::find($command->argument('customerSalesChannel'));
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
 
-        $this->handle($customerSalesChannel->user);
+        $this->handle($customerSalesChannel->user, $command->argument('webhookId'));
     }
 
     /**
      * @throws \Throwable
      */
-    public function handle(ShopifyUser $shopifyUser): void
+    public function handle(ShopifyUser $shopifyUser, $webhookId = null): void
     {
         $debugWebhooks = $shopifyUser->debugWebhooks;
+        if ($webhookId) {
+            $debugWebhooks = $shopifyUser->debugWebhooks()->where('id', $webhookId)->get();
+        }
 
         foreach ($debugWebhooks as $webhook) {
             DB::transaction(function () use ($shopifyUser, $webhook) {

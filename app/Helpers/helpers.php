@@ -8,6 +8,7 @@
 
 use App\Models\SysAdmin\Group;
 use App\Models\Web\Webpage;
+use Illuminate\Support\MessageBag;
 
 if (!function_exists('group')) {
     function group(): ?Group
@@ -20,6 +21,20 @@ if (!function_exists('escapeSQLSearch')) {
     function escapeSQLSearch(string $value): string
     {
         return preg_quote($value, '/');
+    }
+}
+
+if (!function_exists('errorBagHas')) {
+    function errorBagHas(MessageBag $errBag, array $keys): bool
+    {
+        $fail = false;
+        foreach ($keys as $key) {
+            if ($errBag->has($key)) {
+                $fail = true;
+                break;
+            }
+        }
+        return $fail;
     }
 }
 

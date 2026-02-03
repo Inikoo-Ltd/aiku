@@ -9,13 +9,13 @@
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UnpackDeliveryNotePackedState;
+use App\Actions\Dispatching\DeliveryNote\UnpackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToUnassigned;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
-use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
+use App\Actions\Dispatching\DeliveryNote\FinishPackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\DispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseAndDispatchDeliveryNote;
@@ -44,8 +44,8 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
-        Route::patch('unpacked', UnpackDeliveryNotePackedState::class)->name('unpacked');
-        Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
+        Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
+        Route::patch('packed', FinishPackDeliveryNote::class)->name('packed');
         Route::patch('packed_with_picking_bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed-with-picking-bay');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');

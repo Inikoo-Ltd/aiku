@@ -266,11 +266,20 @@ const checkScreenType = () => {
 }
 provide("screenType", screenType)
 
+const requestNotificationPermission = () => {
+	if (!("Notification" in window)) return
+	if (Notification.permission === "default") {
+		Notification.requestPermission()
+	}
+}
+
 onMounted(() => {
+	requestNotificationPermission()
 	checkScreenType()
 	onCheckAppVersion()
 	setColorStyleRoot(layout?.app?.theme)
 })
+
 
 console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>

@@ -211,7 +211,9 @@ const sendMessage = async ({
         formData.append("message_text", text ?? "")
         formData.append("message_type", type)
         formData.append("sender_type", isLoggedIn.value ? "user" : "guest")
-
+        if (isLoggedIn.value && layout.user?.id) {
+            formData.append("sender_id", layout.user.id)
+        }
         if (file) {
             formData.append(type === "image" ? "image" : "file", file)
         }

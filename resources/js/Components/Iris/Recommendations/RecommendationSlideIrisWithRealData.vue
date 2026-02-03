@@ -15,7 +15,6 @@ import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 
 const props = defineProps<{
     product: ProductHit
-    isProductLoading: (productId: string) => boolean
     isLoadingProductRealData: boolean
 }>()
 

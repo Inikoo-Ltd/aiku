@@ -50,6 +50,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $discretionary_offer_label
  * @property mixed $transaction_label
  * @property mixed $product_units
+ * @property mixed $quantity_picked
  */
 class TransactionsResource extends JsonResource
 {
@@ -74,6 +75,7 @@ class TransactionsResource extends JsonResource
             'status'                    => $this->status,
             'quantity_ordered'          => $this->quantity_ordered,
             'quantity_bonus'            => $this->quantity_bonus,
+            'quantity_picked'           => $this->quantity_picked,
             'quantity_dispatched'       => $this->quantity_dispatched,
             'quantity_fail'             => $this->quantity_fail,
             'quantity_cancelled'        => $this->quantity_cancelled,

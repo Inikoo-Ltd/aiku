@@ -10,7 +10,6 @@ import Tag from "@/Components/Tag.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { Link, usePage } from '@inertiajs/vue3'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
 import Icon from "@/Components/Icon.vue"
 import { faSquareArrowUpRight } from "@fortawesome/free-solid-svg-icons"
 

@@ -217,22 +217,6 @@ class EditMasterFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Image'),
-                            'icon'   => 'fa-light fa-image',
-                            'title'  => __('Media'),
-                            'fields' => [
-                                "image" => [
-                                    "type"         => "crop-image-full",
-                                    "label"        => __("Image"),
-                                    "value"        => $masterProductCategory->imageSources(720, 480),
-                                    "required"     => false,
-                                    'noSaveButton' => true,
-                                    "full"         => true
-                                ],
-                                ...$departmentIdFormData
-                            ]
-                        ],
-                        [
                             'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                             'icon'   => 'fa-light fa-folder-tree',
                             'fields' => [
@@ -264,37 +248,20 @@ class EditMasterFamily extends OrgAction
 
                         ],
                         app()->environment('local') ? [
-                            'label'  => __('Discounts'),
+                            'label'  => __('Vol / GR'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
-                                'vol_gr' => [
+                                'offers_data' => [
                                     'label'  => 'Vol / GR',
                                     'information' => __('Any changes will affect the offer in all shops.'),
-                                    'type'   => 'input_twin',
-                                    'value'  => [
-                                        [
-                                            'volume'   => $masterProductCategory->offers_data['vol_gr']['volume'] ?? null,
-                                            'discount' => $masterProductCategory->offers_data['vol_gr']['discount'] ?? null,
-                                        ]
-                                    ],
-                                    'fields' => [
-                                        'volume'   => [
-                                            'key'         => 'volume',
-                                            'placeholder' => __('Minimal Volume'),
-                                            'required'    => true,
-                                            'minValue'    => 0,
-                                            'type'        => 'number',
-                                            'suffix'      => '%'
+                                    'type'   => 'vol_discount',
+                                    'value'  =>  $masterProductCategory->offers_data,
+                                    'initial_value' => [
+                                        'volume_discount'   => [
+                                            'item_quantity' => null,
+                                            'percentage_off' => null,
                                         ],
-                                        'discount' => [
-                                            'key'         => 'discount',
-                                            'placeholder' => __('Discount %'),
-                                            'required'    => true,
-                                            'minValue'    => 0,
-                                            'type'        => 'number',
-                                            'suffix'      => '%'
-                                        ]
-                                    ]
+                                    ],
                                 ],
                             ],
                         ] : [],

@@ -10,6 +10,7 @@
 namespace App\Actions\Iris\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\IrisAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -18,6 +19,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreIrisPortfolioToMultiChannels extends IrisAction
@@ -35,7 +37,8 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
     {
         $channels = $customer->customerSalesChannels()
             ->whereIn('id', Arr::get($modelData, 'customer_sales_channel_ids'))
-            ->get();
+            ->get()
+            ->keyBy('id');
 
         // Changed to only get Active Products; If is_for_sale is false / status is discontinued, will be ignored
         $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))
@@ -43,22 +46,28 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
             ->where('state', '!=', ProductStateEnum::DISCONTINUED->value)
             ->get();
 
-        $existingPortfolios = $channels->flatMap(function ($channel) use ($items) {
-            return $channel->portfolios()
+        $existingPortfolios = Portfolio::whereIn('customer_sales_channel_id', $channels->keys())
                 ->whereIn('item_id', $items->pluck('id'))
                 ->where('item_type', 'Product')
-                ->get(['item_id', 'customer_sales_channel_id'])
-                ->map(fn ($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
-        })->unique()->values()->toArray();
+                ->get()
+                ->keyBy(fn ($p) => "{$p->customer_sales_channel_id}-{$p->item_id}");
 
-        $channels->each(function ($salesChannel) use ($items, $existingPortfolios) {
-            $items->chunk(100)->each(function ($chunkedItems) use ($salesChannel, $existingPortfolios) {
-                $chunkedItems->each(function ($item) use ($salesChannel, $existingPortfolios) {
-                    if (!in_array($salesChannel->id . '-' . $item->id, $existingPortfolios)) {
-                        StorePortfolio::make()->action($salesChannel, $item, []);
+        DB::transaction(function () use ($channels, $items, $existingPortfolios) {
+
+            $channels->each(function ($custSalesChannel) use ($items, $existingPortfolios) {
+                $items->each(function ($item) use ($custSalesChannel, $existingPortfolios) {
+                    $compositeKey = $custSalesChannel->id . '-' . $item->id;
+                    if ($existingPortfolios->has($compositeKey)) {
+                        $portfolio = $existingPortfolios->get($compositeKey);
+                        if (!$portfolio->status) {
+                            UpdatePortfolio::make()->action($portfolio, ['status' => true]);
+                        }
+                    } else {
+                        StorePortfolio::make()->action($custSalesChannel, $item, []);
                     }
                 });
             });
+
         });
     }
 

@@ -355,6 +355,7 @@ const onSubmitEditNetAmount = () => {
 
             <!-- Column: Quantity Ordered -->
             <template #cell(quantity_ordered)="{ item }">
+
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
                     <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
@@ -377,7 +378,10 @@ const onSubmitEditNetAmount = () => {
 
                     <!-- Read-only display -->
                     <div v-else-if="!editingIds.has(item.id)">
-                        {{ formatQuantity(item.quantity_ordered) }}
+                        <span :class="(state === 'dispatched' &&  item.quantity_dispatched!=item.quantity_ordered)||(state === 'packed' &&  item.quantity_picked!=item.quantity_ordered)?'line-through':''">{{ formatQuantity(item.quantity_ordered) }}</span>
+                        <span class="pl-3" v-if="state === 'packed' &&  item.quantity_picked!=item.quantity_ordered">{{ formatQuantity(item.quantity_picked) }}</span>
+                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">{{ formatQuantity(item.quantity_dispatched) }}</span>
+
                     </div>
 
                     <!-- Inline edit mode with original quantity displayed -->

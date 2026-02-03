@@ -5,6 +5,7 @@ import { getStyles } from "@/Composables/styles"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
+import { trans } from "laravel-vue-i18n"
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -16,17 +17,24 @@ import { Autoplay } from 'swiper/modules'
 // Font Awesome
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
+import RecommendationCRBSlideIris from "@/Components/Iris/Recommendations/RecommendationCRBSlideIris.vue"
 import { LastOrderedProduct } from "@/types/Resource/LastOrderedProductsResource"
 library.add(faChevronLeft, faChevronRight)
 
 
 const props = defineProps<{
-    fieldValue: {}
+    fieldValue: {
+        family: {   // GetWebBlockRecommendationsCRB
+            id: number
+            slug: string
+            name: string
+        }
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
+
 
 
 
@@ -40,35 +48,23 @@ const slidesPerView = computed(() => {
     }[props.screenType] ?? 5
 })
 
-const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 const listProducts = ref<LastOrderedProduct[] | null>()
 const isLoadingFetch = ref(false)
 
-const listLoadingProducts = ref<Record<string, string>>({})
-const isProductLoading = (productId: string) => {
-    return listLoadingProducts.value?.[`recommender-${productId}`] === 'loading'
-}
 
 const isFetched = ref(false)
 const fetchRecommenders = async () => {
-    console.log('qqqqqqq')
     if (route().has('iris.json.product_category.last-ordered-products.index')) {
-        // console.log('wwwwwwwwwwww')
         try {
             isLoadingFetch.value = true
-            
             const response = await axios.get(
-                route('iris.json.product_category.last-ordered-products.index', { productCategory: 31890 })
+                route('iris.json.product_category.last-ordered-products.index', { productCategory: props.fieldValue.family.id })
             )
-            
-            
+
             listProducts.value = response.data.data
-    
-            
             console.log('Final listProducts value:', listProducts.value)
-            
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {
@@ -84,7 +80,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6" :style="{
+    <div id="recommendation-customer-recently-bought-1-iris" class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
@@ -92,12 +88,13 @@ onMounted(() => {
         <template v-if="!isFetched || listProducts?.length">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
-                <div class="text-3xl font-semibold">
-                    <div v-html="fieldValue.title"></div>
+                <div class="text-xl md:text-3xl font-semibold">
+                    <!-- <div v-html="fieldValue.title"></div> -->
+                    <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
                 </div>
             </div>
             
-            <div class="py-4" id="LuigiTrends1">
+            <div class="py-4 px-4" id="recommendation-crb-1-iris">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
@@ -119,9 +116,8 @@ onMounted(() => {
                             :key="index"
                             class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
                         >
-                            <RecommendationCustomerRecentlyBoughtSlideIris
+                            <RecommendationCRBSlideIris
                                 :product
-                                :isProductLoading
                             />
                         </SwiperSlide>
                     </template>

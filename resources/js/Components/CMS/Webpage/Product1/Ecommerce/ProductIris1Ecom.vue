@@ -220,7 +220,7 @@ onMounted(async () => {
                 
                 <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
-                        <h1 class="text-3xl font-bold text-justify">
+                        <h1 class="text-3xl font-bold">
                             <span v-if="product.units > 1">{{ product.units }}x</span>
                             {{ product.name }}
                         </h1>
@@ -327,7 +327,7 @@ onMounted(async () => {
                     <div class="flex justify-between items-end">
                         <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
                         <span class="text-green-500 ml-1 font-bold">
-                            {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
+                            {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
                         </span>
                         <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
                             class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
@@ -550,7 +550,7 @@ onMounted(async () => {
                     {{ trans("Profit") }}
                 </span>:
                 <span class="ml-1 font-bold text-green-500">
-                    {{ fieldValue.product?.discounted_margin ?? fieldValue.product?.margin }}
+                   {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
                 </span>
 
                 <span

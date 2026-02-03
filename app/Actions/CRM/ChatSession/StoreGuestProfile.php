@@ -72,7 +72,7 @@ class StoreGuestProfile
         );
 
         BroadcastRealtimeChat::dispatch($chatMessage);
-        BroadcastChatListEvent::dispatch();
+        BroadcastChatListEvent::dispatch($chatMessage);
 
         return [
             'message' => $chatMessage,

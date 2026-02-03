@@ -619,8 +619,9 @@ const compTableFilterForSale = computed(() => {
             <Button
                 @click="onClickFilterForSale('true')"
                 v-tooltip="trans('Only show products that are for sale')"
-                label="Only Show For Sale"
+                :label="trans('Only For Sale')"
                 size="xs"
+				class="whitespace-nowrap"
                 :key="compTableFilterForSale"
                 :type="compTableFilterForSale ? 'secondary' : 'tertiary'"
                 :icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
@@ -629,12 +630,14 @@ const compTableFilterForSale = computed(() => {
             />
             <Button @click="onClickFilterOutOfStock('discontinued')"
                     v-tooltip="trans('Filter the product that discontinued')" label="Discontinued" size="xs"
+				    class="whitespace-nowrap"
                     :key="compTableFilterStatus"
                     :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
                     :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
                     iconRight="fal fa-times" :loading="isLoadingTable == 'discontinued'"/>
             <Button @click="onClickFilterOutOfStock('out-of-stock')"
                     v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
+				    class="whitespace-nowrap"
                     :key="compTableFilterStatus"
                     :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
                     :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"

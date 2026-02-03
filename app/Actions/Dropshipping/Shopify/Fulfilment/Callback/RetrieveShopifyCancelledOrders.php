@@ -23,7 +23,7 @@ class RetrieveShopifyCancelledOrders extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser)
     {
-        return $this->retrieveOrders($shopifyUser, 'CANCELLATION_REQUEST');
+        return $this->retrieveOrders($shopifyUser, 'CANCELLATION_REQUESTED');
     }
 
 
