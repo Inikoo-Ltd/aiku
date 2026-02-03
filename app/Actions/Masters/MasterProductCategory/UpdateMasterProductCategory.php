@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Discounts\Offer\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
@@ -103,8 +104,56 @@ class UpdateMasterProductCategory extends OrgAction
 
             if (isset($offersData['volume_discount'])) {
                 data_set($modelData, 'has_gr_vol_discount', true);
+
+                // Update volume discount in offers and offer_allowances
+                $volumeDiscount = $offersData['volume_discount'];
+
+                // Convert percentage_off from integer % to decimal (10 -> 0.1)
+                if (isset($volumeDiscount['percentage_off'])) {
+                    $volumeDiscount['percentage_off'] = ((float) $volumeDiscount['percentage_off']) / 100;
+                }
+
+                $result = UpdateVolumeGrOfferFromMaster::make()->action(
+                    $masterProductCategory,
+                    $volumeDiscount
+                );
+
+                // Flash notification if no offers were found
+                if ($result['updated_offers'] === 0) {
+                    session()->flash('notification', [
+                        'status'      => 'warning',
+                        'title'       => __('Warning'),
+                        'description' => __('No offers found to update for this master family.'),
+                    ]);
+                } else {
+                    session()->flash('notification', [
+                        'status'      => 'success',
+                        'title'       => __('Success'),
+                        'description' => __('Updated :offers offers and :allowances allowances.', [
+                            'offers' => $result['updated_offers'],
+                            'allowances' => $result['updated_allowances']
+                        ]),
+                    ]);
+                }
             } else {
                 data_set($modelData, 'has_gr_vol_discount', false);
+
+                // Remove volume discount from offers and offer_allowances
+                $result = UpdateVolumeGrOfferFromMaster::make()->action(
+                    $masterProductCategory,
+                    null
+                );
+
+                if ($result['updated_offers'] > 0) {
+                    session()->flash('notification', [
+                        'status'      => 'success',
+                        'title'       => __('Success'),
+                        'description' => __('Volume discount removed from :offers offers and :allowances allowances.', [
+                            'offers' => $result['updated_offers'],
+                            'allowances' => $result['updated_allowances']
+                        ]),
+                    ]);
+                }
             }
         }
 
@@ -125,7 +174,7 @@ class UpdateMasterProductCategory extends OrgAction
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
 
-                // Updates affected field name using translate if follow_master_{field} is true
+                // Updates the affected field name using translation if follow_master_{field} is true
                 if (Arr::has($changed, 'name')) {
                     $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
@@ -212,10 +261,10 @@ class UpdateMasterProductCategory extends OrgAction
                     ->max(12 * 1024),
             ],
             'name_i8n'                 => ['sometimes', 'array'],
-            'description_title_i8n'    => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n'          => ['sometimes', 'array'],
             'description_extra_i8n'    => ['sometimes', 'array'],
-            'offers_data'              => ['sometimes', 'array'],
+            'offers_data'              => ['sometimes', 'array:volume_discount'],
             'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
         ];
 

@@ -10,13 +10,13 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableMasterFamilies from "@/Components/Tables/Grp/Goods/TableMasterFamilies.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ref, computed } from "vue"
-import { faTags } from '@fal'
+import { faCheckCircle, faTimesCircle } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
-library.add(faTags)
+library.add(faCheckCircle, faTimesCircle)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

@@ -34,7 +34,8 @@ trait WithMasterCatalogueSubNavigation
             ],
             [
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_department,
-                'label'    => __('Master Departments'),
+                'label'    => __('M. Departments'),
+                'tooltip'    => __('Master Departments'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_departments.index',
                     'parameters' => [
@@ -50,7 +51,7 @@ trait WithMasterCatalogueSubNavigation
             [
 
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
-                'label'    => __('Master Sub-departments'),
+                'label'    => __('M. Sub-departments'),
                 'tooltip'  => __('Master Sub-departments'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
@@ -66,7 +67,8 @@ trait WithMasterCatalogueSubNavigation
 
             [
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_family,
-                'label'    => __('Master Families'),
+                'label'    => __('M. Families'),
+                'tooltip'    => __('Master Families'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_families.index',
                     'parameters' => [
@@ -84,7 +86,8 @@ trait WithMasterCatalogueSubNavigation
 
             [
                 'number'   => $masterShop->stats->number_current_master_assets_type_product,
-                'label'    => __('Master Products'),
+                'label'    => __('M. Products'),
+                'tooltip'    => __('Master Products'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_products.index',
                     'parameters' => [
@@ -102,7 +105,8 @@ trait WithMasterCatalogueSubNavigation
 
             [
                 'number'   => $masterShop->stats->number_master_collections,
-                'label'    => __('Master Collections'),
+                'label'    => __('M. Collections'),
+                'tooltip'    => __('Master Collections'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_collections.index',
                     'parameters' => [
@@ -115,7 +119,10 @@ trait WithMasterCatalogueSubNavigation
                 ]
             ],
 
-            [
+            app()->environment('local') ? [
+                'number'   => $masterShop->stats->number_master_families_with_vol_gr_offer,
+                'label'    => __('M. Vol/GR'),
+                'tooltip'    => __('Master Volume/Gold Reward Discount'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_gr.index',
                     'parameters' => [
@@ -127,7 +134,7 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Gold Reward')
                 ],
                 'align'    => 'right',
-            ],
+            ] : [],
 
         ];
     }
