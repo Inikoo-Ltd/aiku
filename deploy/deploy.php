@@ -179,6 +179,7 @@ task('deploy:flush-varnish', function () {
     }
 
     if ($shouldFlush) {
+        run('cd {{release_path}}');
         writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
         try {
             artisan('varnish:restart 10', ['skipIfNoEnv', 'showOutput'])();
